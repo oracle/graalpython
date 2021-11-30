@@ -34,29 +34,31 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotNode;
+import com.oracle.graal.python.nodes.frame.PythonFrame;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
+@ImportStatic(PythonFrame.class)
 public abstract class ReadGeneratorFrameVariableNode extends ExpressionNode implements ReadLocalNode, FrameSlotNode {
 
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
-    protected final FrameSlot frameSlot;
+    protected final int frameSlot;
 
-    protected ReadGeneratorFrameVariableNode(FrameSlot frameSlot) {
+    protected ReadGeneratorFrameVariableNode(int frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static ReadGeneratorFrameVariableNode create(FrameSlot slot) {
+    public static ReadGeneratorFrameVariableNode create(int slot) {
         return ReadGeneratorFrameVariableNodeGen.create(slot);
     }
 
@@ -65,7 +67,7 @@ public abstract class ReadGeneratorFrameVariableNode extends ExpressionNode impl
     }
 
     @Override
-    public final FrameSlot getSlot() {
+    public final int getSlotIndex() {
         return frameSlot;
     }
 
@@ -93,25 +95,23 @@ public abstract class ReadGeneratorFrameVariableNode extends ExpressionNode impl
         return generatorFrame.getDouble(frameSlot);
     }
 
-    protected final Object getObjectResult(Frame frame) {
-        return frame.getObject(frameSlot);
-    }
-
     @Specialization(guards = {"generatorFrame.isObject(frameSlot)", "result != null"})
     static Object readLocalObject(@SuppressWarnings("unused") VirtualFrame frame,
                     @SuppressWarnings("unused") @Bind("getGeneratorFrame(frame)") Frame generatorFrame,
-                    @Bind("getObjectResult(generatorFrame)") Object result) {
+                    @Bind("generatorFrame.getObject(frameSlot)") Object result) {
         return result;
     }
 
-    @Specialization(guards = {"generatorFrame.isObject(frameSlot)", "getObjectResult(generatorFrame) == null"})
+    @Specialization(guards = {"generatorFrame.isObject(frameSlot)", "generatorFrame.getObject(frameSlot) == null"})
     Object readLocalObjectNull(@SuppressWarnings("unused") VirtualFrame frame,
                     @SuppressWarnings("unused") @Bind("getGeneratorFrame(frame)") Frame generatorFrame,
                     @Cached PRaiseNode raise) {
-        if (frameSlot.getIdentifier() == RETURN_SLOT_ID) {
+        assert frame.getFrameDescriptor() == generatorFrame.getFrameDescriptor();
+        Object identifier = frame.getFrameDescriptor().getSlotName(frameSlot);
+        if (identifier == RETURN_SLOT_ID) {
             return PNone.NONE;
         } else {
-            throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, frameSlot.getIdentifier());
+            throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
         }
     }
 
@@ -127,6 +127,6 @@ public abstract class ReadGeneratorFrameVariableNode extends ExpressionNode impl
 
     @Override
     public Object getNodeObject() {
-        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, frameSlot.getIdentifier());
+        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, getRootNode().getFrameDescriptor().getSlotName(frameSlot));
     }
 }

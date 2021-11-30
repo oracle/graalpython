@@ -490,7 +490,7 @@ Scope: []
         FreeVars: Empty
         Scope: fromkeys
             Kind: Function
-            FrameDescriptor: [<return_val>, cls, d, iterable, key, value]
+            FrameDescriptor: [<>temp5, <return_val>, cls, d, iterable, key, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: copy
@@ -610,7 +610,7 @@ Scope: []
                 FreeVars: [key]
         Scope: __iter__
             Kind: Function
-            FrameDescriptor: [<return_val>, d, mapping, self]
+            FrameDescriptor: [<>temp3, <return_val>, d, mapping, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __len__
@@ -625,7 +625,7 @@ Scope: []
             FreeVars: Empty
         Scope: __getitem__
             Kind: Function
-            FrameDescriptor: [<return_val>, key, mapping, self]
+            FrameDescriptor: [<>temp3, <return_val>, key, mapping, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __missing__

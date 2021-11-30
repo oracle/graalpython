@@ -30,7 +30,7 @@ Scope: []
             FreeVars: Empty
         Scope: repr_dict
             Kind: Function
-            FrameDescriptor: [<return_val>, key, keyrepr, level, n, newlevel, pieces, repr1, s, self, valrepr, x]
+            FrameDescriptor: [<>temp12, <return_val>, key, keyrepr, level, n, newlevel, pieces, repr1, s, self, valrepr, x]
             CellVars: Empty
             FreeVars: Empty
         Scope: repr_deque

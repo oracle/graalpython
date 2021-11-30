@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.classes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
+
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -62,7 +63,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -83,15 +83,15 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 public abstract class ReadClassAttributeNode extends ExpressionNode implements ReadLocalNode, AccessNameNode {
     protected final String identifier;
     protected final boolean isFreeVar;
-    protected final FrameSlot cellSlot;
+    protected final Integer cellSlot;
 
-    ReadClassAttributeNode(String identifier, FrameSlot cellSlot, boolean isFreeVar) {
+    ReadClassAttributeNode(String identifier, Integer cellSlot, boolean isFreeVar) {
         this.identifier = identifier;
         this.isFreeVar = isFreeVar;
         this.cellSlot = cellSlot;
     }
 
-    public static ReadClassAttributeNode create(String name, FrameSlot cellSlot, boolean isFreeVar) {
+    public static ReadClassAttributeNode create(String name, Integer cellSlot, boolean isFreeVar) {
         return ReadClassAttributeNodeGen.create(name, cellSlot, isFreeVar);
     }
 
@@ -195,7 +195,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
         @Child WriteLocalCellNode writeCell;
         @Child ExpressionNode rhs;
 
-        WriteClassAttributeCellNode(String identifier, FrameSlot cellSlot, ExpressionNode rhs) {
+        WriteClassAttributeCellNode(String identifier, int cellSlot, ExpressionNode rhs) {
             writeName = WriteNameNode.create(identifier, rhs);
             writeCell = WriteLocalCellNode.create(cellSlot, ReadLocalVariableNode.create(cellSlot), rhs);
         }

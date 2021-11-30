@@ -38,7 +38,6 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -128,7 +127,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         return functionName;
     }
 
-    public FrameSlot[] getCellVarSlots() {
+    public int[] getCellVarSlots() {
         return cellVarSlots;
     }
 
@@ -140,7 +139,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @ExplodeLoop
     private void initializeCellVars(Frame frame) {
         for (int i = 0; i < cellVarSlots.length; i++) {
-            FrameSlot frameSlot = cellVarSlots[i];
+            int frameSlot = cellVarSlots[i];
 
             // get the cell
             PCell cell = null;

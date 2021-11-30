@@ -117,7 +117,6 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                                       ReadLocalCellNodeGen SourceSection: [108,111]`end`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [0,end,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [1,<return_val>,Object]
                                     ExpressionStatementNode SourceSection: [117,130]`inner_inner()`

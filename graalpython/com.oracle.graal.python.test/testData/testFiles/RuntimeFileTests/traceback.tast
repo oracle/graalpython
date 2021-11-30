@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [<return_val>, extracted_list, file, item]
+            FrameDescriptor: 5 slots [<>temp3, <return_val>, extracted_list, file, item]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -142,7 +142,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Frame: [0,extracted_list,Illegal]
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Object]
+                  Frame: [4,<return_val>,Object]
       WriteNameNodeGen SourceSection: [890,1471]`def format_list(extr...`
         Identifier: format_list
         FunctionDefinitionNode Name: format_list SourceSection: None
@@ -400,7 +400,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [<return_val>, chain, etype, file, limit, line, tb, value]
+            FrameDescriptor: 9 slots [<>temp7, <return_val>, chain, etype, file, limit, line, tb, value]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -516,7 +516,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Identifier: TracebackException
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [7,<return_val>,Object]
+                  Frame: [8,<return_val>,Object]
       WriteNameNodeGen SourceSection: [3876,4660]`def format_exception...`
         Identifier: format_exception
         FunctionDefinitionNode Name: format_exception SourceSection: None
@@ -2342,7 +2342,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 17 slots [*, <>temp14, <>temp15, <return_val>, capture_locals, co, f, f_locals, filename, fnames, frame_gen, klass, limit, lineno, lookup_lines, name, result]
+                              FrameDescriptor: 18 slots [*, <>temp14, <>temp15, <>temp16, <return_val>, capture_locals, co, f, f_locals, filename, fnames, frame_gen, klass, limit, lineno, lookup_lines, name, result]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2483,21 +2483,21 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             ForNextElementNodeGen SourceSection: None
                                               DestructuringAssignmentNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: <>temp14
-                                                  Frame: [14,<>temp14,Illegal]
-                                                WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <>temp15
                                                   Frame: [15,<>temp15,Illegal]
+                                                WriteLocalVariableNodeGen SourceSection: None
+                                                  Identifier: <>temp16
+                                                  Frame: [16,<>temp16,Illegal]
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: f
                                                   Frame: [12,f,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: None
-                                                    Frame: [14,<>temp14,Illegal]
+                                                    Frame: [15,<>temp15,Illegal]
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: lineno
                                                   Frame: [13,lineno,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: None
-                                                    Frame: [15,<>temp15,Illegal]
+                                                    Frame: [16,<>temp16,Illegal]
                                             BlockNode SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: [12374,12387]`co = f.f_code`
                                                 Identifier: co
@@ -2645,7 +2645,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         ReadLocalVariableNodeGen SourceSection: [13083,13089]`result`
                                           Frame: [6,result,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [16,<return_val>,Object]
+                                    Frame: [17,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [13095,13954]`@classmethod↵    def...`
                         Identifier: from_list
                         PythonCallUnary SourceSection: [13095,13107]`@classmethod`
@@ -2667,7 +2667,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 13 slots [<>temp10, <>temp11, <>temp8, <>temp9, <return_val>, a_list, filename, frame, klass, line, lineno, name, result]
+                              FrameDescriptor: 14 slots [<>temp10, <>temp11, <>temp12, <>temp8, <>temp9, <return_val>, a_list, filename, frame, klass, line, lineno, name, result]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2725,9 +2725,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNodeGen SourceSection: [13842,13847]`frame`
                                                     Frame: [7,frame,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: <>temp8
-                                                    Frame: [8,<>temp8,Illegal]
-                                                  WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: <>temp9
                                                     Frame: [9,<>temp9,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
@@ -2737,25 +2734,28 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Identifier: <>temp11
                                                     Frame: [11,<>temp11,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
+                                                    Identifier: <>temp12
+                                                    Frame: [12,<>temp12,Illegal]
+                                                  WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: filename
                                                     Frame: [3,filename,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [8,<>temp8,Illegal]
+                                                      Frame: [9,<>temp9,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: lineno
                                                     Frame: [4,lineno,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [9,<>temp9,Illegal]
+                                                      Frame: [10,<>temp10,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: name
                                                     Frame: [5,name,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [10,<>temp10,Illegal]
+                                                      Frame: [11,<>temp11,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: line
                                                     Frame: [6,line,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [11,<>temp11,Illegal]
+                                                      Frame: [12,<>temp12,Illegal]
                                                 ExpressionStatementNode SourceSection: [13864,13926]`result.append(FrameS...`
                                                   PythonCallUnary SourceSection: [13864,13926]`result.append(FrameS...`
                                                     CallUnaryMethodNodeGen SourceSection: None
@@ -2786,7 +2786,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         ReadLocalVariableNodeGen SourceSection: [13942,13948]`result`
                                           Frame: [2,result,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [12,<return_val>,Object]
+                                    Frame: [13,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [13954,15801]`def format(self):↵  ...`
                         Identifier: format
                         FunctionDefinitionNode Name: format SourceSection: None
@@ -2804,7 +2804,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 13 slots [<>temp10, <>temp11, <return_val>, count, frame, last_file, last_line, last_name, name, result, row, self, value]
+                            FrameDescriptor: 15 slots [<>temp10, <>temp11, <>temp12, <>temp13, <return_val>, count, frame, last_file, last_line, last_name, name, result, row, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3057,21 +3057,21 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ForNextElementNodeGen SourceSection: None
                                                         DestructuringAssignmentNodeGen SourceSection: None
                                                           WriteLocalVariableNodeGen SourceSection: None
-                                                            Identifier: <>temp10
-                                                            Frame: [10,<>temp10,Illegal]
+                                                            Identifier: <>temp12
+                                                            Frame: [12,<>temp12,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
-                                                            Identifier: <>temp11
-                                                            Frame: [11,<>temp11,Illegal]
+                                                            Identifier: <>temp13
+                                                            Frame: [13,<>temp13,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
                                                             Identifier: name
                                                             Frame: [7,name,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: None
-                                                              Frame: [10,<>temp10,Illegal]
+                                                              Frame: [12,<>temp12,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
                                                             Identifier: value
                                                             Frame: [8,value,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: None
-                                                              Frame: [11,<>temp11,Illegal]
+                                                              Frame: [13,<>temp13,Illegal]
                                                       ExpressionStatementNode SourceSection: [15567,15634]`row.append('    {nam...`
                                                         PythonCallUnary SourceSection: [15567,15634]`row.append('    {nam...`
                                                           CallUnaryMethodNodeGen SourceSection: None
@@ -3144,7 +3144,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       ReadLocalVariableNodeGen SourceSection: [15792,15798]`result`
                                         Frame: [1,result,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [12,<return_val>,Object]
+                                  Frame: [14,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [11163,11167]`list`
@@ -3756,7 +3756,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [<return_val>, frame, self]
+                                FrameDescriptor: 4 slots [<>temp2, <return_val>, frame, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -3837,7 +3837,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [0,self,Illegal]
                                           BlockNode SourceSection: None
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [2,<return_val>,Object]
+                                      Frame: [3,<return_val>,Object]
                           WriteNameNodeGen SourceSection: [20108,20185]`def __eq__(self, oth...`
                             Identifier: __eq__
                             FunctionDefinitionNode Name: __eq__ SourceSection: None

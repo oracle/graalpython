@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: nlargest
         Kind: Function
-        FrameDescriptor: [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
+        FrameDescriptor: [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
         CellVars: [key]
         FreeVars: Empty
         Scope: <genexpr>
@@ -30,7 +30,7 @@ Scope: []
             FreeVars: Empty
     Scope: nsmallest
         Kind: Function
-        FrameDescriptor: [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
+        FrameDescriptor: [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
         CellVars: [key]
         FreeVars: Empty
         Scope: <genexpr>
@@ -55,7 +55,7 @@ Scope: []
             FreeVars: Empty
     Scope: merge
         Kind: Generator
-        FrameDescriptor: [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>, _heapify, _heappop, _heapreplace, direction, h, h_append, it, iterables, key, key_value, next, order, reverse, s, value]
+        FrameDescriptor: [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <return_val>, _heapify, _heappop, _heapreplace, direction, h, h_append, it, iterables, key, key_value, next, order, reverse, s, value]
         CellVars: Empty
         FreeVars: Empty
     Scope: _siftup_max
@@ -80,7 +80,7 @@ Scope: []
         FreeVars: Empty
     Scope: _heapify_max
         Kind: Function
-        FrameDescriptor: [<return_val>, i, n, x]
+        FrameDescriptor: [<>temp3, <return_val>, i, n, x]
         CellVars: Empty
         FreeVars: Empty
     Scope: _heapreplace_max
@@ -95,7 +95,7 @@ Scope: []
         FreeVars: Empty
     Scope: heapify
         Kind: Function
-        FrameDescriptor: [<return_val>, i, n, x]
+        FrameDescriptor: [<>temp3, <return_val>, i, n, x]
         CellVars: Empty
         FreeVars: Empty
     Scope: heappushpop

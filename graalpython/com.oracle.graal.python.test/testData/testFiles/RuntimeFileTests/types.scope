@@ -115,7 +115,7 @@ Scope: []
             FreeVars: Empty
     Scope: _calculate_meta
         Kind: Function
-        FrameDescriptor: [<return_val>, base, base_meta, bases, meta, winner]
+        FrameDescriptor: [<>temp5, <return_val>, base, base_meta, bases, meta, winner]
         CellVars: Empty
         FreeVars: Empty
     Scope: prepare_class
@@ -125,7 +125,7 @@ Scope: []
         FreeVars: Empty
     Scope: resolve_bases
         Kind: Function
-        FrameDescriptor: [<>temp7, <>temp8, <return_val>, base, bases, i, new_base, new_bases, shift, updated]
+        FrameDescriptor: [<>temp7, <>temp8, <>temp9, <return_val>, base, bases, i, new_base, new_bases, shift, updated]
         CellVars: Empty
         FreeVars: Empty
     Scope: new_class

@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'for11'> SourceSection: [0,20]`for i, b in (): pass
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor: 2 slots [<>temp0, <>temp1]
+  FrameDescriptor: 3 slots [<>temp0, <>temp1, <>temp2]
   Documentation: None
   InnerRootNode SourceSection: [0,20]`for i, b in (): pass...`
     ExpressionWithSideEffect SourceSection: [0,20]`for i, b in (): pass...`
@@ -15,19 +15,19 @@ ModuleRootNode Name: <module 'for11'> SourceSection: [0,20]`for i, b in (): pass
               ForNextElementNodeGen SourceSection: None
                 DestructuringAssignmentNodeGen SourceSection: None
                   WriteLocalVariableNodeGen SourceSection: None
-                    Identifier: <>temp0
-                    Frame: [0,<>temp0,Illegal]
-                  WriteLocalVariableNodeGen SourceSection: None
                     Identifier: <>temp1
                     Frame: [1,<>temp1,Illegal]
+                  WriteLocalVariableNodeGen SourceSection: None
+                    Identifier: <>temp2
+                    Frame: [2,<>temp2,Illegal]
                   WriteNameNodeGen SourceSection: None
                     Identifier: i
                     ReadLocalVariableNodeGen SourceSection: None
-                      Frame: [0,<>temp0,Illegal]
+                      Frame: [1,<>temp1,Illegal]
                   WriteNameNodeGen SourceSection: None
                     Identifier: b
                     ReadLocalVariableNodeGen SourceSection: None
-                      Frame: [1,<>temp1,Illegal]
+                      Frame: [2,<>temp2,Illegal]
               ExpressionStatementNode SourceSection: [16,20]`pass`
                 EmptyNode SourceSection: [16,20]`pass`
             GetIteratorExpressionNodeGen SourceSection: [12,14]`()`

@@ -1124,7 +1124,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 21 slots [<>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, a, av, condgroup, i, item_no, item_yes, level, nl, op, self, seqtypes]
+                            FrameDescriptor: 23 slots [<>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <return_val>, a, av, condgroup, i, item_no, item_yes, level, nl, op, self, seqtypes]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1164,21 +1164,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp18
-                                                Frame: [18,<>temp18,Illegal]
+                                                Identifier: <>temp20
+                                                Frame: [20,<>temp20,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp19
-                                                Frame: [19,<>temp19,Illegal]
+                                                Identifier: <>temp21
+                                                Frame: [21,<>temp21,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: op
                                                 Frame: [4,op,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [18,<>temp18,Illegal]
+                                                  Frame: [20,<>temp20,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: av
                                                 Frame: [10,av,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [19,<>temp19,Illegal]
+                                                  Frame: [21,<>temp21,Illegal]
                                           BlockNode SourceSection: None
                                             ExpressionStatementNode SourceSection: [3691,3726]`print(level*"  " + s...`
                                               PythonCallNodeGen SourceSection: [3691,3726]`print(level*"  " + s...`
@@ -1220,21 +1220,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                       ForNextElementNodeGen SourceSection: None
                                                         DestructuringAssignmentNodeGen SourceSection: None
                                                           WriteLocalVariableNodeGen SourceSection: None
-                                                            Identifier: <>temp11
-                                                            Frame: [11,<>temp11,Illegal]
+                                                            Identifier: <>temp13
+                                                            Frame: [13,<>temp13,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
-                                                            Identifier: <>temp12
-                                                            Frame: [12,<>temp12,Illegal]
+                                                            Identifier: <>temp14
+                                                            Frame: [14,<>temp14,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
                                                             Identifier: op
                                                             Frame: [4,op,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: None
-                                                              Frame: [11,<>temp11,Illegal]
+                                                              Frame: [13,<>temp13,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
                                                             Identifier: a
                                                             Frame: [5,a,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: None
-                                                              Frame: [12,<>temp12,Illegal]
+                                                              Frame: [14,<>temp14,Illegal]
                                                       ExpressionStatementNode SourceSection: [3866,3900]`print((level+1)*"  "...`
                                                         PythonCallBinary SourceSection: [3866,3900]`print((level+1)*"  "...`
                                                           CallBinaryMethodNodeGen SourceSection: None
@@ -1279,21 +1279,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                         ForNextElementNodeGen SourceSection: None
                                                           DestructuringAssignmentNodeGen SourceSection: None
                                                             WriteLocalVariableNodeGen SourceSection: None
-                                                              Identifier: <>temp13
-                                                              Frame: [13,<>temp13,Illegal]
+                                                              Identifier: <>temp15
+                                                              Frame: [15,<>temp15,Illegal]
                                                             WriteLocalVariableNodeGen SourceSection: None
-                                                              Identifier: <>temp14
-                                                              Frame: [14,<>temp14,Illegal]
+                                                              Identifier: <>temp16
+                                                              Frame: [16,<>temp16,Illegal]
                                                             WriteLocalVariableNodeGen SourceSection: None
                                                               Identifier: i
                                                               Frame: [6,i,Illegal]
                                                               ReadLocalVariableNodeGen SourceSection: None
-                                                                Frame: [13,<>temp13,Illegal]
+                                                                Frame: [15,<>temp15,Illegal]
                                                             WriteLocalVariableNodeGen SourceSection: None
                                                               Identifier: a
                                                               Frame: [5,a,Illegal]
                                                               ReadLocalVariableNodeGen SourceSection: None
-                                                                Frame: [14,<>temp14,Illegal]
+                                                                Frame: [16,<>temp16,Illegal]
                                                         BlockNode SourceSection: None
                                                           IfNode SourceSection: [4022,4097]`if i:↵              ...`
                                                             YesNodeGen SourceSection: None
@@ -1345,29 +1345,29 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                       ReadLocalVariableNodeGen SourceSection: [4200,4202]`av`
                                                         Frame: [10,av,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: None
-                                                        Identifier: <>temp15
-                                                        Frame: [15,<>temp15,Illegal]
-                                                      WriteLocalVariableNodeGen SourceSection: None
-                                                        Identifier: <>temp16
-                                                        Frame: [16,<>temp16,Illegal]
-                                                      WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp17
                                                         Frame: [17,<>temp17,Illegal]
+                                                      WriteLocalVariableNodeGen SourceSection: None
+                                                        Identifier: <>temp18
+                                                        Frame: [18,<>temp18,Illegal]
+                                                      WriteLocalVariableNodeGen SourceSection: None
+                                                        Identifier: <>temp19
+                                                        Frame: [19,<>temp19,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: condgroup
                                                         Frame: [7,condgroup,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: None
-                                                          Frame: [15,<>temp15,Illegal]
+                                                          Frame: [17,<>temp17,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: item_yes
                                                         Frame: [8,item_yes,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: None
-                                                          Frame: [16,<>temp16,Illegal]
+                                                          Frame: [18,<>temp18,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: item_no
                                                         Frame: [9,item_no,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: None
-                                                          Frame: [17,<>temp17,Illegal]
+                                                          Frame: [19,<>temp19,Illegal]
                                                     ExpressionStatementNode SourceSection: [4219,4239]`print('', condgroup)...`
                                                       PythonCallBinary SourceSection: [4219,4239]`print('', condgroup)...`
                                                         CallBinaryMethodNodeGen SourceSection: None
@@ -1538,7 +1538,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [20,<return_val>,Object]
+                                  Frame: [22,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [4981,5036]`def __repr__(self):↵...`
                         Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
@@ -1952,7 +1952,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 27 slots [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <return_val>, av, h, hi, i, j, l, lo, op, self]
+                            FrameDescriptor: 29 slots [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <return_val>, av, h, hi, i, j, l, lo, op, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2008,21 +2008,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp25
-                                                Frame: [25,<>temp25,Illegal]
+                                                Identifier: <>temp27
+                                                Frame: [27,<>temp27,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp26
-                                                Frame: [26,<>temp26,Illegal]
+                                                Identifier: <>temp28
+                                                Frame: [28,<>temp28,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: op
                                                 Frame: [8,op,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [25,<>temp25,Illegal]
+                                                  Frame: [27,<>temp27,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: av
                                                 Frame: [7,av,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [26,<>temp26,Illegal]
+                                                  Frame: [28,<>temp28,Illegal]
                                           IfNode SourceSection: [5732,7034]`if op is BRANCH:↵   ...`
                                             YesNodeGen SourceSection: None
                                               IsExpressionNodeGen SourceSection: [5735,5747]`op is BRANCH`
@@ -2059,21 +2059,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                             ReadLocalVariableNodeGen SourceSection: [5865,5867]`av`
                                                               Frame: [7,av,Illegal]
                                                         WriteLocalVariableNodeGen SourceSection: None
-                                                          Identifier: <>temp11
-                                                          Frame: [11,<>temp11,Illegal]
+                                                          Identifier: <>temp13
+                                                          Frame: [13,<>temp13,Illegal]
                                                         WriteLocalVariableNodeGen SourceSection: None
-                                                          Identifier: <>temp12
-                                                          Frame: [12,<>temp12,Illegal]
+                                                          Identifier: <>temp14
+                                                          Frame: [14,<>temp14,Illegal]
                                                         WriteLocalVariableNodeGen SourceSection: None
                                                           Identifier: l
                                                           Frame: [5,l,Illegal]
                                                           ReadLocalVariableNodeGen SourceSection: None
-                                                            Frame: [11,<>temp11,Illegal]
+                                                            Frame: [13,<>temp13,Illegal]
                                                         WriteLocalVariableNodeGen SourceSection: None
                                                           Identifier: h
                                                           Frame: [6,h,Illegal]
                                                           ReadLocalVariableNodeGen SourceSection: None
-                                                            Frame: [12,<>temp12,Illegal]
+                                                            Frame: [14,<>temp14,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: [5899,5912]`i = min(i, l)`
                                                         Identifier: i
                                                         Frame: [3,i,Illegal]
@@ -2134,21 +2134,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                       ReadLocalVariableNodeGen SourceSection: [6055,6057]`av`
                                                         Frame: [7,av,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: <>temp13
-                                                    Frame: [13,<>temp13,Illegal]
+                                                    Identifier: <>temp15
+                                                    Frame: [15,<>temp15,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: <>temp14
-                                                    Frame: [14,<>temp14,Illegal]
+                                                    Identifier: <>temp16
+                                                    Frame: [16,<>temp16,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: i
                                                     Frame: [3,i,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [13,<>temp13,Illegal]
+                                                      Frame: [15,<>temp15,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: j
                                                     Frame: [4,j,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [14,<>temp14,Illegal]
+                                                      Frame: [16,<>temp16,Illegal]
                                                 WriteLocalVariableNodeGen SourceSection: [6085,6096]`lo = lo + i`
                                                   Identifier: lo
                                                   Frame: [1,lo,Illegal]
@@ -2183,21 +2183,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                           IntegerLiteralNode SourceSection: [6186,6188]`-1`
                                                             Value: -1
                                                     WriteLocalVariableNodeGen SourceSection: None
-                                                      Identifier: <>temp15
-                                                      Frame: [15,<>temp15,Illegal]
+                                                      Identifier: <>temp17
+                                                      Frame: [17,<>temp17,Illegal]
                                                     WriteLocalVariableNodeGen SourceSection: None
-                                                      Identifier: <>temp16
-                                                      Frame: [16,<>temp16,Illegal]
+                                                      Identifier: <>temp18
+                                                      Frame: [18,<>temp18,Illegal]
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: i
                                                       Frame: [3,i,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: None
-                                                        Frame: [15,<>temp15,Illegal]
+                                                        Frame: [17,<>temp17,Illegal]
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: j
                                                       Frame: [4,j,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: None
-                                                        Frame: [16,<>temp16,Illegal]
+                                                        Frame: [18,<>temp18,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: [6217,6228]`lo = lo + i`
                                                     Identifier: lo
                                                     Frame: [1,lo,Illegal]
@@ -2235,21 +2235,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                             IntegerLiteralNode SourceSection: [6320,6321]`2`
                                                               Value: 2
                                                       WriteLocalVariableNodeGen SourceSection: None
-                                                        Identifier: <>temp17
-                                                        Frame: [17,<>temp17,Illegal]
+                                                        Identifier: <>temp19
+                                                        Frame: [19,<>temp19,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: None
-                                                        Identifier: <>temp18
-                                                        Frame: [18,<>temp18,Illegal]
+                                                        Identifier: <>temp20
+                                                        Frame: [20,<>temp20,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: i
                                                         Frame: [3,i,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: None
-                                                          Frame: [17,<>temp17,Illegal]
+                                                          Frame: [19,<>temp19,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: j
                                                         Frame: [4,j,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: None
-                                                          Frame: [18,<>temp18,Illegal]
+                                                          Frame: [20,<>temp20,Illegal]
                                                     WriteLocalVariableNodeGen SourceSection: [6350,6369]`lo = lo + i * av[0]`
                                                       Identifier: lo
                                                       Frame: [1,lo,Illegal]
@@ -2330,21 +2330,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                             ReadLocalVariableNodeGen SourceSection: [6578,6580]`av`
                                                               Frame: [7,av,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
-                                                            Identifier: <>temp19
-                                                            Frame: [19,<>temp19,Illegal]
+                                                            Identifier: <>temp21
+                                                            Frame: [21,<>temp21,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
-                                                            Identifier: <>temp20
-                                                            Frame: [20,<>temp20,Illegal]
+                                                            Identifier: <>temp22
+                                                            Frame: [22,<>temp22,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
                                                             Identifier: i
                                                             Frame: [3,i,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: None
-                                                              Frame: [19,<>temp19,Illegal]
+                                                              Frame: [21,<>temp21,Illegal]
                                                           WriteLocalVariableNodeGen SourceSection: None
                                                             Identifier: j
                                                             Frame: [4,j,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: None
-                                                              Frame: [20,<>temp20,Illegal]
+                                                              Frame: [22,<>temp22,Illegal]
                                                         WriteLocalVariableNodeGen SourceSection: [6598,6609]`lo = lo + i`
                                                           Identifier: lo
                                                           Frame: [1,lo,Illegal]
@@ -2379,21 +2379,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                                   IntegerLiteralNode SourceSection: [6704,6705]`1`
                                                                     Value: 1
                                                             WriteLocalVariableNodeGen SourceSection: None
-                                                              Identifier: <>temp21
-                                                              Frame: [21,<>temp21,Illegal]
+                                                              Identifier: <>temp23
+                                                              Frame: [23,<>temp23,Illegal]
                                                             WriteLocalVariableNodeGen SourceSection: None
-                                                              Identifier: <>temp22
-                                                              Frame: [22,<>temp22,Illegal]
+                                                              Identifier: <>temp24
+                                                              Frame: [24,<>temp24,Illegal]
                                                             WriteLocalVariableNodeGen SourceSection: None
                                                               Identifier: i
                                                               Frame: [3,i,Illegal]
                                                               ReadLocalVariableNodeGen SourceSection: None
-                                                                Frame: [21,<>temp21,Illegal]
+                                                                Frame: [23,<>temp23,Illegal]
                                                             WriteLocalVariableNodeGen SourceSection: None
                                                               Identifier: j
                                                               Frame: [4,j,Illegal]
                                                               ReadLocalVariableNodeGen SourceSection: None
-                                                                Frame: [22,<>temp22,Illegal]
+                                                                Frame: [24,<>temp24,Illegal]
                                                           IfNode SourceSection: [6734,6932]`if av[2] is not None...`
                                                             NotNodeGen SourceSection: [6737,6754]`av[2] is not None`
                                                               IsExpressionNodeGen SourceSection: None
@@ -2414,21 +2414,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                                       IntegerLiteralNode SourceSection: [6786,6787]`2`
                                                                         Value: 2
                                                                 WriteLocalVariableNodeGen SourceSection: None
-                                                                  Identifier: <>temp23
-                                                                  Frame: [23,<>temp23,Illegal]
+                                                                  Identifier: <>temp25
+                                                                  Frame: [25,<>temp25,Illegal]
                                                                 WriteLocalVariableNodeGen SourceSection: None
-                                                                  Identifier: <>temp24
-                                                                  Frame: [24,<>temp24,Illegal]
+                                                                  Identifier: <>temp26
+                                                                  Frame: [26,<>temp26,Illegal]
                                                                 WriteLocalVariableNodeGen SourceSection: None
                                                                   Identifier: l
                                                                   Frame: [5,l,Illegal]
                                                                   ReadLocalVariableNodeGen SourceSection: None
-                                                                    Frame: [23,<>temp23,Illegal]
+                                                                    Frame: [25,<>temp25,Illegal]
                                                                 WriteLocalVariableNodeGen SourceSection: None
                                                                   Identifier: h
                                                                   Frame: [6,h,Illegal]
                                                                   ReadLocalVariableNodeGen SourceSection: None
-                                                                    Frame: [24,<>temp24,Illegal]
+                                                                    Frame: [26,<>temp26,Illegal]
                                                               WriteLocalVariableNodeGen SourceSection: [6820,6833]`i = min(i, l)`
                                                                 Identifier: i
                                                                 Frame: [3,i,Illegal]
@@ -2949,7 +2949,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [<return_val>, _, c, charset, n, result, self]
+                            FrameDescriptor: 8 slots [<>temp6, <return_val>, _, c, charset, n, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3037,7 +3037,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                       ReadLocalVariableNodeGen SourceSection: [8380,8386]`result`
                                         Frame: [3,result,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [6,<return_val>,Object]
+                                  Frame: [7,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [8391,8953]`def getuntil(self, t...`
                         Identifier: getuntil
                         FunctionDefinitionNode Name: getuntil SourceSection: None
@@ -4657,7 +4657,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [<return_val>, item, items, newitems]
+            FrameDescriptor: 5 slots [<>temp4, <return_val>, item, items, newitems]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4751,7 +4751,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 17 slots [<>temp15, <>temp16, <return_val>, av, item, items, itemsappend, nested, op, prefix, set, source, sourcematch, start, state, subpattern, verbose]
+            FrameDescriptor: 19 slots [<>temp15, <>temp16, <>temp17, <>temp18, <return_val>, av, item, items, itemsappend, nested, op, prefix, set, source, sourcematch, start, state, subpattern, verbose]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -5003,21 +5003,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                 IntegerLiteralNode SourceSection: [15416,15417]`0`
                                   Value: 0
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp15
-                                Frame: [15,<>temp15,Illegal]
+                                Identifier: <>temp17
+                                Frame: [17,<>temp17,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp16
-                                Frame: [16,<>temp16,Illegal]
+                                Identifier: <>temp18
+                                Frame: [18,<>temp18,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: op
                                 Frame: [12,op,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [15,<>temp15,Illegal]
+                                  Frame: [17,<>temp17,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: av
                                 Frame: [13,av,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [16,<>temp16,Illegal]
+                                  Frame: [18,<>temp18,Illegal]
                             IfNode SourceSection: [15427,15591]`if op is LITERAL:↵  ...`
                               YesNodeGen SourceSection: None
                                 IsExpressionNodeGen SourceSection: [15430,15443]`op is LITERAL`
@@ -5128,7 +5128,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 69 slots [<>temp47, <>temp48, <>temp49, <>temp50, <>temp51, <>temp52, <>temp53, <>temp54, <>temp55, <>temp56, <>temp57, <>temp58, <>temp59, <>temp60, <>temp61, <>temp62, <>temp63, <>temp64, <>temp65, <>temp66, <>temp67, <return_val>, _len, _ord, add_flags, av, char, code, code1, code2, condgroup, condname, del_flags, dir, err, first, flags, gid, group, here, hi, i, item, item_no, item_yes, lo, lookbehindgroups, max, min, msg, name, negate, nested, op, p, set, setappend, source, sourceget, sourcematch, start, state, sub_verbose, subpattern, subpatternappend, that, this, verbose, warnings]
+            FrameDescriptor: 70 slots [<>temp47, <>temp48, <>temp49, <>temp50, <>temp51, <>temp52, <>temp53, <>temp54, <>temp55, <>temp56, <>temp57, <>temp58, <>temp59, <>temp60, <>temp61, <>temp62, <>temp63, <>temp64, <>temp65, <>temp66, <>temp67, <>temp68, <return_val>, _len, _ord, add_flags, av, char, code, code1, code2, condgroup, condname, del_flags, dir, err, first, flags, gid, group, here, hi, i, item, item_no, item_yes, lo, lookbehindgroups, max, min, msg, name, negate, nested, op, p, set, setappend, source, sourceget, sourcematch, start, state, sub_verbose, subpattern, subpatternappend, that, this, verbose, warnings]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -7934,21 +7934,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                 ReadLocalVariableNodeGen SourceSection: [31465,31466]`i`
                                   Frame: [46,i,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp62
-                                Frame: [62,<>temp62,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp63
                                 Frame: [63,<>temp63,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp64
+                                Frame: [64,<>temp64,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: op
                                 Frame: [44,op,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [62,<>temp62,Illegal]
+                                  Frame: [63,<>temp63,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: av
                                 Frame: [45,av,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [63,<>temp63,Illegal]
+                                  Frame: [64,<>temp64,Illegal]
                             IfNode SourceSection: [31476,31655]`if op is SUBPATTERN:...`
                               YesNodeGen SourceSection: None
                                 IsExpressionNodeGen SourceSection: [31479,31495]`op is SUBPATTERN`
@@ -7961,9 +7961,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                   ReadLocalVariableNodeGen SourceSection: [31542,31544]`av`
                                     Frame: [45,av,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
-                                    Identifier: <>temp64
-                                    Frame: [64,<>temp64,Illegal]
-                                  WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <>temp65
                                     Frame: [65,<>temp65,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
@@ -7973,25 +7970,28 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                     Identifier: <>temp67
                                     Frame: [67,<>temp67,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp68
+                                    Frame: [68,<>temp68,Illegal]
+                                  WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: group
                                     Frame: [27,group,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [64,<>temp64,Illegal]
+                                      Frame: [65,<>temp65,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: add_flags
                                     Frame: [28,add_flags,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [65,<>temp65,Illegal]
+                                      Frame: [66,<>temp66,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: del_flags
                                     Frame: [29,del_flags,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [66,<>temp66,Illegal]
+                                      Frame: [67,<>temp67,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: p
                                     Frame: [30,p,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [67,<>temp67,Illegal]
+                                      Frame: [68,<>temp68,Illegal]
                                 IfNode SourceSection: [31557,31655]`if group is None and...`
                                   YesNodeGen SourceSection: None
                                     AndNode SourceSection: [31560,31609]`group is None and no...`
@@ -8048,7 +8048,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                       ReadLocalVariableNodeGen SourceSection: [31662,31672]`subpattern`
                         Frame: [5,subpattern,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [68,<return_val>,Object]
+                  Frame: [69,<return_val>,Object]
       WriteNameNodeGen SourceSection: [31674,34051]`def _parse_flags(sou...`
         Identifier: _parse_flags
         FunctionDefinitionNode Name: _parse_flags SourceSection: None
@@ -9004,7 +9004,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                         ReadLocalCellNodeGen SourceSection: [35797,35798]`s`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [2,s,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [35807,35818]`groups = []`
                       Identifier: groups
                       ReadLocalVariableNodeGen SourceSection: None
@@ -9034,7 +9033,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                         ReadLocalCellNodeGen SourceSection: [35868,35875]`literal`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [6,literal,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [35887,36190]`def addgroup(index, ...`
                       Identifier: addgroup
                       Frame: [8,addgroup,Illegal]
@@ -9087,7 +9085,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                           ReadLocalCellNodeGen SourceSection: [35932,35939]`pattern`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [2,pattern,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                     RaiseNodeGen SourceSection: [35960,36016]`raise s.error("inval...`
                                       PythonCallBinary SourceSection: [35966,36016]`s.error("invalid gro...`
                                         CallBinaryMethodNodeGen SourceSection: None
@@ -9095,7 +9092,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                           ReadLocalCellNodeGen SourceSection: [35966,35967]`s`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [3,s,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                         ModNodeGen SourceSection: [35974,36010]`"invalid group refer...`
                                           StringLiteralNode SourceSection: [35974,36002]`"invalid group refer...`
                                           ReadLocalVariableNodeGen SourceSection: [36005,36010]`index`
@@ -9109,7 +9105,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                       ReadLocalCellNodeGen SourceSection: [36028,36035]`literal`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [6,literal,Illegal]
-                                        ReadFromCellNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [36049,36082]`literals.append(''.j...`
                                         PythonCallUnary SourceSection: [36049,36082]`literals.append(''.j...`
@@ -9118,7 +9113,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                             ReadLocalCellNodeGen SourceSection: [36049,36057]`literals`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [5,literals,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [36065,36081]`''.join(literal)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -9126,12 +9120,10 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                             ReadLocalCellNodeGen SourceSection: [36073,36080]`literal`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [6,literal,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                       DeleteItemNodeGen SourceSection: [36095,36109]`del literal[:]`
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [6,literal,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         SliceLiteralNodeGen SourceSection: [36107,36108]`:`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
@@ -9145,7 +9137,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                         ReadLocalCellNodeGen SourceSection: [36118,36124]`groups`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [4,groups,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                       TupleLiteralNode SourceSection: [36132,36154]`(len(literals), inde...`
                                         PythonCallUnary SourceSection: [36133,36146]`len(literals)`
                                           CallUnaryMethodNodeGen SourceSection: None
@@ -9154,7 +9145,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                           ReadLocalCellNodeGen SourceSection: [36137,36145]`literals`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [5,literals,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [36148,36153]`index`
                                           Frame: [0,index,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
@@ -9165,7 +9155,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                         ReadLocalCellNodeGen SourceSection: [36164,36172]`literals`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [5,literals,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                       ObjectLiteralNode SourceSection: [36180,36184]`None`
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [7,<return_val>,Object]
@@ -9180,7 +9169,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                         ReadLocalCellNodeGen SourceSection: [36203,36210]`pattern`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [1,pattern,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                     BreakTargetNode SourceSection: [36226,38617]`while True:↵        ...`
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
@@ -9239,7 +9227,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                             ReadLocalCellNodeGen SourceSection: [36477,36478]`s`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [2,s,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [36485,36488]`"<"`
                                       RaiseNodeGen SourceSection: [36511,36537]`raise s.error("missi...`
                                         PythonCallUnary SourceSection: [36517,36537]`s.error("missing <")...`
@@ -9248,7 +9235,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                             ReadLocalCellNodeGen SourceSection: [36517,36518]`s`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [2,s,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [36525,36536]`"missing <"`
                                         NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
@@ -9261,7 +9247,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                           ReadLocalCellNodeGen SourceSection: [36561,36562]`s`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [2,s,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                         StringLiteralNode SourceSection: [36572,36575]`">"`
                                     IfNode SourceSection: [36593,37342]`if name.isidentifier...`
                                       YesNodeGen SourceSection: None
@@ -9327,7 +9312,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                     ReadLocalCellNodeGen SourceSection: [37042,37043]`s`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [2,s,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                   ModNodeGen SourceSection: [37050,37089]`"bad character in gr...`
                                                     StringLiteralNode SourceSection: [37050,37082]`"bad character in gr...`
                                                     ReadLocalVariableNodeGen SourceSection: [37085,37089]`name`
@@ -9359,7 +9343,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                 ReadLocalCellNodeGen SourceSection: [37227,37228]`s`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,s,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                               ModNodeGen SourceSection: [37235,37271]`"invalid group refer...`
                                                 StringLiteralNode SourceSection: [37235,37263]`"invalid group refer...`
                                                 ReadLocalVariableNodeGen SourceSection: [37266,37271]`index`
@@ -9412,7 +9395,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                               ReadLocalCellNodeGen SourceSection: [37419,37420]`s`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [2,s,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [37429,37438]`OCTDIGITS`
                                               Identifier: OCTDIGITS
                                         BlockNode SourceSection: None
@@ -9441,7 +9423,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                   ReadLocalCellNodeGen SourceSection: [37498,37499]`s`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [2,s,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [37508,37517]`OCTDIGITS`
                                                   Identifier: OCTDIGITS
                                             WriteLocalVariableNodeGen SourceSection: [37543,37557]`this += sget()`
@@ -9513,7 +9494,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                 ReadLocalCellNodeGen SourceSection: [37693,37694]`s`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,s,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [37703,37709]`DIGITS`
                                                 Identifier: DIGITS
                                           BlockNode SourceSection: None
@@ -9564,7 +9544,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                       ReadLocalCellNodeGen SourceSection: [37838,37839]`s`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [2,s,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [37848,37857]`OCTDIGITS`
                                                       Identifier: OCTDIGITS
                                                   YesNodeGen SourceSection: None
@@ -9616,7 +9595,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                         ReadLocalCellNodeGen SourceSection: [38055,38056]`s`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [2,s,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                       ModNodeGen SourceSection: [38063,38163]`'octal escape value ...`
                                                         StringLiteralNode SourceSection: [38063,38156]`'octal escape value ...`
                                                         ReadLocalVariableNodeGen SourceSection: [38159,38163]`this`
@@ -9710,7 +9688,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                       ReadLocalCellNodeGen SourceSection: [38500,38501]`s`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [2,s,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                     ModNodeGen SourceSection: [38508,38530]`'bad escape %s' % th...`
                                                       StringLiteralNode SourceSection: [38508,38523]`'bad escape %s'`
                                                       ReadLocalVariableNodeGen SourceSection: [38526,38530]`this`
@@ -9746,7 +9723,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                         ReadLocalCellNodeGen SourceSection: [38620,38627]`literal`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [6,literal,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [38637,38670]`literals.append(''.j...`
                         PythonCallUnary SourceSection: [38637,38670]`literals.append(''.j...`
                           CallUnaryMethodNodeGen SourceSection: None
@@ -9754,7 +9730,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             ReadLocalCellNodeGen SourceSection: [38637,38645]`literals`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [5,literals,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [38653,38669]`''.join(literal)`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
@@ -9762,7 +9737,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             ReadLocalCellNodeGen SourceSection: [38661,38668]`literal`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [6,literal,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [38675,38926]`if not isinstance(so...`
                       NotNodeGen SourceSection: [38678,38705]`not isinstance(sourc...`
@@ -9843,7 +9817,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                               ReadLocalCellNodeGen SourceSection: [38912,38920]`literals`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [5,literals,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [38926,38949]`return groups, liter...`
@@ -9851,11 +9824,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                         ReadLocalCellNodeGen SourceSection: [38933,38939]`groups`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [4,groups,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [38941,38949]`literals`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [5,literals,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                         PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [15,<return_val>,Object]
@@ -9880,7 +9851,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 13 slots [<>temp10, <>temp11, <>temp8, <>temp9, <return_val>, empty, g, group, groups, index, literals, match, template]
+                FrameDescriptor: 14 slots [<>temp10, <>temp11, <>temp12, <>temp8, <>temp9, <return_val>, empty, g, group, groups, index, literals, match, template]
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: None
@@ -9966,21 +9937,21 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                   ForNextElementNodeGen SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <>temp10
-                                        Frame: [10,<>temp10,Illegal]
-                                      WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <>temp11
                                         Frame: [11,<>temp11,Illegal]
+                                      WriteLocalVariableNodeGen SourceSection: None
+                                        Identifier: <>temp12
+                                        Frame: [12,<>temp12,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: index
                                         Frame: [6,index,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: None
-                                          Frame: [10,<>temp10,Illegal]
+                                          Frame: [11,<>temp11,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: group
                                         Frame: [7,group,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: None
-                                          Frame: [11,<>temp11,Illegal]
+                                          Frame: [12,<>temp12,Illegal]
                                   SetItemNodeGen SourceSection: [39154,39189]`literals[index] = g(...`
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [5,literals,Illegal]
@@ -10023,4 +9994,4 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             ReadLocalVariableNodeGen SourceSection: [39293,39301]`literals`
                               Frame: [5,literals,Illegal]
                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                      Frame: [12,<return_val>,Object]
+                      Frame: [13,<return_val>,Object]

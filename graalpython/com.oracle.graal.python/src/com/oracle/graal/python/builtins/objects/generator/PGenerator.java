@@ -44,7 +44,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -61,7 +60,6 @@ public final class PGenerator extends PythonBuiltinObject {
      * {@link #setNextCallTarget()}.
      */
     @CompilationFinal(dimensions = 1) protected final RootCallTarget[] callTargets;
-    protected final FrameDescriptor frameDescriptor;
     protected final Object[] arguments;
     private final PCell[] closure;
     private boolean finished;
@@ -91,9 +89,9 @@ public final class PGenerator extends PythonBuiltinObject {
         PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
         // set generator closure to the generator frame locals
         CompilerAsserts.partialEvaluationConstant(cellSlots);
-        FrameSlot[] freeVarSlots = cellSlots.getFreeVarSlots();
+        int[] freeVarSlots = cellSlots.getFreeVarSlots();
         CompilerAsserts.partialEvaluationConstant(freeVarSlots);
-        FrameSlot[] cellVarSlots = cellSlots.getCellVarSlots();
+        int[] cellVarSlots = cellSlots.getCellVarSlots();
         CompilerAsserts.partialEvaluationConstant(cellVarSlots);
         Assumption[] cellVarAssumptions = cellSlots.getCellVarAssumptions();
 
@@ -105,11 +103,11 @@ public final class PGenerator extends PythonBuiltinObject {
         }
         assignCells(generatorFrame, cellVarSlots, cellVarAssumptions);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(lang, name, qualname, callTargets, generatorInfo, frameDescriptor, arguments, closure, iterator);
+        return new PGenerator(lang, name, qualname, callTargets, generatorInfo, arguments, closure, iterator);
     }
 
     @ExplodeLoop
-    private static void assignCells(MaterializedFrame generatorFrame, FrameSlot[] cellVarSlots, Assumption[] cellVarAssumptions) {
+    private static void assignCells(MaterializedFrame generatorFrame, int[] cellVarSlots, Assumption[] cellVarAssumptions) {
         // initialize own cell vars to new cells (these cells will be used by nested functions to
         // create their own closures)
         for (int i = 0; i < cellVarSlots.length; i++) {
@@ -118,13 +116,13 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     @ExplodeLoop
-    private static void assignClosure(PCell[] closure, MaterializedFrame generatorFrame, FrameSlot[] freeVarSlots) {
+    private static void assignClosure(PCell[] closure, MaterializedFrame generatorFrame, int[] freeVarSlots) {
         for (int i = 0; i < freeVarSlots.length; i++) {
             generatorFrame.setObject(freeVarSlots[i], closure[i]);
         }
     }
 
-    private PGenerator(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, FrameDescriptor frameDescriptor, Object[] arguments,
+    private PGenerator(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, Object[] arguments,
                     PCell[] closure, Object iterator) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
@@ -132,16 +130,11 @@ public final class PGenerator extends PythonBuiltinObject {
         this.callTargets = callTargets;
         this.generatorInfo = generatorInfo;
         this.currentCallTarget = 0;
-        this.frameDescriptor = frameDescriptor;
         this.arguments = arguments;
         this.closure = closure;
         this.finished = false;
         this.iterator = iterator;
         this.isPRangeIterator = iterator instanceof PIntRangeIterator;
-    }
-
-    public FrameDescriptor getFrameDescriptor() {
-        return frameDescriptor;
     }
 
     public void setNextCallTarget() {

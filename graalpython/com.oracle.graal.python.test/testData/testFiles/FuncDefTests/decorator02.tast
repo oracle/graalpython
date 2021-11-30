@@ -113,11 +113,9 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                                       ReadLocalCellNodeGen SourceSection: [91,93]`fn`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [1,fn,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [103,108]`delta`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [2,delta,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                             Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Object]
                                   FrameReturnNode SourceSection: [117,133]`return wrapped_f`

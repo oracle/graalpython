@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: dump
         Kind: Function
-        FrameDescriptor: [<return_val>, d, f, item, items, prefix]
+        FrameDescriptor: [<>temp5, <return_val>, d, f, item, items, prefix]
         CellVars: Empty
         FreeVars: Empty
     Scope: _makecodes

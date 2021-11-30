@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.GlobalNode;
+import com.oracle.graal.python.nodes.frame.PythonFrame;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
@@ -244,7 +245,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static int extractStackSize(RootNode rootNode) {
-        return rootNode.getFrameDescriptor().getSize();
+        return rootNode.getFrameDescriptor().getNumberOfSlots();
     }
 
     @TruffleBoundary
@@ -256,7 +257,7 @@ public final class PCode extends PythonBuiltinObject {
         varNameList.addAll(Arrays.asList(parameterIds));
         varNameList.addAll(Arrays.asList(keywordNames));
 
-        for (Object identifier : rootNode.getFrameDescriptor().getIdentifiers()) {
+        for (Object identifier : PythonFrame.getIdentifiers(rootNode.getFrameDescriptor())) {
             if (identifier instanceof String) {
                 String varName = (String) identifier;
 

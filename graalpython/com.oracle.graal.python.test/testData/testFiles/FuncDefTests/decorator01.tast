@@ -71,7 +71,6 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                                         ReadLocalCellNodeGen SourceSection: [52,54]`fn`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [0,fn,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [59,60]`1`
                                         Value: 1
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None

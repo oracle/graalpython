@@ -92,6 +92,8 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
 import com.oracle.graal.python.nodes.statement.WithNode;
+import com.oracle.graal.python.parser.DefinitionCellSlots;
+import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
@@ -101,7 +103,6 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
 
 public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
@@ -136,7 +137,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     }
 
     @Override
-    protected StatementNode createFrameReturn(ExpressionNode value, FrameSlot slot) {
+    protected StatementNode createFrameReturn(ExpressionNode value, int slot) {
         return new GeneratorFrameReturnNode(value, slot);
     }
 
@@ -183,25 +184,24 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         ExpressionNode returnTarget;
 
         if (body instanceof BlockNode) {
-            returnTarget = new ReturnTargetNode(body, ReadLocalVariableNode.create(scopeEnvironment.getReturnSlot()));
+            returnTarget = new ReturnTargetNode(body, ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()));
         } else {
-            returnTarget = new GeneratorReturnTargetNode(BlockNode.create(), body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()), generatorInfo);
+            returnTarget = new GeneratorReturnTargetNode(BlockNode.create(), body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()), generatorInfo);
         }
 
-        // ExpressionNode returnTarget = new ReturnTargetNode(body,
-        // nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
         returnTarget.assignSourceSection(body.getSourceSection());
 
         // creating generator expression
-        FrameDescriptor fd = node.scope.getFrameDescriptor();
+        ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+        DefinitionCellSlots definitionCellSlots = scopeEnvironment.getDefinitionCellSlots();
+        FrameDescriptor fd = node.scope.createFrameDescriptor();
         String name = node.scope.getScopeId();
         String qualname = node.scope.getQualname();
-        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY, null);
+        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, executionCellSlots, Signature.EMPTY, null);
         RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(funcRoot);
-        GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, qualname, callTarget, getIterator, fd, scopeEnvironment.getDefinitionCellSlots(),
-                        scopeEnvironment.getExecutionCellSlots(), generatorInfo.getImmutable());
-        genExprDef.setEnclosingFrameDescriptor(node.scope.getParent().getFrameDescriptor());
+        GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, qualname, callTarget, getIterator, fd, definitionCellSlots, generatorInfo.getImmutable());
         genExprDef.assignSourceSection(funcRoot.getSourceSection());
+        genExprDef.setEnclosingFrameDescriptor(node.scope.getParent().getFrameIdentifiers());
         genExprDef.setEnclosingFrameGenerator(node.level != 0 || parentVisitor.comprLevel != 0 || node.scope.getParent().getScopeKind() == ScopeInfo.ScopeKind.Generator);
         PNode result;
         switch (node.resultType) {
@@ -249,13 +249,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
         StatementNode variable;
         if (node.variables.length == 1) {
-            // if (node.variables[0] instanceof VarLookupSSTNode) {
-            // VarLookupSSTNode vln = (VarLookupSSTNode)node.variables[0];
-            // FrameSlot slot = scopeEnvironment.getCurrentScope().findFrameSlot(vln.name);
-            // variable = makeWriteNode(ReadGeneratorFrameVariableNode.create(slot));
-            // } else {
             variable = makeWriteNode((ExpressionNode) node.variables[0].accept(this));
-            // }
         } else {
             ExpressionNode[] variables = new ExpressionNode[node.variables.length];
             for (int i = 0; i < node.variables.length; i++) {
@@ -305,7 +299,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         GetIteratorExpressionNode getIterator = GetIteratorExpressionNode.create(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
         StatementNode forNode = oldNumOfActiveFlags == generatorInfo.getNumOfActiveFlags()
-                        ? new ForNode(body, makeWriteNode((ExpressionNode) target), getIterator)
+                        ? new ForNode(body, makeWriteNode((ExpressionNode) target), getIterator, scopeEnvironment.getCurrentScope().createTemp())
                         : GeneratorForNode.create((WriteNode) makeWriteNode((ExpressionNode) target), getIterator, body, generatorInfo);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
         StatementNode elseBranch = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);

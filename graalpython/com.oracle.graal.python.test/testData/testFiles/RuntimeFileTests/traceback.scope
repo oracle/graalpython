@@ -35,7 +35,7 @@ Scope: []
             FreeVars: Empty
         Scope: _load_lines
             Kind: Function
-            FrameDescriptor: [<return_val>, frame, self]
+            FrameDescriptor: [<>temp2, <return_val>, frame, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: from_exception
@@ -55,17 +55,17 @@ Scope: []
         FreeVars: Empty
         Scope: format
             Kind: Function
-            FrameDescriptor: [<>temp10, <>temp11, <return_val>, count, frame, last_file, last_line, last_name, name, result, row, self, value]
+            FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp13, <return_val>, count, frame, last_file, last_line, last_name, name, result, row, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: from_list
             Kind: Function
-            FrameDescriptor: [<>temp10, <>temp11, <>temp8, <>temp9, <return_val>, a_list, filename, frame, klass, line, lineno, name, result]
+            FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp8, <>temp9, <return_val>, a_list, filename, frame, klass, line, lineno, name, result]
             CellVars: Empty
             FreeVars: Empty
         Scope: extract
             Kind: Function
-            FrameDescriptor: [*, <>temp14, <>temp15, <return_val>, capture_locals, co, f, f_locals, filename, fnames, frame_gen, klass, limit, lineno, lookup_lines, name, result]
+            FrameDescriptor: [*, <>temp14, <>temp15, <>temp16, <return_val>, capture_locals, co, f, f_locals, filename, fnames, frame_gen, klass, limit, lineno, lookup_lines, name, result]
             CellVars: Empty
             FreeVars: Empty
     Scope: walk_tb
@@ -175,7 +175,7 @@ Scope: []
         FreeVars: Empty
     Scope: print_exception
         Kind: Function
-        FrameDescriptor: [<return_val>, chain, etype, file, limit, line, tb, value]
+        FrameDescriptor: [<>temp7, <return_val>, chain, etype, file, limit, line, tb, value]
         CellVars: Empty
         FreeVars: Empty
     Scope: extract_tb
@@ -200,6 +200,6 @@ Scope: []
         FreeVars: Empty
     Scope: print_list
         Kind: Function
-        FrameDescriptor: [<return_val>, extracted_list, file, item]
+        FrameDescriptor: [<>temp3, <return_val>, extracted_list, file, item]
         CellVars: Empty
         FreeVars: Empty

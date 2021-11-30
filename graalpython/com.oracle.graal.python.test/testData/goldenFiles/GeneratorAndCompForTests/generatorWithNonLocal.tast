@@ -126,7 +126,6 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                               ReadLocalCellNodeGen SourceSection: [169,170]`Y`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [4,Y,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                             GetNextCached SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__

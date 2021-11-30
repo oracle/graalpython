@@ -73,7 +73,6 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                                         ReadLocalCellNodeGen SourceSection: [45,46]`x`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [0,x,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
                       WriteLocalCellNodeGen SourceSection: [54,60]`x = 12`

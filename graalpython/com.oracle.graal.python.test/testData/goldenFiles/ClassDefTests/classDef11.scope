@@ -15,6 +15,6 @@ Scope: []
             FreeVars: [fields, name]
             Scope: __repr__
                 Kind: Function
-                FrameDescriptor: [<return_val>, f, fields, name, sb, self]
+                FrameDescriptor: [<>temp5, <return_val>, f, fields, name, sb, self]
                 CellVars: Empty
                 FreeVars: [fields, name]

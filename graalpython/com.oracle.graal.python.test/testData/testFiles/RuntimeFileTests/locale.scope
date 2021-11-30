@@ -1,16 +1,16 @@
 Scope: []
     Kind: Module
-    FrameDescriptor: [<>temp0, <>temp1]
+    FrameDescriptor: [<>temp0, <>temp1, <>temp2]
     CellVars: Empty
     FreeVars: Empty
     Scope: _print_locale
         Kind: Function
-        FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>, _init_categories, categories, category, enc, lang, name]
+        FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>, _init_categories, categories, category, enc, lang, name]
         CellVars: Empty
         FreeVars: Empty
         Scope: _init_categories
             Kind: Function
-            FrameDescriptor: [<>temp3, <>temp4, <return_val>, categories, k, v]
+            FrameDescriptor: [<>temp3, <>temp4, <>temp5, <return_val>, categories, k, v]
             CellVars: Empty
             FreeVars: Empty
     Scope: getpreferredencoding
@@ -50,7 +50,7 @@ Scope: []
         FreeVars: Empty
     Scope: getdefaultlocale
         Kind: Function
-        FrameDescriptor: [<>temp8, <>temp9, <return_val>, _locale, code, encoding, envvars, localename, lookup, os, variable]
+        FrameDescriptor: [<>temp11, <>temp8, <>temp9, <return_val>, _locale, code, encoding, envvars, localename, lookup, os, variable]
         CellVars: Empty
         FreeVars: Empty
     Scope: _build_localename
@@ -115,7 +115,7 @@ Scope: []
         FreeVars: Empty
     Scope: format_string
         Kind: Function
-        FrameDescriptor: [<return_val>, f, grouping, i, monetary, new_f, new_val, perc, percents, starcount, val]
+        FrameDescriptor: [<>temp10, <return_val>, f, grouping, i, monetary, new_f, new_val, perc, percents, starcount, val]
         CellVars: Empty
         FreeVars: Empty
     Scope: _format
@@ -130,7 +130,7 @@ Scope: []
         FreeVars: Empty
     Scope: _group
         Kind: Function
-        FrameDescriptor: [<return_val>, conv, grouping, groups, interval, left_spaces, monetary, right_spaces, s, stripped, thousands_sep]
+        FrameDescriptor: [<>temp11, <return_val>, conv, grouping, groups, interval, left_spaces, monetary, right_spaces, s, stripped, thousands_sep]
         CellVars: Empty
         FreeVars: Empty
     Scope: _grouping_intervals

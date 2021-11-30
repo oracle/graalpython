@@ -25,11 +25,9 @@
  */
 package com.oracle.graal.python.parser;
 
-import com.oracle.truffle.api.frame.FrameSlot;
-
 public final class DefinitionCellSlots implements CellSlots {
-    private final FrameSlot[] cellVarSlots;
-    private final FrameSlot[] freeVarSlots;
+    private final int[] cellVarSlots;
+    private final int[] freeVarSlots;
 
     DefinitionCellSlots(CellFrameSlotSupplier supplier) {
         this.cellVarSlots = supplier.getCellVarSlots();
@@ -37,12 +35,12 @@ public final class DefinitionCellSlots implements CellSlots {
     }
 
     @Override
-    public FrameSlot[] getCellVarSlots() {
+    public int[] getCellVarSlots() {
         return cellVarSlots;
     }
 
     @Override
-    public FrameSlot[] getFreeVarSlots() {
+    public int[] getFreeVarSlots() {
         return freeVarSlots;
     }
 }

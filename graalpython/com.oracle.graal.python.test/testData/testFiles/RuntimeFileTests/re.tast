@@ -1761,7 +1761,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 13 slots [<>temp10, <>temp11, <return_val>, BRANCH, SUBPATTERN, action, flags, gid, lexicon, p, phrase, s, self]
+                                FrameDescriptor: 14 slots [<>temp10, <>temp11, <>temp12, <return_val>, BRANCH, SUBPATTERN, action, flags, gid, lexicon, p, phrase, s, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -1856,21 +1856,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                               ForNextElementNodeGen SourceSection: None
                                                 DestructuringAssignmentNodeGen SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: <>temp10
-                                                    Frame: [10,<>temp10,Illegal]
-                                                  WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: <>temp11
                                                     Frame: [11,<>temp11,Illegal]
+                                                  WriteLocalVariableNodeGen SourceSection: None
+                                                    Identifier: <>temp12
+                                                    Frame: [12,<>temp12,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: phrase
                                                     Frame: [8,phrase,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [10,<>temp10,Illegal]
+                                                      Frame: [11,<>temp11,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: action
                                                     Frame: [9,action,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [11,<>temp11,Illegal]
+                                                      Frame: [12,<>temp12,Illegal]
                                               BlockNode SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [14304,14323]`gid = s.opengroup()`
                                                   Identifier: gid
@@ -1966,7 +1966,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             ReadLocalVariableNodeGen SourceSection: [14605,14606]`p`
                                               Frame: [5,p,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [12,<return_val>,Object]
+                                      Frame: [13,<return_val>,Object]
                           WriteNameNodeGen SourceSection: [14612,15192]`def scan(self, strin...`
                             Identifier: scan
                             FunctionDefinitionNode Name: scan SourceSection: None

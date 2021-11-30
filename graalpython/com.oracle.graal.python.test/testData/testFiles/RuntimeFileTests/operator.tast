@@ -1464,7 +1464,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [<return_val>, a, b, count, i]
+            FrameDescriptor: 6 slots [<>temp4, <return_val>, a, b, count, i]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1522,7 +1522,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       ReadLocalVariableNodeGen SourceSection: [3375,3380]`count`
                         Frame: [2,count,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Object]
+                  Frame: [5,<return_val>,Object]
       WriteNameNodeGen SourceSection: [3382,3439]`def delitem(a, b):↵ ...`
         Identifier: delitem
         FunctionDefinitionNode Name: delitem SourceSection: None
@@ -1631,7 +1631,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [<>temp5, <>temp6, <return_val>, a, b, i, j]
+            FrameDescriptor: 8 slots [<>temp4, <>temp6, <>temp7, <return_val>, a, b, i, j]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1658,21 +1658,21 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           ForNextElementNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp5
-                                Frame: [5,<>temp5,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp6
                                 Frame: [6,<>temp6,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp7
+                                Frame: [7,<>temp7,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: i
                                 Frame: [2,i,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [5,<>temp5,Illegal]
+                                  Frame: [6,<>temp6,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: j
                                 Frame: [3,j,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [6,<>temp6,Illegal]
+                                  Frame: [7,<>temp7,Illegal]
                           IfNode SourceSection: [3592,3628]`if j == b:↵         ...`
                             YesNodeGen SourceSection: None
                               EqNodeGen SourceSection: [3595,3601]`j == b`
@@ -1699,7 +1699,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           StringLiteralNode SourceSection: [3659,3697]`'sequence.index(x): ...`
                         NoValueNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Object]
+                  Frame: [5,<return_val>,Object]
       WriteNameNodeGen SourceSection: [3700,3760]`def setitem(a, b, c)...`
         Identifier: setitem
         FunctionDefinitionNode Name: setitem SourceSection: None
@@ -2106,7 +2106,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               CelVars: None
                                               FreeVars: names
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 4 slots [<return_val>, name, names, obj]
+                                              FrameDescriptor: 5 slots [<>temp3, <return_val>, name, names, obj]
                                               ExecutionSlots:
                                                 FreeVarsSlots: names
                                                 CellVarsSlots: None
@@ -2142,13 +2142,12 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                             ReadLocalCellNodeGen SourceSection: [5639,5644]`names`
                                                               ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [2,names,Illegal]
-                                                              ReadFromCellNodeGen SourceSection: None
                                                         BlockNode SourceSection: None
                                                       FrameReturnNode SourceSection: [5707,5717]`return obj`
                                                         ReadLocalVariableNodeGen SourceSection: [5714,5717]`obj`
                                                           Frame: [0,obj,Illegal]
                                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                    Frame: [3,<return_val>,Object]
+                                                    Frame: [4,<return_val>,Object]
                                         SetAttributeNodeGen SourceSection: [5730,5747]`self._call = func`
                                           Attribute: _call
                                           ReadLocalVariableNodeGen SourceSection: [5730,5734]`self`
@@ -2259,7 +2258,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                           ReadLocalCellNodeGen SourceSection: [5925,5928]`obj`
                                                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                               Frame: [1,obj,Illegal]
-                                                                            ReadFromCellNodeGen SourceSection: None
                                                                         GeneratorAccessNode SourceSection: None
                                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                                       Identifier: getter
@@ -2282,7 +2280,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               ReadLocalCellNodeGen SourceSection: [5944,5951]`getters`
                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [1,getters,Illegal]
-                                                                ReadFromCellNodeGen SourceSection: None
                                                             PythonObjectFactoryNodeGen SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Object]
@@ -2569,7 +2566,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         ReadLocalCellNodeGen SourceSection: [6656,6661]`items`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [2,items,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6675,6696]`self._items = (item,...`
                                           Attribute: _items
@@ -2579,7 +2575,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadLocalCellNodeGen SourceSection: [6690,6694]`item`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [1,item,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [6709,6769]`def func(obj):↵     ...`
                                           Identifier: func
@@ -2620,7 +2615,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                           ReadLocalCellNodeGen SourceSection: [6751,6755]`item`
                                                             ReadLocalVariableNodeGen SourceSection: None
                                                               Frame: [1,item,Illegal]
-                                                            ReadFromCellNodeGen SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Object]
                                         SetAttributeNodeGen SourceSection: [6769,6786]`self._call = func`
@@ -2639,12 +2633,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalCellNodeGen SourceSection: [6836,6840]`item`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [1,item,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [6845,6850]`items`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [2,items,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                           SetAttributeNodeGen SourceSection: None
                                             Attribute: _items
                                             ReadLocalVariableNodeGen SourceSection: [6813,6817]`self`
@@ -2725,7 +2717,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                           ReadLocalCellNodeGen SourceSection: None
                                                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                               Frame: [1,obj,Illegal]
-                                                                            ReadFromCellNodeGen SourceSection: None
                                                                           ReadGeneratorFrameVariableNodeGen SourceSection: [6911,6912]`i`
                                                                             Frame: [0,i,Illegal]
                                                                         GeneratorAccessNode SourceSection: None
@@ -2750,7 +2741,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               ReadLocalCellNodeGen SourceSection: [6923,6928]`items`
                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [1,items,Illegal]
-                                                                ReadFromCellNodeGen SourceSection: None
                                                             PythonObjectFactoryNodeGen SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Object]

@@ -86,6 +86,6 @@ ModuleRootNode Name: <module 'usingSuper02'> SourceSection: [0,44]`class X:↵  
                       WriteNameNodeGen SourceSection: None
                         Identifier: __classcell__
                         ReadLocalVariableNodeGen SourceSection: None
-                          Frame: [0,__class__,Illegal]
+                          Frame: [1,__class__,Illegal]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

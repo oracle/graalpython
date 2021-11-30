@@ -108,7 +108,6 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                                             ReadLocalCellNodeGen SourceSection: [85,88]`end`
                                                               ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [0,end,Illegal]
-                                                              ReadFromCellNodeGen SourceSection: None
                                                         EmptyNode SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [60,65]`print`
                                                         Identifier: print

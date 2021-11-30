@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: expand_template
         Kind: Function
-        FrameDescriptor: [<>temp10, <>temp11, <>temp8, <>temp9, <return_val>, empty, g, group, groups, index, literals, match, template]
+        FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp8, <>temp9, <return_val>, empty, g, group, groups, index, literals, match, template]
         CellVars: Empty
         FreeVars: Empty
     Scope: parse_template
@@ -40,17 +40,17 @@ Scope: []
         FreeVars: Empty
     Scope: _parse
         Kind: Function
-        FrameDescriptor: [<>temp47, <>temp48, <>temp49, <>temp50, <>temp51, <>temp52, <>temp53, <>temp54, <>temp55, <>temp56, <>temp57, <>temp58, <>temp59, <>temp60, <>temp61, <>temp62, <>temp63, <>temp64, <>temp65, <>temp66, <>temp67, <return_val>, _len, _ord, add_flags, av, char, code, code1, code2, condgroup, condname, del_flags, dir, err, first, flags, gid, group, here, hi, i, item, item_no, item_yes, lo, lookbehindgroups, max, min, msg, name, negate, nested, op, p, set, setappend, source, sourceget, sourcematch, start, state, sub_verbose, subpattern, subpatternappend, that, this, verbose, warnings]
+        FrameDescriptor: [<>temp47, <>temp48, <>temp49, <>temp50, <>temp51, <>temp52, <>temp53, <>temp54, <>temp55, <>temp56, <>temp57, <>temp58, <>temp59, <>temp60, <>temp61, <>temp62, <>temp63, <>temp64, <>temp65, <>temp66, <>temp67, <>temp68, <return_val>, _len, _ord, add_flags, av, char, code, code1, code2, condgroup, condname, del_flags, dir, err, first, flags, gid, group, here, hi, i, item, item_no, item_yes, lo, lookbehindgroups, max, min, msg, name, negate, nested, op, p, set, setappend, source, sourceget, sourcematch, start, state, sub_verbose, subpattern, subpatternappend, that, this, verbose, warnings]
         CellVars: Empty
         FreeVars: Empty
     Scope: _parse_sub
         Kind: Function
-        FrameDescriptor: [<>temp15, <>temp16, <return_val>, av, item, items, itemsappend, nested, op, prefix, set, source, sourcematch, start, state, subpattern, verbose]
+        FrameDescriptor: [<>temp15, <>temp16, <>temp17, <>temp18, <return_val>, av, item, items, itemsappend, nested, op, prefix, set, source, sourcematch, start, state, subpattern, verbose]
         CellVars: Empty
         FreeVars: Empty
     Scope: _uniq
         Kind: Function
-        FrameDescriptor: [<return_val>, item, items, newitems]
+        FrameDescriptor: [<>temp4, <return_val>, item, items, newitems]
         CellVars: Empty
         FreeVars: Empty
     Scope: _escape
@@ -95,7 +95,7 @@ Scope: []
             FreeVars: Empty
         Scope: getwhile
             Kind: Function
-            FrameDescriptor: [<return_val>, _, c, charset, n, result, self]
+            FrameDescriptor: [<>temp6, <return_val>, _, c, charset, n, result, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: get
@@ -125,7 +125,7 @@ Scope: []
         FreeVars: Empty
         Scope: getwidth
             Kind: Function
-            FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <return_val>, av, h, hi, i, j, l, lo, op, self]
+            FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <return_val>, av, h, hi, i, j, l, lo, op, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: append
@@ -165,7 +165,7 @@ Scope: []
             FreeVars: Empty
         Scope: dump
             Kind: Function
-            FrameDescriptor: [<>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, a, av, condgroup, i, item_no, item_yes, level, nl, op, self, seqtypes]
+            FrameDescriptor: [<>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <return_val>, a, av, condgroup, i, item_no, item_yes, level, nl, op, self, seqtypes]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__

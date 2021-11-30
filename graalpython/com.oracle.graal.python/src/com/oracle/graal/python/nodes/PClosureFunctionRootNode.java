@@ -42,30 +42,26 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.frame.PythonFrame;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 
 public abstract class PClosureFunctionRootNode extends PClosureRootNode {
-    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] cellVarSlots;
+    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final int[] cellVarSlots;
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
     private final Signature signature;
 
     protected PClosureFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature) {
-        super(language, frameDescriptor, executionCellSlots.getFreeVarSlots(), true);
+        super(language, frameDescriptor, executionCellSlots, true);
         this.cellVarSlots = executionCellSlots.getCellVarSlots();
         this.cellEffectivelyFinalAssumptions = executionCellSlots.getCellVarAssumptions();
         this.signature = signature;
     }
 
     public final String[] getCellVars() {
-        String[] cellVars = new String[cellVarSlots.length];
-        for (int i = 0; i < cellVars.length; i++) {
-            cellVars[i] = (String) cellVarSlots[i].getIdentifier();
-        }
-        return cellVars;
+        return PythonFrame.extractSlotNames(getFrameDescriptor(), cellVarSlots);
     }
 
     @Override

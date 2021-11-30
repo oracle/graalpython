@@ -789,7 +789,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 10 slots [<>temp7, <>temp8, <return_val>, base, bases, i, new_base, new_bases, shift, updated]
+            FrameDescriptor: 11 slots [<>temp7, <>temp8, <>temp9, <return_val>, base, bases, i, new_base, new_bases, shift, updated]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -827,21 +827,21 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ForNextElementNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp7
-                                Frame: [7,<>temp7,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp8
                                 Frame: [8,<>temp8,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp9
+                                Frame: [9,<>temp9,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: i
                                 Frame: [5,i,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [7,<>temp7,Illegal]
+                                  Frame: [8,<>temp8,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: base
                                 Frame: [6,base,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [8,<>temp8,Illegal]
+                                  Frame: [9,<>temp9,Illegal]
                           ContinueTargetNode SourceSection: None
                             BlockNode SourceSection: None
                               IfNode SourceSection: [2217,2273]`if isinstance(base, ...`
@@ -960,7 +960,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         ReadLocalVariableNodeGen SourceSection: [2679,2688]`new_bases`
                           Frame: [1,new_bases,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [9,<return_val>,Object]
+                  Frame: [10,<return_val>,Object]
       WriteNameNodeGen SourceSection: [2691,3755]`def prepare_class(na...`
         Identifier: prepare_class
         FunctionDefinitionNode Name: prepare_class SourceSection: None
@@ -1147,7 +1147,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [<return_val>, base, base_meta, bases, meta, winner]
+            FrameDescriptor: 7 slots [<>temp5, <return_val>, base, base_meta, bases, meta, winner]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1236,7 +1236,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       ReadLocalVariableNodeGen SourceSection: [4322,4328]`winner`
                         Frame: [2,winner,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [5,<return_val>,Object]
+                  Frame: [6,<return_val>,Object]
       WriteNameNodeGen SourceSection: [4330,6524]`class DynamicClassAt...`
         Identifier: DynamicClassAttribute
         PythonCallBinary SourceSection: [4330,6524]`class DynamicClassAt...`
@@ -2569,7 +2569,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadLocalCellNodeGen SourceSection: [7727,7731]`func`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [0,func,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [7742,7797]`raise TypeError('typ...`
                         PythonCallUnary SourceSection: [7748,7797]`TypeError('types.cor...`
                           CallUnaryMethodNodeGen SourceSection: None
@@ -2590,7 +2589,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               ReadLocalCellNodeGen SourceSection: [7807,7811]`func`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,func,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7825,7837]`FunctionType`
                               Identifier: FunctionType
                           IsExpressionNodeGen SourceSection: [7850,7903]`getattr(func, '__cod...`
@@ -2606,7 +2604,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 ReadLocalCellNodeGen SourceSection: [7858,7862]`func`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [0,func,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [7864,7874]`'__code__'`
                                 ObjectLiteralNode SourceSection: [7876,7880]`None`
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7895,7903]`CodeType`
@@ -2629,7 +2626,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               ReadLocalCellNodeGen SourceSection: [7926,7930]`func`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,func,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                         IfNode SourceSection: [8067,8205]`if co_flags & 0x180:...`
                           YesNodeGen SourceSection: None
                             BitAndNodeGen SourceSection: [8070,8086]`co_flags & 0x180`
@@ -2641,7 +2637,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             ReadLocalCellNodeGen SourceSection: [8107,8111]`func`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [0,func,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         IfNode SourceSection: [8205,8984]`if co_flags & 0x20:↵...`
                           YesNodeGen SourceSection: None
@@ -2662,13 +2657,11 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 ReadLocalCellNodeGen SourceSection: [8283,8287]`func`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [0,func,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                             SetAttributeNodeGen SourceSection: [8309,8719]`func.__code__ = Code...`
                               Attribute: __code__
                               ReadLocalCellNodeGen SourceSection: [8309,8313]`func`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,func,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [8325,8719]`CodeType(↵          ...`
                                 CallNodeGen SourceSection: None
                                 GetAttributeNode SourceSection: [8351,8365]`co.co_argcount`
@@ -2785,7 +2778,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               ReadLocalCellNodeGen SourceSection: [8739,8743]`func`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,func,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                           BlockNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8991,9000]`functools`
@@ -2814,7 +2806,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadLocalCellNodeGen SourceSection: [9050,9054]`func`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [0,func,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                         FunctionDefinitionNode Name: wrapped SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2867,7 +2858,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalCellNodeGen SourceSection: [9105,9109]`func`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [3,func,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                     IfNode SourceSection: [9135,9361]`if (coro.__class__ i...`
                                       YesNodeGen SourceSection: None
                                         OrNode SourceSection: [9139,9251]`coro.__class__ is Co...`
@@ -2930,7 +2920,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadLocalCellNodeGen SourceSection: [9382,9398]`_collections_abc`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [4,_collections_abc,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                           NotNodeGen SourceSection: [9426,9474]`not isinstance(coro,...`
                                             PythonCallBinary SourceSection: [9430,9474]`isinstance(coro, _co...`
                                               CallBinaryMethodNodeGen SourceSection: None
@@ -2946,7 +2935,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                 ReadLocalCellNodeGen SourceSection: [9447,9463]`_collections_abc`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [4,_collections_abc,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [9677,9707]`return _GeneratorWra...`
                                         PythonCallUnary SourceSection: [9684,9707]`_GeneratorWrapper(co...`

@@ -10,7 +10,7 @@ Scope: []
         FreeVars: Empty
         Scope: _keep_positive
             Kind: Function
-            FrameDescriptor: [<return_val>, elem, nonpositive, self]
+            FrameDescriptor: [<>temp3, <return_val>, elem, nonpositive, self]
             CellVars: Empty
             FreeVars: Empty
             Scope: <genexpr>

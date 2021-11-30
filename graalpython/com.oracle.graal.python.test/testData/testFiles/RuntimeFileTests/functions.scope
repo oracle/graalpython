@@ -25,7 +25,7 @@ Scope: []
         FreeVars: Empty
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [<return_val>, i, self, x]
+            FrameDescriptor: [<>temp3, <return_val>, i, self, x]
             CellVars: Empty
             FreeVars: Empty
         Scope: __iter__
@@ -35,12 +35,12 @@ Scope: []
             FreeVars: Empty
         Scope: __next__
             Kind: Function
-            FrameDescriptor: [<return_val>, args, it, self]
+            FrameDescriptor: [<>temp3, <return_val>, args, it, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [<return_val>, args, func, i, iterable, iterators, self]
+            FrameDescriptor: [<>temp6, <return_val>, args, func, i, iterable, iterators, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: __build_class__
@@ -50,7 +50,7 @@ Scope: []
         FreeVars: Empty
     Scope: filter
         Kind: Function
-        FrameDescriptor: [<return_val>, func, i, iterable, predicate, result]
+        FrameDescriptor: [<>temp5, <return_val>, func, i, iterable, predicate, result]
         CellVars: Empty
         FreeVars: Empty
         Scope: <lambda>
@@ -60,12 +60,12 @@ Scope: []
             FreeVars: Empty
     Scope: all
         Kind: Function
-        FrameDescriptor: [<return_val>, i, iterable]
+        FrameDescriptor: [<>temp2, <return_val>, i, iterable]
         CellVars: Empty
         FreeVars: Empty
     Scope: any
         Kind: Function
-        FrameDescriptor: [<return_val>, i, iterable]
+        FrameDescriptor: [<>temp2, <return_val>, i, iterable]
         CellVars: Empty
         FreeVars: Empty
     Scope: hasattr

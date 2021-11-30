@@ -89,7 +89,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                             Documentation: None
                                             FreeVarSlots: __class__
                                             ExecutionSlots:
-                                              FreeVarsSlots: <>freevar__class__
+                                              FreeVarsSlots: __class__
                                               CellVarsSlots: __class__
                                             ClassBodyRootNode SourceSection: [56,192]`class Y:↵           ...`
                                               Name: Y
@@ -99,7 +99,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                               NeedsCellFrame: False
                                               FrameDescriptor: 4 slots [<>freevar__class__, __class__, methodY, z]
                                               ExecutionSlots:
-                                                FreeVarsSlots: <>freevar__class__
+                                                FreeVarsSlots: __class__
                                                 CellVarsSlots: __class__
                                               InnerRootNode SourceSection: [56,192]`class Y:↵           ...`
                                                 ReturnTargetNode SourceSection: [56,192]`class Y:↵           ...`
@@ -154,13 +154,12 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                                       ReadLocalCellNodeGen SourceSection: [166,175]`__class__`
                                                                         ReadLocalVariableNodeGen SourceSection: None
                                                                           Frame: [2,__class__,Illegal]
-                                                                        ReadFromCellNodeGen SourceSection: None
                                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [3,<return_val>,Object]
                                                     WriteNameNodeGen SourceSection: None
                                                       Identifier: __classcell__
                                                       ReadLocalVariableNodeGen SourceSection: None
-                                                        Frame: [0,__class__,Illegal]
+                                                        Frame: [2,__class__,Illegal]
                                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                                           StringLiteralNode SourceSection: None
                                       FrameReturnNode SourceSection: [192,200]`return Y`
@@ -205,12 +204,11 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                         ReadLocalCellNodeGen SourceSection: [253,262]`__class__`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [2,__class__,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
                       WriteNameNodeGen SourceSection: None
                         Identifier: __classcell__
                         ReadLocalVariableNodeGen SourceSection: None
-                          Frame: [0,__class__,Illegal]
+                          Frame: [2,__class__,Illegal]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

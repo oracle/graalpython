@@ -47,6 +47,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.nodes.frame.PythonFrame;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -130,9 +131,7 @@ public class BasicTests extends ParserTestBase {
 
     @Test
     public void inline01() throws Exception {
-        FrameDescriptor fd = new FrameDescriptor(44);
-        fd.addFrameSlot("a");
-        fd.addFrameSlot("b");
+        FrameDescriptor fd = PythonFrame.createTestFrameDescriptor("a", "b");
         Frame frame = Truffle.getRuntime().createVirtualFrame(new Object[]{2, 3, null}, fd);
         checkTreeResult("a + b", PythonParser.ParserMode.InlineEvaluation, frame);
     }

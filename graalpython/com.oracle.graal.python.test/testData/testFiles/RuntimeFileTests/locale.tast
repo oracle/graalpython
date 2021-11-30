@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor: 2 slots [<>temp0, <>temp1]
+  FrameDescriptor: 3 slots [<>temp0, <>temp1, <>temp2]
   Documentation: `Locale support modul...`
   InnerRootNode SourceSection: [0,78027]`"""Locale support mo...`
     ExpressionWithSideEffects SourceSection: [0,78027]`"""Locale support mo...`
@@ -586,7 +586,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [<return_val>, conv, grouping, groups, interval, left_spaces, monetary, right_spaces, s, stripped, thousands_sep]
+            FrameDescriptor: 12 slots [<>temp11, <return_val>, conv, grouping, groups, interval, left_spaces, monetary, right_spaces, s, stripped, thousands_sep]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1269,7 +1269,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [<return_val>, f, grouping, i, monetary, new_f, new_val, perc, percents, starcount, val]
+            FrameDescriptor: 12 slots [<>temp10, <return_val>, f, grouping, i, monetary, new_f, new_val, perc, percents, starcount, val]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1545,7 +1545,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadLocalVariableNodeGen SourceSection: [7532,7535]`val`
                           Frame: [1,val,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [10,<return_val>,Object]
+                  Frame: [11,<return_val>,Object]
       WriteNameNodeGen SourceSection: [7537,8175]`def format(percent, ...`
         Identifier: format
         FunctionDefinitionNode Name: format SourceSection: None
@@ -3463,7 +3463,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [<>temp8, <>temp9, <return_val>, _locale, code, encoding, envvars, localename, lookup, os, variable]
+            FrameDescriptor: 12 slots [<>temp11, <>temp8, <>temp9, <return_val>, _locale, code, encoding, envvars, localename, lookup, os, variable]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4242,19 +4242,19 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             ForNextElementNodeGen SourceSection: None
               DestructuringAssignmentNodeGen SourceSection: None
                 WriteLocalVariableNodeGen SourceSection: None
-                  Identifier: <>temp0
-                  Frame: [0,<>temp0,Illegal]
-                WriteLocalVariableNodeGen SourceSection: None
                   Identifier: <>temp1
                   Frame: [1,<>temp1,Illegal]
+                WriteLocalVariableNodeGen SourceSection: None
+                  Identifier: <>temp2
+                  Frame: [2,<>temp2,Illegal]
                 WriteNameNodeGen SourceSection: None
                   Identifier: k
                   ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [0,<>temp0,Illegal]
+                    Frame: [1,<>temp1,Illegal]
                 WriteNameNodeGen SourceSection: None
                   Identifier: v
                   ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<>temp1,Illegal]
+                    Frame: [2,<>temp2,Illegal]
             BlockNode SourceSection: None
               WriteNameNodeGen SourceSection: [25138,25160]`k = k.replace('_', '...`
                 Identifier: k
@@ -6918,7 +6918,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 21 slots [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>, _init_categories, categories, category, enc, lang, name]
+            FrameDescriptor: 22 slots [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>, _init_categories, categories, category, enc, lang, name]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -6952,7 +6952,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, categories, k, v]
+                          FrameDescriptor: 7 slots [<>temp3, <>temp4, <>temp5, <return_val>, categories, k, v]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -6972,21 +6972,21 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         ForNextElementNodeGen SourceSection: None
                                           DestructuringAssignmentNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
-                                              Identifier: <>temp3
-                                              Frame: [3,<>temp3,Illegal]
-                                            WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <>temp4
                                               Frame: [4,<>temp4,Illegal]
+                                            WriteLocalVariableNodeGen SourceSection: None
+                                              Identifier: <>temp5
+                                              Frame: [5,<>temp5,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: k
                                               Frame: [1,k,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [3,<>temp3,Illegal]
+                                                Frame: [4,<>temp4,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: v
                                               Frame: [2,v,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [4,<>temp4,Illegal]
+                                                Frame: [5,<>temp5,Illegal]
                                         IfNode SourceSection: [76227,76284]`if k[:3] == 'LC_':↵ ...`
                                           YesNodeGen SourceSection: None
                                             EqNodeGen SourceSection: [76230,76244]`k[:3] == 'LC_'`
@@ -7018,7 +7018,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                                 Identifier: globals
                                     BlockNode SourceSection: None
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [5,<return_val>,Object]
+                                Frame: [6,<return_val>,Object]
                     ExpressionStatementNode SourceSection: [76284,76302]`_init_categories()`
                       PythonCallNodeGen SourceSection: [76284,76302]`_init_categories()`
                         CallNodeGen SourceSection: None
@@ -7112,21 +7112,21 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ForNextElementNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp10
-                                Frame: [10,<>temp10,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp11
                                 Frame: [11,<>temp11,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp12
+                                Frame: [12,<>temp12,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: name
                                 Frame: [4,name,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [10,<>temp10,Illegal]
+                                  Frame: [11,<>temp11,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: category
                                 Frame: [5,category,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [11,<>temp11,Illegal]
+                                  Frame: [12,<>temp12,Illegal]
                           BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [76670,76688]`print(name, '...')`
                               PythonCallBinary SourceSection: [76670,76688]`print(name, '...')`
@@ -7144,21 +7144,21 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNodeGen SourceSection: [76719,76727]`category`
                                   Frame: [5,category,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp8
-                                Frame: [8,<>temp8,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp9
                                 Frame: [9,<>temp9,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp10
+                                Frame: [10,<>temp10,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: lang
                                 Frame: [2,lang,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [8,<>temp8,Illegal]
+                                  Frame: [9,<>temp9,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: enc
                                 Frame: [3,enc,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [9,<>temp9,Illegal]
+                                  Frame: [10,<>temp10,Illegal]
                             ExpressionStatementNode SourceSection: [76737,76782]`print('   Language: ...`
                               PythonCallBinary SourceSection: [76737,76782]`print('   Language: ...`
                                 CallBinaryMethodNodeGen SourceSection: None
@@ -7224,21 +7224,21 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ForNextElementNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp14
-                                Frame: [14,<>temp14,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp15
                                 Frame: [15,<>temp15,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp16
+                                Frame: [16,<>temp16,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: name
                                 Frame: [4,name,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [14,<>temp14,Illegal]
+                                  Frame: [15,<>temp15,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: category
                                 Frame: [5,category,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [15,<>temp15,Illegal]
+                                  Frame: [16,<>temp16,Illegal]
                           BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [77012,77030]`print(name, '...')`
                               PythonCallBinary SourceSection: [77012,77030]`print(name, '...')`
@@ -7256,21 +7256,21 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNodeGen SourceSection: [77061,77069]`category`
                                   Frame: [5,category,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp12
-                                Frame: [12,<>temp12,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp13
                                 Frame: [13,<>temp13,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp14
+                                Frame: [14,<>temp14,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: lang
                                 Frame: [2,lang,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [12,<>temp12,Illegal]
+                                  Frame: [13,<>temp13,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: enc
                                 Frame: [3,enc,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [13,<>temp13,Illegal]
+                                  Frame: [14,<>temp14,Illegal]
                             ExpressionStatementNode SourceSection: [77079,77124]`print('   Language: ...`
                               PythonCallBinary SourceSection: [77079,77124]`print('   Language: ...`
                                 CallBinaryMethodNodeGen SourceSection: None
@@ -7362,21 +7362,21 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ForNextElementNodeGen SourceSection: None
                                   DestructuringAssignmentNodeGen SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <>temp18
-                                      Frame: [18,<>temp18,Illegal]
-                                    WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <>temp19
                                       Frame: [19,<>temp19,Illegal]
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: <>temp20
+                                      Frame: [20,<>temp20,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: name
                                       Frame: [4,name,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: None
-                                        Frame: [18,<>temp18,Illegal]
+                                        Frame: [19,<>temp19,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: category
                                       Frame: [5,category,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: None
-                                        Frame: [19,<>temp19,Illegal]
+                                        Frame: [20,<>temp20,Illegal]
                                 BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [77579,77597]`print(name, '...')`
                                     PythonCallBinary SourceSection: [77579,77597]`print(name, '...')`
@@ -7394,21 +7394,21 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       ReadLocalVariableNodeGen SourceSection: [77632,77640]`category`
                                         Frame: [5,category,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <>temp16
-                                      Frame: [16,<>temp16,Illegal]
-                                    WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <>temp17
                                       Frame: [17,<>temp17,Illegal]
+                                    WriteLocalVariableNodeGen SourceSection: None
+                                      Identifier: <>temp18
+                                      Frame: [18,<>temp18,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: lang
                                       Frame: [2,lang,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: None
-                                        Frame: [16,<>temp16,Illegal]
+                                        Frame: [17,<>temp17,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: enc
                                       Frame: [3,enc,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: None
-                                        Frame: [17,<>temp17,Illegal]
+                                        Frame: [18,<>temp18,Illegal]
                                   ExpressionStatementNode SourceSection: [77654,77699]`print('   Language: ...`
                                     PythonCallBinary SourceSection: [77654,77699]`print('   Language: ...`
                                       CallBinaryMethodNodeGen SourceSection: None
@@ -7444,7 +7444,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Frame: [0,categories,Illegal]
                             BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [20,<return_val>,Object]
+                  Frame: [21,<return_val>,Object]
       TryFinallyNode SourceSection: [77783,77872]`try:↵    LC_MESSAGES...`
         TryExceptNode SourceSection: None
           ExpressionStatementNode SourceSection: [77792,77803]`LC_MESSAGES`

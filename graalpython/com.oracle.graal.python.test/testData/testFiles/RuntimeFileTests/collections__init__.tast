@@ -2418,7 +2418,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [<return_val>, inst_dict, k, self]
+                            FrameDescriptor: 5 slots [<>temp3, <return_val>, inst_dict, k, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2498,7 +2498,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 Frame: [0,self,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Object]
+                                  Frame: [4,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [10105,10206]`def copy(self):↵    ...`
                         Identifier: copy
                         FunctionDefinitionNode Name: copy SourceSection: None
@@ -2562,7 +2562,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 6 slots [<return_val>, cls, iterable, key, self, value]
+                              FrameDescriptor: 7 slots [<>temp5, <return_val>, cls, iterable, key, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2618,7 +2618,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadLocalVariableNodeGen SourceSection: [10463,10467]`self`
                                           Frame: [3,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [5,<return_val>,Object]
+                                    Frame: [6,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [10473,10820]`def __eq__(self, oth...`
                         Identifier: __eq__
                         FunctionDefinitionNode Name: __eq__ SourceSection: None
@@ -2764,7 +2764,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             CelVars: _len, field_names, num_fields, repr_fmt, tuple_new
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 36 slots [*, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>, __getnewargs__, __new__, __repr__, _asdict, _len, _make, _replace, arg_list, cache, class_namespace, defaults, doc, field_defaults, field_names, index, itemgetter_object, method, module, name, namespace, num_fields, rename, repr_fmt, result, s, seen, tuple_new, typename]
+            FrameDescriptor: 37 slots [*, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <return_val>, __getnewargs__, __new__, __repr__, _asdict, _len, _make, _replace, arg_list, cache, class_namespace, defaults, doc, field_defaults, field_names, index, itemgetter_object, method, module, name, namespace, num_fields, rename, repr_fmt, result, s, seen, tuple_new, typename]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: _len, field_names, num_fields, repr_fmt, tuple_new
@@ -2813,7 +2813,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           ReadLocalCellNodeGen SourceSection: [12245,12256]`field_names`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,field_names,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12258,12261]`str`
                             Identifier: str
                       WriteLocalCellNodeGen SourceSection: [12272,12323]`field_names = field_...`
@@ -2829,7 +2828,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 ReadLocalCellNodeGen SourceSection: [12286,12297]`field_names`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,field_names,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [12306,12309]`','`
                               StringLiteralNode SourceSection: [12311,12314]`' '`
                       BlockNode SourceSection: None
@@ -2850,7 +2848,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           ReadLocalCellNodeGen SourceSection: [12356,12367]`field_names`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,field_names,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [12374,12411]`typename = _sys.inte...`
                       Identifier: typename
                       Frame: [0,typename,Illegal]
@@ -2883,21 +2880,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               ForNextElementNodeGen SourceSection: None
                                 DestructuringAssignmentNodeGen SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: None
-                                    Identifier: <>temp29
-                                    Frame: [29,<>temp29,Illegal]
-                                  WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <>temp30
                                     Frame: [30,<>temp30,Illegal]
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp31
+                                    Frame: [31,<>temp31,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: index
                                     Frame: [7,index,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [29,<>temp29,Illegal]
+                                      Frame: [30,<>temp30,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: name
                                     Frame: [8,name,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [30,<>temp30,Illegal]
+                                      Frame: [31,<>temp31,Illegal]
                               BlockNode SourceSection: None
                                 IfNode SourceSection: [12512,12711]`if (not name.isident...`
                                   YesNodeGen SourceSection: None
@@ -2937,7 +2934,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     ReadLocalCellNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [1,field_names,Illegal]
-                                      ReadFromCellNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [12678,12683]`index`
                                       Frame: [7,index,Illegal]
                                     FormatStringLiteralNode SourceSection: [12687,12698]`f'_{index}'`
@@ -2959,7 +2955,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 ReadLocalCellNodeGen SourceSection: [12486,12497]`field_names`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,field_names,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                           BlockNode SourceSection: None
                       BlockNode SourceSection: None
                     ElseNode SourceSection: [12731,13197]`for name in [typenam...`
@@ -3031,7 +3026,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             ReadLocalCellNodeGen SourceSection: [12756,12767]`field_names`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [1,field_names,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [13197,13209]`seen = set()`
                       Identifier: seen
@@ -3101,7 +3095,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           ReadLocalCellNodeGen SourceSection: [13226,13237]`field_names`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,field_names,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [13535,13554]`field_defaults = {}`
                       Identifier: field_defaults
@@ -3140,7 +3133,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 ReadLocalCellNodeGen SourceSection: [13650,13661]`field_names`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,field_names,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                           RaiseNodeGen SourceSection: [13676,13735]`raise TypeError('Got...`
                             PythonCallUnary SourceSection: [13682,13735]`TypeError('Got more ...`
                               CallUnaryMethodNodeGen SourceSection: None
@@ -3175,7 +3167,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     ReadLocalCellNodeGen SourceSection: [13793,13804]`field_names`
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [1,field_names,Illegal]
-                                      ReadFromCellNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [13855,13873]`reversed(defaults)`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [13855,13863]`reversed`
@@ -3205,7 +3196,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           ReadLocalCellNodeGen SourceSection: [13971,13982]`field_names`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,field_names,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [13989,14018]`num_fields = len(fie...`
                       Identifier: num_fields
                       ReadLocalVariableNodeGen SourceSection: None
@@ -3217,7 +3207,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         ReadLocalCellNodeGen SourceSection: [14006,14017]`field_names`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [1,field_names,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14023,14074]`arg_list = repr(fiel...`
                       Identifier: arg_list
                       Frame: [11,arg_list,Illegal]
@@ -3232,7 +3221,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               ReadLocalCellNodeGen SourceSection: [14039,14050]`field_names`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,field_names,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [14060,14063]`"'"`
                           StringLiteralNode SourceSection: [14065,14067]`""`
                         SliceLiteralNodeGen SourceSection: [14069,14073]`1:-1`
@@ -3257,7 +3245,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               Name: <genexpr>
                               FrameDescriptor: 2 slots [<return_val>, name]
                               Enclosing
-                                FrameDescriptor: 36 slots [*, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>, __getnewargs__, __new__, __repr__, _asdict, _len, _make, _replace, arg_list, cache, class_namespace, defaults, doc, field_defaults, field_names, index, itemgetter_object, method, module, name, namespace, num_fields, rename, repr_fmt, result, s, seen, tuple_new, typename]
+                                FrameDescriptor: 37 slots [*, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <return_val>, __getnewargs__, __new__, __repr__, _asdict, _len, _make, _replace, arg_list, cache, class_namespace, defaults, doc, field_defaults, field_names, index, itemgetter_object, method, module, name, namespace, num_fields, rename, repr_fmt, result, s, seen, tuple_new, typename]
                               Active Flags: 2
                               For Nodes: 1
                               Block Nodes: 0
@@ -3303,7 +3291,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 ReadLocalCellNodeGen SourceSection: [14131,14142]`field_names`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,field_names,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [14146,14149]`')'`
                     WriteLocalCellNodeGen SourceSection: [14154,14179]`tuple_new = tuple.__...`
@@ -3340,7 +3327,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         ReadLocalCellNodeGen SourceSection: [14386,14395]`tuple_new`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [13,tuple_new,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [14409,14441]`'namedtuple_{}'.form...`
                           CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
@@ -3433,7 +3419,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadLocalCellNodeGen SourceSection: [14774,14783]`tuple_new`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [4,tuple_new,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [14784,14787]`cls`
                                           Frame: [0,cls,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [14789,14797]`iterable`
@@ -3446,13 +3431,11 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             ReadLocalCellNodeGen SourceSection: [14810,14814]`_len`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [5,_len,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [14815,14821]`result`
                                               Frame: [2,result,Illegal]
                                           ReadLocalCellNodeGen SourceSection: [14826,14836]`num_fields`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [3,num_fields,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [14850,14920]`raise TypeError(f'Ex...`
                                         PythonCallUnary SourceSection: [14856,14920]`TypeError(f'Expected...`
                                           CallUnaryMethodNodeGen SourceSection: None
@@ -3540,7 +3523,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadLocalCellNodeGen SourceSection: [15145,15156]`field_names`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [3,field_names,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [15158,15163]`_self`
                                           Frame: [0,_self,Illegal]
                                   IfNode SourceSection: [15174,15267]`if kwds:↵           ...`
@@ -3617,7 +3599,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadLocalCellNodeGen SourceSection: [15535,15543]`repr_fmt`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,repr_fmt,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [15546,15550]`self`
                                           Frame: [0,self,Illegal]
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -3761,7 +3742,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         ReadLocalCellNodeGen SourceSection: [16279,16290]`field_names`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [1,field_names,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [16320,16334]`field_defaults`
                           Frame: [9,field_defaults,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [16355,16362]`__new__`
@@ -3787,21 +3767,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           ForNextElementNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp33
-                                Frame: [33,<>temp33,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp34
                                 Frame: [34,<>temp34,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp35
+                                Frame: [35,<>temp35,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: index
                                 Frame: [7,index,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [33,<>temp33,Illegal]
+                                  Frame: [34,<>temp34,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: name
                                 Frame: [8,name,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [34,<>temp34,Illegal]
+                                  Frame: [35,<>temp35,Illegal]
                           BlockNode SourceSection: None
                             TryFinallyNode SourceSection: [16607,16848]`try:↵            ite...`
                               TryExceptNode SourceSection: None
@@ -3812,21 +3792,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     ReadLocalVariableNodeGen SourceSection: [16655,16660]`index`
                                       Frame: [7,index,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
-                                    Identifier: <>temp31
-                                    Frame: [31,<>temp31,Illegal]
-                                  WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <>temp32
                                     Frame: [32,<>temp32,Illegal]
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp33
+                                    Frame: [33,<>temp33,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: itemgetter_object
                                     Frame: [26,itemgetter_object,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [31,<>temp31,Illegal]
+                                      Frame: [32,<>temp32,Illegal]
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: doc
                                     Frame: [27,doc,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [32,<>temp32,Illegal]
+                                      Frame: [33,<>temp33,Illegal]
                                 ExceptNode SourceSection: None
                                   BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [16699,16737]`itemgetter_object = ...`
@@ -3882,7 +3862,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             ReadLocalCellNodeGen SourceSection: [16585,16596]`field_names`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [1,field_names,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [16914,16964]`result = type(typena...`
                       Identifier: result
@@ -3955,7 +3934,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       ReadLocalVariableNodeGen SourceSection: [17572,17578]`result`
                         Frame: [28,result,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [35,<return_val>,Object]
+                  Frame: [36,<return_val>,Object]
       WriteNameNodeGen SourceSection: [17741,17927]`def _count_elements(...`
         Identifier: _count_elements
         FunctionDefinitionNode Name: _count_elements SourceSection: None
@@ -3973,7 +3952,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [<return_val>, elem, iterable, mapping, mapping_get]
+            FrameDescriptor: 6 slots [<>temp4, <return_val>, elem, iterable, mapping, mapping_get]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4032,7 +4011,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             Frame: [1,iterable,Illegal]
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Object]
+                  Frame: [5,<return_val>,Object]
       TryFinallyNode SourceSection: [17927,18080]`try:                ...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [18009,18049]`from _collections im...`
@@ -4477,7 +4456,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 13 slots [<>temp10, <>temp11, <>temp8, <>temp9, <return_val>, __class__, args, count, elem, iterable, kwds, self, self_get]
+                            FrameDescriptor: 14 slots [<>temp10, <>temp11, <>temp12, <>temp8, <>temp9, <return_val>, __class__, args, count, elem, iterable, kwds, self, self_get]
                             ExecutionSlots:
                               FreeVarsSlots: __class__
                               CellVarsSlots: None
@@ -4610,21 +4589,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ForNextElementNodeGen SourceSection: None
                                                     DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: None
-                                                        Identifier: <>temp10
-                                                        Frame: [10,<>temp10,Illegal]
-                                                      WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <>temp11
                                                         Frame: [11,<>temp11,Illegal]
+                                                      WriteLocalVariableNodeGen SourceSection: None
+                                                        Identifier: <>temp12
+                                                        Frame: [12,<>temp12,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: elem
                                                         Frame: [5,elem,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: None
-                                                          Frame: [10,<>temp10,Illegal]
+                                                          Frame: [11,<>temp11,Illegal]
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: count
                                                         Frame: [6,count,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: None
-                                                          Frame: [11,<>temp11,Illegal]
+                                                          Frame: [12,<>temp12,Illegal]
                                                   SetItemNodeGen SourceSection: [24435,24473]`self[elem] = count +...`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [2,self,Illegal]
@@ -4686,7 +4665,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Frame: [1,kwds,Illegal]
                                       BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [12,<return_val>,Object]
+                                  Frame: [13,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [24706,26171]`def subtract(*args, ...`
                         Identifier: subtract
                         FunctionDefinitionNode Name: subtract SourceSection: None
@@ -4704,7 +4683,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 12 slots [<>temp10, <>temp7, <>temp8, <>temp9, <return_val>, args, count, elem, iterable, kwds, self, self_get]
+                            FrameDescriptor: 13 slots [<>temp10, <>temp11, <>temp7, <>temp8, <>temp9, <return_val>, args, count, elem, iterable, kwds, self, self_get]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4833,21 +4812,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ForNextElementNodeGen SourceSection: None
                                                   DestructuringAssignmentNodeGen SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: None
-                                                      Identifier: <>temp9
-                                                      Frame: [9,<>temp9,Illegal]
-                                                    WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <>temp10
                                                       Frame: [10,<>temp10,Illegal]
+                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: <>temp11
+                                                      Frame: [11,<>temp11,Illegal]
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: elem
                                                       Frame: [5,elem,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: None
-                                                        Frame: [9,<>temp9,Illegal]
+                                                        Frame: [10,<>temp10,Illegal]
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: count
                                                       Frame: [6,count,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: None
-                                                        Frame: [10,<>temp10,Illegal]
+                                                        Frame: [11,<>temp11,Illegal]
                                                 SetItemNodeGen SourceSection: [25967,26005]`self[elem] = self_ge...`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,self,Illegal]
@@ -4913,7 +4892,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Frame: [1,kwds,Illegal]
                                       BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [11,<return_val>,Object]
+                                  Frame: [12,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [26171,26261]`def copy(self):↵    ...`
                         Identifier: copy
                         FunctionDefinitionNode Name: copy SourceSection: None
@@ -5208,7 +5187,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 11 slots [<>temp10, <>temp7, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, result, self]
+                            FrameDescriptor: 12 slots [<>temp10, <>temp11, <>temp7, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5256,21 +5235,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp7
-                                                Frame: [7,<>temp7,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp8
                                                 Frame: [8,<>temp8,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp9
+                                                Frame: [9,<>temp9,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [4,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [7,<>temp7,Illegal]
+                                                  Frame: [8,<>temp8,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [5,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [8,<>temp8,Illegal]
+                                                  Frame: [9,<>temp9,Illegal]
                                           BlockNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [27585,27615]`newcount = count + o...`
                                               Identifier: newcount
@@ -5311,21 +5290,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp9
-                                                Frame: [9,<>temp9,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp10
                                                 Frame: [10,<>temp10,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp11
+                                                Frame: [11,<>temp11,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [4,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [9,<>temp9,Illegal]
+                                                  Frame: [10,<>temp10,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [5,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [10,<>temp10,Illegal]
+                                                  Frame: [11,<>temp11,Illegal]
                                           IfNode SourceSection: [27739,27819]`if elem not in self ...`
                                             YesNodeGen SourceSection: None
                                               AndNode SourceSection: [27742,27772]`elem not in self and...`
@@ -5381,7 +5360,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 11 slots [<>temp10, <>temp7, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, result, self]
+                            FrameDescriptor: 12 slots [<>temp10, <>temp11, <>temp7, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5429,21 +5408,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp7
-                                                Frame: [7,<>temp7,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp8
                                                 Frame: [8,<>temp8,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp9
+                                                Frame: [9,<>temp9,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [4,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [7,<>temp7,Illegal]
+                                                  Frame: [8,<>temp8,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [5,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [8,<>temp8,Illegal]
+                                                  Frame: [9,<>temp9,Illegal]
                                           BlockNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [28188,28218]`newcount = count - o...`
                                               Identifier: newcount
@@ -5484,21 +5463,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp9
-                                                Frame: [9,<>temp9,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp10
                                                 Frame: [10,<>temp10,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp11
+                                                Frame: [11,<>temp11,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [4,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [9,<>temp9,Illegal]
+                                                  Frame: [10,<>temp10,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [5,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [10,<>temp10,Illegal]
+                                                  Frame: [11,<>temp11,Illegal]
                                           IfNode SourceSection: [28342,28426]`if elem not in self ...`
                                             YesNodeGen SourceSection: None
                                               AndNode SourceSection: [28345,28375]`elem not in self and...`
@@ -5557,7 +5536,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 12 slots [<>temp10, <>temp11, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, other_count, result, self]
+                            FrameDescriptor: 13 slots [<>temp10, <>temp11, <>temp12, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, other_count, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5605,21 +5584,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp8
-                                                Frame: [8,<>temp8,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp9
                                                 Frame: [9,<>temp9,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp10
+                                                Frame: [10,<>temp10,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [5,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [8,<>temp8,Illegal]
+                                                  Frame: [9,<>temp9,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [6,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [9,<>temp9,Illegal]
+                                                  Frame: [10,<>temp10,Illegal]
                                           BlockNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [28802,28827]`other_count = other[...`
                                               Identifier: other_count
@@ -5671,21 +5650,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp10
-                                                Frame: [10,<>temp10,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp11
                                                 Frame: [11,<>temp11,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp12
+                                                Frame: [12,<>temp12,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [5,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [10,<>temp10,Illegal]
+                                                  Frame: [11,<>temp11,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [6,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [11,<>temp11,Illegal]
+                                                  Frame: [12,<>temp12,Illegal]
                                           IfNode SourceSection: [29020,29100]`if elem not in self ...`
                                             YesNodeGen SourceSection: None
                                               AndNode SourceSection: [29023,29053]`elem not in self and...`
@@ -5741,7 +5720,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 10 slots [<>temp8, <>temp9, <return_val>, count, elem, newcount, other, other_count, result, self]
+                            FrameDescriptor: 11 slots [<>temp10, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, other_count, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5789,21 +5768,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp8
-                                                Frame: [8,<>temp8,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp9
                                                 Frame: [9,<>temp9,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp10
+                                                Frame: [10,<>temp10,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [5,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [8,<>temp8,Illegal]
+                                                  Frame: [9,<>temp9,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [6,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [9,<>temp9,Illegal]
+                                                  Frame: [10,<>temp10,Illegal]
                                           BlockNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [29452,29477]`other_count = other[...`
                                               Identifier: other_count
@@ -5871,7 +5850,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, count, elem, result, self]
+                            FrameDescriptor: 8 slots [<>temp4, <>temp5, <>temp6, <return_val>, count, elem, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5898,21 +5877,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp4
-                                                Frame: [4,<>temp4,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp5
                                                 Frame: [5,<>temp5,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp6
+                                                Frame: [6,<>temp6,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [2,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [4,<>temp4,Illegal]
+                                                  Frame: [5,<>temp5,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [3,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [5,<>temp5,Illegal]
+                                                  Frame: [6,<>temp6,Illegal]
                                           IfNode SourceSection: [29822,29881]`if count > 0:↵      ...`
                                             YesNodeGen SourceSection: None
                                               GtNodeGen SourceSection: [29825,29834]`count > 0`
@@ -5939,7 +5918,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       ReadLocalVariableNodeGen SourceSection: [29888,29894]`result`
                                         Frame: [1,result,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [6,<return_val>,Object]
+                                  Frame: [7,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [29900,30219]`def __neg__(self):↵ ...`
                         Identifier: __neg__
                         FunctionDefinitionNode Name: __neg__ SourceSection: None
@@ -5957,7 +5936,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, count, elem, result, self]
+                            FrameDescriptor: 8 slots [<>temp4, <>temp5, <>temp6, <return_val>, count, elem, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5984,21 +5963,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp4
-                                                Frame: [4,<>temp4,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp5
                                                 Frame: [5,<>temp5,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp6
+                                                Frame: [6,<>temp6,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [2,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [4,<>temp4,Illegal]
+                                                  Frame: [5,<>temp5,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [3,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [5,<>temp5,Illegal]
+                                                  Frame: [6,<>temp6,Illegal]
                                           IfNode SourceSection: [30137,30200]`if count < 0:↵      ...`
                                             YesNodeGen SourceSection: None
                                               LtNodeGen SourceSection: [30140,30149]`count < 0`
@@ -6028,7 +6007,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       ReadLocalVariableNodeGen SourceSection: [30207,30213]`result`
                                         Frame: [1,result,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [6,<return_val>,Object]
+                                  Frame: [7,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [30219,30486]`def _keep_positive(s...`
                         Identifier: _keep_positive
                         FunctionDefinitionNode Name: _keep_positive SourceSection: None
@@ -6046,7 +6025,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [<return_val>, elem, nonpositive, self]
+                            FrameDescriptor: 5 slots [<>temp3, <return_val>, elem, nonpositive, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6071,7 +6050,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           Name: <genexpr>
                                           FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, count, elem]
                                           Enclosing
-                                            FrameDescriptor: 4 slots [<return_val>, elem, nonpositive, self]
+                                            FrameDescriptor: 5 slots [<>temp3, <return_val>, elem, nonpositive, self]
                                           Active Flags: 4
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -6164,7 +6143,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       ReadLocalVariableNodeGen SourceSection: [30476,30480]`self`
                                         Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Object]
+                                  Frame: [4,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [30486,30838]`def __iadd__(self, o...`
                         Identifier: __iadd__
                         FunctionDefinitionNode Name: __iadd__ SourceSection: None
@@ -6182,7 +6161,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, count, elem, other, self]
+                            FrameDescriptor: 8 slots [<>temp4, <>temp5, <>temp6, <return_val>, count, elem, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6209,21 +6188,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp4
-                                                Frame: [4,<>temp4,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp5
                                                 Frame: [5,<>temp5,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp6
+                                                Frame: [6,<>temp6,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [2,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [4,<>temp4,Illegal]
+                                                  Frame: [5,<>temp5,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [3,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [5,<>temp5,Illegal]
+                                                  Frame: [6,<>temp6,Illegal]
                                           SetItemNodeGen SourceSection: [30776,30795]`self[elem] += count`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [0,self,Illegal]
@@ -6252,7 +6231,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadLocalVariableNodeGen SourceSection: [30811,30815]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [6,<return_val>,Object]
+                                  Frame: [7,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [30838,31190]`def __isub__(self, o...`
                         Identifier: __isub__
                         FunctionDefinitionNode Name: __isub__ SourceSection: None
@@ -6270,7 +6249,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, count, elem, other, self]
+                            FrameDescriptor: 8 slots [<>temp4, <>temp5, <>temp6, <return_val>, count, elem, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6297,21 +6276,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp4
-                                                Frame: [4,<>temp4,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp5
                                                 Frame: [5,<>temp5,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp6
+                                                Frame: [6,<>temp6,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [2,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [4,<>temp4,Illegal]
+                                                  Frame: [5,<>temp5,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [3,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [5,<>temp5,Illegal]
+                                                  Frame: [6,<>temp6,Illegal]
                                           SetItemNodeGen SourceSection: [31128,31147]`self[elem] -= count`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [0,self,Illegal]
@@ -6340,7 +6319,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadLocalVariableNodeGen SourceSection: [31163,31167]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [6,<return_val>,Object]
+                                  Frame: [7,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [31190,31618]`def __ior__(self, ot...`
                         Identifier: __ior__
                         FunctionDefinitionNode Name: __ior__ SourceSection: None
@@ -6358,7 +6337,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, count, elem, other, other_count, self]
+                            FrameDescriptor: 9 slots [<>temp5, <>temp6, <>temp7, <return_val>, count, elem, other, other_count, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6385,21 +6364,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp5
-                                                Frame: [5,<>temp5,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp6
                                                 Frame: [6,<>temp6,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp7
+                                                Frame: [7,<>temp7,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [3,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [5,<>temp5,Illegal]
+                                                  Frame: [6,<>temp6,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: other_count
                                                 Frame: [4,other_count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [6,<>temp6,Illegal]
+                                                  Frame: [7,<>temp7,Illegal]
                                           BlockNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [31480,31498]`count = self[elem]`
                                               Identifier: count
@@ -6438,7 +6417,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadLocalVariableNodeGen SourceSection: [31591,31595]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [7,<return_val>,Object]
+                                  Frame: [8,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [31618,32191]`def __iand__(self, o...`
                         Identifier: __iand__
                         FunctionDefinitionNode Name: __iand__ SourceSection: None
@@ -6456,7 +6435,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, count, elem, other, other_count, self]
+                            FrameDescriptor: 9 slots [<>temp5, <>temp6, <>temp7, <return_val>, count, elem, other, other_count, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6483,21 +6462,21 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ForNextElementNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <>temp5
-                                                Frame: [5,<>temp5,Illegal]
-                                              WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp6
                                                 Frame: [6,<>temp6,Illegal]
+                                              WriteLocalVariableNodeGen SourceSection: None
+                                                Identifier: <>temp7
+                                                Frame: [7,<>temp7,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
                                                 Frame: [3,elem,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [5,<>temp5,Illegal]
+                                                  Frame: [6,<>temp6,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: count
                                                 Frame: [4,count,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [6,<>temp6,Illegal]
+                                                  Frame: [7,<>temp7,Illegal]
                                           BlockNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [31888,31913]`other_count = other[...`
                                               Identifier: other_count
@@ -6536,11 +6515,11 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadLocalVariableNodeGen SourceSection: [32006,32010]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [7,<return_val>,Object]
+                                  Frame: [8,<return_val>,Object]
                     WriteNameNodeGen SourceSection: None
                       Identifier: __classcell__
                       ReadLocalVariableNodeGen SourceSection: None
-                        Frame: [0,__class__,Illegal]
+                        Frame: [22,__class__,Illegal]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [18094,18098]`dict`
@@ -6707,7 +6686,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [<return_val>, key, mapping, self]
+                            FrameDescriptor: 5 slots [<>temp3, <return_val>, key, mapping, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6767,7 +6746,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadLocalVariableNodeGen SourceSection: [33277,33280]`key`
                                           Frame: [1,key,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Object]
+                                  Frame: [4,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [33343,33435]`def get(self, key, d...`
                         Identifier: get
                         FunctionDefinitionNode Name: get SourceSection: None
@@ -6904,7 +6883,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [<return_val>, d, mapping, self]
+                            FrameDescriptor: 5 slots [<>temp3, <return_val>, d, mapping, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6959,7 +6938,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadLocalVariableNodeGen SourceSection: [33734,33735]`d`
                                           Frame: [1,d,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Object]
+                                  Frame: [4,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [33742,33824]`def __contains__(sel...`
                         Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
@@ -7037,7 +7016,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                         ReadLocalCellNodeGen SourceSection: [33790,33793]`key`
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                             Frame: [1,key,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [33797,33798]`m`
                                                           Frame: [0,m,Illegal]
                                                       GeneratorAccessNode SourceSection: None
@@ -8543,7 +8521,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 6 slots [<return_val>, cls, d, iterable, key, value]
+                              FrameDescriptor: 7 slots [<>temp5, <return_val>, cls, d, iterable, key, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -8599,7 +8577,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadLocalVariableNodeGen SourceSection: [37995,37996]`d`
                                           Frame: [3,d,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [5,<return_val>,Object]
+                                    Frame: [6,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           GetAttributeNode SourceSection: [35996,36027]`_collections_abc.Mut...`

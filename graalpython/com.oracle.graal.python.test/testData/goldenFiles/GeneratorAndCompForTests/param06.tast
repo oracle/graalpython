@@ -98,7 +98,6 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                         ReadLocalCellNodeGen SourceSection: [72,77]`files`
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                             Frame: [2,files,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                       GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__

@@ -25,7 +25,7 @@ Scope: []
         FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [<return_val>, i, key, lineno, prompt, self]
+            FrameDescriptor: [<>temp5, <return_val>, i, key, lineno, prompt, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __repr__
@@ -35,7 +35,7 @@ Scope: []
             FreeVars: Empty
         Scope: _Printer__setup
             Kind: Function
-            FrameDescriptor: [<return_val>, data, filename, fp, self]
+            FrameDescriptor: [<>temp4, <return_val>, data, filename, fp, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__

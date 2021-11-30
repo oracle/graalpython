@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: f
         Kind: Function
-        FrameDescriptor: [<return_val>, i]
+        FrameDescriptor: [<>temp1, <return_val>, i]
         CellVars: Empty
         FreeVars: Empty

@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: compile
         Kind: Function
-        FrameDescriptor: [<>temp8, <>temp9, <return_val>, code, flags, groupindex, i, indexgroup, k, p, pattern]
+        FrameDescriptor: [<>temp10, <>temp8, <>temp9, <return_val>, code, flags, groupindex, i, indexgroup, k, p, pattern]
         CellVars: Empty
         FreeVars: Empty
     Scope: dis
@@ -15,7 +15,7 @@ Scope: []
         FreeVars: Empty
         Scope: dis_
             Kind: Function
-            FrameDescriptor: [<>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>, arg, code, dis_, end, flags, hi, i, j, labels, level, lo, mapping, max, min, offset_width, op, prefix, prefix_len, prefix_skip, print_, print_2, skip, start, sys]
+            FrameDescriptor: [<>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <>temp39, <return_val>, arg, code, dis_, end, flags, hi, i, j, labels, level, lo, mapping, max, min, offset_width, op, prefix, prefix_len, prefix_skip, print_, print_2, skip, start, sys]
             CellVars: [end, start]
             FreeVars: [code, dis_, labels, level, offset_width, sys]
             Scope: <genexpr>
@@ -65,12 +65,12 @@ Scope: []
         FreeVars: Empty
     Scope: _get_charset_prefix
         Kind: Function
-        FrameDescriptor: [<>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <return_val>, add_flags, av, charset, charsetappend, del_flags, flags, group, iscased, op, p, pattern]
+        FrameDescriptor: [<>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <return_val>, add_flags, av, charset, charsetappend, del_flags, flags, group, iscased, op, p, pattern]
         CellVars: Empty
         FreeVars: Empty
     Scope: _get_literal_prefix
         Kind: Function
-        FrameDescriptor: [<>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <return_val>, add_flags, av, del_flags, flags, flags1, got_all, group, iscased, op, p, pattern, prefix, prefix1, prefix_skip, prefix_skip1, prefixappend]
+        FrameDescriptor: [<>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <return_val>, add_flags, av, del_flags, flags, flags1, got_all, group, iscased, op, p, pattern, prefix, prefix1, prefix_skip, prefix_skip1, prefixappend]
         CellVars: Empty
         FreeVars: Empty
     Scope: _get_iscased
@@ -80,7 +80,7 @@ Scope: []
         FreeVars: Empty
     Scope: _generate_overlap_table
         Kind: Function
-        FrameDescriptor: [<return_val>, i, idx, prefix, table]
+        FrameDescriptor: [<>temp4, <return_val>, i, idx, prefix, table]
         CellVars: Empty
         FreeVars: Empty
     Scope: _simple
@@ -105,17 +105,17 @@ Scope: []
             FreeVars: [_CODEBITS, _int, s]
     Scope: _optimize_charset
         Kind: Function
-        FrameDescriptor: [<>temp22, <>temp23, <>temp24, <>temp25, <>temp27, <return_val>, av, block, charmap, charset, chunk, comps, data, fixes, fixup, hascased, i, iscased, k, lo, mapping, op, out, p, q, r, runs, tail]
+        FrameDescriptor: [<>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp30, <return_val>, av, block, charmap, charset, chunk, comps, data, fixes, fixup, hascased, i, iscased, k, lo, mapping, op, out, p, q, r, runs, tail]
         CellVars: Empty
         FreeVars: Empty
     Scope: _compile_charset
         Kind: Function
-        FrameDescriptor: [<>temp6, <>temp7, <return_val>, av, charset, code, emit, flags, op]
+        FrameDescriptor: [<>temp6, <>temp7, <>temp8, <return_val>, av, charset, code, emit, flags, op]
         CellVars: Empty
         FreeVars: Empty
     Scope: _compile
         Kind: Function
-        FrameDescriptor: [<>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <return_val>, ASSERT_CODES, LITERAL_CODES, REPEATING_CODES, SUCCESS_CODES, _len, add_flags, av, charset, code, del_flags, emit, fixes, flags, group, hascased, hi, iscased, k, lo, op, p, pattern, skip, skipno, skipyes, tail, tailappend, tolower]
+        FrameDescriptor: [<>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <>temp39, <return_val>, ASSERT_CODES, LITERAL_CODES, REPEATING_CODES, SUCCESS_CODES, _len, add_flags, av, charset, code, del_flags, emit, fixes, flags, group, hascased, hi, iscased, k, lo, op, p, pattern, skip, skipno, skipyes, tail, tailappend, tolower]
         CellVars: Empty
         FreeVars: Empty
     Scope: _combine_flags

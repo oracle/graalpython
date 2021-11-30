@@ -40,7 +40,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -50,14 +49,14 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class WriteLocalCellNode extends StatementNode implements WriteIdentifierNode {
     @Child private ExpressionNode readLocal;
 
-    private final FrameSlot frameSlot;
+    private final int frameSlot;
 
-    WriteLocalCellNode(FrameSlot frameSlot, ExpressionNode readLocalNode) {
+    WriteLocalCellNode(int frameSlot, ExpressionNode readLocalNode) {
         this.frameSlot = frameSlot;
         this.readLocal = readLocalNode;
     }
 
-    public static WriteLocalCellNode create(FrameSlot frameSlot, ExpressionNode readLocal, ExpressionNode right) {
+    public static WriteLocalCellNode create(int frameSlot, ExpressionNode readLocal, ExpressionNode right) {
         return WriteLocalCellNodeGen.create(frameSlot, readLocal, right);
     }
 
@@ -78,7 +77,7 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
 
     @Override
     public Object getIdentifier() {
-        return frameSlot.getIdentifier();
+        return getRootNode().getFrameDescriptor().getSlotName(frameSlot);
     }
 
     @ImportStatic(PythonOptions.class)

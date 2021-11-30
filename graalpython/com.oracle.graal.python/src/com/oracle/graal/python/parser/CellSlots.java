@@ -25,10 +25,8 @@
  */
 package com.oracle.graal.python.parser;
 
-import com.oracle.truffle.api.frame.FrameSlot;
-
 public interface CellSlots {
-    FrameSlot[] getCellVarSlots();
+    int[] getCellVarSlots();
 
-    FrameSlot[] getFreeVarSlots();
+    int[] getFreeVarSlots();
 }

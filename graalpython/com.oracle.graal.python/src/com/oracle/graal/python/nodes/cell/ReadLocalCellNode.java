@@ -31,18 +31,14 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundL
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.cell.ReadLocalCellNodeGen.ReadFromCellNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -51,26 +47,26 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 @NodeInfo(shortName = "read_cell")
 public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLocalNode {
     @Child private ExpressionNode readLocal;
-    @Child private ReadFromCellNode readCell;
-    private final FrameSlot frameSlot;
+    private final int frameSlot;
+    private final boolean isFreeVar;
 
-    ReadLocalCellNode(FrameSlot frameSlot, boolean isFreeVar) {
+    ReadLocalCellNode(int frameSlot, boolean isFreeVar) {
         this.frameSlot = frameSlot;
         this.readLocal = ReadLocalVariableNode.create(frameSlot);
-        this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
+        this.isFreeVar = isFreeVar;
     }
 
-    ReadLocalCellNode(FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
+    ReadLocalCellNode(int frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
         this.frameSlot = frameSlot;
         this.readLocal = readLocal;
-        this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
+        this.isFreeVar = isFreeVar;
     }
 
-    public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar) {
+    public static ReadLocalCellNode create(int frameSlot, boolean isFreeVar) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar);
     }
 
-    public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
+    public static ReadLocalCellNode create(int frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar, readLocal);
     }
 
@@ -79,43 +75,27 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
         return WriteLocalCellNode.create(frameSlot, readLocal, rhs);
     }
 
-    abstract static class ReadFromCellNode extends PNodeWithContext {
-        private final boolean isFreeVar;
-        private final Object identifier;
-
-        public ReadFromCellNode(boolean isFreeVar, Object identifier) {
-            this.isFreeVar = isFreeVar;
-            this.identifier = identifier;
-        }
-
-        abstract Object execute(Object cell);
-
-        @Specialization
-        Object read(PCell cell,
-                        @Cached PRaiseNode raise,
-                        @Cached CellBuiltins.GetRefNode getRef,
-                        @Cached("createClassProfile()") ValueProfile refTypeProfile) {
-            Object ref = refTypeProfile.profile(getRef.execute(cell));
-            if (ref != null) {
-                return ref;
-            } else {
-                if (isFreeVar) {
-                    throw raise.raise(NameError, ErrorMessages.FREE_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
-                }
-                throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
-            }
-        }
-
-        @Fallback
-        Object read(Object cell) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Expected a cell, got: " + cell.toString() + " instead.");
-        }
-    }
-
     @Specialization
-    Object readObject(VirtualFrame frame) {
-        return readCell.execute(readLocal.execute(frame));
+    Object readObject(VirtualFrame frame,
+                    @Cached PRaiseNode raise,
+                    @Cached CellBuiltins.GetRefNode getRef,
+                    @Cached("createClassProfile()") ValueProfile refTypeProfile) {
+        Object value = readLocal.execute(frame);
+        if (!(value instanceof PCell)) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("Expected a cell, got: " + value.toString() + " instead.");
+        }
+        PCell cell = (PCell) value;
+        Object ref = refTypeProfile.profile(getRef.execute(cell));
+        if (ref != null) {
+            return ref;
+        } else {
+            Object identifier = frame.getFrameDescriptor().getSlotName(frameSlot);
+            if (isFreeVar) {
+                throw raise.raise(NameError, ErrorMessages.FREE_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
+            }
+            throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
+        }
     }
 
     @Override

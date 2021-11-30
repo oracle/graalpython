@@ -121,7 +121,6 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                         ReadLocalCellNodeGen SourceSection: [153,162]`__class__`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,__class__,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                         WriteNameNodeGen SourceSection: [175,258]`def fn3(slef):↵     ...`
@@ -161,12 +160,11 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                         ReadLocalCellNodeGen SourceSection: [248,257]`__class__`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,__class__,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                       WriteNameNodeGen SourceSection: None
                         Identifier: __classcell__
                         ReadLocalVariableNodeGen SourceSection: None
-                          Frame: [0,__class__,Illegal]
+                          Frame: [3,__class__,Illegal]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

@@ -10,7 +10,7 @@ Scope: []
         FreeVars: Empty
     Scope: _decompose
         Kind: Function
-        FrameDescriptor: [<>temp8, <>temp9, <return_val>, flag, flags_to_check, member, member_value, members, negative, not_covered, value]
+        FrameDescriptor: [<>temp10, <>temp8, <>temp9, <return_val>, flag, flags_to_check, member, member_value, members, negative, not_covered, value]
         CellVars: Empty
         FreeVars: Empty
         Scope: <lambda>
@@ -30,7 +30,7 @@ Scope: []
             FreeVars: Empty
     Scope: unique
         Kind: Function
-        FrameDescriptor: [<>temp5, <>temp6, <return_val>, alias_details, duplicates, enumeration, member, name]
+        FrameDescriptor: [<>temp5, <>temp6, <>temp7, <return_val>, alias_details, duplicates, enumeration, member, name]
         CellVars: Empty
         FreeVars: Empty
         Scope: <genexpr>
@@ -70,7 +70,7 @@ Scope: []
             FreeVars: Empty
         Scope: _create_pseudo_member_
             Kind: Function
-            FrameDescriptor: [<>temp8, <>temp9, <return_val>, _, bit, cls, extra_flags, flag_value, need_to_create, pseudo_member, value]
+            FrameDescriptor: [<>temp10, <>temp8, <>temp9, <return_val>, _, bit, cls, extra_flags, flag_value, need_to_create, pseudo_member, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: _missing_
@@ -85,7 +85,7 @@ Scope: []
         FreeVars: Empty
         Scope: __invert__
             Kind: Function
-            FrameDescriptor: [<>temp5, <>temp6, <return_val>, inverted, m, members, self, uncovered]
+            FrameDescriptor: [<>temp5, <>temp6, <>temp7, <return_val>, inverted, m, members, self, uncovered]
             CellVars: Empty
             FreeVars: Empty
         Scope: __xor__
@@ -145,7 +145,7 @@ Scope: []
             FreeVars: Empty
         Scope: _generate_next_value_
             Kind: Function
-            FrameDescriptor: [<return_val>, count, high_bit, last_value, last_values, name, start]
+            FrameDescriptor: [<>temp7, <return_val>, count, high_bit, last_value, last_values, name, start]
             CellVars: Empty
             FreeVars: Empty
     Scope: _reduce_ex_by_name
@@ -235,12 +235,12 @@ Scope: []
             FreeVars: Empty
         Scope: _generate_next_value_
             Kind: Function
-            FrameDescriptor: [<return_val>, count, last_value, last_values, name, start]
+            FrameDescriptor: [<>temp5, <return_val>, count, last_value, last_values, name, start]
             CellVars: Empty
             FreeVars: Empty
         Scope: __new__
             Kind: Function
-            FrameDescriptor: [<return_val>, cls, member, value]
+            FrameDescriptor: [<>temp4, <return_val>, cls, member, value]
             CellVars: Empty
             FreeVars: Empty
     Scope: EnumMeta
@@ -250,17 +250,17 @@ Scope: []
         FreeVars: Empty
         Scope: _find_new_
             Kind: Function
-            FrameDescriptor: [<return_val>, __new__, classdict, first_enum, member_type, method, possible, save_new, target, use_args]
+            FrameDescriptor: [<>temp10, <>temp9, <return_val>, __new__, classdict, first_enum, member_type, method, possible, save_new, target, use_args]
             CellVars: Empty
             FreeVars: Empty
         Scope: _get_mixins_
             Kind: Function
-            FrameDescriptor: [<>temp5, <return_val>, base, bases, first_enum, member_type]
+            FrameDescriptor: [<>temp5, <>temp6, <return_val>, base, bases, first_enum, member_type]
             CellVars: Empty
             FreeVars: Empty
         Scope: _create_
             Kind: Function
-            FrameDescriptor: [*, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <return_val>, _, bases, class_name, classdict, cls, count, enum_class, exc, first_enum, item, last_values, member_name, member_value, metacls, module, name, names, original_names, qualname, start, type, value]
+            FrameDescriptor: [*, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>, _, bases, class_name, classdict, cls, count, enum_class, exc, first_enum, item, last_values, member_name, member_value, metacls, module, name, names, original_names, qualname, start, type, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: __setattr__
@@ -340,7 +340,7 @@ Scope: []
             FreeVars: Empty
         Scope: __new__
             Kind: Function
-            FrameDescriptor: [<>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>, __class__, __new__, _order_, args, base_attributes, bases, canonical_member, class_method, classdict, cls, enum_class, enum_member, enum_members, enum_method, first_enum, ignore, invalid_names, key, member_name, member_type, metacls, methods, name, obj_method, save_new, use_args, value]
+            FrameDescriptor: [<>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <return_val>, __class__, __new__, _order_, args, base_attributes, bases, canonical_member, class_method, classdict, cls, enum_class, enum_member, enum_members, enum_method, first_enum, ignore, invalid_names, key, member_name, member_type, metacls, methods, name, obj_method, save_new, use_args, value]
             CellVars: [classdict, member_type]
             FreeVars: [__class__]
             Scope: <genexpr>

@@ -73,7 +73,6 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                         ReadLocalCellNodeGen SourceSection: [26,27]`c`
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                             Frame: [1,c,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: x

@@ -119,7 +119,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                             CelVars: None
                                             FreeVars: fields, name
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 6 slots [<return_val>, f, fields, name, sb, self]
+                                            FrameDescriptor: 7 slots [<>temp5, <return_val>, f, fields, name, sb, self]
                                             ExecutionSlots:
                                               FreeVarsSlots: fields, name
                                               CellVarsSlots: None
@@ -139,7 +139,6 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                       ReadLocalCellNodeGen SourceSection: [205,209]`name`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [3,name,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                     ElseNode SourceSection: [222,264]`for f in fields:↵   ...`
                                                       ForNode SourceSection: None
                                                         ForRepeatingNode SourceSection: None
@@ -153,10 +152,9 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                           ReadLocalCellNodeGen SourceSection: [231,237]`fields`
                                                             ReadLocalVariableNodeGen SourceSection: None
                                                               Frame: [4,fields,Illegal]
-                                                            ReadFromCellNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [5,<return_val>,Object]
+                                                  Frame: [6,<return_val>,Object]
                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [64,69]`tuple`

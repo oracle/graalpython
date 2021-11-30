@@ -285,7 +285,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                     WriteNameNodeGen SourceSection: None
                       Identifier: __classcell__
                       ReadLocalVariableNodeGen SourceSection: None
-                        Frame: [0,__class__,Illegal]
+                        Frame: [2,__class__,Illegal]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [527,536]`Exception`
@@ -449,7 +449,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                     WriteNameNodeGen SourceSection: None
                       Identifier: __classcell__
                       ReadLocalVariableNodeGen SourceSection: None
-                        Frame: [0,__class__,Illegal]
+                        Frame: [3,__class__,Illegal]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [1643,1646]`int`
@@ -1068,7 +1068,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                     CelVars: None
                     FreeVars: None
                     NeedsCellFrame: False
-                    FrameDescriptor: 6 slots [<return_val>, d, f, item, items, prefix]
+                    FrameDescriptor: 7 slots [<>temp5, <return_val>, d, f, item, items, prefix]
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: None
@@ -1132,7 +1132,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                     Frame: [3,items,Illegal]
                               BlockNode SourceSection: None
                         Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                          Frame: [5,<return_val>,Object]
+                          Frame: [6,<return_val>,Object]
               WithNode SourceSection: [5758,7163]`with open("sre_const...`
                 BlockNode SourceSection: None
                   ExpressionStatementNode SourceSection: [5806,6190]`f.write("""\↵/*↵ * S...`

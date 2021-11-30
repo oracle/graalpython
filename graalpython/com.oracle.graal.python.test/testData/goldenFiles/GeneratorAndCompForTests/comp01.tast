@@ -46,7 +46,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                               ReadLocalCellNodeGen SourceSection: [10,11]`i`
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [0,i,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [13,42]`tuple(j for j in t i...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13,18]`tuple`
@@ -81,7 +80,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                                 ReadLocalCellNodeGen SourceSection: [35,36]`i`
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [1,i,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [40,41]`j`
                                                   Frame: [0,j,Illegal]
                                             ExpressionStatementNode SourceSection: [19,20]`j`

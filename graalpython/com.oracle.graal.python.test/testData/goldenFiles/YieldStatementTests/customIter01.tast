@@ -210,7 +210,6 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                             ReadLocalCellNodeGen SourceSection: [205,211]`MyIter`
                                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                 Frame: [0,MyIter,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                       WriteLocalCellNodeGen SourceSection: None
                                         Identifier: ret
                                         ReadGeneratorFrameVariableNodeGen SourceSection: None

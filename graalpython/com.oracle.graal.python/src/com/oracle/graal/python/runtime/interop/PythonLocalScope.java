@@ -42,21 +42,15 @@ package com.oracle.graal.python.runtime.interop;
 
 import static com.oracle.graal.python.nodes.PNodeUtil.getRootSourceSection;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -74,12 +68,12 @@ public final class PythonLocalScope implements TruffleObject {
 
     static final int LIMIT = 3;
 
-    final Map<String, ? extends FrameSlot> slots;
+    final Map<String, Integer> slots;
     final RootNode root;
     final Frame frame;
     final SourceSection sourceSection;
 
-    PythonLocalScope(Map<String, ? extends FrameSlot> slotsMap, RootNode root, Frame frame) {
+    PythonLocalScope(Map<String, Integer> slotsMap, RootNode root, Frame frame) {
         assert root != null;
         this.slots = slotsMap;
         this.root = root;
@@ -88,86 +82,15 @@ public final class PythonLocalScope implements TruffleObject {
     }
 
     @TruffleBoundary
-    static FrameSlot getSlot(List<? extends FrameSlot> slots, int idx) {
-        return slots.get(idx);
-    }
-
-    @TruffleBoundary
-    static List<? extends FrameSlot> getSlotsList(FrameDescriptor frameDescriptor) {
-        return frameDescriptor.getSlots();
-    }
-
-    @TruffleBoundary
-    static int getListSize(List<? extends FrameSlot> slots) {
-        return slots.size();
-    }
-
-    @TruffleBoundary
-    static void add(Map<String, FrameSlot> slotsMap, FrameSlot slot) {
-        slotsMap.put(Objects.toString(slot.getIdentifier()), slot);
-    }
-
-    @TruffleBoundary
-    static Map<String, FrameSlot> createMap(List<? extends FrameSlot> slots, int size) {
-        Map<String, FrameSlot> slotsMap = new LinkedHashMap<>(size);
-        for (FrameSlot slot : slots) {
-            add(slotsMap, slot);
-        }
-        return slotsMap;
-    }
-
-    @TruffleBoundary
-    static Map<String, FrameSlot> createEmptyMap() {
-        return Collections.emptyMap();
-    }
-
-    @TruffleBoundary
-    static Map<String, FrameSlot> createSingletonMap(FrameSlot slot) {
-        return Collections.singletonMap(Objects.toString(slot.getIdentifier()), slot);
-    }
-
-    @TruffleBoundary
-    static Map<String, FrameSlot> createMap(FrameSlot slot1, FrameSlot slot2, int size) {
-        Map<String, FrameSlot> slotsMap = new LinkedHashMap<>(size);
-        slotsMap.put(Objects.toString(slot1.getIdentifier()), slot1);
-        slotsMap.put(Objects.toString(slot2.getIdentifier()), slot2);
-        return slotsMap;
-    }
-
     static PythonLocalScope createLocalScope(RootNode root, Frame frame) {
-        Map<String, FrameSlot> slotsMap = null;
-        FrameSlot singleSlot = null;
-        FrameDescriptor frameDescriptor = frame == null ? root.getFrameDescriptor() : frame.getFrameDescriptor();
-        List<? extends FrameSlot> slots = getSlotsList(frameDescriptor);
-        int size = getListSize(slots);
-        if (frame == null) {
-            if (size > 1) {
-                return new PythonLocalScope(createMap(slots, size), root, null);
-            } else if (size == 1) {
-                return new PythonLocalScope(createSingletonMap(getSlot(slots, 0)), root, null);
+        LinkedHashMap<String, Integer> slotsMap = new LinkedHashMap<>();
+
+        FrameDescriptor fd = frame == null ? root.getFrameDescriptor() : frame.getFrameDescriptor();
+        for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
+            Object identifier = fd.getSlotName(slot);
+            if (FrameSlotIDs.isUserFrameSlot(identifier) && (frame == null || frame.getValue(slot) != null)) {
+                slotsMap.put(identifier.toString(), slot);
             }
-        } else {
-            for (int i = 0; i < size; i++) {
-                // Filter out slots with null values, e.g. <return_val>.
-                FrameSlot slot = getSlot(slots, i);
-                if (!FrameSlotIDs.isUserFrameSlot(slot.getIdentifier()) || frame.getValue(slot) == null) {
-                    continue;
-                }
-                if (slotsMap != null) {
-                    add(slotsMap, slot);
-                } else if (singleSlot == null) {
-                    singleSlot = slot;
-                } else {
-                    slotsMap = createMap(singleSlot, slot, size);
-                    singleSlot = null;
-                }
-            }
-            if (singleSlot != null) {
-                return new PythonLocalScope(createSingletonMap(singleSlot), root, frame);
-            }
-        }
-        if (slotsMap == null) {
-            slotsMap = createEmptyMap();
         }
         return new PythonLocalScope(slotsMap, root, frame);
     }
@@ -185,42 +108,26 @@ public final class PythonLocalScope implements TruffleObject {
     }
 
     @TruffleBoundary
-    static FrameSlot findFrameSlot(PythonLocalScope scope, String member) {
-        return scope.slots.get(member);
+    Integer findFrameSlot(String member) {
+        return slots.get(member);
     }
 
-    static boolean hasFrame(PythonLocalScope scope) {
-        return scope.frame != null;
+    private boolean hasFrame() {
+        return frame != null;
     }
 
     @ExportMessage
-    static class ReadMember {
-
-        @Specialization(guards = {"hasFrame(receiver)", "cachedMember.equals(member)"}, limit = "LIMIT")
-        static Object doCached(PythonLocalScope receiver, @SuppressWarnings("unused") String member,
-                        @Cached("member") String cachedMember,
-                        // We cache the member's slot for fast-path access
-                        @Cached(value = "findFrameSlot(receiver, member)") FrameSlot slot) throws UnknownIdentifierException {
-            return doRead(receiver, cachedMember, slot);
-        }
-
-        @Specialization(guards = "hasFrame(receiver)", replaces = "doCached")
-        static Object doGeneric(PythonLocalScope receiver, String member) throws UnknownIdentifierException {
-            FrameSlot slot = findFrameSlot(receiver, member);
-            return doRead(receiver, member, slot);
-        }
-
-        @Specialization(guards = "!hasFrame(receiver)")
-        static Object error(@SuppressWarnings("unused") PythonLocalScope receiver, @SuppressWarnings("unused") String member) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
-        }
-
-        private static Object doRead(PythonLocalScope receiver, String member, FrameSlot slot) throws UnknownIdentifierException {
+    @TruffleBoundary
+    Object readMember(String member) throws UnknownIdentifierException, UnsupportedMessageException {
+        if (hasFrame()) {
+            Integer slot = findFrameSlot(member);
             if (slot == null) {
                 throw UnknownIdentifierException.create(member);
             } else {
-                return receiver.frame.getValue(slot);
+                return frame.getValue(slot);
             }
+        } else {
+            throw UnsupportedMessageException.create();
         }
     }
 
@@ -247,34 +154,18 @@ public final class PythonLocalScope implements TruffleObject {
     }
 
     @ExportMessage
-    static class WriteMember {
-
-        @Specialization(guards = {"hasFrame(receiver)", "cachedMember.equals(member)"}, limit = "LIMIT")
-        static void doCached(PythonLocalScope receiver, @SuppressWarnings("unused") String member, Object value,
-                        @Cached("member") String cachedMember,
-                        // We cache the member's slot for fast-path access
-                        @Cached(value = "findFrameSlot(receiver, member)") FrameSlot slot) throws UnknownIdentifierException {
-            doWrite(receiver, cachedMember, value, slot);
-        }
-
-        @Specialization(guards = "hasFrame(receiver)", replaces = "doCached")
-        static void doGeneric(PythonLocalScope receiver, String member, Object value) throws UnknownIdentifierException {
-            FrameSlot slot = findFrameSlot(receiver, member);
-            doWrite(receiver, member, value, slot);
-        }
-
-        @Specialization(guards = "!hasFrame(receiver)")
-        static void error(@SuppressWarnings("unused") PythonLocalScope receiver, @SuppressWarnings("unused") String member,
-                        @SuppressWarnings("unused") Object value) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
-        }
-
-        private static void doWrite(PythonLocalScope receiver, String member, Object value, FrameSlot slot) throws UnknownIdentifierException {
+    @TruffleBoundary
+    void writeMember(String member, Object value) throws UnknownIdentifierException, UnsupportedMessageException {
+        if (hasFrame()) {
+            Integer slot = findFrameSlot(member);
             if (slot == null) {
                 throw UnknownIdentifierException.create(member);
             } else {
-                receiver.frame.setObject(slot, value);
+                frame.setObject(slot, value);
             }
+        } else {
+            throw UnsupportedMessageException.create();
+
         }
     }
 

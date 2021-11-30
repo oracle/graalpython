@@ -96,10 +96,10 @@ import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -535,6 +535,7 @@ public final class PythonSSTNodeFactory {
     }
 
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame, ArrayList<String> deprecationWarnings) {
+        assert currentFrame == null || mode == ParserMode.InlineEvaluation || mode == ParserMode.WithArguments;
         Node result;
         boolean isGen = false;
         Frame useFrame = currentFrame;
@@ -565,19 +566,19 @@ public final class PythonSSTNodeFactory {
                             : parserSSTResult instanceof BlockSSTNode
                                             ? factoryVisitor.asExpression((BlockSSTNode) parserSSTResult)
                                             : FactorySSTVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
-            FrameDescriptor fd = useFrame == null ? null : useFrame.getFrameDescriptor();
             switch (mode) {
                 case Eval:
                     scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
-                    StatementNode evalReturn = new ReturnNode.FrameReturnNode(body, scopeEnvironment.getReturnSlot());
-                    ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, ReadLocalVariableNode.create(scopeEnvironment.getReturnSlot()));
-                    FunctionRootNode functionRoot = rootNodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    StatementNode evalReturn = new ReturnNode.FrameReturnNode(body, scopeEnvironment.getCurrentScope().getReturnSlot());
+                    ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()));
+                    ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+                    FunctionRootNode functionRoot = rootNodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
                                     returnTarget,
-                                    scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY, null);
+                                    executionCellSlots, Signature.EMPTY, null);
                     result = functionRoot;
                     break;
                 case File:
-                    result = rootNodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    result = rootNodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
@@ -585,12 +586,13 @@ public final class PythonSSTNodeFactory {
                     result = body;
                     break;
                 case InteractiveStatement:
-                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd, scopeEnvironment.getGlobalScope().hasAnnotations());
+                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
+                                    scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
                 case Statement:
                     body.assignSourceSection(body.getSourceSection());
-                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;

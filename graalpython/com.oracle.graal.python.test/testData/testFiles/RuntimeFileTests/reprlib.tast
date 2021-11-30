@@ -174,12 +174,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       ReadLocalCellNodeGen SourceSection: [480,492]`repr_running`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [4,repr_running,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                   FrameReturnNode SourceSection: [510,526]`return fillvalue`
                                                     ReadLocalCellNodeGen SourceSection: [517,526]`fillvalue`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [5,fillvalue,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [539,560]`repr_running.add(key...`
                                                   PythonCallUnary SourceSection: [539,560]`repr_running.add(key...`
@@ -188,7 +186,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       ReadLocalCellNodeGen SourceSection: [539,551]`repr_running`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [4,repr_running,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [556,559]`key`
                                                       Frame: [1,key,Illegal]
                                                 TryFinallyNode SourceSection: [573,698]`try:↵               ...`
@@ -201,7 +198,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         ReadLocalCellNodeGen SourceSection: [603,616]`user_function`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [3,user_function,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [617,621]`self`
                                                           Frame: [0,self,Illegal]
                                                     BlockNode SourceSection: None
@@ -212,7 +208,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         ReadLocalCellNodeGen SourceSection: [660,672]`repr_running`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [4,repr_running,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [681,684]`key`
                                                         Frame: [1,key,Illegal]
                                                 FrameReturnNode SourceSection: [698,711]`return result`
@@ -231,7 +226,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       ReadLocalCellNodeGen SourceSection: [821,834]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
-                                        ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [836,848]`'__module__'`
                                   SetAttributeNodeGen SourceSection: [858,909]`wrapper.__doc__ = ge...`
                                     Attribute: __doc__
@@ -244,7 +238,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       ReadLocalCellNodeGen SourceSection: [884,897]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
-                                        ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [899,908]`'__doc__'`
                                   SetAttributeNodeGen SourceSection: [918,971]`wrapper.__name__ = g...`
                                     Attribute: __name__
@@ -257,7 +250,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       ReadLocalCellNodeGen SourceSection: [945,958]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
-                                        ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [960,970]`'__name__'`
                                   SetAttributeNodeGen SourceSection: [980,1041]`wrapper.__qualname__...`
                                     Attribute: __qualname__
@@ -270,7 +262,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       ReadLocalCellNodeGen SourceSection: [1011,1024]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
-                                        ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [1026,1040]`'__qualname__'`
                                   SetAttributeNodeGen SourceSection: [1050,1121]`wrapper.__annotation...`
                                     Attribute: __annotations__
@@ -283,7 +274,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       ReadLocalCellNodeGen SourceSection: [1084,1097]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
-                                        ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [1099,1116]`'__annotations__'`
                                       EmptyDictLiteralNode SourceSection: [1118,1120]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
@@ -766,13 +756,11 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                             ReadLocalCellNodeGen SourceSection: [2158,2163]`repr1`
                                                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                 Frame: [2,repr1,Illegal]
-                                                              ReadFromCellNodeGen SourceSection: None
                                                             ReadGeneratorFrameVariableNodeGen SourceSection: [2164,2168]`elem`
                                                               Frame: [0,elem,Illegal]
                                                             ReadLocalCellNodeGen SourceSection: [2170,2178]`newlevel`
                                                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                 Frame: [1,newlevel,Illegal]
-                                                              ReadFromCellNodeGen SourceSection: None
                                                           GeneratorAccessNode SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: elem
@@ -1326,7 +1314,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 12 slots [<return_val>, key, keyrepr, level, n, newlevel, pieces, repr1, s, self, valrepr, x]
+                            FrameDescriptor: 13 slots [<>temp12, <return_val>, key, keyrepr, level, n, newlevel, pieces, repr1, s, self, valrepr, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None

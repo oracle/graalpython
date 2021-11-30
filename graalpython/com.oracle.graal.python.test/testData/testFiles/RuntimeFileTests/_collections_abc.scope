@@ -25,12 +25,12 @@ Scope: []
             FreeVars: Empty
         Scope: extend
             Kind: Function
-            FrameDescriptor: [<return_val>, self, v, values]
+            FrameDescriptor: [<>temp3, <return_val>, self, v, values]
             CellVars: Empty
             FreeVars: Empty
         Scope: reverse
             Kind: Function
-            FrameDescriptor: [<>temp3, <>temp4, <return_val>, i, n, self]
+            FrameDescriptor: [<>temp3, <>temp4, <>temp5, <return_val>, i, n, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: clear
@@ -90,7 +90,7 @@ Scope: []
             FreeVars: Empty
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [<return_val>, self, v, value]
+            FrameDescriptor: [<>temp3, <return_val>, self, v, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: __iter__
@@ -115,7 +115,7 @@ Scope: []
             FreeVars: Empty
         Scope: update
             Kind: Function
-            FrameDescriptor: [<>temp10, <>temp11, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>, args, key, kwds, other, self, value]
+            FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>, args, key, kwds, other, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: clear
@@ -155,7 +155,7 @@ Scope: []
             FreeVars: Empty
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [<return_val>, key, self, v, value]
+            FrameDescriptor: [<>temp4, <return_val>, key, self, v, value]
             CellVars: Empty
             FreeVars: Empty
     Scope: ItemsView
@@ -265,22 +265,22 @@ Scope: []
         FreeVars: Empty
         Scope: __isub__
             Kind: Function
-            FrameDescriptor: [<return_val>, it, self, value]
+            FrameDescriptor: [<>temp3, <return_val>, it, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: __ixor__
             Kind: Function
-            FrameDescriptor: [<return_val>, it, self, value]
+            FrameDescriptor: [<>temp3, <return_val>, it, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: __iand__
             Kind: Function
-            FrameDescriptor: [<return_val>, it, self, value]
+            FrameDescriptor: [<>temp3, <return_val>, it, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: __ior__
             Kind: Function
-            FrameDescriptor: [<return_val>, it, self, value]
+            FrameDescriptor: [<>temp3, <return_val>, it, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: clear
@@ -315,7 +315,7 @@ Scope: []
         FreeVars: Empty
         Scope: _hash
             Kind: Function
-            FrameDescriptor: [<return_val>, MASK, MAX, h, hx, n, self, x]
+            FrameDescriptor: [<>temp7, <return_val>, MASK, MAX, h, hx, n, self, x]
             CellVars: Empty
             FreeVars: Empty
         Scope: __xor__
@@ -355,7 +355,7 @@ Scope: []
                 FreeVars: Empty
         Scope: isdisjoint
             Kind: Function
-            FrameDescriptor: [<return_val>, other, self, value]
+            FrameDescriptor: [<>temp3, <return_val>, other, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: __and__
@@ -380,7 +380,7 @@ Scope: []
             FreeVars: Empty
         Scope: __ge__
             Kind: Function
-            FrameDescriptor: [<return_val>, elem, other, self]
+            FrameDescriptor: [<>temp4, <return_val>, elem, other, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __gt__
@@ -395,7 +395,7 @@ Scope: []
             FreeVars: Empty
         Scope: __le__
             Kind: Function
-            FrameDescriptor: [<return_val>, elem, other, self]
+            FrameDescriptor: [<>temp4, <return_val>, elem, other, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: Callable
@@ -655,7 +655,7 @@ Scope: []
             FreeVars: Empty
     Scope: _check_methods
         Kind: Function
-        FrameDescriptor: [<return_val>, B, C, method, methods, mro]
+        FrameDescriptor: [<>temp5, <>temp6, <return_val>, B, C, method, methods, mro]
         CellVars: Empty
         FreeVars: Empty
     Scope: _ag

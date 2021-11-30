@@ -15,7 +15,7 @@ Scope: []
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [<>temp10, <>temp11, <return_val>, BRANCH, SUBPATTERN, action, flags, gid, lexicon, p, phrase, s, self]
+            FrameDescriptor: [<>temp10, <>temp11, <>temp12, <return_val>, BRANCH, SUBPATTERN, action, flags, gid, lexicon, p, phrase, s, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: _pickle

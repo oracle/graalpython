@@ -35,7 +35,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -43,14 +42,14 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 @ImportStatic(FrameSlotGuards.class)
 public abstract class WriteGeneratorFrameVariableNode extends StatementNode implements WriteIdentifierNode, FrameSlotNode {
 
-    protected final FrameSlot frameSlot;
+    protected final int frameSlot;
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
 
-    public WriteGeneratorFrameVariableNode(FrameSlot frameSlot) {
+    public WriteGeneratorFrameVariableNode(int frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static WriteGeneratorFrameVariableNode create(FrameSlot frameSlot, ExpressionNode right) {
+    public static WriteGeneratorFrameVariableNode create(int frameSlot, ExpressionNode right) {
         return WriteGeneratorFrameVariableNodeGen.create(frameSlot, right);
     }
 
@@ -62,13 +61,13 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
     }
 
     @Override
-    public final FrameSlot getSlot() {
+    public final int getSlotIndex() {
         return frameSlot;
     }
 
     @Override
     public final Object getIdentifier() {
-        return frameSlot.getIdentifier();
+        return getRootNode().getFrameDescriptor().getSlotName(frameSlot);
     }
 
     protected final Frame getGeneratorFrame(VirtualFrame frame) {

@@ -172,7 +172,6 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                     ReadLocalCellNodeGen SourceSection: [218,232]`method_and_var`
                                                                       ReadLocalVariableNodeGen SourceSection: None
                                                                         Frame: [1,method_and_var,Illegal]
-                                                                      ReadFromCellNodeGen SourceSection: None
                                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [2,<return_val>,Object]
                                                     WriteNameNodeGen SourceSection: [245,319]`def actual_global(se...`

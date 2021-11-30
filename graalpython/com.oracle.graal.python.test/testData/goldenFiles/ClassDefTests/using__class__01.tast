@@ -80,12 +80,11 @@ ModuleRootNode Name: <module 'using__class__01'> SourceSection: [0,52]`class X:â
                                         ReadLocalCellNodeGen SourceSection: [42,51]`__class__`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,__class__,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                       WriteNameNodeGen SourceSection: None
                         Identifier: __classcell__
                         ReadLocalVariableNodeGen SourceSection: None
-                          Frame: [0,__class__,Illegal]
+                          Frame: [1,__class__,Illegal]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

@@ -164,7 +164,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [<return_val>, m]
+            FrameDescriptor: 3 slots [<>temp1, <return_val>, m]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -295,7 +295,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Identifier: sys
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Object]
+                  Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [4329,5005]`def removeduppaths()...`
         Identifier: removeduppaths
         FunctionDefinitionNode Name: removeduppaths SourceSection: None
@@ -312,7 +312,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, L, dir, dircase, known_paths]
+            FrameDescriptor: 8 slots [<>temp4, <>temp5, <>temp6, <return_val>, L, dir, dircase, known_paths]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -349,21 +349,21 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ReadLocalVariableNodeGen SourceSection: [4853,4856]`dir`
                                   Frame: [2,dir,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp4
-                                Frame: [4,<>temp4,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp5
                                 Frame: [5,<>temp5,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp6
+                                Frame: [6,<>temp6,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: dir
                                 Frame: [2,dir,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [4,<>temp4,Illegal]
+                                  Frame: [5,<>temp5,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: dircase
                                 Frame: [3,dircase,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [5,<>temp5,Illegal]
+                                  Frame: [6,<>temp6,Illegal]
                             IfNode SourceSection: [4866,4964]`if dircase not in kn...`
                               NotNodeGen SourceSection: [4869,4895]`dircase not in known...`
                                 ContainsNodeGen SourceSection: None
@@ -420,7 +420,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       ReadLocalVariableNodeGen SourceSection: [4991,5002]`known_paths`
                         Frame: [1,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [6,<return_val>,Object]
+                  Frame: [7,<return_val>,Object]
       WriteNameNodeGen SourceSection: [5005,5336]`def _init_pathinfo()...`
         Identifier: _init_pathinfo
         FunctionDefinitionNode Name: _init_pathinfo SourceSection: None
@@ -437,7 +437,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, _, d, item, itemcase]
+            FrameDescriptor: 8 slots [<>temp4, <>temp5, <>temp6, <return_val>, _, d, item, itemcase]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -486,21 +486,21 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReadLocalVariableNodeGen SourceSection: [5236,5240]`item`
                                           Frame: [3,item,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <>temp4
-                                        Frame: [4,<>temp4,Illegal]
-                                      WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <>temp5
                                         Frame: [5,<>temp5,Illegal]
+                                      WriteLocalVariableNodeGen SourceSection: None
+                                        Identifier: <>temp6
+                                        Frame: [6,<>temp6,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: _
                                         Frame: [1,_,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: None
-                                          Frame: [4,<>temp4,Illegal]
+                                          Frame: [5,<>temp5,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: itemcase
                                         Frame: [2,itemcase,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: None
-                                          Frame: [5,<>temp5,Illegal]
+                                          Frame: [6,<>temp6,Illegal]
                                     ExpressionStatementNode SourceSection: [5258,5273]`d.add(itemcase)`
                                       PythonCallUnary SourceSection: [5258,5273]`d.add(itemcase)`
                                         CallUnaryMethodNodeGen SourceSection: None
@@ -528,7 +528,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       ReadLocalVariableNodeGen SourceSection: [5332,5333]`d`
                         Frame: [0,d,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [6,<return_val>,Object]
+                  Frame: [7,<return_val>,Object]
       WriteNameNodeGen SourceSection: [5336,6871]`def addpackage(sited...`
         Identifier: addpackage
         FunctionDefinitionNode Name: addpackage SourceSection: None
@@ -546,7 +546,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 17 slots [<>temp12, <>temp13, <>temp14, <>temp15, <return_val>, dir, dircase, f, fullname, known_paths, line, n, name, record, reset, sitedir, traceback]
+            FrameDescriptor: 20 slots [<>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <return_val>, dir, dircase, f, fullname, known_paths, line, n, name, record, reset, sitedir, traceback]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -636,21 +636,21 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ForNextElementNodeGen SourceSection: None
                               DestructuringAssignmentNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: <>temp14
-                                  Frame: [14,<>temp14,Illegal]
+                                  Identifier: <>temp17
+                                  Frame: [17,<>temp17,Illegal]
                                 WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: <>temp15
-                                  Frame: [15,<>temp15,Illegal]
+                                  Identifier: <>temp18
+                                  Frame: [18,<>temp18,Illegal]
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: n
                                   Frame: [11,n,Illegal]
                                   ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [14,<>temp14,Illegal]
+                                    Frame: [17,<>temp17,Illegal]
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: line
                                   Frame: [6,line,Illegal]
                                   ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [15,<>temp15,Illegal]
+                                    Frame: [18,<>temp18,Illegal]
                             ContinueTargetNode SourceSection: None
                               BlockNode SourceSection: None
                                 IfNode SourceSection: [5905,5967]`if line.startswith("...`
@@ -705,21 +705,21 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           ReadLocalVariableNodeGen SourceSection: [6179,6183]`line`
                                             Frame: [6,line,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <>temp12
-                                          Frame: [12,<>temp12,Illegal]
-                                        WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <>temp13
                                           Frame: [13,<>temp13,Illegal]
+                                        WriteLocalVariableNodeGen SourceSection: None
+                                          Identifier: <>temp14
+                                          Frame: [14,<>temp14,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: dir
                                           Frame: [7,dir,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: None
-                                            Frame: [12,<>temp12,Illegal]
+                                            Frame: [13,<>temp13,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: dircase
                                           Frame: [8,dircase,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: None
-                                            Frame: [13,<>temp13,Illegal]
+                                            Frame: [14,<>temp14,Illegal]
                                       IfNode SourceSection: [6201,6354]`if not dircase in kn...`
                                         YesNodeGen SourceSection: None
                                           AndNode SourceSection: [6204,6254]`not dircase in known...`
@@ -908,7 +908,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       ReadLocalVariableNodeGen SourceSection: [6857,6868]`known_paths`
                         Frame: [2,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [16,<return_val>,Object]
+                  Frame: [19,<return_val>,Object]
       WriteNameNodeGen SourceSection: [6871,7597]`def addsitedir(sited...`
         Identifier: addsitedir
         FunctionDefinitionNode Name: addsitedir SourceSection: None
@@ -927,7 +927,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 9 slots [<>temp6, <>temp7, <return_val>, known_paths, name, names, reset, sitedir, sitedircase]
+            FrameDescriptor: 10 slots [<>temp6, <>temp7, <>temp8, <return_val>, known_paths, name, names, reset, sitedir, sitedircase]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1054,7 +1054,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Name: <genexpr>
                           FrameDescriptor: 2 slots [<return_val>, name]
                           Enclosing
-                            FrameDescriptor: 9 slots [<>temp6, <>temp7, <return_val>, known_paths, name, names, reset, sitedir, sitedircase]
+                            FrameDescriptor: 10 slots [<>temp6, <>temp7, <>temp8, <return_val>, known_paths, name, names, reset, sitedir, sitedircase]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -1149,7 +1149,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       ReadLocalVariableNodeGen SourceSection: [7583,7594]`known_paths`
                         Frame: [1,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [8,<return_val>,Object]
+                  Frame: [9,<return_val>,Object]
       WriteNameNodeGen SourceSection: [7597,8580]`def check_enableuser...`
         Identifier: check_enableusersite
         FunctionDefinitionNode Name: check_enableusersite SourceSection: None
@@ -1773,7 +1773,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [<return_val>, prefix, prefixes, seen, sitepackages]
+            FrameDescriptor: 6 slots [<>temp4, <return_val>, prefix, prefixes, seen, sitepackages]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1962,7 +1962,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       ReadLocalVariableNodeGen SourceSection: [11848,11860]`sitepackages`
                         Frame: [1,sitepackages,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Object]
+                  Frame: [5,<return_val>,Object]
       WriteNameNodeGen SourceSection: [11862,12102]`def addsitepackages(...`
         Identifier: addsitepackages
         FunctionDefinitionNode Name: addsitepackages SourceSection: None
@@ -1981,7 +1981,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [<return_val>, known_paths, prefixes, sitedir]
+            FrameDescriptor: 5 slots [<>temp3, <return_val>, known_paths, prefixes, sitedir]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2045,7 +2045,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       ReadLocalVariableNodeGen SourceSection: [12089,12100]`known_paths`
                         Frame: [0,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Object]
+                  Frame: [4,<return_val>,Object]
       WriteNameNodeGen SourceSection: [12102,12516]`def setquit():↵    "...`
         Identifier: setquit
         FunctionDefinitionNode Name: setquit SourceSection: None
@@ -2578,7 +2578,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 21 slots [<>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _, candidate_confs, conf_basename, env, exe_dir, executable, f, key, known_paths, line, site_prefix, system_site, value, virtual_conf]
+            FrameDescriptor: 22 slots [<>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <return_val>, _, candidate_confs, conf_basename, env, exe_dir, executable, f, key, known_paths, line, site_prefix, system_site, value, virtual_conf]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2720,7 +2720,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Name: <genexpr>
                           FrameDescriptor: 2 slots [<return_val>, conffile]
                           Enclosing
-                            FrameDescriptor: 21 slots [<>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _, candidate_confs, conf_basename, env, exe_dir, executable, f, key, known_paths, line, site_prefix, system_site, value, virtual_conf]
+                            FrameDescriptor: 22 slots [<>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <return_val>, _, candidate_confs, conf_basename, env, exe_dir, executable, f, key, known_paths, line, site_prefix, system_site, value, virtual_conf]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -2853,29 +2853,29 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Frame: [12,line,Illegal]
                                         StringLiteralNode SourceSection: [16669,16672]`'='`
                                       WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <>temp16
-                                        Frame: [16,<>temp16,Illegal]
-                                      WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <>temp17
                                         Frame: [17,<>temp17,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <>temp18
                                         Frame: [18,<>temp18,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
+                                        Identifier: <>temp19
+                                        Frame: [19,<>temp19,Illegal]
+                                      WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: key
                                         Frame: [10,key,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: None
-                                          Frame: [16,<>temp16,Illegal]
+                                          Frame: [17,<>temp17,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: _
                                         Frame: [4,_,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: None
-                                          Frame: [17,<>temp17,Illegal]
+                                          Frame: [18,<>temp18,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: value
                                         Frame: [11,value,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: None
-                                          Frame: [18,<>temp18,Illegal]
+                                          Frame: [19,<>temp19,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: [16694,16719]`key = key.strip().lo...`
                                       Identifier: key
                                       Frame: [10,key,Illegal]
@@ -2949,8 +2949,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           GetClassNodeGen SourceSection: None
                         BlockNode SourceSection: [16967,17009]`sys.prefix = sys.exe...`
                           WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <>temp19
-                            Frame: [19,<>temp19,Illegal]
+                            Identifier: <>temp20
+                            Frame: [20,<>temp20,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [16998,17009]`site_prefix`
                               Frame: [5,site_prefix,Illegal]
                           SetAttributeNodeGen SourceSection: None
@@ -2958,13 +2958,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16967,16970]`sys`
                               Identifier: sys
                             ReadLocalVariableNodeGen SourceSection: None
-                              Frame: [19,<>temp19,Illegal]
+                              Frame: [20,<>temp20,Illegal]
                           SetAttributeNodeGen SourceSection: None
                             Attribute: exec_prefix
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16980,16983]`sys`
                               Identifier: sys
                             ReadLocalVariableNodeGen SourceSection: None
-                              Frame: [19,<>temp19,Illegal]
+                              Frame: [20,<>temp20,Illegal]
                         ExpressionStatementNode SourceSection: [17090,17132]`addsitepackages(know...`
                           PythonCallBinary SourceSection: [17090,17132]`addsitepackages(know...`
                             CallBinaryMethodNodeGen SourceSection: None
@@ -3022,7 +3022,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       ReadLocalVariableNodeGen SourceSection: [17464,17475]`known_paths`
                         Frame: [0,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [20,<return_val>,Object]
+                  Frame: [21,<return_val>,Object]
       WriteNameNodeGen SourceSection: [17478,18055]`def execsitecustomiz...`
         Identifier: execsitecustomize
         FunctionDefinitionNode Name: execsitecustomize SourceSection: None
@@ -3485,7 +3485,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [<return_val>, args, buffer, dir, help, textwrap, user_base, user_site]
+            FrameDescriptor: 9 slots [<>temp7, <return_val>, args, buffer, dir, help, textwrap, user_base, user_site]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3804,7 +3804,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             IntegerLiteralNode SourceSection: [21223,21225]`10`
                               Value: 10
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [7,<return_val>,Object]
+                  Frame: [8,<return_val>,Object]
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None

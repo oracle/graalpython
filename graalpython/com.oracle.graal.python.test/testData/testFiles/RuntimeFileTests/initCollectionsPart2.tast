@@ -166,7 +166,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [<return_val>, key, mapping, self]
+                            FrameDescriptor: 5 slots [<>temp3, <return_val>, key, mapping, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -226,7 +226,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         ReadLocalVariableNodeGen SourceSection: [1247,1250]`key`
                                           Frame: [1,key,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Object]
+                                  Frame: [4,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [1313,1405]`def get(self, key, d...`
                         Identifier: get
                         FunctionDefinitionNode Name: get SourceSection: None
@@ -363,7 +363,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [<return_val>, d, mapping, self]
+                            FrameDescriptor: 5 slots [<>temp3, <return_val>, d, mapping, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -418,7 +418,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         ReadLocalVariableNodeGen SourceSection: [1704,1705]`d`
                                           Frame: [1,d,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Object]
+                                  Frame: [4,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [1712,1794]`def __contains__(sel...`
                         Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
@@ -496,7 +496,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                         ReadLocalCellNodeGen SourceSection: [1760,1763]`key`
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                             Frame: [1,key,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [1767,1768]`m`
                                                           Frame: [0,m,Illegal]
                                                       GeneratorAccessNode SourceSection: None
@@ -2002,7 +2001,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 6 slots [<return_val>, cls, d, iterable, key, value]
+                              FrameDescriptor: 7 slots [<>temp5, <return_val>, cls, d, iterable, key, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2058,7 +2057,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         ReadLocalVariableNodeGen SourceSection: [5965,5966]`d`
                                           Frame: [3,d,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [5,<return_val>,Object]
+                                    Frame: [6,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           GetAttributeNode SourceSection: [3966,3997]`_collections_abc.Mut...`

@@ -37,7 +37,6 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
@@ -46,19 +45,18 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeInfo(shortName = "read_local")
 public abstract class ReadLocalVariableNode extends ExpressionNode implements ReadLocalNode, FrameSlotNode {
 
-    protected final FrameSlot frameSlot;
+    protected final int frameSlot;
 
-    protected ReadLocalVariableNode(FrameSlot frameSlot) {
+    protected ReadLocalVariableNode(int frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static ReadLocalVariableNode create(FrameSlot slot) {
-        assert slot != null;
+    public static ReadLocalVariableNode create(int slot) {
         return ReadLocalVariableNodeGen.create(slot);
     }
 
     @Override
-    public final FrameSlot getSlot() {
+    public final int getSlotIndex() {
         return frameSlot;
     }
 
@@ -82,23 +80,20 @@ public abstract class ReadLocalVariableNode extends ExpressionNode implements Re
         return frame.getDouble(frameSlot);
     }
 
-    protected final Object getObjectResult(VirtualFrame frame) {
-        return frame.getObject(frameSlot);
-    }
-
     @Specialization(guards = {"frame.isObject(frameSlot)", "result != null"})
     static Object readLocalObject(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Bind("getObjectResult(frame)") Object result) {
+                    @Bind("frame.getObject(frameSlot)") Object result) {
         return result;
     }
 
-    @Specialization(guards = {"frame.isObject(frameSlot)", "getObjectResult(frame) == null"})
+    @Specialization(guards = {"frame.isObject(frameSlot)", "frame.getObject(frameSlot) == null"})
     Object readLocalObjectNull(@SuppressWarnings("unused") VirtualFrame frame,
                     @Cached PRaiseNode raise) {
-        if (frameSlot.getIdentifier() == RETURN_SLOT_ID) {
+        Object identifier = frame.getFrameDescriptor().getSlotName(frameSlot);
+        if (identifier == RETURN_SLOT_ID) {
             return PNone.NONE;
         } else {
-            throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, frameSlot.getIdentifier());
+            throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
         }
     }
 
@@ -114,6 +109,6 @@ public abstract class ReadLocalVariableNode extends ExpressionNode implements Re
 
     @Override
     public Object getNodeObject() {
-        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, frameSlot.getIdentifier());
+        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, getRootNode().getFrameDescriptor().getSlotName(frameSlot));
     }
 }

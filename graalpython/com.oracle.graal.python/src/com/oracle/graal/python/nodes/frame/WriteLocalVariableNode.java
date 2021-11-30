@@ -30,7 +30,6 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
@@ -39,14 +38,13 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @ImportStatic(FrameSlotGuards.class)
 public abstract class WriteLocalVariableNode extends StatementNode implements WriteIdentifierNode, FrameSlotNode {
 
-    protected final FrameSlot frameSlot;
+    protected final int frameSlot;
 
-    public WriteLocalVariableNode(FrameSlot frameSlot) {
+    public WriteLocalVariableNode(int frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static WriteLocalVariableNode create(FrameSlot frameSlot, ExpressionNode right) {
-        assert frameSlot != null;
+    public static WriteLocalVariableNode create(int frameSlot, ExpressionNode right) {
         return WriteLocalVariableNodeGen.create(frameSlot, right);
     }
 
@@ -58,13 +56,13 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
     }
 
     @Override
-    public final FrameSlot getSlot() {
+    public final int getSlotIndex() {
         return frameSlot;
     }
 
     @Override
     public final Object getIdentifier() {
-        return frameSlot.getIdentifier();
+        return getRootNode().getFrameDescriptor().getSlotName(frameSlot);
     }
 
     @Specialization(guards = "isBooleanKind(frame, frameSlot)")

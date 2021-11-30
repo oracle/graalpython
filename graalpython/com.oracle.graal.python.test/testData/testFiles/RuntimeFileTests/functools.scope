@@ -30,12 +30,12 @@ Scope: []
             FreeVars: [cache_token, dispatch_cache, registry]
     Scope: _find_impl
         Kind: Function
-        FrameDescriptor: [<return_val>, cls, match, mro, registry, t]
+        FrameDescriptor: [<>temp5, <return_val>, cls, match, mro, registry, t]
         CellVars: Empty
         FreeVars: Empty
     Scope: _compose_mro
         Kind: Function
-        FrameDescriptor: [<return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
+        FrameDescriptor: [<>temp11, <>temp12, <>temp13, <return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
         CellVars: [bases, cls, is_related, is_strict_base, type_set, types]
         FreeVars: Empty
         Scope: <genexpr>
@@ -50,7 +50,7 @@ Scope: []
             FreeVars: [is_strict_base]
         Scope: is_strict_base
             Kind: Function
-            FrameDescriptor: [<return_val>, other, typ, types]
+            FrameDescriptor: [<>temp3, <return_val>, other, typ, types]
             CellVars: Empty
             FreeVars: [types]
         Scope: <genexpr>
@@ -65,7 +65,7 @@ Scope: []
             FreeVars: [bases, cls]
     Scope: _c3_mro
         Kind: Function
-        FrameDescriptor: [<>temp11, <>temp12, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
+        FrameDescriptor: [<>temp11, <>temp12, <>temp13, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
         CellVars: [abcs, base]
         FreeVars: Empty
         Scope: <genexpr>
@@ -90,7 +90,7 @@ Scope: []
             FreeVars: [base]
     Scope: _c3_merge
         Kind: Function
-        FrameDescriptor: [<return_val>, candidate, result, s1, s2, seq, sequences]
+        FrameDescriptor: [<>temp7, <>temp8, <return_val>, candidate, result, s1, s2, seq, sequences]
         CellVars: Empty
         FreeVars: Empty
         Scope: <genexpr>
@@ -140,7 +140,7 @@ Scope: []
             FreeVars: [maxsize, typed]
     Scope: _make_key
         Kind: Function
-        FrameDescriptor: [<return_val>, args, fasttypes, item, key, kwd_mark, kwds, len, tuple, type, typed]
+        FrameDescriptor: [<>temp10, <return_val>, args, fasttypes, item, key, kwd_mark, kwds, len, tuple, type, typed]
         CellVars: [type]
         FreeVars: Empty
         Scope: <genexpr>
@@ -290,7 +290,7 @@ Scope: []
                 FreeVars: Empty
     Scope: total_ordering
         Kind: Function
-        FrameDescriptor: [<>temp5, <>temp6, <return_val>, cls, opfunc, opname, root, roots]
+        FrameDescriptor: [<>temp5, <>temp6, <>temp7, <return_val>, cls, opfunc, opname, root, roots]
         CellVars: [cls]
         FreeVars: Empty
         Scope: <genexpr>
@@ -365,6 +365,6 @@ Scope: []
         FreeVars: Empty
     Scope: update_wrapper
         Kind: Function
-        FrameDescriptor: [<return_val>, assigned, attr, updated, value, wrapped, wrapper]
+        FrameDescriptor: [<>temp6, <return_val>, assigned, attr, updated, value, wrapped, wrapper]
         CellVars: Empty
         FreeVars: Empty
