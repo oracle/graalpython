@@ -38,7 +38,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
@@ -65,26 +64,26 @@ public abstract class ReadLocalVariableNode extends ExpressionNode implements Re
 
     @Specialization(guards = "frame.isBoolean(frameSlot)")
     boolean readLocalBoolean(VirtualFrame frame) {
-        return FrameUtil.getBooleanSafe(frame, frameSlot);
+        return frame.getBoolean(frameSlot);
     }
 
     @Specialization(guards = "frame.isInt(frameSlot)")
     int readLocalInt(VirtualFrame frame) {
-        return FrameUtil.getIntSafe(frame, frameSlot);
+        return frame.getInt(frameSlot);
     }
 
     @Specialization(guards = "frame.isLong(frameSlot)")
     long readLocalLong(VirtualFrame frame) {
-        return FrameUtil.getLongSafe(frame, frameSlot);
+        return frame.getLong(frameSlot);
     }
 
     @Specialization(guards = "frame.isDouble(frameSlot)")
     double readLocalDouble(VirtualFrame frame) {
-        return FrameUtil.getDoubleSafe(frame, frameSlot);
+        return frame.getDouble(frameSlot);
     }
 
     protected final Object getObjectResult(VirtualFrame frame) {
-        return FrameUtil.getObjectSafe(frame, frameSlot);
+        return frame.getObject(frameSlot);
     }
 
     @Specialization(guards = {"frame.isObject(frameSlot)", "result != null"})

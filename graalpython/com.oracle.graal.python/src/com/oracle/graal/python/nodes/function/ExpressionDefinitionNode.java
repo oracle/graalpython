@@ -33,7 +33,6 @@ import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -60,7 +59,7 @@ abstract class ExpressionDefinitionNode extends ExpressionNode {
 
         for (int i = 0; i < freeVarDefinitionSlots.length; i++) {
             FrameSlot defFrameSlot = freeVarDefinitionSlots[i];
-            Object cell = FrameUtil.getObjectSafe(frame, defFrameSlot);
+            Object cell = frame.getObject(defFrameSlot);
             assert cell instanceof PCell : "getting closure from locals: expected a cell";
             closure[i] = (PCell) cell;
         }

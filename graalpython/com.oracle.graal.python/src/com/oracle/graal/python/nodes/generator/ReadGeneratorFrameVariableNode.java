@@ -42,7 +42,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
@@ -73,29 +72,29 @@ public abstract class ReadGeneratorFrameVariableNode extends ExpressionNode impl
     @Specialization(guards = "generatorFrame.isBoolean(frameSlot)")
     boolean readLocalBoolean(@SuppressWarnings("unused") VirtualFrame frame,
                     @Bind("getGeneratorFrame(frame)") Frame generatorFrame) {
-        return FrameUtil.getBooleanSafe(generatorFrame, frameSlot);
+        return generatorFrame.getBoolean(frameSlot);
     }
 
     @Specialization(guards = "generatorFrame.isInt(frameSlot)")
     int readLocalInt(@SuppressWarnings("unused") VirtualFrame frame,
                     @Bind("getGeneratorFrame(frame)") Frame generatorFrame) {
-        return FrameUtil.getIntSafe(generatorFrame, frameSlot);
+        return generatorFrame.getInt(frameSlot);
     }
 
     @Specialization(guards = "generatorFrame.isLong(frameSlot)")
     long readLocalLong(@SuppressWarnings("unused") VirtualFrame frame,
                     @Bind("getGeneratorFrame(frame)") Frame generatorFrame) {
-        return FrameUtil.getLongSafe(generatorFrame, frameSlot);
+        return generatorFrame.getLong(frameSlot);
     }
 
     @Specialization(guards = "generatorFrame.isDouble(frameSlot)")
     double readLocalDouble(@SuppressWarnings("unused") VirtualFrame frame,
                     @Bind("getGeneratorFrame(frame)") Frame generatorFrame) {
-        return FrameUtil.getDoubleSafe(generatorFrame, frameSlot);
+        return generatorFrame.getDouble(frameSlot);
     }
 
     protected final Object getObjectResult(Frame frame) {
-        return FrameUtil.getObjectSafe(frame, frameSlot);
+        return frame.getObject(frameSlot);
     }
 
     @Specialization(guards = {"generatorFrame.isObject(frameSlot)", "result != null"})

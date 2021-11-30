@@ -72,7 +72,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.FrameUtil;
 
 public class ScopeEnvironment implements CellFrameSlotSupplier {
 
@@ -531,7 +530,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             for (Object identifier : frame.getFrameDescriptor().getIdentifiers()) {
                 FrameSlot frameSlot = frame.getFrameDescriptor().findFrameSlot(identifier);
                 if (frameSlot != null && frame.isObject(frameSlot)) {
-                    Object value = FrameUtil.getObjectSafe(frame, frameSlot);
+                    Object value = frame.getObject(frameSlot);
                     if (value instanceof PCell) {
                         globalScope.addFreeVar((String) frameSlot.getIdentifier(), false);
                     }

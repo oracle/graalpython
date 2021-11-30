@@ -39,7 +39,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -146,7 +145,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
             // get the cell
             PCell cell = null;
             if (isGenerator) {
-                cell = (PCell) FrameUtil.getObjectSafe(frame, frameSlot);
+                cell = (PCell) frame.getObject(frameSlot);
             }
             if (cell == null) {
                 cell = new PCell(cellEffectivelyFinalAssumptions[i]);
