@@ -702,7 +702,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyDictSizeNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        public Object size(PDict dict,
+        public int size(PDict dict,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -979,12 +979,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyDictContainsNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        public Object contains(VirtualFrame frame, PDict dict, Object key,
+        public int contains(VirtualFrame frame, PDict dict, Object key,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame);
+                return PInt.intValue(lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
@@ -1348,14 +1348,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySetContainsNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        public Object contains(VirtualFrame frame, PSet anyset, Object item,
+        public int contains(VirtualFrame frame, PSet anyset, Object item,
                         @Cached ConditionProfile hasFrameProfile,
                         @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 HashingStorage storage = anyset.getDictStorage();
                 // TODO: FIXME: this might call __hash__ twice
-                return lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame);
+                return PInt.intValue(lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
@@ -1363,14 +1363,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        public Object contains(VirtualFrame frame, PFrozenSet anyset, Object item,
+        public int contains(VirtualFrame frame, PFrozenSet anyset, Object item,
                         @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 HashingStorage storage = anyset.getDictStorage();
                 // TODO: FIXME: this might call __hash__ twice
-                return lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame);
+                return PInt.intValue(lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
@@ -1583,13 +1583,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyBytesSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object size(VirtualFrame frame, PBytes obj,
+        public int size(VirtualFrame frame, PBytes obj,
                         @Cached PyObjectSizeNode sizeNode) {
             return sizeNode.execute(frame, obj);
         }
 
         @Specialization(guards = {"!isPBytes(obj)", "isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        public int sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -1597,7 +1597,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object size(VirtualFrame frame, Object obj,
+        public int size(VirtualFrame frame, Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
