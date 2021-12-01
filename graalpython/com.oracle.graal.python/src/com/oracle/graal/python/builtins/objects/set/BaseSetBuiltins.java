@@ -127,7 +127,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         public static Object repr(VirtualFrame frame, PBaseSet self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
+                        @Cached("create(Repr)") LookupAndCallUnaryNode repr,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {

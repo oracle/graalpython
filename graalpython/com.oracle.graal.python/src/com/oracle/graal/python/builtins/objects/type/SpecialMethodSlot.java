@@ -146,11 +146,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
-import com.sun.org.apache.xpath.internal.operations.And;
-import com.sun.org.apache.xpath.internal.operations.Mod;
-import com.sun.org.apache.xpath.internal.operations.Or;
-import jdk.internal.loader.AbstractClassLoaderValue.Sub;
-
 /**
  * Subset of special methods that is cached in {@link PythonManagedClass} and
  * {@link PythonBuiltinClassType}.

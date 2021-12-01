@@ -2038,7 +2038,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SumFunctionNode extends PythonBuiltinNode {
 
-        @Child private LookupAndCallUnaryNode next = LookupAndCallUnaryNode.create(__NEXT__);
+        @Child private LookupAndCallUnaryNode next = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next);
         @Child private AddNode add = AddNode.create();
 
         @Child private IsBuiltinClassProfile errorProfile1 = IsBuiltinClassProfile.create();

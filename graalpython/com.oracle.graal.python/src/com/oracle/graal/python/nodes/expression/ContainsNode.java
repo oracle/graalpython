@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectGetIter;

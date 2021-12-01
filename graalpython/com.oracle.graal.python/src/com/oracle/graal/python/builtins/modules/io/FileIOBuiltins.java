@@ -1120,7 +1120,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isClosed()")
         Object doit(VirtualFrame frame, PFileIO self,
                         @Cached PyObjectLookupAttr lookupName,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
+                        @Cached("create(Repr)") LookupAndCallUnaryNode repr) {
             String mode = ModeNode.modeString(self);
             String closefd = self.isCloseFD() ? "True" : "False";
             Object nameobj = lookupName.execute(frame, self, "name");

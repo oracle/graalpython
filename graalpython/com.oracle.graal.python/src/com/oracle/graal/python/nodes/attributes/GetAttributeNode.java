@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import com.oracle.graal.python.PythonLanguage;

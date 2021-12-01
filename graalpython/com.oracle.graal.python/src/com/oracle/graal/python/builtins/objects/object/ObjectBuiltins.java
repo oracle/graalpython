@@ -347,7 +347,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, Object self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode) {
+                        @Cached("create(Repr)") LookupAndCallUnaryNode reprNode) {
             return reprNode.executeObject(frame, self);
         }
     }
@@ -710,7 +710,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "formatString.isEmpty()")
         static Object format(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
+                        @Cached("create(Str)") LookupAndCallUnaryNode strCall) {
             return strCall.executeObject(frame, self);
         }
     }

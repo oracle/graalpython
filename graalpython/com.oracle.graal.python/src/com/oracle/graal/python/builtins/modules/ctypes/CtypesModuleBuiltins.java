@@ -500,7 +500,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object unpickle(VirtualFrame frame, Object typ, PTuple state,
                         @Cached CallNode callNode,
-                        @Cached("create(__NEW__)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
+                        @Cached("create(New)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
                         @Cached("create(__SETSTATE__)") GetAttributeNode setStateAttr) {
             Object obj = lookupAndCallUnaryNode.executeObject(frame, typ);
             Object meth = setStateAttr.executeObject(frame, obj);
