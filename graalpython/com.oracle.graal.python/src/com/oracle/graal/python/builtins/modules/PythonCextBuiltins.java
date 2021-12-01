@@ -1789,24 +1789,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "size == 0")
-        public Object newEmptyList(int size) {
-            return factory().createList(PythonUtils.EMPTY_OBJECT_ARRAY);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "size == 0")
         public Object newEmptyList(long size) {
             return factory().createList(PythonUtils.EMPTY_OBJECT_ARRAY);
         }
 
         @Specialization(guards = "size > 0")
-        public Object newList(int size) {
-            return factory().createList(new Object[size]);
+        public Object newList(long size) {
+            return factory().createList(array(size));
         }
 
-        @Specialization(guards = "size > 0")
-        public Object newList(long size) {
-            return factory().createList(new Object[(int) size]);
+        private static Object[] array(long size) {
+            Object[] a = new Object[(int) size];
+            Arrays.fill(a, PNone.NO_VALUE);
+            return a;
         }
     }
 
@@ -1963,7 +1958,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return getNativeNullNode.execute();
             }
         }
-        
+
         @Specialization
         Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
@@ -2025,7 +2020,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return -1;
             }
         }
-        
+
         @Specialization
         Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh, Object s,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
