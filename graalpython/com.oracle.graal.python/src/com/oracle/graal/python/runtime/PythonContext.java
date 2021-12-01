@@ -140,6 +140,7 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 public final class PythonContext extends Python3Core {
@@ -538,11 +539,15 @@ public final class PythonContext extends Python3Core {
     public static final class ChildContextData {
         private int exitCode = 0;
         private boolean signaled;
-        @CompilationFinal private TruffleContext ctx;
-        @CompilationFinal private PythonContext parentCtx;
+        private final PythonContext parentCtx;
+        private TruffleWeakReference<TruffleContext> ctx;
 
         private final AtomicBoolean exiting = new AtomicBoolean(false);
         private final CountDownLatch running = new CountDownLatch(1);
+
+        public ChildContextData(PythonContext parentCtx) {
+            this.parentCtx = parentCtx;
+        }
 
         public void setExitCode(int exitCode) {
             this.exitCode = exitCode;
@@ -563,16 +568,12 @@ public final class PythonContext extends Python3Core {
 
         private void setTruffleContext(TruffleContext ctx) {
             assert this.ctx == null;
-            this.ctx = ctx;
+            assert ctx != null;
+            this.ctx = new TruffleWeakReference<>(ctx);
         }
 
         public TruffleContext getTruffleContext() {
-            return ctx;
-        }
-
-        private void setParentContext(PythonContext parentCtx) {
-            assert this.parentCtx == null;
-            this.parentCtx = parentCtx;
+            return ctx.get();
         }
 
         public void awaitRunning() throws InterruptedException {
@@ -786,9 +787,15 @@ public final class PythonContext extends Python3Core {
             return namedSemaphores.remove(name);
         }
 
-        private final Map<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
 
-        private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
+        /**
+         * {@code ChildContextData} outlives its own context, because the parent needs to be able to
+         * access the exit code even after the child context was closed and thread disposed. We
+         * dispose the mapping to {@code ChildContextData} when the Python code (our internal Python
+         * code) asks for the exit code for the first time after the child exited.
+         */
+        private final ConcurrentHashMap<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
 
         @TruffleBoundary
         public Thread getChildContextThread(long tid) {
@@ -808,6 +815,11 @@ public final class PythonContext extends Python3Core {
         @TruffleBoundary
         public ChildContextData getChildContextData(long tid) {
             return childContextData.get(tid);
+        }
+
+        @TruffleBoundary
+        public void removeChildContextData(long tid) {
+            childContextData.remove(tid);
         }
 
         @TruffleBoundary
@@ -853,12 +865,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
-        ChildContextData data = new ChildContextData();
-        if (!isChildContext()) {
-            data.setParentContext(this);
-        } else {
-            data.setParentContext(childContextData.parentCtx);
-        }
+        ChildContextData data = new ChildContextData(isChildContext() ? childContextData.parentCtx : this);
 
         Builder builder = data.parentCtx.env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
         Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, builder));
