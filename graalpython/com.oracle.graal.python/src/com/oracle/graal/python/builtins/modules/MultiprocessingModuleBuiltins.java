@@ -214,6 +214,12 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             }
 
             PythonContext.ChildContextData data = multiprocessing.getChildContextData(tid);
+            /*
+             * The assumption made here is that once _waittid returns the exit code, the caller
+             * caches it and never calls _waittid again, so we do not need to keep the data and can
+             * clean it. See popen_truffleprocess that calls the _waittid builtin.
+             */
+            multiprocessing.removeChildContextData(tid);
             return factory().createTuple(new Object[]{id, data.wasSignaled() ? data.getExitCode() : 0, data.getExitCode()});
         }
     }
@@ -231,7 +237,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 try {
                     data.awaitRunning();
                     TruffleContext truffleCtx = data.getTruffleContext();
-                    if (!truffleCtx.isCancelling() && data.compareAndSetExiting(false, true)) {
+                    if (truffleCtx != null && !truffleCtx.isCancelling() && data.compareAndSetExiting(false, true)) {
                         LOGGER.fine("terminating spawned thread");
                         data.setSignaled(sig.intValue());
                         truffleCtx.closeCancelled(this, "_terminate_spawned_thread");
