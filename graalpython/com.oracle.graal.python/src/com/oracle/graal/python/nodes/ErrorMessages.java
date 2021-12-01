@@ -504,8 +504,11 @@ public abstract class ErrorMessages {
     public static final String OBJ_DOES_NOT_SUPPORT_INDEXING = "'%p' object does not support indexing";
     public static final String OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%s' object does not support item assignment";
     public static final String P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%p' object does not support item assignment";
+    public static final String OBJ_CANT_BE_REPEATED = "'%p' object can't be repeated";
+    public static final String OBJ_CANT_BE_CONCATENATED = "'%p' object can't be concatenated";
     public static final String OBJ_DOESNT_SUPPORT_DELETION = "'%p' object doesn't support item deletion";
     public static final String OBJ_HAS_NO_LEN = "object of type '%p' has no len()";
+    public static final String OBJ_IS_UNSLICEABLE = "'%p' object is unsliceable";
     public static final String OBJ_ISNT_CALLABLE = "'%p' object is not callable";
     public static final String OBJ_ISNT_ITERATOR = "'%p' object is not an iterator";
     public static final String OBJ_ISNT_MAPPING = "'%p' object is not a mapping";

@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_T
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.LIST_INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
+import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -62,6 +63,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -101,6 +108,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.DivModNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TupleNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -310,8 +318,10 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.MulNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -1485,7 +1495,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return getNativeNullNode.execute();
             }
         }
-    }
+        }
 
     @Builtin(name = "PySet_Pop", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
@@ -2521,9 +2531,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getNativeNullNode.execute();
+                }
             }
         }
-    }
 
     @Builtin(name = "PyNumber_Index", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
@@ -2680,6 +2690,265 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    ///////////// sequence /////////////
+    @Builtin(name = "PySequence_Tuple", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PySequenceTupleNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public PTuple values(PTuple obj) {
+            return obj;
+        }
+
+        @Specialization
+        public Object values(VirtualFrame frame, Object obj,
+                        @Cached TupleNode tupleNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return tupleNode.execute(frame, PythonBuiltinClassType.PTuple, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PySequence_List", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PySequenceListNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public PList values(PList obj) {
+            return obj;
+        }
+
+        @Specialization
+        public Object values(VirtualFrame frame, Object obj,
+                        @Cached ConstructListNode listNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return listNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PySequence_SetItem", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class PySequenceSetItemNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "checkNode.execute(obj)")
+        public Object setItem(VirtualFrame frame, Object obj, Object key, Object value,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached ConditionProfile hasSetItem,
+                        @Cached CallNode callNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object setItemCallable = lookupAttrNode.execute(frame, obj, __SETITEM__);
+                if (hasSetItem.profile(setItemCallable == PNone.NO_VALUE)) {
+                    throw raise(TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, obj);
+                } else {
+                    callNode.execute(setItemCallable, key, value);
+                    return 0;
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(obj)")
+        Object setItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
+        }
+    }
+
+    @Builtin(name = "PySequence_GetSlice", minNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    abstract static class PySequenceGetSliceNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = "checkNode.execute(obj)")
+        Object getSlice(VirtualFrame frame, Object obj, long iLow, long iHigh,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached CallNode callNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object getItemCallable = lookupAttrNode.execute(frame, obj, __GETITEM__);
+                return callNode.execute(getItemCallable, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(obj)")
+        Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
+        }
+    }
+
+    @Builtin(name = "PySequence_Contains", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceContainsNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object contains(VirtualFrame frame, Object haystack, Object needle,
+                        @Cached ContainsNode containsNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return containsNode.executeObject(frame, needle, haystack);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+    }
+
+    @Builtin(name = "PySequence_Repeat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceRepeatNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "checkNode.execute(obj)")
+        Object repeat(VirtualFrame frame, Object obj, long n,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached("createMul()") MulNode mulNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return mulNode.executeObject(frame, obj, n);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(obj)")
+        protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
+        }
+
+        protected MulNode createMul() {
+            return (MulNode) BinaryArithmetic.Mul.create();
+        }
+    }
+
+    @Builtin(name = "PySequence_InPlaceRepeat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceInPlaceRepeatNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"checkNode.execute(obj)"})
+        Object repeat(VirtualFrame frame, Object obj, long n,
+                        @Cached PyObjectLookupAttr lookupNode,
+                        @Cached CallNode callNode,
+                        @Cached("createMul()") MulNode mulNode,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object imulCallable = lookupNode.execute(frame, obj, __IMUL__);
+                if (imulCallable != PNone.NO_VALUE) {
+                    Object ret = callNode.execute(frame, imulCallable, n);
+                    return ret;
+                }
+                return mulNode.executeObject(frame, obj, n);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(obj)")
+        protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
+        }
+
+        protected MulNode createMul() {
+            return (MulNode) BinaryArithmetic.Mul.create();
+        }
+    }
+
+    @Builtin(name = "PySequence_Concat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceConcatNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"})
+        Object concat(VirtualFrame frame, Object s1, Object s2,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached("createAdd()") com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode addNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return addNode.executeObject(frame, s1, s2);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"})
+        protected Object cantConcat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
+        }
+
+        protected com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode createAdd() {
+            return (com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
+        }
+    }
+
+    @Builtin(name = "PySequence_InPlaceConcat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceInPlaceConcatNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = {"checkNode.execute(s1)"})
+        Object concat(VirtualFrame frame, Object s1, Object s2,
+                        @Cached PyObjectLookupAttr lookupNode,
+                        @Cached CallNode callNode,
+                        @Cached("createAdd()") com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode addNode,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object iaddCallable = lookupNode.execute(frame, s1, __IADD__);
+                if (iaddCallable != PNone.NO_VALUE) {
+                    return callNode.execute(frame, iaddCallable, s2);
+                }
+                return addNode.executeObject(frame, s1, s2);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(s1)")
+        protected Object concat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
+        }
+
+        protected com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode createAdd() {
+            return (com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
+        }
+    }
+    
     /**
      * This is used in the ExternalFunctionNode below, so all arguments passed from Python code into
      * a C function are automatically unwrapped if they are wrapped. This function is also called

@@ -290,7 +290,7 @@ public class BytesBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"")
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"")
     @GenerateNodeFactory
-    abstract static class DecodeNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class DecodeNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {

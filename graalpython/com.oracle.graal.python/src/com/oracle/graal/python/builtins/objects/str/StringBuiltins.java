@@ -421,7 +421,7 @@ public final class StringBuiltins extends PythonBuiltins {
         boolean operator(String self, String other) {
             return self.equals(other);
         }
-    }
+        }
 
     @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
@@ -1565,7 +1565,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.replace
     @Builtin(name = "replace", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    public abstract static class ReplaceNode extends PythonBuiltinNode {
+    public abstract static class ReplaceNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
