@@ -223,6 +223,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListExtendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListInsertNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
@@ -242,12 +243,9 @@ import com.oracle.graal.python.builtins.objects.set.SetNodes.ConstructSetNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
-<<<<<<< HEAD
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
-=======
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
->>>>>>> intrinsified python_cext PyBytes_XXX
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -1309,45 +1307,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "Py_DECREF", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyDECREFNode extends PythonUnaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        public Object values(Object obj) {
-            // pass
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = "Py_INCREF", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyINCREFNode extends PythonUnaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        public Object values(Object obj) {
-            // pass
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = "Py_XINCREF", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PyXINCREFNode extends PythonUnaryBuiltinNode {
+    public abstract static class PyChangeREFNode extends PythonUnaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public Object values(Object obj) {
             // pass
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "PyObject_LEN", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyLenNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object values(VirtualFrame frame, Object obj,
-                        @Cached PyObject_Size sizeNode) {
-            return sizeNode.execute(frame, obj);
         }
     }
 
