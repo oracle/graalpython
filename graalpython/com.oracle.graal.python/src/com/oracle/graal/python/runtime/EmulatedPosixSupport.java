@@ -2674,23 +2674,24 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    private static int encodeIntOptVal(byte[] optval, int optlen, int value) throws PosixException {
-        if (optlen < 4) {
-            byte[] tmp = new byte[4];
+    private static int encodeIntOptVal(byte[] optval, int optlen, int value) {
+        if (optlen < Integer.BYTES) {
+            byte[] tmp = new byte[Integer.BYTES];
             nativeByteArraySupport().putInt(tmp, 0, value);
             PythonUtils.arraycopy(tmp, 0, optval, 0, optlen);
         } else {
             nativeByteArraySupport().putInt(optval, 0, value);
         }
-        return 4;
+        return Integer.BYTES;
     }
 
-    private static int encodeBooleanOptVal(byte[] optval, int optlen, boolean value) throws PosixException {
+    private static int encodeBooleanOptVal(byte[] optval, int optlen, boolean value) {
         return encodeIntOptVal(optval, optlen, value ? 1 : 0);
     }
 
     private static int decodeIntOptVal(byte[] optval, int optlen) throws PosixException {
-        if (optlen != 4 || optval.length < 4) {
+        assert optval.length >= optlen;
+        if (optlen != Integer.BYTES) {
             throw posixException(OSErrorEnum.EINVAL);
         }
         return nativeByteArraySupport().getInt(optval, 0);
