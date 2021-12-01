@@ -6,6 +6,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 ## Version 22.0.0
 * Added support for `pyexpat` module.
 * Added partial support for `PYTHONHASHSEED` environment variable (also available via `HashSeed` context option), currently only affecting hashing in `pyexpat` module.
+* Implement `_csv` module.
 
 ## Version 21.3.0
 
