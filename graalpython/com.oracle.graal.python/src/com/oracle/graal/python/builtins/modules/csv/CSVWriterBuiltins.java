@@ -67,7 +67,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVWriter)
-public class CSVWriterBuiltins extends PythonBuiltins {
+public final class CSVWriterBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

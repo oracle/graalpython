@@ -91,7 +91,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_csv")
-public class CSVModuleBuiltins extends PythonBuiltins {
+public final class CSVModuleBuiltins extends PythonBuiltins {
 
     static long fieldLimit = 128 * 1024; // max parsed field size
     static final String WRITE = "write";

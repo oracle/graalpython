@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -67,7 +68,7 @@ public abstract class PyUnicodeCheckNode extends Node {
         return true;
     }
 
-    @Specialization
+    @Fallback
     static boolean doGeneric(Object object,
                     @Cached GetClassNode getClass,
                     @Cached IsSubtypeNode isSubtype) {

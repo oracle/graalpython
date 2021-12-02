@@ -59,7 +59,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVReader)
-public class CSVReaderBuiltins extends PythonBuiltins {
+public final class CSVReaderBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

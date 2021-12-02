@@ -586,7 +586,7 @@ public final class PythonUtils {
         return buffer.hasRemaining();
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public static boolean equals(Object a, Object b) {
         return a.equals(b);
     }

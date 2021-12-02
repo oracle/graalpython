@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT
 import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT_SET_CODEPOINT;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
 public final class CSVDialect extends PythonBuiltinObject {
@@ -87,6 +88,7 @@ public final class CSVDialect extends PythonBuiltinObject {
         this.lineTerminatorCodePoints = strToCodePointArray(this.lineTerminator);
     }
 
+    @TruffleBoundary
     private static int[] strToCodePointArray(String str) {
         final int strLen = str.length();
         final int codePointCount = str.codePointCount(0, strLen);

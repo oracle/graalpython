@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -90,6 +91,11 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
     }
 
     @Specialization
+    static boolean doBoolean(Boolean object) {
+        return false;
+    }
+
+    @Specialization
     static boolean doNone(PNone object) {
         return false;
     }
@@ -100,19 +106,19 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
                     @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
                     @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
                     @Cached(parameters = "Int") LookupCallableSlotInMRONode lookupInt,
-                    @Cached PyUnicodeCheckNode checkComplex) {
+                    @Cached PyComplexCheckNode checkComplex) {
         Object type = getClassNode.execute(object);
         return lookupIndex.execute(type) != PNone.NO_VALUE || lookupInt.execute(type) != PNone.NO_VALUE || lookupFloat.execute(type) != PNone.NO_VALUE || checkComplex.execute(object);
     }
 
-    @Specialization(replaces = "doPythonObject", guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isNone(object)", "!isString(object)"})
-    static boolean doObject(VirtualFrame frame, Object object,
+    @Fallback
+    static boolean doObject(Object object,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
                     @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
                     @Cached(parameters = "Int") LookupCallableSlotInMRONode lookupInt,
-                    @Cached PyUnicodeCheckNode checkComplex) {
+                    @Cached PyComplexCheckNode checkComplex) {
         Object type = getClassNode.execute(object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return interopLibrary.isNumber(object);

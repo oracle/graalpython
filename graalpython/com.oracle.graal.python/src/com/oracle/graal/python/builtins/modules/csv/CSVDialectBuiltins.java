@@ -56,7 +56,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVDialect)
-public class CSVDialectBuiltins extends PythonBuiltins {
+public final class CSVDialectBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
