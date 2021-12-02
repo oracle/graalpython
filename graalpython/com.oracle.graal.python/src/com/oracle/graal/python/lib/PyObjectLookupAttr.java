@@ -174,15 +174,16 @@ public abstract class PyObjectLookupAttr extends Node {
         }
     }
 
-    // simple version that needs no calls and only reads from the object directly. the only
-    // difference for type.__getattribute__ over object.__getattribute__ is that it looks for a
-    // __get__ method on the value and invokes it if it is callable.
+    // If the class of an object is "type", the object must be a class and as "type" is the base
+    // metaclass, which defines only certain type slots, it can not have inherited other
+    // attributes via metaclass inheritance. For all non-type-slot attributes it therefore
+    // suffices to only check for inheritance via super classes.
     @SuppressWarnings("unused")
     @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "!isTypeSlot(name)"}, limit = "1")
     static final Object doBuiltinTypeType(VirtualFrame frame, Object object, String name,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
-                    @Cached ReadAttributeFromObjectNode readNode,
+                    @Cached LookupAttributeInMRONode.Dynamic readNode,
                     @Cached ConditionProfile valueFound,
                     @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
                     @Cached ConditionProfile noGetMethod,
@@ -205,24 +206,24 @@ public abstract class PyObjectLookupAttr extends Node {
         return PNone.NO_VALUE;
     }
 
-    // simple version that needs no calls and only reads from the object directly. the only
-    // difference for type.__getattribute__ over object.__getattribute__ is that it looks for a
-    // __get__ method on the value and invokes it if it is callable.
+    // simple version that only reads attributes from (super) class inheritance and the object
+    // itself. the only difference for type.__getattribute__ over object.__getattribute__
+    // is that it looks for a __get__ method on the value and invokes it if it is callable.
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1", replaces = "doBuiltinTypeType")
+    @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(metaClassDescr)"}, replaces = "doBuiltinTypeType", limit = "1")
     static final Object doBuiltinType(VirtualFrame frame, Object object, String name,
                     @Cached("name") String cachedName,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
-                    @Cached("create(name)") LookupAttributeInMRONode lookupName,
-                    @Bind("lookupName.execute(type)") Object descr,
-                    @Cached ReadAttributeFromObjectNode readNode,
+                    @Cached("create(name)") LookupAttributeInMRONode lookupInMetaclassHierachy,
+                    @Bind("lookupInMetaclassHierachy.execute(type)") Object metaClassDescr,
+                    @Cached("create(name)") LookupAttributeInMRONode readNode,
                     @Cached ConditionProfile valueFound,
                     @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
                     @Cached ConditionProfile noGetMethod,
                     @Cached CallTernaryMethodNode invokeValueGet,
                     @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
-        Object value = readNode.execute(object, cachedName);
+        Object value = readNode.execute(object);
         if (valueFound.profile(value != PNone.NO_VALUE)) {
             Object valueGet = lookupValueGet.execute(value);
             if (noGetMethod.profile(valueGet == PNone.NO_VALUE)) {
