@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -90,7 +91,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -219,32 +219,17 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
          * it as {@code uint8_t*} and therefore we get a byte index. However, we return
          * {@code uint64_t} since we do not know how many bytes are requested.
          */
-        @Specialization
+        @Specialization(limit = "2")
         @ExplodeLoop
-        static long doBytesI64(PBytesLike bytesLike, long byteIdx,
-                        @Cached("createClassProfile()") ValueProfile profile,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Cached PyLongAsLongNode asLongNode) {
-            PBytesLike profiled = profile.profile(bytesLike);
-            int len = lenNode.execute(profiled.getSequenceStorage());
+        static byte doBytesI64(PBytesLike bytesLike, long byteIdx,
+                        @CachedLibrary("bytesLike") PythonBufferAccessLibrary bufferLib) {
+            int len = bufferLib.getBufferLength(bytesLike);
             // simulate sentinel value
             if (byteIdx >= len) {
                 assert byteIdx < len + 8;
-                return 0L;
+                return 0;
             }
-            int i = (int) byteIdx;
-            long result = 0;
-            SequenceStorage store = profiled.getSequenceStorage();
-
-            for (int j = 0; j < Long.BYTES; j++) {
-                if (i + j < len) {
-                    long shift = Byte.SIZE * j;
-                    long mask = 0xFFL << shift;
-                    result |= (asLongNode.execute(null, getItemNode.execute(store, i + j)) << shift) & mask;
-                }
-            }
-            return result;
+            return bufferLib.readByte(bytesLike, (int) byteIdx);
         }
 
         @Specialization
