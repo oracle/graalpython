@@ -115,19 +115,19 @@ public final class IntNodes {
 
         protected static int asWellSizedData(int len) {
             switch (len) {
-            case 1:
-            case 2:
-            case 4:
-            case 8:
-                return len;
-            default:
-                return -1;
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                    return len;
+                default:
+                    return -1;
             }
         }
 
         @Specialization(guards = "size == cachedDataLen", limit = "4")
         static byte[] doPrimitive(long value, int size, boolean bigEndian,
-                             @Cached("asWellSizedData(size)") int cachedDataLen) {
+                        @Cached("asWellSizedData(size)") int cachedDataLen) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             support.putLong(bytes, 0, value, cachedDataLen);
@@ -174,19 +174,19 @@ public final class IntNodes {
 
         protected static int asWellSizedData(int len) {
             switch (len) {
-            case 1:
-            case 2:
-            case 4:
-            case 8:
-                return len;
-            default:
-                return -1;
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                    return len;
+                default:
+                    return -1;
             }
         }
 
         @Specialization(guards = "data.length == cachedDataLen", limit = "4")
         static Object doLong(byte[] data, boolean bigEndian,
-                             @Cached("asWellSizedData(data.length)") int cachedDataLen) {
+                        @Cached("asWellSizedData(data.length)") int cachedDataLen) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             return support.getLong(data, 0, cachedDataLen);
         }
