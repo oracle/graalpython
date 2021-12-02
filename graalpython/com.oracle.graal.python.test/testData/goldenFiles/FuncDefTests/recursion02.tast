@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: recursionInner, 
+              CellVarsSlots: recursionInner
             FunctionRootNode SourceSection: [0,94]`def outer():â†µ  def r...`
               Name: outer
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -28,7 +28,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
               FrameDescriptor: 2 slots [<return_val>, recursionInner]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: recursionInner, 
+                CellVarsSlots: recursionInner
               InnerRootNode SourceSection: [0,94]`def outer():â†µ  def r...`
                 ReturnTargetNode SourceSection: [0,94]`def outer():â†µ  def r...`
                   Body: BlockNode SourceSection: None
@@ -42,9 +42,9 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: recursionInner, 
+                          FreeVarSlots: recursionInner
                           ExecutionSlots:
-                            FreeVarsSlots: recursionInner, 
+                            FreeVarsSlots: recursionInner
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [15,77]`def recursionInner(a...`
                             Name: recursionInner
@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                             NeedsCellFrame: False
                             FrameDescriptor: 3 slots [<return_val>, arg, recursionInner]
                             ExecutionSlots:
-                              FreeVarsSlots: recursionInner, 
+                              FreeVarsSlots: recursionInner
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [15,77]`def recursionInner(a...`
                               ReturnTargetNode SourceSection: [15,77]`def recursionInner(a...`

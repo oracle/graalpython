@@ -231,7 +231,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
               FrameDescriptor: 3 slots [<return_val>, i, t]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: i, 
+                CellVarsSlots: i
               InnerRootNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
                 GeneratorReturnTargetNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
                   flagSlot: 1
@@ -266,7 +266,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   NeedsCellFrame: False
                                   FrameDescriptor: 3 slots [<return_val>, i, j]
                                   ExecutionSlots:
-                                    FreeVarsSlots: i, 
+                                    FreeVarsSlots: i
                                     CellVarsSlots: None
                                   InnerRootNode SourceSection: [2193,2215]`j for j in t if i !=...`
                                     GeneratorReturnTargetNode SourceSection: [2193,2215]`j for j in t if i !=...`
@@ -3330,7 +3330,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: _CODEBITS, , _int, , s, 
+            CellVarsSlots: _CODEBITS, _int, s
           FunctionRootNode SourceSection: [14757,14945]`def _mk_bitmap(bits,...`
             Name: _mk_bitmap
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -3341,7 +3341,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             FrameDescriptor: 5 slots [<return_val>, _CODEBITS, _int, bits, s]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: _CODEBITS, , _int, , s, 
+              CellVarsSlots: _CODEBITS, _int, s
             InnerRootNode SourceSection: [14757,14945]`def _mk_bitmap(bits,...`
               ReturnTargetNode SourceSection: [14757,14945]`def _mk_bitmap(bits,...`
                 Body: BlockNode SourceSection: None
@@ -3407,7 +3407,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             NeedsCellFrame: False
                             FrameDescriptor: 5 slots [<return_val>, _CODEBITS, _int, i, s]
                             ExecutionSlots:
-                              FreeVarsSlots: _CODEBITS, , _int, , s, 
+                              FreeVarsSlots: _CODEBITS, _int, s
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
                               GeneratorReturnTargetNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
@@ -5320,7 +5320,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: code, , dis_, , labels, , level, , offset_width, , sys, 
+            CellVarsSlots: code, dis_, labels, level, offset_width, sys
           FunctionRootNode SourceSection: [20989,26271]`def dis(code):↵    i...`
             Name: dis
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -5331,7 +5331,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             FrameDescriptor: 7 slots [<return_val>, code, dis_, labels, level, offset_width, sys]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: code, , dis_, , labels, , level, , offset_width, , sys, 
+              CellVarsSlots: code, dis_, labels, level, offset_width, sys
             InnerRootNode SourceSection: [20989,26271]`def dis(code):↵    i...`
               ReturnTargetNode SourceSection: [20989,26271]`def dis(code):↵    i...`
                 Body: BlockNode SourceSection: None
@@ -5395,10 +5395,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: code, , dis_, , labels, , level, , offset_width, , sys, 
+                        FreeVarSlots: code, dis_, labels, level, offset_width, sys
                         ExecutionSlots:
-                          FreeVarsSlots: code, , dis_, , labels, , level, , offset_width, , sys, 
-                          CellVarsSlots: end, , start, 
+                          FreeVarsSlots: code, dis_, labels, level, offset_width, sys
+                          CellVarsSlots: end, start
                         FunctionRootNode SourceSection: [21101,26250]`def dis_(start, end)...`
                           Name: dis_
                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -5408,8 +5408,8 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           NeedsCellFrame: False
                           FrameDescriptor: 40 slots [<>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>, arg, code, dis_, end, flags, hi, i, j, labels, level, lo, mapping, max, min, offset_width, op, prefix, prefix_len, prefix_skip, print_, print_2, skip, start, sys]
                           ExecutionSlots:
-                            FreeVarsSlots: code, , dis_, , labels, , level, , offset_width, , sys, 
-                            CellVarsSlots: end, , start, 
+                            FreeVarsSlots: code, dis_, labels, level, offset_width, sys
+                            CellVarsSlots: end, start
                           InnerRootNode SourceSection: [21101,26250]`def dis_(start, end)...`
                             ReturnTargetNode SourceSection: [21101,26250]`def dis_(start, end)...`
                               Body: BlockNode SourceSection: None
@@ -5439,9 +5439,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           Name: to
                                           Value: ObjectLiteralNode SourceSection: [21152,21156]`None`
                                       Documentation: None
-                                      FreeVarSlots: end, , labels, , level, , offset_width, , start, 
+                                      FreeVarSlots: end, labels, level, offset_width, start
                                       ExecutionSlots:
-                                        FreeVarsSlots: end, , labels, , level, , offset_width, , start, 
+                                        FreeVarsSlots: end, labels, level, offset_width, start
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [21131,21446]`def print_(*args, to...`
                                         Name: print_
@@ -5452,7 +5452,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         NeedsCellFrame: False
                                         FrameDescriptor: 8 slots [<return_val>, args, end, labels, level, offset_width, start, to]
                                         ExecutionSlots:
-                                          FreeVarsSlots: end, , labels, , level, , offset_width, , start, 
+                                          FreeVarsSlots: end, labels, level, offset_width, start
                                           CellVarsSlots: None
                                         InnerRootNode SourceSection: [21131,21446]`def print_(*args, to...`
                                           ReturnTargetNode SourceSection: [21131,21446]`def print_(*args, to...`
@@ -5577,9 +5577,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       Arguments: None
                                       KwArguments: None
                                       Documentation: None
-                                      FreeVarSlots: end, , level, , offset_width, 
+                                      FreeVarSlots: end, level, offset_width
                                       ExecutionSlots:
-                                        FreeVarsSlots: end, , level, , offset_width, 
+                                        FreeVarsSlots: end, level, offset_width
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [21446,21575]`def print_2(*args):↵...`
                                         Name: print_2
@@ -5589,7 +5589,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         NeedsCellFrame: False
                                         FrameDescriptor: 5 slots [<return_val>, args, end, level, offset_width]
                                         ExecutionSlots:
-                                          FreeVarsSlots: end, , level, , offset_width, 
+                                          FreeVarsSlots: end, level, offset_width
                                           CellVarsSlots: None
                                         InnerRootNode SourceSection: [21446,21575]`def print_2(*args):↵...`
                                           ReturnTargetNode SourceSection: [21446,21575]`def print_2(*args):↵...`
@@ -6203,7 +6203,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       NeedsCellFrame: False
                                                                       FrameDescriptor: 3 slots [<return_val>, sys, x]
                                                                       ExecutionSlots:
-                                                                        FreeVarsSlots: sys, 
+                                                                        FreeVarsSlots: sys
                                                                         CellVarsSlots: None
                                                                       InnerRootNode SourceSection: [23296,23417]`x.to_bytes(_sre.CODE...`
                                                                         GeneratorReturnTargetNode SourceSection: [23296,23417]`x.to_bytes(_sre.CODE...`

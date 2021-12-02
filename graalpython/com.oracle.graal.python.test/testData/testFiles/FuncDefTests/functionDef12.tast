@@ -23,7 +23,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: x, 
+              CellVarsSlots: x
             FunctionRootNode SourceSection: [0,74]`def outer ():↵    de...`
               Name: outer
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
               FrameDescriptor: 3 slots [<return_val>, inner, x]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: x, 
+                CellVarsSlots: x
               InnerRootNode SourceSection: [0,74]`def outer ():↵    de...`
                 ReturnTargetNode SourceSection: [0,74]`def outer ():↵    de...`
                   Body: BlockNode SourceSection: None
@@ -46,9 +46,9 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: x, 
+                          FreeVarSlots: x
                           ExecutionSlots:
-                            FreeVarsSlots: x, 
+                            FreeVarsSlots: x
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [18,54]`def inner():↵       ...`
                             Name: inner
@@ -58,7 +58,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                             NeedsCellFrame: False
                             FrameDescriptor: 2 slots [<return_val>, x]
                             ExecutionSlots:
-                              FreeVarsSlots: x, 
+                              FreeVarsSlots: x
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [18,54]`def inner():↵       ...`
                               ReturnTargetNode SourceSection: [18,54]`def inner():↵       ...`

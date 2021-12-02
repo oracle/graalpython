@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               ClassBodyRootNode SourceSection: [0,59]`class X:↵    def run...`
                 Name: X
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -32,7 +32,7 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                 FrameDescriptor: 2 slots [__class__, run]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: __class__
                 InnerRootNode SourceSection: [0,59]`class X:↵    def run...`
                   ReturnTargetNode SourceSection: [0,59]`class X:↵    def run...`
                     Body: BlockNode SourceSection: None
@@ -51,9 +51,9 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: __class__
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [13,59]`def run(self):↵     ...`
                               Name: run
@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                               NeedsCellFrame: False
                               FrameDescriptor: 4 slots [<return_val>, __class__, f, self]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: __class__
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [13,59]`def run(self):↵     ...`
                                 ReturnTargetNode SourceSection: [13,59]`def run(self):↵     ...`
@@ -83,9 +83,9 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                                           Arguments: None
                                           KwArguments: None
                                           Documentation: None
-                                          FreeVarSlots: __class__, 
+                                          FreeVarSlots: __class__
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, 
+                                            FreeVarsSlots: __class__
                                             CellVarsSlots: None
                                           FunctionRootNode SourceSection: [34,59]`def f():↵        sup...`
                                             Name: f
@@ -95,7 +95,7 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                                             NeedsCellFrame: False
                                             FrameDescriptor: 2 slots [<return_val>, __class__]
                                             ExecutionSlots:
-                                              FreeVarsSlots: __class__, 
+                                              FreeVarsSlots: __class__
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [34,59]`def f():↵        sup...`
                                               ReturnTargetNode SourceSection: [34,59]`def f():↵        sup...`

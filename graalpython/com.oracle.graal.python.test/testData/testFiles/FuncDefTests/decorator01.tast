@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: fn, 
+            CellVarsSlots: fn
           FunctionRootNode SourceSection: [0,78]`def mydecorator(fn):...`
             Name: mydecorator
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
             FrameDescriptor: 3 slots [<return_val>, fn, wrap]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: fn, 
+              CellVarsSlots: fn
             InnerRootNode SourceSection: [0,78]`def mydecorator(fn):...`
               ReturnTargetNode SourceSection: [0,78]`def mydecorator(fn):...`
                 Body: BlockNode SourceSection: None
@@ -45,9 +45,9 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: fn, 
+                        FreeVarSlots: fn
                         ExecutionSlots:
-                          FreeVarsSlots: fn, 
+                          FreeVarsSlots: fn
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [25,65]`def wrap():↵        ...`
                           Name: wrap
@@ -57,7 +57,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                           NeedsCellFrame: False
                           FrameDescriptor: 2 slots [<return_val>, fn]
                           ExecutionSlots:
-                            FreeVarsSlots: fn, 
+                            FreeVarsSlots: fn
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [25,65]`def wrap():↵        ...`
                             ReturnTargetNode SourceSection: [25,65]`def wrap():↵        ...`

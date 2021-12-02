@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               ClassBodyRootNode SourceSection: [0,263]`class X:↵           ...`
                 Name: X
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -32,7 +32,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                 FrameDescriptor: 3 slots [__class__, createY, methodX]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: __class__
                 InnerRootNode SourceSection: [0,263]`class X:↵           ...`
                   ReturnTargetNode SourceSection: [0,263]`class X:↵           ...`
                     Body: BlockNode SourceSection: None
@@ -51,9 +51,9 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: __class__
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [21,213]`def createY(this):↵ ...`
                               Name: createY
@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                               NeedsCellFrame: False
                               FrameDescriptor: 4 slots [<return_val>, Y, __class__, this]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: __class__
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [21,213]`def createY(this):↵ ...`
                                 ReturnTargetNode SourceSection: [21,213]`def createY(this):↵ ...`
@@ -87,10 +87,10 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                             Arguments: None
                                             KwArguments: None
                                             Documentation: None
-                                            FreeVarSlots: __class__, 
+                                            FreeVarSlots: __class__
                                             ExecutionSlots:
-                                              FreeVarsSlots: <>freevar__class__, 
-                                              CellVarsSlots: __class__, 
+                                              FreeVarsSlots: <>freevar__class__
+                                              CellVarsSlots: __class__
                                             ClassBodyRootNode SourceSection: [56,192]`class Y:↵           ...`
                                               Name: Y
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -99,8 +99,8 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                               NeedsCellFrame: False
                                               FrameDescriptor: 4 slots [<>freevar__class__, __class__, methodY, z]
                                               ExecutionSlots:
-                                                FreeVarsSlots: <>freevar__class__, 
-                                                CellVarsSlots: __class__, 
+                                                FreeVarsSlots: <>freevar__class__
+                                                CellVarsSlots: __class__
                                               InnerRootNode SourceSection: [56,192]`class Y:↵           ...`
                                                 ReturnTargetNode SourceSection: [56,192]`class Y:↵           ...`
                                                   Body: BlockNode SourceSection: None
@@ -123,9 +123,9 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                           Arguments: None
                                                           KwArguments: None
                                                           Documentation: None
-                                                          FreeVarSlots: __class__, 
+                                                          FreeVarSlots: __class__
                                                           ExecutionSlots:
-                                                            FreeVarsSlots: __class__, 
+                                                            FreeVarsSlots: __class__
                                                             CellVarsSlots: None
                                                           FunctionRootNode SourceSection: [119,192]`def methodY(this):↵ ...`
                                                             Name: methodY
@@ -136,7 +136,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                             NeedsCellFrame: False
                                                             FrameDescriptor: 4 slots [<return_val>, __class__, this, y]
                                                             ExecutionSlots:
-                                                              FreeVarsSlots: __class__, 
+                                                              FreeVarsSlots: __class__
                                                               CellVarsSlots: None
                                                             InnerRootNode SourceSection: [119,192]`def methodY(this):↵ ...`
                                                               ReturnTargetNode SourceSection: [119,192]`def methodY(this):↵ ...`
@@ -174,9 +174,9 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: __class__
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [213,263]`def methodX(this):↵ ...`
                               Name: methodX
@@ -187,7 +187,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                               NeedsCellFrame: False
                               FrameDescriptor: 4 slots [<return_val>, __class__, this, yy]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: __class__
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [213,263]`def methodX(this):↵ ...`
                                 ReturnTargetNode SourceSection: [213,263]`def methodX(this):↵ ...`

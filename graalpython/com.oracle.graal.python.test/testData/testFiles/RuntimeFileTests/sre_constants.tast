@@ -39,7 +39,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: __class__
             ClassBodyRootNode SourceSection: [515,1619]`class error(Exceptio...`
               Name: error
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -49,7 +49,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
               FrameDescriptor: 4 slots [__class__, __doc__, __init__, __module__]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               InnerRootNode SourceSection: [515,1619]`class error(Exceptio...`
                 ReturnTargetNode SourceSection: [515,1619]`class error(Exceptio...`
                   Body: BlockNode SourceSection: None
@@ -76,9 +76,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             ObjectLiteralNode SourceSection: [981,985]`None`
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [939,1619]`def __init__(self, m...`
                             Name: __init__
@@ -89,7 +89,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             NeedsCellFrame: False
                             FrameDescriptor: 8 slots [<>temp6, <return_val>, __class__, msg, newline, pattern, pos, self]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [939,1619]`def __init__(self, m...`
                               ReturnTargetNode SourceSection: [939,1619]`def __init__(self, m...`
@@ -305,7 +305,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: __class__
             ClassBodyRootNode SourceSection: [1619,1868]`class _NamedIntConst...`
               Name: _NamedIntConstant
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -315,7 +315,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
               FrameDescriptor: 4 slots [__class__, __new__, __repr__, __str__]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               InnerRootNode SourceSection: [1619,1868]`class _NamedIntConst...`
                 ReturnTargetNode SourceSection: [1619,1868]`class _NamedIntConst...`
                   Body: BlockNode SourceSection: None
@@ -334,9 +334,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [1653,1799]`def __new__(cls, val...`
                             Name: __new__
@@ -347,7 +347,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             NeedsCellFrame: False
                             FrameDescriptor: 6 slots [<return_val>, __class__, cls, name, self, value]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [1653,1799]`def __new__(cls, val...`
                               ReturnTargetNode SourceSection: [1653,1799]`def __new__(cls, val...`

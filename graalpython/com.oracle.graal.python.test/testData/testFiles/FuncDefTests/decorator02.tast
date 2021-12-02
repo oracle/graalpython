@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: delta, 
+            CellVarsSlots: delta
           FunctionRootNode SourceSection: [0,151]`def mydecorator(delt...`
             Name: mydecorator
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
             FrameDescriptor: 3 slots [<return_val>, delta, wrap]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: delta, 
+              CellVarsSlots: delta
             InnerRootNode SourceSection: [0,151]`def mydecorator(delt...`
               ReturnTargetNode SourceSection: [0,151]`def mydecorator(delt...`
                 Body: BlockNode SourceSection: None
@@ -45,10 +45,10 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: delta, 
+                        FreeVarSlots: delta
                         ExecutionSlots:
-                          FreeVarsSlots: delta, 
-                          CellVarsSlots: fn, 
+                          FreeVarsSlots: delta
+                          CellVarsSlots: fn
                         FunctionRootNode SourceSection: [28,138]`def wrap(fn):↵      ...`
                           Name: wrap
                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -58,8 +58,8 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                           NeedsCellFrame: False
                           FrameDescriptor: 4 slots [<return_val>, delta, fn, wrapped_f]
                           ExecutionSlots:
-                            FreeVarsSlots: delta, 
-                            CellVarsSlots: fn, 
+                            FreeVarsSlots: delta
+                            CellVarsSlots: fn
                           InnerRootNode SourceSection: [28,138]`def wrap(fn):↵      ...`
                             ReturnTargetNode SourceSection: [28,138]`def wrap(fn):↵      ...`
                               Body: BlockNode SourceSection: None
@@ -78,9 +78,9 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                       Arguments: None
                                       KwArguments: None
                                       Documentation: None
-                                      FreeVarSlots: delta, , fn, 
+                                      FreeVarSlots: delta, fn
                                       ExecutionSlots:
-                                        FreeVarsSlots: delta, , fn, 
+                                        FreeVarsSlots: delta, fn
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [50,117]`def wrapped_f(*args)...`
                                         Name: wrapped_f
@@ -90,7 +90,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                         NeedsCellFrame: False
                                         FrameDescriptor: 4 slots [<return_val>, args, delta, fn]
                                         ExecutionSlots:
-                                          FreeVarsSlots: delta, , fn, 
+                                          FreeVarsSlots: delta, fn
                                           CellVarsSlots: None
                                         InnerRootNode SourceSection: [50,117]`def wrapped_f(*args)...`
                                           ReturnTargetNode SourceSection: [50,117]`def wrapped_f(*args)...`

@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: MyIter, , ret, 
+              CellVarsSlots: MyIter, ret
             FunctionRootNode SourceSection: [0,244]`def fn():↵    class ...`
               Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -28,7 +28,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
               FrameDescriptor: 4 slots [<return_val>, MyIter, gen, ret]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: MyIter, , ret, 
+                CellVarsSlots: MyIter, ret
               InnerRootNode SourceSection: [0,244]`def fn():↵    class ...`
                 ReturnTargetNode SourceSection: [0,244]`def fn():↵    class ...`
                   Body: BlockNode SourceSection: None
@@ -162,9 +162,9 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: MyIter, , ret, 
+                          FreeVarSlots: MyIter, ret
                           ExecutionSlots:
-                            FreeVarsSlots: MyIter, , ret, 
+                            FreeVarsSlots: MyIter, ret
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [148,218]`def gen():↵        n...`
                             Name: gen
@@ -174,7 +174,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                             NeedsCellFrame: False
                             FrameDescriptor: 4 slots [<>temp2, <return_val>, MyIter, ret]
                             ExecutionSlots:
-                              FreeVarsSlots: MyIter, , ret, 
+                              FreeVarsSlots: MyIter, ret
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [148,218]`def gen():↵        n...`
                               GeneratorReturnTargetNode SourceSection: [148,218]`def gen():↵        n...`

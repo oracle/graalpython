@@ -2537,7 +2537,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: _collections_abc, , func, 
+            CellVarsSlots: _collections_abc, func
           FunctionRootNode SourceSection: [7624,9869]`def coroutine(func):...`
             Name: coroutine
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -2548,7 +2548,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             FrameDescriptor: 7 slots [<return_val>, _collections_abc, co, co_flags, func, functools, wrapped]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: _collections_abc, , func, 
+              CellVarsSlots: _collections_abc, func
             InnerRootNode SourceSection: [7624,9869]`def coroutine(func):...`
               ReturnTargetNode SourceSection: [7624,9869]`def coroutine(func):...`
                 Body: BlockNode SourceSection: None
@@ -2819,9 +2819,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: _collections_abc, , func, 
+                          FreeVarSlots: _collections_abc, func
                           ExecutionSlots:
-                            FreeVarsSlots: _collections_abc, , func, 
+                            FreeVarsSlots: _collections_abc, func
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [9060,9852]`def wrapped(*args, *...`
                             Name: wrapped
@@ -2832,7 +2832,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             NeedsCellFrame: False
                             FrameDescriptor: 6 slots [<return_val>, _collections_abc, args, coro, func, kwargs]
                             ExecutionSlots:
-                              FreeVarsSlots: _collections_abc, , func, 
+                              FreeVarsSlots: _collections_abc, func
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [9060,9852]`def wrapped(*args, *...`
                               ReturnTargetNode SourceSection: [9060,9852]`def wrapped(*args, *...`

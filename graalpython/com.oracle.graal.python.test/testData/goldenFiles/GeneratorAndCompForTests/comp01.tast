@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                 FrameDescriptor: 3 slots [<return_val>, i, t]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: i, 
+                  CellVarsSlots: i
                 InnerRootNode SourceSection: [10,93]`i: tuple(j for j in ...`
                   GeneratorReturnTargetNode SourceSection: [10,93]`i: tuple(j for j in ...`
                     flagSlot: 1
@@ -68,7 +68,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                     NeedsCellFrame: False
                                     FrameDescriptor: 3 slots [<return_val>, i, j]
                                     ExecutionSlots:
-                                      FreeVarsSlots: i, 
+                                      FreeVarsSlots: i
                                       CellVarsSlots: None
                                     InnerRootNode SourceSection: [19,41]`j for j in t if i !=...`
                                       GeneratorReturnTargetNode SourceSection: [19,41]`j for j in t if i !=...`

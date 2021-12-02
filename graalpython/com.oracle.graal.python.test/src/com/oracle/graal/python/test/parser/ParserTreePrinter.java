@@ -562,7 +562,7 @@ public class ParserTreePrinter implements NodeVisitor {
                 } else {
                     first = false;
                 }
-                sb.append(slot.getIdentifier()).append(", ");
+                sb.append(slot.getIdentifier());
             }
         }
     }

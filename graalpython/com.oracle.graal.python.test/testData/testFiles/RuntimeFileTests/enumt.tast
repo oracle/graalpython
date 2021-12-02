@@ -484,7 +484,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: __class__
             ClassBodyRootNode SourceSection: [1420,3954]`class _EnumDict(dict...`
               Name: _EnumDict
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -494,7 +494,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               FrameDescriptor: 4 slots [__class__, __doc__, __init__, __setitem__]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               InnerRootNode SourceSection: [1420,3954]`class _EnumDict(dict...`
                 ReturnTargetNode SourceSection: [1420,3954]`class _EnumDict(dict...`
                   Body: BlockNode SourceSection: None
@@ -516,9 +516,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [1625,1766]`def __init__(self):↵...`
                             Name: __init__
@@ -529,7 +529,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             NeedsCellFrame: False
                             FrameDescriptor: 3 slots [<return_val>, __class__, self]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [1625,1766]`def __init__(self):↵...`
                               ReturnTargetNode SourceSection: [1625,1766]`def __init__(self):↵...`
@@ -575,9 +575,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           Arguments: None
                           KwArguments: None
                           Documentation: StringLiteralNode: `Changes anything not...`
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [1766,3954]`def __setitem__(self...`
                             Name: __setitem__
@@ -588,7 +588,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             NeedsCellFrame: False
                             FrameDescriptor: 6 slots [<return_val>, __class__, already, key, self, value]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [1766,3954]`def __setitem__(self...`
                               ReturnTargetNode SourceSection: [1766,3954]`def __setitem__(self...`
@@ -982,7 +982,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: __class__
             ClassBodyRootNode SourceSection: [3968,21037]`class EnumMeta(type)...`
               Name: EnumMeta
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -992,7 +992,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               FrameDescriptor: 20 slots [__bool__, __call__, __class__, __contains__, __delattr__, __dir__, __doc__, __getattr__, __getitem__, __iter__, __len__, __members__, __new__, __prepare__, __repr__, __reversed__, __setattr__, _create_, _find_new_, _get_mixins_]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               InnerRootNode SourceSection: [3968,21037]`class EnumMeta(type)...`
                 ReturnTargetNode SourceSection: [3968,21037]`class EnumMeta(type)...`
                   Body: BlockNode SourceSection: None
@@ -1117,10 +1117,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
-                            CellVarsSlots: classdict, , member_type, 
+                            FreeVarsSlots: __class__
+                            CellVarsSlots: classdict, member_type
                           FunctionRootNode SourceSection: [4441,11215]`def __new__(metacls,...`
                             Name: __new__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -1130,8 +1130,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             NeedsCellFrame: False
                             FrameDescriptor: 35 slots [<>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>, __class__, __new__, _order_, args, base_attributes, bases, canonical_member, class_method, classdict, cls, enum_class, enum_member, enum_members, enum_method, first_enum, ignore, invalid_names, key, member_name, member_type, metacls, methods, name, obj_method, save_new, use_args, value]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
-                              CellVarsSlots: classdict, , member_type, 
+                              FreeVarsSlots: __class__
+                              CellVarsSlots: classdict, member_type
                             InnerRootNode SourceSection: [4441,11215]`def __new__(metacls,...`
                               ReturnTargetNode SourceSection: [4441,11215]`def __new__(metacls,...`
                                 Body: BlockNode SourceSection: None
@@ -1297,7 +1297,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             NeedsCellFrame: False
                                             FrameDescriptor: 3 slots [<return_val>, classdict, k]
                                             ExecutionSlots:
-                                              FreeVarsSlots: classdict, 
+                                              FreeVarsSlots: classdict
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [5304,5352]`k: classdict[k] for ...`
                                               GeneratorReturnTargetNode SourceSection: [5304,5352]`k: classdict[k] for ...`
@@ -1615,7 +1615,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     NeedsCellFrame: False
                                                     FrameDescriptor: 3 slots [<return_val>, m, member_type]
                                                     ExecutionSlots:
-                                                      FreeVarsSlots: member_type, 
+                                                      FreeVarsSlots: member_type
                                                       CellVarsSlots: None
                                                     InnerRootNode SourceSection: [7411,7453]`m in member_type.__d...`
                                                       GeneratorReturnTargetNode SourceSection: [7411,7453]`m in member_type.__d...`
@@ -2408,9 +2408,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [13118,13425]`def __delattr__(cls,...`
                             Name: __delattr__
@@ -2421,7 +2421,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             NeedsCellFrame: False
                             FrameDescriptor: 4 slots [<return_val>, __class__, attr, cls]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [13118,13425]`def __delattr__(cls,...`
                               ReturnTargetNode SourceSection: [13118,13425]`def __delattr__(cls,...`
@@ -2673,7 +2673,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: cls, 
+                            CellVarsSlots: cls
                           FunctionRootNode SourceSection: [14183,14278]`def __iter__(cls):↵ ...`
                             Name: __iter__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -2684,7 +2684,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             FrameDescriptor: 2 slots [<return_val>, cls]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: cls, 
+                              CellVarsSlots: cls
                             InnerRootNode SourceSection: [14183,14278]`def __iter__(cls):↵ ...`
                               ReturnTargetNode SourceSection: [14183,14278]`def __iter__(cls):↵ ...`
                                 Body: BlockNode SourceSection: None
@@ -2714,7 +2714,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           NeedsCellFrame: False
                                           FrameDescriptor: 3 slots [<return_val>, cls, name]
                                           ExecutionSlots:
-                                            FreeVarsSlots: cls, 
+                                            FreeVarsSlots: cls
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [14218,14271]`cls._member_map_[nam...`
                                             GeneratorReturnTargetNode SourceSection: [14218,14271]`cls._member_map_[nam...`
@@ -2912,7 +2912,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: cls, 
+                            CellVarsSlots: cls
                           FunctionRootNode SourceSection: [14695,14804]`def __reversed__(cls...`
                             Name: __reversed__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -2923,7 +2923,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             FrameDescriptor: 2 slots [<return_val>, cls]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: cls, 
+                              CellVarsSlots: cls
                             InnerRootNode SourceSection: [14695,14804]`def __reversed__(cls...`
                               ReturnTargetNode SourceSection: [14695,14804]`def __reversed__(cls...`
                                 Body: BlockNode SourceSection: None
@@ -2953,7 +2953,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           NeedsCellFrame: False
                                           FrameDescriptor: 3 slots [<return_val>, cls, name]
                                           ExecutionSlots:
-                                            FreeVarsSlots: cls, 
+                                            FreeVarsSlots: cls
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [14734,14797]`cls._member_map_[nam...`
                                             GeneratorReturnTargetNode SourceSection: [14734,14797]`cls._member_map_[nam...`
@@ -3015,9 +3015,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           Arguments: None
                           KwArguments: None
                           Documentation: StringLiteralNode: `Block attempts to re...`
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [14804,15299]`def __setattr__(cls,...`
                             Name: __setattr__
@@ -3028,7 +3028,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             NeedsCellFrame: False
                             FrameDescriptor: 6 slots [<return_val>, __class__, cls, member_map, name, value]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [14804,15299]`def __setattr__(cls,...`
                               ReturnTargetNode SourceSection: [14804,15299]`def __setattr__(cls,...`
@@ -4449,7 +4449,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: self, 
+                            CellVarsSlots: self
                           FunctionRootNode SourceSection: [22637,22945]`def __dir__(self):↵ ...`
                             Name: __dir__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4460,7 +4460,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             FrameDescriptor: 3 slots [<return_val>, added_behavior, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: self, 
+                              CellVarsSlots: self
                             InnerRootNode SourceSection: [22637,22945]`def __dir__(self):↵ ...`
                               ReturnTargetNode SourceSection: [22637,22945]`def __dir__(self):↵ ...`
                                 Body: BlockNode SourceSection: None
@@ -4496,7 +4496,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             NeedsCellFrame: False
                                             FrameDescriptor: 4 slots [<return_val>, cls, m, self]
                                             ExecutionSlots:
-                                              FreeVarsSlots: self, 
+                                              FreeVarsSlots: self
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [22699,22848]`m↵                fo...`
                                               GeneratorReturnTargetNode SourceSection: [22699,22848]`m↵                fo...`
@@ -4903,7 +4903,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             FreeVarSlots: None
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: filter, , source, 
+                              CellVarsSlots: filter, source
                             FunctionRootNode SourceSection: [24232,25753]`def _convert(cls, na...`
                               Name: _convert
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4914,7 +4914,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               FrameDescriptor: 8 slots [<return_val>, cls, filter, members, module, module_globals, name, source]
                               ExecutionSlots:
                                 FreeVarsSlots: None
-                                CellVarsSlots: filter, , source, 
+                                CellVarsSlots: filter, source
                               InnerRootNode SourceSection: [24232,25753]`def _convert(cls, na...`
                                 ReturnTargetNode SourceSection: [24232,25753]`def _convert(cls, na...`
                                   Body: BlockNode SourceSection: None
@@ -5017,7 +5017,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               NeedsCellFrame: False
                                               FrameDescriptor: 4 slots [<return_val>, filter, name, source]
                                               ExecutionSlots:
-                                                FreeVarsSlots: filter, , source, 
+                                                FreeVarsSlots: filter, source
                                                 CellVarsSlots: None
                                               InnerRootNode SourceSection: [25215,25309]`(name, source[name])...`
                                                 GeneratorReturnTargetNode SourceSection: [25215,25309]`(name, source[name])...`

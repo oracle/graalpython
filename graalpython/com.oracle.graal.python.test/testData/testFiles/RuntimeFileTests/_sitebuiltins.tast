@@ -287,7 +287,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: files, , os, 
+                            CellVarsSlots: files, os
                           FunctionRootNode SourceSection: [942,1249]`def __init__(self, n...`
                             Name: __init__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -298,7 +298,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                             FrameDescriptor: 7 slots [<return_val>, data, dirs, files, name, os, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: files, , os, 
+                              CellVarsSlots: files, os
                             InnerRootNode SourceSection: [942,1249]`def __init__(self, n...`
                               ReturnTargetNode SourceSection: [942,1249]`def __init__(self, n...`
                                 Body: BlockNode SourceSection: None
@@ -384,7 +384,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             NeedsCellFrame: False
                                             FrameDescriptor: 5 slots [<return_val>, dir, filename, files, os]
                                             ExecutionSlots:
-                                              FreeVarsSlots: files, , os, 
+                                              FreeVarsSlots: files, os
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
                                               GeneratorReturnTargetNode SourceSection: [1121,1242]`os.path.join(dir, fi...`

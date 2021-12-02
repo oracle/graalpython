@@ -2012,7 +2012,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: getters, , names, 
+                            CellVarsSlots: getters, names
                           FunctionRootNode SourceSection: [5349,5988]`def __init__(self, a...`
                             Name: __init__
                             Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
@@ -2023,7 +2023,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             FrameDescriptor: 7 slots [<return_val>, attr, attrs, func, getters, names, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: getters, , names, 
+                              CellVarsSlots: getters, names
                             InnerRootNode SourceSection: [5349,5988]`def __init__(self, a...`
                               ReturnTargetNode SourceSection: [5349,5988]`def __init__(self, a...`
                                 Body: BlockNode SourceSection: None
@@ -2095,9 +2095,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Arguments: None
                                             KwArguments: None
                                             Documentation: None
-                                            FreeVarSlots: names, 
+                                            FreeVarSlots: names
                                             ExecutionSlots:
-                                              FreeVarsSlots: names, 
+                                              FreeVarsSlots: names
                                               CellVarsSlots: None
                                             FunctionRootNode SourceSection: [5596,5730]`def func(obj):↵     ...`
                                               Name: func
@@ -2108,7 +2108,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               NeedsCellFrame: False
                                               FrameDescriptor: 4 slots [<return_val>, name, names, obj]
                                               ExecutionSlots:
-                                                FreeVarsSlots: names, 
+                                                FreeVarsSlots: names
                                                 CellVarsSlots: None
                                               InnerRootNode SourceSection: [5596,5730]`def func(obj):↵     ...`
                                                 ReturnTargetNode SourceSection: [5596,5730]`def func(obj):↵     ...`
@@ -2195,10 +2195,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Arguments: None
                                             KwArguments: None
                                             Documentation: None
-                                            FreeVarSlots: getters, 
+                                            FreeVarSlots: getters
                                             ExecutionSlots:
-                                              FreeVarsSlots: getters, 
-                                              CellVarsSlots: obj, 
+                                              FreeVarsSlots: getters
+                                              CellVarsSlots: obj
                                             FunctionRootNode SourceSection: [5874,5965]`def func(obj):↵     ...`
                                               Name: func
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -2208,8 +2208,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               NeedsCellFrame: False
                                               FrameDescriptor: 3 slots [<return_val>, getters, obj]
                                               ExecutionSlots:
-                                                FreeVarsSlots: getters, 
-                                                CellVarsSlots: obj, 
+                                                FreeVarsSlots: getters
+                                                CellVarsSlots: obj
                                               InnerRootNode SourceSection: [5874,5965]`def func(obj):↵     ...`
                                                 ReturnTargetNode SourceSection: [5874,5965]`def func(obj):↵     ...`
                                                   Body: BlockNode SourceSection: None
@@ -2243,7 +2243,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               NeedsCellFrame: False
                                                               FrameDescriptor: 3 slots [<return_val>, getter, obj]
                                                               ExecutionSlots:
-                                                                FreeVarsSlots: obj, 
+                                                                FreeVarsSlots: obj
                                                                 CellVarsSlots: None
                                                               InnerRootNode SourceSection: [5918,5951]`getter(obj) for gett...`
                                                                 GeneratorReturnTargetNode SourceSection: [5918,5951]`getter(obj) for gett...`
@@ -2527,7 +2527,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: item, , items, 
+                            CellVarsSlots: item, items
                           FunctionRootNode SourceSection: [6607,6965]`def __init__(self, i...`
                             Name: __init__
                             Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
@@ -2538,7 +2538,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             FrameDescriptor: 6 slots [<>temp4, <return_val>, func, item, items, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: item, , items, 
+                              CellVarsSlots: item, items
                             InnerRootNode SourceSection: [6607,6965]`def __init__(self, i...`
                               ReturnTargetNode SourceSection: [6607,6965]`def __init__(self, i...`
                                 Body: BlockNode SourceSection: None
@@ -2588,9 +2588,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Arguments: None
                                             KwArguments: None
                                             Documentation: None
-                                            FreeVarSlots: item, 
+                                            FreeVarSlots: item
                                             ExecutionSlots:
-                                              FreeVarsSlots: item, 
+                                              FreeVarsSlots: item
                                               CellVarsSlots: None
                                             FunctionRootNode SourceSection: [6709,6769]`def func(obj):↵     ...`
                                               Name: func
@@ -2601,7 +2601,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               NeedsCellFrame: False
                                               FrameDescriptor: 3 slots [<return_val>, item, obj]
                                               ExecutionSlots:
-                                                FreeVarsSlots: item, 
+                                                FreeVarsSlots: item
                                                 CellVarsSlots: None
                                               InnerRootNode SourceSection: [6709,6769]`def func(obj):↵     ...`
                                                 ReturnTargetNode SourceSection: [6709,6769]`def func(obj):↵     ...`
@@ -2664,10 +2664,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Arguments: None
                                             KwArguments: None
                                             Documentation: None
-                                            FreeVarSlots: items, 
+                                            FreeVarSlots: items
                                             ExecutionSlots:
-                                              FreeVarsSlots: items, 
-                                              CellVarsSlots: obj, 
+                                              FreeVarsSlots: items
+                                              CellVarsSlots: obj
                                             FunctionRootNode SourceSection: [6863,6942]`def func(obj):↵     ...`
                                               Name: func
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -2677,8 +2677,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               NeedsCellFrame: False
                                               FrameDescriptor: 3 slots [<return_val>, items, obj]
                                               ExecutionSlots:
-                                                FreeVarsSlots: items, 
-                                                CellVarsSlots: obj, 
+                                                FreeVarsSlots: items
+                                                CellVarsSlots: obj
                                               InnerRootNode SourceSection: [6863,6942]`def func(obj):↵     ...`
                                                 ReturnTargetNode SourceSection: [6863,6942]`def func(obj):↵     ...`
                                                   Body: BlockNode SourceSection: None
@@ -2712,7 +2712,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               NeedsCellFrame: False
                                                               FrameDescriptor: 3 slots [<return_val>, i, obj]
                                                               ExecutionSlots:
-                                                                FreeVarsSlots: obj, 
+                                                                FreeVarsSlots: obj
                                                                 CellVarsSlots: None
                                                               InnerRootNode SourceSection: [6907,6928]`obj[i] for i in item...`
                                                                 GeneratorReturnTargetNode SourceSection: [6907,6928]`obj[i] for i in item...`

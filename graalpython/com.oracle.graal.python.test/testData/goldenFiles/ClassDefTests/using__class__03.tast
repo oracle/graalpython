@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               ClassBodyRootNode SourceSection: [0,258]`class XN:↵          ...`
                 Name: XN
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -32,7 +32,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                 FrameDescriptor: 4 slots [__class__, fn1, fn2, fn3]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: __class__
                 InnerRootNode SourceSection: [0,258]`class XN:↵          ...`
                   ReturnTargetNode SourceSection: [0,258]`class XN:↵          ...`
                     Body: BlockNode SourceSection: None
@@ -51,9 +51,9 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: __class__
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [22,115]`def fn1(self):↵     ...`
                               Name: fn1
@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                               NeedsCellFrame: False
                               FrameDescriptor: 3 slots [<return_val>, __class__, self]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: __class__
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [22,115]`def fn1(self):↵     ...`
                                 ReturnTargetNode SourceSection: [22,115]`def fn1(self):↵     ...`
@@ -92,9 +92,9 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: __class__
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [115,175]`def fn2(self):↵     ...`
                               Name: fn2
@@ -105,7 +105,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                               NeedsCellFrame: False
                               FrameDescriptor: 3 slots [<return_val>, __class__, self]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: __class__
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [115,175]`def fn2(self):↵     ...`
                                 ReturnTargetNode SourceSection: [115,175]`def fn2(self):↵     ...`
@@ -130,9 +130,9 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: __class__
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [175,258]`def fn3(slef):↵     ...`
                               Name: fn3
@@ -143,7 +143,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                               NeedsCellFrame: False
                               FrameDescriptor: 3 slots [<return_val>, __class__, slef]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: __class__
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [175,258]`def fn3(slef):↵     ...`
                                 ReturnTargetNode SourceSection: [175,258]`def fn3(slef):↵     ...`

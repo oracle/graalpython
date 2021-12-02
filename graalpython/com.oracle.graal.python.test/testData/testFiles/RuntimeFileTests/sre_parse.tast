@@ -8953,7 +8953,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: groups, , literal, , literals, , pattern, , s, 
+            CellVarsSlots: groups, literal, literals, pattern, s
           FunctionRootNode SourceSection: [35638,38951]`def parse_template(s...`
             Name: parse_template
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -8964,7 +8964,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             FrameDescriptor: 16 slots [<return_val>, addgroup, c, groupindex, groups, index, isoctal, lappend, literal, literals, name, pattern, s, sget, source, this]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: groups, , literal, , literals, , pattern, , s, 
+              CellVarsSlots: groups, literal, literals, pattern, s
             InnerRootNode SourceSection: [35638,38951]`def parse_template(s...`
               ReturnTargetNode SourceSection: [35638,38951]`def parse_template(s...`
                 Body: BlockNode SourceSection: None
@@ -9042,9 +9042,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: groups, , literal, , literals, , pattern, , s, 
+                        FreeVarSlots: groups, literal, literals, pattern, s
                         ExecutionSlots:
-                          FreeVarsSlots: groups, , literal, , literals, , pattern, , s, 
+                          FreeVarsSlots: groups, literal, literals, pattern, s
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [35887,36190]`def addgroup(index, ...`
                           Name: addgroup
@@ -9055,7 +9055,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                           NeedsCellFrame: False
                           FrameDescriptor: 8 slots [<return_val>, groups, index, literal, literals, pattern, pos, s]
                           ExecutionSlots:
-                            FreeVarsSlots: groups, , literal, , literals, , pattern, , s, 
+                            FreeVarsSlots: groups, literal, literals, pattern, s
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [35887,36190]`def addgroup(index, ...`
                             ReturnTargetNode SourceSection: [35887,36190]`def addgroup(index, ...`

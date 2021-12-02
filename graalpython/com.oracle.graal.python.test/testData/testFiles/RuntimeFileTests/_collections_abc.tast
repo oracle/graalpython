@@ -4184,7 +4184,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: self, 
+                            CellVarsSlots: self
                           FunctionRootNode SourceSection: [12241,12428]`def __and__(self, ot...`
                             Name: __and__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4195,7 +4195,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: self, 
+                              CellVarsSlots: self
                             InnerRootNode SourceSection: [12241,12428]`def __and__(self, ot...`
                               ReturnTargetNode SourceSection: [12241,12428]`def __and__(self, ot...`
                                 Body: BlockNode SourceSection: None
@@ -4253,7 +4253,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             NeedsCellFrame: False
                                             FrameDescriptor: 3 slots [<return_val>, self, value]
                                             ExecutionSlots:
-                                              FreeVarsSlots: self, 
+                                              FreeVarsSlots: self
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [12380,12421]`value for value in o...`
                                               GeneratorReturnTargetNode SourceSection: [12380,12421]`value for value in o...`
@@ -4517,7 +4517,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: other, 
+                            CellVarsSlots: other
                           FunctionRootNode SourceSection: [12879,13199]`def __sub__(self, ot...`
                             Name: __sub__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4528,7 +4528,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: other, 
+                              CellVarsSlots: other
                             InnerRootNode SourceSection: [12879,13199]`def __sub__(self, ot...`
                               ReturnTargetNode SourceSection: [12879,13199]`def __sub__(self, ot...`
                                 Body: BlockNode SourceSection: None
@@ -4613,7 +4613,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             NeedsCellFrame: False
                                             FrameDescriptor: 3 slots [<return_val>, other, value]
                                             ExecutionSlots:
-                                              FreeVarsSlots: other, 
+                                              FreeVarsSlots: other
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [13112,13192]`value for value in s...`
                                               GeneratorReturnTargetNode SourceSection: [13112,13192]`value for value in s...`
@@ -4672,7 +4672,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: self, 
+                            CellVarsSlots: self
                           FunctionRootNode SourceSection: [13199,13520]`def __rsub__(self, o...`
                             Name: __rsub__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4683,7 +4683,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: self, 
+                              CellVarsSlots: self
                             InnerRootNode SourceSection: [13199,13520]`def __rsub__(self, o...`
                               ReturnTargetNode SourceSection: [13199,13520]`def __rsub__(self, o...`
                                 Body: BlockNode SourceSection: None
@@ -4765,7 +4765,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             NeedsCellFrame: False
                                             FrameDescriptor: 3 slots [<return_val>, self, value]
                                             ExecutionSlots:
-                                              FreeVarsSlots: self, 
+                                              FreeVarsSlots: self
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [13433,13513]`value for value in o...`
                                               GeneratorReturnTargetNode SourceSection: [13433,13513]`value for value in o...`
@@ -8333,7 +8333,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: value, 
+                            CellVarsSlots: value
                           FunctionRootNode SourceSection: [24105,24271]`def count(self, valu...`
                             Name: count
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -8344,7 +8344,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             FrameDescriptor: 3 slots [<return_val>, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: value, 
+                              CellVarsSlots: value
                             InnerRootNode SourceSection: [24105,24271]`def count(self, valu...`
                               ReturnTargetNode SourceSection: [24105,24271]`def count(self, valu...`
                                 Body: BlockNode SourceSection: None
@@ -8385,7 +8385,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             NeedsCellFrame: False
                                             FrameDescriptor: 3 slots [<return_val>, v, value]
                                             ExecutionSlots:
-                                              FreeVarsSlots: value, 
+                                              FreeVarsSlots: value
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [24225,24268]`1 for v in self if v...`
                                               GeneratorReturnTargetNode SourceSection: [24225,24268]`1 for v in self if v...`

@@ -1862,7 +1862,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: key, 
+            CellVarsSlots: key
           FunctionRootNode SourceSection: [18959,20826]`def nsmallest(n, ite...`
             Name: nsmallest
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -1873,7 +1873,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: key, 
+              CellVarsSlots: key
             InnerRootNode SourceSection: [18959,20826]`def nsmallest(n, ite...`
               ReturnTargetNode SourceSection: [18959,20826]`def nsmallest(n, ite...`
                 Body: BlockNode SourceSection: None
@@ -2342,7 +2342,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             NeedsCellFrame: False
                             FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, elem, i, key]
                             ExecutionSlots:
-                              FreeVarsSlots: key, 
+                              FreeVarsSlots: key
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [20385,20438]`(key(elem), i, elem)...`
                               GeneratorReturnTargetNode SourceSection: [20385,20438]`(key(elem), i, elem)...`
@@ -2628,7 +2628,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: key, 
+            CellVarsSlots: key
           FunctionRootNode SourceSection: [20826,22665]`def nlargest(n, iter...`
             Name: nlargest
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -2639,7 +2639,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: key, 
+              CellVarsSlots: key
             InnerRootNode SourceSection: [20826,22665]`def nlargest(n, iter...`
               ReturnTargetNode SourceSection: [20826,22665]`def nlargest(n, iter...`
                 Body: BlockNode SourceSection: None
@@ -3121,7 +3121,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             NeedsCellFrame: False
                             FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, elem, i, key]
                             ExecutionSlots:
-                              FreeVarsSlots: key, 
+                              FreeVarsSlots: key
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [22176,22237]`(key(elem), i, elem)...`
                               GeneratorReturnTargetNode SourceSection: [22176,22237]`(key(elem), i, elem)...`

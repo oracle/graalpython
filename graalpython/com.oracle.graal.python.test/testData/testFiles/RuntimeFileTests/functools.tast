@@ -1352,7 +1352,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: cls, 
+            CellVarsSlots: cls
           FunctionRootNode SourceSection: [7283,8082]`def total_ordering(c...`
             Name: total_ordering
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -1363,7 +1363,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, cls, opfunc, opname, root, roots]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: cls, 
+              CellVarsSlots: cls
             InnerRootNode SourceSection: [7283,8082]`def total_ordering(c...`
               ReturnTargetNode SourceSection: [7283,8082]`def total_ordering(c...`
                 Body: BlockNode SourceSection: None
@@ -1399,7 +1399,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             NeedsCellFrame: False
                             FrameDescriptor: 3 slots [<return_val>, cls, op]
                             ExecutionSlots:
-                              FreeVarsSlots: cls, 
+                              FreeVarsSlots: cls
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [7457,7537]`op for op in _conver...`
                               GeneratorReturnTargetNode SourceSection: [7457,7537]`op for op in _conver...`
@@ -1554,7 +1554,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: mycmp, 
+            CellVarsSlots: mycmp
           FunctionRootNode SourceSection: [8082,8725]`def cmp_to_key(mycmp...`
             Name: cmp_to_key
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -1565,7 +1565,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FrameDescriptor: 3 slots [<return_val>, K, mycmp]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: mycmp, 
+              CellVarsSlots: mycmp
             InnerRootNode SourceSection: [8082,8725]`def cmp_to_key(mycmp...`
               ReturnTargetNode SourceSection: [8082,8725]`def cmp_to_key(mycmp...`
                 Body: BlockNode SourceSection: None
@@ -1588,9 +1588,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: mycmp, 
+                          FreeVarSlots: mycmp
                           ExecutionSlots:
-                            FreeVarsSlots: mycmp, 
+                            FreeVarsSlots: mycmp
                             CellVarsSlots: None
                           ClassBodyRootNode SourceSection: [8164,8715]`class K(object):↵   ...`
                             Name: K
@@ -1600,7 +1600,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             NeedsCellFrame: False
                             FrameDescriptor: 9 slots [__eq__, __ge__, __gt__, __hash__, __init__, __le__, __lt__, __slots__, mycmp]
                             ExecutionSlots:
-                              FreeVarsSlots: mycmp, 
+                              FreeVarsSlots: mycmp
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [8164,8715]`class K(object):↵   ...`
                               ReturnTargetNode SourceSection: [8164,8715]`class K(object):↵   ...`
@@ -1671,9 +1671,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8277,8360]`def __lt__(self, oth...`
                                           Name: __lt__
@@ -1684,7 +1684,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           NeedsCellFrame: False
                                           FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8277,8360]`def __lt__(self, oth...`
                                             ReturnTargetNode SourceSection: [8277,8360]`def __lt__(self, oth...`
@@ -1735,9 +1735,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8360,8443]`def __gt__(self, oth...`
                                           Name: __gt__
@@ -1748,7 +1748,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           NeedsCellFrame: False
                                           FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8360,8443]`def __gt__(self, oth...`
                                             ReturnTargetNode SourceSection: [8360,8443]`def __gt__(self, oth...`
@@ -1799,9 +1799,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8443,8527]`def __eq__(self, oth...`
                                           Name: __eq__
@@ -1812,7 +1812,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           NeedsCellFrame: False
                                           FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8443,8527]`def __eq__(self, oth...`
                                             ReturnTargetNode SourceSection: [8443,8527]`def __eq__(self, oth...`
@@ -1863,9 +1863,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8527,8611]`def __le__(self, oth...`
                                           Name: __le__
@@ -1876,7 +1876,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           NeedsCellFrame: False
                                           FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8527,8611]`def __le__(self, oth...`
                                             ReturnTargetNode SourceSection: [8527,8611]`def __le__(self, oth...`
@@ -1927,9 +1927,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8611,8695]`def __ge__(self, oth...`
                                           Name: __ge__
@@ -1940,7 +1940,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           NeedsCellFrame: False
                                           FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8611,8695]`def __ge__(self, oth...`
                                             ReturnTargetNode SourceSection: [8611,8695]`def __ge__(self, oth...`
@@ -2031,7 +2031,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: __class__
             ClassBodyRootNode SourceSection: [9042,11795]`class partial:↵    "...`
               Name: partial
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -2041,7 +2041,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
               FrameDescriptor: 8 slots [__call__, __class__, __doc__, __new__, __reduce__, __repr__, __setstate__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               InnerRootNode SourceSection: [9042,11795]`class partial:↵    "...`
                 ReturnTargetNode SourceSection: [9042,11795]`class partial:↵    "...`
                   Body: BlockNode SourceSection: None
@@ -2072,9 +2072,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [9227,10003]`def __new__(*args, *...`
                             Name: __new__
@@ -2085,7 +2085,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             NeedsCellFrame: False
                             FrameDescriptor: 11 slots [<>temp7, <>temp8, <>temp9, <return_val>, __class__, args, cls, func, keywords, self, tmpkw]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [9227,10003]`def __new__(*args, *...`
                               ReturnTargetNode SourceSection: [9227,10003]`def __new__(*args, *...`
@@ -3419,7 +3419,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: self, 
+                            CellVarsSlots: self
                           FunctionRootNode SourceSection: [13563,14019]`def _make_unbound_me...`
                             Name: _make_unbound_method
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -3430,7 +3430,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             FrameDescriptor: 3 slots [<return_val>, _method, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: self, 
+                              CellVarsSlots: self
                             InnerRootNode SourceSection: [13563,14019]`def _make_unbound_me...`
                               ReturnTargetNode SourceSection: [13563,14019]`def _make_unbound_me...`
                                 Body: BlockNode SourceSection: None
@@ -3449,9 +3449,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: self, 
+                                        FreeVarSlots: self
                                         ExecutionSlots:
-                                          FreeVarsSlots: self, 
+                                          FreeVarsSlots: self
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [13603,13896]`def _method(*args, *...`
                                           Name: _method
@@ -3462,7 +3462,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           NeedsCellFrame: False
                                           FrameDescriptor: 10 slots [<>temp7, <>temp8, <return_val>, args, call_args, call_keywords, cls_or_self, keywords, rest, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: self, 
+                                            FreeVarsSlots: self
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [13603,13896]`def _method(*args, *...`
                                             ReturnTargetNode SourceSection: [13603,13896]`def _method(*args, *...`
@@ -4040,7 +4040,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: type, 
+            CellVarsSlots: type
           FunctionRootNode SourceSection: [15601,16835]`def _make_key(args, ...`
             Name: _make_key
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4051,7 +4051,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FrameDescriptor: 11 slots [<return_val>, args, fasttypes, item, key, kwd_mark, kwds, len, tuple, type, typed]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: type, 
+              CellVarsSlots: type
             InnerRootNode SourceSection: [15601,16835]`def _make_key(args, ...`
               ReturnTargetNode SourceSection: [15601,16835]`def _make_key(args, ...`
                 Body: BlockNode SourceSection: None
@@ -4181,7 +4181,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   NeedsCellFrame: False
                                   FrameDescriptor: 3 slots [<return_val>, type, v]
                                   ExecutionSlots:
-                                    FreeVarsSlots: type, 
+                                    FreeVarsSlots: type
                                     CellVarsSlots: None
                                   InnerRootNode SourceSection: [16634,16655]`type(v) for v in arg...`
                                     GeneratorReturnTargetNode SourceSection: [16634,16655]`type(v) for v in arg...`
@@ -4252,7 +4252,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     NeedsCellFrame: False
                                     FrameDescriptor: 3 slots [<return_val>, type, v]
                                     ExecutionSlots:
-                                      FreeVarsSlots: type, 
+                                      FreeVarsSlots: type
                                       CellVarsSlots: None
                                     InnerRootNode SourceSection: [16699,16729]`type(v) for v in kwd...`
                                       GeneratorReturnTargetNode SourceSection: [16699,16729]`type(v) for v in kwd...`
@@ -4354,7 +4354,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: maxsize, , typed, 
+            CellVarsSlots: maxsize, typed
           FunctionRootNode SourceSection: [16835,18354]`def lru_cache(maxsiz...`
             Name: lru_cache
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4365,7 +4365,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FrameDescriptor: 4 slots [<return_val>, decorating_function, maxsize, typed]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: maxsize, , typed, 
+              CellVarsSlots: maxsize, typed
             InnerRootNode SourceSection: [16835,18354]`def lru_cache(maxsiz...`
               ReturnTargetNode SourceSection: [16835,18354]`def lru_cache(maxsiz...`
                 Body: BlockNode SourceSection: None
@@ -4422,9 +4422,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: maxsize, , typed, 
+                        FreeVarSlots: maxsize, typed
                         ExecutionSlots:
-                          FreeVarsSlots: maxsize, , typed, 
+                          FreeVarsSlots: maxsize, typed
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [18147,18326]`def decorating_funct...`
                           Name: decorating_function
@@ -4435,7 +4435,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           NeedsCellFrame: False
                           FrameDescriptor: 5 slots [<return_val>, maxsize, typed, user_function, wrapper]
                           ExecutionSlots:
-                            FreeVarsSlots: maxsize, , typed, 
+                            FreeVarsSlots: maxsize, typed
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [18147,18326]`def decorating_funct...`
                             ReturnTargetNode SourceSection: [18147,18326]`def decorating_funct...`
@@ -4491,7 +4491,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: KEY, , NEXT, , PREV, , RESULT, , _CacheInfo, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , sentinel, , typed, , user_function, 
+            CellVarsSlots: KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function
           FunctionRootNode SourceSection: [18354,23204]`def _lru_cache_wrapp...`
             Name: _lru_cache_wrapper
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4502,7 +4502,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FrameDescriptor: 27 slots [<>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <return_val>, KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_clear, cache_get, cache_info, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function, wrapper]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: KEY, , NEXT, , PREV, , RESULT, , _CacheInfo, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , sentinel, , typed, , user_function, 
+              CellVarsSlots: KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function
             InnerRootNode SourceSection: [18354,23204]`def _lru_cache_wrapp...`
               ReturnTargetNode SourceSection: [18354,23204]`def _lru_cache_wrapp...`
                 Body: BlockNode SourceSection: None
@@ -4704,9 +4704,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: misses, , user_function, 
+                          FreeVarSlots: misses, user_function
                           ExecutionSlots:
-                            FreeVarsSlots: misses, , user_function, 
+                            FreeVarsSlots: misses, user_function
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [19149,19387]`def wrapper(*args, *...`
                             Name: wrapper
@@ -4717,7 +4717,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             NeedsCellFrame: False
                             FrameDescriptor: 6 slots [<return_val>, args, kwds, misses, result, user_function]
                             ExecutionSlots:
-                              FreeVarsSlots: misses, , user_function, 
+                              FreeVarsSlots: misses, user_function
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [19149,19387]`def wrapper(*args, *...`
                               ReturnTargetNode SourceSection: [19149,19387]`def wrapper(*args, *...`
@@ -4787,9 +4787,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: cache, , cache_get, , hits, , make_key, , misses, , sentinel, , typed, , user_function, 
+                            FreeVarSlots: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
                             ExecutionSlots:
-                              FreeVarsSlots: cache, , cache_get, , hits, , make_key, , misses, , sentinel, , typed, , user_function, 
+                              FreeVarsSlots: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [19418,19864]`def wrapper(*args, *...`
                               Name: wrapper
@@ -4800,7 +4800,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               NeedsCellFrame: False
                               FrameDescriptor: 13 slots [<return_val>, args, cache, cache_get, hits, key, kwds, make_key, misses, result, sentinel, typed, user_function]
                               ExecutionSlots:
-                                FreeVarsSlots: cache, , cache_get, , hits, , make_key, , misses, , sentinel, , typed, , user_function, 
+                                FreeVarsSlots: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [19418,19864]`def wrapper(*args, *...`
                                 ReturnTargetNode SourceSection: [19418,19864]`def wrapper(*args, *...`
@@ -4929,9 +4929,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: KEY, , NEXT, , PREV, , RESULT, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , typed, , user_function, 
+                            FreeVarSlots: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
                             ExecutionSlots:
-                              FreeVarsSlots: KEY, , NEXT, , PREV, , RESULT, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , typed, , user_function, 
+                              FreeVarsSlots: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [19879,22710]`def wrapper(*args, *...`
                               Name: wrapper
@@ -4942,7 +4942,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               NeedsCellFrame: False
                               FrameDescriptor: 36 slots [<>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp34, <>temp35, <return_val>, KEY, NEXT, PREV, RESULT, _key, args, cache, cache_get, cache_len, full, hits, key, kwds, last, link, link_next, link_prev, lock, make_key, maxsize, misses, oldkey, oldresult, oldroot, result, root, typed, user_function]
                               ExecutionSlots:
-                                FreeVarsSlots: KEY, , NEXT, , PREV, , RESULT, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , typed, , user_function, 
+                                FreeVarsSlots: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [19879,22710]`def wrapper(*args, *...`
                                 ReturnTargetNode SourceSection: [19879,22710]`def wrapper(*args, *...`
@@ -5392,9 +5392,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: StringLiteralNode: `Report cache statist...`
-                        FreeVarSlots: _CacheInfo, , cache_len, , hits, , lock, , maxsize, , misses, 
+                        FreeVarSlots: _CacheInfo, cache_len, hits, lock, maxsize, misses
                         ExecutionSlots:
-                          FreeVarsSlots: _CacheInfo, , cache_len, , hits, , lock, , maxsize, , misses, 
+                          FreeVarsSlots: _CacheInfo, cache_len, hits, lock, maxsize, misses
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [22710,22856]`def cache_info():↵  ...`
                           Name: cache_info
@@ -5404,7 +5404,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           NeedsCellFrame: False
                           FrameDescriptor: 7 slots [<return_val>, _CacheInfo, cache_len, hits, lock, maxsize, misses]
                           ExecutionSlots:
-                            FreeVarsSlots: _CacheInfo, , cache_len, , hits, , lock, , maxsize, , misses, 
+                            FreeVarsSlots: _CacheInfo, cache_len, hits, lock, maxsize, misses
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [22710,22856]`def cache_info():↵  ...`
                             ReturnTargetNode SourceSection: [22710,22856]`def cache_info():↵  ...`
@@ -5456,9 +5456,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: StringLiteralNode: `Clear the cache and ...`
-                        FreeVarSlots: cache, , full, , hits, , lock, , misses, , root, 
+                        FreeVarSlots: cache, full, hits, lock, misses, root
                         ExecutionSlots:
-                          FreeVarsSlots: cache, , full, , hits, , lock, , misses, , root, 
+                          FreeVarsSlots: cache, full, hits, lock, misses, root
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [22856,23114]`def cache_clear():↵ ...`
                           Name: cache_clear
@@ -5468,7 +5468,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           NeedsCellFrame: False
                           FrameDescriptor: 8 slots [<>temp6, <return_val>, cache, full, hits, lock, misses, root]
                           ExecutionSlots:
-                            FreeVarsSlots: cache, , full, , hits, , lock, , misses, , root, 
+                            FreeVarsSlots: cache, full, hits, lock, misses, root
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [22856,23114]`def cache_clear():↵ ...`
                             ReturnTargetNode SourceSection: [22856,23114]`def cache_clear():↵ ...`
@@ -5812,7 +5812,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: abcs, , base, 
+            CellVarsSlots: abcs, base
           FunctionRootNode SourceSection: [24428,26555]`def _c3_mro(cls, abc...`
             Name: _c3_mro
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -5823,7 +5823,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FrameDescriptor: 14 slots [<>temp11, <>temp12, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: abcs, , base, 
+              CellVarsSlots: abcs, base
             InnerRootNode SourceSection: [24428,26555]`def _c3_mro(cls, abc...`
               ReturnTargetNode SourceSection: [24428,26555]`def _c3_mro(cls, abc...`
                 Body: BlockNode SourceSection: None
@@ -6026,7 +6026,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         NeedsCellFrame: False
                                         FrameDescriptor: 3 slots [<return_val>, b, base]
                                         ExecutionSlots:
-                                          FreeVarsSlots: base, 
+                                          FreeVarsSlots: base
                                           CellVarsSlots: None
                                         InnerRootNode SourceSection: [25873,25915]`issubclass(b, base) ...`
                                           GeneratorReturnTargetNode SourceSection: [25873,25915]`issubclass(b, base) ...`
@@ -6138,7 +6138,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             NeedsCellFrame: False
                             FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             ExecutionSlots:
-                              FreeVarsSlots: abcs, 
+                              FreeVarsSlots: abcs
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
                               GeneratorReturnTargetNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
@@ -6207,7 +6207,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             NeedsCellFrame: False
                             FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             ExecutionSlots:
-                              FreeVarsSlots: abcs, 
+                              FreeVarsSlots: abcs
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
                               GeneratorReturnTargetNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
@@ -6276,7 +6276,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             NeedsCellFrame: False
                             FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             ExecutionSlots:
-                              FreeVarsSlots: abcs, 
+                              FreeVarsSlots: abcs
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
                               GeneratorReturnTargetNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
@@ -6367,7 +6367,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: bases, , cls, , is_related, , is_strict_base, , type_set, , types, 
+            CellVarsSlots: bases, cls, is_related, is_strict_base, type_set, types
           FunctionRootNode SourceSection: [26555,28154]`def _compose_mro(cls...`
             Name: _compose_mro
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -6378,7 +6378,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FrameDescriptor: 12 slots [<return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: bases, , cls, , is_related, , is_strict_base, , type_set, , types, 
+              CellVarsSlots: bases, cls, is_related, is_strict_base, type_set, types
             InnerRootNode SourceSection: [26555,28154]`def _compose_mro(cls...`
               ReturnTargetNode SourceSection: [26555,28154]`def _compose_mro(cls...`
                 Body: BlockNode SourceSection: None
@@ -6423,9 +6423,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: bases, , cls, 
+                        FreeVarSlots: bases, cls
                         ExecutionSlots:
-                          FreeVarsSlots: bases, , cls, 
+                          FreeVarsSlots: bases, cls
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [26924,27069]`def is_related(typ):...`
                           Name: is_related
@@ -6436,7 +6436,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           NeedsCellFrame: False
                           FrameDescriptor: 4 slots [<return_val>, bases, cls, typ]
                           ExecutionSlots:
-                            FreeVarsSlots: bases, , cls, 
+                            FreeVarsSlots: bases, cls
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [26924,27069]`def is_related(typ):...`
                             ReturnTargetNode SourceSection: [26924,27069]`def is_related(typ):...`
@@ -6508,7 +6508,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             NeedsCellFrame: False
                             FrameDescriptor: 3 slots [<return_val>, is_related, n]
                             ExecutionSlots:
-                              FreeVarsSlots: is_related, 
+                              FreeVarsSlots: is_related
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [27078,27111]`n for n in types if ...`
                               GeneratorReturnTargetNode SourceSection: [27078,27111]`n for n in types if ...`
@@ -6563,9 +6563,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: types, 
+                        FreeVarSlots: types
                         ExecutionSlots:
-                          FreeVarsSlots: types, 
+                          FreeVarsSlots: types
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [27221,27381]`def is_strict_base(t...`
                           Name: is_strict_base
@@ -6576,7 +6576,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           NeedsCellFrame: False
                           FrameDescriptor: 4 slots [<return_val>, other, typ, types]
                           ExecutionSlots:
-                            FreeVarsSlots: types, 
+                            FreeVarsSlots: types
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [27221,27381]`def is_strict_base(t...`
                             ReturnTargetNode SourceSection: [27221,27381]`def is_strict_base(t...`
@@ -6655,7 +6655,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             NeedsCellFrame: False
                             FrameDescriptor: 3 slots [<return_val>, is_strict_base, n]
                             ExecutionSlots:
-                              FreeVarsSlots: is_strict_base, 
+                              FreeVarsSlots: is_strict_base
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [27390,27431]`n for n in types if ...`
                               GeneratorReturnTargetNode SourceSection: [27390,27431]`n for n in types if ...`
@@ -6793,7 +6793,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 NeedsCellFrame: False
                                                 FrameDescriptor: 3 slots [<return_val>, s, type_set]
                                                 ExecutionSlots:
-                                                  FreeVarsSlots: type_set, 
+                                                  FreeVarsSlots: type_set
                                                   CellVarsSlots: None
                                                 InnerRootNode SourceSection: [27763,27802]`s for s in sub.__mro...`
                                                   GeneratorReturnTargetNode SourceSection: [27763,27802]`s for s in sub.__mro...`
@@ -7130,7 +7130,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: cache_token, , dispatch, , dispatch_cache, , register, , registry, 
+                CellVarsSlots: cache_token, dispatch, dispatch_cache, register, registry
               FunctionRootNode SourceSection: [29187,32199]`def singledispatch(f...`
                 Name: singledispatch
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -7141,7 +7141,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                 FrameDescriptor: 10 slots [<return_val>, cache_token, dispatch, dispatch_cache, func, register, registry, types, weakref, wrapper]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: cache_token, , dispatch, , dispatch_cache, , register, , registry, 
+                  CellVarsSlots: cache_token, dispatch, dispatch_cache, register, registry
                 InnerRootNode SourceSection: [29187,32199]`def singledispatch(f...`
                   ReturnTargetNode SourceSection: [29187,32199]`def singledispatch(f...`
                     Body: BlockNode SourceSection: None
@@ -7192,9 +7192,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: StringLiteralNode: `generic_func.dispatc...`
-                            FreeVarSlots: cache_token, , dispatch_cache, , registry, 
+                            FreeVarSlots: cache_token, dispatch_cache, registry
                             ExecutionSlots:
-                              FreeVarsSlots: cache_token, , dispatch_cache, , registry, 
+                              FreeVarsSlots: cache_token, dispatch_cache, registry
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [29923,30673]`def dispatch(cls):↵ ...`
                               Name: dispatch
@@ -7205,7 +7205,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               NeedsCellFrame: False
                               FrameDescriptor: 7 slots [<return_val>, cache_token, cls, current_token, dispatch_cache, impl, registry]
                               ExecutionSlots:
-                                FreeVarsSlots: cache_token, , dispatch_cache, , registry, 
+                                FreeVarsSlots: cache_token, dispatch_cache, registry
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [29923,30673]`def dispatch(cls):↵ ...`
                                 ReturnTargetNode SourceSection: [29923,30673]`def dispatch(cls):↵ ...`
@@ -7330,10 +7330,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               ObjectLiteralNode SourceSection: [30696,30700]`None`
                             KwArguments: None
                             Documentation: StringLiteralNode: `generic_func.registe...`
-                            FreeVarSlots: cache_token, , dispatch_cache, , register, , registry, 
+                            FreeVarSlots: cache_token, dispatch_cache, register, registry
                             ExecutionSlots:
-                              FreeVarsSlots: cache_token, , dispatch_cache, , register, , registry, 
-                              CellVarsSlots: cls, 
+                              FreeVarsSlots: cache_token, dispatch_cache, register, registry
+                              CellVarsSlots: cls
                             FunctionRootNode SourceSection: [30673,31866]`def register(cls, fu...`
                               Name: register
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -7343,8 +7343,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               NeedsCellFrame: False
                               FrameDescriptor: 12 slots [<>temp10, <>temp11, <return_val>, ann, argname, cache_token, cls, dispatch_cache, func, get_type_hints, register, registry]
                               ExecutionSlots:
-                                FreeVarsSlots: cache_token, , dispatch_cache, , register, , registry, 
-                                CellVarsSlots: cls, 
+                                FreeVarsSlots: cache_token, dispatch_cache, register, registry
+                                CellVarsSlots: cls
                               InnerRootNode SourceSection: [30673,31866]`def register(cls, fu...`
                                 ReturnTargetNode SourceSection: [30673,31866]`def register(cls, fu...`
                                   Body: BlockNode SourceSection: None
@@ -7389,9 +7389,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 Arguments: None
                                                 KwArguments: None
                                                 Documentation: None
-                                                FreeVarSlots: cls, , register, 
+                                                FreeVarSlots: cls, register
                                                 ExecutionSlots:
-                                                  FreeVarsSlots: cls, , register, 
+                                                  FreeVarsSlots: cls, register
                                                   CellVarsSlots: None
                                                 FunctionRootNode SourceSection: [30964,30990]`lambda f: register(c...`
                                                   Name: <lambda>
@@ -7402,7 +7402,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   NeedsCellFrame: False
                                                   FrameDescriptor: 4 slots [<return_val>, cls, f, register]
                                                   ExecutionSlots:
-                                                    FreeVarsSlots: cls, , register, 
+                                                    FreeVarsSlots: cls, register
                                                     CellVarsSlots: None
                                                   InnerRootNode SourceSection: [30964,30990]`lambda f: register(c...`
                                                     ReturnTargetNode SourceSection: [30964,30990]`lambda f: register(c...`
@@ -7585,9 +7585,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: dispatch, 
+                            FreeVarSlots: dispatch
                             ExecutionSlots:
-                              FreeVarsSlots: dispatch, 
+                              FreeVarsSlots: dispatch
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [31866,31953]`def wrapper(*args, *...`
                               Name: wrapper
@@ -7598,7 +7598,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               NeedsCellFrame: False
                               FrameDescriptor: 4 slots [<return_val>, args, dispatch, kw]
                               ExecutionSlots:
-                                FreeVarsSlots: dispatch, 
+                                FreeVarsSlots: dispatch
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [31866,31953]`def wrapper(*args, *...`
                                 ReturnTargetNode SourceSection: [31866,31953]`def wrapper(*args, *...`

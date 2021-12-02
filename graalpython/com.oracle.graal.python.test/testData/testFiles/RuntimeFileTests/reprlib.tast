@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: fillvalue, 
+            CellVarsSlots: fillvalue
           FunctionRootNode SourceSection: [201,1178]`def recursive_repr(f...`
             Name: recursive_repr
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -63,7 +63,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
             FrameDescriptor: 3 slots [<return_val>, decorating_function, fillvalue]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: fillvalue, 
+              CellVarsSlots: fillvalue
             InnerRootNode SourceSection: [201,1178]`def recursive_repr(f...`
               ReturnTargetNode SourceSection: [201,1178]`def recursive_repr(f...`
                 Body: BlockNode SourceSection: None
@@ -82,10 +82,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: fillvalue, 
+                        FreeVarSlots: fillvalue
                         ExecutionSlots:
-                          FreeVarsSlots: fillvalue, 
-                          CellVarsSlots: repr_running, , user_function, 
+                          FreeVarsSlots: fillvalue
+                          CellVarsSlots: repr_running, user_function
                         FunctionRootNode SourceSection: [321,1150]`def decorating_funct...`
                           Name: decorating_function
                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -95,8 +95,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           NeedsCellFrame: False
                           FrameDescriptor: 5 slots [<return_val>, fillvalue, repr_running, user_function, wrapper]
                           ExecutionSlots:
-                            FreeVarsSlots: fillvalue, 
-                            CellVarsSlots: repr_running, , user_function, 
+                            FreeVarsSlots: fillvalue
+                            CellVarsSlots: repr_running, user_function
                           InnerRootNode SourceSection: [321,1150]`def decorating_funct...`
                             ReturnTargetNode SourceSection: [321,1150]`def decorating_funct...`
                               Body: BlockNode SourceSection: None
@@ -123,9 +123,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Arguments: None
                                       KwArguments: None
                                       Documentation: None
-                                      FreeVarSlots: fillvalue, , repr_running, , user_function, 
+                                      FreeVarSlots: fillvalue, repr_running, user_function
                                       ExecutionSlots:
-                                        FreeVarsSlots: fillvalue, , repr_running, , user_function, 
+                                        FreeVarsSlots: fillvalue, repr_running, user_function
                                         CellVarsSlots: None
                                       FunctionRootNode SourceSection: [399,792]`def wrapper(self):↵ ...`
                                         Name: wrapper
@@ -136,7 +136,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         NeedsCellFrame: False
                                         FrameDescriptor: 7 slots [<return_val>, fillvalue, key, repr_running, result, self, user_function]
                                         ExecutionSlots:
-                                          FreeVarsSlots: fillvalue, , repr_running, , user_function, 
+                                          FreeVarsSlots: fillvalue, repr_running, user_function
                                           CellVarsSlots: None
                                         InnerRootNode SourceSection: [399,792]`def wrapper(self):↵ ...`
                                           ReturnTargetNode SourceSection: [399,792]`def wrapper(self):↵ ...`
@@ -624,7 +624,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: newlevel, , repr1, 
+                            CellVarsSlots: newlevel, repr1
                           FunctionRootNode SourceSection: [1920,2400]`def _repr_iterable(s...`
                             Name: _repr_iterable
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -635,7 +635,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             FrameDescriptor: 13 slots [<return_val>, left, level, maxiter, n, newlevel, pieces, repr1, right, s, self, trail, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: newlevel, , repr1, 
+                              CellVarsSlots: newlevel, repr1
                             InnerRootNode SourceSection: [1920,2400]`def _repr_iterable(s...`
                               ReturnTargetNode SourceSection: [1920,2400]`def _repr_iterable(s...`
                                 Body: BlockNode SourceSection: None
@@ -752,7 +752,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 NeedsCellFrame: False
                                                 FrameDescriptor: 4 slots [<return_val>, elem, newlevel, repr1]
                                                 ExecutionSlots:
-                                                  FreeVarsSlots: newlevel, , repr1, 
+                                                  FreeVarsSlots: newlevel, repr1
                                                   CellVarsSlots: None
                                                 InnerRootNode SourceSection: [2158,2210]`repr1(elem, newlevel...`
                                                   GeneratorReturnTargetNode SourceSection: [2158,2210]`repr1(elem, newlevel...`

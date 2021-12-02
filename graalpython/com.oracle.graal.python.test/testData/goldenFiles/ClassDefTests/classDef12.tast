@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: method_and_var, 
+                            CellVarsSlots: method_and_var
                           FunctionRootNode SourceSection: [14,393]`def get_nested_class...`
                             Name: get_nested_class
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -54,7 +54,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                             FrameDescriptor: 3 slots [<return_val>, Test, method_and_var]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: method_and_var, 
+                              CellVarsSlots: method_and_var
                             InnerRootNode SourceSection: [14,393]`def get_nested_class...`
                               ReturnTargetNode SourceSection: [14,393]`def get_nested_class...`
                                 Body: BlockNode SourceSection: None
@@ -76,9 +76,9 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                           Arguments: None
                                           KwArguments: None
                                           Documentation: None
-                                          FreeVarSlots: method_and_var, 
+                                          FreeVarSlots: method_and_var
                                           ExecutionSlots:
-                                            FreeVarsSlots: method_and_var, 
+                                            FreeVarsSlots: method_and_var
                                             CellVarsSlots: None
                                           ClassBodyRootNode SourceSection: [77,375]`class Test(object):↵...`
                                             Name: Test
@@ -88,7 +88,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                             NeedsCellFrame: False
                                             FrameDescriptor: 4 slots [actual_global, method_and_var, str, test]
                                             ExecutionSlots:
-                                              FreeVarsSlots: method_and_var, 
+                                              FreeVarsSlots: method_and_var
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [77,375]`class Test(object):↵...`
                                               ReturnTargetNode SourceSection: [77,375]`class Test(object):↵...`
@@ -143,9 +143,9 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                         Arguments: None
                                                         KwArguments: None
                                                         Documentation: None
-                                                        FreeVarSlots: method_and_var, 
+                                                        FreeVarSlots: method_and_var
                                                         ExecutionSlots:
-                                                          FreeVarsSlots: method_and_var, 
+                                                          FreeVarsSlots: method_and_var
                                                           CellVarsSlots: None
                                                         FunctionRootNode SourceSection: [179,245]`def test(self):↵    ...`
                                                           Name: test
@@ -156,7 +156,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                           NeedsCellFrame: False
                                                           FrameDescriptor: 3 slots [<return_val>, method_and_var, self]
                                                           ExecutionSlots:
-                                                            FreeVarsSlots: method_and_var, 
+                                                            FreeVarsSlots: method_and_var
                                                             CellVarsSlots: None
                                                           InnerRootNode SourceSection: [179,245]`def test(self):↵    ...`
                                                             ReturnTargetNode SourceSection: [179,245]`def test(self):↵    ...`

@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: a_local_var, 
+              CellVarsSlots: a_local_var
             FunctionRootNode SourceSection: [0,210]`def fn():â†µ    a_loca...`
               Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -28,7 +28,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
               FrameDescriptor: 3 slots [<return_val>, a_local_var, f]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: a_local_var, 
+                CellVarsSlots: a_local_var
               InnerRootNode SourceSection: [0,210]`def fn():â†µ    a_loca...`
                 ReturnTargetNode SourceSection: [0,210]`def fn():â†µ    a_loca...`
                   Body: BlockNode SourceSection: None
@@ -46,9 +46,9 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: a_local_var, 
+                          FreeVarSlots: a_local_var
                           ExecutionSlots:
-                            FreeVarsSlots: a_local_var, 
+                            FreeVarsSlots: a_local_var
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [47,210]`def f():â†µ        cla...`
                             Name: f
@@ -58,7 +58,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                             NeedsCellFrame: False
                             FrameDescriptor: 3 slots [<return_val>, C, a_local_var]
                             ExecutionSlots:
-                              FreeVarsSlots: a_local_var, 
+                              FreeVarsSlots: a_local_var
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [47,210]`def f():â†µ        cla...`
                               ReturnTargetNode SourceSection: [47,210]`def f():â†µ        cla...`
@@ -76,9 +76,9 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                           Arguments: None
                                           KwArguments: None
                                           Documentation: None
-                                          FreeVarSlots: a_local_var, 
+                                          FreeVarSlots: a_local_var
                                           ExecutionSlots:
-                                            FreeVarsSlots: a_local_var, 
+                                            FreeVarsSlots: a_local_var
                                             CellVarsSlots: None
                                           ClassBodyRootNode SourceSection: [64,190]`class C(object):â†µ   ...`
                                             Name: C
@@ -88,7 +88,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                             NeedsCellFrame: False
                                             FrameDescriptor: 2 slots [a_local_var, method01]
                                             ExecutionSlots:
-                                              FreeVarsSlots: a_local_var, 
+                                              FreeVarsSlots: a_local_var
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [64,190]`class C(object):â†µ   ...`
                                               ReturnTargetNode SourceSection: [64,190]`class C(object):â†µ   ...`
@@ -112,9 +112,9 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                         Arguments: None
                                                         KwArguments: None
                                                         Documentation: None
-                                                        FreeVarSlots: a_local_var, 
+                                                        FreeVarSlots: a_local_var
                                                         ExecutionSlots:
-                                                          FreeVarsSlots: a_local_var, 
+                                                          FreeVarsSlots: a_local_var
                                                           CellVarsSlots: None
                                                         FunctionRootNode SourceSection: [131,190]`def method01():â†µ    ...`
                                                           Name: method01
@@ -124,7 +124,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                           NeedsCellFrame: False
                                                           FrameDescriptor: 2 slots [<return_val>, a_local_var]
                                                           ExecutionSlots:
-                                                            FreeVarsSlots: a_local_var, 
+                                                            FreeVarsSlots: a_local_var
                                                             CellVarsSlots: None
                                                           InnerRootNode SourceSection: [131,190]`def method01():â†µ    ...`
                                                             ReturnTargetNode SourceSection: [131,190]`def method01():â†µ    ...`

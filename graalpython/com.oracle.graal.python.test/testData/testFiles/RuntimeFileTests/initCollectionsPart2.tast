@@ -428,7 +428,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: key, 
+                            CellVarsSlots: key
                           FunctionRootNode SourceSection: [1712,1794]`def __contains__(sel...`
                             Name: __contains__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -439,7 +439,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                             FrameDescriptor: 3 slots [<return_val>, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: key, 
+                              CellVarsSlots: key
                             InnerRootNode SourceSection: [1712,1794]`def __contains__(sel...`
                               ReturnTargetNode SourceSection: [1712,1794]`def __contains__(sel...`
                                 Body: BlockNode SourceSection: None
@@ -480,7 +480,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             NeedsCellFrame: False
                                             FrameDescriptor: 3 slots [<return_val>, key, m]
                                             ExecutionSlots:
-                                              FreeVarsSlots: key, 
+                                              FreeVarsSlots: key
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [1760,1787]`key in m for m in se...`
                                               GeneratorReturnTargetNode SourceSection: [1760,1787]`key in m for m in se...`
