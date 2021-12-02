@@ -134,7 +134,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -214,7 +213,8 @@ public abstract class ExternalFunctionNodes {
         LENFUNC(38, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
         OBJOBJPROC(39, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
         OBJOBJARGPROC(40, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
-        NEW(41);
+        NEW(41),
+        MP_DELITEM(42, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create);
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
 
@@ -378,6 +378,10 @@ public abstract class ExternalFunctionNodes {
                     }
                     nodeKlass = SetterRoot.class;
                     rootNodeFunction = l -> new SetterRoot(l, name, sig);
+                    break;
+                case MP_DELITEM:
+                    nodeKlass = MpDelItemRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MpDelItemRootNode(l, name, sig) : l -> new MpDelItemRootNode(l, name);
                     break;
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
@@ -1354,6 +1358,44 @@ public abstract class ExternalFunctionNodes {
     }
 
     /**
+     * Implement mapping of {@code __delitem__} to {@code mp_ass_subscript}. It handles adding the
+     * NULL 3rd argument.
+     */
+    static final class MpDelItemRootNode extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "i"}, KEYWORDS_HIDDEN_CALLABLE, true);
+        @Child private ReadIndexedArgumentNode readArg1Node;
+
+        MpDelItemRootNode(PythonLanguage language, String name) {
+            super(language, name, false);
+        }
+
+        MpDelItemRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
+            this.readArg1Node = ReadIndexedArgumentNode.create(1);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            Object arg1 = readArg1Node.execute(frame);
+            return new Object[]{self, arg1, PNone.NO_VALUE};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
+            releaseNativeWrapperNode.execute(cArguments[2]);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
      * Wrapper root node for reverse binary operations.
      */
     static final class MethReverseRootNode extends MethodDescriptorRoot {
@@ -1883,7 +1925,7 @@ public abstract class ExternalFunctionNodes {
             throw PRaiseNode.raise(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
 
-        protected static boolean isNativeNull(TruffleObject object) {
+        protected static boolean isNativeNull(Object object) {
             return object instanceof PythonNativeNull;
         }
 

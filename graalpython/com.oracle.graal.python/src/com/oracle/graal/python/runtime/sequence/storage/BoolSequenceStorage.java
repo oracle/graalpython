@@ -67,7 +67,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new BoolSequenceStorage(Arrays.copyOf(values, length));
+        return new BoolSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override

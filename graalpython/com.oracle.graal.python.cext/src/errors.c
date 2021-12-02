@@ -223,7 +223,7 @@ PyObject* PyErr_SetFromErrnoWithFilenameObjects(PyObject* exc, PyObject* filenam
         char *s = strerror(i);
         // TODO(fa): use PyUnicode_DecodeLocale once available
         // message = PyUnicode_DecodeLocale(s, "surrogateescape");
-        message = polyglot_from_string(s, SRC_CS);
+        message = PyUnicode_FromString(s);
     }
     else {
         /* Sometimes errno didn't get set */

@@ -44,9 +44,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -107,11 +110,20 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode {
 
     public abstract Object executeTernary(VirtualFrame frame, Object x, Object y, Object z);
 
+    protected final LookupInMROBaseNode createInplaceLookup() {
+        if (arithmetic.slot != null) {
+            return LookupCallableSlotInMRONode.create(arithmetic.slot);
+        } else {
+            return LookupAttributeInMRONode.create(arithmetic.methodName);
+        }
+    }
+
     @Specialization
     Object doBinary(VirtualFrame frame, Object left, Object right, Object z,
-                    @Cached("create(arithmetic.methodName)") LookupInheritedAttributeNode getattrInplace) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached("createInplaceLookup()") LookupInMROBaseNode lookupInplace) {
         Object result;
-        Object inplaceCallable = getattrInplace.execute(left);
+        Object inplaceCallable = lookupInplace.execute(getClassNode.execute(left));
         if (inplaceCallable != PNone.NO_VALUE) {
             // nb.: The only ternary in-place operator is '__ipow__' but according to 'typeobject.c:
             // slot_nb_inplace_power', this is always called as binary.

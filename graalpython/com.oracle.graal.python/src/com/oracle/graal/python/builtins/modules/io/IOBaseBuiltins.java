@@ -121,7 +121,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PIOBase)
-public class IOBaseBuiltins extends PythonBuiltins {
+public final class IOBaseBuiltins extends PythonBuiltins {
 
     // taken from usr/include/stdio.h
     public static final int BUFSIZ = 8192;

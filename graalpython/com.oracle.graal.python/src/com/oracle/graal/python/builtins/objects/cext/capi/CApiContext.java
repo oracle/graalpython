@@ -110,7 +110,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -167,7 +166,7 @@ public final class CApiContext extends CExtContext {
     @CompilationFinal private int pyLongBitsInDigit = -1;
 
     /** Cache for polyglot types of primitive and pointer types. */
-    @CompilationFinal(dimensions = 1) private final TruffleObject[] llvmTypeCache;
+    @CompilationFinal(dimensions = 1) private final Object[] llvmTypeCache;
 
     /** same as {@code moduleobject.c: max_module_number} */
     private long maxModuleNumber;
@@ -207,7 +206,7 @@ public final class CApiContext extends CExtContext {
         assert nullID == 0;
 
         // initialize primitive and pointer type cache
-        llvmTypeCache = new TruffleObject[LLVMType.values().length];
+        llvmTypeCache = new Object[LLVMType.values().length];
 
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
@@ -250,11 +249,11 @@ public final class CApiContext extends CExtContext {
         return pyLongBitsInDigit;
     }
 
-    public TruffleObject getLLVMTypeID(LLVMType llvmType) {
+    public Object getLLVMTypeID(LLVMType llvmType) {
         return llvmTypeCache[llvmType.ordinal()];
     }
 
-    public void setLLVMTypeID(LLVMType llvmType, TruffleObject llvmTypeId) {
+    public void setLLVMTypeID(LLVMType llvmType, Object llvmTypeId) {
         llvmTypeCache[llvmType.ordinal()] = llvmTypeId;
     }
 
@@ -542,12 +541,12 @@ public final class CApiContext extends CExtContext {
         return nativeObjectWrapperList.get(idx);
     }
 
-    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
+    public PythonAbstractNativeObject getPythonNativeObject(Object nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
                     GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, AttachLLVMTypeNode attachLLVMTypeNode) {
         return getPythonNativeObject(nativePtr, newRefProfile, validRefProfile, resurrectProfile, getObRefCntNode, addRefCntNode, false, attachLLVMTypeNode);
     }
 
-    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
+    public PythonAbstractNativeObject getPythonNativeObject(Object nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
                     GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
         CompilerAsserts.partialEvaluationConstant(addRefCntNode);
         CompilerAsserts.partialEvaluationConstant(steal);
@@ -587,7 +586,7 @@ public final class CApiContext extends CExtContext {
         return new PythonAbstractNativeObject(nativePtr);
     }
 
-    PythonAbstractNativeObject createPythonAbstractNativeObject(TruffleObject nativePtr, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
+    PythonAbstractNativeObject createPythonAbstractNativeObject(Object nativePtr, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
         PythonAbstractNativeObject nativeObject = new PythonAbstractNativeObject(attachLLVMTypeNode.execute(nativePtr));
         int nativeRefID = nativeObjectWrapperList.reserve();
         assert nativeRefID != -1;

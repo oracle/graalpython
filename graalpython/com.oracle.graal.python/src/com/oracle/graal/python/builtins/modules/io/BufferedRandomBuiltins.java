@@ -58,7 +58,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PBufferedRandom)
-public class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
+public final class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedRandomBuiltinsFactory.getFactories();
@@ -96,7 +96,7 @@ public class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends BaseInitNode {
 
-        @Child BufferedRandomInit init = BufferedRandomBuiltinsFactory.BufferedRandomInitNodeGen.create();
+        @Child private BufferedRandomInit init = BufferedRandomBuiltinsFactory.BufferedRandomInitNodeGen.create();
 
         @Override
         protected final void init(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {

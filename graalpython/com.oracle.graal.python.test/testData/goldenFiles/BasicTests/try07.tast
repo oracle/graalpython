@@ -18,6 +18,10 @@ ModuleRootNode Name: <module 'try07'> SourceSection: [0,91]`try:↵    pass↵ex
                 EmptyNode SourceSection: [41,45]`pass`
               WriteNameNodeGen SourceSection: None
                 Identifier: err
+              DeleteNameNodeGen SourceSection: None
+                Identifier: err
+                IsBuiltinClassProfile SourceSection: None
+                  GetClassNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [21,28]`OSError`
                 Identifier: OSError
                 IsBuiltinClassProfile SourceSection: None

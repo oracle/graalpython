@@ -523,13 +523,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone close(VirtualFrame frame, int fd,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil) {
             try {
                 PythonContext ctx = getContext();
                 if (ctx.getSharedMultiprocessingData().decrementFDRefCount(fd)) {
                     return PNone.NONE;
                 }
-                posixLib.close(getPosixSupport(), fd);
+                gil.release(true);
+                try {
+                    posixLib.close(getPosixSupport(), fd);
+                } finally {
+                    gil.acquire();
+                }
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -816,11 +822,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone ftruncate(VirtualFrame frame, int fd, long length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil,
                         @Cached BranchProfile errorProfile) {
             auditNode.audit("os.truncate", fd, length);
             while (true) {
                 try {
-                    posixLib.ftruncate(getPosixSupport(), fd, length);
+                    gil.release(true);
+                    try {
+                        posixLib.ftruncate(getPosixSupport(), fd, length);
+                    } finally {
+                        gil.acquire();
+                    }
                     return PNone.NONE;
                 } catch (PosixException e) {
                     errorProfile.enter();

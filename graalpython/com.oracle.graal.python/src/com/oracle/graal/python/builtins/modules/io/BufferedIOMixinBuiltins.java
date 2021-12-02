@@ -77,6 +77,10 @@ import java.util.List;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.CheckIsClosedNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.EnterBufferedNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.FlushAndRewindUnlockedNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -104,7 +108,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedWriter, PBufferedRandom})
-public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
+public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedIOMixinBuiltinsFactory.getFactories();
@@ -115,7 +119,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class CloseNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         private static Object close(VirtualFrame frame, PBuffered self,
-                        BufferedIONodes.EnterBufferedNode lock,
+                        EnterBufferedNode lock,
                         PyObjectCallMethodObjArgs callMethodClose) {
             try {
                 lock.enter(self);
@@ -125,7 +129,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 }
                 return res;
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
         }
 
@@ -135,7 +139,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodClose,
                         @Cached PyObjectCallMethodObjArgs callMethodDeallocWarn,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
+                        @Cached EnterBufferedNode lock,
                         @Cached ConditionProfile profile) {
             try {
                 lock.enter(self);
@@ -148,7 +152,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                     }
                 }
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
             /* flush() will most probably re-take the lock, so drop it first */
             try {
@@ -245,7 +249,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "isSupportedWhence(whence)"})
         static long doit(VirtualFrame frame, PBuffered self, Object off, int whence,
-                        @Cached("create(SEEK)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
+                        @Cached("create(SEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedIONodes.CheckIsSeekabledNode checkIsSeekabledNode,
                         @Cached BufferedIONodes.AsOffNumberNode asOffNumberNode,
                         @Cached BufferedIONodes.SeekNode seekNode) {
@@ -275,7 +279,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class TellNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static long doit(VirtualFrame frame, PBuffered self,
-                        @Cached BufferedIONodes.RawTellNode rawTellNode) {
+                        @Cached RawTellNode rawTellNode) {
             long pos = rawTellNode.execute(frame, self);
             pos -= rawOffset(self);
             /* TODO: sanity check (pos >= 0) */
@@ -295,10 +299,10 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "self.isWritable()"})
         static Object doit(VirtualFrame frame, PBuffered self, Object pos,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached("create(TRUNCATE)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
-                        @Cached BufferedIONodes.RawTellNode rawTellNode,
-                        @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
+                        @Cached EnterBufferedNode lock,
+                        @Cached("create(TRUNCATE)") CheckIsClosedNode checkIsClosedNode,
+                        @Cached RawTellNode rawTellNode,
+                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached PyObjectCallMethodObjArgs callMethodTruncate) {
             checkIsClosedNode.execute(frame, self);
             try {
@@ -309,7 +313,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 rawTellNode.execute(frame, self);
                 return res;
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
         }
 

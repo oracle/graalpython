@@ -68,6 +68,11 @@ def _reference_setitem(args):
     return listObj
 
 
+def _reference_reverse(args):
+    args[0].reverse()
+    return args[0]
+
+
 def _reference_SET_ITEM(args):
     listObj = args[0]
     pos = args[1]
@@ -321,5 +326,27 @@ class TestPyList(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyList_Reverse = CPyExtFunction(
+        _reference_reverse,
+        lambda: (
+            ([],),
+            ([1, 2, 3],),
+            ([1, "a", 0.1],),
+        ),
+        code='''PyObject* wrap_PyList_Reverse(PyObject* list) {
+            if (PyList_Reverse(list)) {
+                return NULL;
+            }
+            Py_INCREF(list);
+            return list;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* list"],
+        callfunction="wrap_PyList_Reverse",
         cmpfunc=unhandled_error_compare
     )

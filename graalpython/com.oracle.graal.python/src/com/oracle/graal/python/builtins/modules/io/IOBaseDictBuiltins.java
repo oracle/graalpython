@@ -68,7 +68,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendClasses = {PIOBase, PFileIO, PStringIO, PTextIOWrapper, PBytesIO,
                 PBufferedReader, PBufferedWriter, PBufferedRandom, PBufferedRWPair})
-public class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
+public final class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IOBaseDictBuiltinsFactory.getFactories();
@@ -82,13 +82,13 @@ public class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(none)")
-        protected Object doit(PythonObject self, @SuppressWarnings("unused") PNone none,
+        static Object doit(PythonObject self, @SuppressWarnings("unused") PNone none,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(self);
         }
 
         @Specialization
-        protected Object setDict(PythonObject self, @SuppressWarnings("unused") Object d) {
+        Object setDict(PythonObject self, @SuppressWarnings("unused") Object d) {
             throw raise(PythonBuiltinClassType.AssertionError, "attribute '__dict__' of '%p' objects is not writable", self);
         }
     }

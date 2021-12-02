@@ -1452,17 +1452,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return BuiltinFunctionsFactory.IsSubClassNodeFactory.create(newDepth);
         }
 
-        private static boolean isSubclassCheckInternal(VirtualFrame frame, Object derived, Object cls, LookupAndCallBinaryNode subclassCheckNode, CoerceToBooleanNode castToBooleanNode) {
-            Object instanceCheckResult = subclassCheckNode.executeObject(frame, cls, derived);
-            return instanceCheckResult != NOT_IMPLEMENTED && castToBooleanNode.executeBoolean(frame, instanceCheckResult);
-        }
-
         @Specialization(guards = "!isPTuple(cls)")
         static boolean isSubclass(VirtualFrame frame, Object derived, Object cls,
                         @Cached("create(__SUBCLASSCHECK__)") LookupAndCallBinaryNode subclassCheckNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
-            return isSubclassCheckInternal(frame, derived, cls, subclassCheckNode, castToBooleanNode) || isSubtypeNode.execute(frame, derived, cls);
+            Object instanceCheckResult = subclassCheckNode.executeObject(frame, cls, derived);
+            if (instanceCheckResult != NOT_IMPLEMENTED) {
+                return castToBooleanNode.executeBoolean(frame, instanceCheckResult);
+            }
+            return isSubtypeNode.execute(frame, derived, cls);
         }
     }
 

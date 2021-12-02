@@ -680,6 +680,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__len__", mappings->mp_length, -1, JWRAPPER_LENFUNC);
         ADD_SLOT_CONV("__getitem__", mappings->mp_subscript, -2, JWRAPPER_BINARYFUNC);
         ADD_SLOT_CONV("__setitem__", mappings->mp_ass_subscript, -3, JWRAPPER_OBJOBJARGPROC);
+        ADD_SLOT_CONV("__delitem__", mappings->mp_ass_subscript, -3, JWRAPPER_MP_DELITEM);
     }
 
     PyAsyncMethods* async = cls->tp_as_async;

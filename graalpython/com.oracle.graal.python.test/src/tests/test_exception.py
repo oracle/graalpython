@@ -634,3 +634,11 @@ class ExceptionTests(unittest.TestCase):
         except UnicodeEncodeError as e:
             errMsg = str(e)
         assert len(errMsg) > 0
+
+    def test_exception_scope(self):
+        g = {}
+        exec("try:1\nexcept Exception as e: pass", g)
+        assert 'e' not in g
+        exec("try:1/0\nexcept Exception as e: pass", g)
+        assert 'e' not in g
+

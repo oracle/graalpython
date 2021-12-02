@@ -82,13 +82,18 @@ public abstract class PyObjectGetMethod extends Node {
     public abstract Object execute(Frame frame, Object receiver, String name);
 
     protected static boolean isObjectGetAttribute(Object lazyClass) {
-        Object slotValue = null;
+        Object getattributeSlot = null;
+        Object getattrSlot = null;
         if (lazyClass instanceof PythonBuiltinClassType) {
-            slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonBuiltinClassType) lazyClass);
+            PythonBuiltinClassType type = (PythonBuiltinClassType) lazyClass;
+            getattributeSlot = SpecialMethodSlot.GetAttribute.getValue(type);
+            getattrSlot = SpecialMethodSlot.GetAttr.getValue(type);
         } else if (lazyClass instanceof PythonManagedClass) {
-            slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonManagedClass) lazyClass);
+            PythonManagedClass type = (PythonManagedClass) lazyClass;
+            getattributeSlot = SpecialMethodSlot.GetAttribute.getValue(type);
+            getattrSlot = SpecialMethodSlot.GetAttr.getValue(type);
         }
-        return slotValue == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE;
+        return getattributeSlot == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE && getattrSlot == PNone.NO_VALUE;
     }
 
     @Specialization(guards = "!isObjectGetAttribute(lazyClass)", limit = "1")

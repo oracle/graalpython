@@ -7765,6 +7765,10 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: err
                                                       Frame: [42,err,Illegal]
+                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: err
+                                                      Frame: [42,err,Illegal]
+                                                      ObjectLiteralNode SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [30504,30509]`error`
                                                       Identifier: error
                                                   BlockNode SourceSection: None

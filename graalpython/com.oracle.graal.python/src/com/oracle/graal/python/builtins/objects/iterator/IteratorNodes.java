@@ -40,15 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIterator;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodesFactory.GetInternalIteratorSequenceStorageNodeGen;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -73,7 +80,9 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -85,8 +94,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
-import java.util.ArrayList;
-import java.util.List;
 
 public abstract class IteratorNodes {
 
@@ -178,6 +185,114 @@ public abstract class IteratorNodes {
                 }
             }
             return -1;
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public abstract static class GetInternalIteratorSequenceStorage extends Node {
+        public static GetInternalIteratorSequenceStorage getUncached() {
+            return GetInternalIteratorSequenceStorageNodeGen.getUncached();
+        }
+
+        /**
+         * The argument must be a builtin iterator, which points to the first element of the
+         * internal sequence storage. Returns {@code null} if the sequence storage is not available
+         * or if the iterator is not pointing to the first item in the storage.
+         */
+        public final SequenceStorage execute(PBuiltinIterator iterator) {
+            assert GetClassNode.getUncached().execute(iterator) == PIterator;
+            assert iterator.index == 0 && !iterator.isExhausted();
+            return executeInternal(iterator);
+        }
+
+        protected abstract SequenceStorage executeInternal(PBuiltinIterator iterator);
+
+        @Specialization(guards = "isList(it.sequence)")
+        static SequenceStorage doSequenceList(PSequenceIterator it) {
+            return ((PList) it.sequence).getSequenceStorage();
+        }
+
+        @Specialization
+        static SequenceStorage doSequenceLong(PLongSequenceIterator it) {
+            return it.sequence;
+        }
+
+        @Specialization
+        static SequenceStorage doSequenceDouble(PDoubleSequenceIterator it) {
+            return it.sequence;
+        }
+
+        @Specialization
+        static SequenceStorage doSequenceObj(PObjectSequenceIterator it) {
+            return it.sequence;
+        }
+
+        @Specialization
+        static SequenceStorage doSequenceIntSeq(PIntegerSequenceIterator it) {
+            return it.sequence;
+        }
+
+        @Specialization(guards = "isPTuple(it.sequence)")
+        static SequenceStorage doSequenceTuple(PSequenceIterator it) {
+            return ((PTuple) it.sequence).getSequenceStorage();
+        }
+
+        @Fallback
+        static SequenceStorage doOthers(PBuiltinIterator it) {
+            return null;
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    public abstract static class BuiltinIteratorLengthHint extends Node {
+        /**
+         * The argument must be a builtin iterator. Returns {@code -1} if the length hint is not
+         * available and rewrites itself to generic fallback that always returns {@code -1}.
+         */
+        public final int execute(PBuiltinIterator iterator) {
+            assert GetClassNode.getUncached().execute(iterator) == PIterator;
+            return executeInternal(iterator);
+        }
+
+        protected abstract int executeInternal(PBuiltinIterator iterator);
+
+        protected static SequenceStorage getStorage(GetInternalIteratorSequenceStorage getSeqStorage, PBuiltinIterator it) {
+            return it.index != 0 || it.isExhausted() ? null : getSeqStorage.execute(it);
+        }
+
+        @Specialization(guards = "storage != null")
+        static int doSeqStorage(@SuppressWarnings("unused") PBuiltinIterator it,
+                        @SuppressWarnings("unused") @Cached GetInternalIteratorSequenceStorage getSeqStorage,
+                        @Bind("getStorage(getSeqStorage, it)") SequenceStorage storage) {
+            return ensurePositive(storage.length());
+        }
+
+        @Specialization
+        static int doString(PStringIterator it) {
+            return ensurePositive(it.value.length());
+        }
+
+        @Specialization
+        static int doSequenceArr(PArrayIterator it) {
+            return ensurePositive(it.array.getLength());
+        }
+
+        @Specialization
+        static int doSequenceIntRange(PIntRangeIterator it) {
+            return ensurePositive(it.getLength());
+        }
+
+        @Specialization(replaces = {"doSeqStorage", "doString", "doSequenceArr", "doSequenceIntRange"})
+        static int doGeneric(@SuppressWarnings("unused") PBuiltinIterator it) {
+            return -1;
+        }
+
+        static int ensurePositive(int len) {
+            if (len < 0) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            return len;
         }
     }
 

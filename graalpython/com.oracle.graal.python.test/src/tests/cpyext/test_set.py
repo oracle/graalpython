@@ -57,6 +57,12 @@ def _reference_contains(args):
     except TypeError:
         return raise_Py6_SystemError()
 
+
+def _reference_clear(args):
+    args[0].clear()
+    return args[0]
+
+
 class FrozenSetSubclass(frozenset):
     pass
 
@@ -199,6 +205,27 @@ class TestPySet(CPyExtTestCase):
         resultspec="n",
         argspec='O',
         arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySet_Clear = CPyExtFunction(
+        _reference_clear,
+        lambda: (
+            ({1, 2, 3},),
+            ({1, "a", 0.1},),
+        ),
+        code='''PyObject* wrap_PySet_Clear(PyObject* set) {
+            if (PySet_Clear(set)) {
+                return NULL;
+            }
+            Py_INCREF(set);
+            return set;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* set"],
+        callfunction="wrap_PySet_Clear",
         cmpfunc=unhandled_error_compare
     )
 

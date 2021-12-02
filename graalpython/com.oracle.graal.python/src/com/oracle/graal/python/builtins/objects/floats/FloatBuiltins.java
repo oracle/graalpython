@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -654,8 +655,15 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static long hashDouble(double self) {
+        static long doDouble(double self) {
             return PyObjectHashNode.hash(self);
+        }
+
+        @Specialization(guards = "dval != null")
+        static long doNativeFloat(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeObject object,
+                        @SuppressWarnings("unused") @Cached FromNativeSubclassNode getFloat,
+                        @Bind("getFloat.execute(frame, object)") Double dval) {
+            return PyObjectHashNode.hash(dval);
         }
     }
 

@@ -107,6 +107,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 import sun.misc.Unsafe;
@@ -372,9 +373,15 @@ public final class NFIPosixSupport extends PosixSupport {
             Object unbound;
             try {
                 InteropLibrary interop = InteropLibrary.getUncached();
+                SignatureLibrary sigs = SignatureLibrary.getUncached();
+
+                String sig = String.format("with %s %s", posix.nfiBackend, function.signature);
+                Source sigSrc = Source.newBuilder("nfi", sig, "posix-nfi-signature").internal(true).build();
+                Object signature = posix.context.getEnv().parseInternal(sigSrc).call();
+
                 unbound = interop.readMember(library, function.name());
-                posix.cachedFunctions.set(function.ordinal(), interop.invokeMember(unbound, "bind", function.signature));
-            } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException e) {
+                posix.cachedFunctions.set(function.ordinal(), sigs.bind(signature, unbound));
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 throw CompilerDirectives.shouldNotReachHere(function.name(), e);
             }
         }

@@ -47,14 +47,15 @@ import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.M
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
+import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -213,6 +214,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
@@ -226,6 +228,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -252,7 +255,6 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -344,7 +346,6 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -1634,6 +1635,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyUnicode_Contains", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyUnicodeContains extends PythonBinaryBuiltinNode {
+        @Specialization
+        int contains(VirtualFrame frame, Object haystack, Object needle,
+                        @Cached StringBuiltins.ContainsNode containsNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return containsNode.executeBool(haystack, needle) ? 1 : 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+    }
+
     @Builtin(name = "do_richcompare", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
@@ -2156,7 +2173,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Unicode_DecodeUTF32 extends NativeUnicodeBuiltin {
 
         @Specialization
-        Object doUnicodeStringErrors(VirtualFrame frame, TruffleObject o, long size, String errors, int byteorder, Object errorMarker,
+        Object doUnicodeStringErrors(VirtualFrame frame, Object o, long size, String errors, int byteorder, Object errorMarker,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
@@ -2174,7 +2191,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doUnicodeStringErrors")
-        Object doUnicode(VirtualFrame frame, TruffleObject o, long size, Object errors, int byteorder, Object errorMarker,
+        Object doUnicode(VirtualFrame frame, Object o, long size, Object errors, int byteorder, Object errorMarker,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
@@ -2826,7 +2843,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleHandleCacheCreate extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object createCache(TruffleObject ptrToResolveHandle) {
+        static Object createCache(Object ptrToResolveHandle) {
             return new HandleCache(ptrToResolveHandle);
         }
     }
@@ -2896,7 +2913,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyLongFromVoidPtr extends PythonUnaryBuiltinNode {
         @Specialization(limit = "2")
-        Object doPointer(TruffleObject pointer,
+        Object doPointer(Object pointer,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @CachedLibrary("pointer") InteropLibrary lib) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
@@ -4137,6 +4154,23 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
             return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), "invalid item for assignment");
+        }
+    }
+
+    @Builtin(name = "PyList_Reverse", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyListReverse extends PythonUnaryBuiltinNode {
+        @Specialization
+        int reverse(VirtualFrame frame, PList self,
+                        @Cached ListBuiltins.ListReverseNode reverseNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                reverseNode.execute(frame, self);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
         }
     }
 

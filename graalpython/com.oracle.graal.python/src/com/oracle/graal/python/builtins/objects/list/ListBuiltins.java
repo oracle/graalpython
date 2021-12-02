@@ -953,10 +953,7 @@ public class ListBuiltins extends PythonBuiltins {
 
     @Builtin(name = __IMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class IMulNode extends PythonBuiltinNode {
-
-        public abstract PList execute(VirtualFrame frame, PList list, Object value);
-
+    abstract static class IMulNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doGeneric(VirtualFrame frame, PList list, Object right,
                         @Cached ConditionProfile updatedProfile,
@@ -971,7 +968,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected IMulNode createIMulNode() {
-            return ListBuiltinsFactory.IMulNodeFactory.create(null);
+            return ListBuiltinsFactory.IMulNodeFactory.create();
         }
     }
 
