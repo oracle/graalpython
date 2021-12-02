@@ -174,7 +174,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
     public static final String CANT_CONCAT_P_TO_S = "can't concat %p to %s";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
-    public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
+    public static final String CANT_CONVERT_TO_STR_IMPLICITLY = "Can't convert '%p' object to str implicitly";
     public static final String CANT_COMPARE = "Can't compare %p and %p";
     public static final String CANT_DELETE = "can't delete '%s'";
     public static final String CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE = "can't delete numeric/char attribute";

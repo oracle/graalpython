@@ -537,7 +537,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_EXPLICITELY, str);
+            throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_IMPLICITLY, str);
         }
     }
 
