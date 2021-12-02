@@ -187,6 +187,7 @@ declare_type(PyMethodDescr_Type, method_descriptor, PyMethodDescrObject);
 declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject);
 declare_type(PyMemberDescr_Type, member_descriptor, PyMemberDescrObject);
 declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
+declare_type(_PyExc_StopIteration, StopIteration, PyStopIterationObject);
 declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
 declare_type(PyFunction_Type, function, PyFunctionObject);
 declare_type(PyMethod_Type, method, PyMethodObject);

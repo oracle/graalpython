@@ -3526,6 +3526,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: exc
                                               Frame: [22,exc,Illegal]
+                                            WriteLocalVariableNodeGen SourceSection: None
+                                              Identifier: exc
+                                              Frame: [22,exc,Illegal]
+                                              ObjectLiteralNode SourceSection: None
                                             TupleLiteralNode SourceSection: [17171,17199]`(AttributeError, Val...`
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [17172,17186]`AttributeError`
                                                 Identifier: AttributeError

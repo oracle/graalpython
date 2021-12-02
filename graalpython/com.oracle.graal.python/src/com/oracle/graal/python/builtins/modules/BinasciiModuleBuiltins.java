@@ -171,9 +171,50 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private ByteSequenceStorage b64decode(byte[] data, int dataLen) {
             try {
+                /*
+                 * The JDK decoder behaves differently in some corner cases. It is more restrictive
+                 * regarding superfluous padding. On the other hand, it's more permissive when it
+                 * comes to lack of padding. We compute the expected padding ourselves to cover
+                 * these two cases manually.
+                 */
+                // Compute the expected and real padding
+                int base64chars = 0;
+                int lastBase64Char = -1;
+                int padding = 0;
+                for (int i = 0; i < dataLen; i++) {
+                    byte c = data[i];
+                    if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '+' || c == '/') {
+                        lastBase64Char = i;
+                        base64chars++;
+                        padding = 0;
+                    }
+                    if (c == '=') {
+                        padding++;
+                    }
+                }
+                int expectedPadding = 0;
+                if (base64chars % 4 == 1) {
+                    throw PRaiseNode.raiseUncached(this, BinasciiError, "Invalid base64-encoded string: number of data characters (1) cannot be 1 more than a multiple of 4");
+                } else if (base64chars % 4 == 2) {
+                    expectedPadding = 2;
+                } else if (base64chars % 4 == 3) {
+                    expectedPadding = 1;
+                }
+                if (padding < expectedPadding) {
+                    throw PRaiseNode.raiseUncached(this, BinasciiError, "Incorrect padding");
+                }
+                // Find the end of the expected padding, if any
+                int decodeLen = lastBase64Char + 1;
+                int correctedPadding = 0;
+                for (int i = decodeLen; correctedPadding < expectedPadding && i < dataLen; i++) {
+                    if (data[i] == '=') {
+                        correctedPadding++;
+                        decodeLen = i + 1;
+                    }
+                }
                 // Using MIME decoder because that one skips over anything that is not the alphabet,
                 // just like CPython does
-                ByteBuffer result = Base64.getMimeDecoder().decode(ByteBuffer.wrap(data, 0, dataLen));
+                ByteBuffer result = Base64.getMimeDecoder().decode(ByteBuffer.wrap(data, 0, decodeLen));
                 return new ByteSequenceStorage(result.array(), result.limit());
             } catch (IllegalArgumentException e) {
                 throw PRaiseNode.raiseUncached(this, BinasciiError, e);

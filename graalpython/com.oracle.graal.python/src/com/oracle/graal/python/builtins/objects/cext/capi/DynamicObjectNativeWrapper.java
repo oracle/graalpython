@@ -117,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -149,6 +150,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1259,22 +1261,38 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return doPCodeCached(object, nativeWrapper, key, NativeMember.byName(key), factory, toSulongNode);
         }
 
-        // TODO: fallback guard
-        @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key,
+        @Specialization(guards = {"eq(VALUE, key)", "isStopIteration(exception, getClassNode, isSubtypeNode)"}, limit = "1")
+        static Object doException(PBaseException exception, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("getClassNode") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(getAttr.execute(null, exception, "value"));
+        }
+
+        protected boolean isStopIteration(PBaseException exception, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(exception), PythonBuiltinClassType.StopIteration);
+        }
+
+        @Fallback
+        static Object doGeneric(@SuppressWarnings("unused") Object object, PythonNativeWrapper nativeWrapper, String key,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
-            // This is the preliminary generic case: There are native members we know that they
-            // exist but we do currently not represent them. So, store them into a dynamic object
-            // such that native code at least reads the value that was written before.
-            if (nativeWrapper.isMemberReadable(key)) {
-                logGeneric(key);
-                DynamicObjectStorage nativeMemberStore = nativeWrapper.getNativeMemberStore();
-                if (nativeMemberStore != null) {
-                    return lib.getItem(nativeMemberStore, key);
+            if (nativeWrapper instanceof DynamicObjectNativeWrapper) {
+                DynamicObjectNativeWrapper dynamicWrapper = (DynamicObjectNativeWrapper) nativeWrapper;
+                // This is the preliminary generic case: There are native members we know that they
+                // exist but we do currently not represent them. So, store them into a dynamic
+                // object
+                // such that native code at least reads the value that was written before.
+                if (dynamicWrapper.isMemberReadable(key)) {
+                    logGeneric(key);
+                    DynamicObjectStorage nativeMemberStore = dynamicWrapper.getNativeMemberStore();
+                    if (nativeMemberStore != null) {
+                        return lib.getItem(nativeMemberStore, key);
+                    }
+                    return toSulongNode.execute(getNativeNullNode.execute());
                 }
-                return toSulongNode.execute(getNativeNullNode.execute());
             }
             throw UnknownIdentifierException.create(key);
         }

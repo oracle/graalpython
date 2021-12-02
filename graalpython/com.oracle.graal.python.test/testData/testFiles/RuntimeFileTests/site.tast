@@ -3078,6 +3078,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: exc
                                 Frame: [1,exc,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: exc
+                                Frame: [1,exc,Illegal]
+                                ObjectLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [17628,17639]`ImportError`
                                 Identifier: ImportError
                             BlockNode SourceSection: None
@@ -3141,6 +3145,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: err
                             Frame: [2,err,Illegal]
+                          WriteLocalVariableNodeGen SourceSection: None
+                            Identifier: err
+                            Frame: [2,err,Illegal]
+                            ObjectLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [17764,17773]`Exception`
                             Identifier: Exception
                         BlockNode SourceSection: None
@@ -3201,6 +3209,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: exc
                                 Frame: [1,exc,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: exc
+                                Frame: [1,exc,Illegal]
+                                ObjectLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [18205,18216]`ImportError`
                                 Identifier: ImportError
                             BlockNode SourceSection: None
@@ -3264,6 +3276,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: err
                             Frame: [2,err,Illegal]
+                          WriteLocalVariableNodeGen SourceSection: None
+                            Identifier: err
+                            Frame: [2,err,Illegal]
+                            ObjectLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [18341,18350]`Exception`
                             Identifier: Exception
                         BlockNode SourceSection: None

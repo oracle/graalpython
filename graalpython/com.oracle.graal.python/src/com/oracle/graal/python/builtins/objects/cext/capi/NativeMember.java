@@ -281,7 +281,10 @@ public enum NativeMember {
     CO_NAMES("co_names", OBJECT),
     CO_VARNAMES("co_varnames", OBJECT),
     CO_FREEVARS("co_freevars", OBJECT),
-    CO_CELLVARS("co_cellvars", OBJECT);
+    CO_CELLVARS("co_cellvars", OBJECT),
+
+    // PyStopIterationObject
+    VALUE("value", OBJECT);
 
     private final String memberName;
     private final NativeMemberType type;

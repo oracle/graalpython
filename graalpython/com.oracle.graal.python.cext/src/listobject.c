@@ -106,3 +106,8 @@ UPCALL_ID(PyList_Insert);
 int PyList_Insert(PyObject *op, Py_ssize_t where, PyObject *newitem) {
     return UPCALL_CEXT_I(_jls_PyList_Insert, native_to_java(op), where, native_to_java(newitem));
 }
+
+UPCALL_ID(PyList_Reverse);
+PyAPI_FUNC(int) PyList_Reverse(PyObject *self) {
+    return UPCALL_CEXT_I(_jls_PyList_Reverse, native_to_java(self));
+}

@@ -93,6 +93,12 @@ def _reference_readchar(args):
     return ord(s[i])
 
 
+def _reference_contains(args):
+    if not isinstance(args[0], str) or not isinstance(args[1], str):
+        raise TypeError
+    return args[1] in args[0]
+
+
 class CustomString(str):
     pass
 
@@ -632,6 +638,18 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='On',
         arguments=["PyObject* str", "Py_ssize_t index"],
         callfunction="wrap_PyUnicode_ReadChar",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_Contains = CPyExtFunction(
+        _reference_contains,
+        lambda: (
+            ("aaa", "bbb"),
+            ("aaa", "a"),
+        ),
+        resultspec="i",
+        argspec='OO',
+        arguments=["PyObject* haystack", "PyObject* needle"],
         cmpfunc=unhandled_error_compare
     )
 

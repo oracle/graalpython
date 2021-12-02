@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -340,6 +341,11 @@ public abstract class ObjectNodes {
                 return id(materializeNode.execute(self));
             }
             return getObjectIdNode.execute(self);
+        }
+
+        @Specialization
+        Object id(PythonNativeVoidPtr self) {
+            return self.getNativePointer();
         }
 
         protected static boolean isDefaultCase(PythonObject object) {

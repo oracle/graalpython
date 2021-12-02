@@ -49,6 +49,10 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: err
                               Frame: [0,err,Illegal]
+                            WriteLocalVariableNodeGen SourceSection: None
+                              Identifier: err
+                              Frame: [0,err,Illegal]
+                              ObjectLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
                               Identifier: Exception
                           BlockNode SourceSection: None
