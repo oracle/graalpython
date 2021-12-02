@@ -23,7 +23,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
             CelVars: delta
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [delta, wrap, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, delta, wrap]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: delta, 
@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                           CelVars: fn
                           FreeVars: delta
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [fn, wrapped_f, delta, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, delta, fn, wrapped_f]
                           ExecutionSlots:
                             FreeVarsSlots: delta, 
                             CellVarsSlots: fn, 
@@ -88,7 +88,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                         CelVars: None
                                         FreeVars: delta, fn
                                         NeedsCellFrame: False
-                                        FrameDescriptor: 4 slots [args, fn, delta, <return_val>]
+                                        FrameDescriptor: 4 slots [<return_val>, args, delta, fn]
                                         ExecutionSlots:
                                           FreeVarsSlots: delta, , fn, 
                                           CellVarsSlots: None

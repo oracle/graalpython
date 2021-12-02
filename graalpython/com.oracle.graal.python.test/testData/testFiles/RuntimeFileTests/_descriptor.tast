@@ -81,7 +81,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
             CelVars: fields, name, named_tuple
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [name, fields, named_tuple, _define_named_tuple_methods, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, _define_named_tuple_methods, fields, name, named_tuple]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: fields, , name, , named_tuple, 
@@ -126,7 +126,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                             CelVars: None
                             FreeVars: fields, name
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [__name__, n_sequence_fields, fields, __str__, __repr__, name]
+                            FrameDescriptor: 6 slots [__name__, __repr__, __str__, fields, n_sequence_fields, name]
                             ExecutionSlots:
                               FreeVarsSlots: fields, , name, 
                               CellVarsSlots: None
@@ -175,7 +175,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           CelVars: None
                                           FreeVars: None
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 2 slots [self, <return_val>]
+                                          FrameDescriptor: 2 slots [<return_val>, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: None
                                             CellVarsSlots: None
@@ -214,7 +214,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           CelVars: None
                                           FreeVars: fields, name
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 6 slots [self, sb, f, name, fields, <return_val>]
+                                          FrameDescriptor: 6 slots [<return_val>, f, fields, name, sb, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: fields, , name, 
                                             CellVarsSlots: None
@@ -335,7 +335,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                           CelVars: None
                           FreeVars: fields, named_tuple
                           NeedsCellFrame: False
-                          FrameDescriptor: 8 slots [make_func, i, name, fields, named_tuple, <>temp5, <>temp6, <return_val>]
+                          FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, fields, i, make_func, name, named_tuple]
                           ExecutionSlots:
                             FreeVarsSlots: fields, , named_tuple, 
                             CellVarsSlots: None
@@ -384,7 +384,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                 CelVars: i
                                                 FreeVars: None
                                                 NeedsCellFrame: False
-                                                FrameDescriptor: 3 slots [i, func, <return_val>]
+                                                FrameDescriptor: 3 slots [<return_val>, func, i]
                                                 ExecutionSlots:
                                                   FreeVarsSlots: None
                                                   CellVarsSlots: i, 
@@ -417,7 +417,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                               CelVars: None
                                                               FreeVars: i
                                                               NeedsCellFrame: False
-                                                              FrameDescriptor: 3 slots [self, i, <return_val>]
+                                                              FrameDescriptor: 3 slots [<return_val>, i, self]
                                                               ExecutionSlots:
                                                                 FreeVarsSlots: i, 
                                                                 CellVarsSlots: None
@@ -527,7 +527,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 5 slots [__init__, __delattr__, __getattr__, __setattr__, __repr__]
+                  FrameDescriptor: 5 slots [__delattr__, __getattr__, __init__, __repr__, __setattr__]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: None
@@ -561,7 +561,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, kwargs, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, kwargs, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -612,7 +612,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, name, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, name, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -666,7 +666,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, name, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, name, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -718,7 +718,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 4 slots [self, name, value, <return_val>]
+                                FrameDescriptor: 4 slots [<return_val>, name, self, value]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -777,7 +777,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 8 slots [self, sb, ns, k, v, <>temp5, <>temp6, <return_val>]
+                                FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, k, ns, sb, self, v]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None

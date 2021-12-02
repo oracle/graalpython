@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'issueGR16991'> SourceSection: [0,105]`def gen(x): 
         WriteNameNodeGen SourceSection: [0,105]`def gen(x): ↵  while...`
           Identifier: gen
           GeneratorFunctionDefinitionNode Name: gen SourceSection: None
-            FrameDescriptor: 2 slots [x, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, x]
             Active Flags: 4
             For Nodes: 0
             Block Nodes: 1
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'issueGR16991'> SourceSection: [0,105]`def gen(x): 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [x, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, x]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

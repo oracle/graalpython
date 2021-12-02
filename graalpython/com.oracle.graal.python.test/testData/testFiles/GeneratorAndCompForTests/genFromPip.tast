@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
         WriteNameNodeGen SourceSection: [0,692]`def find_on_path(imp...`
           Identifier: find_on_path
           GeneratorFunctionDefinitionNode Name: find_on_path SourceSection: None
-            FrameDescriptor: 11 slots [importer, path_item, only, entries, filtered, path_item_entries, fullpath, factory, dist, entry, <return_val>]
+            FrameDescriptor: 11 slots [<return_val>, dist, entries, entry, factory, filtered, fullpath, importer, only, path_item, path_item_entries]
             Active Flags: 5
             For Nodes: 2
             Block Nodes: 3
@@ -31,7 +31,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
               CelVars: only, path_item
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 11 slots [importer, path_item, only, entries, filtered, path_item_entries, fullpath, factory, dist, entry, <return_val>]
+              FrameDescriptor: 11 slots [<return_val>, dist, entries, entry, factory, filtered, fullpath, importer, only, path_item, path_item_entries]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: only, , path_item, 
@@ -111,9 +111,9 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                         Frame: [4,filtered,Illegal]
                         GeneratorExpressionNode SourceSection: [342,424]`entry↵        for en...`
                           Name: <genexpr>
-                          FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, entry, only, path_item]
                           Enclosing
-                            FrameDescriptor: 11 slots [importer, path_item, only, entries, filtered, path_item_entries, fullpath, factory, dist, entry, <return_val>]
+                            FrameDescriptor: 11 slots [<return_val>, dist, entries, entry, factory, filtered, fullpath, importer, only, path_item, path_item_entries]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -124,7 +124,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             CelVars: None
                             FreeVars: only, path_item
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, entry, only, path_item]
                             ExecutionSlots:
                               FreeVarsSlots: only, , path_item, 
                               CellVarsSlots: None

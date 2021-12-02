@@ -23,7 +23,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
             CelVars: fn
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [fn, wrap, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, fn, wrap]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: fn, 
@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                           CelVars: None
                           FreeVars: fn
                           NeedsCellFrame: False
-                          FrameDescriptor: 2 slots [fn, <return_val>]
+                          FrameDescriptor: 2 slots [<return_val>, fn]
                           ExecutionSlots:
                             FreeVarsSlots: fn, 
                             CellVarsSlots: None

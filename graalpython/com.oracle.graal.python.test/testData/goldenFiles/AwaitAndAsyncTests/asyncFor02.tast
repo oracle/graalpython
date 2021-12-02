@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'asyncFor02'> SourceSection: [0,42]`async def f():â
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [i, b, <>temp2, <>temp3, <return_val>]
+              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, b, i]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

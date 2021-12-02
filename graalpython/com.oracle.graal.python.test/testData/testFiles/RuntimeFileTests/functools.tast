@@ -127,7 +127,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [wrapper, wrapped, assigned, updated, value, attr, <return_val>]
+            FrameDescriptor: 7 slots [<return_val>, assigned, attr, updated, value, wrapped, wrapper]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -269,7 +269,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [wrapped, assigned, updated, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, assigned, updated, wrapped]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -338,7 +338,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -420,7 +420,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -490,7 +490,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -565,7 +565,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -647,7 +647,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -728,7 +728,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -803,7 +803,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -885,7 +885,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -955,7 +955,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1030,7 +1030,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1112,7 +1112,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1193,7 +1193,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1360,7 +1360,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: cls
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [cls, roots, root, opname, opfunc, <>temp5, <>temp6, <return_val>]
+            FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, cls, opfunc, opname, root, roots]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: cls, 
@@ -1384,9 +1384,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: set
                         GeneratorExpressionNode SourceSection: [7457,7537]`op for op in _conver...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [op, cls, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, cls, op]
                           Enclosing
-                            FrameDescriptor: 8 slots [cls, roots, root, opname, opfunc, <>temp5, <>temp6, <return_val>]
+                            FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, cls, opfunc, opname, root, roots]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -1397,7 +1397,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: cls
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [op, cls, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, cls, op]
                             ExecutionSlots:
                               FreeVarsSlots: cls, 
                               CellVarsSlots: None
@@ -1562,7 +1562,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: mycmp
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [mycmp, K, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, K, mycmp]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: mycmp, 
@@ -1598,7 +1598,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: mycmp
                             NeedsCellFrame: False
-                            FrameDescriptor: 9 slots [__slots__, __init__, __lt__, __gt__, __eq__, __le__, __ge__, __hash__, mycmp]
+                            FrameDescriptor: 9 slots [__eq__, __ge__, __gt__, __hash__, __init__, __le__, __lt__, __slots__, mycmp]
                             ExecutionSlots:
                               FreeVarsSlots: mycmp, 
                               CellVarsSlots: None
@@ -1636,7 +1636,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: None
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 3 slots [self, obj, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, obj, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: None
                                             CellVarsSlots: None
@@ -1682,7 +1682,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
@@ -1746,7 +1746,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
@@ -1810,7 +1810,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
@@ -1874,7 +1874,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
@@ -1938,7 +1938,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
@@ -2038,7 +2038,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 8 slots [__class__, __slots__, __new__, __call__, __repr__, __reduce__, __setstate__, __doc__]
+              FrameDescriptor: 8 slots [__call__, __class__, __doc__, __new__, __reduce__, __repr__, __setstate__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: __class__, 
@@ -2083,7 +2083,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 11 slots [args, keywords, cls, func, tmpkw, self, __class__, <>temp7, <>temp8, <>temp9, <return_val>]
+                            FrameDescriptor: 11 slots [<>temp7, <>temp8, <>temp9, <return_val>, __class__, args, cls, func, keywords, self, tmpkw]
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
                               CellVarsSlots: None
@@ -2311,7 +2311,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [args, keywords, self, newkeywords, <>temp4, <>temp5, <return_val>]
+                            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, args, keywords, newkeywords, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2434,7 +2434,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, qualname, args, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, args, qualname, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2486,9 +2486,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [2,args,Illegal]
                                           GeneratorExpressionNode SourceSection: [10448,10474]`repr(x) for x in sel...`
                                             Name: <genexpr>
-                                            FrameDescriptor: 2 slots [x, <return_val>]
+                                            FrameDescriptor: 2 slots [<return_val>, x]
                                             Enclosing
-                                              FrameDescriptor: 4 slots [self, qualname, args, <return_val>]
+                                              FrameDescriptor: 4 slots [<return_val>, args, qualname, self]
                                             Active Flags: 2
                                             For Nodes: 1
                                             Block Nodes: 0
@@ -2499,7 +2499,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               CelVars: None
                                               FreeVars: None
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 2 slots [x, <return_val>]
+                                              FrameDescriptor: 2 slots [<return_val>, x]
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
                                                 CellVarsSlots: None
@@ -2551,9 +2551,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [2,args,Illegal]
                                           GeneratorExpressionNode SourceSection: [10496,10544]`f"{k}={v!r}" for (k,...`
                                             Name: <genexpr>
-                                            FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                             Enclosing
-                                              FrameDescriptor: 4 slots [self, qualname, args, <return_val>]
+                                              FrameDescriptor: 4 slots [<return_val>, args, qualname, self]
                                             Active Flags: 2
                                             For Nodes: 1
                                             Block Nodes: 0
@@ -2564,7 +2564,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               CelVars: None
                                               FreeVars: None
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
                                                 CellVarsSlots: None
@@ -2662,7 +2662,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2749,7 +2749,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 11 slots [self, state, func, args, kwds, namespace, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>]
+                            FrameDescriptor: 11 slots [<>temp6, <>temp7, <>temp8, <>temp9, <return_val>, args, func, kwds, namespace, self, state]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3033,7 +3033,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__init__, __repr__, _make_unbound_method, __get__, __isabstractmethod__, __doc__]
+              FrameDescriptor: 6 slots [__doc__, __get__, __init__, __isabstractmethod__, __repr__, _make_unbound_method]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3070,7 +3070,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, func, args, keywords, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, args, func, keywords, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3236,7 +3236,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, args, keywords, format_string, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, args, format_string, keywords, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3279,9 +3279,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           StringLiteralNode SourceSection: [13095,13099]`", "`
                                         GeneratorExpressionNode SourceSection: [13105,13194]`"{}={!r}".format(k, ...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                          FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                           Enclosing
-                                            FrameDescriptor: 5 slots [self, args, keywords, format_string, <return_val>]
+                                            FrameDescriptor: 5 slots [<return_val>, args, format_string, keywords, self]
                                           Active Flags: 2
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -3292,7 +3292,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             CelVars: None
                                             FreeVars: None
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                             ExecutionSlots:
                                               FreeVarsSlots: None
                                               CellVarsSlots: None
@@ -3427,7 +3427,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: self
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, _method, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, _method, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: self, 
@@ -3460,7 +3460,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: self
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 10 slots [args, keywords, call_keywords, cls_or_self, rest, call_args, self, <>temp7, <>temp8, <return_val>]
+                                          FrameDescriptor: 10 slots [<>temp7, <>temp8, <return_val>, args, call_args, call_keywords, cls_or_self, keywords, rest, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: self, 
                                             CellVarsSlots: None
@@ -3608,7 +3608,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, obj, cls, get, result, new_func, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, cls, get, new_func, obj, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3782,7 +3782,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3853,7 +3853,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__slots__, __init__, __hash__, __doc__]
+              FrameDescriptor: 4 slots [__doc__, __hash__, __init__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3894,7 +3894,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, tup, hash, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, hash, self, tup]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3960,7 +3960,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4048,7 +4048,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: type
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [args, kwds, typed, kwd_mark, fasttypes, tuple, type, len, key, item, <return_val>]
+            FrameDescriptor: 11 slots [<return_val>, args, fasttypes, item, key, kwd_mark, kwds, len, tuple, type, typed]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: type, 
@@ -4166,9 +4166,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 Frame: [5,tuple,Illegal]
                               GeneratorExpressionNode SourceSection: [16634,16655]`type(v) for v in arg...`
                                 Name: <genexpr>
-                                FrameDescriptor: 3 slots [v, type, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, type, v]
                                 Enclosing
-                                  FrameDescriptor: 11 slots [args, kwds, typed, kwd_mark, fasttypes, tuple, type, len, key, item, <return_val>]
+                                  FrameDescriptor: 11 slots [<return_val>, args, fasttypes, item, key, kwd_mark, kwds, len, tuple, type, typed]
                                 Active Flags: 2
                                 For Nodes: 1
                                 Block Nodes: 0
@@ -4179,7 +4179,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   CelVars: None
                                   FreeVars: type
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 3 slots [v, type, <return_val>]
+                                  FrameDescriptor: 3 slots [<return_val>, type, v]
                                   ExecutionSlots:
                                     FreeVarsSlots: type, 
                                     CellVarsSlots: None
@@ -4237,9 +4237,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   Frame: [5,tuple,Illegal]
                                 GeneratorExpressionNode SourceSection: [16699,16729]`type(v) for v in kwd...`
                                   Name: <genexpr>
-                                  FrameDescriptor: 3 slots [v, type, <return_val>]
+                                  FrameDescriptor: 3 slots [<return_val>, type, v]
                                   Enclosing
-                                    FrameDescriptor: 11 slots [args, kwds, typed, kwd_mark, fasttypes, tuple, type, len, key, item, <return_val>]
+                                    FrameDescriptor: 11 slots [<return_val>, args, fasttypes, item, key, kwd_mark, kwds, len, tuple, type, typed]
                                   Active Flags: 2
                                   For Nodes: 1
                                   Block Nodes: 0
@@ -4250,7 +4250,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     CelVars: None
                                     FreeVars: type
                                     NeedsCellFrame: False
-                                    FrameDescriptor: 3 slots [v, type, <return_val>]
+                                    FrameDescriptor: 3 slots [<return_val>, type, v]
                                     ExecutionSlots:
                                       FreeVarsSlots: type, 
                                       CellVarsSlots: None
@@ -4362,7 +4362,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: maxsize, typed
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [maxsize, typed, decorating_function, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, decorating_function, maxsize, typed]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: maxsize, , typed, 
@@ -4433,7 +4433,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: maxsize, typed
                           NeedsCellFrame: False
-                          FrameDescriptor: 5 slots [user_function, wrapper, maxsize, typed, <return_val>]
+                          FrameDescriptor: 5 slots [<return_val>, maxsize, typed, user_function, wrapper]
                           ExecutionSlots:
                             FreeVarsSlots: maxsize, , typed, 
                             CellVarsSlots: None
@@ -4499,7 +4499,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 27 slots [user_function, maxsize, typed, _CacheInfo, sentinel, make_key, PREV, NEXT, KEY, RESULT, cache, hits, misses, full, cache_get, cache_len, lock, root, wrapper, cache_info, cache_clear, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <return_val>]
+            FrameDescriptor: 27 slots [<>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <return_val>, KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_clear, cache_get, cache_info, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function, wrapper]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: KEY, , NEXT, , PREV, , RESULT, , _CacheInfo, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , sentinel, , typed, , user_function, 
@@ -4715,7 +4715,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: misses, user_function
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [args, kwds, result, user_function, misses, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, args, kwds, misses, result, user_function]
                             ExecutionSlots:
                               FreeVarsSlots: misses, , user_function, 
                               CellVarsSlots: None
@@ -4798,7 +4798,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
                               NeedsCellFrame: False
-                              FrameDescriptor: 13 slots [args, kwds, key, result, user_function, typed, sentinel, make_key, cache, hits, misses, cache_get, <return_val>]
+                              FrameDescriptor: 13 slots [<return_val>, args, cache, cache_get, hits, key, kwds, make_key, misses, result, sentinel, typed, user_function]
                               ExecutionSlots:
                                 FreeVarsSlots: cache, , cache_get, , hits, , make_key, , misses, , sentinel, , typed, , user_function, 
                                 CellVarsSlots: None
@@ -4940,7 +4940,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
                               NeedsCellFrame: False
-                              FrameDescriptor: 36 slots [args, kwds, key, link, link_prev, link_next, _key, result, last, oldroot, oldkey, oldresult, user_function, maxsize, typed, make_key, PREV, NEXT, KEY, RESULT, cache, hits, misses, full, cache_get, cache_len, lock, root, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <return_val>, <>temp34, <>temp35]
+                              FrameDescriptor: 36 slots [<>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp34, <>temp35, <return_val>, KEY, NEXT, PREV, RESULT, _key, args, cache, cache_get, cache_len, full, hits, key, kwds, last, link, link_next, link_prev, lock, make_key, maxsize, misses, oldkey, oldresult, oldroot, result, root, typed, user_function]
                               ExecutionSlots:
                                 FreeVarsSlots: KEY, , NEXT, , PREV, , RESULT, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , typed, , user_function, 
                                 CellVarsSlots: None
@@ -5402,7 +5402,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: _CacheInfo, cache_len, hits, lock, maxsize, misses
                           NeedsCellFrame: False
-                          FrameDescriptor: 7 slots [maxsize, _CacheInfo, hits, misses, cache_len, lock, <return_val>]
+                          FrameDescriptor: 7 slots [<return_val>, _CacheInfo, cache_len, hits, lock, maxsize, misses]
                           ExecutionSlots:
                             FreeVarsSlots: _CacheInfo, , cache_len, , hits, , lock, , maxsize, , misses, 
                             CellVarsSlots: None
@@ -5466,7 +5466,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: cache, full, hits, lock, misses, root
                           NeedsCellFrame: False
-                          FrameDescriptor: 8 slots [cache, hits, misses, full, lock, root, <>temp6, <return_val>]
+                          FrameDescriptor: 8 slots [<>temp6, <return_val>, cache, full, hits, lock, misses, root]
                           ExecutionSlots:
                             FreeVarsSlots: cache, , full, , hits, , lock, , misses, , root, 
                             CellVarsSlots: None
@@ -5599,7 +5599,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [sequences, result, candidate, s2, s1, seq, <return_val>]
+            FrameDescriptor: 7 slots [<return_val>, candidate, result, s1, s2, seq, sequences]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -5633,9 +5633,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   Identifier: list
                                 GeneratorExpressionNode SourceSection: [23745,23770]`s for s in sequences...`
                                   Name: <genexpr>
-                                  FrameDescriptor: 2 slots [s, <return_val>]
+                                  FrameDescriptor: 2 slots [<return_val>, s]
                                   Enclosing
-                                    FrameDescriptor: 7 slots [sequences, result, candidate, s2, s1, seq, <return_val>]
+                                    FrameDescriptor: 7 slots [<return_val>, candidate, result, s1, s2, seq, sequences]
                                   Active Flags: 4
                                   For Nodes: 1
                                   Block Nodes: 0
@@ -5646,7 +5646,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     CelVars: None
                                     FreeVars: None
                                     NeedsCellFrame: False
-                                    FrameDescriptor: 2 slots [s, <return_val>]
+                                    FrameDescriptor: 2 slots [<return_val>, s]
                                     ExecutionSlots:
                                       FreeVarsSlots: None
                                       CellVarsSlots: None
@@ -5820,7 +5820,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: abcs, base
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+            FrameDescriptor: 14 slots [<>temp11, <>temp12, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: abcs, , base, 
@@ -6011,9 +6011,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       Identifier: any
                                     GeneratorExpressionNode SourceSection: [25873,25915]`issubclass(b, base) ...`
                                       Name: <genexpr>
-                                      FrameDescriptor: 3 slots [b, base, <return_val>]
+                                      FrameDescriptor: 3 slots [<return_val>, b, base]
                                       Enclosing
-                                        FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+                                        FrameDescriptor: 14 slots [<>temp11, <>temp12, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
                                       Active Flags: 2
                                       For Nodes: 1
                                       Block Nodes: 0
@@ -6024,7 +6024,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         CelVars: None
                                         FreeVars: base
                                         NeedsCellFrame: False
-                                        FrameDescriptor: 3 slots [b, base, <return_val>]
+                                        FrameDescriptor: 3 slots [<return_val>, b, base]
                                         ExecutionSlots:
                                           FreeVarsSlots: base, 
                                           CellVarsSlots: None
@@ -6123,9 +6123,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, abcs, base]
                           Enclosing
-                            FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+                            FrameDescriptor: 14 slots [<>temp11, <>temp12, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -6136,7 +6136,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: abcs
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             ExecutionSlots:
                               FreeVarsSlots: abcs, 
                               CellVarsSlots: None
@@ -6192,9 +6192,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, abcs, base]
                           Enclosing
-                            FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+                            FrameDescriptor: 14 slots [<>temp11, <>temp12, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -6205,7 +6205,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: abcs
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             ExecutionSlots:
                               FreeVarsSlots: abcs, 
                               CellVarsSlots: None
@@ -6261,9 +6261,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, abcs, base]
                           Enclosing
-                            FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+                            FrameDescriptor: 14 slots [<>temp11, <>temp12, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -6274,7 +6274,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: abcs
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             ExecutionSlots:
                               FreeVarsSlots: abcs, 
                               CellVarsSlots: None
@@ -6375,7 +6375,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: bases, cls, is_related, is_strict_base, type_set, types
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
+            FrameDescriptor: 12 slots [<return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: bases, , cls, , is_related, , is_strict_base, , type_set, , types, 
@@ -6434,7 +6434,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: bases, cls
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [typ, cls, bases, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, bases, cls, typ]
                           ExecutionSlots:
                             FreeVarsSlots: bases, , cls, 
                             CellVarsSlots: None
@@ -6493,9 +6493,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [27078,27111]`n for n in types if ...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [n, is_related, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, is_related, n]
                           Enclosing
-                            FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
+                            FrameDescriptor: 12 slots [<return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -6506,7 +6506,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: is_related
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [n, is_related, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, is_related, n]
                             ExecutionSlots:
                               FreeVarsSlots: is_related, 
                               CellVarsSlots: None
@@ -6574,7 +6574,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: types
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [typ, other, types, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, other, typ, types]
                           ExecutionSlots:
                             FreeVarsSlots: types, 
                             CellVarsSlots: None
@@ -6640,9 +6640,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [27390,27431]`n for n in types if ...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [n, is_strict_base, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, is_strict_base, n]
                           Enclosing
-                            FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
+                            FrameDescriptor: 12 slots [<return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -6653,7 +6653,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: is_strict_base
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [n, is_strict_base, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, is_strict_base, n]
                             ExecutionSlots:
                               FreeVarsSlots: is_strict_base, 
                               CellVarsSlots: None
@@ -6778,9 +6778,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Identifier: list
                                             GeneratorExpressionNode SourceSection: [27763,27802]`s for s in sub.__mro...`
                                               Name: <genexpr>
-                                              FrameDescriptor: 3 slots [s, type_set, <return_val>]
+                                              FrameDescriptor: 3 slots [<return_val>, s, type_set]
                                               Enclosing
-                                                FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
+                                                FrameDescriptor: 12 slots [<return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
                                               Active Flags: 4
                                               For Nodes: 1
                                               Block Nodes: 0
@@ -6791,7 +6791,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 CelVars: None
                                                 FreeVars: type_set
                                                 NeedsCellFrame: False
-                                                FrameDescriptor: 3 slots [s, type_set, <return_val>]
+                                                FrameDescriptor: 3 slots [<return_val>, s, type_set]
                                                 ExecutionSlots:
                                                   FreeVarsSlots: type_set, 
                                                   CellVarsSlots: None
@@ -6963,7 +6963,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [cls, registry, mro, match, t, <return_val>]
+            FrameDescriptor: 6 slots [<return_val>, cls, match, mro, registry, t]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -7138,7 +7138,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                 CelVars: cache_token, dispatch, dispatch_cache, register, registry
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 10 slots [func, types, weakref, registry, dispatch_cache, cache_token, dispatch, register, wrapper, <return_val>]
+                FrameDescriptor: 10 slots [<return_val>, cache_token, dispatch, dispatch_cache, func, register, registry, types, weakref, wrapper]
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: cache_token, , dispatch, , dispatch_cache, , register, , registry, 
@@ -7203,7 +7203,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: cache_token, dispatch_cache, registry
                               NeedsCellFrame: False
-                              FrameDescriptor: 7 slots [cls, current_token, impl, registry, dispatch_cache, cache_token, <return_val>]
+                              FrameDescriptor: 7 slots [<return_val>, cache_token, cls, current_token, dispatch_cache, impl, registry]
                               ExecutionSlots:
                                 FreeVarsSlots: cache_token, , dispatch_cache, , registry, 
                                 CellVarsSlots: None
@@ -7341,7 +7341,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: cls
                               FreeVars: cache_token, dispatch_cache, register, registry
                               NeedsCellFrame: False
-                              FrameDescriptor: 12 slots [cls, func, ann, get_type_hints, argname, registry, dispatch_cache, cache_token, register, <return_val>, <>temp10, <>temp11]
+                              FrameDescriptor: 12 slots [<>temp10, <>temp11, <return_val>, ann, argname, cache_token, cls, dispatch_cache, func, get_type_hints, register, registry]
                               ExecutionSlots:
                                 FreeVarsSlots: cache_token, , dispatch_cache, , register, , registry, 
                                 CellVarsSlots: cls, 
@@ -7400,7 +7400,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   CelVars: None
                                                   FreeVars: cls, register
                                                   NeedsCellFrame: False
-                                                  FrameDescriptor: 4 slots [f, cls, register, <return_val>]
+                                                  FrameDescriptor: 4 slots [<return_val>, cls, f, register]
                                                   ExecutionSlots:
                                                     FreeVarsSlots: cls, , register, 
                                                     CellVarsSlots: None
@@ -7596,7 +7596,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: dispatch
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [args, kw, dispatch, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, args, dispatch, kw]
                               ExecutionSlots:
                                 FreeVarsSlots: dispatch, 
                                 CellVarsSlots: None

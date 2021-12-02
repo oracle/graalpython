@@ -175,7 +175,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [name, obj, warnings, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, name, obj, warnings]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -299,7 +299,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteNameNodeGen SourceSection: [2479,2547]`def __reversed__(sel...`
                         Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                          FrameDescriptor: 2 slots [self, <return_val>]
+                          FrameDescriptor: 2 slots [<return_val>, self]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -317,7 +317,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -415,7 +415,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteNameNodeGen SourceSection: [2609,2722]`def __reversed__(sel...`
                         Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                          FrameDescriptor: 3 slots [self, key, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, key, self]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -433,7 +433,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, key, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -543,7 +543,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteNameNodeGen SourceSection: [2786,2892]`def __reversed__(sel...`
                         Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                          FrameDescriptor: 3 slots [self, key, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, key, self]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -561,7 +561,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, key, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -698,7 +698,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 25 slots [__init__, __setitem__, __delitem__, __iter__, __reversed__, clear, popitem, move_to_end, __sizeof__, update, _OrderedDict__update, keys, items, values, __ne__, _OrderedDict__marker, pop, setdefault, __repr__, __reduce__, copy, fromkeys, __eq__, <>temp23, __doc__]
+              FrameDescriptor: 25 slots [<>temp23, _OrderedDict__marker, _OrderedDict__update, __delitem__, __doc__, __eq__, __init__, __iter__, __ne__, __reduce__, __repr__, __reversed__, __setitem__, __sizeof__, clear, copy, fromkeys, items, keys, move_to_end, pop, popitem, setdefault, update, values]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -734,7 +734,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 9 slots [args, kwds, self, root, <>temp4, <>temp5, <>temp6, <>temp7, <return_val>]
+                            FrameDescriptor: 9 slots [<>temp4, <>temp5, <>temp6, <>temp7, <return_val>, args, kwds, root, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -929,7 +929,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 14 slots [self, key, value, dict_setitem, proxy, Link, link, root, last, <>temp9, <>temp10, <>temp11, <>temp12, <return_val>]
+                            FrameDescriptor: 14 slots [<>temp10, <>temp11, <>temp12, <>temp9, <return_val>, Link, dict_setitem, key, last, link, proxy, root, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1120,7 +1120,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, key, dict_delitem, link, link_prev, link_next, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, dict_delitem, key, link, link_next, link_prev, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1218,7 +1218,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteNameNodeGen SourceSection: [5709,5957]`def __iter__(self):↵...`
                         Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
-                          FrameDescriptor: 4 slots [self, root, curr, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, curr, root, self]
                           Active Flags: 3
                           For Nodes: 0
                           Block Nodes: 2
@@ -1236,7 +1236,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, root, curr, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, curr, root, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1312,7 +1312,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteNameNodeGen SourceSection: [5957,6225]`def __reversed__(sel...`
                         Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                          FrameDescriptor: 4 slots [self, root, curr, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, curr, root, self]
                           Active Flags: 3
                           For Nodes: 0
                           Block Nodes: 2
@@ -1330,7 +1330,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, root, curr, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, curr, root, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1420,7 +1420,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, root, <>temp2, <return_val>]
+                            FrameDescriptor: 4 slots [<>temp2, <return_val>, root, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1501,7 +1501,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 9 slots [self, last, root, link, link_prev, link_next, key, value, <return_val>]
+                            FrameDescriptor: 9 slots [<return_val>, key, last, link, link_next, link_prev, root, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1673,7 +1673,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 10 slots [self, key, last, link, link_prev, link_next, soft_link, root, first, <return_val>]
+                            FrameDescriptor: 10 slots [<return_val>, first, key, last, link, link_next, link_prev, root, self, soft_link]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1858,7 +1858,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, sizeof, n, size, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, n, self, size, sizeof]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2017,7 +2017,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2057,7 +2057,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2097,7 +2097,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2159,7 +2159,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, key, default, result, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, default, key, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2258,7 +2258,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, key, default, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, default, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2337,7 +2337,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2418,7 +2418,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, inst_dict, k, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, inst_dict, k, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2516,7 +2516,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2562,7 +2562,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 6 slots [cls, iterable, value, self, key, <return_val>]
+                              FrameDescriptor: 6 slots [<return_val>, cls, iterable, key, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2636,7 +2636,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2764,7 +2764,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             CelVars: _len, field_names, num_fields, repr_fmt, tuple_new
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 36 slots [typename, field_names, *, rename, defaults, module, seen, index, name, field_defaults, num_fields, arg_list, repr_fmt, tuple_new, _len, s, namespace, __new__, _make, _replace, __repr__, _asdict, __getnewargs__, method, class_namespace, cache, itemgetter_object, doc, result, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>]
+            FrameDescriptor: 36 slots [*, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>, __getnewargs__, __new__, __repr__, _asdict, _len, _make, _replace, arg_list, cache, class_namespace, defaults, doc, field_defaults, field_names, index, itemgetter_object, method, module, name, namespace, num_fields, rename, repr_fmt, result, s, seen, tuple_new, typename]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: _len, , field_names, , num_fields, , repr_fmt, , tuple_new, 
@@ -3255,9 +3255,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               StringLiteralNode SourceSection: [14096,14100]`', '`
                             GeneratorExpressionNode SourceSection: [14106,14142]`f'{name}=%r' for nam...`
                               Name: <genexpr>
-                              FrameDescriptor: 2 slots [name, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, name]
                               Enclosing
-                                FrameDescriptor: 36 slots [typename, field_names, *, rename, defaults, module, seen, index, name, field_defaults, num_fields, arg_list, repr_fmt, tuple_new, _len, s, namespace, __new__, _make, _replace, __repr__, _asdict, __getnewargs__, method, class_namespace, cache, itemgetter_object, doc, result, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>]
+                                FrameDescriptor: 36 slots [*, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>, __getnewargs__, __new__, __repr__, _asdict, _len, _make, _replace, arg_list, cache, class_namespace, defaults, doc, field_defaults, field_names, index, itemgetter_object, method, module, name, namespace, num_fields, rename, repr_fmt, result, s, seen, tuple_new, typename]
                               Active Flags: 2
                               For Nodes: 1
                               Block Nodes: 0
@@ -3268,7 +3268,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 2 slots [name, <return_val>]
+                                FrameDescriptor: 2 slots [<return_val>, name]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -3404,7 +3404,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CelVars: None
                             FreeVars: _len, num_fields, tuple_new
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [cls, iterable, result, num_fields, tuple_new, _len, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, _len, cls, iterable, num_fields, result, tuple_new]
                             ExecutionSlots:
                               FreeVarsSlots: _len, , num_fields, , tuple_new, 
                               CellVarsSlots: None
@@ -3497,7 +3497,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           CelVars: None
                           FreeVars: field_names
                           NeedsCellFrame: False
-                          FrameDescriptor: 5 slots [_self, kwds, result, field_names, <return_val>]
+                          FrameDescriptor: 5 slots [<return_val>, _self, field_names, kwds, result]
                           ExecutionSlots:
                             FreeVarsSlots: field_names, 
                             CellVarsSlots: None
@@ -3585,7 +3585,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           CelVars: None
                           FreeVars: repr_fmt
                           NeedsCellFrame: False
-                          FrameDescriptor: 3 slots [self, repr_fmt, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, repr_fmt, self]
                           ExecutionSlots:
                             FreeVarsSlots: repr_fmt, 
                             CellVarsSlots: None
@@ -3640,7 +3640,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 2 slots [self, <return_val>]
+                          FrameDescriptor: 2 slots [<return_val>, self]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -3692,7 +3692,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 2 slots [self, <return_val>]
+                          FrameDescriptor: 2 slots [<return_val>, self]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -3973,7 +3973,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [mapping, iterable, mapping_get, elem, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, elem, iterable, mapping, mapping_get]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4078,7 +4078,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                   CelVars: __class__
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 24 slots [__class__, __init__, __missing__, most_common, elements, fromkeys, update, subtract, copy, __reduce__, __delitem__, __repr__, __add__, __sub__, __or__, __and__, __pos__, __neg__, _keep_positive, __iadd__, __isub__, __ior__, __iand__, __doc__]
+                  FrameDescriptor: 24 slots [__add__, __and__, __class__, __delitem__, __doc__, __iadd__, __iand__, __init__, __ior__, __isub__, __missing__, __neg__, __or__, __pos__, __reduce__, __repr__, __sub__, _keep_positive, copy, elements, fromkeys, most_common, subtract, update]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: __class__, 
@@ -4114,7 +4114,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: __class__
                                 NeedsCellFrame: False
-                                FrameDescriptor: 7 slots [args, kwds, self, __class__, <>temp4, <>temp5, <return_val>]
+                                FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, __class__, args, kwds, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
@@ -4237,7 +4237,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, key, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, key, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -4281,7 +4281,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, n, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, n, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -4373,7 +4373,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 2 slots [self, <return_val>]
+                                FrameDescriptor: 2 slots [<return_val>, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -4428,7 +4428,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   CelVars: None
                                   FreeVars: None
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 4 slots [cls, iterable, v, <return_val>]
+                                  FrameDescriptor: 4 slots [<return_val>, cls, iterable, v]
                                   ExecutionSlots:
                                     FreeVarsSlots: None
                                     CellVarsSlots: None
@@ -4481,7 +4481,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: __class__
                                 NeedsCellFrame: False
-                                FrameDescriptor: 13 slots [args, kwds, self, iterable, self_get, elem, count, __class__, <>temp8, <>temp9, <>temp10, <>temp11, <return_val>]
+                                FrameDescriptor: 13 slots [<>temp10, <>temp11, <>temp8, <>temp9, <return_val>, __class__, args, count, elem, iterable, kwds, self, self_get]
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
@@ -4708,7 +4708,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 12 slots [args, kwds, self, iterable, self_get, elem, count, <>temp7, <>temp8, <>temp9, <>temp10, <return_val>]
+                                FrameDescriptor: 12 slots [<>temp10, <>temp7, <>temp8, <>temp9, <return_val>, args, count, elem, iterable, kwds, self, self_get]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -4935,7 +4935,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 2 slots [self, <return_val>]
+                                FrameDescriptor: 2 slots [<return_val>, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -4976,7 +4976,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 2 slots [self, <return_val>]
+                                FrameDescriptor: 2 slots [<return_val>, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -5027,7 +5027,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: __class__
                                 NeedsCellFrame: False
-                                FrameDescriptor: 4 slots [self, elem, __class__, <return_val>]
+                                FrameDescriptor: 4 slots [<return_val>, __class__, elem, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
@@ -5088,7 +5088,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, items, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, items, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -5212,7 +5212,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 11 slots [self, other, result, newcount, elem, count, <return_val>, <>temp7, <>temp8, <>temp9, <>temp10]
+                                FrameDescriptor: 11 slots [<>temp10, <>temp7, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, result, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -5385,7 +5385,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 11 slots [self, other, result, newcount, elem, count, <return_val>, <>temp7, <>temp8, <>temp9, <>temp10]
+                                FrameDescriptor: 11 slots [<>temp10, <>temp7, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, result, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -5561,7 +5561,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 12 slots [self, other, result, other_count, newcount, elem, count, <return_val>, <>temp8, <>temp9, <>temp10, <>temp11]
+                                FrameDescriptor: 12 slots [<>temp10, <>temp11, <>temp8, <>temp9, <return_val>, count, elem, newcount, other, other_count, result, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -5745,7 +5745,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 10 slots [self, other, result, other_count, newcount, elem, count, <return_val>, <>temp8, <>temp9]
+                                FrameDescriptor: 10 slots [<>temp8, <>temp9, <return_val>, count, elem, newcount, other, other_count, result, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -5875,7 +5875,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 7 slots [self, result, elem, count, <>temp4, <>temp5, <return_val>]
+                                FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, count, elem, result, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -5961,7 +5961,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 7 slots [self, result, elem, count, <>temp4, <>temp5, <return_val>]
+                                FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, count, elem, result, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -6050,7 +6050,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 4 slots [self, nonpositive, elem, <return_val>]
+                                FrameDescriptor: 4 slots [<return_val>, elem, nonpositive, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -6073,9 +6073,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Identifier: list
                                             GeneratorExpressionNode SourceSection: [30346,30399]`elem for elem, count...`
                                               Name: <genexpr>
-                                              FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
+                                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, count, elem]
                                               Enclosing
-                                                FrameDescriptor: 4 slots [self, nonpositive, elem, <return_val>]
+                                                FrameDescriptor: 4 slots [<return_val>, elem, nonpositive, self]
                                               Active Flags: 4
                                               For Nodes: 1
                                               Block Nodes: 0
@@ -6086,7 +6086,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 CelVars: None
                                                 FreeVars: None
                                                 NeedsCellFrame: False
-                                                FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
+                                                FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, count, elem]
                                                 ExecutionSlots:
                                                   FreeVarsSlots: None
                                                   CellVarsSlots: None
@@ -6186,7 +6186,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 7 slots [self, other, elem, count, <>temp4, <>temp5, <return_val>]
+                                FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, count, elem, other, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -6274,7 +6274,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 7 slots [self, other, elem, count, <>temp4, <>temp5, <return_val>]
+                                FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, count, elem, other, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -6362,7 +6362,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 8 slots [self, other, count, elem, other_count, <>temp5, <>temp6, <return_val>]
+                                FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, count, elem, other, other_count, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -6460,7 +6460,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 8 slots [self, other, other_count, elem, count, <>temp5, <>temp6, <return_val>]
+                                FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, count, elem, other, other_count, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None

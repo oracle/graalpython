@@ -5,62 +5,62 @@ Scope: []
     FreeVars: Empty
     Scope: Scanner
         Kind: Class
-        FrameDescriptor: [scan, __init__]
+        FrameDescriptor: [__init__, scan]
         CellVars: Empty
         FreeVars: Empty
         Scope: scan
             Kind: Function
-            FrameDescriptor: [result, string, match, self, i, action, j, m, <return_val>, append]
+            FrameDescriptor: [<return_val>, action, append, i, j, m, match, result, self, string]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [BRANCH, gid, flags, <>temp10, SUBPATTERN, <>temp11, p, s, phrase, self, action, <return_val>, lexicon]
+            FrameDescriptor: [<>temp10, <>temp11, <return_val>, BRANCH, SUBPATTERN, action, flags, gid, lexicon, p, phrase, s, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: _pickle
         Kind: Function
-        FrameDescriptor: [p, <return_val>]
+        FrameDescriptor: [<return_val>, p]
         CellVars: Empty
         FreeVars: Empty
     Scope: _subx
         Kind: Function
-        FrameDescriptor: [template, filter, pattern, <return_val>]
+        FrameDescriptor: [<return_val>, filter, pattern, template]
         CellVars: Empty
         FreeVars: Empty
         Scope: filter
             Kind: Function
-            FrameDescriptor: [template, match, <return_val>]
+            FrameDescriptor: [<return_val>, match, template]
             CellVars: Empty
             FreeVars: Empty
     Scope: _expand
         Kind: Function
-        FrameDescriptor: [template, pattern, match, <return_val>]
+        FrameDescriptor: [<return_val>, match, pattern, template]
         CellVars: Empty
         FreeVars: Empty
     Scope: _compile_repl
         Kind: Function
-        FrameDescriptor: [pattern, repl, <return_val>]
+        FrameDescriptor: [<return_val>, pattern, repl]
         CellVars: Empty
         FreeVars: Empty
     Scope: _compile
         Kind: Function
-        FrameDescriptor: [p, pattern, flags, <return_val>]
+        FrameDescriptor: [<return_val>, flags, p, pattern]
         CellVars: Empty
         FreeVars: Empty
     Scope: escape
         Kind: Function
-        FrameDescriptor: [pattern, <return_val>]
+        FrameDescriptor: [<return_val>, pattern]
         CellVars: Empty
         FreeVars: Empty
     Scope: <genexpr>
         Kind: DictComp
-        FrameDescriptor: [i, <return_val>]
+        FrameDescriptor: [<return_val>, i]
         CellVars: Empty
         FreeVars: Empty
     Scope: template
         Kind: Function
-        FrameDescriptor: [pattern, flags, <return_val>]
+        FrameDescriptor: [<return_val>, flags, pattern]
         CellVars: Empty
         FreeVars: Empty
     Scope: purge
@@ -70,51 +70,51 @@ Scope: []
         FreeVars: Empty
     Scope: compile
         Kind: Function
-        FrameDescriptor: [pattern, flags, <return_val>]
+        FrameDescriptor: [<return_val>, flags, pattern]
         CellVars: Empty
         FreeVars: Empty
     Scope: finditer
         Kind: Function
-        FrameDescriptor: [string, pattern, flags, <return_val>]
+        FrameDescriptor: [<return_val>, flags, pattern, string]
         CellVars: Empty
         FreeVars: Empty
     Scope: findall
         Kind: Function
-        FrameDescriptor: [string, pattern, flags, <return_val>]
+        FrameDescriptor: [<return_val>, flags, pattern, string]
         CellVars: Empty
         FreeVars: Empty
     Scope: split
         Kind: Function
-        FrameDescriptor: [string, pattern, flags, maxsplit, <return_val>]
+        FrameDescriptor: [<return_val>, flags, maxsplit, pattern, string]
         CellVars: Empty
         FreeVars: Empty
     Scope: subn
         Kind: Function
-        FrameDescriptor: [string, pattern, count, flags, repl, <return_val>]
+        FrameDescriptor: [<return_val>, count, flags, pattern, repl, string]
         CellVars: Empty
         FreeVars: Empty
     Scope: sub
         Kind: Function
-        FrameDescriptor: [string, pattern, count, flags, repl, <return_val>]
+        FrameDescriptor: [<return_val>, count, flags, pattern, repl, string]
         CellVars: Empty
         FreeVars: Empty
     Scope: search
         Kind: Function
-        FrameDescriptor: [string, pattern, flags, <return_val>]
+        FrameDescriptor: [<return_val>, flags, pattern, string]
         CellVars: Empty
         FreeVars: Empty
     Scope: fullmatch
         Kind: Function
-        FrameDescriptor: [string, pattern, flags, <return_val>]
+        FrameDescriptor: [<return_val>, flags, pattern, string]
         CellVars: Empty
         FreeVars: Empty
     Scope: match
         Kind: Function
-        FrameDescriptor: [string, pattern, flags, <return_val>]
+        FrameDescriptor: [<return_val>, flags, pattern, string]
         CellVars: Empty
         FreeVars: Empty
     Scope: RegexFlag
         Kind: Class
-        FrameDescriptor: [A, I, ASCII, L, UNICODE, M, DEBUG, IGNORECASE, DOTALL, LOCALE, S, T, U, X, TEMPLATE, VERBOSE, MULTILINE]
+        FrameDescriptor: [A, ASCII, DEBUG, DOTALL, I, IGNORECASE, L, LOCALE, M, MULTILINE, S, T, TEMPLATE, U, UNICODE, VERBOSE, X]
         CellVars: Empty
         FreeVars: Empty

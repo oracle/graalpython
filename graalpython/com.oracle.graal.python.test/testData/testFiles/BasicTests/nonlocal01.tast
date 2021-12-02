@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
               CelVars: x
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [x, inner, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, inner, x]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: x, 
@@ -61,7 +61,7 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                             CelVars: None
                             FreeVars: x
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [x, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, x]
                             ExecutionSlots:
                               FreeVarsSlots: x, 
                               CellVarsSlots: None

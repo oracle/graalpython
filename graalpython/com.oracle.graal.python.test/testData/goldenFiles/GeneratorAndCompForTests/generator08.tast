@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
         WriteNameNodeGen SourceSection: [0,104]`def merge(h):↵    fo...`
           Identifier: merge
           GeneratorFunctionDefinitionNode Name: merge SourceSection: None
-            FrameDescriptor: 7 slots [h, value, order, it, <>temp4, <>temp5, <return_val>]
+            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, h, it, order, value]
             Active Flags: 3
             For Nodes: 0
             Block Nodes: 1
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 7 slots [h, value, order, it, <>temp4, <>temp5, <return_val>]
+              FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, h, it, order, value]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

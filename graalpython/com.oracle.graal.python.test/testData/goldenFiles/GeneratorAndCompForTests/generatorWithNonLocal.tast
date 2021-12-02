@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
               CelVars: Y, exec_gen
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [exec_gen, _inner_func, gen, Y, <return_val>]
+              FrameDescriptor: 5 slots [<return_val>, Y, _inner_func, exec_gen, gen]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: Y, , exec_gen, 
@@ -43,7 +43,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                         Identifier: _inner_func
                         Frame: [1,_inner_func,Illegal]
                         GeneratorFunctionDefinitionNode Name: _inner_func SourceSection: None
-                          FrameDescriptor: 6 slots [doit, C, A, exec_gen, Y, <return_val>]
+                          FrameDescriptor: 6 slots [<return_val>, A, C, Y, doit, exec_gen]
                           Active Flags: 2
                           For Nodes: 2
                           Block Nodes: 1
@@ -60,7 +60,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                             CelVars: None
                             FreeVars: Y, exec_gen
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [doit, C, A, exec_gen, Y, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, A, C, Y, doit, exec_gen]
                             ExecutionSlots:
                               FreeVarsSlots: Y, , exec_gen, 
                               CellVarsSlots: None
@@ -86,7 +86,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                           CelVars: None
                                           FreeVars: exec_gen
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 2 slots [exec_gen, <return_val>]
+                                          FrameDescriptor: 2 slots [<return_val>, exec_gen]
                                           ExecutionSlots:
                                             FreeVarsSlots: exec_gen, 
                                             CellVarsSlots: None

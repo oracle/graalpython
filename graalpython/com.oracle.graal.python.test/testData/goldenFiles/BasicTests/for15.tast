@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [i, row, <>temp2, <>temp3, <return_val>]
+              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, i, row]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

@@ -27,7 +27,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
               CelVars: abcs, base
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+              FrameDescriptor: 5 slots [<return_val>, abcs, base, cls, other]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: abcs, , base, 
@@ -65,9 +65,9 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     Identifier: any
                                   GeneratorExpressionNode SourceSection: [66,108]`issubclass(b, base) ...`
                                     Name: <genexpr>
-                                    FrameDescriptor: 3 slots [b, base, <return_val>]
+                                    FrameDescriptor: 3 slots [<return_val>, b, base]
                                     Enclosing
-                                      FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+                                      FrameDescriptor: 5 slots [<return_val>, abcs, base, cls, other]
                                     Active Flags: 2
                                     For Nodes: 1
                                     Block Nodes: 0
@@ -78,7 +78,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                       CelVars: None
                                       FreeVars: base
                                       NeedsCellFrame: False
-                                      FrameDescriptor: 3 slots [b, base, <return_val>]
+                                      FrameDescriptor: 3 slots [<return_val>, b, base]
                                       ExecutionSlots:
                                         FreeVarsSlots: base, 
                                         CellVarsSlots: None
@@ -152,9 +152,9 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                             Identifier: list
                           GeneratorExpressionNode SourceSection: [164,202]`mro(base, abcs=abcs)...`
                             Name: <genexpr>
-                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             Enclosing
-                              FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+                              FrameDescriptor: 5 slots [<return_val>, abcs, base, cls, other]
                             Active Flags: 2
                             For Nodes: 1
                             Block Nodes: 0
@@ -165,7 +165,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                               CelVars: None
                               FreeVars: abcs
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, abcs, base]
                               ExecutionSlots:
                                 FreeVarsSlots: abcs, 
                                 CellVarsSlots: None

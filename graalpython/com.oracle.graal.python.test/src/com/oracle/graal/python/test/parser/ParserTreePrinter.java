@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.test.parser;
 
+import java.util.Collection;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ModuleRootNode;
@@ -486,20 +488,18 @@ public class ParserTreePrinter implements NodeVisitor {
     private void addFrameDescriptor(FrameDescriptor fd) {
         indent(level);
         sb.append("FrameDescriptor: ");
-        if (fd.getSlots().size() == 0) {
+        Set<Object> identifiers = fd.getIdentifiers();
+        if (identifiers.isEmpty()) {
             sb.append(" Empty");
             newLine();
             return;
         }
-        sb.append(fd.getSlots().size()).append(" slots [");
-        Set<Object> identifiers = fd.getIdentifiers();
-        String[] names = new String[identifiers.size()];
-        int i = 0;
-        String name;
+        sb.append(identifiers.size()).append(" slots [");
+        TreeSet<String> names = new TreeSet<>();
         for (Object identifier : identifiers) {
-            name = identifier.toString();
+            String name = identifier.toString();
             if (printTmpSlots || (!printTmpSlots && !name.startsWith("<>temp"))) {
-                names[i++] = name;
+                names.add(name);
             }
         }
         add(names);
@@ -521,6 +521,22 @@ public class ParserTreePrinter implements NodeVisitor {
 
     private void add(String[] array) {
         if (array == null || array.length == 0) {
+            sb.append("None");
+        } else {
+            boolean first = true;
+            for (String text : array) {
+                if (!first) {
+                    sb.append(", ");
+                } else {
+                    first = false;
+                }
+                sb.append(text);
+            }
+        }
+    }
+
+    private void add(Collection<String> array) {
+        if (array == null || array.isEmpty()) {
             sb.append("None");
         } else {
             boolean first = true;

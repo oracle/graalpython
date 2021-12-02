@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
               CelVars: c
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [c, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, c]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: c, 
@@ -43,9 +43,9 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                       ExpressionStatementNode SourceSection: [22,46]`x + c for x in range...`
                         GeneratorExpressionNode SourceSection: [22,46]`x + c for x in range...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [x, c, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, c, x]
                           Enclosing
-                            FrameDescriptor: 2 slots [c, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, c]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                             CelVars: None
                             FreeVars: c
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [x, c, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, c, x]
                             ExecutionSlots:
                               FreeVarsSlots: c, 
                               CellVarsSlots: None

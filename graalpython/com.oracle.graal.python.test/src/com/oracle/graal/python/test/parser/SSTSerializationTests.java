@@ -51,6 +51,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -1381,7 +1382,7 @@ public class SSTSerializationTests extends ParserTestBase {
         });
         indent(sb, indent + 1);
         sb.append("FrameDescriptor: ");
-        printSet(sb, names);
+        printSet(sb, new TreeSet<>(names));
         sb.append("\n");
         indent(sb, indent + 1);
         sb.append("CellVars: ");
@@ -1405,13 +1406,13 @@ public class SSTSerializationTests extends ParserTestBase {
          * Processor Intel(R) Core(TM) i7-6820HQ CPU @ 2.70GHz Memory 32801MB Operating System
          * Ubuntu 18.04.2 LTS the result should be : Memory times: parsing: 6,674,919,690ns (100%)
          * serialization: 435,290,014ns(+6%) deserialization: 2,220,701,051ns (-67%)
-         * 
+         *
          * Average times: parsing: 4,171,824ns (100%) serialization: 272,056ns (+6%)
          * deserialization: 1,387,938ns(-67%)
-         * 
+         *
          * Times with file operations: parsing: 6,879,809,367ns (100%) serialization:
          * 583,667,690ns(+8%) deserialization: 2,270,131,909ns (-68%)
-         * 
+         *
          * Average times: parsing: 4,299,880ns (100%) serialization: 364,792ns (+8%)
          * deserialization: 1,418,832ns(-68%)
          */

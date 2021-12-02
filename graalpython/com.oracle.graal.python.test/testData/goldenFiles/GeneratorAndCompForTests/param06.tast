@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
               CelVars: files
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [files, dirs, a, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, a, dirs, files]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: files, 
@@ -57,9 +57,9 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                             Identifier: list
                           GeneratorExpressionNode SourceSection: [28,77]`join(dir, file) for ...`
                             Name: <genexpr>
-                            FrameDescriptor: 4 slots [file, dir, files, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, dir, file, files]
                             Enclosing
-                              FrameDescriptor: 4 slots [files, dirs, a, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, a, dirs, files]
                             Active Flags: 2
                             For Nodes: 2
                             Block Nodes: 0
@@ -70,7 +70,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                               CelVars: None
                               FreeVars: files
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [file, dir, files, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, dir, file, files]
                               ExecutionSlots:
                                 FreeVarsSlots: files, 
                                 CellVarsSlots: None

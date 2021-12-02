@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'lambda03'> SourceSection: [0,12]`lambda *y: 0`
         CelVars: None
         FreeVars: None
         NeedsCellFrame: False
-        FrameDescriptor: 2 slots [y, <return_val>]
+        FrameDescriptor: 2 slots [<return_val>, y]
         ExecutionSlots:
           FreeVarsSlots: None
           CellVarsSlots: None

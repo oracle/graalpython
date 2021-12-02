@@ -542,7 +542,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [C, methods, mro, B, method, <return_val>]
+            FrameDescriptor: 6 slots [<return_val>, B, C, method, methods, mro]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -655,7 +655,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__slots__, __hash__, __subclasshook__]
+              FrameDescriptor: 3 slots [__hash__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -696,7 +696,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -736,7 +736,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -808,7 +808,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__slots__, __await__, __subclasshook__]
+              FrameDescriptor: 3 slots [__await__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -835,7 +835,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                           ReadClassAttributeNodeGen SourceSection: [2985,3000]`@abstractmethod`
                             Identifier: abstractmethod
                           GeneratorFunctionDefinitionNode Name: __await__ SourceSection: None
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             Active Flags: 2
                             For Nodes: 0
                             Block Nodes: 0
@@ -853,7 +853,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -897,7 +897,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -971,7 +971,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [__slots__, send, throw, close, __subclasshook__]
+              FrameDescriptor: 5 slots [__slots__, __subclasshook__, close, send, throw]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1012,7 +1012,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, value, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1062,7 +1062,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [self, typ, val, tb, <return_val>]
+                              FrameDescriptor: 5 slots [<return_val>, self, tb, typ, val]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1161,7 +1161,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1224,7 +1224,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1305,7 +1305,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__slots__, __aiter__, __subclasshook__]
+              FrameDescriptor: 3 slots [__aiter__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1346,7 +1346,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1388,7 +1388,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1462,7 +1462,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__slots__, __anext__, __aiter__, __subclasshook__]
+              FrameDescriptor: 4 slots [__aiter__, __anext__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1503,7 +1503,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1540,7 +1540,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1580,7 +1580,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1649,7 +1649,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__slots__, __anext__, asend, athrow, aclose, __subclasshook__]
+              FrameDescriptor: 6 slots [__anext__, __slots__, __subclasshook__, aclose, asend, athrow]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1686,7 +1686,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1730,7 +1730,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, value, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1780,7 +1780,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [self, typ, val, tb, <return_val>]
+                              FrameDescriptor: 5 slots [<return_val>, self, tb, typ, val]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1879,7 +1879,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1942,7 +1942,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2024,7 +2024,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__slots__, __iter__, __subclasshook__]
+              FrameDescriptor: 3 slots [__iter__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -2051,7 +2051,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                           ReadClassAttributeNodeGen SourceSection: [6588,6603]`@abstractmethod`
                             Identifier: abstractmethod
                           GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             Active Flags: 3
                             For Nodes: 0
                             Block Nodes: 0
@@ -2069,7 +2069,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2119,7 +2119,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2193,7 +2193,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__slots__, __next__, __iter__, __subclasshook__]
+              FrameDescriptor: 4 slots [__iter__, __next__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -2234,7 +2234,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2271,7 +2271,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2311,7 +2311,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2536,7 +2536,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__slots__, __reversed__, __subclasshook__]
+              FrameDescriptor: 3 slots [__reversed__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -2563,7 +2563,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                           ReadClassAttributeNodeGen SourceSection: [7806,7821]`@abstractmethod`
                             Identifier: abstractmethod
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             Active Flags: 3
                             For Nodes: 0
                             Block Nodes: 0
@@ -2581,7 +2581,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2631,7 +2631,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2700,7 +2700,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__slots__, __next__, send, throw, close, __subclasshook__]
+              FrameDescriptor: 6 slots [__next__, __slots__, __subclasshook__, close, send, throw]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -2737,7 +2737,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2781,7 +2781,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, value, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2831,7 +2831,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [self, typ, val, tb, <return_val>]
+                              FrameDescriptor: 5 slots [<return_val>, self, tb, typ, val]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2930,7 +2930,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2993,7 +2993,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3075,7 +3075,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__slots__, __len__, __subclasshook__]
+              FrameDescriptor: 3 slots [__len__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3116,7 +3116,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3156,7 +3156,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3228,7 +3228,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__slots__, __contains__, __subclasshook__]
+              FrameDescriptor: 3 slots [__contains__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3269,7 +3269,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, x, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, self, x]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3315,7 +3315,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3428,7 +3428,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3506,7 +3506,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__slots__, __call__, __subclasshook__]
+              FrameDescriptor: 3 slots [__call__, __slots__, __subclasshook__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3548,7 +3548,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, args, kwds, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, args, kwds, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3600,7 +3600,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, C, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, C, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3674,7 +3674,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 18 slots [__slots__, __le__, __lt__, __gt__, __ge__, __eq__, _from_iterable, __and__, __rand__, isdisjoint, __or__, __ror__, __sub__, __rsub__, __xor__, __rxor__, _hash, __doc__]
+              FrameDescriptor: 18 slots [__and__, __doc__, __eq__, __ge__, __gt__, __le__, __lt__, __or__, __rand__, __ror__, __rsub__, __rxor__, __slots__, __sub__, __xor__, _from_iterable, _hash, isdisjoint]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3714,7 +3714,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, other, elem, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, elem, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3812,7 +3812,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3889,7 +3889,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3966,7 +3966,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, other, elem, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, elem, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4064,7 +4064,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4145,7 +4145,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, it, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, cls, it]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -4192,7 +4192,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: self
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: self, 
@@ -4238,9 +4238,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             ReadFromCellNodeGen SourceSection: None
                                         GeneratorExpressionNode SourceSection: [12380,12421]`value for value in o...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 3 slots [value, self, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, self, value]
                                           Enclosing
-                                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, other, self]
                                           Active Flags: 4
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -4251,7 +4251,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CelVars: None
                                             FreeVars: self
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [value, self, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, self, value]
                                             ExecutionSlots:
                                               FreeVarsSlots: self, 
                                               CellVarsSlots: None
@@ -4323,7 +4323,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, other, value, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, other, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4389,7 +4389,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, other, chain, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, chain, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4429,9 +4429,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       Frame: [2,chain,Illegal]
                                       GeneratorExpressionNode SourceSection: [12773,12808]`e for s in (self, ot...`
                                         Name: <genexpr>
-                                        FrameDescriptor: 3 slots [e, s, <return_val>]
+                                        FrameDescriptor: 3 slots [<return_val>, e, s]
                                         Enclosing
-                                          FrameDescriptor: 4 slots [self, other, chain, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, chain, other, self]
                                         Active Flags: 2
                                         For Nodes: 2
                                         Block Nodes: 0
@@ -4442,7 +4442,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CelVars: None
                                           FreeVars: None
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 3 slots [e, s, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, e, s]
                                           ExecutionSlots:
                                             FreeVarsSlots: None
                                             CellVarsSlots: None
@@ -4525,7 +4525,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: other
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: other, 
@@ -4598,9 +4598,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Frame: [0,self,Illegal]
                                         GeneratorExpressionNode SourceSection: [13112,13192]`value for value in s...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 3 slots [value, other, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, other, value]
                                           Enclosing
-                                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, other, self]
                                           Active Flags: 4
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -4611,7 +4611,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CelVars: None
                                             FreeVars: other
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [value, other, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, other, value]
                                             ExecutionSlots:
                                               FreeVarsSlots: other, 
                                               CellVarsSlots: None
@@ -4680,7 +4680,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: self
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: self, 
@@ -4750,9 +4750,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             ReadFromCellNodeGen SourceSection: None
                                         GeneratorExpressionNode SourceSection: [13433,13513]`value for value in o...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 3 slots [value, self, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, self, value]
                                           Enclosing
-                                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, other, self]
                                           Active Flags: 4
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -4763,7 +4763,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CelVars: None
                                             FreeVars: self
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [value, self, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, self, value]
                                             ExecutionSlots:
                                               FreeVarsSlots: self, 
                                               CellVarsSlots: None
@@ -4832,7 +4832,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4924,7 +4924,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [self, MAX, MASK, n, h, hx, x, <return_val>]
+                            FrameDescriptor: 8 slots [<return_val>, MASK, MAX, h, hx, n, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5135,7 +5135,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 11 slots [__slots__, add, discard, remove, pop, clear, __ior__, __iand__, __ixor__, __isub__, __doc__]
+              FrameDescriptor: 11 slots [__doc__, __iand__, __ior__, __isub__, __ixor__, __slots__, add, clear, discard, pop, remove]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -5179,7 +5179,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, value, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -5227,7 +5227,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, value, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -5271,7 +5271,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, value, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5338,7 +5338,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, it, value, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, it, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5410,7 +5410,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5463,7 +5463,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, it, value, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, it, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5525,7 +5525,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, it, value, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, it, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5590,7 +5590,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, it, value, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, it, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5705,7 +5705,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, it, value, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, it, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5801,7 +5801,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 9 slots [__slots__, __getitem__, get, __contains__, keys, items, values, __eq__, __reversed__]
+              FrameDescriptor: 9 slots [__contains__, __eq__, __getitem__, __reversed__, __slots__, get, items, keys, values]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -5844,7 +5844,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, key, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, key, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -5889,7 +5889,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, key, default, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, default, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5950,7 +5950,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, key, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6005,7 +6005,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6045,7 +6045,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6085,7 +6085,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6125,7 +6125,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6223,7 +6223,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__slots__, __init__, __len__, __repr__]
+              FrameDescriptor: 4 slots [__init__, __len__, __repr__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -6261,7 +6261,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, mapping, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, mapping, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6307,7 +6307,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6352,7 +6352,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6401,7 +6401,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__slots__, _from_iterable, __contains__, __iter__]
+              FrameDescriptor: 4 slots [__contains__, __iter__, __slots__, _from_iterable]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -6442,7 +6442,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, it, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, it, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -6489,7 +6489,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, key, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6529,7 +6529,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       WriteNameNodeGen SourceSection: [18748,18802]`def __iter__(self):↵...`
                         Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
-                          FrameDescriptor: 2 slots [self, <return_val>]
+                          FrameDescriptor: 2 slots [<return_val>, self]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -6547,7 +6547,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6633,7 +6633,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__slots__, _from_iterable, __contains__, __iter__]
+              FrameDescriptor: 4 slots [__contains__, __iter__, __slots__, _from_iterable]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -6674,7 +6674,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, it, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, it, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -6721,7 +6721,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [self, item, key, value, v, <>temp5, <>temp6, <return_val>]
+                            FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, item, key, self, v, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6799,7 +6799,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       WriteNameNodeGen SourceSection: [19185,19284]`def __iter__(self):↵...`
                         Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
-                          FrameDescriptor: 3 slots [self, key, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, key, self]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -6817,7 +6817,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, key, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6915,7 +6915,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__slots__, __contains__, __iter__]
+              FrameDescriptor: 3 slots [__contains__, __iter__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -6952,7 +6952,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, value, v, key, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, key, self, v, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7027,7 +7027,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       WriteNameNodeGen SourceSection: [19580,19672]`def __iter__(self):↵...`
                         Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
-                          FrameDescriptor: 3 slots [self, key, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, key, self]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -7045,7 +7045,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, key, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7139,7 +7139,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 9 slots [__slots__, __setitem__, __delitem__, _MutableMapping__marker, pop, popitem, clear, update, setdefault]
+              FrameDescriptor: 9 slots [_MutableMapping__marker, __delitem__, __setitem__, __slots__, clear, pop, popitem, setdefault, update]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -7182,7 +7182,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, key, value, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, key, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -7236,7 +7236,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, key, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, key, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -7288,7 +7288,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, key, default, value, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, default, key, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7376,7 +7376,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, key, value, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, key, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7452,7 +7452,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7505,7 +7505,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 13 slots [args, kwds, self, other, key, value, <>temp6, <>temp7, <>temp8, <>temp9, <>temp10, <>temp11, <return_val>]
+                            FrameDescriptor: 13 slots [<>temp10, <>temp11, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>, args, key, kwds, other, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7748,7 +7748,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, key, default, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, default, key, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7837,7 +7837,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 8 slots [__slots__, __getitem__, __iter__, __contains__, __reversed__, index, count, __doc__]
+              FrameDescriptor: 8 slots [__contains__, __doc__, __getitem__, __iter__, __reversed__, __slots__, count, index]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -7881,7 +7881,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, index, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, index, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -7911,7 +7911,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       WriteNameNodeGen SourceSection: [22928,23125]`def __iter__(self):↵...`
                         Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
-                          FrameDescriptor: 4 slots [self, i, v, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, i, self, v]
                           Active Flags: 6
                           For Nodes: 0
                           Block Nodes: 3
@@ -7929,7 +7929,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, i, v, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, i, self, v]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -8011,7 +8011,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, value, v, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, self, v, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -8067,7 +8067,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       WriteNameNodeGen SourceSection: [23274,23374]`def __reversed__(sel...`
                         Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                          FrameDescriptor: 3 slots [self, i, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, i, self]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -8085,7 +8085,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, i, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, i, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -8159,7 +8159,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, value, start, stop, i, v, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, i, self, start, stop, v, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -8341,7 +8341,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: value
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, value, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: value, 
@@ -8370,9 +8370,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Identifier: sum
                                         GeneratorExpressionNode SourceSection: [24225,24268]`1 for v in self if v...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 3 slots [v, value, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, v, value]
                                           Enclosing
-                                            FrameDescriptor: 3 slots [self, value, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, self, value]
                                           Active Flags: 4
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -8383,7 +8383,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CelVars: None
                                             FreeVars: value
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [v, value, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, v, value]
                                             ExecutionSlots:
                                               FreeVarsSlots: value, 
                                               CellVarsSlots: None
@@ -8518,7 +8518,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [__slots__, __doc__]
+              FrameDescriptor: 2 slots [__doc__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -8591,7 +8591,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 11 slots [__slots__, __setitem__, __delitem__, insert, append, clear, reverse, extend, pop, remove, __iadd__]
+              FrameDescriptor: 11 slots [__delitem__, __iadd__, __setitem__, __slots__, append, clear, extend, insert, pop, remove, reverse]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -8634,7 +8634,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, index, value, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, index, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -8688,7 +8688,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, index, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, index, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -8736,7 +8736,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, index, value, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, index, self, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -8786,7 +8786,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, value, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -8840,7 +8840,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -8893,7 +8893,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [self, n, i, <>temp3, <>temp4, <return_val>]
+                            FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, i, n, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -8998,7 +8998,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, values, v, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, self, v, values]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -9059,7 +9059,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, index, v, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, index, self, v]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -9115,7 +9115,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, value, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -9165,7 +9165,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, values, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, self, values]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None

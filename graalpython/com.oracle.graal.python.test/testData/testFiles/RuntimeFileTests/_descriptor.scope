@@ -5,67 +5,67 @@ Scope: []
     FreeVars: Empty
     Scope: SimpleNamespace
         Kind: Class
-        FrameDescriptor: [__setattr__, __getattr__, __repr__, __init__, __delattr__]
+        FrameDescriptor: [__delattr__, __getattr__, __init__, __repr__, __setattr__]
         CellVars: Empty
         FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [<>temp6, ns, v, self, k, <>temp5, <return_val>, sb]
+            FrameDescriptor: [<>temp5, <>temp6, <return_val>, k, ns, sb, self, v]
             CellVars: Empty
             FreeVars: Empty
         Scope: __setattr__
             Kind: Function
-            FrameDescriptor: [name, self, value, <return_val>]
+            FrameDescriptor: [<return_val>, name, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: __getattr__
             Kind: Function
-            FrameDescriptor: [name, self, <return_val>]
+            FrameDescriptor: [<return_val>, name, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __delattr__
             Kind: Function
-            FrameDescriptor: [name, self, <return_val>]
+            FrameDescriptor: [<return_val>, name, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [kwargs, self, <return_val>]
+            FrameDescriptor: [<return_val>, kwargs, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: make_named_tuple_class
         Kind: Function
-        FrameDescriptor: [named_tuple, name, _define_named_tuple_methods, fields, <return_val>]
+        FrameDescriptor: [<return_val>, _define_named_tuple_methods, fields, name, named_tuple]
         CellVars: [fields, name, named_tuple]
         FreeVars: Empty
         Scope: _define_named_tuple_methods
             Kind: Function
-            FrameDescriptor: [make_func, <>temp6, named_tuple, name, i, <>temp5, fields, <return_val>]
+            FrameDescriptor: [<>temp5, <>temp6, <return_val>, fields, i, make_func, name, named_tuple]
             CellVars: Empty
             FreeVars: [fields, named_tuple]
             Scope: make_func
                 Kind: Function
-                FrameDescriptor: [func, i, <return_val>]
+                FrameDescriptor: [<return_val>, func, i]
                 CellVars: [i]
                 FreeVars: Empty
                 Scope: func
                     Kind: Function
-                    FrameDescriptor: [self, i, <return_val>]
+                    FrameDescriptor: [<return_val>, i, self]
                     CellVars: Empty
                     FreeVars: [i]
         Scope: named_tuple
             Kind: Class
-            FrameDescriptor: [n_sequence_fields, __name__, __str__, name, __repr__, fields]
+            FrameDescriptor: [__name__, __repr__, __str__, fields, n_sequence_fields, name]
             CellVars: Empty
             FreeVars: [fields, name]
             Scope: __repr__
                 Kind: Function
-                FrameDescriptor: [f, name, self, fields, <return_val>, sb]
+                FrameDescriptor: [<return_val>, f, fields, name, sb, self]
                 CellVars: Empty
                 FreeVars: [fields, name]
             Scope: __str__
                 Kind: Function
-                FrameDescriptor: [self, <return_val>]
+                FrameDescriptor: [<return_val>, self]
                 CellVars: Empty
                 FreeVars: Empty
     Scope: _f

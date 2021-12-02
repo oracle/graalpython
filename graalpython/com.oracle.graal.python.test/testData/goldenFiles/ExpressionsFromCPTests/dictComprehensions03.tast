@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
         Identifier: dict
       GeneratorExpressionNode SourceSection: [1,51]`x:x for x in seq1 fo...`
         Name: <genexpr>
-        FrameDescriptor: 3 slots [y, x, <return_val>]
+        FrameDescriptor: 3 slots [<return_val>, x, y]
         Enclosing
           FrameDescriptor:  Empty
         Active Flags: 4
@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
           CelVars: None
           FreeVars: None
           NeedsCellFrame: False
-          FrameDescriptor: 3 slots [y, x, <return_val>]
+          FrameDescriptor: 3 slots [<return_val>, x, y]
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None

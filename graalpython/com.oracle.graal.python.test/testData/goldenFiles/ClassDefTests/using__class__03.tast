@@ -62,7 +62,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, __class__, self]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
@@ -103,7 +103,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, __class__, self]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
@@ -141,7 +141,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [slef, __class__, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, __class__, slef]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None

@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [a, b, <>temp2, <>temp3, <return_val>]
+              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, a, b]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

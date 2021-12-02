@@ -93,7 +93,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -145,7 +145,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [s, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, s]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -285,7 +285,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     CelVars: None
                     FreeVars: None
                     NeedsCellFrame: False
-                    FrameDescriptor: 3 slots [category, value, <return_val>]
+                    FrameDescriptor: 3 slots [<return_val>, category, value]
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: None
@@ -415,7 +415,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [d, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, d]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -452,7 +452,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
       WriteNameNodeGen SourceSection: [3450,3952]`def _grouping_interv...`
         Identifier: _grouping_intervals
         GeneratorFunctionDefinitionNode Name: _grouping_intervals SourceSection: None
-          FrameDescriptor: 4 slots [grouping, last_interval, interval, <return_val>]
+          FrameDescriptor: 4 slots [<return_val>, grouping, interval, last_interval]
           Active Flags: 6
           For Nodes: 1
           Block Nodes: 3
@@ -470,7 +470,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [grouping, last_interval, interval, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, grouping, interval, last_interval]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -586,7 +586,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [s, monetary, conv, thousands_sep, grouping, stripped, right_spaces, left_spaces, groups, interval, <return_val>]
+            FrameDescriptor: 11 slots [<return_val>, conv, grouping, groups, interval, left_spaces, monetary, right_spaces, s, stripped, thousands_sep]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -851,7 +851,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [s, amount, lpos, rpos, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, amount, lpos, rpos, s]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1004,7 +1004,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 14 slots [percent, value, grouping, monetary, additional, formatted, seps, parts, decimal_point, <>temp9, <>temp10, <>temp11, <>temp12, <return_val>]
+            FrameDescriptor: 14 slots [<>temp10, <>temp11, <>temp12, <>temp9, <return_val>, additional, decimal_point, formatted, grouping, monetary, parts, percent, seps, value]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1269,7 +1269,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [f, val, grouping, monetary, percents, new_f, new_val, perc, i, starcount, <return_val>]
+            FrameDescriptor: 11 slots [<return_val>, f, grouping, i, monetary, new_f, new_val, perc, percents, starcount, val]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1565,7 +1565,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [percent, value, grouping, monetary, additional, warnings, match, <return_val>]
+            FrameDescriptor: 8 slots [<return_val>, additional, grouping, match, monetary, percent, value, warnings]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1712,7 +1712,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 13 slots [val, symbol, grouping, international, conv, digits, s, smb, precedes, separated, sign_pos, sign, <return_val>]
+            FrameDescriptor: 13 slots [<return_val>, conv, digits, grouping, international, precedes, s, separated, sign, sign_pos, smb, symbol, val]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2062,7 +2062,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [val, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, val]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2103,7 +2103,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [string, conv, ts, dd, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, conv, dd, string, ts]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2196,7 +2196,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [string, func, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, func, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2247,7 +2247,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [string, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2290,7 +2290,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [s1, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, s1]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2380,7 +2380,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [code, encoding, langname, norm_encoding, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, code, encoding, langname, norm_encoding]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2564,7 +2564,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [code, modifier, _, encoding, <return_val>, <>temp5, <>temp6, <>temp7]
+            FrameDescriptor: 8 slots [<>temp5, <>temp6, <>temp7, <return_val>, _, code, encoding, modifier]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2697,7 +2697,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 18 slots [localename, code, modifier, langname, encoding, lang_enc, norm_encoding, lookup_name, defmod, <>temp9, <>temp10, <>temp11, <>temp12, <return_val>, <>temp14, <>temp15, <>temp16, <>temp17]
+            FrameDescriptor: 18 slots [<>temp10, <>temp11, <>temp12, <>temp14, <>temp15, <>temp16, <>temp17, <>temp9, <return_val>, code, defmod, encoding, lang_enc, langname, localename, lookup_name, modifier, norm_encoding]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3209,7 +3209,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [localename, code, modifier, <>temp3, <>temp4, <return_val>]
+            FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, code, localename, modifier]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3359,7 +3359,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [localetuple, language, encoding, <>temp3, <>temp4, <return_val>]
+            FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, encoding, language, localetuple]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3463,7 +3463,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [envvars, _locale, code, encoding, os, lookup, localename, variable, <>temp8, <>temp9, <return_val>]
+            FrameDescriptor: 11 slots [<>temp8, <>temp9, <return_val>, _locale, code, encoding, envvars, localename, lookup, os, variable]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3672,7 +3672,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [category, localename, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, category, localename]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3746,7 +3746,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [category, locale, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, category, locale]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3828,7 +3828,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [category, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, category]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3892,7 +3892,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [do_setlocale, _bootlocale, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, _bootlocale, do_setlocale]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3977,7 +3977,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       CelVars: None
                       FreeVars: None
                       NeedsCellFrame: False
-                      FrameDescriptor: 2 slots [do_setlocale, <return_val>]
+                      FrameDescriptor: 2 slots [<return_val>, do_setlocale]
                       ExecutionSlots:
                         FreeVarsSlots: None
                         CellVarsSlots: None
@@ -4013,7 +4013,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       CelVars: None
                       FreeVars: None
                       NeedsCellFrame: False
-                      FrameDescriptor: 3 slots [do_setlocale, res, <return_val>]
+                      FrameDescriptor: 3 slots [<return_val>, do_setlocale, res]
                       ExecutionSlots:
                         FreeVarsSlots: None
                         CellVarsSlots: None
@@ -4092,7 +4092,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 5 slots [do_setlocale, _bootlocale, oldloc, result, <return_val>]
+                  FrameDescriptor: 5 slots [<return_val>, _bootlocale, do_setlocale, oldloc, result]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: None
@@ -6918,7 +6918,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 21 slots [categories, _init_categories, lang, enc, name, category, <>temp6, <>temp7, <>temp8, <>temp9, <>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>]
+            FrameDescriptor: 21 slots [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>, _init_categories, categories, category, enc, lang, name]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -6952,7 +6952,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 6 slots [categories, k, v, <>temp3, <>temp4, <return_val>]
+                          FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, categories, k, v]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None

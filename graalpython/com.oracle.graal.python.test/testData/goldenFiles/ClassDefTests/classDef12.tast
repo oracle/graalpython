@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [get_nested_class, t, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, get_nested_class, t]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -51,7 +51,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                             CelVars: method_and_var
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [method_and_var, Test, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, Test, method_and_var]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: method_and_var, 
@@ -86,7 +86,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                             CelVars: None
                                             FreeVars: method_and_var
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 4 slots [method_and_var, test, actual_global, str]
+                                            FrameDescriptor: 4 slots [actual_global, method_and_var, str, test]
                                             ExecutionSlots:
                                               FreeVarsSlots: method_and_var, 
                                               CellVarsSlots: None
@@ -119,7 +119,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                           CelVars: None
                                                           FreeVars: None
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 2 slots [self, <return_val>]
+                                                          FrameDescriptor: 2 slots [<return_val>, self]
                                                           ExecutionSlots:
                                                             FreeVarsSlots: None
                                                             CellVarsSlots: None
@@ -154,7 +154,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                           CelVars: None
                                                           FreeVars: method_and_var
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 3 slots [self, method_and_var, <return_val>]
+                                                          FrameDescriptor: 3 slots [<return_val>, method_and_var, self]
                                                           ExecutionSlots:
                                                             FreeVarsSlots: method_and_var, 
                                                             CellVarsSlots: None
@@ -192,7 +192,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                           CelVars: None
                                                           FreeVars: None
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 2 slots [self, <return_val>]
+                                                          FrameDescriptor: 2 slots [<return_val>, self]
                                                           ExecutionSlots:
                                                             FreeVarsSlots: None
                                                             CellVarsSlots: None
@@ -231,7 +231,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                           CelVars: None
                                                           FreeVars: None
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 2 slots [self, <return_val>]
+                                                          FrameDescriptor: 2 slots [<return_val>, self]
                                                           ExecutionSlots:
                                                             FreeVarsSlots: None
                                                             CellVarsSlots: None

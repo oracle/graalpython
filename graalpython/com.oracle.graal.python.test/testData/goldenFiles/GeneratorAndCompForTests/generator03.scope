@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Function
-        FrameDescriptor: [c, <return_val>]
+        FrameDescriptor: [<return_val>, c]
         CellVars: [c]
         FreeVars: Empty
         Scope: <genexpr>
             Kind: GenExp
-            FrameDescriptor: [c, x, <return_val>]
+            FrameDescriptor: [<return_val>, c, x]
             CellVars: Empty
             FreeVars: [c]

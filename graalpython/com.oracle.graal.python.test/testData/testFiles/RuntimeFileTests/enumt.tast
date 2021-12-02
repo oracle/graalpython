@@ -83,7 +83,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [obj, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, obj]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -142,7 +142,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [name, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, name]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -247,7 +247,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [name, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, name]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -340,7 +340,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [cls, _break_on_call_reduce, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, _break_on_call_reduce, cls]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -372,7 +372,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 3 slots [self, proto, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, proto, self]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -446,7 +446,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [value, __doc__]
+              FrameDescriptor: 2 slots [__doc__, value]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -491,7 +491,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__class__, __init__, __setitem__, __doc__]
+              FrameDescriptor: 4 slots [__class__, __doc__, __init__, __setitem__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: __class__, 
@@ -527,7 +527,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, __class__, self]
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
                               CellVarsSlots: None
@@ -586,7 +586,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [self, key, value, already, __class__, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, __class__, already, key, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
                               CellVarsSlots: None
@@ -989,7 +989,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 20 slots [__class__, __prepare__, __new__, __bool__, __call__, __contains__, __delattr__, __dir__, __getattr__, __getitem__, __iter__, __len__, __members__, __repr__, __reversed__, __setattr__, _create_, _get_mixins_, _find_new_, __doc__]
+              FrameDescriptor: 20 slots [__bool__, __call__, __class__, __contains__, __delattr__, __dir__, __doc__, __getattr__, __getitem__, __iter__, __len__, __members__, __new__, __prepare__, __repr__, __reversed__, __setattr__, _create_, _find_new_, _get_mixins_]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: __class__, 
@@ -1029,7 +1029,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 9 slots [metacls, cls, bases, enum_dict, member_type, first_enum, <>temp6, <>temp7, <return_val>]
+                              FrameDescriptor: 9 slots [<>temp6, <>temp7, <return_val>, bases, cls, enum_dict, first_enum, member_type, metacls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1128,7 +1128,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: classdict, member_type
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 35 slots [metacls, cls, bases, classdict, ignore, key, member_type, first_enum, __new__, save_new, use_args, enum_members, name, _order_, invalid_names, enum_class, base_attributes, methods, value, args, enum_member, canonical_member, member_name, class_method, obj_method, enum_method, __class__, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>]
+                            FrameDescriptor: 35 slots [<>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>, __class__, __new__, _order_, args, base_attributes, bases, canonical_member, class_method, classdict, cls, enum_class, enum_member, enum_members, enum_method, first_enum, ignore, invalid_names, key, member_name, member_type, metacls, methods, name, obj_method, save_new, use_args, value]
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
                               CellVarsSlots: classdict, , member_type, 
@@ -1282,9 +1282,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Identifier: dict
                                         GeneratorExpressionNode SourceSection: [5304,5352]`k: classdict[k] for ...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 3 slots [k, classdict, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, classdict, k]
                                           Enclosing
-                                            FrameDescriptor: 35 slots [metacls, cls, bases, classdict, ignore, key, member_type, first_enum, __new__, save_new, use_args, enum_members, name, _order_, invalid_names, enum_class, base_attributes, methods, value, args, enum_member, canonical_member, member_name, class_method, obj_method, enum_method, __class__, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>]
+                                            FrameDescriptor: 35 slots [<>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>, __class__, __new__, _order_, args, base_attributes, bases, canonical_member, class_method, classdict, cls, enum_class, enum_member, enum_members, enum_method, first_enum, ignore, invalid_names, key, member_name, member_type, metacls, methods, name, obj_method, save_new, use_args, value]
                                           Active Flags: 2
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -1295,7 +1295,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             CelVars: None
                                             FreeVars: classdict
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [k, classdict, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, classdict, k]
                                             ExecutionSlots:
                                               FreeVarsSlots: classdict, 
                                               CellVarsSlots: None
@@ -1487,9 +1487,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Identifier: set
                                         GeneratorExpressionNode SourceSection: [6377,6424]`a for b in enum_clas...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 3 slots [a, b, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, a, b]
                                           Enclosing
-                                            FrameDescriptor: 35 slots [metacls, cls, bases, classdict, ignore, key, member_type, first_enum, __new__, save_new, use_args, enum_members, name, _order_, invalid_names, enum_class, base_attributes, methods, value, args, enum_member, canonical_member, member_name, class_method, obj_method, enum_method, __class__, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>]
+                                            FrameDescriptor: 35 slots [<>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>, __class__, __new__, _order_, args, base_attributes, bases, canonical_member, class_method, classdict, cls, enum_class, enum_member, enum_members, enum_method, first_enum, ignore, invalid_names, key, member_name, member_type, metacls, methods, name, obj_method, save_new, use_args, value]
                                           Active Flags: 2
                                           For Nodes: 2
                                           Block Nodes: 0
@@ -1500,7 +1500,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             CelVars: None
                                             FreeVars: None
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [a, b, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, a, b]
                                             ExecutionSlots:
                                               FreeVarsSlots: None
                                               CellVarsSlots: None
@@ -1600,9 +1600,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Identifier: any
                                                 GeneratorExpressionNode SourceSection: [7411,7453]`m in member_type.__d...`
                                                   Name: <genexpr>
-                                                  FrameDescriptor: 3 slots [m, member_type, <return_val>]
+                                                  FrameDescriptor: 3 slots [<return_val>, m, member_type]
                                                   Enclosing
-                                                    FrameDescriptor: 35 slots [metacls, cls, bases, classdict, ignore, key, member_type, first_enum, __new__, save_new, use_args, enum_members, name, _order_, invalid_names, enum_class, base_attributes, methods, value, args, enum_member, canonical_member, member_name, class_method, obj_method, enum_method, __class__, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>]
+                                                    FrameDescriptor: 35 slots [<>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <return_val>, __class__, __new__, _order_, args, base_attributes, bases, canonical_member, class_method, classdict, cls, enum_class, enum_member, enum_members, enum_method, first_enum, ignore, invalid_names, key, member_name, member_type, metacls, methods, name, obj_method, save_new, use_args, value]
                                                   Active Flags: 2
                                                   For Nodes: 1
                                                   Block Nodes: 0
@@ -1613,7 +1613,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     CelVars: None
                                                     FreeVars: member_type
                                                     NeedsCellFrame: False
-                                                    FrameDescriptor: 3 slots [m, member_type, <return_val>]
+                                                    FrameDescriptor: 3 slots [<return_val>, m, member_type]
                                                     ExecutionSlots:
                                                       FreeVarsSlots: member_type, 
                                                       CellVarsSlots: None
@@ -2159,7 +2159,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2209,7 +2209,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 9 slots [cls, value, names, *, module, qualname, type, start, <return_val>]
+                            FrameDescriptor: 9 slots [*, <return_val>, cls, module, names, qualname, start, type, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2321,7 +2321,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [cls, member, warnings, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, cls, member, warnings]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2419,7 +2419,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [cls, attr, __class__, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, __class__, attr, cls]
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
                               CellVarsSlots: None
@@ -2500,7 +2500,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2548,7 +2548,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [cls, name, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, cls, name]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2630,7 +2630,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [cls, name, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, cls, name]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2681,7 +2681,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: cls
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [cls, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, cls]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: cls, 
@@ -2699,9 +2699,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     FrameReturnNode SourceSection: [14210,14272]`return (cls._member_...`
                                       GeneratorExpressionNode SourceSection: [14218,14271]`cls._member_map_[nam...`
                                         Name: <genexpr>
-                                        FrameDescriptor: 3 slots [name, cls, <return_val>]
+                                        FrameDescriptor: 3 slots [<return_val>, cls, name]
                                         Enclosing
-                                          FrameDescriptor: 2 slots [cls, <return_val>]
+                                          FrameDescriptor: 2 slots [<return_val>, cls]
                                         Active Flags: 2
                                         For Nodes: 1
                                         Block Nodes: 0
@@ -2712,7 +2712,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           CelVars: None
                                           FreeVars: cls
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 3 slots [name, cls, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, cls, name]
                                           ExecutionSlots:
                                             FreeVarsSlots: cls, 
                                             CellVarsSlots: None
@@ -2783,7 +2783,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [cls, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, cls]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2832,7 +2832,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [cls, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, cls]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2877,7 +2877,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [cls, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, cls]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2920,7 +2920,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: cls
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [cls, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, cls]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: cls, 
@@ -2938,9 +2938,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     FrameReturnNode SourceSection: [14726,14798]`return (cls._member_...`
                                       GeneratorExpressionNode SourceSection: [14734,14797]`cls._member_map_[nam...`
                                         Name: <genexpr>
-                                        FrameDescriptor: 3 slots [name, cls, <return_val>]
+                                        FrameDescriptor: 3 slots [<return_val>, cls, name]
                                         Enclosing
-                                          FrameDescriptor: 2 slots [cls, <return_val>]
+                                          FrameDescriptor: 2 slots [<return_val>, cls]
                                         Active Flags: 2
                                         For Nodes: 1
                                         Block Nodes: 0
@@ -2951,7 +2951,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           CelVars: None
                                           FreeVars: cls
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 3 slots [name, cls, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, cls, name]
                                           ExecutionSlots:
                                             FreeVarsSlots: cls, 
                                             CellVarsSlots: None
@@ -3026,7 +3026,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [cls, name, value, member_map, __class__, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, __class__, cls, member_map, name, value]
                             ExecutionSlots:
                               FreeVarsSlots: __class__, 
                               CellVarsSlots: None
@@ -3132,7 +3132,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 34 slots [cls, class_name, names, *, module, qualname, type, start, metacls, bases, _, first_enum, classdict, original_names, last_values, value, count, name, member_name, member_value, item, enum_class, exc, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <return_val>]
+                            FrameDescriptor: 34 slots [*, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <return_val>, _, bases, class_name, classdict, cls, count, enum_class, exc, first_enum, item, last_values, member_name, member_value, metacls, module, name, names, original_names, qualname, start, type, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3596,7 +3596,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 6 slots [bases, member_type, first_enum, base, <return_val>, <>temp5]
+                              FrameDescriptor: 6 slots [<>temp5, <return_val>, base, bases, first_enum, member_type]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3814,7 +3814,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 10 slots [classdict, member_type, first_enum, __new__, save_new, target, possible, method, use_args, <return_val>]
+                              FrameDescriptor: 10 slots [<return_val>, __new__, classdict, first_enum, member_type, method, possible, save_new, target, use_args]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -4023,7 +4023,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 13 slots [__new__, _generate_next_value_, _missing_, __repr__, __str__, __dir__, __format__, __hash__, __reduce_ex__, name, value, _convert, __doc__]
+              FrameDescriptor: 13 slots [__dir__, __doc__, __format__, __hash__, __new__, __reduce_ex__, __repr__, __str__, _convert, _generate_next_value_, _missing_, name, value]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -4059,7 +4059,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [cls, value, member, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, cls, member, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4190,7 +4190,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [name, start, count, last_values, last_value, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, count, last_value, last_values, name, start]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4277,7 +4277,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [cls, value, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, cls, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -4336,7 +4336,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4400,7 +4400,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4457,7 +4457,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: self
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, added_behavior, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, added_behavior, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: self, 
@@ -4481,9 +4481,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Identifier: list
                                         GeneratorExpressionNode SourceSection: [22699,22848]`m↵                fo...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 4 slots [m, cls, self, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, cls, m, self]
                                           Enclosing
-                                            FrameDescriptor: 3 slots [self, added_behavior, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, added_behavior, self]
                                           Active Flags: 4
                                           For Nodes: 2
                                           Block Nodes: 0
@@ -4494,7 +4494,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             CelVars: None
                                             FreeVars: self
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 4 slots [m, cls, self, <return_val>]
+                                            FrameDescriptor: 4 slots [<return_val>, cls, m, self]
                                             ExecutionSlots:
                                               FreeVarsSlots: self, 
                                               CellVarsSlots: None
@@ -4614,7 +4614,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, format_spec, cls, val, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, cls, format_spec, self, val]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4712,7 +4712,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4757,7 +4757,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, proto, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, proto, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4820,7 +4820,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -4865,7 +4865,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -4911,7 +4911,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: filter, source
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 8 slots [cls, name, module, filter, source, module_globals, members, <return_val>]
+                              FrameDescriptor: 8 slots [<return_val>, cls, filter, members, module, module_globals, name, source]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: filter, , source, 
@@ -5002,9 +5002,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Identifier: list
                                           GeneratorExpressionNode SourceSection: [25215,25309]`(name, source[name])...`
                                             Name: <genexpr>
-                                            FrameDescriptor: 4 slots [name, filter, source, <return_val>]
+                                            FrameDescriptor: 4 slots [<return_val>, filter, name, source]
                                             Enclosing
-                                              FrameDescriptor: 8 slots [cls, name, module, filter, source, module_globals, members, <return_val>]
+                                              FrameDescriptor: 8 slots [<return_val>, cls, filter, members, module, module_globals, name, source]
                                             Active Flags: 4
                                             For Nodes: 1
                                             Block Nodes: 0
@@ -5015,7 +5015,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               CelVars: None
                                               FreeVars: filter, source
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 4 slots [name, filter, source, <return_val>]
+                                              FrameDescriptor: 4 slots [<return_val>, filter, name, source]
                                               ExecutionSlots:
                                                 FreeVarsSlots: filter, , source, 
                                                 CellVarsSlots: None
@@ -5099,7 +5099,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         CelVars: None
                                                         FreeVars: None
                                                         NeedsCellFrame: False
-                                                        FrameDescriptor: 2 slots [t, <return_val>]
+                                                        FrameDescriptor: 2 slots [<return_val>, t]
                                                         ExecutionSlots:
                                                           FreeVarsSlots: None
                                                           CellVarsSlots: None
@@ -5154,7 +5154,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           CelVars: None
                                                           FreeVars: None
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 2 slots [t, <return_val>]
+                                                          FrameDescriptor: 2 slots [<return_val>, t]
                                                           ExecutionSlots:
                                                             FreeVarsSlots: None
                                                             CellVarsSlots: None
@@ -5309,7 +5309,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [self, proto, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, proto, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -5360,7 +5360,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 12 slots [_generate_next_value_, _missing_, _create_pseudo_member_, __contains__, __repr__, __str__, __bool__, __or__, __and__, __xor__, __invert__, __doc__]
+              FrameDescriptor: 12 slots [__and__, __bool__, __contains__, __doc__, __invert__, __or__, __repr__, __str__, __xor__, _create_pseudo_member_, _generate_next_value_, _missing_]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -5396,7 +5396,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [name, start, count, last_values, high_bit, last_value, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, count, high_bit, last_value, last_values, name, start]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5519,7 +5519,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [cls, value, original_value, possible_member, <return_val>]
+                              FrameDescriptor: 5 slots [<return_val>, cls, original_value, possible_member, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -5609,7 +5609,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 8 slots [cls, value, pseudo_member, _, extra_flags, <>temp5, <>temp6, <return_val>]
+                              FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, _, cls, extra_flags, pseudo_member, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -5763,7 +5763,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, other, warnings, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, other, self, warnings]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5863,7 +5863,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, cls, members, uncovered, <return_val>, <>temp5, <>temp6]
+                            FrameDescriptor: 7 slots [<>temp5, <>temp6, <return_val>, cls, members, self, uncovered]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -5976,9 +5976,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Identifier: list
                                               GeneratorExpressionNode SourceSection: [28490,28533]`str(m._name_ or m._v...`
                                                 Name: <genexpr>
-                                                FrameDescriptor: 2 slots [m, <return_val>]
+                                                FrameDescriptor: 2 slots [<return_val>, m]
                                                 Enclosing
-                                                  FrameDescriptor: 7 slots [self, cls, members, uncovered, <return_val>, <>temp5, <>temp6]
+                                                  FrameDescriptor: 7 slots [<>temp5, <>temp6, <return_val>, cls, members, self, uncovered]
                                                 Active Flags: 2
                                                 For Nodes: 1
                                                 Block Nodes: 0
@@ -5989,7 +5989,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   CelVars: None
                                                   FreeVars: None
                                                   NeedsCellFrame: False
-                                                  FrameDescriptor: 2 slots [m, <return_val>]
+                                                  FrameDescriptor: 2 slots [<return_val>, m]
                                                   ExecutionSlots:
                                                     FreeVarsSlots: None
                                                     CellVarsSlots: None
@@ -6069,7 +6069,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, cls, members, uncovered, <return_val>, <>temp5, <>temp6]
+                            FrameDescriptor: 7 slots [<>temp5, <>temp6, <return_val>, cls, members, self, uncovered]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6222,9 +6222,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Identifier: list
                                                 GeneratorExpressionNode SourceSection: [29023,29066]`str(m._name_ or m._v...`
                                                   Name: <genexpr>
-                                                  FrameDescriptor: 2 slots [m, <return_val>]
+                                                  FrameDescriptor: 2 slots [<return_val>, m]
                                                   Enclosing
-                                                    FrameDescriptor: 7 slots [self, cls, members, uncovered, <return_val>, <>temp5, <>temp6]
+                                                    FrameDescriptor: 7 slots [<>temp5, <>temp6, <return_val>, cls, members, self, uncovered]
                                                   Active Flags: 2
                                                   For Nodes: 1
                                                   Block Nodes: 0
@@ -6235,7 +6235,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     CelVars: None
                                                     FreeVars: None
                                                     NeedsCellFrame: False
-                                                    FrameDescriptor: 2 slots [m, <return_val>]
+                                                    FrameDescriptor: 2 slots [<return_val>, m]
                                                     ExecutionSlots:
                                                       FreeVarsSlots: None
                                                       CellVarsSlots: None
@@ -6308,7 +6308,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6353,7 +6353,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6433,7 +6433,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6513,7 +6513,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6593,7 +6593,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [self, members, uncovered, inverted, m, <>temp5, <>temp6, <return_val>]
+                            FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, inverted, m, members, self, uncovered]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -6742,7 +6742,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 10 slots [_missing_, _create_pseudo_member_, __or__, __and__, __xor__, __ror__, __rand__, __rxor__, __invert__, __doc__]
+              FrameDescriptor: 10 slots [__and__, __doc__, __invert__, __or__, __rand__, __ror__, __rxor__, __xor__, _create_pseudo_member_, _missing_]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -6782,7 +6782,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [cls, value, new_member, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, cls, new_member, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -6869,7 +6869,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 11 slots [cls, value, pseudo_member, need_to_create, _, extra_flags, bit, flag_value, <>temp8, <>temp9, <return_val>]
+                              FrameDescriptor: 11 slots [<>temp8, <>temp9, <return_val>, _, bit, cls, extra_flags, flag_value, need_to_create, pseudo_member, value]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -7107,7 +7107,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, other, result, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, other, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7201,7 +7201,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7290,7 +7290,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, other, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, other, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7391,7 +7391,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, result, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -7453,7 +7453,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [value, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, value]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -7495,7 +7495,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [enumeration, duplicates, name, member, alias_details, <>temp5, <>temp6, <return_val>]
+            FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, alias_details, duplicates, enumeration, member, name]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -7595,9 +7595,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 Identifier: list
                               GeneratorExpressionNode SourceSection: [32846,32904]`"%s -> %s" % (alias,...`
                                 Name: <genexpr>
-                                FrameDescriptor: 5 slots [alias, name, <>temp2, <>temp3, <return_val>]
+                                FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, alias, name]
                                 Enclosing
-                                  FrameDescriptor: 8 slots [enumeration, duplicates, name, member, alias_details, <>temp5, <>temp6, <return_val>]
+                                  FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, alias_details, duplicates, enumeration, member, name]
                                 Active Flags: 2
                                 For Nodes: 1
                                 Block Nodes: 0
@@ -7608,7 +7608,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   CelVars: None
                                   FreeVars: None
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 5 slots [alias, name, <>temp2, <>temp3, <return_val>]
+                                  FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, alias, name]
                                   ExecutionSlots:
                                     FreeVarsSlots: None
                                     CellVarsSlots: None
@@ -7700,7 +7700,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [flag, value, not_covered, negative, flags_to_check, members, member, member_value, <>temp8, <>temp9, <return_val>]
+            FrameDescriptor: 11 slots [<>temp8, <>temp9, <return_val>, flag, flags_to_check, member, member_value, members, negative, not_covered, value]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -7747,9 +7747,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Identifier: list
                           GeneratorExpressionNode SourceSection: [33513,33623]`(m, v)↵             ...`
                             Name: <genexpr>
-                            FrameDescriptor: 5 slots [v, m, <>temp2, <>temp3, <return_val>]
+                            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, m, v]
                             Enclosing
-                              FrameDescriptor: 11 slots [flag, value, not_covered, negative, flags_to_check, members, member, member_value, <>temp8, <>temp9, <return_val>]
+                              FrameDescriptor: 11 slots [<>temp8, <>temp9, <return_val>, flag, flags_to_check, member, member_value, members, negative, not_covered, value]
                             Active Flags: 4
                             For Nodes: 1
                             Block Nodes: 0
@@ -7760,7 +7760,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [v, m, <>temp2, <>temp3, <return_val>]
+                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, m, v]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -7848,9 +7848,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             Identifier: list
                           GeneratorExpressionNode SourceSection: [33751,33881]`(m, v)↵             ...`
                             Name: <genexpr>
-                            FrameDescriptor: 5 slots [v, m, <>temp2, <>temp3, <return_val>]
+                            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, m, v]
                             Enclosing
-                              FrameDescriptor: 11 slots [flag, value, not_covered, negative, flags_to_check, members, member, member_value, <>temp8, <>temp9, <return_val>]
+                              FrameDescriptor: 11 slots [<>temp8, <>temp9, <return_val>, flag, flags_to_check, member, member_value, members, negative, not_covered, value]
                             Active Flags: 4
                             For Nodes: 1
                             Block Nodes: 0
@@ -7861,7 +7861,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [v, m, <>temp2, <>temp3, <return_val>]
+                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, m, v]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -8070,7 +8070,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   CelVars: None
                                   FreeVars: None
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 2 slots [m, <return_val>]
+                                  FrameDescriptor: 2 slots [<return_val>, m]
                                   ExecutionSlots:
                                     FreeVarsSlots: None
                                     CellVarsSlots: None
@@ -8165,7 +8165,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 2 slots [value, <return_val>]
+                FrameDescriptor: 2 slots [<return_val>, value]
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: None

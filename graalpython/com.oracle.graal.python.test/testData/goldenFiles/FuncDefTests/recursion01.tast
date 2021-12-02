@@ -28,7 +28,7 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [self, msg, offset, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, msg, offset, self]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

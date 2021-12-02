@@ -365,25 +365,24 @@ public final class ScopeInfo {
 
     private static final FrameSlot[] EMPTY = new FrameSlot[0];
 
-    private static FrameSlot[] getFrameSlots(Collection<String> identifiers, ScopeInfo scope) {
+    private FrameSlot[] getFrameSlots(Collection<String> identifiers) {
         if (identifiers == null) {
             return EMPTY;
         }
-        assert scope != null : "getting frame slots: scope cannot be null!";
         FrameSlot[] slots = new FrameSlot[identifiers.size()];
         int i = 0;
         for (String identifier : identifiers) {
-            slots[i++] = scope.findFrameSlot(identifier);
+            slots[i++] = findFrameSlot(identifier);
         }
         return slots;
     }
 
     public FrameSlot[] getCellVarSlots() {
-        return getFrameSlots(cellVars, this);
+        return getFrameSlots(cellVars);
     }
 
     public FrameSlot[] getFreeVarSlots() {
-        FrameSlot[] result = getFrameSlots(freeVars, this);
+        FrameSlot[] result = getFrameSlots(freeVars);
         if (freeVars != null && scopeKind == ScopeKind.Class && freeVars.contains(__CLASS__)) {
             for (int i = 0; i < result.length; i++) {
                 FrameSlot slot = result[i];
@@ -408,7 +407,7 @@ public final class ScopeInfo {
 
     public FrameSlot[] getFreeVarSlotsInParentScope() {
         assert parent != null : "cannot get current freeVars in parent scope, parent scope cannot be null!";
-        return getFrameSlots(freeVars, parent);
+        return parent.getFrameSlots(freeVars);
     }
 
     public void setDefaultArgumentNodes(List<ExpressionNode> defaultArgumentNodes) {
@@ -458,7 +457,7 @@ public final class ScopeInfo {
         });
         indent(sb, indent + 1);
         sb.append("FrameDescriptor: ");
-        printSet(sb, names);
+        printSet(sb, new TreeSet<>(names));
         sb.append("\n");
         indent(sb, indent + 1);
         sb.append("CellVars: ");

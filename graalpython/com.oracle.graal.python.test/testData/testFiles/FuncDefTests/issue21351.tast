@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
             CelVars: var
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [var, toInternal, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, toInternal, var]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: var, 
@@ -54,7 +54,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                           CelVars: None
                           FreeVars: var
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [obj, x, var, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, obj, var, x]
                           ExecutionSlots:
                             FreeVarsSlots: var, 
                             CellVarsSlots: None

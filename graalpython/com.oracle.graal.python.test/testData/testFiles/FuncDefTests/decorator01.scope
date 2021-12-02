@@ -10,11 +10,11 @@ Scope: []
         FreeVars: Empty
     Scope: mydecorator
         Kind: Function
-        FrameDescriptor: [fn, wrap, <return_val>]
+        FrameDescriptor: [<return_val>, fn, wrap]
         CellVars: [fn]
         FreeVars: Empty
         Scope: wrap
             Kind: Function
-            FrameDescriptor: [fn, <return_val>]
+            FrameDescriptor: [<return_val>, fn]
             CellVars: Empty
             FreeVars: [fn]

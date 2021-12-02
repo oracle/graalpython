@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 8 slots [self, count, name, value, frame, <>temp5, <>temp6, <return_val>]
+              FrameDescriptor: 8 slots [<>temp5, <>temp6, <return_val>, count, frame, name, self, value]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

@@ -40,7 +40,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [heap, item, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, heap, item]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -106,7 +106,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [heap, lastelt, returnitem, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, heap, lastelt, returnitem]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -183,7 +183,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [heap, item, returnitem, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, heap, item, returnitem]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -250,7 +250,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [heap, item, <>temp2, <>temp3, <return_val>]
+            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, heap, item]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -346,7 +346,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [x, n, i, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, i, n, x]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -419,7 +419,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [heap, lastelt, returnitem, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, heap, lastelt, returnitem]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -496,7 +496,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [heap, item, returnitem, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, heap, item, returnitem]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -563,7 +563,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [x, n, i, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, i, n, x]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -636,7 +636,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [heap, startpos, pos, newitem, parentpos, parent, <return_val>]
+            FrameDescriptor: 7 slots [<return_val>, heap, newitem, parent, parentpos, pos, startpos]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -751,7 +751,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [heap, pos, endpos, startpos, newitem, childpos, rightpos, <return_val>]
+            FrameDescriptor: 8 slots [<return_val>, childpos, endpos, heap, newitem, pos, rightpos, startpos]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -914,7 +914,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [heap, startpos, pos, newitem, parentpos, parent, <return_val>]
+            FrameDescriptor: 7 slots [<return_val>, heap, newitem, parent, parentpos, pos, startpos]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1029,7 +1029,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [heap, pos, endpos, startpos, newitem, childpos, rightpos, <return_val>]
+            FrameDescriptor: 8 slots [<return_val>, childpos, endpos, heap, newitem, pos, rightpos, startpos]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1178,7 +1178,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
       WriteNameNodeGen SourceSection: [13287,18959]`def merge(*iterables...`
         Identifier: merge
         GeneratorFunctionDefinitionNode Name: merge SourceSection: None
-          FrameDescriptor: 36 slots [iterables, key, reverse, h, h_append, _heapify, _heappop, _heapreplace, direction, next, order, it, value, s, key_value, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>]
+          FrameDescriptor: 36 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>, _heapify, _heappop, _heapreplace, direction, h, h_append, it, iterables, key, key_value, next, order, reverse, s, value]
           Active Flags: 23
           For Nodes: 2
           Block Nodes: 8
@@ -1202,7 +1202,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 36 slots [iterables, key, reverse, h, h_append, _heapify, _heappop, _heapreplace, direction, next, order, it, value, s, key_value, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>]
+            FrameDescriptor: 36 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <return_val>, _heapify, _heappop, _heapreplace, direction, h, h_append, it, iterables, key, key_value, next, order, reverse, s, value]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1870,7 +1870,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: key
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+            FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: key, 
@@ -2057,9 +2057,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: list
                             GeneratorExpressionNode SourceSection: [19862,19904]`(elem, i) for i, ele...`
                               Name: <genexpr>
-                              FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
+                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, elem, i]
                               Enclosing
-                                FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                                FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
                               Active Flags: 2
                               For Nodes: 1
                               Block Nodes: 0
@@ -2070,7 +2070,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
+                                FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, elem, i]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -2246,9 +2246,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: list
                             GeneratorExpressionNode SourceSection: [20277,20309]`elem for (elem, orde...`
                               Name: <genexpr>
-                              FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
+                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, elem, order]
                               Enclosing
-                                FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                                FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
                               Active Flags: 2
                               For Nodes: 1
                               Block Nodes: 0
@@ -2259,7 +2259,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
+                                FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, elem, order]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -2327,9 +2327,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [20385,20438]`(key(elem), i, elem)...`
                           Name: <genexpr>
-                          FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
+                          FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, elem, i, key]
                           Enclosing
-                            FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                            FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -2340,7 +2340,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             CelVars: None
                             FreeVars: key
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
+                            FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, elem, i, key]
                             ExecutionSlots:
                               FreeVarsSlots: key, 
                               CellVarsSlots: None
@@ -2546,9 +2546,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [20788,20823]`elem for (k, order, ...`
                           Name: <genexpr>
-                          FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
+                          FrameDescriptor: 7 slots [<>temp3, <>temp4, <>temp5, <return_val>, elem, k, order]
                           Enclosing
-                            FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                            FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -2559,7 +2559,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
+                            FrameDescriptor: 7 slots [<>temp3, <>temp4, <>temp5, <return_val>, elem, k, order]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2636,7 +2636,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             CelVars: key
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+            FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: key, 
@@ -2825,9 +2825,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: list
                             GeneratorExpressionNode SourceSection: [21642,21692]`(elem, i) for i, ele...`
                               Name: <genexpr>
-                              FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
+                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, elem, i]
                               Enclosing
-                                FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                                FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
                               Active Flags: 2
                               For Nodes: 1
                               Block Nodes: 0
@@ -2838,7 +2838,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
+                                FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, elem, i]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -3025,9 +3025,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Identifier: list
                             GeneratorExpressionNode SourceSection: [22068,22100]`elem for (elem, orde...`
                               Name: <genexpr>
-                              FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
+                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, elem, order]
                               Enclosing
-                                FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                                FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
                               Active Flags: 2
                               For Nodes: 1
                               Block Nodes: 0
@@ -3038,7 +3038,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
+                                FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, elem, order]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -3106,9 +3106,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [22176,22237]`(key(elem), i, elem)...`
                           Name: <genexpr>
-                          FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
+                          FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, elem, i, key]
                           Enclosing
-                            FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                            FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -3119,7 +3119,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             CelVars: None
                             FreeVars: key
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
+                            FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, elem, i, key]
                             ExecutionSlots:
                               FreeVarsSlots: key, 
                               CellVarsSlots: None
@@ -3336,9 +3336,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [22590,22625]`elem for (k, order, ...`
                           Name: <genexpr>
-                          FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
+                          FrameDescriptor: 7 slots [<>temp3, <>temp4, <>temp5, <return_val>, elem, k, order]
                           Enclosing
-                            FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                            FrameDescriptor: 20 slots [<>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _elem, _heapreplace, _order, elem, it, iterable, k, key, n, order, result, sentinel, size, top]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -3349,7 +3349,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
+                            FrameDescriptor: 7 slots [<>temp3, <>temp4, <>temp5, <return_val>, elem, k, order]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None

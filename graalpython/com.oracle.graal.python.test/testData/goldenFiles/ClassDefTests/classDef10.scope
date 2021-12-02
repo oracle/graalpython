@@ -10,11 +10,11 @@ Scope: []
         FreeVars: Empty
         Scope: test
             Kind: Function
-            FrameDescriptor: [arg, self, <return_val>]
+            FrameDescriptor: [<return_val>, arg, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: test
         Kind: Function
-        FrameDescriptor: [arg, <return_val>]
+        FrameDescriptor: [<return_val>, arg]
         CellVars: Empty
         FreeVars: Empty

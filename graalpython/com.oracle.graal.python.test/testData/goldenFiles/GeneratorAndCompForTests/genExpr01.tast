@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'genExpr01'> SourceSection: [0,48]`[ (c,s) for c in
         Identifier: list
       GeneratorExpressionNode SourceSection: [2,47]`(c,s) for c in ('a',...`
         Name: <genexpr>
-        FrameDescriptor: 3 slots [s, c, <return_val>]
+        FrameDescriptor: 3 slots [<return_val>, c, s]
         Enclosing
           FrameDescriptor:  Empty
         Active Flags: 2
@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'genExpr01'> SourceSection: [0,48]`[ (c,s) for c in
           CelVars: None
           FreeVars: None
           NeedsCellFrame: False
-          FrameDescriptor: 3 slots [s, c, <return_val>]
+          FrameDescriptor: 3 slots [<return_val>, c, s]
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None

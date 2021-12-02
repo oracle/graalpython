@@ -62,7 +62,7 @@ ModuleRootNode Name: <module 'using__class__01'> SourceSection: [0,52]`class X:â
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, __class__, self]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None

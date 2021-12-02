@@ -60,7 +60,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
             CelVars: fillvalue
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [fillvalue, decorating_function, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, decorating_function, fillvalue]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: fillvalue, 
@@ -93,7 +93,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           CelVars: repr_running, user_function
                           FreeVars: fillvalue
                           NeedsCellFrame: False
-                          FrameDescriptor: 5 slots [user_function, repr_running, wrapper, fillvalue, <return_val>]
+                          FrameDescriptor: 5 slots [<return_val>, fillvalue, repr_running, user_function, wrapper]
                           ExecutionSlots:
                             FreeVarsSlots: fillvalue, 
                             CellVarsSlots: repr_running, , user_function, 
@@ -134,7 +134,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         CelVars: None
                                         FreeVars: fillvalue, repr_running, user_function
                                         NeedsCellFrame: False
-                                        FrameDescriptor: 7 slots [self, key, result, user_function, repr_running, fillvalue, <return_val>]
+                                        FrameDescriptor: 7 slots [<return_val>, fillvalue, key, repr_running, result, self, user_function]
                                         ExecutionSlots:
                                           FreeVarsSlots: fillvalue, , repr_running, , user_function, 
                                           CellVarsSlots: None
@@ -317,7 +317,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 14 slots [__init__, repr, repr1, _repr_iterable, repr_tuple, repr_list, repr_array, repr_set, repr_frozenset, repr_deque, repr_dict, repr_str, repr_int, repr_instance]
+              FrameDescriptor: 14 slots [__init__, _repr_iterable, repr, repr1, repr_array, repr_deque, repr_dict, repr_frozenset, repr_instance, repr_int, repr_list, repr_set, repr_str, repr_tuple]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -350,7 +350,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -449,7 +449,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, x, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -504,7 +504,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [self, x, level, typename, parts, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, level, parts, self, typename, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -632,7 +632,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: newlevel, repr1
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 13 slots [self, x, level, left, right, maxiter, trail, n, s, newlevel, repr1, pieces, <return_val>]
+                            FrameDescriptor: 13 slots [<return_val>, left, level, maxiter, n, newlevel, pieces, repr1, right, s, self, trail, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: newlevel, , repr1, 
@@ -737,9 +737,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Identifier: list
                                             GeneratorExpressionNode SourceSection: [2158,2210]`repr1(elem, newlevel...`
                                               Name: <genexpr>
-                                              FrameDescriptor: 4 slots [elem, newlevel, repr1, <return_val>]
+                                              FrameDescriptor: 4 slots [<return_val>, elem, newlevel, repr1]
                                               Enclosing
-                                                FrameDescriptor: 13 slots [self, x, level, left, right, maxiter, trail, n, s, newlevel, repr1, pieces, <return_val>]
+                                                FrameDescriptor: 13 slots [<return_val>, left, level, maxiter, n, newlevel, pieces, repr1, right, s, self, trail, x]
                                               Active Flags: 2
                                               For Nodes: 1
                                               Block Nodes: 0
@@ -750,7 +750,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 CelVars: None
                                                 FreeVars: newlevel, repr1
                                                 NeedsCellFrame: False
-                                                FrameDescriptor: 4 slots [elem, newlevel, repr1, <return_val>]
+                                                FrameDescriptor: 4 slots [<return_val>, elem, newlevel, repr1]
                                                 ExecutionSlots:
                                                   FreeVarsSlots: newlevel, , repr1, 
                                                   CellVarsSlots: None
@@ -875,7 +875,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, level, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -941,7 +941,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, level, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1006,7 +1006,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, x, level, header, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, header, level, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1099,7 +1099,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, level, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1180,7 +1180,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, level, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1261,7 +1261,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, level, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1326,7 +1326,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 12 slots [self, x, level, n, newlevel, repr1, pieces, keyrepr, valrepr, key, s, <return_val>]
+                            FrameDescriptor: 12 slots [<return_val>, key, keyrepr, level, n, newlevel, pieces, repr1, s, self, valrepr, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1526,7 +1526,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, x, level, s, i, j, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, i, j, level, s, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1724,7 +1724,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, x, level, s, i, j, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, i, j, level, s, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1876,7 +1876,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, x, level, s, i, j, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, i, j, level, s, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2059,7 +2059,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [x, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, x]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None

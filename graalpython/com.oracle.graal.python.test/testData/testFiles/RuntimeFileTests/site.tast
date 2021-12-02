@@ -75,7 +75,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [paths, dir, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, dir, paths]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -164,7 +164,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [m, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, m]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -312,7 +312,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [L, known_paths, dir, dircase, <>temp4, <>temp5, <return_val>]
+            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, L, dir, dircase, known_paths]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -437,7 +437,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [d, _, itemcase, item, <>temp4, <>temp5, <return_val>]
+            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, _, d, item, itemcase]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -546,7 +546,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 17 slots [sitedir, name, known_paths, reset, fullname, f, line, dir, dircase, traceback, record, n, <>temp12, <>temp13, <>temp14, <>temp15, <return_val>]
+            FrameDescriptor: 17 slots [<>temp12, <>temp13, <>temp14, <>temp15, <return_val>, dir, dircase, f, fullname, known_paths, line, n, name, record, reset, sitedir, traceback]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -927,7 +927,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 9 slots [sitedir, known_paths, reset, sitedircase, names, name, <>temp6, <>temp7, <return_val>]
+            FrameDescriptor: 9 slots [<>temp6, <>temp7, <return_val>, known_paths, name, names, reset, sitedir, sitedircase]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1052,9 +1052,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [7404,7451]`name for name in nam...`
                           Name: <genexpr>
-                          FrameDescriptor: 2 slots [name, <return_val>]
+                          FrameDescriptor: 2 slots [<return_val>, name]
                           Enclosing
-                            FrameDescriptor: 9 slots [sitedir, known_paths, reset, sitedircase, names, name, <>temp6, <>temp7, <return_val>]
+                            FrameDescriptor: 9 slots [<>temp6, <>temp7, <return_val>, known_paths, name, names, reset, sitedir, sitedircase]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -1065,7 +1065,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [name, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, name]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1282,7 +1282,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [env_base, joinuser, base, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, base, env_base, joinuser]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1331,7 +1331,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 2 slots [args, <return_val>]
+                          FrameDescriptor: 2 slots [<return_val>, args]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -1487,7 +1487,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [userbase, version, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, userbase, version]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1646,7 +1646,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [userbase, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, userbase]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1701,7 +1701,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [known_paths, user_site, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, known_paths, user_site]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1773,7 +1773,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [prefixes, sitepackages, seen, prefix, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, prefix, prefixes, seen, sitepackages]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1981,7 +1981,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [known_paths, prefixes, sitedir, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, known_paths, prefixes, sitedir]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2062,7 +2062,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [eof, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, eof]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2132,7 +2132,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [files, dirs, here, <>temp3, <>temp4, <return_val>]
+            FrameDescriptor: 6 slots [<>temp3, <>temp4, <return_val>, dirs, files, here]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2367,7 +2367,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [register_readline, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, register_readline]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2393,7 +2393,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 6 slots [atexit, readline, rlcompleter, readline_doc, history, <return_val>]
+                          FrameDescriptor: 6 slots [<return_val>, atexit, history, readline, readline_doc, rlcompleter]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -2578,7 +2578,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 21 slots [known_paths, env, executable, exe_dir, _, site_prefix, conf_basename, candidate_confs, virtual_conf, system_site, key, value, line, f, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>]
+            FrameDescriptor: 21 slots [<>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _, candidate_confs, conf_basename, env, exe_dir, executable, f, key, known_paths, line, site_prefix, system_site, value, virtual_conf]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2718,9 +2718,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [16114,16293]`conffile for conffil...`
                           Name: <genexpr>
-                          FrameDescriptor: 2 slots [conffile, <return_val>]
+                          FrameDescriptor: 2 slots [<return_val>, conffile]
                           Enclosing
-                            FrameDescriptor: 21 slots [known_paths, env, executable, exe_dir, _, site_prefix, conf_basename, candidate_confs, virtual_conf, system_site, key, value, line, f, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>]
+                            FrameDescriptor: 21 slots [<>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, _, candidate_confs, conf_basename, env, exe_dir, executable, f, key, known_paths, line, site_prefix, system_site, value, virtual_conf]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -2731,7 +2731,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [conffile, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, conffile]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3039,7 +3039,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [sitecustomize, exc, err, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, err, exc, sitecustomize]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3170,7 +3170,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [usercustomize, exc, err, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, err, exc, usercustomize]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3301,7 +3301,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [orig_path, known_paths, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, known_paths, orig_path]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3485,7 +3485,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [help, args, user_base, user_site, dir, buffer, textwrap, <return_val>]
+            FrameDescriptor: 8 slots [<return_val>, args, buffer, dir, help, textwrap, user_base, user_site]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None

@@ -215,7 +215,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             Identifier: dict
           GeneratorExpressionNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
             Name: <genexpr>
-            FrameDescriptor: 3 slots [i, t, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, i, t]
             Enclosing
               FrameDescriptor:  Empty
             Active Flags: 2
@@ -228,7 +228,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
               CelVars: i
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [i, t, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, i, t]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: i, 
@@ -251,9 +251,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Identifier: tuple
                               GeneratorExpressionNode SourceSection: [2193,2215]`j for j in t if i !=...`
                                 Name: <genexpr>
-                                FrameDescriptor: 3 slots [j, i, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, i, j]
                                 Enclosing
-                                  FrameDescriptor: 3 slots [i, t, <return_val>]
+                                  FrameDescriptor: 3 slots [<return_val>, i, t]
                                 Active Flags: 4
                                 For Nodes: 1
                                 Block Nodes: 0
@@ -264,7 +264,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   CelVars: None
                                   FreeVars: i
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 3 slots [j, i, <return_val>]
+                                  FrameDescriptor: 3 slots [<return_val>, i, j]
                                   ExecutionSlots:
                                     FreeVarsSlots: i, 
                                     CellVarsSlots: None
@@ -374,7 +374,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [flags, add_flags, del_flags, TYPE_FLAGS, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, TYPE_FLAGS, add_flags, del_flags, flags]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -454,7 +454,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 39 slots [code, pattern, flags, emit, _len, LITERAL_CODES, REPEATING_CODES, SUCCESS_CODES, ASSERT_CODES, iscased, tolower, fixes, lo, skip, k, charset, hascased, group, add_flags, del_flags, p, hi, av, tail, tailappend, skipyes, skipno, op, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <return_val>]
+            FrameDescriptor: 39 slots [<>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <return_val>, ASSERT_CODES, LITERAL_CODES, REPEATING_CODES, SUCCESS_CODES, _len, add_flags, av, charset, code, del_flags, emit, fixes, flags, group, hascased, hi, iscased, k, lo, op, p, pattern, skip, skipno, skipyes, tail, tailappend, tolower]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2119,7 +2119,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 9 slots [charset, flags, code, emit, op, av, <>temp6, <>temp7, <return_val>]
+            FrameDescriptor: 9 slots [<>temp6, <>temp7, <return_val>, av, charset, code, emit, flags, op]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2374,7 +2374,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 28 slots [charset, iscased, fixup, fixes, out, tail, charmap, hascased, lo, k, r, i, op, av, runs, q, p, data, comps, mapping, block, chunk, <>temp22, <>temp23, <>temp24, <>temp25, <return_val>, <>temp27]
+            FrameDescriptor: 28 slots [<>temp22, <>temp23, <>temp24, <>temp25, <>temp27, <return_val>, av, block, charmap, charset, chunk, comps, data, fixes, fixup, hascased, i, iscased, k, lo, mapping, op, out, p, q, r, runs, tail]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3338,7 +3338,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: _CODEBITS, _int, s
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [bits, _CODEBITS, _int, s, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, _CODEBITS, _int, bits, s]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: _CODEBITS, , _int, , s, 
@@ -3392,9 +3392,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
                           Name: <genexpr>
-                          FrameDescriptor: 5 slots [i, _CODEBITS, _int, s, <return_val>]
+                          FrameDescriptor: 5 slots [<return_val>, _CODEBITS, _int, i, s]
                           Enclosing
-                            FrameDescriptor: 5 slots [bits, _CODEBITS, _int, s, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, _CODEBITS, _int, bits, s]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -3405,7 +3405,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             CelVars: None
                             FreeVars: _CODEBITS, _int, s
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [i, _CODEBITS, _int, s, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, _CODEBITS, _int, i, s]
                             ExecutionSlots:
                               FreeVarsSlots: _CODEBITS, , _int, , s, 
                               CellVarsSlots: None
@@ -3499,7 +3499,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [b, a, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3591,7 +3591,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [p, op, av, <return_val>, <>temp4, <>temp5]
+            FrameDescriptor: 6 slots [<>temp4, <>temp5, <return_val>, av, op, p]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3696,7 +3696,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [prefix, table, idx, i, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, i, idx, prefix, table]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3833,7 +3833,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [flags, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, flags]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3906,7 +3906,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 26 slots [pattern, flags, prefix, prefixappend, prefix_skip, iscased, group, add_flags, del_flags, p, flags1, prefix1, prefix_skip1, got_all, op, av, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <return_val>]
+            FrameDescriptor: 26 slots [<>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <return_val>, add_flags, av, del_flags, flags, flags1, got_all, group, iscased, op, p, pattern, prefix, prefix1, prefix_skip, prefix_skip1, prefixappend]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4209,7 +4209,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 22 slots [pattern, flags, op, av, group, add_flags, del_flags, iscased, charset, charsetappend, p, <return_val>, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21]
+            FrameDescriptor: 22 slots [<>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <return_val>, add_flags, av, charset, charsetappend, del_flags, flags, group, iscased, op, p, pattern]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4634,7 +4634,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 21 slots [code, pattern, flags, lo, hi, prefix, prefix_skip, charset, got_all, emit, skip, mask, hascased, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>]
+            FrameDescriptor: 21 slots [<>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, charset, code, emit, flags, got_all, hascased, hi, lo, mask, pattern, prefix, prefix_skip, skip]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -5074,7 +5074,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [obj, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, obj]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -5120,7 +5120,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [p, flags, code, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, code, flags, p]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -5221,7 +5221,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [code, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, code]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -5244,9 +5244,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             StringLiteralNode SourceSection: [20930,20934]`', '`
                           GeneratorExpressionNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
                             Name: <genexpr>
-                            FrameDescriptor: 2 slots [x, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, x]
                             Enclosing
-                              FrameDescriptor: 2 slots [code, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, code]
                             Active Flags: 2
                             For Nodes: 1
                             Block Nodes: 0
@@ -5257,7 +5257,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [x, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, x]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -5328,7 +5328,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: code, dis_, labels, level, offset_width, sys
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [code, sys, labels, level, offset_width, dis_, <return_val>]
+            FrameDescriptor: 7 slots [<return_val>, code, dis_, labels, level, offset_width, sys]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: code, , dis_, , labels, , level, , offset_width, , sys, 
@@ -5406,7 +5406,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           CelVars: end, start
                           FreeVars: code, dis_, labels, level, offset_width, sys
                           NeedsCellFrame: False
-                          FrameDescriptor: 40 slots [start, end, print_, print_2, i, op, arg, skip, lo, hi, mapping, j, min, max, flags, prefix_len, prefix_skip, prefix, code, sys, labels, level, offset_width, dis_, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>]
+                          FrameDescriptor: 40 slots [<>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>, arg, code, dis_, end, flags, hi, i, j, labels, level, lo, mapping, max, min, offset_width, op, prefix, prefix_len, prefix_skip, print_, print_2, skip, start, sys]
                           ExecutionSlots:
                             FreeVarsSlots: code, , dis_, , labels, , level, , offset_width, , sys, 
                             CellVarsSlots: end, , start, 
@@ -5450,7 +5450,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         CelVars: None
                                         FreeVars: end, labels, level, offset_width, start
                                         NeedsCellFrame: False
-                                        FrameDescriptor: 8 slots [args, to, start, end, labels, level, offset_width, <return_val>]
+                                        FrameDescriptor: 8 slots [<return_val>, args, end, labels, level, offset_width, start, to]
                                         ExecutionSlots:
                                           FreeVarsSlots: end, , labels, , level, , offset_width, , start, 
                                           CellVarsSlots: None
@@ -5587,7 +5587,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         CelVars: None
                                         FreeVars: end, level, offset_width
                                         NeedsCellFrame: False
-                                        FrameDescriptor: 5 slots [args, end, level, offset_width, <return_val>]
+                                        FrameDescriptor: 5 slots [<return_val>, args, end, level, offset_width]
                                         ExecutionSlots:
                                           FreeVarsSlots: end, , level, , offset_width, 
                                           CellVarsSlots: None
@@ -6188,9 +6188,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       PythonObjectFactoryNodeGen SourceSection: None
                                                                   GeneratorExpressionNode SourceSection: [23296,23417]`x.to_bytes(_sre.CODE...`
                                                                     Name: <genexpr>
-                                                                    FrameDescriptor: 3 slots [x, sys, <return_val>]
+                                                                    FrameDescriptor: 3 slots [<return_val>, sys, x]
                                                                     Enclosing
-                                                                      FrameDescriptor: 40 slots [start, end, print_, print_2, i, op, arg, skip, lo, hi, mapping, j, min, max, flags, prefix_len, prefix_skip, prefix, code, sys, labels, level, offset_width, dis_, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>]
+                                                                      FrameDescriptor: 40 slots [<>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>, arg, code, dis_, end, flags, hi, i, j, labels, level, lo, mapping, max, min, offset_width, op, prefix, prefix_len, prefix_skip, print_, print_2, skip, start, sys]
                                                                     Active Flags: 2
                                                                     For Nodes: 1
                                                                     Block Nodes: 0
@@ -6201,7 +6201,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       CelVars: None
                                                                       FreeVars: sys
                                                                       NeedsCellFrame: False
-                                                                      FrameDescriptor: 3 slots [x, sys, <return_val>]
+                                                                      FrameDescriptor: 3 slots [<return_val>, sys, x]
                                                                       ExecutionSlots:
                                                                         FreeVarsSlots: sys, 
                                                                         CellVarsSlots: None
@@ -7080,9 +7080,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                         StringLiteralNode SourceSection: [25707,25711]`', '`
                                                                                       GeneratorExpressionNode SourceSection: [25717,25744]`'%#02x' % x for x in...`
                                                                                         Name: <genexpr>
-                                                                                        FrameDescriptor: 2 slots [x, <return_val>]
+                                                                                        FrameDescriptor: 2 slots [<return_val>, x]
                                                                                         Enclosing
-                                                                                          FrameDescriptor: 40 slots [start, end, print_, print_2, i, op, arg, skip, lo, hi, mapping, j, min, max, flags, prefix_len, prefix_skip, prefix, code, sys, labels, level, offset_width, dis_, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>]
+                                                                                          FrameDescriptor: 40 slots [<>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp33, <>temp34, <>temp35, <>temp36, <>temp37, <>temp38, <return_val>, arg, code, dis_, end, flags, hi, i, j, labels, level, lo, mapping, max, min, offset_width, op, prefix, prefix_len, prefix_skip, print_, print_2, skip, start, sys]
                                                                                         Active Flags: 2
                                                                                         For Nodes: 1
                                                                                         Block Nodes: 0
@@ -7093,7 +7093,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                           CelVars: None
                                                                                           FreeVars: None
                                                                                           NeedsCellFrame: False
-                                                                                          FrameDescriptor: 2 slots [x, <return_val>]
+                                                                                          FrameDescriptor: 2 slots [<return_val>, x]
                                                                                           ExecutionSlots:
                                                                                             FreeVarsSlots: None
                                                                                             CellVarsSlots: None
@@ -7319,7 +7319,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [p, flags, pattern, code, groupindex, indexgroup, k, i, <>temp8, <>temp9, <return_val>]
+            FrameDescriptor: 11 slots [<>temp8, <>temp9, <return_val>, code, flags, groupindex, i, indexgroup, k, p, pattern]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None

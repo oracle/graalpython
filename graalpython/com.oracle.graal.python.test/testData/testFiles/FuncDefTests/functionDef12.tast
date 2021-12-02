@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
               CelVars: x
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [inner, x, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, inner, x]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: x, 
@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                             CelVars: None
                             FreeVars: x
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [x, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, x]
                             ExecutionSlots:
                               FreeVarsSlots: x, 
                               CellVarsSlots: None

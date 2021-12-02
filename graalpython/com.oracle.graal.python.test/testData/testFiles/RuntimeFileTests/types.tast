@@ -361,7 +361,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -650,7 +650,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [name, bases, kwds, exec_body, resolved_bases, meta, ns, <>temp7, <>temp8, <>temp9, <return_val>]
+            FrameDescriptor: 11 slots [<>temp7, <>temp8, <>temp9, <return_val>, bases, exec_body, kwds, meta, name, ns, resolved_bases]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -789,7 +789,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 10 slots [bases, new_bases, updated, shift, new_base, i, base, <>temp7, <>temp8, <return_val>]
+            FrameDescriptor: 10 slots [<>temp7, <>temp8, <return_val>, base, bases, i, new_base, new_bases, shift, updated]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -981,7 +981,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [name, bases, kwds, meta, ns, <return_val>]
+            FrameDescriptor: 6 slots [<return_val>, bases, kwds, meta, name, ns]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1147,7 +1147,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [meta, bases, winner, base_meta, base, <return_val>]
+            FrameDescriptor: 6 slots [<return_val>, base, base_meta, bases, meta, winner]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1257,7 +1257,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 8 slots [__init__, __get__, __set__, __delete__, getter, setter, deleter, __doc__]
+              FrameDescriptor: 8 slots [__delete__, __doc__, __get__, __init__, __set__, deleter, getter, setter]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1297,7 +1297,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [self, fget, fset, fdel, doc, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, doc, fdel, fget, fset, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1413,7 +1413,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, instance, ownerclass, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, instance, ownerclass, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1512,7 +1512,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, instance, value, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, instance, self, value]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1587,7 +1587,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, instance, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, instance, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1654,7 +1654,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, fget, fdoc, result, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, fdoc, fget, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1766,7 +1766,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, fset, result, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, fset, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1854,7 +1854,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, fdel, result, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, fdel, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1947,7 +1947,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 15 slots [__init__, send, throw, close, gi_code, gi_frame, gi_running, gi_yieldfrom, cr_code, cr_frame, cr_running, cr_await, __next__, __iter__, __await__]
+              FrameDescriptor: 15 slots [__await__, __init__, __iter__, __next__, close, cr_await, cr_code, cr_frame, cr_running, gi_code, gi_frame, gi_running, gi_yieldfrom, send, throw]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1980,7 +1980,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, gen, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, gen, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2064,7 +2064,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, val, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, self, val]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2117,7 +2117,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, tp, rest, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, rest, self, tp]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2180,7 +2180,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2228,7 +2228,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2278,7 +2278,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2328,7 +2328,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2378,7 +2378,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2440,7 +2440,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2485,7 +2485,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2545,7 +2545,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             CelVars: _collections_abc, func
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [func, co_flags, co, functools, _collections_abc, wrapped, <return_val>]
+            FrameDescriptor: 7 slots [<return_val>, _collections_abc, co, co_flags, func, functools, wrapped]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: _collections_abc, , func, 
@@ -2830,7 +2830,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CelVars: None
                             FreeVars: _collections_abc, func
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [args, kwargs, coro, func, _collections_abc, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, _collections_abc, args, coro, func, kwargs]
                             ExecutionSlots:
                               FreeVarsSlots: _collections_abc, , func, 
                               CellVarsSlots: None
@@ -2978,7 +2978,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Identifier: list
               GeneratorExpressionNode SourceSection: [9880,9916]`n for n in globals()...`
                 Name: <genexpr>
-                FrameDescriptor: 2 slots [n, <return_val>]
+                FrameDescriptor: 2 slots [<return_val>, n]
                 Enclosing
                   FrameDescriptor:  Empty
                 Active Flags: 4
@@ -2991,7 +2991,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 2 slots [n, <return_val>]
+                  FrameDescriptor: 2 slots [<return_val>, n]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: None

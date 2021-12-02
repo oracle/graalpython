@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
         WriteNameNodeGen SourceSection: [0,35]`def fn(a, b=1):↵  yi...`
           Identifier: fn
           GeneratorFunctionDefinitionNode Name: fn SourceSection: None
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             Active Flags: 3
             For Nodes: 0
             Block Nodes: 1
@@ -32,7 +32,7 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [a, b, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, a, b]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Function
-        FrameDescriptor: [my_math, sys, <return_val>]
+        FrameDescriptor: [<return_val>, my_math, sys]
         CellVars: Empty
         FreeVars: Empty

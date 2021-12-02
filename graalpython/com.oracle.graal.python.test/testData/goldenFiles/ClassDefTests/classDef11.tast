@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
               CelVars: fields, name
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [name, fields, named_tuple, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, fields, name, named_tuple]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: fields, , name, 
@@ -70,7 +70,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                               CelVars: None
                               FreeVars: fields, name
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [__name__, n_sequence_fields, fields, __repr__, name]
+                              FrameDescriptor: 5 slots [__name__, __repr__, fields, n_sequence_fields, name]
                               ExecutionSlots:
                                 FreeVarsSlots: fields, , name, 
                                 CellVarsSlots: None
@@ -119,7 +119,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                             CelVars: None
                                             FreeVars: fields, name
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 6 slots [self, sb, f, name, fields, <return_val>]
+                                            FrameDescriptor: 6 slots [<return_val>, f, fields, name, sb, self]
                                             ExecutionSlots:
                                               FreeVarsSlots: fields, , name, 
                                               CellVarsSlots: None

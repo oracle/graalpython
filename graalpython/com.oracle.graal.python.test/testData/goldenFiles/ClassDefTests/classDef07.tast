@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [dict_setitem, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, dict_setitem]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None

@@ -499,7 +499,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__init__, groups, opengroup, closegroup, checkgroup, checklookbehindgroup]
+              FrameDescriptor: 6 slots [__init__, checkgroup, checklookbehindgroup, closegroup, groups, opengroup]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -532,7 +532,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -593,7 +593,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -639,7 +639,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, name, gid, ogid, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, gid, name, ogid, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -783,7 +783,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, gid, p, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, gid, p, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -844,7 +844,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, gid, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, gid, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -910,7 +910,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, gid, source, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, gid, self, source]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1013,7 +1013,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 10 slots [__init__, dump, __repr__, __len__, __delitem__, __getitem__, __setitem__, insert, append, getwidth]
+              FrameDescriptor: 10 slots [__delitem__, __getitem__, __init__, __len__, __repr__, __setitem__, append, dump, getwidth, insert]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1047,7 +1047,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, pattern, data, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, data, pattern, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1124,7 +1124,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 21 slots [self, level, nl, seqtypes, op, a, i, condgroup, item_yes, item_no, av, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>]
+                            FrameDescriptor: 21 slots [<>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <return_val>, a, av, condgroup, i, item_no, item_yes, level, nl, op, self, seqtypes]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1556,7 +1556,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1601,7 +1601,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1646,7 +1646,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, index, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, index, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1696,7 +1696,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, index, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, index, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1780,7 +1780,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, index, code, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, code, index, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1838,7 +1838,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, index, code, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, code, index, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1899,7 +1899,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, code, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, code, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -1952,7 +1952,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 27 slots [self, lo, hi, i, j, l, h, av, op, <return_val>, <>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26]
+                            FrameDescriptor: 27 slots [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <return_val>, av, h, hi, i, j, l, lo, op, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2547,7 +2547,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 10 slots [__init__, _Tokenizer__next, match, get, getwhile, getuntil, pos, tell, seek, error]
+              FrameDescriptor: 10 slots [_Tokenizer__next, __init__, error, get, getuntil, getwhile, match, pos, seek, tell]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -2580,7 +2580,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, string, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, self, string]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2681,7 +2681,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, index, char, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, char, index, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2833,7 +2833,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, char, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, char, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2897,7 +2897,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, this, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, self, this]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2949,7 +2949,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, n, charset, result, c, _, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, _, c, charset, n, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3055,7 +3055,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, terminator, result, c, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, c, result, self, terminator]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3201,7 +3201,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3257,7 +3257,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3313,7 +3313,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, index, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, index, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3367,7 +3367,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, msg, offset, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, msg, offset, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3437,7 +3437,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [source, escape, code, c, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, c, code, escape, source]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3955,7 +3955,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [source, escape, state, code, c, group, <return_val>]
+            FrameDescriptor: 7 slots [<return_val>, c, code, escape, group, source, state]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4657,7 +4657,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [items, newitems, item, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, item, items, newitems]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4751,7 +4751,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 17 slots [source, state, verbose, nested, items, itemsappend, sourcematch, start, subpattern, prefix, item, set, op, av, <return_val>, <>temp15, <>temp16]
+            FrameDescriptor: 17 slots [<>temp15, <>temp16, <return_val>, av, item, items, itemsappend, nested, op, prefix, set, source, sourcematch, start, state, subpattern, verbose]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -5128,7 +5128,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 69 slots [source, state, verbose, nested, first, subpattern, subpatternappend, sourceget, sourcematch, _len, _ord, this, code, here, set, setappend, warnings, negate, code1, that, code2, msg, lo, hi, min, max, item, group, add_flags, del_flags, p, start, name, char, gid, dir, lookbehindgroups, condname, condgroup, item_yes, item_no, flags, err, sub_verbose, op, av, i, <>temp47, <>temp48, <>temp49, <>temp50, <>temp51, <>temp52, <>temp53, <>temp54, <>temp55, <>temp56, <>temp57, <>temp58, <>temp59, <>temp60, <>temp61, <>temp62, <>temp63, <>temp64, <>temp65, <>temp66, <>temp67, <return_val>]
+            FrameDescriptor: 69 slots [<>temp47, <>temp48, <>temp49, <>temp50, <>temp51, <>temp52, <>temp53, <>temp54, <>temp55, <>temp56, <>temp57, <>temp58, <>temp59, <>temp60, <>temp61, <>temp62, <>temp63, <>temp64, <>temp65, <>temp66, <>temp67, <return_val>, _len, _ord, add_flags, av, char, code, code1, code2, condgroup, condname, del_flags, dir, err, first, flags, gid, group, here, hi, i, item, item_no, item_yes, lo, lookbehindgroups, max, min, msg, name, negate, nested, op, p, set, setappend, source, sourceget, sourcematch, start, state, sub_verbose, subpattern, subpatternappend, that, this, verbose, warnings]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -8066,7 +8066,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 9 slots [source, state, char, sourceget, add_flags, del_flags, flag, msg, <return_val>]
+            FrameDescriptor: 9 slots [<return_val>, add_flags, char, del_flags, flag, msg, source, sourceget, state]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -8594,7 +8594,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [src, flags, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, flags, src]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -8735,7 +8735,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [str, flags, pattern, source, p, <return_val>]
+            FrameDescriptor: 6 slots [<return_val>, flags, p, pattern, source, str]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -8961,7 +8961,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             CelVars: groups, literal, literals, pattern, s
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 16 slots [source, pattern, s, sget, groups, literals, literal, lappend, addgroup, groupindex, this, c, name, index, isoctal, <return_val>]
+            FrameDescriptor: 16 slots [<return_val>, addgroup, c, groupindex, groups, index, isoctal, lappend, literal, literals, name, pattern, s, sget, source, this]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: groups, , literal, , literals, , pattern, , s, 
@@ -9053,7 +9053,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                           CelVars: None
                           FreeVars: groups, literal, literals, pattern, s
                           NeedsCellFrame: False
-                          FrameDescriptor: 8 slots [index, pos, pattern, s, groups, literals, literal, <return_val>]
+                          FrameDescriptor: 8 slots [<return_val>, groups, index, literal, literals, pattern, pos, s]
                           ExecutionSlots:
                             FreeVarsSlots: groups, , literal, , literals, , pattern, , s, 
                             CellVarsSlots: None
@@ -9784,9 +9784,9 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                             Identifier: list
                           GeneratorExpressionNode SourceSection: [38860,38920]`None if s is None el...`
                             Name: <genexpr>
-                            FrameDescriptor: 2 slots [s, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, s]
                             Enclosing
-                              FrameDescriptor: 16 slots [source, pattern, s, sget, groups, literals, literal, lappend, addgroup, groupindex, this, c, name, index, isoctal, <return_val>]
+                              FrameDescriptor: 16 slots [<return_val>, addgroup, c, groupindex, groups, index, isoctal, lappend, literal, literals, name, pattern, s, sget, source, this]
                             Active Flags: 2
                             For Nodes: 1
                             Block Nodes: 0
@@ -9797,7 +9797,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [s, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, s]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -9880,7 +9880,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 13 slots [template, match, g, empty, groups, literals, index, group, <>temp8, <>temp9, <>temp10, <>temp11, <return_val>]
+                FrameDescriptor: 13 slots [<>temp10, <>temp11, <>temp8, <>temp9, <return_val>, empty, g, group, groups, index, literals, match, template]
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: None

@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [_cls, hits, misses, maxsize, currsize, <return_val>]
+              FrameDescriptor: 6 slots [<return_val>, _cls, currsize, hits, maxsize, misses]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

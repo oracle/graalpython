@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
         Identifier: list
       GeneratorExpressionNode SourceSection: [1,24]`x**3 for x in range(...`
         Name: <genexpr>
-        FrameDescriptor: 2 slots [x, <return_val>]
+        FrameDescriptor: 2 slots [<return_val>, x]
         Enclosing
           FrameDescriptor:  Empty
         Active Flags: 2
@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
           CelVars: None
           FreeVars: None
           NeedsCellFrame: False
-          FrameDescriptor: 2 slots [x, <return_val>]
+          FrameDescriptor: 2 slots [<return_val>, x]
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None

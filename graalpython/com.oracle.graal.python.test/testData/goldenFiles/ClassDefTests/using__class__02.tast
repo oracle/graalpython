@@ -62,7 +62,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [this, Y, __class__, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, Y, __class__, this]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
@@ -97,7 +97,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                               CelVars: __class__
                                               FreeVars: None
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 4 slots [__class__, z, methodY, <>freevar__class__]
+                                              FrameDescriptor: 4 slots [<>freevar__class__, __class__, methodY, z]
                                               ExecutionSlots:
                                                 FreeVarsSlots: <>freevar__class__, 
                                                 CellVarsSlots: __class__, 
@@ -134,7 +134,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                             CelVars: None
                                                             FreeVars: __class__
                                                             NeedsCellFrame: False
-                                                            FrameDescriptor: 4 slots [this, y, __class__, <return_val>]
+                                                            FrameDescriptor: 4 slots [<return_val>, __class__, this, y]
                                                             ExecutionSlots:
                                                               FreeVarsSlots: __class__, 
                                                               CellVarsSlots: None
@@ -185,7 +185,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [this, yy, __class__, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, __class__, this, yy]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None

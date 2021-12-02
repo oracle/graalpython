@@ -48,7 +48,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                         WriteNameNodeGen SourceSection: [29,192]`def __reversed__(sel...`
                           Identifier: __reversed__
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                            FrameDescriptor: 4 slots [self, root, curr, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, curr, root, self]
                             Active Flags: 3
                             For Nodes: 0
                             Block Nodes: 2
@@ -66,7 +66,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, root, curr, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, curr, root, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None

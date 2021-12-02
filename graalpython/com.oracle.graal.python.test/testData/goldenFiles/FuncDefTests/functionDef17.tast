@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [inner, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, inner]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -57,7 +57,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                             CelVars: end
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [end, inner_inner, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, end, inner_inner]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: end, 
@@ -89,7 +89,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                           CelVars: None
                                           FreeVars: end
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 2 slots [end, <return_val>]
+                                          FrameDescriptor: 2 slots [<return_val>, end]
                                           ExecutionSlots:
                                             FreeVarsSlots: end, 
                                             CellVarsSlots: None

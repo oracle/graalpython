@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
               CelVars: MyIter, ret
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [MyIter, gen, ret, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, MyIter, gen, ret]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: MyIter, , ret, 
@@ -89,7 +89,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                             CelVars: None
                                             FreeVars: None
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 2 slots [self, <return_val>]
+                                            FrameDescriptor: 2 slots [<return_val>, self]
                                             ExecutionSlots:
                                               FreeVarsSlots: None
                                               CellVarsSlots: None
@@ -125,7 +125,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                             CelVars: None
                                             FreeVars: None
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 2 slots [self, <return_val>]
+                                            FrameDescriptor: 2 slots [<return_val>, self]
                                             ExecutionSlots:
                                               FreeVarsSlots: None
                                               CellVarsSlots: None
@@ -155,7 +155,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                         Identifier: gen
                         Frame: [1,gen,Illegal]
                         GeneratorFunctionDefinitionNode Name: gen SourceSection: None
-                          FrameDescriptor: 4 slots [MyIter, ret, <>temp2, <return_val>]
+                          FrameDescriptor: 4 slots [<>temp2, <return_val>, MyIter, ret]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 2
@@ -172,7 +172,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                             CelVars: None
                             FreeVars: MyIter, ret
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [MyIter, ret, <>temp2, <return_val>]
+                            FrameDescriptor: 4 slots [<>temp2, <return_val>, MyIter, ret]
                             ExecutionSlots:
                               FreeVarsSlots: MyIter, , ret, 
                               CellVarsSlots: None

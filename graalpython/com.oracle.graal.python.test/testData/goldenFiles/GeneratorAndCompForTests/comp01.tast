@@ -17,7 +17,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
               Identifier: dict
             GeneratorExpressionNode SourceSection: [10,93]`i: tuple(j for j in ...`
               Name: <genexpr>
-              FrameDescriptor: 3 slots [i, t, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, i, t]
               Enclosing
                 FrameDescriptor:  Empty
               Active Flags: 2
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                 CelVars: i
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 3 slots [i, t, <return_val>]
+                FrameDescriptor: 3 slots [<return_val>, i, t]
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: i, 
@@ -53,9 +53,9 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                   Identifier: tuple
                                 GeneratorExpressionNode SourceSection: [19,41]`j for j in t if i !=...`
                                   Name: <genexpr>
-                                  FrameDescriptor: 3 slots [j, i, <return_val>]
+                                  FrameDescriptor: 3 slots [<return_val>, i, j]
                                   Enclosing
-                                    FrameDescriptor: 3 slots [i, t, <return_val>]
+                                    FrameDescriptor: 3 slots [<return_val>, i, t]
                                   Active Flags: 4
                                   For Nodes: 1
                                   Block Nodes: 0
@@ -66,7 +66,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                     CelVars: None
                                     FreeVars: i
                                     NeedsCellFrame: False
-                                    FrameDescriptor: 3 slots [j, i, <return_val>]
+                                    FrameDescriptor: 3 slots [<return_val>, i, j]
                                     ExecutionSlots:
                                       FreeVarsSlots: i, 
                                       CellVarsSlots: None

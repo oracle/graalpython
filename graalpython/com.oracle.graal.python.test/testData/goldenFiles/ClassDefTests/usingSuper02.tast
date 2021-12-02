@@ -62,7 +62,7 @@ ModuleRootNode Name: <module 'usingSuper02'> SourceSection: [0,44]`class X:↵  
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, __class__, self]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None

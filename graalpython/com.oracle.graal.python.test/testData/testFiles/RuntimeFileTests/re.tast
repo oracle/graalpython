@@ -100,7 +100,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 17 slots [ASCII, IGNORECASE, LOCALE, UNICODE, MULTILINE, DOTALL, VERBOSE, A, I, L, U, M, S, X, TEMPLATE, T, DEBUG]
+              FrameDescriptor: 17 slots [A, ASCII, DEBUG, DOTALL, I, IGNORECASE, L, LOCALE, M, MULTILINE, S, T, TEMPLATE, U, UNICODE, VERBOSE, X]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -289,7 +289,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, flags, pattern, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -351,7 +351,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, flags, pattern, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -413,7 +413,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, flags, pattern, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -477,7 +477,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [pattern, repl, string, count, flags, <return_val>]
+            FrameDescriptor: 6 slots [<return_val>, count, flags, pattern, repl, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -557,7 +557,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [pattern, repl, string, count, flags, <return_val>]
+            FrameDescriptor: 6 slots [<return_val>, count, flags, pattern, repl, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -637,7 +637,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [pattern, string, maxsplit, flags, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, flags, maxsplit, pattern, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -707,7 +707,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, flags, pattern, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -769,7 +769,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, flags, pattern, string]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -831,7 +831,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [pattern, flags, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, flags, pattern]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -921,7 +921,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [pattern, flags, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, flags, pattern]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -964,7 +964,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             Identifier: dict
           GeneratorExpressionNode SourceSection: [11461,11520]`i: '\\' + chr(i) for...`
             Name: <genexpr>
-            FrameDescriptor: 2 slots [i, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, i]
             Enclosing
               FrameDescriptor:  Empty
             Active Flags: 2
@@ -977,7 +977,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [i, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, i]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1039,7 +1039,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [pattern, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, pattern]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1161,7 +1161,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [pattern, flags, p, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, flags, p, pattern]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1383,7 +1383,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [repl, pattern, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, pattern, repl]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1433,7 +1433,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [pattern, match, template, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, match, pattern, template]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1501,7 +1501,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [pattern, template, filter, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, filter, pattern, template]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1585,7 +1585,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 3 slots [match, template, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, match, template]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -1645,7 +1645,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [p, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, p]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1761,7 +1761,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 13 slots [self, lexicon, flags, BRANCH, SUBPATTERN, p, s, gid, phrase, action, <>temp10, <>temp11, <return_val>]
+                                FrameDescriptor: 13 slots [<>temp10, <>temp11, <return_val>, BRANCH, SUBPATTERN, action, flags, gid, lexicon, p, phrase, s, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -1984,7 +1984,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 10 slots [self, string, result, append, match, i, m, j, action, <return_val>]
+                                FrameDescriptor: 10 slots [<return_val>, action, append, i, j, m, match, result, self, string]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None

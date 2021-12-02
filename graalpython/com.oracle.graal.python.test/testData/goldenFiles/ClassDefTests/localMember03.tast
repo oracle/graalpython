@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
               CelVars: a_local_var
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [a_local_var, f, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, a_local_var, f]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: a_local_var, 
@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                             CelVars: None
                             FreeVars: a_local_var
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [C, a_local_var, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, C, a_local_var]
                             ExecutionSlots:
                               FreeVarsSlots: a_local_var, 
                               CellVarsSlots: None
@@ -122,7 +122,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                           CelVars: None
                                                           FreeVars: a_local_var
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 2 slots [a_local_var, <return_val>]
+                                                          FrameDescriptor: 2 slots [<return_val>, a_local_var]
                                                           ExecutionSlots:
                                                             FreeVarsSlots: a_local_var, 
                                                             CellVarsSlots: None
