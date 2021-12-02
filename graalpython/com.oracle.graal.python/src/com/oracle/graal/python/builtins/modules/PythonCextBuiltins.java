@@ -1631,7 +1631,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyBytesConcatNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object concat(VirtualFrame frame, PBytes original, PBytes newPart,
+        public Object concat(VirtualFrame frame, PBytes original, Object newPart,
                         @Cached AddNode addNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
@@ -1643,8 +1643,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isPBytes(obj)", "isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object concatNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        @Specialization(guards = {"!isPBytes(original)", "isBytesSubtype(frame, original, getClassNode, isSubtypeNode)"})
+        public Object concatNative(VirtualFrame frame, @SuppressWarnings("unused") Object original, @SuppressWarnings("unused") Object newPart,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached GetNativeNullNode getNativeNullNode,
@@ -1652,14 +1652,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
         }
 
-        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object concat(VirtualFrame frame, Object obj,
+        @Specialization(guards = {"!isPBytes(original)", "!isBytesSubtype(frame, original, getClassNode, isSubtypeNode)"})
+        public Object concat(VirtualFrame frame, Object original, @SuppressWarnings("unused") Object newPart,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, original), original);
         }
 
         protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -1671,7 +1671,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyBytesJoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object join(VirtualFrame frame, PBytes original, PBytes newPart,
+        public Object join(VirtualFrame frame, PBytes original, Object newPart,
                         @Cached JoinNode joinNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
@@ -1683,8 +1683,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isPBytes(obj)", "isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object joinNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        @Specialization(guards = {"!isPBytes(original)", "isBytesSubtype(frame, original, getClassNode, isSubtypeNode)"})
+        public Object joinNative(VirtualFrame frame, @SuppressWarnings("unused") Object original, @SuppressWarnings("unused") Object newPart,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
@@ -1692,14 +1692,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
         }
 
-        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object join(VirtualFrame frame, Object obj,
+        @Specialization(guards = {"!isPBytes(original)", "!isBytesSubtype(frame, original, getClassNode, isSubtypeNode)"})
+        public Object join(VirtualFrame frame, @SuppressWarnings("unused") Object original, @SuppressWarnings("unused") Object newPart,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, original), original);
         }
 
         protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
