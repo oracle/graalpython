@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -72,11 +73,16 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
         this.handlerFactory = handlerFactory;
     }
 
+    public LookupAndCallReversibleTernaryNode(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
+        super(slot);
+        this.handlerFactory = handlerFactory;
+    }
+
     @Specialization(guards = "v.getClass() == cachedVClass", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObjectR(VirtualFrame frame, Object v, Object w, Object z,
                     @SuppressWarnings("unused") @Cached("v.getClass()") Class<?> cachedVClass,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr,
-                    @Cached("create(name)") LookupSpecialMethodNode getattrR,
+                    @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Cached("createLookup()") LookupSpecialBaseNode getattrR,
                     @Cached GetClassNode getClass,
                     @Cached GetClassNode getClassR,
                     @Cached IsSubtypeNode isSubtype,
@@ -88,8 +94,8 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
     @Specialization(replaces = "callObjectR")
     @Megamorphic
     Object callObjectRMegamorphic(VirtualFrame frame, Object v, Object w, Object z,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr,
-                    @Cached("create(name)") LookupSpecialMethodNode getattrR,
+                    @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Cached("createLookup()") LookupSpecialBaseNode getattrR,
                     @Cached GetClassNode getClass,
                     @Cached GetClassNode getClassR,
                     @Cached IsSubtypeNode isSubtype,
@@ -98,7 +104,7 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
         return doCallObjectR(frame, v, w, z, getattr, getattrR, getClass, getClassR, isSubtype, isSameTypeNode, notImplementedBranch);
     }
 
-    private Object doCallObjectR(VirtualFrame frame, Object v, Object w, Object z, LookupSpecialMethodNode getattr, LookupSpecialMethodNode getattrR, GetClassNode getClass, GetClassNode getClassR,
+    private Object doCallObjectR(VirtualFrame frame, Object v, Object w, Object z, LookupSpecialBaseNode getattr, LookupSpecialBaseNode getattrR, GetClassNode getClass, GetClassNode getClassR,
                     IsSubtypeNode isSubtype, IsSameTypeNode isSameTypeNode, BranchProfile notImplementedBranch) {
         // c.f. mostly slot_nb_power and wrap_ternaryfunc_r. like
         // cpython://Object/abstract.c#ternary_op we try all three combinations, and the structure

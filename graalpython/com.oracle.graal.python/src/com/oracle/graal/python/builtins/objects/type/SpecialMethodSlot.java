@@ -66,6 +66,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
@@ -248,6 +250,9 @@ public enum SpecialMethodSlot {
     RLShift(__RLSHIFT__),
     RShift(__RSHIFT__),
     RRShift(__RRSHIFT__),
+
+    IAdd(__IADD__),
+    IMul(__IMUL__),
 
     Reversed(__REVERSED__),
     Bytes(__BYTES__);
@@ -818,6 +823,10 @@ public enum SpecialMethodSlot {
                 return RShift;
             case __RRSHIFT__:
                 return RRShift;
+            case __IADD__:
+                return IAdd;
+            case __IMUL__:
+                return IMul;
             case __REVERSED__:
                 return Reversed;
             case __BYTES__:

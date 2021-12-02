@@ -40,8 +40,7 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
-
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -57,7 +56,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class SetAttributeNode extends StatementNode implements WriteNode {
 
     public static final class Dynamic extends PNodeWithContext {
-        @Child private LookupAndCallTernaryNode call = LookupAndCallTernaryNode.create(__SETATTR__);
+        @Child private LookupAndCallTernaryNode call = LookupAndCallTernaryNode.create(SpecialMethodSlot.SetAttr);
 
         public void execute(VirtualFrame frame, Object object, Object key, Object value) {
             call.execute(frame, object, key, value);
