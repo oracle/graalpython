@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class CSVWriter extends PythonBuiltinObject {
@@ -74,7 +75,7 @@ public final class CSVWriter extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    void joinFields(Object iter) {
+    void joinFields(Node node, Object iter) {
         Object field;
 
         this.joinReset();
@@ -91,7 +92,7 @@ public final class CSVWriter extends PythonBuiltinObject {
 
         if (this.numFields > 0 && this.rec.length() == 0) {
             if (this.dialect.quoting == QUOTE_NONE) {
-                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
+                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
             }
             this.numFields--;
             this.joinAppend(null, true);

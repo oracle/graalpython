@@ -87,7 +87,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
             Object state = IndirectCallContext.enter(frame, language, getContext(), this);
 
             try {
-                return self.parseIterableInput();
+                return self.parseIterableInput(this);
             } finally {
                 IndirectCallContext.exit(frame, language, getContext(), state);
             }

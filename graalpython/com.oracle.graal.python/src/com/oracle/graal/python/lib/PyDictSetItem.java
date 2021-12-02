@@ -62,7 +62,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class PyDictSetItem extends Node {
     public abstract void execute(Frame frame, PDict dict, Object key, Object item);
 
-    // We never need a frame for reading string keys
+    // We never need a frame for setting string keys
     @Specialization(limit = "3")
     static final void setItemWithStringKey(@SuppressWarnings("unused") PDict dict, String key, Object item,
                     @Bind("dict.getDictStorage()") HashingStorage dictStorage,

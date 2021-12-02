@@ -93,10 +93,10 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             }
 
             // Join all fields of passed in sequence in internal buffer.
-            PythonLanguage language = PythonLanguage.get(this);
+            PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, language, getContext(), this);
             try {
-                self.joinFields(iter);
+                self.joinFields(this, iter);
             } finally {
                 IndirectCallContext.exit(frame, language, getContext(), state);
             }

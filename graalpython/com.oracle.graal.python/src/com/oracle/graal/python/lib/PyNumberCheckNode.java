@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -111,8 +110,8 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
         return lookupIndex.execute(type) != PNone.NO_VALUE || lookupInt.execute(type) != PNone.NO_VALUE || lookupFloat.execute(type) != PNone.NO_VALUE || checkComplex.execute(object);
     }
 
-    @Fallback
-    static boolean doObject(Object object,
+    @Specialization(replaces = "doPythonObject", guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isNone(object)", "!isString(object)"})
+    static boolean doObject(VirtualFrame frame, Object object,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,

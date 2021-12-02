@@ -93,10 +93,11 @@ import com.oracle.truffle.api.library.CachedLibrary;
 @CoreFunctions(defineModule = "_csv")
 public final class CSVModuleBuiltins extends PythonBuiltins {
 
-    static long fieldLimit = 128 * 1024; // max parsed field size
     static final String WRITE = "write";
     static final String NOT_SET = "NOT_SET";
     static final int NOT_SET_CODEPOINT = -1;
+
+    long fieldLimit = 128 * 1024; // max parsed field size
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -260,27 +261,27 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "field_size_limit", parameterNames = {"limit"}, doc = "Sets an upper limit on parsed fields.\n" +
+    @Builtin(name = "field_size_limit", parameterNames = {"$mod", "limit"}, declaresExplicitSelf = true, doc = "Sets an upper limit on parsed fields.\n" +
                     "csv.field_size_limit([limit])\n\n" +
                     "Returns old limit. If limit is not given, no new limit is set and\n" +
                     "the old limit is returned")
     @GenerateNodeFactory
     public abstract static class CSVFieldSizeLimitNode extends PythonBuiltinNode {
+
         @Specialization
-        long getOrSetFieldSizeLimit(VirtualFrame frame, Object newLimit,
+        long getOrSetFieldSizeLimit(VirtualFrame frame, PythonModule self, Object newLimit,
                         @Cached PyLongCheckExactNode checkLongNode,
                         @Cached PyLongAsLongNode castToLong) {
 
-            long oldLimit = fieldLimit;
+            CSVModuleBuiltins csvModuleBuiltins = (CSVModuleBuiltins) self.getBuiltins();
+            long oldLimit = csvModuleBuiltins.fieldLimit;
 
             if (newLimit != PNone.NO_VALUE) {
                 if (!checkLongNode.execute(newLimit)) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_INTEGER, "limit");
                 }
-
-                fieldLimit = castToLong.execute(frame, newLimit);
+                csvModuleBuiltins.fieldLimit = castToLong.execute(frame, newLimit);
             }
-
             return oldLimit;
         }
     }
@@ -462,7 +463,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                             getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
-        protected boolean isCSVDialect(Object dialect) {
+        protected static boolean isCSVDialect(Object dialect) {
             return dialect instanceof CSVDialect;
         }
 

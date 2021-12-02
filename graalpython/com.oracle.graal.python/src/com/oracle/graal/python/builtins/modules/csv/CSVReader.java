@@ -63,10 +63,12 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class CSVReader extends PythonBuiltinObject {
@@ -121,7 +123,7 @@ public final class CSVReader extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    Object parseIterableInput() {
+    Object parseIterableInput(Node node) {
         do {
             Object lineObj;
             try {
@@ -160,7 +162,7 @@ public final class CSVReader extends PythonBuiltinObject {
             }
 
             this.lineNum++;
-            this.parseLine(line);
+            this.parseLine(node, line);
 
         } while (this.state != START_RECORD);
 
@@ -170,7 +172,7 @@ public final class CSVReader extends PythonBuiltinObject {
         return PythonObjectFactory.getUncached().createList(fields.toArray());
     }
 
-    void parseLine(String line) {
+    void parseLine(Node node, String line) {
         final int lineLength = line.length();
 
         /*
@@ -180,16 +182,16 @@ public final class CSVReader extends PythonBuiltinObject {
         for (int offset = 0; offset < lineLength;) {
             final int codepoint = line.codePointAt(offset);
 
-            parseProcessCodePoint(codepoint);
+            parseProcessCodePoint(node, codepoint);
 
             offset += Character.charCount(codepoint);
         }
 
-        parseProcessCodePoint(EOL);
+        parseProcessCodePoint(node, EOL);
     }
 
     @SuppressWarnings("fallthrough")
-    void parseProcessCodePoint(int codePoint) {
+    void parseProcessCodePoint(Node node, int codePoint) {
         CSVDialect dialect = this.dialect;
 
         switch (this.state) {
@@ -230,21 +232,21 @@ public final class CSVReader extends PythonBuiltinObject {
                     if (dialect.quoting == QUOTE_NONNUMERIC) {
                         this.numericField = true;
                     }
-                    parseAddCodePoint(codePoint);
+                    parseAddCodePoint(node, codePoint);
                     this.state = IN_FIELD;
                 }
                 break;
 
             case ESCAPED_CHAR:
                 if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT) {
-                    parseAddCodePoint(codePoint);
+                    parseAddCodePoint(node, codePoint);
                     this.state = AFTER_ESCAPED_CRNL;
                     break;
                 }
                 if (codePoint == EOL) {
                     codePoint = NEWLINE_CODEPOINT;
                 }
-                parseAddCodePoint(codePoint);
+                parseAddCodePoint(node, codePoint);
 
                 this.state = IN_FIELD;
                 break;
@@ -271,7 +273,7 @@ public final class CSVReader extends PythonBuiltinObject {
                     this.state = START_FIELD;
                 } else {
                     /* normal character - save in field */
-                    parseAddCodePoint(codePoint);
+                    parseAddCodePoint(node, codePoint);
                 }
                 break;
 
@@ -293,7 +295,7 @@ public final class CSVReader extends PythonBuiltinObject {
                     }
                 } else {
                     /* normal character - save in field */
-                    parseAddCodePoint(codePoint);
+                    parseAddCodePoint(node, codePoint);
                 }
                 break;
 
@@ -301,7 +303,7 @@ public final class CSVReader extends PythonBuiltinObject {
                 if (codePoint == EOL) {
                     codePoint = NEWLINE_CODEPOINT;
                 }
-                parseAddCodePoint(codePoint);
+                parseAddCodePoint(node, codePoint);
                 this.state = IN_QUOTED_FIELD;
                 break;
 
@@ -310,7 +312,7 @@ public final class CSVReader extends PythonBuiltinObject {
                 if (dialect.quoting != QUOTE_NONE &&
                                 codePoint == dialect.quoteCharCodePoint) {
                     /* save "" as " */
-                    parseAddCodePoint(codePoint);
+                    parseAddCodePoint(node, codePoint);
                     this.state = IN_QUOTED_FIELD;
                 } else if (codePoint == dialect.delimiterCodePoint) {
                     /* save field - wait for new field */
@@ -321,7 +323,7 @@ public final class CSVReader extends PythonBuiltinObject {
                     parseSaveField();
                     this.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
                 } else if (!dialect.strict) {
-                    parseAddCodePoint(codePoint);
+                    parseAddCodePoint(node, codePoint);
                     this.state = IN_FIELD;
                 } else {
                     /* illegal */
@@ -344,11 +346,13 @@ public final class CSVReader extends PythonBuiltinObject {
 
     }
 
-    void parseAddCodePoint(int codePoint) {
+    void parseAddCodePoint(Node node, int codePoint) {
 
-        if (this.field.length() + Character.charCount(codePoint) > CSVModuleBuiltins.fieldLimit) {
+        CSVModuleBuiltins csvModuleBuiltins = (CSVModuleBuiltins) PythonContext.get(node).lookupBuiltinModule("_csv").getBuiltins();
+
+        if (this.field.length() + Character.charCount(codePoint) > csvModuleBuiltins.fieldLimit) {
             throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.LARGER_THAN_FIELD_SIZE_LIMIT,
-                            CSVModuleBuiltins.fieldLimit);
+                            csvModuleBuiltins.fieldLimit);
         }
 
         this.field.appendCodePoint(codePoint);
