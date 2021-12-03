@@ -1,0 +1,4 @@
+BlockSSTNode[0, 2]
+    UnarySSTNode[0, 2]
+        Op: -
+        Value: VarLookupSSTNode[1, 2] Value: "u"
