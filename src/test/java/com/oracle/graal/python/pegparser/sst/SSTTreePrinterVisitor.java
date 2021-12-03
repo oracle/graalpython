@@ -100,7 +100,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
             case IS_NOT: return "is not";
             case IS: return "is";
             case BIT_OR: return "|";
-            case BIT_COR: return "^";
+            case BIT_XOR: return "^";
             case BIT_AND: return "&";
             case LSHIFT: return "<<";
             case RSHIFT: return ">>";

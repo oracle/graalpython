@@ -21,6 +21,26 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void binaryOp01() throws Exception {
+        checkTreeResult("1 + 10");
+    }
+
+    @Test
+    public void binaryOp02() throws Exception {
+        checkTreeResult("'ahoj' + 10");
+    }
+
+    @Test
+    public void binaryOp03() throws Exception {
+        checkTreeResult("3 ** 2");
+    }
+
+    @Test
+    public void binaryOp04() throws Exception {
+        checkTreeResult("3 ** 2 ** 2");
+    }
+    
+    @Test
     public void testBreak() throws Exception {
         checkTreeResult("break");
     }
@@ -44,7 +64,7 @@ public class BasicTests extends ParserTestBase {
     public void testYieldFrom() throws Exception {
         checkTreeResult("yield from f");
     }
-
+    
 //    @Test
 //    public void booelan01() throws Exception {
 //        checkTreeResult("True");

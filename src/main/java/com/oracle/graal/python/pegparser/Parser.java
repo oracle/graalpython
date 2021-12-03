@@ -4560,9 +4560,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "signed_number '+' NUMBER");
-                // TODO: node.action: _PyAST_BinOp ( real , Add , imag , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( real , Add , imag , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.ADD,real,imag,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "signed_number '+' NUMBER");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 level--;
@@ -4586,9 +4589,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "signed_number '-' NUMBER");
-                // TODO: node.action: _PyAST_BinOp ( real , Sub , imag , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( real , Sub , imag , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.SUB,real,imag,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "signed_number '-' NUMBER");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 level--;
@@ -9475,6 +9481,7 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
+        Token startToken = getAndInitializeToken();
         { // bitwise_or '|' bitwise_xor
             debugMessageln("%d> bitwise_or[%d-%d]: %s", level, _mark, mark(), "bitwise_or '|' bitwise_xor");
             Token _literal;
@@ -9489,9 +9496,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_or '|' bitwise_xor");
-                // TODO: node.action: _PyAST_BinOp ( a , BitOr , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , BitOr , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.BIT_OR,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_or '|' bitwise_xor");
                 level--;
                 return (SSTNode)_res;
@@ -9554,6 +9564,7 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
+        Token startToken = getAndInitializeToken();
         { // bitwise_xor '^' bitwise_and
             debugMessageln("%d> bitwise_xor[%d-%d]: %s", level, _mark, mark(), "bitwise_xor '^' bitwise_and");
             Token _literal;
@@ -9568,9 +9579,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d bitwise_xor[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_xor '^' bitwise_and");
-                // TODO: node.action: _PyAST_BinOp ( a , BitXor , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , BitXor , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.BIT_XOR,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_xor '^' bitwise_and");
                 level--;
                 return (SSTNode)_res;
@@ -9633,6 +9647,7 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
+        Token startToken = getAndInitializeToken();
         { // bitwise_and '&' shift_expr
             debugMessageln("%d> bitwise_and[%d-%d]: %s", level, _mark, mark(), "bitwise_and '&' shift_expr");
             Token _literal;
@@ -9647,9 +9662,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d bitwise_and[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_and '&' shift_expr");
-                // TODO: node.action: _PyAST_BinOp ( a , BitAnd , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , BitAnd , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.BIT_AND,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_and '&' shift_expr");
                 level--;
                 return (SSTNode)_res;
@@ -9712,6 +9730,7 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
+        Token startToken = getAndInitializeToken();
         { // shift_expr '<<' sum
             debugMessageln("%d> shift_expr[%d-%d]: %s", level, _mark, mark(), "shift_expr '<<' sum");
             Token _literal;
@@ -9726,9 +9745,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "shift_expr '<<' sum");
-                // TODO: node.action: _PyAST_BinOp ( a , LShift , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , LShift , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.LSHIFT,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "shift_expr '<<' sum");
                 level--;
                 return (SSTNode)_res;
@@ -9751,9 +9773,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "shift_expr '>>' sum");
-                // TODO: node.action: _PyAST_BinOp ( a , RShift , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , RShift , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.RSHIFT,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "shift_expr '>>' sum");
                 level--;
                 return (SSTNode)_res;
@@ -9816,6 +9841,7 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
+        Token startToken = getAndInitializeToken();
         { // sum '+' term
             debugMessageln("%d> sum[%d-%d]: %s", level, _mark, mark(), "sum '+' term");
             Token _literal;
@@ -9830,9 +9856,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, _mark, mark(), "sum '+' term");
-                // TODO: node.action: _PyAST_BinOp ( a , Add , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , Add , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.ADD,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "sum '+' term");
                 level--;
                 return (SSTNode)_res;
@@ -9855,9 +9884,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, _mark, mark(), "sum '-' term");
-                // TODO: node.action: _PyAST_BinOp ( a , Sub , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , Sub , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.SUB,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "sum '-' term");
                 level--;
                 return (SSTNode)_res;
@@ -9926,6 +9958,7 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
+        Token startToken = getAndInitializeToken();
         { // term '*' factor
             debugMessageln("%d> term[%d-%d]: %s", level, _mark, mark(), "term '*' factor");
             Token _literal;
@@ -9940,9 +9973,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, _mark, mark(), "term '*' factor");
-                // TODO: node.action: _PyAST_BinOp ( a , Mult , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , Mult , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.MULT,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '*' factor");
                 level--;
                 return (SSTNode)_res;
@@ -9965,9 +10001,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, _mark, mark(), "term '/' factor");
-                // TODO: node.action: _PyAST_BinOp ( a , Div , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , Div , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.DIV,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '/' factor");
                 level--;
                 return (SSTNode)_res;
@@ -9990,9 +10029,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, _mark, mark(), "term '//' factor");
-                // TODO: node.action: _PyAST_BinOp ( a , FloorDiv , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , FloorDiv , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.FLOOR_DIV,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '//' factor");
                 level--;
                 return (SSTNode)_res;
@@ -10015,9 +10057,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, _mark, mark(), "term '%' factor");
-                // TODO: node.action: _PyAST_BinOp ( a , Mod , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , Mod , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.MOD,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '%' factor");
                 level--;
                 return (SSTNode)_res;
@@ -10200,6 +10245,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // await_primary '**' factor
             debugMessageln("%d> power[%d-%d]: %s", level, _mark, mark(), "await_primary '**' factor");
             Token _literal;
@@ -10214,9 +10260,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d power[%d-%d]: %s succeeded!", level, _mark, mark(), "await_primary '**' factor");
-                // TODO: node.action: _PyAST_BinOp ( a , Pow , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BinOp ( a , Pow , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.POW,a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "await_primary '**' factor");
                 cache.putResult(_mark, POWER_ID, _res);
                 level--;

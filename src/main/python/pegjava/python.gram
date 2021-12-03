@@ -344,8 +344,8 @@ closed_pattern[SSTNode]:  # originally return type expr_ty
 
 literal_pattern[SSTNode]: # originally return type expr_ty
     | signed_number !('+' | '-')
-    | real=signed_number '+' imag=NUMBER { _PyAST_BinOp(real, Add, imag, EXTRA) }
-    | real=signed_number '-' imag=NUMBER  { _PyAST_BinOp(real, Sub, imag, EXTRA) }
+    | real=signed_number '+' imag=NUMBER { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.ADD, real, imag, startToken.startOffset, endToken.endOffset ) }
+    | real=signed_number '-' imag=NUMBER  { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.SUB, real, imag, startToken.startOffset, endToken.endOffset ) }
     | strings
     | 'None' { factory.createNone(startToken.startOffset, startToken.endOffset) }
     | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset); }
@@ -651,28 +651,28 @@ isnot_bitwise_or[CmpopExprPair*]: 'is' 'not' a=bitwise_or { _PyPegen_cmpop_expr_
 is_bitwise_or[CmpopExprPair*]: 'is' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Is, a) }
 
 bitwise_or[SSTNode]: # originally return type expr_ty
-    | a=bitwise_or '|' b=bitwise_xor { _PyAST_BinOp(a, BitOr, b, EXTRA) }
+    | a=bitwise_or '|' b=bitwise_xor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.BIT_OR, a, b, startToken.startOffset, endToken.endOffset ) }
     | bitwise_xor
 bitwise_xor[SSTNode]: # originally return type expr_ty
-    | a=bitwise_xor '^' b=bitwise_and { _PyAST_BinOp(a, BitXor, b, EXTRA) }
+    | a=bitwise_xor '^' b=bitwise_and { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.BIT_XOR, a, b, startToken.startOffset, endToken.endOffset ) }
     | bitwise_and
 bitwise_and[SSTNode]: # originally return type expr_ty
-    | a=bitwise_and '&' b=shift_expr { _PyAST_BinOp(a, BitAnd, b, EXTRA) }
+    | a=bitwise_and '&' b=shift_expr { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.BIT_AND, a, b, startToken.startOffset, endToken.endOffset ) }
     | shift_expr
 shift_expr[SSTNode]: # originally return type expr_ty
-    | a=shift_expr '<<' b=sum { _PyAST_BinOp(a, LShift, b, EXTRA) }
-    | a=shift_expr '>>' b=sum { _PyAST_BinOp(a, RShift, b, EXTRA) }
+    | a=shift_expr '<<' b=sum { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.LSHIFT, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=shift_expr '>>' b=sum { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.RSHIFT, a, b, startToken.startOffset, endToken.endOffset ) }
     | sum
 
 sum[SSTNode]: # originally return type expr_ty
-    | a=sum '+' b=term { _PyAST_BinOp(a, Add, b, EXTRA) }
-    | a=sum '-' b=term { _PyAST_BinOp(a, Sub, b, EXTRA) }
+    | a=sum '+' b=term { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.ADD, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=sum '-' b=term { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.SUB, a, b, startToken.startOffset, endToken.endOffset ) }
     | term
 term[SSTNode]: # originally return type expr_ty
-    | a=term '*' b=factor { _PyAST_BinOp(a, Mult, b, EXTRA) }
-    | a=term '/' b=factor { _PyAST_BinOp(a, Div, b, EXTRA) }
-    | a=term '//' b=factor { _PyAST_BinOp(a, FloorDiv, b, EXTRA) }
-    | a=term '%' b=factor { _PyAST_BinOp(a, Mod, b, EXTRA) }
+    | a=term '*' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.MULT, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=term '/' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.DIV, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=term '//' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.FLOOR_DIV, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=term '%' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.MOD, a, b, startToken.startOffset, endToken.endOffset ) }
     | a=term '@' b=factor { CHECK_VERSION(expr_ty, 5, "The '@' operator is", _PyAST_BinOp(a, MatMult, b, EXTRA)) }
     | factor
 factor[SSTNode] (memo): # originally return type expr_ty
@@ -681,7 +681,7 @@ factor[SSTNode] (memo): # originally return type expr_ty
     | '~' a=factor {factory.createUnaryOp(UnarySSTNode.Type.INVERT, a, startToken.startOffset, endToken.endOffset)} #{ _PyAST_UnaryOp(Invert, a, EXTRA) }
     | power
 power[SSTNode]: # originally return type expr_ty
-    | a=await_primary '**' b=factor { _PyAST_BinOp(a, Pow, b, EXTRA) }
+    | a=await_primary '**' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.POW, a, b, startToken.startOffset, endToken.endOffset ) }
     | await_primary
 await_primary[SSTNode] (memo): # originally return type expr_ty
     | AWAIT a=primary { CHECK_VERSION(expr_ty, 5, "Await expressions are", _PyAST_Await(a, EXTRA)) }

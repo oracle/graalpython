@@ -62,7 +62,7 @@ public class BinaryArithmeticSSTNode extends SSTNode {
         IS_NOT,
         IS,
         BIT_OR,  // |
-        BIT_COR, // ^
+        BIT_XOR, // ^
         BIT_AND, // &
         LSHIFT, // <<
         RSHIFT, // >>

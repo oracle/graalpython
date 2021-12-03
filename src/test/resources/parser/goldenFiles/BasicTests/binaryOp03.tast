@@ -1,0 +1,5 @@
+BlockSSTNode[0, 6]
+    BinaryArithmeticSSTNode[0, 6]
+        Op: **
+        LHS: IntegerLiteralSSTNode[0, 1] Value: "3"
+        RHS: IntegerLiteralSSTNode[5, 6] Value: "2"

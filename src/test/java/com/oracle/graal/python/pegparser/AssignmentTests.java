@@ -60,10 +60,10 @@ public class AssignmentTests extends ParserTestBase {
         checkTreeResult("a = b = 1");
     }
 
-//    @Test
-//    public void assignment03() throws Exception {
-//        checkTreeResult("a = 0\n" + "b = a\n" + "c = a + a + b");
-//    }
+    @Test
+    public void assignment03() throws Exception {
+        checkTreeResult("a = 0\n" + "b = a\n" + "c = a + a + b");
+    }
 
     @Test
     public void assignment04() throws Exception {
