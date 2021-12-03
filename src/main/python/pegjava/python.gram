@@ -196,23 +196,23 @@ assignment[SSTNode]:
            this.newTypeComment((Token) tc),
              startToken.startOffset, endToken.endOffset); }
     | a=single_target b=augassign ~ c=(yield_expr | star_expressions) {
-         _PyAST_AugAssign(a, b->kind, c, EXTRA) }
+         factory.createAugAssignment(a, b, (SSTNode)c, startToken.startOffset, endToken.endOffset) }
     | invalid_assignment
 
-augassign[AugOperator*]:
-    | '+=' { _PyPegen_augoperator(p, Add) }
-    | '-=' { _PyPegen_augoperator(p, Sub) }
-    | '*=' { _PyPegen_augoperator(p, Mult) }
+augassign[BinaryArithmeticSSTNode___Type]:
+    | '+=' { BinaryArithmeticSSTNode.Type.ADD }
+    | '-=' { BinaryArithmeticSSTNode.Type.SUB }
+    | '*=' { BinaryArithmeticSSTNode.Type.MULT }
     | '@=' { CHECK_VERSION(AugOperator*, 5, "The '@' operator is", _PyPegen_augoperator(p, MatMult)) }
-    | '/=' { _PyPegen_augoperator(p, Div) }
-    | '%=' { _PyPegen_augoperator(p, Mod) }
-    | '&=' { _PyPegen_augoperator(p, BitAnd) }
-    | '|=' { _PyPegen_augoperator(p, BitOr) }
-    | '^=' { _PyPegen_augoperator(p, BitXor) }
-    | '<<=' { _PyPegen_augoperator(p, LShift) }
-    | '>>=' { _PyPegen_augoperator(p, RShift) }
-    | '**=' { _PyPegen_augoperator(p, Pow) }
-    | '//=' { _PyPegen_augoperator(p, FloorDiv) }
+    | '/=' { BinaryArithmeticSSTNode.Type.DIV }
+    | '%=' { BinaryArithmeticSSTNode.Type.MOD }
+    | '&=' { BinaryArithmeticSSTNode.Type.BIT_AND }
+    | '|=' { BinaryArithmeticSSTNode.Type.BIT_OR }
+    | '^=' { BinaryArithmeticSSTNode.Type.BIT_XOR }
+    | '<<=' { BinaryArithmeticSSTNode.Type.LSHIFT }
+    | '>>=' { BinaryArithmeticSSTNode.Type.RSHIFT }
+    | '**=' { BinaryArithmeticSSTNode.Type.POW }
+    | '//=' { BinaryArithmeticSSTNode.Type.FLOOR_DIV }
 
 global_stmt[stmt_ty]: 'global' a[asdl_expr_seq*]=','.NAME+ {
     _PyAST_Global(CHECK(asdl_identifier_seq*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
@@ -812,7 +812,7 @@ star_atom[SSTNode]: # originally return type expr_ty
 
 single_target[SSTNode]: # originally return type expr_ty
     | single_subscript_attribute_target
-    | a=NAME { _PyPegen_set_expr_context(p, a, Store) }
+    | a=NAME  { a } #{ _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=single_target ')' { a }
 single_subscript_attribute_target[SSTNode]: # originally return type expr_ty
     | a=t_primary '.' b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }

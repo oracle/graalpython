@@ -46,6 +46,7 @@ import com.oracle.graal.python.pegparser.sst.AnnAssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.AnnotationSSTNode;
 import com.oracle.graal.python.pegparser.sst.ArgDefListBuilder;
 import com.oracle.graal.python.pegparser.sst.AssignmentSSTNode;
+import com.oracle.graal.python.pegparser.sst.AugAssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
@@ -79,6 +80,11 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, SSTNode typeComment, int startOffset, int endOffset) {
         return new AssignmentSSTNode(lhs, rhs, typeComment, startOffset, endOffset);
+    }
+    
+    @Override
+    public AugAssignmentSSTNode createAugAssignment(SSTNode lhs, BinaryArithmeticSSTNode.Type operation, SSTNode rhs, int startOffset, int endOffset) {
+        return new AugAssignmentSSTNode(lhs, operation, rhs, startOffset, endOffset);
     }
     
     @Override

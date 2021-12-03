@@ -1,0 +1,9 @@
+BlockSSTNode[0, 17]
+    FunctionDefSSTNode[0, 17]
+        Name:fn
+        ---- Function body of fn ----
+        AugAssignmentSSTNode[11, 17]
+            Op: +
+            LHS: VarLookupSSTNode[11, 12] Value: "x"
+            RHS: IntegerLiteralSSTNode[16, 17] Value: "3"
+        ---- End of fn function ----

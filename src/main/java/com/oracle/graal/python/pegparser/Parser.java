@@ -1863,7 +1863,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> assignment[%d-%d]: %s", level, _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
             int _cut_var = 0;
             SSTNode a;
-            SSTNode[] b;
+            BinaryArithmeticSSTNode.Type b;
             Object c;
             if (
                 (a = single_target_rule()) != null  // single_target
@@ -1876,9 +1876,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
-                // TODO: node.action: _PyAST_AugAssign ( a , b -> kind , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_AugAssign ( a , b -> kind , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createAugAssignment(a,b,(SSTNode)c,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 level--;
@@ -1931,15 +1934,15 @@ public final class Parser extends AbstractParser {
     //     | '>>='
     //     | '**='
     //     | '//='
-    public SSTNode[] augassign_rule()
+    public BinaryArithmeticSSTNode.Type augassign_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AUGASSIGN_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, AUGASSIGN_ID);
+            _res = (BinaryArithmeticSSTNode.Type)cache.getResult(_mark, AUGASSIGN_ID);
             level--;
-            return (SSTNode[])_res;
+            return (BinaryArithmeticSSTNode.Type)_res;
         }
         { // '+='
             debugMessageln("%d> augassign[%d-%d]: %s", level, _mark, mark(), "'+='");
@@ -1949,13 +1952,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'+='");
-                // TODO: node.action: _PyPegen_augoperator ( p , Add )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , Add ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.ADD;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'+='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -1969,13 +1970,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'-='");
-                // TODO: node.action: _PyPegen_augoperator ( p , Sub )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , Sub ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.SUB;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -1989,13 +1988,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'*='");
-                // TODO: node.action: _PyPegen_augoperator ( p , Mult )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , Mult ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.MULT;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2015,7 +2012,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'@='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2029,13 +2026,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'/='");
-                // TODO: node.action: _PyPegen_augoperator ( p , Div )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , Div ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.DIV;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'/='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2049,13 +2044,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'%='");
-                // TODO: node.action: _PyPegen_augoperator ( p , Mod )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , Mod ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.MOD;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'%='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2069,13 +2062,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'&='");
-                // TODO: node.action: _PyPegen_augoperator ( p , BitAnd )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , BitAnd ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.BIT_AND;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'&='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2089,13 +2080,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'|='");
-                // TODO: node.action: _PyPegen_augoperator ( p , BitOr )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , BitOr ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.BIT_OR;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'|='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2109,13 +2098,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'^='");
-                // TODO: node.action: _PyPegen_augoperator ( p , BitXor )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , BitXor ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.BIT_XOR;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'^='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2129,13 +2116,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'<<='");
-                // TODO: node.action: _PyPegen_augoperator ( p , LShift )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , LShift ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.LSHIFT;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'<<='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2149,13 +2134,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'>>='");
-                // TODO: node.action: _PyPegen_augoperator ( p , RShift )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , RShift ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.RSHIFT;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'>>='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2169,13 +2152,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'**='");
-                // TODO: node.action: _PyPegen_augoperator ( p , Pow )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , Pow ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.POW;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2189,13 +2170,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'//='");
-                // TODO: node.action: _PyPegen_augoperator ( p , FloorDiv )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_augoperator ( p , FloorDiv ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.FLOOR_DIV;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'//='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (BinaryArithmeticSSTNode.Type)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
@@ -2205,7 +2184,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, AUGASSIGN_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (BinaryArithmeticSSTNode.Type)_res;
     }
 
     // global_stmt: 'global' ','.NAME+
@@ -12754,9 +12733,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d single_target[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
-                // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Store ) to Java !!![0m");
-                _res = null;
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, SINGLE_TARGET_ID, _res);
                 level--;
@@ -14128,7 +14105,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_assignment[%d-%d]: %s", level, _mark, mark(), "star_expressions augassign (yield_expr | star_expressions)");
             Object _tmp_208_var;
             SSTNode a;
-            SSTNode[] augassign_var;
+            BinaryArithmeticSSTNode.Type augassign_var;
             if (
                 (a = star_expressions_rule()) != null  // star_expressions
                 &&
@@ -26701,7 +26678,6 @@ public final class Parser extends AbstractParser {
     }
 
     // TODO replacing asdl_expr_seq* --> SSTNode[]
-    // TODO replacing AugOperator* --> SSTNode[]
     // TODO replacing stmt_ty --> SSTNode[]
     // TODO replacing asdl_alias_seq* --> SSTNode[]
     // TODO replacing alias_ty --> SSTNode[]

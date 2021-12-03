@@ -84,7 +84,14 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(AugAssignmentSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Op: ").append(binOp(node.operation)).append("\n");
+        sb.append(indent()).append("LHS: ").append(node.lhs.accept(this)).append("\n");
+        sb.append(indent()).append("RHS: ").append(node.rhs.accept(this));
+        level--;
+        return sb.toString();
     }
 
     private String binOp(BinaryArithmeticSSTNode.Type type) {
@@ -261,6 +268,9 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         sb.append('\n').append(indent()).append("---- Function body of ").append(node.name).append(" ----");
         for(SSTNode stm : node.body) {
             sb.append('\n').append(indent()).append(stm.accept(this));
+        }
+        if (sb.lastIndexOf("\n") != sb.length() - 1) {
+            sb.append('\n');
         }
         sb.append(indent()).append("---- End of ").append(node.name).append(" function ----");
         level--;

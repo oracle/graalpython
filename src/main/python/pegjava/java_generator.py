@@ -107,6 +107,8 @@ def _check_type(self, ttype: str) -> str:
         return "SSTNode"
     elif "SSTNode*" == ttype:
         return "SSTNode[]"
+    elif ttype and '___' in ttype:          # another hack, the ___ is replaced with .
+        return ttype.replace('___', '.')
     if ttype and ttype.endswith('*'):
         ttype = ttype.replace("*", "[]")
     return ttype
@@ -683,7 +685,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
         if (node_action.startswith('factory') or
             node_action.startswith('new') or
-            len(node_action) == 1
+            'SSTNode' in node_action
+            or len(node_action) == 1
             or node_action.startswith('finish')
             or node_action == "elem"
             or re.match("(\\([^()*]+\\))?this.", node_action)):
