@@ -79,6 +79,7 @@ public abstract class ErrorMessages {
     public static final String KEY_IN_S_MUST_BE_STRING = "Key in %s.%s must be str, not %p";
     public static final String ITEM_IN_S_MUST_BE_STRING = "Item in %s.%s must be str, not %p";
     public static final String ATTR_NAME_MUST_BE_STRING = "attribute name must be string, not '%p'";
+    public static final String S_MUST_BE_STRING_NOT_S = "\"%s\" must be string, not %.200s";
     public static final String ATTR_S_OF_S_IS_NOT_READABLE = "attribute %s of %s objects is not readable";
     public static final String ATTR_S_OF_S_IS_NOT_WRITABLE = "attribute %s of %s is not writable";
     public static final String ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE = "attribute %s of %s object is not writable";
@@ -440,7 +441,8 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
-    public static final String MUST_BE_INTEGER = "%s must be an integer, not %p";
+    public static final String MUST_BE_INTEGER = "%s must be an integer";
+    public static final String MUST_BE_INTEGER_NOT_P = "%s must be an integer, not %p";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
     public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
     public static final String MUST_BE_NUMERIC = "must be numeric, not %p";
@@ -449,6 +451,8 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_S_NOT_P = "%s must be a %s, not %p";
     public static final String MUST_BE_S_OR_S = "%s must be %s or %s";
     public static final String MUST_BE_SET_TO_S_OBJ = "%s must be set to a %s object";
+    public static final String MUST_BE_STRING = "%s must be a string";
+    public static final String MUST_BE_STRING_QUOTED = "\"%s\" must be a string";
     public static final String MUST_BE_STRINGS = "%s must be strings";
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
@@ -999,6 +1003,23 @@ public abstract class ErrorMessages {
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
+
+    // csv errors
+    public static final String MUST_BE_ONE_CHARACTER_STRING = "\"%s\" must be a 1-character string";
+    public static final String DELIMITER_MUST_BE_ONE_CHAR_STRING = "\"delimiter\" must be a 1-character string";
+    public static final String QUOTECHAR_MUST_BE_SET_IF_QUOTING_ENABLED = "quotechar must be set if quoting enabled";
+    public static final String LINETERMINATOR_MUST_BE_SET = "lineterminator must be set";
+    public static final String BAD_QUOTING_VALUE = "bad \"quoting\" value";
+    public static final String S_EXPECTED_AFTER_S = "'%s' expected after '%s'";
+    public static final String NEWLINE_IN_UNQOUTED_FIELD = "new-line character seen in unquoted field - do you need to open the file in universal-newline mode?";
+    public static final String LARGER_THAN_FIELD_SIZE_LIMIT = "field larger than field limit (%d)";
+    public static final String UNEXPECTED_END_OF_DATA = "unexpected end of data";
+    public static final String WRONG_ITERATOR_RETURN_TYPE = "iterator should return strings, not %.200s (the file should be opened in text mode)";
+    public static final String LINE_CONTAINS_NULL_BYTE = "line contains NUL";
+    public static final String EXPECTED_ITERABLE_NOT_S = "iterable expected, not %.200s";
+    public static final String EMPTY_FIELD_RECORD_MUST_BE_QUOTED = "single empty field record must be quoted";
+    public static final String ESCAPE_WITHOUT_ESCAPECHAR = "need to escape, but no escapechar set";
+    public static final String S_MUST_HAVE_WRITE_METHOD = "%s must have \"write\" method";
 
     // warnings
     public static final String WARN_P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +

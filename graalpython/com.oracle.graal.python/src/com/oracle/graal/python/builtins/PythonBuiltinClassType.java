@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -234,6 +235,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
     JSONEncoder("Encoder", "_json", Flags.PUBLIC_BASE_WODICT),
 
+    // csv
+    CSVDialect("Dialect", "_csv", Flags.PUBLIC_BASE_WODICT),
+    CSVReader("Reader", "_csv", Flags.PUBLIC_BASE_WODICT),
+    CSVWriter("Writer", "_csv", Flags.PUBLIC_BASE_WODICT),
+
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
     AST("AST", "_ast", Flags.PUBLIC_BASE_WDICT),
 
@@ -306,6 +312,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     TimeoutError("TimeoutError", BUILTINS, Flags.EXCEPTION),
     ZipImportError("ZipImportError", "zipimport", Flags.EXCEPTION),
     ZLibError("error", "zlib", Flags.EXCEPTION),
+    CSVError("Error", "_csv", Flags.EXCEPTION),
     LZMAError("LZMAError", "_lzma", Flags.EXCEPTION),
     StructError("StructError", "_struct", Flags.EXCEPTION),
     PickleError("PickleError", "_pickle", Flags.EXCEPTION),
@@ -601,6 +608,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         TimeoutError.base = OSError;
         ZipImportError.base = ImportError;
         ZLibError.base = Exception;
+        CSVError.base = Exception;
         LZMAError.base = Exception;
         SocketGAIError.base = OSError;
         SocketHError.base = OSError;
@@ -709,9 +717,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         Empty.base = Exception;
 
-        HashSet<String> set = new HashSet<>();
+        HashSet<String> set = PythonUtils.ASSERTIONS_ENABLED ? new HashSet<>() : null;
         for (PythonBuiltinClassType type : VALUES) {
-            assert set.add(type.name) : type.name(); // check uniqueness
+            // check uniqueness
+            assert set.add("" + type.moduleName + "." + type.name) : type.name();
 
             /* Initialize type.base (defaults to PythonObject unless that's us) */
             if (type.base == null && type != PythonObject) {

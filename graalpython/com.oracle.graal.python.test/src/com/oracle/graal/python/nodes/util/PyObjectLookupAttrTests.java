@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,55 +38,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
+package com.oracle.graal.python.nodes.util;
+
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
-/**
- * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
- * {@code __str__} special method.
- * <p>
- * The output is always coerced to a Java {@link String}
- *
- * @see PyObjectStrAsObjectNode
- */
-@GenerateUncached
-public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
-    public abstract String execute(Frame frame, Object object);
+import com.oracle.graal.python.test.PythonTests;
 
-    public final String execute(Object object) {
-        return execute(null, object);
+public class PyObjectLookupAttrTests {
+
+    @Before
+    public void setUp() {
+        PythonTests.enterContext();
     }
 
-    @Specialization
-    static String doString(String obj) {
-        return obj;
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 
-    @Specialization
-    static String doGeneric(VirtualFrame frame, Object obj,
-                    @Cached PyObjectStrAsObjectNode strNode,
-                    @Cached CastToJavaStringNode castToString) {
-        try {
-            return castToString.execute(strNode.execute(frame, obj));
-        } catch (CannotCastException e) {
-            throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
-        }
-    }
+    // Regression test to ensure that super class attributes are evaluated for BuiltinClassType
+    // attribute lookup.
+    // Booleans super class PInt defines "real" which we expect to find in an attribute lookup.
+    @Test
+    public void lookupThroughMRO() {
+        Object v = new RootNode(null) {
+            @Node.Child private PyObjectLookupAttr lookupNode = PyObjectLookupAttr.create();
 
-    public static PyObjectStrAsJavaStringNode create() {
-        return PyObjectStrAsJavaStringNodeGen.create();
-    }
-
-    public static PyObjectStrAsJavaStringNode getUncached() {
-        return PyObjectStrAsJavaStringNodeGen.getUncached();
+            @Override
+            public Object execute(VirtualFrame frame) {
+                return lookupNode.execute(frame, PythonBuiltinClassType.Boolean, "real");
+            }
+        }.getCallTarget().call();
+        Assert.assertNotSame(PNone.NO_VALUE, v);
     }
 }

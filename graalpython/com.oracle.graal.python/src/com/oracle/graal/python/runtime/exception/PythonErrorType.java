@@ -71,6 +71,7 @@ public abstract class PythonErrorType {
     public static final PythonBuiltinClassType FileNotFoundError = PythonBuiltinClassType.FileNotFoundError;
     public static final PythonBuiltinClassType ZipImportError = PythonBuiltinClassType.ZipImportError;
     public static final PythonBuiltinClassType ZLibError = PythonBuiltinClassType.ZLibError;
+    public static final PythonBuiltinClassType CSVError = PythonBuiltinClassType.CSVError;
     public static final PythonBuiltinClassType LZMAError = PythonBuiltinClassType.LZMAError;
     public static final PythonBuiltinClassType StructError = PythonBuiltinClassType.StructError;
     public static final PythonBuiltinClassType IOUnsupportedOperation = PythonBuiltinClassType.IOUnsupportedOperation;

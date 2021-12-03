@@ -38,6 +38,10 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
+import com.oracle.graal.python.builtins.modules.csv.CSVDialect;
+import com.oracle.graal.python.builtins.modules.csv.CSVReader;
+import com.oracle.graal.python.builtins.modules.csv.CSVWriter;
+import com.oracle.graal.python.builtins.modules.csv.QuoteStyle;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataObject;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldObject;
 import com.oracle.graal.python.builtins.modules.ctypes.CThunkObject;
@@ -240,6 +244,7 @@ import com.oracle.truffle.api.object.Shape;
  * </li>
  * </ul>
  */
+
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
 public abstract class PythonObjectFactory extends Node {
@@ -1174,6 +1179,26 @@ public abstract class PythonObjectFactory extends Node {
 
     public final LZMAObject.LZMACompressor createLZMACompressor(Object clazz, boolean isNative) {
         return trace(LZMAObject.createCompressor(clazz, getShape(clazz), isNative));
+    }
+
+    public final CSVReader createCSVReader(Object clazz) {
+        return trace(new CSVReader(clazz, getShape(clazz)));
+    }
+
+    public final CSVWriter createCSVWriter(Object clazz) {
+        return trace(new CSVWriter(clazz, getShape(clazz)));
+    }
+
+    public final CSVDialect createCSVDialect(Object clazz) {
+        return trace(new CSVDialect(clazz, getShape(clazz)));
+    }
+
+    public final CSVDialect createCSVDialect(Object clazz, String delimiter, boolean doublequote, String escapechar,
+                    String lineterminator, String quotechar, QuoteStyle quoting, boolean skipinitialspace,
+                    boolean strict) {
+        return trace(new CSVDialect(clazz, getShape(clazz), delimiter, doublequote, escapechar,
+                        lineterminator, quotechar, quoting, skipinitialspace,
+                        strict));
     }
 
     public final PFileIO createFileIO(Object clazz) {

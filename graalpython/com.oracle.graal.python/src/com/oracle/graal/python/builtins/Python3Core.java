@@ -109,6 +109,10 @@ import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins;
@@ -482,6 +486,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new TupleGetterBuiltins(),
                         new JavaModuleBuiltins(),
                         new JArrayModuleBuiltins(),
+                        new CSVModuleBuiltins(),
                         new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
@@ -566,6 +571,11 @@ public abstract class Python3Core extends ParserErrorCallback {
                         // json
                         new JSONScannerBuiltins(),
                         new JSONEncoderBuiltins(),
+
+                        // csv
+                        new CSVDialectBuiltins(),
+                        new CSVReaderBuiltins(),
+                        new CSVWriterBuiltins(),
 
                         // _ast
                         new AstBuiltins(),

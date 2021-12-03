@@ -160,7 +160,7 @@ public abstract class IteratorNodes {
                         }
                         return intLen;
                     } else {
-                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER, __LEN__, len);
+                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, __LEN__, len);
                     }
                 }
             }
@@ -180,7 +180,7 @@ public abstract class IteratorNodes {
                         }
                         return intLen;
                     } else {
-                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER, __LENGTH_HINT__, len);
+                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, __LENGTH_HINT__, len);
                     }
                 }
             }

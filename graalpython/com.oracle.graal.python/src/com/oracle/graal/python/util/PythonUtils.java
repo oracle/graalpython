@@ -613,6 +613,11 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
+    public static boolean equals(Object a, Object b) {
+        return a.equals(b);
+    }
+
+    @TruffleBoundary
     public static <E> ArrayDeque<E> newDeque() {
         return new ArrayDeque<>();
     }

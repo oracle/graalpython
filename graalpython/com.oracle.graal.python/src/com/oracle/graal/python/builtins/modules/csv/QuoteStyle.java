@@ -38,55 +38,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.builtins.modules.csv;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import java.util.Arrays;
 
-/**
- * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
- * {@code __str__} special method.
- * <p>
- * The output is always coerced to a Java {@link String}
- *
- * @see PyObjectStrAsObjectNode
- */
-@GenerateUncached
-public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
-    public abstract String execute(Frame frame, Object object);
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
-    public final String execute(Object object) {
-        return execute(null, object);
+public enum QuoteStyle {
+    QUOTE_MINIMAL,
+    QUOTE_ALL,
+    QUOTE_NONNUMERIC,
+    QUOTE_NONE;
+
+    @CompilationFinal(dimensions = 1) private static final QuoteStyle[] VALUES = Arrays.copyOf(values(), values().length);
+
+    public static QuoteStyle getQuoteStyle(int ordinal) {
+        return VALUES[ordinal];
     }
 
-    @Specialization
-    static String doString(String obj) {
-        return obj;
-    }
-
-    @Specialization
-    static String doGeneric(VirtualFrame frame, Object obj,
-                    @Cached PyObjectStrAsObjectNode strNode,
-                    @Cached CastToJavaStringNode castToString) {
-        try {
-            return castToString.execute(strNode.execute(frame, obj));
-        } catch (CannotCastException e) {
-            throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
-        }
-    }
-
-    public static PyObjectStrAsJavaStringNode create() {
-        return PyObjectStrAsJavaStringNodeGen.create();
-    }
-
-    public static PyObjectStrAsJavaStringNode getUncached() {
-        return PyObjectStrAsJavaStringNodeGen.getUncached();
+    public static boolean containsOrdinalValue(int ordinal) {
+        return ordinal >= 0 && ordinal < VALUES.length;
     }
 }

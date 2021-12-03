@@ -64,6 +64,10 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 public abstract class GetNextNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object iterator);
 
+    public Object execute(Object iterator) {
+        return execute(null, iterator);
+    }
+
     public abstract boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
     public abstract int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
