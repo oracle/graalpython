@@ -861,7 +861,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __INSTANCECHECK__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
-        @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+        @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(SpecialMethodSlot.GetAttribute);
         @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
         @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
 

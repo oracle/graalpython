@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -53,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -184,7 +184,7 @@ public abstract class ListNodes {
 
         protected IndexNode(String message, CheckType type) {
             checkType = type;
-            getIndexNode = LookupAndCallUnaryNode.create(__INDEX__);
+            getIndexNode = LookupAndCallUnaryNode.create(SpecialMethodSlot.Index);
             errorMessage = message;
         }
 

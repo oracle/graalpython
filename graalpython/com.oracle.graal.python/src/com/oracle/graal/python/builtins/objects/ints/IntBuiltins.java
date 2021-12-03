@@ -2461,7 +2461,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         Object fromObject(VirtualFrame frame, Object cl, Object object, String byteorder, boolean signed,
-                        @Cached("create(__BYTES__)") LookupAndCallUnaryNode callBytes,
+                        @Cached("create(Bytes)") LookupAndCallUnaryNode callBytes,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.BytesFromObject bytesFromObject) {
             byte[] bytes;

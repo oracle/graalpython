@@ -72,7 +72,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -300,14 +299,14 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic(SpecialMethodNames.class)
+    @ImportStatic(SpecialMethodSlot.class)
     protected abstract static class DispatchMissingNode extends Node {
 
         protected abstract Object execute(VirtualFrame frame, Object self, Object key);
 
         @Specialization
         protected static Object misssing(VirtualFrame frame, Object self, Object key,
-                        @Cached("create(__MISSING__)") LookupAndCallBinaryNode callMissing,
+                        @Cached("create(Missing)") LookupAndCallBinaryNode callMissing,
                         @Cached DefaultMissingNode defaultMissing) {
             Object result = callMissing.executeObject(frame, self, key);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {

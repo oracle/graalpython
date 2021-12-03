@@ -85,7 +85,7 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         Object next(VirtualFrame frame, PSequenceReverseIterator self,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItem,
                         @Cached IsBuiltinClassProfile profile) {
             if (self.index >= 0) {
                 try {

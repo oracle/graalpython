@@ -98,6 +98,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RRSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSHIFT__;
@@ -250,6 +251,7 @@ public enum SpecialMethodSlot {
     RLShift(__RLSHIFT__),
     RShift(__RSHIFT__),
     RRShift(__RRSHIFT__),
+    Round(__ROUND__),
 
     IAdd(__IADD__),
     IMul(__IMUL__),
@@ -823,6 +825,8 @@ public enum SpecialMethodSlot {
                 return RShift;
             case __RRSHIFT__:
                 return RRShift;
+            case __ROUND__:
+                return Round;
             case __IADD__:
                 return IAdd;
             case __IMUL__:

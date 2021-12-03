@@ -243,7 +243,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
         Object next(VirtualFrame frame, PSequenceIterator self,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItem,
                         @Cached IsBuiltinClassProfile profile) {
             try {
                 return callGetItem.executeObject(frame, self.getObject(), self.index++);

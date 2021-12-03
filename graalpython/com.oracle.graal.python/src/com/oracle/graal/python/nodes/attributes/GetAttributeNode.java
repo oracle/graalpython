@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -114,7 +113,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
 
     abstract static class GetAttributeBaseNode extends Node {
 
-        @Child protected LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+        @Child protected LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(SpecialMethodSlot.GetAttribute);
         @Child private IsBuiltinClassProfile isBuiltinClassProfile;
 
         @Child private LookupSpecialMethodSlotNode lookupGetattrNode;

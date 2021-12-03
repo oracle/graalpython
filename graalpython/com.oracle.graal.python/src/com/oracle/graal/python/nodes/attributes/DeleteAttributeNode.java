@@ -63,7 +63,7 @@ public abstract class DeleteAttributeNode extends StatementNode {
 
     @Specialization
     protected void doIt(VirtualFrame frame, Object object, Object key,
-                    @Cached("create(__DELATTR__)") LookupAndCallBinaryNode call) {
+                    @Cached("create(DelAttr)") LookupAndCallBinaryNode call) {
         call.executeObject(frame, object, key);
     }
 }

@@ -152,7 +152,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object repr(VirtualFrame frame, PList self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
+                        @Cached("create(Repr)") LookupAndCallUnaryNode repr,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItem) {
             SequenceStorage storage = self.getSequenceStorage();

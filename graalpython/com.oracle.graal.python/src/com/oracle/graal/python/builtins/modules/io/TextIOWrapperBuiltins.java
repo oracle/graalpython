@@ -1159,7 +1159,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isOK()")
         Object doit(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
+                        @Cached("create(Repr)") LookupAndCallUnaryNode repr,
                         @Cached IONodes.ToStringNode toString,
                         @Cached IsBuiltinClassProfile isValueError) {
             if (!getContext().reprEnter(self)) {

@@ -104,7 +104,7 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
     @Specialization(guards = "!isNumber(x)")
     public long toLong(Object x,
                     @Cached PRaiseNode raise,
-                    @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode) {
+                    @Cached("create(Int)") LookupAndCallUnaryNode callIntNode) {
         Object result = callIntNode.executeObject(null, x);
         return toLong(x, raise, result);
     }

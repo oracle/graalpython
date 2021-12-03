@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1027,7 +1028,6 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
-        protected final String method = __STR__;
         @Child private LookupAndCallUnaryNode callStrNode;
         @Child private CastToListNode castToListNode;
         @Child private ObjectNodes.DefaultObjectReprNode defaultReprNode;
@@ -1130,7 +1130,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         private LookupAndCallUnaryNode getCallStrNode() {
             if (callStrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callStrNode = insert(LookupAndCallUnaryNode.create(method));
+                callStrNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Str));
             }
             return callStrNode;
         }

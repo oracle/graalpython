@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -49,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -948,7 +948,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         double doIt(VirtualFrame frame, Object iterable,
                         @Cached PyObjectGetIter getIter,
-                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode callNextNode,
+                        @Cached("create(Next)") LookupAndCallUnaryNode callNextNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached IsBuiltinClassProfile stopProfile) {
             Object iterator = getIter.execute(frame, iterable);
@@ -2259,7 +2259,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ProdNode extends PythonBuiltinNode {
 
-        @Child private LookupAndCallUnaryNode callNextNode = LookupAndCallUnaryNode.create(__NEXT__);
+        @Child private LookupAndCallUnaryNode callNextNode = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next);
         @Child private BinaryOpNode mul = BinaryArithmetic.Mul.create();
         @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 

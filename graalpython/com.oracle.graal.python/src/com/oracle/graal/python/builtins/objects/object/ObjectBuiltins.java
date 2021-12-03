@@ -315,7 +315,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         Object ne(VirtualFrame frame, Object self, Object other) {
             if (eqNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(LookupAndCallBinaryNode.create(__EQ__));
+                eqNode = insert(LookupAndCallBinaryNode.create(SpecialMethodSlot.Eq));
             }
             Object result = eqNode.executeObject(frame, self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
@@ -347,7 +347,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, Object self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode) {
+                        @Cached("create(Repr)") LookupAndCallUnaryNode reprNode) {
             return reprNode.executeObject(frame, self);
         }
     }
@@ -710,7 +710,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "formatString.isEmpty()")
         static Object format(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
+                        @Cached("create(Str)") LookupAndCallUnaryNode strCall) {
             return strCall.executeObject(frame, self);
         }
     }

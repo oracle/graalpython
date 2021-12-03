@@ -85,9 +85,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -641,7 +639,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (str == null) {
                 if (callReprNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+                    callReprNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Repr));
                 }
                 Object strStr = callReprNode.executeObject(frame, origObj);
                 if (PGuards.isString(strStr)) {
@@ -856,7 +854,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached("create(Reversed)") LookupSpecialMethodSlotNode lookupReversed,
                         @Cached CallUnaryMethodNode callReversed,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode lookupLen,
+                        @Cached("create(Len)") LookupAndCallUnaryNode lookupLen,
                         @Cached("create(GetItem)") LookupSpecialMethodSlotNode getItemNode,
                         @Cached ConditionProfile noReversedProfile,
                         @Cached ConditionProfile noGetItemProfile) {
@@ -1053,7 +1051,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 invalidValueProfile.enter();
                 if (callReprNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+                    callReprNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Repr));
                 }
                 Object str = callReprNode.executeObject(frame, origObj);
                 if (PGuards.isString(str)) {
@@ -1449,7 +1447,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private Object callIndex(VirtualFrame frame, Object obj) {
             if (callIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
+                callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Index));
             }
             Object result = callIndexNode.executeObject(frame, obj);
             // the case when the result is NO_VALUE (i.e. the object does not provide __index__)
@@ -1471,7 +1469,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private Object callInt(VirtualFrame frame, Object object) {
             if (callIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callIntNode = insert(LookupAndCallUnaryNode.create(__INT__));
+                callIntNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Int));
             }
             Object result = callIntNode.executeObject(frame, object);
             if (result != PNone.NO_VALUE && !isIntegerType(result)) {

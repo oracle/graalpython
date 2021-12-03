@@ -3395,7 +3395,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "isReprFormatCode(formatCode)")
         @SuppressWarnings("unused")
         PTuple doRepr(VirtualFrame frame, Object module, double val, int formatCode, int precision, int flags,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode callReprNode,
+                        @Cached("create(Repr)") LookupAndCallUnaryNode callReprNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             Object reprString = callReprNode.executeObject(frame, val);
@@ -3409,7 +3409,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isReprFormatCode(formatCode)")
         Object doGeneric(VirtualFrame frame, Object module, double val, int formatCode, int precision, @SuppressWarnings("unused") int flags,
-                        @Cached("create(__FORMAT__)") LookupAndCallBinaryNode callReprNode,
+                        @Cached("create(Format)") LookupAndCallBinaryNode callReprNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
@@ -3493,7 +3493,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isMappingOrSequence(obj)")
         static Object doGenericUnboxed(VirtualFrame frame, Object obj,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode,
+                        @Cached("create(Len)") LookupAndCallUnaryNode callLenNode,
                         @Cached ConditionProfile noLenProfile,
                         @Cached CastToNativeLongNode castToLongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {

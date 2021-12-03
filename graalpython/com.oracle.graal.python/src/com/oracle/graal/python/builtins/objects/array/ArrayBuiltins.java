@@ -437,7 +437,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static String repr(VirtualFrame frame, PArray self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode,
+                        @Cached("create(Repr)") LookupAndCallUnaryNode reprNode,
                         @Cached ConditionProfile isEmptyProfile,
                         @Cached ConditionProfile isUnicodeProfile,
                         @Cached CastToJavaStringNode cast,
