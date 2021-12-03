@@ -364,8 +364,7 @@ wildcard_pattern[SSTNode]: # originally return type expr_ty
 value_pattern[SSTNode]: # originally return type expr_ty
     | attr=attr !('.' | '(' | '=') { attr }
 attr[SSTNode]: # originally return type expr_ty
-    | value=name_or_attr '.' attr=NAME {
-        _PyAST_Attribute(value, attr->v.Name.id, Load, EXTRA) }
+    | value=name_or_attr '.' attr=NAME { factory.createGetAttribute(value, ((VarLookupSSTNode)attr).getName(), startToken.startOffset, startToken.endOffset)}
 name_or_attr[SSTNode]: # originally return type expr_ty
     | attr
     | NAME
@@ -688,7 +687,7 @@ await_primary[SSTNode] (memo): # originally return type expr_ty
     | primary
 primary[SSTNode]: # originally return type expr_ty
     | invalid_primary  # must be before 'primay genexp' because of invalid_genexp
-    | a=primary '.' b=NAME { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
+    | a=primary '.' b=NAME { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
     | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)this.singletonSequence(b)), NULL, EXTRA) }
     | a=primary '(' b=[arguments] ')' {
         _PyAST_Call(a,
@@ -801,7 +800,7 @@ star_target[SSTNode] (memo): # originally return type expr_ty
         _PyAST_Starred(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), Store, EXTRA) }
     | target_with_star_atom
 target_with_star_atom[SSTNode] (memo): # originally return type expr_ty
-    | a=t_primary '.' b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }
+    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
     | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
     | star_atom
 star_atom[SSTNode]: # originally return type expr_ty
@@ -815,12 +814,12 @@ single_target[SSTNode]: # originally return type expr_ty
     | a=NAME  { a } #{ _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=single_target ')' { a }
 single_subscript_attribute_target[SSTNode]: # originally return type expr_ty
-    | a=t_primary '.' b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }
+    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
     | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
 
 del_targets[asdl_expr_seq*]: a[asdl_expr_seq*]=','.del_target+ [','] { a }
 del_target[SSTNode] (memo): # originally return type expr_ty
-    | a=t_primary '.' b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Del, EXTRA) }
+    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
     | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Del, EXTRA) }
     | del_t_atom
 del_t_atom[SSTNode]: # originally return type expr_ty
@@ -831,11 +830,11 @@ del_t_atom[SSTNode]: # originally return type expr_ty
 
 targets[asdl_expr_seq*]: a[asdl_expr_seq*]=','.target+ [','] { a }
 target[SSTNode] (memo): # originally return type expr_ty
-    | a=t_primary '.' b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }
+    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
     | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
     | t_atom
 t_primary[SSTNode]: # originally return type expr_ty
-    | a=t_primary '.' b=NAME &t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
+    | a=t_primary '.' b=NAME &t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
     | a=t_primary '[' b=slices ']' &t_lookahead { _PyAST_Subscript(a, b, Load, EXTRA) }
     | a=t_primary b=genexp &t_lookahead {
         _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)this.singletonSequence(b)), NULL, EXTRA) }

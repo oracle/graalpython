@@ -54,6 +54,7 @@ import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
 import com.oracle.graal.python.pegparser.sst.ComprehensionSSTNode;
 import com.oracle.graal.python.pegparser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.pegparser.sst.FunctionDefSSTNode;
+import com.oracle.graal.python.pegparser.sst.GetAttributeSSTNode;
 import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
@@ -110,6 +111,11 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public SSTNode createEllipsis(int startOffset, int endOffset) {
         return new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS, startOffset, endOffset);
+    }
+    
+    @Override
+    public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset) {
+        return new GetAttributeSSTNode(receiver, name, startOffset, endOffset);
     }
 
     @Override

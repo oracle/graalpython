@@ -4872,6 +4872,7 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
+        Token startToken = getAndInitializeToken();
         { // name_or_attr '.' NAME
             debugMessageln("%d> attr[%d-%d]: %s", level, _mark, mark(), "name_or_attr '.' NAME");
             Token _literal;
@@ -4886,9 +4887,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d attr[%d-%d]: %s succeeded!", level, _mark, mark(), "name_or_attr '.' NAME");
-                // TODO: node.action: _PyAST_Attribute ( value , attr -> v . Name . id , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Attribute ( value , attr -> v . Name . id , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createGetAttribute(value,((VarLookupSSTNode)attr).getName(),startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '.' NAME");
                 level--;
                 return (SSTNode)_res;
@@ -10375,6 +10374,7 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
+        Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_primary
             debugMessageln("%d> primary[%d-%d]: %s", level, _mark, mark(), "invalid_primary");
             Object invalid_primary_var;
@@ -10406,9 +10406,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, _mark, mark(), "primary '.' NAME");
-                // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Attribute ( a , b -> v . Name . id , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createGetAttribute(a,((VarLookupSSTNode)b).getName(),startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '.' NAME");
                 level--;
                 return (SSTNode)_res;
@@ -12489,6 +12487,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> target_with_star_atom[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
@@ -12505,9 +12504,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createGetAttribute(a,((VarLookupSSTNode)b).getName(),startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
                 level--;
@@ -12787,6 +12784,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> single_subscript_attribute_target[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
@@ -12803,9 +12801,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d single_subscript_attribute_target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createGetAttribute(a,((VarLookupSSTNode)b).getName(),startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
                 level--;
@@ -12906,6 +12902,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> del_target[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
@@ -12922,9 +12919,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Del , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Attribute ( a , b -> v . Name . id , Del , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createGetAttribute(a,((VarLookupSSTNode)b).getName(),startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 cache.putResult(_mark, DEL_TARGET_ID, _res);
                 level--;
@@ -13159,6 +13154,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> target[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
@@ -13175,9 +13171,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createGetAttribute(a,((VarLookupSSTNode)b).getName(),startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 cache.putResult(_mark, TARGET_ID, _res);
                 level--;
@@ -13279,6 +13273,7 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME &t_lookahead
             debugMessageln("%d> t_primary[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME &t_lookahead");
             Token _literal;
@@ -13295,9 +13290,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME &t_lookahead");
-                // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Attribute ( a , b -> v . Name . id , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createGetAttribute(a,((VarLookupSSTNode)b).getName(),startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME &t_lookahead");
                 level--;
                 return (SSTNode)_res;

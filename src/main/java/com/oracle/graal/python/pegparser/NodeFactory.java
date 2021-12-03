@@ -60,6 +60,8 @@ public interface NodeFactory {
     public SSTNode createNone(int startOffset, int endOffset);
 
     public SSTNode createEllipsis(int startOffset, int endOffset);
+    
+    public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset);
 
     public SSTNode createPass(int startOffset, int endOffset);
 
