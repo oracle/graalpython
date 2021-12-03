@@ -408,7 +408,7 @@ Py_UNICODE* PyUnicode_AsUnicode(PyObject *unicode) {
 
 UPCALL_ID(PyTruffle_Unicode_AsWideChar);
 Py_UNICODE* PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size) {
-    PyObject* bytes = UPCALL_CEXT_O(_jls_PyTruffle_Unicode_AsWideChar, native_to_java(unicode), Py_UNICODE_SIZE, native_to_java(Py_None), ERROR_MARKER);
+    PyObject* bytes = UPCALL_CEXT_O(_jls_PyTruffle_Unicode_AsWideChar, native_to_java(unicode), Py_UNICODE_SIZE, ERROR_MARKER);
     if (bytes != NULL) {
         // exclude null terminator at the end
         *size = PyBytes_Size(bytes) / Py_UNICODE_SIZE;

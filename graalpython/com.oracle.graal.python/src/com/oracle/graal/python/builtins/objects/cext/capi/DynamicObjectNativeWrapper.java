@@ -882,26 +882,24 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(UNICODE_WSTR, key)")
         static Object doWstr(PString object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("asWideCharNode") @Cached UnicodeAsWideCharNode asWideCharNode,
-                        @Shared("sizeofWcharNode") @Cached SizeofWCharNode sizeofWcharNode,
-                        @Shared("strLen") @Cached StringLenNode stringLenNode) {
+                        @Shared("sizeofWcharNode") @Cached SizeofWCharNode sizeofWcharNode) {
             int elementSize = (int) sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
-            return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(object, elementSize, stringLenNode.execute(object)), elementSize);
+            return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(object, elementSize), elementSize);
         }
 
         @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
         static long doWstrLength(PString object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("asWideCharNode") @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("sizeofWcharNode") @Cached SizeofWCharNode sizeofWcharNode,
-                        @Shared("strLen") @Cached StringLenNode stringLenNode) {
+                        @Shared("sizeofWcharNode") @Cached SizeofWCharNode sizeofWcharNode) {
             long sizeofWchar = sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
-            PBytes result = asWideCharNode.executeNativeOrder(object, sizeofWchar, stringLenNode.execute(object));
+            PBytes result = asWideCharNode.executeNativeOrder(object, sizeofWchar);
             return lenNode.execute(result.getSequenceStorage()) / sizeofWchar;
         }
 
         @Specialization(guards = "eq(UNICODE_LENGTH, key)")
         static long doUnicodeLength(PString object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Shared("strLen") @Cached StringLenNode stringLenNode) {
+                        @Cached StringLenNode stringLenNode) {
             return stringLenNode.execute(object);
         }
 

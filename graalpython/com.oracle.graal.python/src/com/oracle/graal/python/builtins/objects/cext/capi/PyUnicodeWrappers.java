@@ -54,13 +54,12 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -163,7 +162,6 @@ public abstract class PyUnicodeWrappers {
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached SizeofWCharNode sizeofWcharNode,
-                        @Exclusive @Cached StringLenNode stringLenNode,
                         @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
             boolean mustRelease = gil.acquire();
             try {
@@ -176,7 +174,7 @@ public abstract class PyUnicodeWrappers {
                         // in this case, we can just return the pointer
                         return ((NativeCharSequence) content).getPtr();
                     }
-                    return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(s, elementSize, stringLenNode.execute(s)), elementSize);
+                    return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(s, elementSize), elementSize);
                 }
                 throw UnknownIdentifierException.create(member);
             } finally {

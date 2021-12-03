@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.util;
 
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -65,6 +66,30 @@ public class CharsetMapping {
     @TruffleBoundary
     public static Charset getCharset(String encoding) {
         String name = CHARSET_NAME_MAP.get(normalize(encoding));
+        if (name != null) {
+            return getJavaCharset(name);
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    public static Charset getCharsetForDecoding(String encoding, byte[] bytes, int len) {
+        String normalized = normalize(encoding);
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            /*
+             * JDK's charsets for UTF-16 and UTF-32 default to big endian irrespective of the
+             * platform if there is no BOM. The UTF-16-LE and UTF-32-LE charsets reject big endian
+             * BOM. CPython defaults to platform endian and accepts both BOMs. So, in order to get
+             * the behavior we need, we have to take a peek at the possible BOM and if it's BE BOM,
+             * we use BE encoding, otherwise LE encoding.
+             */
+            if ("utf_16".equals(normalized) && len >= 2 && bytes[0] == (byte) 0xFE && bytes[1] == (byte) 0xFF) {
+                return StandardCharsets.UTF_16BE;
+            } else if ("utf_32".equals(normalized) && len >= 4 && bytes[0] == 0 && bytes[1] == 0 && bytes[2] == (byte) 0xFE && bytes[3] == (byte) 0xFF) {
+                return getJavaCharset("UTF-32BE");
+            }
+        }
+        String name = CHARSET_NAME_MAP.get(normalized);
         if (name != null) {
             return getJavaCharset(name);
         }
@@ -138,7 +163,8 @@ public class CharsetMapping {
         JAVA_CHARSETS.put("UTF-8", StandardCharsets.UTF_8);
         JAVA_CHARSETS.put("UTF-16BE", StandardCharsets.UTF_16BE);
         JAVA_CHARSETS.put("UTF-16LE", StandardCharsets.UTF_16LE);
-        JAVA_CHARSETS.put("UTF-16", StandardCharsets.UTF_16);
+        JAVA_CHARSETS.put("UTF-16", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Charset.forName("UnicodeLittle") : StandardCharsets.UTF_16);
+        JAVA_CHARSETS.put("UTF-32", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Charset.forName("UTF-32LE-BOM") : Charset.forName("UTF-32BE-BOM"));
 
         // Add our custom charsets
         addMapping("raw_unicode_escape", "x-python-raw-unicode-escape");

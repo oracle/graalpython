@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -58,40 +59,35 @@ public abstract class UnicodeObjectNodes {
 
     @GenerateUncached
     public abstract static class UnicodeAsWideCharNode extends Node {
-        private static final int NATIVE_ORDER = 0;
-        private static final int LITTLE_ENDIAN = -1;
-        private static final int BIG_ENDIAN = 1;
-        private static Charset UTF32;
-        private static Charset UTF32LE;
-        private static Charset UTF32BE;
+        private static Charset UTF32LE = Charset.forName("UTF-32LE");
+        private static Charset UTF32BE = Charset.forName("UTF-32BE");
 
-        public final PBytes executeNativeOrder(Object obj, long elementSize, long elements) {
-            return execute(obj, elementSize, elements, UnicodeAsWideCharNode.NATIVE_ORDER);
+        public final PBytes executeNativeOrder(Object obj, long elementSize) {
+            return execute(obj, elementSize, ByteOrder.nativeOrder());
         }
 
-        public final PBytes executeLittleEndian(Object obj, long elementSize, long elements) {
-            return execute(obj, elementSize, elements, UnicodeAsWideCharNode.LITTLE_ENDIAN);
+        public final PBytes executeLittleEndian(Object obj, long elementSize) {
+            return execute(obj, elementSize, ByteOrder.LITTLE_ENDIAN);
         }
 
-        public final PBytes executeBigEndian(Object obj, long elementSize, long elements) {
-            return execute(obj, elementSize, elements, UnicodeAsWideCharNode.BIG_ENDIAN);
+        public final PBytes executeBigEndian(Object obj, long elementSize) {
+            return execute(obj, elementSize, ByteOrder.BIG_ENDIAN);
         }
 
-        public abstract PBytes execute(Object obj, long elementSize, long elements, int byteOrder);
+        public abstract PBytes execute(Object obj, long elementSize, ByteOrder byteOrder);
 
         @Specialization
-        static PBytes doUnicode(PString s, long elementSize, long elements, int byteOrder,
+        static PBytes doUnicode(PString s, long elementSize, ByteOrder byteOrder,
                         @Cached StringMaterializeNode materializeNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return doUnicode(materializeNode.execute(s), elementSize, elements, byteOrder, factory);
+            return doUnicode(materializeNode.execute(s), elementSize, byteOrder, factory);
         }
 
         @Specialization
         @TruffleBoundary
-        static PBytes doUnicode(String s, long elementSize, long elements, int byteOrder,
+        static PBytes doUnicode(String s, long elementSize, ByteOrder byteOrder,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            // use native byte order
-            Charset utf32Charset = getUTF32Charset(-1);
+            Charset utf32Charset = byteOrder == ByteOrder.LITTLE_ENDIAN ? UTF32LE : UTF32BE;
 
             // elementSize == 2: Store String in 'wchar_t' of size == 2, i.e., use UCS2. This is
             // achieved by decoding to UTF32 (which is basically UCS4) and ignoring the two
@@ -99,15 +95,10 @@ public abstract class UnicodeObjectNodes {
             if (elementSize == 2L) {
                 ByteBuffer bytes = ByteBuffer.wrap(s.getBytes(utf32Charset));
                 // FIXME unsafe narrowing
-                int size;
-                if (elements >= 0) {
-                    size = Math.min(bytes.remaining() / 2, (int) (elements * elementSize));
-                } else {
-                    size = bytes.remaining() / 2;
-                }
+                int size = bytes.remaining() / 2;
                 ByteBuffer buf = ByteBuffer.allocate(size);
                 while (bytes.remaining() >= 4) {
-                    if (byteOrder < NATIVE_ORDER) {
+                    if (byteOrder != ByteOrder.nativeOrder()) {
                         buf.putChar((char) ((bytes.getInt() & 0xFFFF0000) >> 16));
                     } else {
                         buf.putChar((char) (bytes.getInt() & 0x0000FFFF));
@@ -122,37 +113,6 @@ public abstract class UnicodeObjectNodes {
             } else {
                 throw new RuntimeException("unsupported wchar size; was: " + elementSize);
             }
-        }
-
-        protected static Charset getUTF32Charset(int byteorder) {
-            String utf32Name = getUTF32Name(byteorder);
-            if (byteorder == NATIVE_ORDER) {
-                if (UTF32 == null) {
-                    UTF32 = Charset.forName(utf32Name);
-                }
-                return UTF32;
-            } else if (byteorder < NATIVE_ORDER) {
-                if (UTF32LE == null) {
-                    UTF32LE = Charset.forName(utf32Name);
-                }
-                return UTF32LE;
-            }
-            if (UTF32BE == null) {
-                UTF32BE = Charset.forName(utf32Name);
-            }
-            return UTF32BE;
-        }
-
-        protected static String getUTF32Name(int byteorder) {
-            String csName;
-            if (byteorder == 0) {
-                csName = "UTF-32";
-            } else if (byteorder < 0) {
-                csName = "UTF-32LE";
-            } else {
-                csName = "UTF-32BE";
-            }
-            return csName;
         }
     }
 }
