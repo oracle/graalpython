@@ -30,22 +30,22 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "write_local")
 @NodeChild(value = "rightNode", type = ExpressionNode.class)
 @ImportStatic(FrameSlotGuards.class)
+@SuppressWarnings("deprecation")    // new Frame API
 public abstract class WriteLocalVariableNode extends StatementNode implements WriteIdentifierNode, FrameSlotNode {
 
-    protected final FrameSlot frameSlot;
+    protected final com.oracle.truffle.api.frame.FrameSlot frameSlot;
 
-    public WriteLocalVariableNode(FrameSlot frameSlot) {
+    public WriteLocalVariableNode(com.oracle.truffle.api.frame.FrameSlot frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static WriteLocalVariableNode create(FrameSlot frameSlot, ExpressionNode right) {
+    public static WriteLocalVariableNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode right) {
         assert frameSlot != null;
         return WriteLocalVariableNodeGen.create(frameSlot, right);
     }
@@ -58,7 +58,7 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
     }
 
     @Override
-    public final FrameSlot getSlot() {
+    public final com.oracle.truffle.api.frame.FrameSlot getSlot() {
         return frameSlot;
     }
 

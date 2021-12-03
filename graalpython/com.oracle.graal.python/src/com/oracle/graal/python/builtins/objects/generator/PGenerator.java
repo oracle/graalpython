@@ -44,7 +44,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -73,6 +72,7 @@ public final class PGenerator extends PythonBuiltinObject {
     // running means it is currently on the stack, not just started
     private boolean running;
 
+    @SuppressWarnings("deprecation")    // new Frame API
     public static PGenerator create(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
                     ExecutionCellSlots cellSlots, GeneratorInfo generatorInfo, PythonObjectFactory factory,
                     Object iterator) {
@@ -91,9 +91,9 @@ public final class PGenerator extends PythonBuiltinObject {
         PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
         // set generator closure to the generator frame locals
         CompilerAsserts.partialEvaluationConstant(cellSlots);
-        FrameSlot[] freeVarSlots = cellSlots.getFreeVarSlots();
+        com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots = cellSlots.getFreeVarSlots();
         CompilerAsserts.partialEvaluationConstant(freeVarSlots);
-        FrameSlot[] cellVarSlots = cellSlots.getCellVarSlots();
+        com.oracle.truffle.api.frame.FrameSlot[] cellVarSlots = cellSlots.getCellVarSlots();
         CompilerAsserts.partialEvaluationConstant(cellVarSlots);
         Assumption[] cellVarAssumptions = cellSlots.getCellVarAssumptions();
 
@@ -109,7 +109,8 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     @ExplodeLoop
-    private static void assignCells(MaterializedFrame generatorFrame, FrameSlot[] cellVarSlots, Assumption[] cellVarAssumptions) {
+    @SuppressWarnings("deprecation")    // new Frame API
+    private static void assignCells(MaterializedFrame generatorFrame, com.oracle.truffle.api.frame.FrameSlot[] cellVarSlots, Assumption[] cellVarAssumptions) {
         // initialize own cell vars to new cells (these cells will be used by nested functions to
         // create their own closures)
         for (int i = 0; i < cellVarSlots.length; i++) {
@@ -118,7 +119,8 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     @ExplodeLoop
-    private static void assignClosure(PCell[] closure, MaterializedFrame generatorFrame, FrameSlot[] freeVarSlots) {
+    @SuppressWarnings("deprecation")    // new Frame API
+    private static void assignClosure(PCell[] closure, MaterializedFrame generatorFrame, com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots) {
         for (int i = 0; i < freeVarSlots.length; i++) {
             generatorFrame.setObject(freeVarSlots[i], closure[i]);
         }
