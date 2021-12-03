@@ -74,9 +74,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
             }
             level--;
         }
-        sb.append(indent()).append("RHS: ").append(node.rhs.accept(this)).append("\n");;
+        sb.append(indent()).append("RHS: ").append(node.rhs.accept(this));
         if (node.typeComment != null) {
-            sb.append(indent()).append("TypeComment: ").append(node.typeComment.accept(this)).append("\n");
+            sb.append('\n');
+            sb.append(indent()).append("TypeComment: ").append(node.typeComment.accept(this));
         }
         level--;
         return sb.toString();

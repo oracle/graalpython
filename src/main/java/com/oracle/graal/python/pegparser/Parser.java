@@ -10482,9 +10482,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, _mark, mark(), "primary '[' slices ']'");
-                // TODO: node.action: _PyAST_Subscript ( a , b , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Subscript ( a , b , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createSubscript(a,b,startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '[' slices ']'");
                 level--;
                 return (SSTNode)_res;
@@ -12533,9 +12531,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                // TODO: node.action: _PyAST_Subscript ( a , b , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Subscript ( a , b , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createSubscript(a,b,startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
                 level--;
@@ -12830,9 +12826,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d single_subscript_attribute_target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                // TODO: node.action: _PyAST_Subscript ( a , b , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Subscript ( a , b , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createSubscript(a,b,startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
                 level--;
@@ -12948,9 +12942,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                // TODO: node.action: _PyAST_Subscript ( a , b , Del , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Subscript ( a , b , Del , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createSubscript(a,b,startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 cache.putResult(_mark, DEL_TARGET_ID, _res);
                 level--;
@@ -13200,9 +13192,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                // TODO: node.action: _PyAST_Subscript ( a , b , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Subscript ( a , b , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createSubscript(a,b,startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 cache.putResult(_mark, TARGET_ID, _res);
                 level--;
@@ -13318,9 +13308,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' &t_lookahead");
-                // TODO: node.action: _PyAST_Subscript ( a , b , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Subscript ( a , b , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createSubscript(a,b,startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' &t_lookahead");
                 level--;
                 return (SSTNode)_res;

@@ -74,6 +74,8 @@ public interface NodeFactory {
     public SSTNode createNumber(String number, int startOffset, int endOffset);
 
     public SSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
+    
+    public SubscriptSSTNode createSubscript(SSTNode receiver, SSTNode subscript, int startOffset, int endOffset);
 
     public UnarySSTNode createUnaryOp(UnarySSTNode.Type op, SSTNode value, int startOffset, int endOffset);
 

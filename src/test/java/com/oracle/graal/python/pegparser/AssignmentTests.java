@@ -45,42 +45,42 @@ import org.junit.jupiter.api.Test;
 
 public class AssignmentTests extends ParserTestBase {
 
-    //Test
+    @Test
     public void assignment01() throws Exception {
         checkTreeResult("a = 1");
     }
     
-    //Test
+    @Test
     public void assignmentWithTypeComment01() throws Exception {
         checkTreeResult("a = 1 # type: int");
     }
 
-    //Test
+    @Test
     public void assignment02() throws Exception {
         checkTreeResult("a = b = 1");
     }
 
-    //Test
+    @Test
     public void assignment03() throws Exception {
         checkTreeResult("a = 0\n" + "b = a\n" + "c = a + a + b");
     }
 
-    //Test
+    @Test
     public void assignment04() throws Exception {
         checkTreeResult("a = b = c = d = e");
     }
 
-//    //Test
+//    @Test
 //    public void assignment05() throws Exception {
 //        checkTreeResult("a, b, c = 1, 2, 3");
 //    }
 
-    //Test
+    @Test
     public void assignment06() throws Exception {
         checkScopeAndTree("def fn():\n  a = b = c = d = e");
     }
 
-//    //Test
+//    @Test
 //    public void assignment07() throws Exception {
 //        checkScopeAndTree("def fn():\n  a, b, c = 1, 2, 3");
 //    }
@@ -95,7 +95,7 @@ public class AssignmentTests extends ParserTestBase {
 //        checkTreeResult("f().b = 1");
 //    }
 
-    //Test
+    @Test
     public void assignment10() throws Exception {
         checkTreeResult("i, j, k = x = a");
     }
@@ -105,79 +105,79 @@ public class AssignmentTests extends ParserTestBase {
         checkScopeAndTree("def fn():\n  a.b.c.d = 1222");
     }
 
-    //Test
+    @Test
     public void augassign01() throws Exception {
         checkTreeResult("a += b");
     }
 
-    //Test
+    @Test
     public void augassign02() throws Exception {
         checkTreeResult("a -= b");
     }
 
-    //Test
+    @Test
     public void augassign03() throws Exception {
         checkTreeResult("a *= b");
     }
 
-    //Test
+    @Test
     public void augassign04() throws Exception {
         checkTreeResult("a /= b");
     }
 
-    //Test
+    @Test
     public void augassign05() throws Exception {
         checkTreeResult("a //= b");
     }
 
-    //Test
+    @Test
     public void augassign06() throws Exception {
         checkTreeResult("a %= b");
     }
 
-    //Test
+    @Test
     public void augassign07() throws Exception {
         checkTreeResult("a &= b");
     }
 
-    //Test
+    @Test
     public void augassign08() throws Exception {
         checkTreeResult("a |= b");
     }
 
-    //Test
+    @Test
     public void augassign09() throws Exception {
         checkTreeResult("a ^= b");
     }
 
-    //Test
+    @Test
     public void augassign10() throws Exception {
         checkTreeResult("a <<= b");
     }
 
-    //Test
+    @Test
     public void augassign11() throws Exception {
         checkTreeResult("a >>= b");
     }
 
-    //Test
+    @Test
     public void augassign12() throws Exception {
         checkTreeResult("a **= b");
     }
 
-    //Test
+    @Test
     public void augassign13() throws Exception {
         checkScopeAndTree("def fn (): x += 3");
     }
 //
-//    //Test
+//    @Test
 //    public void augassign14() throws Exception {
 //        checkScopeAndTree(
 //                        "def _method(*args, **keywords):\n" +
 //                                        "    cls_or_self, *rest = args");
 //    }
 //
-//    //Test
+//    @Test
 //    public void nonLocal01() throws Exception {
 //        checkSyntaxErrorMessage(
 //                        "def outer():\n" +
@@ -189,18 +189,18 @@ public class AssignmentTests extends ParserTestBase {
 //                        "SyntaxError: name 'x' is assigned to before nonlocal declaration");
 //    }
 //
-//    //Test
+//    @Test
 //    public void annotationType01() throws Exception {
 //        checkTreeResult("j: int");
 //    }
 //
-//    //Test
+//    @Test
 //    public void annotationType02() throws Exception {
 //        checkScopeAndTree("def fn():\n" + "  index : int = 0\n");
 //    }
 //
-//    //Test
-//    public void annotationType03() throws Exception {
-//        checkTreeResult("j = 1\n" + "ahoj.__annotations__['j'] = float");
-//    }
+    @Test
+    public void annotationType03() throws Exception {
+        checkTreeResult("j = 1\n" + "ahoj.__annotations__['j'] = float");
+    }
 }

@@ -694,7 +694,7 @@ primary[SSTNode]: # originally return type expr_ty
                  (b) ? ((expr_ty) b)->v.Call.args : NULL,
                  (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
                  EXTRA) }
-    | a=primary '[' b=slices ']' { _PyAST_Subscript(a, b, Load, EXTRA) }
+    | a=primary '[' b=slices ']' { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | atom
 
 slices[SSTNode]: # originally return type expr_ty
@@ -801,7 +801,7 @@ star_target[SSTNode] (memo): # originally return type expr_ty
     | target_with_star_atom
 target_with_star_atom[SSTNode] (memo): # originally return type expr_ty
     | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
+    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | star_atom
 star_atom[SSTNode]: # originally return type expr_ty
     | a=NAME { a }
@@ -815,12 +815,12 @@ single_target[SSTNode]: # originally return type expr_ty
     | '(' a=single_target ')' { a }
 single_subscript_attribute_target[SSTNode]: # originally return type expr_ty
     | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
+    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
 
 del_targets[asdl_expr_seq*]: a[asdl_expr_seq*]=','.del_target+ [','] { a }
 del_target[SSTNode] (memo): # originally return type expr_ty
     | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Del, EXTRA) }
+    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | del_t_atom
 del_t_atom[SSTNode]: # originally return type expr_ty
     | a=NAME { _PyPegen_set_expr_context(p, a, Del) }
@@ -831,11 +831,11 @@ del_t_atom[SSTNode]: # originally return type expr_ty
 targets[asdl_expr_seq*]: a[asdl_expr_seq*]=','.target+ [','] { a }
 target[SSTNode] (memo): # originally return type expr_ty
     | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
+    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | t_atom
 t_primary[SSTNode]: # originally return type expr_ty
     | a=t_primary '.' b=NAME &t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' &t_lookahead { _PyAST_Subscript(a, b, Load, EXTRA) }
+    | a=t_primary '[' b=slices ']' &t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | a=t_primary b=genexp &t_lookahead {
         _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)this.singletonSequence(b)), NULL, EXTRA) }
     | a=t_primary '(' b=[arguments] ')' &t_lookahead {
