@@ -30,6 +30,7 @@
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_include_on_stdin
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_invalid_arg_produces_message
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_legacy_paths
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_multiple_dirs
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_multiple_runs
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_no_args_compiles_path
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_no_args_respects_force_flag
@@ -38,6 +39,7 @@
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_pyc_invalidation_mode
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_quiet
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_recursion_control
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_recursion_limit
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_regexp
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_silent
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_workers_available_cores
