@@ -44,8 +44,11 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -61,6 +64,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+
+import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode.ERROR_CERT_VERIFICATION;
 
 @GenerateUncached
 @ImportStatic(PGuards.class)
@@ -140,7 +145,7 @@ public abstract class PConstructAndRaiseNode extends Node {
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
         Python3Core core = PythonContext.get(this);
         Object[] args = new Object[arguments.length + 1];
-        args[0] = formatArgs != null ? getFormattedMessage(format, formatArgs) : format;
+        args[0] = (formatArgs != null) ? getFormattedMessage(format, formatArgs) : format;
         System.arraycopy(arguments, 0, args, 1, arguments.length);
         return raiseInternal(frame, type, cause, args, keywords, callNode, core);
     }
@@ -173,25 +178,16 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     private static Object[] createOsErrorArgs(int errno, String message, Object filename1, Object filename2) {
-        return new Object[]{errno, message,
-                        (filename1 != null) ? filename1 : PNone.NONE,
-                        PNone.NONE,
-                        (filename2 != null) ? filename2 : PNone.NONE};
+        return new Object[]{errno, message, filename1, null, filename2};
     }
 
     private static Object[] createOsErrorArgs(OSErrorEnum osErrorEnum, String filename1, String filename2) {
-        return new Object[]{osErrorEnum.getNumber(), osErrorEnum.getMessage(),
-                        (filename1 != null) ? filename1 : PNone.NONE,
-                        PNone.NONE,
-                        (filename2 != null) ? filename2 : PNone.NONE};
+        return new Object[]{osErrorEnum.getNumber(), osErrorEnum.getMessage(), filename1, null, filename2};
     }
 
     private static Object[] createOsErrorArgs(Exception exception, String filename1, String filename2) {
         OSErrorEnum.ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(exception);
-        return new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message,
-                        (filename1 != null) ? filename1 : PNone.NONE,
-                        PNone.NONE,
-                        (filename2 != null) ? filename2 : PNone.NONE};
+        return new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message, filename1, null, filename2};
     }
 
     private PException raiseOSErrorInternal(Frame frame, Object[] arguments) {
@@ -230,6 +226,11 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, null));
     }
 
+    public final PException raiseFileNotFoundError(Frame frame, String format, Object... fmtArgs) {
+        String message = getFormattedMessage(format, fmtArgs);
+        return executeWithArgsOnly(frame, PythonBuiltinClassType.FileNotFoundError, new Object[]{OSErrorEnum.ENOENT.getNumber(), message});
+    }
+
     public final PException raiseOSError(Frame frame, int errno, String message, Object filename, Object filename2) {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, filename2));
     }
@@ -238,12 +239,33 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseSSLError(frame, message, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public final PException raiseSSLError(Frame frame, String message, Object ... formatArgs) {
+    public final PException raiseSSLError(Frame frame, String message, Object... formatArgs) {
         return executeWithFmtMessageAndArgs(frame, PythonBuiltinClassType.SSLError, message, formatArgs, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public final PException raiseSSLError(Frame frame, String message, Object[] formatArgs, Object[] args) {
-        return executeWithFmtMessageAndArgs(frame, PythonBuiltinClassType.SSLError, message, formatArgs, args);
+    public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, Exception ex) {
+        return raiseSSLError(frame, errorCode, getMessage(ex));
+    }
+
+    public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, String format, Object... formatArgs) {
+        String message = getFormattedMessage(format, formatArgs);
+        final PException pException = executeWithFmtMessageAndArgs(frame, errorCode.getType(), null, null,
+                        new Object[]{errorCode.getErrno(), message});
+        final PBaseException ex = pException.getUnreifiedException();
+        assert ex.getData() instanceof OsErrorBuiltins.OSErrorData;
+        SSLErrorBuiltins.SSLErrorData data = new SSLErrorBuiltins.SSLErrorData((OsErrorBuiltins.OSErrorData) ex.getData());
+        ex.setData(data);
+        String mnemonic = errorCode.getMnemonic();
+        data.setReason(mnemonic != null ? mnemonic : message);
+        data.setLibrary("[SSL]");
+        if (errorCode == ERROR_CERT_VERIFICATION) {
+            // not trying to be 100% correct,
+            // use code = 1 (X509_V_ERR_UNSPECIFIED) and msg from jdk exception instead
+            // see openssl x509_txt.c#X509_verify_cert_error_string
+            data.setVerifyCode(1);
+            data.setVerifyMessage(message);
+        }
+        return pException;
     }
 
     public static PConstructAndRaiseNode create() {

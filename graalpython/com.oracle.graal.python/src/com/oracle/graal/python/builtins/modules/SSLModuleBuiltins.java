@@ -138,7 +138,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     static {
         SSLCipher[] computed;
         try {
-            computed = SSLCipherSelector.selectCiphers(null,null, DEFAULT_CIPHER_STRING);
+            computed = SSLCipherSelector.selectCiphers(null, PConstructAndRaiseNode.getUncached(), null, DEFAULT_CIPHER_STRING);
         } catch (PException e) {
             computed = new SSLCipher[0];
         }
@@ -385,7 +385,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
                 if (!(cert instanceof X509Certificate)) {
                     throw constructAndRaiseNode.raiseSSLError(frame, SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
                 }
-                return CertUtils.decodeCertificate(this, getContext().factory(), (X509Certificate) l.get(0));
+                return CertUtils.decodeCertificate(frame, constructAndRaiseNode, getContext().factory(), (X509Certificate) l.get(0));
             } catch (IOException ex) {
                 throw constructAndRaiseNode.raiseSSLError(frame, SSL_CANT_OPEN_FILE_S, ex.toString());
             } catch (CertificateException | CRLException ex) {

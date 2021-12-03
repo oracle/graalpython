@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,16 +63,16 @@ public class SSLCipherSelector {
                     SSLCipher.TLS_AES_128_GCM_SHA256, SSLCipher.TLS_AES_128_CCM_SHA256};
 
     @TruffleBoundary
-    public static SSLCipher[] selectCiphers(Frame frame, Node node, String cipherList) {
+    public static SSLCipher[] selectCiphers(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, Node node, String cipherList) {
         List<SSLCipher> selected = new LinkedList<>();
         Set<SSLCipher> deleted = new HashSet<>();
         // Handle ciphersuites for TLS version <= 1.2. TLSv1.3 ciphersuites are handled
         // separately.
-        selectCiphersFromList(node, cipherList, selected, deleted);
+        selectCiphersFromList(frame, constructAndRaiseNode, node, cipherList, selected, deleted);
         // The call fails when no <= TLSv1.2 ciphersuites get selected, regardless of TLSv1.3
         // ciphersuites
         if (selected.size() == 0) {
-            throw PConstructAndRaiseNode.getUncached().raiseSSLError(frame, ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+            throw constructAndRaiseNode.raiseSSLError(frame, ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
         }
         // The API that CPython uses is meant only for setting <= TLSv1.2 ciphersuites, but it
         // also unconditionally adds a hardcoded list of TLSv1.3 ciphersuites to the beginning
@@ -88,13 +87,13 @@ public class SSLCipherSelector {
         return result;
     }
 
-    private static void selectCiphersFromList(Node node, String cipherList, List<SSLCipher> selected, Set<SSLCipher> deleted) {
+    private static void selectCiphersFromList(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, Node node, String cipherList, List<SSLCipher> selected, Set<SSLCipher> deleted) {
         for (String cipherString : cipherList.split("[:, ]")) {
-            selectSingle(node, cipherString, selected, deleted);
+            selectSingle(frame, constructAndRaiseNode, node, cipherString, selected, deleted);
         }
     }
 
-    private static void selectSingle(Node node, String cipherString, List<SSLCipher> selected, Set<SSLCipher> deleted) {
+    private static void selectSingle(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, Node node, String cipherString, List<SSLCipher> selected, Set<SSLCipher> deleted) {
         if (cipherString.startsWith("!")) {
             // Remove the ciphers from the list and prevent them from reappearing
             List<SSLCipher> ciphers = getCiphersForCipherString(node, cipherString.substring(1));
@@ -114,10 +113,10 @@ public class SSLCipherSelector {
             } else if (cipherString.startsWith("@SECLEVEL=")) {
                 throw PRaiseNode.raiseUncached(node, NotImplementedError, "@SECLEVEL not implemented");
             } else {
-                throw PRaiseNode.raiseUncached(node, SSLError, ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+                throw constructAndRaiseNode.raiseSSLError(frame, ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
             }
         } else if (cipherString.equals("DEFAULT")) {
-            selectCiphersFromList(node, "ALL:!COMPLEMENTOFDEFAULT:!eNULL", selected, deleted);
+            selectCiphersFromList(frame, constructAndRaiseNode, node, "ALL:!COMPLEMENTOFDEFAULT:!eNULL", selected, deleted);
         } else {
             List<SSLCipher> ciphers = getCiphersForCipherString(node, cipherString);
             for (SSLCipher cipher : ciphers) {

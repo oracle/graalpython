@@ -1008,7 +1008,7 @@ public abstract class ErrorMessages {
     // ssl error messages
     public static final String SSL_ERR_DECODING_PEM_FILE_S = "Error decoding PEM-encoded file: %s";
     public static final String SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S = "Error decoding PEM-encoded file: unexpected type %s";
-    public static final String SSL_ERR_DECODING_PEM_FILE= "Error decoding PEM-encoded file";
+    public static final String SSL_ERR_DECODING_PEM_FILE = "Error decoding PEM-encoded file";
     public static final String SSL_CANT_OPEN_FILE_S = "Can't open file: %s";
     public static final String SSL_CANNOT_WRITE_AFTER_EOF = "cannot write() after write_eof()";
 

@@ -47,7 +47,9 @@ import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -622,6 +624,26 @@ public final class PythonUtils {
     @TruffleBoundary
     public static <E> E pop(ArrayDeque<E> q) {
         return q.pop();
+    }
+
+    @TruffleBoundary
+    public static <E> List<E> newList() {
+        return new ArrayList<E>();
+    }
+
+    @TruffleBoundary
+    public static <E> void add(List<E> list, E e) {
+        list.add(e);
+    }
+
+    @TruffleBoundary
+    public static <E> E get(List<E> list, int index) {
+        return list.get(index);
+    }
+
+    @TruffleBoundary
+    public static <E> Object[] toArray(List<E> list) {
+        return list.toArray();
     }
 
     /**

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -175,8 +176,9 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class DoHandshakeNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doHandshake(VirtualFrame frame, PSSLSocket self,
-                        @Cached SSLOperationNode sslOperationNode) {
-            sslOperationNode.handshake(frame, self);
+                        @Cached SSLOperationNode sslOperationNode,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+            sslOperationNode.handshake(frame, constructAndRaiseNode, self);
             return PNone.NONE;
         }
     }
@@ -308,14 +310,15 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!der")
-        PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der) {
+        PDict getPeerCertDict(VirtualFrame frame, PSSLSocket self, @SuppressWarnings("unused") boolean der,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             if (!self.isHandshakeComplete()) {
                 throw raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
             }
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
                 try {
-                    return CertUtils.decodeCertificate(this, getContext().factory(), (X509Certificate) certificate);
+                    return CertUtils.decodeCertificate(frame, constructAndRaiseNode, getContext().factory(), (X509Certificate) certificate);
                 } catch (CertificateParsingException e) {
                     return factory().createDict();
                 }

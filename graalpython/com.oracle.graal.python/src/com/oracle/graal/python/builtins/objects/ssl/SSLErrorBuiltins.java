@@ -48,12 +48,14 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.BaseExceptionDataAttrNode;
+import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -68,27 +70,146 @@ public class SSLErrorBuiltins extends PythonBuiltins {
         return SSLErrorBuiltinsFactory.getFactories();
     }
 
+    @CompilerDirectives.ValueType
+    public static class SSLErrorData extends OsErrorBuiltins.OSErrorData {
+        private Object reason;
+        private Object library;
+        private Object verifyCode;
+        private Object verifyMessage;
+
+        public SSLErrorData(OsErrorBuiltins.OSErrorData data) {
+            this.setMyerrno(data.getMyerrno());
+            this.setFilename(data.getFilename());
+            this.setFilename2(data.getFilename2());
+            this.setStrerror(data.getStrerror());
+            this.setWinerror(data.getWinerror());
+        }
+
+        public Object getReason() {
+            return reason;
+        }
+
+        public void setReason(Object reason) {
+            this.reason = reason;
+        }
+
+        public Object getLibrary() {
+            return library;
+        }
+
+        public void setLibrary(Object library) {
+            this.library = library;
+        }
+
+        public Object getVerifyCode() {
+            return verifyCode;
+        }
+
+        public void setVerifyCode(Object verifyCode) {
+            this.verifyCode = verifyCode;
+        }
+
+        public Object getVerifyMessage() {
+            return verifyMessage;
+        }
+
+        public void setVerifyMessage(Object verifyMessage) {
+            this.verifyMessage = verifyMessage;
+        }
+    }
+
+    @Builtin(name = "strerror", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @GenerateNodeFactory
+    public abstract static class OSErrorStrerrorNode extends BaseExceptionDataAttrNode {
+        @Override
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof OsErrorBuiltins.OSErrorData;
+            return ((OsErrorBuiltins.OSErrorData) data).getStrerror();
+        }
+
+        @Override
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof OsErrorBuiltins.OSErrorData;
+            ((OsErrorBuiltins.OSErrorData) data).setStrerror(value);
+        }
+    }
+
+    @Builtin(name = "reason", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @GenerateNodeFactory
+    public abstract static class SSLErrorReasonNode extends BaseExceptionDataAttrNode {
+        @Override
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SSLErrorData;
+            return ((SSLErrorData) data).getReason();
+        }
+
+        @Override
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SSLErrorData;
+            ((SSLErrorData) data).setReason(value);
+        }
+    }
+
+    @Builtin(name = "library", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @GenerateNodeFactory
+    public abstract static class SSLErrorLibNode extends BaseExceptionDataAttrNode {
+        @Override
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SSLErrorData;
+            return ((SSLErrorData) data).getLibrary();
+        }
+
+        @Override
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SSLErrorData;
+            ((SSLErrorData) data).setLibrary(value);
+        }
+    }
+
+    @Builtin(name = "verify_code", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @GenerateNodeFactory
+    public abstract static class SSLErrorVerifCodeNode extends BaseExceptionDataAttrNode {
+        @Override
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SSLErrorData;
+            return ((SSLErrorData) data).getVerifyCode();
+        }
+
+        @Override
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SSLErrorData;
+            ((SSLErrorData) data).setVerifyCode(value);
+        }
+    }
+
+    @Builtin(name = "verify_message", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @GenerateNodeFactory
+    public abstract static class SSLErrorVerifMsgNode extends BaseExceptionDataAttrNode {
+        @Override
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SSLErrorData;
+            return ((SSLErrorData) data).getVerifyMessage();
+        }
+
+        @Override
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SSLErrorData;
+            ((SSLErrorData) data).setVerifyMessage(value);
+        }
+    }
+
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, PBaseException self,
-                        @Cached PyObjectStrAsObjectNode strNode,
-                        @Cached("createGetStrerror()") GetAttributeNode getStrerror,
-                        @Cached("createLookupArgs()") GetAttributeNode getArgs) {
-            Object strerror = getStrerror.executeObject(frame, self);
+                        @Cached PyObjectStrAsObjectNode strNode) {
+            assert self.getData() instanceof OsErrorBuiltins.OSErrorData;
+            Object strerror = ((OsErrorBuiltins.OSErrorData) self.getData()).getStrerror();
             if (PGuards.isString(strerror)) {
                 return strerror;
             }
-            return strNode.execute(frame, getArgs.executeObject(frame, self));
-        }
-
-        protected static GetAttributeNode createGetStrerror() {
-            return GetAttributeNode.create("strerror");
-        }
-
-        protected static GetAttributeNode createLookupArgs() {
-            return GetAttributeNode.create("args");
+            return strNode.execute(frame, self.getArgs());
         }
     }
 

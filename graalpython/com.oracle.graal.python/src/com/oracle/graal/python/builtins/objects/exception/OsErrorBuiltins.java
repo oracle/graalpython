@@ -192,7 +192,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     }
 
     @CompilerDirectives.ValueType
-    public static final class OSErrorData extends PBaseException.Data {
+    public static class OSErrorData extends PBaseException.Data {
         private Object myerrno;
         private Object strerror;
         private Object filename;
@@ -201,7 +201,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         // only for BlockingIOError, -1 otherwise
         private int written = -1;
 
-        private OSErrorData() {
+        protected OSErrorData() {
 
         }
 
@@ -266,21 +266,11 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 data.setFilename(args[2]);
             }
             if (args.length >= 4) {
-                data.setFilename2(args[3]);
+                data.setWinerror(args[3]);
             }
             if (args.length == 5) {
-                data.setWinerror(args[4]);
+                data.setFilename2(args[4]);
             }
-            return data;
-        }
-
-        public static OSErrorData create(Object myerrno, Object strerror, Object filename, Object filename2, Object winerror) {
-            final OSErrorData data = new OSErrorData();
-            data.setMyerrno(myerrno);
-            data.setStrerror(strerror);
-            data.setFilename(filename);
-            data.setFilename2(filename2);
-            data.setWinerror(winerror);
             return data;
         }
     }
@@ -328,6 +318,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class OSErrorInitNode extends PythonBuiltinNode {
+        public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds);
+
         @Specialization
         Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds,
                         @Cached GetClassNode getClassNode,
@@ -446,22 +438,22 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             final Object filename2 = data.getFilename2();
             final Object myerrno = data.getMyerrno();
             final Object strerror = data.getStrerror();
-            if (filename != null) {
-                if (filename2 != null) {
-                    return PythonUtils.format("[Error %s] %s: %s -> %s",
+            if (filename != null && filename != PNone.NONE) {
+                if (filename2 != null && filename2 != PNone.NONE) {
+                    return PythonUtils.format("[Errno %s] %s: %s -> %s",
                                     myerrno != null ? myerrno : PNone.NONE,
                                     strerror != null ? strerror : PNone.NONE,
                                     reprNode.execute(frame, filename),
                                     reprNode.execute(frame, filename2));
                 } else {
-                    return PythonUtils.format("[Error %s] %s: %s",
+                    return PythonUtils.format("[Errno %s] %s: %s",
                                     myerrno != null ? myerrno : PNone.NONE,
                                     strerror != null ? strerror : PNone.NONE,
                                     reprNode.execute(frame, filename));
                 }
             }
             if (myerrno != null && strerror != null) {
-                return PythonUtils.format("[Error %s] %s", myerrno, strerror);
+                return PythonUtils.format("[Errno %s] %s", myerrno, strerror);
             }
             return baseStrNode.execute(frame, self);
         }
