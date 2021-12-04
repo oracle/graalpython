@@ -101,7 +101,6 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
 
 public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
@@ -136,7 +135,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     }
 
     @Override
-    protected StatementNode createFrameReturn(ExpressionNode value, FrameSlot slot) {
+    @SuppressWarnings("deprecation")    // new Frame API
+    protected StatementNode createFrameReturn(ExpressionNode value, com.oracle.truffle.api.frame.FrameSlot slot) {
         return new GeneratorFrameReturnNode(value, slot);
     }
 

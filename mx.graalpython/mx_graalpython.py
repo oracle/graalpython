@@ -1506,7 +1506,14 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     standalone_dir_name='graalpython-<version>-<graalvm_os>-<arch>',
     license_files=[],
     third_party_license_files=[],
-    dependencies=['pynl', 'Truffle', 'LLVM Runtime Native', 'LLVM.org toolchain', 'TRegex'],
+    dependencies=[
+        'pynl',
+        'Truffle',
+        'LLVM Runtime Native',
+        'LLVM.org toolchain',
+        'TRegex',
+        'ICU4J',
+    ],
     standalone_dependencies={
         'LLVM Runtime Core': ('lib/sulong', []),
         'LLVM Runtime Native': ('lib/sulong', []),

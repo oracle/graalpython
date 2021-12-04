@@ -66,7 +66,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -282,6 +281,7 @@ public abstract class MaterializeFrameNode extends Node {
      * </ol>
      */
     @ImportStatic(SpecialMethodNames.class)
+    @SuppressWarnings("deprecation")    // new Frame API
     public abstract static class SyncFrameValuesNode extends Node {
 
         private final boolean adoptable;
@@ -296,17 +296,18 @@ public abstract class MaterializeFrameNode extends Node {
                         assumptions = "cachedFd.getVersion()", //
                         limit = "1")
         @ExplodeLoop
+        @SuppressWarnings("deprecation")    // new Frame API
         static void doLocalsStorageCached(PFrame pyFrame, Frame frameToSync,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
                         @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd,
-                        @Cached(value = "getSlots(cachedFd)", dimensions = 1) FrameSlot[] cachedSlots) {
+                        @Cached(value = "getSlots(cachedFd)", dimensions = 1) com.oracle.truffle.api.frame.FrameSlot[] cachedSlots) {
             boolean invalidState = false;
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
             MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();
 
             for (int i = 0; i < cachedSlots.length; i++) {
-                FrameSlot slot = cachedSlots[i];
+                com.oracle.truffle.api.frame.FrameSlot slot = cachedSlots[i];
                 if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
                     if (frameToSync.isBoolean(slot)) {
                         try {
@@ -369,17 +370,18 @@ public abstract class MaterializeFrameNode extends Node {
         @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd"}, //
                         assumptions = "cachedFd.getVersion()", //
                         limit = "1")
+        @SuppressWarnings("deprecation")    // new Frame API
         static void doLocalsStorageLoop(PFrame pyFrame, Frame frameToSync,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
                         @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd,
-                        @Cached(value = "getSlots(cachedFd)", dimensions = 1) FrameSlot[] cachedSlots) {
+                        @Cached(value = "getSlots(cachedFd)", dimensions = 1) com.oracle.truffle.api.frame.FrameSlot[] cachedSlots) {
             boolean invalidState = false;
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
             MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();
 
             for (int i = 0; i < cachedSlots.length; i++) {
-                FrameSlot slot = cachedSlots[i];
+                com.oracle.truffle.api.frame.FrameSlot slot = cachedSlots[i];
                 if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
                     if (frameToSync.isBoolean(slot)) {
                         try {
@@ -440,17 +442,18 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         @Specialization(guards = "hasLocalsStorage(pyFrame, frameToSync, frameProfile)", replaces = {"doLocalsStorageCached", "doLocalsStorageLoop"})
+        @SuppressWarnings("deprecation")    // new Frame API
         static void doLocalsStorageUncached(PFrame pyFrame, Frame frameToSync,
                         @Cached("createClassProfile()") ValueProfile frameProfile) {
             FrameDescriptor fd = frameToSync.getFrameDescriptor();
-            FrameSlot[] cachedSlots = getSlots(fd);
+            com.oracle.truffle.api.frame.FrameSlot[] cachedSlots = getSlots(fd);
             try {
                 LocalsStorage localsStorage = getLocalsStorage(pyFrame);
                 MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
                 assert fd == target.getFrameDescriptor();
 
                 for (int i = 0; i < cachedSlots.length; i++) {
-                    FrameSlot slot = cachedSlots[i];
+                    com.oracle.truffle.api.frame.FrameSlot slot = cachedSlots[i];
                     if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
                         if (frameToSync.isBoolean(slot)) {
                             target.setBoolean(slot, frameToSync.getBoolean(slot));
@@ -479,9 +482,10 @@ public abstract class MaterializeFrameNode extends Node {
                         assumptions = "cachedFd.getVersion()", //
                         limit = "1")
         @ExplodeLoop
+        @SuppressWarnings("deprecation")    // new Frame API
         static void doGenericDictAdoptableCached(VirtualFrame frame, PFrame pyFrame, Frame frameToSync,
                         @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
-                        @Cached(value = "getSlots(cachedFd)", dimensions = 1) FrameSlot[] cachedSlots,
+                        @Cached(value = "getSlots(cachedFd)", dimensions = 1) com.oracle.truffle.api.frame.FrameSlot[] cachedSlots,
                         @Cached(value = "getProfiles(cachedSlots.length)", dimensions = 1) ConditionProfile[] profiles,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached BranchProfile updatedStorage,
@@ -495,7 +499,7 @@ public abstract class MaterializeFrameNode extends Node {
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
 
             for (int i = 0; i < cachedSlots.length; i++) {
-                FrameSlot slot = cachedSlots[i];
+                com.oracle.truffle.api.frame.FrameSlot slot = cachedSlots[i];
                 if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
                     Object value = frameToSync.getValue(slot);
                     if (value != null) {
@@ -523,6 +527,7 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         @Specialization(guards = {"isDictWithCustomStorage(pyFrame)", "isAdoptable()"}, replaces = "doGenericDictAdoptableCached")
+        @SuppressWarnings("deprecation")    // new Frame API
         static void doGenericDictAdoptable(VirtualFrame frame, PFrame pyFrame, Frame frameToSync,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached BranchProfile updatedStorage,
@@ -533,12 +538,12 @@ public abstract class MaterializeFrameNode extends Node {
             // refresh the values.
 
             FrameDescriptor fd = frameToSync.getFrameDescriptor();
-            FrameSlot[] slots = getSlots(fd);
+            com.oracle.truffle.api.frame.FrameSlot[] slots = getSlots(fd);
             // The cast is guaranteed by the guard.
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
 
             for (int i = 0; i < slots.length; i++) {
-                FrameSlot slot = slots[i];
+                com.oracle.truffle.api.frame.FrameSlot slot = slots[i];
                 if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
                     Object value = frameToSync.getValue(slot);
                     if (value != null) {
@@ -566,12 +571,13 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         @Specialization(guards = {"isDictWithCustomStorage(pyFrame)", "!isAdoptable()"})
+        @SuppressWarnings("deprecation")    // new Frame API
         static void doGenericDict(VirtualFrame frame, PFrame pyFrame, Frame frameToSync) {
             // Same as 'doGenericDictAdoptable' but uses a full call node to call '__setitem__' and
             // '__delitem__' since this node is not adoptable.
 
             FrameDescriptor fd = frameToSync.getFrameDescriptor();
-            FrameSlot[] slots = getSlots(fd);
+            com.oracle.truffle.api.frame.FrameSlot[] slots = getSlots(fd);
             // The cast is guaranteed by the guard.
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
 
@@ -580,7 +586,7 @@ public abstract class MaterializeFrameNode extends Node {
             Object deleteItemMethod = LookupInheritedAttributeNode.Dynamic.getUncached().execute(localsDict, SpecialMethodNames.__DELITEM__);
 
             for (int i = 0; i < slots.length; i++) {
-                FrameSlot slot = slots[i];
+                com.oracle.truffle.api.frame.FrameSlot slot = slots[i];
                 if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
                     Object value = frameToSync.getValue(slot);
                     if (value != null) {
@@ -600,9 +606,10 @@ public abstract class MaterializeFrameNode extends Node {
             // nothing to do; we already worked on the custom object
         }
 
-        protected static FrameSlot[] getSlots(FrameDescriptor fd) {
+        @SuppressWarnings("deprecation")    // new Frame API
+        protected static com.oracle.truffle.api.frame.FrameSlot[] getSlots(FrameDescriptor fd) {
             CompilerDirectives.transferToInterpreter();
-            return fd.getSlots().toArray(new FrameSlot[0]);
+            return fd.getSlots().toArray(new com.oracle.truffle.api.frame.FrameSlot[0]);
         }
 
         protected static ConditionProfile[] getProfiles(int n) {

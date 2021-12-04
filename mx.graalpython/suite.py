@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "d5c604c2c94f74f397d1cd62595d541048ae6289",
+                "version": "fa8db34069fcf2525c435b729c15b870110462dc",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "d5c604c2c94f74f397d1cd62595d541048ae6289",
+                "version": "fa8db34069fcf2525c435b729c15b870110462dc",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "d5c604c2c94f74f397d1cd62595d541048ae6289",
+                "version": "fa8db34069fcf2525c435b729c15b870110462dc",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -120,26 +120,6 @@ suite = {
             ],
             "packedResource": True,
             "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
-        },
-        "ICU4J-69.1" : {
-            "moduleName" : "com.ibm.icu",
-            "sha1" : "ff666ac55986650893aacb9e2e0003538e9799c0",
-            "sourceSha1" : "3e19ca5465fce86a094c24df0b6c9256e53c8885",
-            "maven" : {
-            "groupId" : "com.ibm.icu",
-            "artifactId" : "icu4j",
-            "version" : "69.1",
-            },
-        },
-        "ICU4J-CHARSET-69.1" : {
-            "moduleName" : "com.ibm.icu.charset",
-            "sha1" : "c62f823ed741048490beb1660765397ad6331287",
-            "sourceSha1" : "9b366d73b5621fe534624be8276e53f2f9ee1485",
-            "maven" : {
-              "groupId" : "com.ibm.icu",
-              "artifactId" : "icu4j-charset",
-              "version" : "69.1",
-            },
         },
         "NETBEANS-LIB-PROFILER" : {
             "moduleName" : "org.netbeans.modules.org-netbeans-lib-profiler",
@@ -268,8 +248,8 @@ suite = {
                 "truffle:ANTLR4",
                 "sulong:SULONG_API",
                 "XZ-1.8",
-                "ICU4J-69.1",
-                "ICU4J-CHARSET-69.1",
+                "truffle:ICU4J",
+                "truffle:ICU4J-CHARSET",
                 "sdk:JLINE3",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
@@ -460,6 +440,8 @@ suite = {
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
+                "truffle:ICU4J",
+                "truffle:ICU4J-CHARSET",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
             ],
