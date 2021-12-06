@@ -263,6 +263,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetBuiltins.ClearNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.ConstructSetNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
@@ -2959,6 +2960,45 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode createAdd() {
             return (com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
+        }
+    }
+
+    @Builtin(name = "PySet_Clear", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PySetClearNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
+        public Object clear(VirtualFrame frame, PSet s,
+                        @Cached ClearNode clearNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                clearNode.execute(frame, s);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isPSet(set)", "isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
+        public Object clearNative(VirtualFrame frame, @SuppressWarnings("unused") Object set,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
+        }
+
+        @Specialization(guards = {"!isPSet(set)", "!isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
+        public Object clear(VirtualFrame frame, Object set,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, set), set);
+        }
+
+        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet);
         }
     }
 

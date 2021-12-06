@@ -51,14 +51,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-##################### SET, FROZENSET
-
-@may_raise(-1)
-def PySet_Clear(s):
-    s.clear()
-    return 0
-
-
 ##################### MAPPINGPROXY
 
 
