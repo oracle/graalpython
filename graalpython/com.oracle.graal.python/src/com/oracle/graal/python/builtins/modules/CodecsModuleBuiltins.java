@@ -1335,7 +1335,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "unicode_escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors"})
     @GenerateNodeFactory
-    abstract static class UnicodeEscapeEncodeNode extends PythonBinaryBuiltinNode {
+    public abstract static class UnicodeEscapeEncodeNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {

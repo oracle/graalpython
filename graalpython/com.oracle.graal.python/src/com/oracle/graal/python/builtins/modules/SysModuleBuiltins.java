@@ -171,6 +171,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -732,7 +733,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class InternNode extends PythonBuiltinNode {
+    public abstract static class InternNode extends PythonUnaryBuiltinNode {
         private PString doIntern(Object str, StringNodes.InternStringNode internNode) {
             final PString interned = internNode.execute(str);
             if (interned == null) {
