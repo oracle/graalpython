@@ -91,7 +91,7 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
 
     @Specialization
     static boolean doBoolean(Boolean object) {
-        return false;
+        return true;
     }
 
     @Specialization

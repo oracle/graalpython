@@ -105,6 +105,7 @@ public abstract class ErrorMessages {
     public static final String BASE_OUT_OF_RANGE_FOR_INT = "base is out of range for int()";
     public static final String BASES_MUST_BE_TYPES = "bases must be types";
     public static final String BASES_ITEM_CAUSES_INHERITANCE_CYCLE = "a __bases__ item causes an inheritance cycle";
+    public static final String BASE_MUST_BE = "PyNumber_ToBase: base must be 2, 8, 10 or 16";
     public static final String BOOL_SHOULD_RETURN_BOOL = "__bool__ should return bool, returned %p";
     public static final String BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS = "both points must have the same number of dimensions";
     public static final String BUFFER_INDICES_MUST_BE_INTS = "buffer indices must be integers, not %p";

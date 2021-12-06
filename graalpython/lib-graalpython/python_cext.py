@@ -66,63 +66,6 @@ def PyDictProxy_New(mapping):
     mappingproxy = type(type.__dict__)
     return mappingproxy(mapping)
 
-##################### NUMBER
-
-def _safe_check(v, type_check):
-    try:
-        return type_check(v)
-    except:
-        return False
-
-
-def PyNumber_Check(v):
-    return _safe_check(v, lambda x: isinstance(int(x), int)) or _safe_check(v, lambda x: isinstance(float(x), float))
-
-
-@may_raise
-def PyNumber_Index(v):
-    if not hasattr(v, "__index__"):
-        raise TypeError("'%s' object cannot be interpreted as an integer" % type(v).__name__)
-    result = v.__index__()
-    result_type = type(result)
-    if not isinstance(result, int):
-        raise TypeError("__index__ returned non-int (type %s)" % result_type.__name__)
-    if result_type is not int:
-        from warnings import warn
-        warn("__index__ returned non-int (type %s). The ability to return an instance of a strict subclass of int "
-             "is deprecated, and may be removed in a future version of Python." % result_type.__name__)
-    return result
-
-
-@may_raise
-def PyNumber_Long(v):
-    return int(v)
-
-
-@may_raise
-def PyNumber_Absolute(v):
-    return abs(v)
-
-
-@may_raise
-def PyNumber_Divmod(a, b):
-    return divmod(a, b)
-
-
-@may_raise
-def PyNumber_ToBase(n, base):
-    b_index = PyNumber_Index(n)
-    if base == 2:
-        return bin(b_index)
-    elif base == 8:
-        return oct(b_index)
-    elif base == 10:
-        return str(b_index)
-    elif base == 16:
-        return hex(b_index)
-    raise ValueError("Unsupported base " + str(base))
-
-
 @may_raise
 def PyIter_Next(itObj):
     try:
