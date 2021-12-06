@@ -51,13 +51,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-##################### MAPPINGPROXY
-
-
-def PyDictProxy_New(mapping):
-    mappingproxy = type(type.__dict__)
-    return mappingproxy(mapping)
-
 @may_raise
 def PyIter_Next(itObj):
     try:
