@@ -199,6 +199,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -2137,25 +2138,26 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Megamorphic
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
-                        @Cached GetClassNode getClassNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
-                        @Cached BranchProfile updatedStorage,
-                        @Cached("create(New)") LookupInheritedSlotNode getNewFuncNode,
-                        @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
-                        @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
-                        @Cached("create(__MRO_ENTRIES__)") LookupInheritedAttributeNode lookupMroEntriesNode,
-                        @Cached CastToJavaStringNode castStr,
-                        @Cached CallNode callSetNameNode,
-                        @Cached CallNode callInitSubclassNode,
-                        @Cached CallNode callNewFuncNode,
-                        @Cached("create(__DICT__)") LookupAttributeInMRONode getDictAttrNode,
-                        @Cached("create(__WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
-                        @Cached GetItemsizeNode getItemSize,
-                        @Cached WriteAttributeToObjectNode writeItemSize,
-                        @Cached GetBestBaseClassNode getBestBaseNode,
-                        @Cached IsIdentifierNode isIdentifier,
-                        @Cached HashingStorage.InitNode initNode,
-                        @Cached GetMroStorageNode getMroStorageNode) {
+                       @Cached GetClassNode getClassNode,
+                       @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
+                       @Cached BranchProfile updatedStorage,
+                       @Cached("create(New)") LookupInheritedSlotNode getNewFuncNode,
+                       @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
+                       @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
+                       @Cached("create(__MRO_ENTRIES__)") LookupInheritedAttributeNode lookupMroEntriesNode,
+                       @Cached CastToJavaStringNode castStr,
+                       @Cached CallNode callSetNameNode,
+                       @Cached CallNode callInitSubclassNode,
+                       @Cached CallNode callNewFuncNode,
+                       @Cached("create(__DICT__)") LookupAttributeInMRONode getDictAttrNode,
+                       @Cached("create(__WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
+                       @Cached GetItemsizeNode getItemSize,
+                       @Cached WriteAttributeToObjectNode writeItemSize,
+                       @Cached GetBestBaseClassNode getBestBaseNode,
+                       @Cached IsIdentifierNode isIdentifier,
+                       @Cached HashingStorage.InitNode initNode,
+                       @Cached GetMroStorageNode getMroStorageNode,
+                       @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
             Object metaclass = cls;
@@ -2177,7 +2179,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 PythonLanguage language = PythonLanguage.get(this);
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, hashingStoragelib,
-                                getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier);
+                                getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier, constructAndRaiseNode);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
@@ -2282,7 +2284,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private PythonClass typeMetaclass(VirtualFrame frame, PythonLanguage language, String name, PTuple bases, PDict namespace, Object metaclass,
                         HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
                         LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize,
-                        IsIdentifierNode isIdentifier) {
+                        IsIdentifierNode isIdentifier, PConstructAndRaiseNode constructAndRaiseNode) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
@@ -2308,7 +2310,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             assert metaclass != null;
 
             if (!canEncodeUTF8(name)) {
-                throw raise(UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_CLASSNAME, name);
+                throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, ErrorMessages.CANNOT_ENCODE_CLASSNAME, name);
             }
             if (containsNullCharacter(name)) {
                 throw raise(ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
@@ -2322,7 +2324,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(pythonClass, namespace, hashingStorageLib, slots, qualnameSet);
+            copyDictSlots(frame, pythonClass, namespace, hashingStorageLib, slots, qualnameSet, constructAndRaiseNode);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
@@ -2501,7 +2503,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return false;
         }
 
-        private void copyDictSlots(PythonClass pythonClass, PDict namespace, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
+        private void copyDictSlots(VirtualFrame frame, PythonClass pythonClass, PDict namespace, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet, PConstructAndRaiseNode constructAndRaiseNode) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
@@ -2539,7 +2541,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     if (doc != null) {
                         if (!canEncodeUTF8(doc)) {
-                            throw raise(UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
+                            throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
                         }
                     }
                     pythonClass.setAttribute(key, value);

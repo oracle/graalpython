@@ -47,6 +47,7 @@ import java.util.Map;
 
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -165,7 +166,7 @@ public class StringUtils {
                         if (Character.isValidCodePoint(code)) {
                             sb.append(Character.toChars(code));
                         } else {
-                            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + ILLEGAl_CHARACTER, i, i + 9);
+                            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + ILLEGAl_CHARACTER, i, i + 9);
                         }
                         i += 9;
                         continue;
@@ -251,7 +252,7 @@ public class StringUtils {
                 truncatedMessage = TRUNCATED_UXXXXXXXX_ERROR;
                 break;
         }
-        return PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
+        return PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
     }
 
     /**
@@ -265,15 +266,15 @@ public class StringUtils {
     @CompilerDirectives.TruffleBoundary
     private static int doCharacterName(String text, StringBuilder sb, int offset) {
         if (offset >= text.length()) {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         char ch = text.charAt(offset);
         if (ch != '{') {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         int closeIndex = text.indexOf("}", offset + 1);
         if (closeIndex == -1) {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, text.length() - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + MALFORMED_ERROR, offset - 2, text.length() - 1);
         }
         String charName = text.substring(offset + 1, closeIndex).toUpperCase();
         // When JDK 1.8 will not be supported, we can replace with Character.codePointOf(String
@@ -282,7 +283,7 @@ public class StringUtils {
         if (cp >= 0) {
             sb.append(Character.toChars(cp));
         } else {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
         }
         return closeIndex;
     }

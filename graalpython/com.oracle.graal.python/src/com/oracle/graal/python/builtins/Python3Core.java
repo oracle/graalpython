@@ -792,7 +792,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
             for (PythonBuiltins builtin : builtins) {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (annotation.isEager()) {
+                if (annotation.isEager() || annotation.extendClasses().length != 0) {
                     builtin.postInitialize(this);
                 }
             }

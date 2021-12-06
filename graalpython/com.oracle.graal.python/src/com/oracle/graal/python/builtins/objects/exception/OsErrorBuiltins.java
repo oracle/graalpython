@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyArgCheckPositionalNode;
@@ -91,11 +92,12 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        final PythonModule builtins = core.getBuiltins();
         final PythonBuiltinClass osError = core.lookupType(PythonBuiltinClassType.OSError);
-        builtinConstants.put("EnvironmentError", osError);
-        builtinConstants.put("IOError", osError);
+        builtins.setAttribute("EnvironmentError", osError);
+        builtins.setAttribute("IOError", osError);
     }
 
     static boolean osErrorUseInit(VirtualFrame frame, Python3Core core, Object type, PyObjectGetAttr getAttr) {

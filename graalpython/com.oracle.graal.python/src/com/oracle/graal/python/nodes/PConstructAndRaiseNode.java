@@ -176,6 +176,10 @@ public abstract class PConstructAndRaiseNode extends Node {
         return exception.getMessage();
     }
 
+    public final PException raise(Frame frame, PythonBuiltinClassType err, String message, Object... formatArgs) {
+        return executeWithFmtMessageAndArgs(frame, err, message, formatArgs, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
     private static Object[] createOsErrorArgs(int errno, String message, Object filename1, Object filename2) {
         return new Object[]{errno, message, filename1, null, filename2};
     }
@@ -239,7 +243,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     public final PException raiseSSLError(Frame frame, String message, Object... formatArgs) {
-        return executeWithFmtMessageAndArgs(frame, PythonBuiltinClassType.SSLError, message, formatArgs, PythonUtils.EMPTY_OBJECT_ARRAY);
+        return raise(frame, PythonBuiltinClassType.SSLError, message, formatArgs);
     }
 
     public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, Exception ex) {
@@ -265,6 +269,18 @@ public abstract class PConstructAndRaiseNode extends Node {
             data.setVerifyMessage(message);
         }
         return pException;
+    }
+
+    public final PException raiseUnicodeEncodeError(Frame frame, String message, Object... formatArgs) {
+        return raise(frame, PythonBuiltinClassType.UnicodeEncodeError, message, formatArgs);
+    }
+
+    public final PException raiseUnicodeDecodeError(Frame frame, String message, Object... formatArgs) {
+        return raise(frame, PythonBuiltinClassType.UnicodeDecodeError, message, formatArgs);
+    }
+
+    public static PException raiseUncachedUnicodeDecodeError(String message, Object... formatArgs) {
+        return getUncached().raiseUnicodeDecodeError(null, message, formatArgs);
     }
 
     public static PConstructAndRaiseNode create() {
