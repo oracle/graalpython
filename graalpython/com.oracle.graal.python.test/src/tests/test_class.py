@@ -52,3 +52,48 @@ def test_new_not_descriptor():
     class C:
         __new__ = str
     assert C() == str(C)
+
+
+def test_meta_meta_new():
+    class NewDescriptor():
+        def new_descriptor_new(self):
+            return lambda *a, **kw: ("a kind of NewDescriptor thing", a, kw)
+
+        def __get__(self, *args):
+            return self.new_descriptor_new()
+
+        def __set__(self, *args):
+            raise NotImplementedError
+
+    class MetaMeta(type):
+        pass
+
+    class Meta(type, metaclass=MetaMeta):
+        def __new__(*args, **kwargs):
+            cls = super().__new__(*args, **kwargs)
+            cls.metatype = Meta
+            return cls
+
+    # setup done, now testing
+
+    class aMeta(metaclass=Meta):
+        pass
+
+    MetaMeta.__new__ = Meta.__new__
+
+    class stillAMeta(metaclass=Meta):
+        pass
+
+    class aMetaThatIsNotAMetaMeta(metaclass=MetaMeta):
+        pass
+
+    MetaMeta.__new__ = NewDescriptor()
+
+    class notAMeta(metaclass=Meta):
+        pass
+
+    assert aMeta[0] == 'a kind of Meta'
+    assert stillAMeta[0] == 'a kind of Meta'
+    assert aMetaThatIsNotAMetaMeta[0] == 'a kind of Meta'
+    assert notAMeta[0] == 'a kind of NewDescriptor thing'
+q
