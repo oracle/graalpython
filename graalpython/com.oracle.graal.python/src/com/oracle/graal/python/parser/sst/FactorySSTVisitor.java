@@ -151,6 +151,7 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.source.Source;
@@ -282,8 +283,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return BlockNode.create(statements);
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
-    protected StatementNode createFrameReturn(ExpressionNode right, com.oracle.truffle.api.frame.FrameSlot slot) {
+    protected StatementNode createFrameReturn(ExpressionNode right, FrameSlot slot) {
         assert slot != null;
         return new FrameReturnNode(right, slot);
     }
@@ -419,7 +419,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     @Override
-    @SuppressWarnings("deprecation")    // new Frame API
     public PNode visit(ClassSSTNode node) {
         ScopeInfo classScope = node.scope;
         scopeEnvironment.setCurrentScope(classScope);
@@ -1354,10 +1353,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
     public ReadNode makeTempLocalVariable() {
         Object tempName = FrameSlotIDs.getTempLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().getSize());
-        com.oracle.truffle.api.frame.FrameSlot tempSlot = scopeEnvironment.createAndReturnLocal(tempName);
+        FrameSlot tempSlot = scopeEnvironment.createAndReturnLocal(tempName);
         return !scopeEnvironment.isInGeneratorScope()
                         ? ReadLocalVariableNode.create(tempSlot)
                         : ReadGeneratorFrameVariableNode.create(tempSlot);

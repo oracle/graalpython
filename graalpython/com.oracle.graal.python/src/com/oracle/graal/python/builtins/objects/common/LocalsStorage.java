@@ -67,6 +67,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -76,7 +77,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(HashingStorageLibrary.class)
-@SuppressWarnings("deprecation")    // new Frame API
 public final class LocalsStorage extends HashingStorage {
     /* This won't be the real (materialized) frame but a clone of it. */
     protected final MaterializedFrame frame;
@@ -94,11 +94,11 @@ public final class LocalsStorage extends HashingStorage {
         return this.frame;
     }
 
-    private Object getValue(com.oracle.truffle.api.frame.FrameSlot slot) {
+    private Object getValue(FrameSlot slot) {
         return getValue(this.frame, slot);
     }
 
-    private static Object getValue(MaterializedFrame frame, com.oracle.truffle.api.frame.FrameSlot slot) {
+    private static Object getValue(MaterializedFrame frame, FrameSlot slot) {
         if (slot != null) {
             Object value = frame.getValue(slot);
             if (value instanceof PCell) {
@@ -122,7 +122,7 @@ public final class LocalsStorage extends HashingStorage {
     @TruffleBoundary
     private void calculateLength() {
         this.len = this.frame.getFrameDescriptor().getSize();
-        for (com.oracle.truffle.api.frame.FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
+        for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
             Object identifier = slot.getIdentifier();
             if (!isUserFrameSlot(identifier) || getValue(frame, slot) == null) {
                 this.len--;
@@ -130,26 +130,24 @@ public final class LocalsStorage extends HashingStorage {
         }
     }
 
-    @SuppressWarnings({"unused", "deprecation"})    // new frame API
+    @SuppressWarnings("unused")
     @ExportMessage
     @ImportStatic(PGuards.class)
     static class GetItemWithState {
         @Specialization(guards = {"key == cachedKey", "desc == self.frame.getFrameDescriptor()"}, limit = "3", assumptions = "desc.getVersion()")
-        @SuppressWarnings("deprecation")    // new Frame API
         static Object getItemCached(LocalsStorage self, String key, ThreadState state,
                         @Cached("key") String cachedKey,
                         @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
-                        @Cached("desc.findFrameSlot(key)") com.oracle.truffle.api.frame.FrameSlot slot) {
+                        @Cached("desc.findFrameSlot(key)") FrameSlot slot) {
             return self.getValue(slot);
         }
 
         @Specialization(replaces = "getItemCached")
-        @SuppressWarnings("deprecation")    // new Frame API
         static Object string(LocalsStorage self, String key, ThreadState state) {
             if (!isUserFrameSlot(key)) {
                 return null;
             }
-            com.oracle.truffle.api.frame.FrameSlot slot = findSlot(self, key);
+            FrameSlot slot = findSlot(self, key);
             return self.getValue(slot);
         }
 
@@ -160,7 +158,6 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
-        @SuppressWarnings("deprecation")    // new Frame API
         static Object notString(LocalsStorage self, Object key, ThreadState state,
                         @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
@@ -169,7 +166,7 @@ public final class LocalsStorage extends HashingStorage {
             CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
-            for (com.oracle.truffle.api.frame.FrameSlot slot : self.frame.getFrameDescriptor().getSlots()) {
+            for (FrameSlot slot : self.frame.getFrameDescriptor().getSlots()) {
                 Object currentKey = slot.getIdentifier();
                 if (currentKey instanceof String) {
                     long keyHash = hashNode.execute(frame, currentKey);
@@ -182,8 +179,7 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @TruffleBoundary
-        @SuppressWarnings("deprecation")    // new Frame API
-        private static com.oracle.truffle.api.frame.FrameSlot findSlot(LocalsStorage self, Object key) {
+        private static FrameSlot findSlot(LocalsStorage self, Object key) {
             return self.frame.getFrameDescriptor().findFrameSlot(key);
         }
     }
@@ -221,10 +217,9 @@ public final class LocalsStorage extends HashingStorage {
     @ExportMessage
     @TruffleBoundary
     @Override
-    @SuppressWarnings("deprecation")    // new Frame API
     public Object forEachUntyped(ForEachNode<Object> node, Object arg) {
         Object result = arg;
-        for (com.oracle.truffle.api.frame.FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
+        for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
             Object identifier = slot.getIdentifier();
             if (identifier instanceof String) {
                 if (isUserFrameSlot(identifier)) {
@@ -240,21 +235,19 @@ public final class LocalsStorage extends HashingStorage {
 
     @ExportMessage
     static class AddAllToOther {
-        @SuppressWarnings("deprecation")    // new Frame API
-        protected static com.oracle.truffle.api.frame.FrameSlot[] getSlots(FrameDescriptor desc) {
-            return desc.getSlots().toArray(new com.oracle.truffle.api.frame.FrameSlot[0]);
+        protected static FrameSlot[] getSlots(FrameDescriptor desc) {
+            return desc.getSlots().toArray(new FrameSlot[0]);
         }
 
         @Specialization(guards = {"desc == self.frame.getFrameDescriptor()"}, limit = "1", assumptions = "desc.getVersion()")
         @ExplodeLoop
-        @SuppressWarnings("deprecation")    // new Frame API
         static HashingStorage cached(LocalsStorage self, HashingStorage other,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
-                        @Exclusive @Cached(value = "getSlots(desc)", dimensions = 1) com.oracle.truffle.api.frame.FrameSlot[] slots) {
+                        @Exclusive @Cached(value = "getSlots(desc)", dimensions = 1) FrameSlot[] slots) {
             HashingStorage result = other;
             for (int i = 0; i < slots.length; i++) {
-                com.oracle.truffle.api.frame.FrameSlot slot = slots[i];
+                FrameSlot slot = slots[i];
                 Object value = self.getValue(slot);
                 if (value != null) {
                     result = lib.setItem(result, slot.getIdentifier(), value);
@@ -265,13 +258,12 @@ public final class LocalsStorage extends HashingStorage {
 
         @Specialization(replaces = "cached")
         @TruffleBoundary
-        @SuppressWarnings("deprecation")    // new Frame API
         static HashingStorage generic(LocalsStorage self, HashingStorage other,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage result = other;
-            com.oracle.truffle.api.frame.FrameSlot[] slots = getSlots(self.frame.getFrameDescriptor());
+            FrameSlot[] slots = getSlots(self.frame.getFrameDescriptor());
             for (int i = 0; i < slots.length; i++) {
-                com.oracle.truffle.api.frame.FrameSlot slot = slots[i];
+                FrameSlot slot = slots[i];
                 Object value = self.getValue(slot);
                 if (value != null) {
                     result = lib.setItem(result, slot.getIdentifier(), value);
@@ -304,13 +296,12 @@ public final class LocalsStorage extends HashingStorage {
         return new HashingStorageIterable<>(new ReverseLocalsIterator(this.frame));
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
     protected abstract static class AbstractLocalsIterator implements Iterator<Object> {
-        protected List<? extends com.oracle.truffle.api.frame.FrameSlot> slots;
+        protected List<? extends FrameSlot> slots;
         protected final int size;
         protected int index;
         protected final MaterializedFrame frame;
-        protected com.oracle.truffle.api.frame.FrameSlot nextFrameSlot = null;
+        protected FrameSlot nextFrameSlot = null;
 
         AbstractLocalsIterator(MaterializedFrame frame) {
             this.frame = frame;
@@ -320,7 +311,7 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @TruffleBoundary
-        private static List<? extends com.oracle.truffle.api.frame.FrameSlot> getSlots(MaterializedFrame frame) {
+        private static List<? extends FrameSlot> getSlots(MaterializedFrame frame) {
             return frame.getFrameDescriptor().getSlots();
         }
 
@@ -357,10 +348,10 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @TruffleBoundary
-        public com.oracle.truffle.api.frame.FrameSlot nextSlot() {
+        public FrameSlot nextSlot() {
             if (hasNext()) {
                 assert this.nextFrameSlot != null;
-                com.oracle.truffle.api.frame.FrameSlot value = this.nextFrameSlot;
+                FrameSlot value = this.nextFrameSlot;
                 this.nextFrameSlot = null;
                 return value;
             }
@@ -377,10 +368,9 @@ public final class LocalsStorage extends HashingStorage {
 
         @TruffleBoundary
         @Override
-        @SuppressWarnings("deprecation")    // new Frame API
         protected boolean loadNext() {
             while (this.index < this.size) {
-                com.oracle.truffle.api.frame.FrameSlot nextCandidate = this.slots.get(this.index++);
+                FrameSlot nextCandidate = this.slots.get(this.index++);
                 Object identifier = nextCandidate.getIdentifier();
                 if (identifier instanceof String) {
                     if (isUserFrameSlot(identifier)) {
@@ -405,10 +395,9 @@ public final class LocalsStorage extends HashingStorage {
 
         @TruffleBoundary
         @Override
-        @SuppressWarnings("deprecation")    // new Frame API
         protected boolean loadNext() {
             while (this.index >= 0) {
-                com.oracle.truffle.api.frame.FrameSlot nextCandidate = this.slots.get(this.index--);
+                FrameSlot nextCandidate = this.slots.get(this.index--);
                 Object identifier = nextCandidate.getIdentifier();
                 if (identifier instanceof String) {
                     if (isUserFrameSlot(identifier)) {

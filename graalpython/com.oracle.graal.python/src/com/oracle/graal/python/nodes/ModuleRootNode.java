@@ -37,6 +37,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -48,9 +49,7 @@ public class ModuleRootNode extends PClosureRootNode {
     @Child private WriteGlobalNode writeAnnotations;
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
-    @SuppressWarnings("deprecation")    // new Frame API
-    public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots,
-                    boolean hasAnnotations) {
+    public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots, boolean hasAnnotations) {
         super(language, descriptor, freeVarSlots, hasAnnotations);
         if (name.startsWith("<")) {
             this.name = "<module>";

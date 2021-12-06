@@ -129,7 +129,6 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
-    @SuppressWarnings("deprecation")    // new Frame API
     public void inline01() throws Exception {
         FrameDescriptor fd = new FrameDescriptor(44);
         fd.addFrameSlot("a");

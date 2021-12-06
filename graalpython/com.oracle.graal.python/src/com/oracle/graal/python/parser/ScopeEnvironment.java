@@ -70,9 +70,10 @@ import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
+import com.oracle.truffle.api.frame.FrameUtil;
 
-@SuppressWarnings("deprecation")    // new Frame API
 public class ScopeEnvironment implements CellFrameSlotSupplier {
 
     public static final String CLASS_VAR_PREFIX = "<>class";
@@ -314,11 +315,11 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return currentScope.isExplicitNonlocalVariable(name);
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot createAndReturnLocal(Object name) {
+    public FrameSlot createAndReturnLocal(Object name) {
         return currentScope.createSlotIfNotPresent(name);
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot getReturnSlot() {
+    public FrameSlot getReturnSlot() {
         return currentScope.createSlotIfNotPresent(RETURN_SLOT_ID, FrameSlotKind.Object);
     }
 
@@ -354,7 +355,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         if (currentScope.isFreeVar(name)) {
             // this is covering the special eval case where free vars pass through to the eval
             // module scope
-            com.oracle.truffle.api.frame.FrameSlot cellSlot = currentScope.findFrameSlot(name);
+            FrameSlot cellSlot = currentScope.findFrameSlot(name);
             assert cellSlot != null;
             return ReadLocalCellNode.create(cellSlot, true);
         }
@@ -367,7 +368,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     }
 
     private ReadNode findVariableInLocalOrEnclosingScopes(String name) {
-        com.oracle.truffle.api.frame.FrameSlot slot = currentScope.findFrameSlot(name);
+        FrameSlot slot = currentScope.findFrameSlot(name);
         if (slot != null) {
             return (ReadNode) getReadNode(name, slot);
         }
@@ -387,7 +388,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
     private ReadNode findVariableNodeInGenerator(String name) {
 
-        com.oracle.truffle.api.frame.FrameSlot slot = currentScope.findFrameSlot(name);
+        FrameSlot slot = currentScope.findFrameSlot(name);
         if (slot != null && !isCellInCurrentScope(name)) {
             // is local in generater?
             return ReadGeneratorFrameVariableNode.create(slot);
@@ -399,7 +400,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     }
 
     private ReadNode findVariableNodeClass(String name) {
-        com.oracle.truffle.api.frame.FrameSlot cellSlot = null;
+        FrameSlot cellSlot = null;
         if (name.equals(__CLASS__)) {
             boolean isFreeVar = currentScope.isFreeVar(name);
             if (isFreeVar) {
@@ -421,7 +422,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return ReadClassAttributeNode.create(name, cellSlot, currentScope.isFreeVar(name));
     }
 
-    public PNode getReadNode(String name, com.oracle.truffle.api.frame.FrameSlot slot) {
+    public PNode getReadNode(String name, FrameSlot slot) {
         if (isCellInCurrentScope(name)) {
             assert slot != null;
             return ReadLocalCellNode.create(slot, currentScope.isFreeVar(name));
@@ -446,7 +447,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                 // scope
                 // and the second one is __class__ (implicit) closure for inner methods,
                 // where __class__ or super is used. Both of them can have different values.
-                com.oracle.truffle.api.frame.FrameSlot slot = currentScope.findFrameSlot(FrameSlotIDs.FREEVAR__CLASS__);
+                FrameSlot slot = currentScope.findFrameSlot(FrameSlotIDs.FREEVAR__CLASS__);
                 if (slot != null) {
                     return (ReadNode) getReadNode(name, slot);
                 }
@@ -473,21 +474,21 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     }
 
     @Override
-    public com.oracle.truffle.api.frame.FrameSlot[] getCellVarSlots() {
+    public FrameSlot[] getCellVarSlots() {
         return currentScope.getCellVarSlots();
     }
 
     @Override
-    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarSlots() {
+    public FrameSlot[] getFreeVarSlots() {
         return currentScope.getFreeVarSlots();
     }
 
     @Override
-    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarDefinitionSlots() {
+    public FrameSlot[] getFreeVarDefinitionSlots() {
         return currentScope.getFreeVarSlotsInParentScope();
     }
 
-    private StatementNode getWriteNode(String name, com.oracle.truffle.api.frame.FrameSlot slot, ExpressionNode right) {
+    private StatementNode getWriteNode(String name, FrameSlot slot, ExpressionNode right) {
         if (isCellInCurrentScope(name)) {
             return !isInGeneratorScope()
                             ? WriteLocalCellNode.create(slot, ReadLocalVariableNode.create(slot), right)
@@ -528,9 +529,9 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     public void setFreeVarsInRootScope(Frame frame) {
         if (frame != null) {
             for (Object identifier : frame.getFrameDescriptor().getIdentifiers()) {
-                com.oracle.truffle.api.frame.FrameSlot frameSlot = frame.getFrameDescriptor().findFrameSlot(identifier);
+                FrameSlot frameSlot = frame.getFrameDescriptor().findFrameSlot(identifier);
                 if (frameSlot != null && frame.isObject(frameSlot)) {
-                    Object value = com.oracle.truffle.api.frame.FrameUtil.getObjectSafe(frame, frameSlot);
+                    Object value = FrameUtil.getObjectSafe(frame, frameSlot);
                     if (value instanceof PCell) {
                         globalScope.addFreeVar((String) frameSlot.getIdentifier(), false);
                     }

@@ -80,6 +80,7 @@ import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -482,7 +483,6 @@ public class ParserTreePrinter implements NodeVisitor {
         level--;
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
     private void addFrameDescriptor(FrameDescriptor fd) {
         indent(level);
         sb.append("FrameDescriptor: ");
@@ -535,13 +535,12 @@ public class ParserTreePrinter implements NodeVisitor {
         }
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
-    private void add(com.oracle.truffle.api.frame.FrameSlot[] slots) {
+    private void add(FrameSlot[] slots) {
         if (slots == null || slots.length == 0) {
             sb.append("None");
         } else {
             boolean first = true;
-            for (com.oracle.truffle.api.frame.FrameSlot slot : slots) {
+            for (FrameSlot slot : slots) {
                 if (!first) {
                     sb.append(", ");
                 } else {
@@ -552,8 +551,7 @@ public class ParserTreePrinter implements NodeVisitor {
         }
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
-    private void add(com.oracle.truffle.api.frame.FrameSlot slot) {
+    private void add(FrameSlot slot) {
         if (printTmpSlots) {
             sb.append(slot.toString());
         } else {

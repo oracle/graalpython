@@ -62,6 +62,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -79,19 +80,18 @@ import com.oracle.truffle.api.nodes.NodeInfo;
  * LOAD_CLASSDEREF} from CPython.
  */
 @NodeInfo(shortName = "read_class_member")
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class ReadClassAttributeNode extends ExpressionNode implements ReadLocalNode, AccessNameNode {
     protected final String identifier;
     protected final boolean isFreeVar;
-    protected final com.oracle.truffle.api.frame.FrameSlot cellSlot;
+    protected final FrameSlot cellSlot;
 
-    ReadClassAttributeNode(String identifier, com.oracle.truffle.api.frame.FrameSlot cellSlot, boolean isFreeVar) {
+    ReadClassAttributeNode(String identifier, FrameSlot cellSlot, boolean isFreeVar) {
         this.identifier = identifier;
         this.isFreeVar = isFreeVar;
         this.cellSlot = cellSlot;
     }
 
-    public static ReadClassAttributeNode create(String name, com.oracle.truffle.api.frame.FrameSlot cellSlot, boolean isFreeVar) {
+    public static ReadClassAttributeNode create(String name, FrameSlot cellSlot, boolean isFreeVar) {
         return ReadClassAttributeNodeGen.create(name, cellSlot, isFreeVar);
     }
 
@@ -195,7 +195,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
         @Child WriteLocalCellNode writeCell;
         @Child ExpressionNode rhs;
 
-        WriteClassAttributeCellNode(String identifier, com.oracle.truffle.api.frame.FrameSlot cellSlot, ExpressionNode rhs) {
+        WriteClassAttributeCellNode(String identifier, FrameSlot cellSlot, ExpressionNode rhs) {
             writeName = WriteNameNode.create(identifier, rhs);
             writeCell = WriteLocalCellNode.create(cellSlot, ReadLocalVariableNode.create(cellSlot), rhs);
         }

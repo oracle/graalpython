@@ -103,6 +103,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -223,9 +224,8 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getRootNode() instanceof BuiltinFunctionRootNode;
         }
 
-        @SuppressWarnings("deprecation")    // new Frame API
         protected ReadLocalVariableNode createRead(VirtualFrame frame) {
-            com.oracle.truffle.api.frame.FrameSlot slot = frame.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
+            FrameSlot slot = frame.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
             if (slot == null) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }

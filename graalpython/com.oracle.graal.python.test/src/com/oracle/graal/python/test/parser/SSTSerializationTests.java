@@ -61,6 +61,7 @@ import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
@@ -1346,14 +1347,13 @@ public class SSTSerializationTests extends ParserTestBase {
         }
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
-    private static void printFrameSlots(StringBuilder sb, com.oracle.truffle.api.frame.FrameSlot[] slots) {
+    private static void printFrameSlots(StringBuilder sb, FrameSlot[] slots) {
         if (slots.length == 0) {
             sb.append("Empty");
         } else {
             sb.append("[");
             boolean first = true;
-            for (com.oracle.truffle.api.frame.FrameSlot slot : slots) {
+            for (FrameSlot slot : slots) {
                 if (first) {
                     sb.append(slot.getIdentifier());
                     first = false;
@@ -1366,7 +1366,6 @@ public class SSTSerializationTests extends ParserTestBase {
 
     // here we can not use the ScopeInfo.debugPrint(), because we need exclude the temporary
     // variables.
-    @SuppressWarnings("deprecation")    // new Frame API
     private static void printScope(ScopeInfo scope, StringBuilder sb, int indent) {
         indent(sb, indent);
         sb.append("Scope: ").append(scope.getScopeId()).append("\n");

@@ -48,18 +48,18 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class PClosureRootNode extends PRootNode {
     private final boolean isSingleContext;
     private final boolean annotationsAvailable;
-    @CompilationFinal(dimensions = 1) protected final com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots;
+    @CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
     @CompilationFinal(dimensions = 1) protected PCell[] closure;
     private final int length;
 
-    protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots, boolean hasAnnotations) {
+    protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, FrameSlot[] freeVarSlots, boolean hasAnnotations) {
         super(language, frameDescriptor);
         this.isSingleContext = language.isSingleContext();
         this.freeVarSlots = freeVarSlots;

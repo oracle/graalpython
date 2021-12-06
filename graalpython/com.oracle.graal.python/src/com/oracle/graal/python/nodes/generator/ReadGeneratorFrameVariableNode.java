@@ -41,22 +41,23 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class ReadGeneratorFrameVariableNode extends ExpressionNode implements ReadLocalNode, FrameSlotNode {
 
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
-    protected final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    protected final FrameSlot frameSlot;
 
-    protected ReadGeneratorFrameVariableNode(com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    protected ReadGeneratorFrameVariableNode(FrameSlot frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static ReadGeneratorFrameVariableNode create(com.oracle.truffle.api.frame.FrameSlot slot) {
+    public static ReadGeneratorFrameVariableNode create(FrameSlot slot) {
         return ReadGeneratorFrameVariableNodeGen.create(slot);
     }
 
@@ -65,36 +66,36 @@ public abstract class ReadGeneratorFrameVariableNode extends ExpressionNode impl
     }
 
     @Override
-    public final com.oracle.truffle.api.frame.FrameSlot getSlot() {
+    public final FrameSlot getSlot() {
         return frameSlot;
     }
 
     @Specialization(guards = "generatorFrame.isBoolean(frameSlot)")
     boolean readLocalBoolean(@SuppressWarnings("unused") VirtualFrame frame,
                     @Bind("getGeneratorFrame(frame)") Frame generatorFrame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getBooleanSafe(generatorFrame, frameSlot);
+        return FrameUtil.getBooleanSafe(generatorFrame, frameSlot);
     }
 
     @Specialization(guards = "generatorFrame.isInt(frameSlot)")
     int readLocalInt(@SuppressWarnings("unused") VirtualFrame frame,
                     @Bind("getGeneratorFrame(frame)") Frame generatorFrame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getIntSafe(generatorFrame, frameSlot);
+        return FrameUtil.getIntSafe(generatorFrame, frameSlot);
     }
 
     @Specialization(guards = "generatorFrame.isLong(frameSlot)")
     long readLocalLong(@SuppressWarnings("unused") VirtualFrame frame,
                     @Bind("getGeneratorFrame(frame)") Frame generatorFrame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getLongSafe(generatorFrame, frameSlot);
+        return FrameUtil.getLongSafe(generatorFrame, frameSlot);
     }
 
     @Specialization(guards = "generatorFrame.isDouble(frameSlot)")
     double readLocalDouble(@SuppressWarnings("unused") VirtualFrame frame,
                     @Bind("getGeneratorFrame(frame)") Frame generatorFrame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getDoubleSafe(generatorFrame, frameSlot);
+        return FrameUtil.getDoubleSafe(generatorFrame, frameSlot);
     }
 
     protected final Object getObjectResult(Frame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getObjectSafe(frame, frameSlot);
+        return FrameUtil.getObjectSafe(frame, frameSlot);
     }
 
     @Specialization(guards = {"generatorFrame.isObject(frameSlot)", "result != null"})

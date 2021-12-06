@@ -42,10 +42,10 @@ import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.memory.MemoryFence;
 
-@SuppressWarnings("deprecation")    // new Frame API
 public final class ScopeInfo {
 
     public enum ScopeKind {
@@ -220,18 +220,18 @@ public final class ScopeInfo {
         return parent;
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot findFrameSlot(Object identifier) {
+    public FrameSlot findFrameSlot(Object identifier) {
         assert identifier != null : "identifier is null!";
         return this.getFrameDescriptor().findFrameSlot(identifier);
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot createSlotIfNotPresent(Object identifier) {
+    public FrameSlot createSlotIfNotPresent(Object identifier) {
         return createSlotIfNotPresent(identifier, FrameSlotKind.Illegal);
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot createSlotIfNotPresent(Object identifier, FrameSlotKind kind) {
+    public FrameSlot createSlotIfNotPresent(Object identifier, FrameSlotKind kind) {
         assert identifier != null : "identifier is null!";
-        com.oracle.truffle.api.frame.FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
+        FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
             return createSlot(identifier, kind);
         } else {
@@ -239,8 +239,8 @@ public final class ScopeInfo {
         }
     }
 
-    private synchronized com.oracle.truffle.api.frame.FrameSlot createSlot(Object identifier, FrameSlotKind kind) {
-        com.oracle.truffle.api.frame.FrameSlot existing = this.getFrameDescriptor().findFrameSlot(identifier);
+    private synchronized FrameSlot createSlot(Object identifier, FrameSlotKind kind) {
+        FrameSlot existing = this.getFrameDescriptor().findFrameSlot(identifier);
         if (existing != null) {
             return existing;
         }
@@ -363,14 +363,14 @@ public final class ScopeInfo {
         return freeVars != null && freeVars.contains(identifier);
     }
 
-    private static final com.oracle.truffle.api.frame.FrameSlot[] EMPTY = new com.oracle.truffle.api.frame.FrameSlot[0];
+    private static final FrameSlot[] EMPTY = new FrameSlot[0];
 
-    private static com.oracle.truffle.api.frame.FrameSlot[] getFrameSlots(Collection<String> identifiers, ScopeInfo scope) {
+    private static FrameSlot[] getFrameSlots(Collection<String> identifiers, ScopeInfo scope) {
         if (identifiers == null) {
             return EMPTY;
         }
         assert scope != null : "getting frame slots: scope cannot be null!";
-        com.oracle.truffle.api.frame.FrameSlot[] slots = new com.oracle.truffle.api.frame.FrameSlot[identifiers.size()];
+        FrameSlot[] slots = new FrameSlot[identifiers.size()];
         int i = 0;
         for (String identifier : identifiers) {
             slots[i++] = scope.findFrameSlot(identifier);
@@ -378,15 +378,15 @@ public final class ScopeInfo {
         return slots;
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot[] getCellVarSlots() {
+    public FrameSlot[] getCellVarSlots() {
         return getFrameSlots(cellVars, this);
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarSlots() {
-        com.oracle.truffle.api.frame.FrameSlot[] result = getFrameSlots(freeVars, this);
+    public FrameSlot[] getFreeVarSlots() {
+        FrameSlot[] result = getFrameSlots(freeVars, this);
         if (freeVars != null && scopeKind == ScopeKind.Class && freeVars.contains(__CLASS__)) {
             for (int i = 0; i < result.length; i++) {
-                com.oracle.truffle.api.frame.FrameSlot slot = result[i];
+                FrameSlot slot = result[i];
                 if (slot == null || __CLASS__.equals(slot.getIdentifier())) {
                     // If __class__ is freevar in the class scope, then is stored in frameslot with
                     // different name.
@@ -406,7 +406,7 @@ public final class ScopeInfo {
         return result;
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarSlotsInParentScope() {
+    public FrameSlot[] getFreeVarSlotsInParentScope() {
         assert parent != null : "cannot get current freeVars in parent scope, parent scope cannot be null!";
         return getFrameSlots(freeVars, parent);
     }

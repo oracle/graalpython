@@ -40,24 +40,24 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "write_cell")
 @NodeChild(value = "rhs", type = ExpressionNode.class)
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class WriteLocalCellNode extends StatementNode implements WriteIdentifierNode {
     @Child private ExpressionNode readLocal;
 
-    private final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    private final FrameSlot frameSlot;
 
-    WriteLocalCellNode(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode readLocalNode) {
+    WriteLocalCellNode(FrameSlot frameSlot, ExpressionNode readLocalNode) {
         this.frameSlot = frameSlot;
         this.readLocal = readLocalNode;
     }
 
-    public static WriteLocalCellNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode readLocal, ExpressionNode right) {
+    public static WriteLocalCellNode create(FrameSlot frameSlot, ExpressionNode readLocal, ExpressionNode right) {
         return WriteLocalCellNodeGen.create(frameSlot, readLocal, right);
     }
 

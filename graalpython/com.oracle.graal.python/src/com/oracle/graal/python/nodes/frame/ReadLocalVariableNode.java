@@ -37,53 +37,54 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "read_local")
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class ReadLocalVariableNode extends ExpressionNode implements ReadLocalNode, FrameSlotNode {
 
-    protected final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    protected final FrameSlot frameSlot;
 
-    protected ReadLocalVariableNode(com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    protected ReadLocalVariableNode(FrameSlot frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static ReadLocalVariableNode create(com.oracle.truffle.api.frame.FrameSlot slot) {
+    public static ReadLocalVariableNode create(FrameSlot slot) {
         assert slot != null;
         return ReadLocalVariableNodeGen.create(slot);
     }
 
     @Override
-    public final com.oracle.truffle.api.frame.FrameSlot getSlot() {
+    public final FrameSlot getSlot() {
         return frameSlot;
     }
 
     @Specialization(guards = "frame.isBoolean(frameSlot)")
     boolean readLocalBoolean(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getBooleanSafe(frame, frameSlot);
+        return FrameUtil.getBooleanSafe(frame, frameSlot);
     }
 
     @Specialization(guards = "frame.isInt(frameSlot)")
     int readLocalInt(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getIntSafe(frame, frameSlot);
+        return FrameUtil.getIntSafe(frame, frameSlot);
     }
 
     @Specialization(guards = "frame.isLong(frameSlot)")
     long readLocalLong(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getLongSafe(frame, frameSlot);
+        return FrameUtil.getLongSafe(frame, frameSlot);
     }
 
     @Specialization(guards = "frame.isDouble(frameSlot)")
     double readLocalDouble(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getDoubleSafe(frame, frameSlot);
+        return FrameUtil.getDoubleSafe(frame, frameSlot);
     }
 
     protected final Object getObjectResult(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getObjectSafe(frame, frameSlot);
+        return FrameUtil.getObjectSafe(frame, frameSlot);
     }
 
     @Specialization(guards = {"frame.isObject(frameSlot)", "result != null"})

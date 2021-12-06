@@ -42,35 +42,35 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeInfo(shortName = "read_cell")
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLocalNode {
     @Child private ExpressionNode readLocal;
     @Child private ReadFromCellNode readCell;
-    private final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    private final FrameSlot frameSlot;
 
-    ReadLocalCellNode(com.oracle.truffle.api.frame.FrameSlot frameSlot, boolean isFreeVar) {
+    ReadLocalCellNode(FrameSlot frameSlot, boolean isFreeVar) {
         this.frameSlot = frameSlot;
         this.readLocal = ReadLocalVariableNode.create(frameSlot);
         this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
     }
 
-    ReadLocalCellNode(com.oracle.truffle.api.frame.FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
+    ReadLocalCellNode(FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
         this.frameSlot = frameSlot;
         this.readLocal = readLocal;
         this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
     }
 
-    public static ReadLocalCellNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, boolean isFreeVar) {
+    public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar);
     }
 
-    public static ReadLocalCellNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
+    public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar, readLocal);
     }
 

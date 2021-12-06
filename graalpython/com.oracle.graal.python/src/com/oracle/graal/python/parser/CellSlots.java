@@ -25,9 +25,10 @@
  */
 package com.oracle.graal.python.parser;
 
-@SuppressWarnings("deprecation")    // new Frame API
-public interface CellSlots {
-    com.oracle.truffle.api.frame.FrameSlot[] getCellVarSlots();
+import com.oracle.truffle.api.frame.FrameSlot;
 
-    com.oracle.truffle.api.frame.FrameSlot[] getFreeVarSlots();
+public interface CellSlots {
+    FrameSlot[] getCellVarSlots();
+
+    FrameSlot[] getFreeVarSlots();
 }

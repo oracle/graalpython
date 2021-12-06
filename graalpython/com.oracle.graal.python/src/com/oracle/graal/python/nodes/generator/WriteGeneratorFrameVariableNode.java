@@ -35,22 +35,22 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChild(value = "rightNode", type = ExpressionNode.class)
 @ImportStatic(FrameSlotGuards.class)
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class WriteGeneratorFrameVariableNode extends StatementNode implements WriteIdentifierNode, FrameSlotNode {
 
-    protected final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    protected final FrameSlot frameSlot;
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
 
-    public WriteGeneratorFrameVariableNode(com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    public WriteGeneratorFrameVariableNode(FrameSlot frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static WriteGeneratorFrameVariableNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode right) {
+    public static WriteGeneratorFrameVariableNode create(FrameSlot frameSlot, ExpressionNode right) {
         return WriteGeneratorFrameVariableNodeGen.create(frameSlot, right);
     }
 
@@ -62,7 +62,7 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
     }
 
     @Override
-    public final com.oracle.truffle.api.frame.FrameSlot getSlot() {
+    public final FrameSlot getSlot() {
         return frameSlot;
     }
 

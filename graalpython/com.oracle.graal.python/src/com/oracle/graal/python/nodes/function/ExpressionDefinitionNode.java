@@ -32,17 +32,18 @@ import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@SuppressWarnings("deprecation")    // new Frame API
 abstract class ExpressionDefinitionNode extends ExpressionNode {
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
     private final ConditionProfile isGeneratorProfile = ConditionProfile.createBinaryProfile();
 
     final ExecutionCellSlots executionCellSlots;
-    @CompilerDirectives.CompilationFinal(dimensions = 1) private final com.oracle.truffle.api.frame.FrameSlot[] freeVarDefinitionSlots;
+    @CompilerDirectives.CompilationFinal(dimensions = 1) private final FrameSlot[] freeVarDefinitionSlots;
 
     ExpressionDefinitionNode(DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
         this.executionCellSlots = executionCellSlots;
@@ -58,8 +59,8 @@ abstract class ExpressionDefinitionNode extends ExpressionNode {
         PCell[] closure = new PCell[freeVarDefinitionSlots.length];
 
         for (int i = 0; i < freeVarDefinitionSlots.length; i++) {
-            com.oracle.truffle.api.frame.FrameSlot defFrameSlot = freeVarDefinitionSlots[i];
-            Object cell = com.oracle.truffle.api.frame.FrameUtil.getObjectSafe(frame, defFrameSlot);
+            FrameSlot defFrameSlot = freeVarDefinitionSlots[i];
+            Object cell = FrameUtil.getObjectSafe(frame, defFrameSlot);
             assert cell instanceof PCell : "getting closure from locals: expected a cell";
             closure[i] = (PCell) cell;
         }
@@ -82,7 +83,7 @@ abstract class ExpressionDefinitionNode extends ExpressionNode {
         return executionCellSlots;
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarDefinitionSlots() {
+    public FrameSlot[] getFreeVarDefinitionSlots() {
         return freeVarDefinitionSlots;
     }
 

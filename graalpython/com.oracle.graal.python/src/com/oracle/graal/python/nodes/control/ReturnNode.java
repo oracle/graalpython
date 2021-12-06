@@ -30,6 +30,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -46,12 +47,11 @@ public class ReturnNode extends StatementNode {
         return PNone.NONE;
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
     public static final class FrameReturnNode extends ReturnNode {
-        protected final com.oracle.truffle.api.frame.FrameSlot slot;
+        protected final FrameSlot slot;
         @Child private ExpressionNode right;
 
-        public FrameReturnNode(ExpressionNode right, com.oracle.truffle.api.frame.FrameSlot slot) {
+        public FrameReturnNode(ExpressionNode right, FrameSlot slot) {
             this.right = right;
             this.slot = slot;
         }
@@ -68,13 +68,12 @@ public class ReturnNode extends StatementNode {
         }
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
     public static final class GeneratorFrameReturnNode extends ReturnNode {
         private final ValueProfile frameProfile = ValueProfile.createClassProfile();
-        protected final com.oracle.truffle.api.frame.FrameSlot slot;
+        protected final FrameSlot slot;
         @Child private ExpressionNode right;
 
-        public GeneratorFrameReturnNode(ExpressionNode right, com.oracle.truffle.api.frame.FrameSlot slot) {
+        public GeneratorFrameReturnNode(ExpressionNode right, FrameSlot slot) {
             this.right = right;
             this.slot = slot;
         }
