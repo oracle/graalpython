@@ -444,7 +444,7 @@ public class ListBuiltins extends PythonBuiltins {
     // list.insert(i, x)
     @Builtin(name = "insert", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class ListInsertNode extends PythonBuiltinNode {
+    public abstract static class ListInsertNode extends PythonTernaryBuiltinNode {
         protected static final String ERROR_MSG = ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER;
 
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -489,7 +489,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone insertLongIndex(VirtualFrame frame, PList list, long index, Object value,
-                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+                        @Cached ListInsertNode insertNode) {
             int where = index < Integer.MIN_VALUE ? 0 : index > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) index;
             where = normalizeIndex(where, getLength(list.getSequenceStorage()));
             return insertNode.execute(frame, list, where, value);
@@ -497,7 +497,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone insertPIntIndex(VirtualFrame frame, PList list, PInt index, Object value,
-                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+                        @Cached ListInsertNode insertNode) {
             int where = normalizePIntForIndex(index);
             where = normalizeIndex(where, getLength(list.getSequenceStorage()));
             return insertNode.execute(frame, list, where, value);
@@ -506,7 +506,7 @@ public class ListBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isIntegerOrPInt(i)"})
         PNone insert(VirtualFrame frame, PList list, Object i, Object value,
                         @Cached("createInteger(ERROR_MSG)") IndexNode indexNode,
-                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+                        @Cached ListInsertNode insertNode) {
             Object indexValue = indexNode.execute(frame, i);
             return insertNode.execute(frame, list, indexValue, value);
         }
@@ -546,10 +546,6 @@ public class ListBuiltins extends PythonBuiltins {
 
         protected boolean isIntegerOrPInt(Object index) {
             return index instanceof Integer || index instanceof PInt;
-        }
-
-        protected ListInsertNode createListInsertNode() {
-            return ListBuiltinsFactory.ListInsertNodeFactory.create(null);
         }
 
         private int getLength(SequenceStorage s) {

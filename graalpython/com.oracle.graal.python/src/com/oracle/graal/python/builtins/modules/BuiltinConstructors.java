@@ -966,7 +966,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // frozenset([iterable])
     @Builtin(name = FROZENSET, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFrozenSet)
     @GenerateNodeFactory
-    public abstract static class FrozenSetNode extends PythonBuiltinNode {
+    public abstract static class FrozenSetNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(arg)")
         public PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg) {
@@ -3168,7 +3168,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class MappingproxyNode extends PythonBuiltinNode {
+    public abstract static class MappingproxyNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         Object doMapping(Object klass, Object obj,
                         @Cached PyMappingCheckNode mappingCheckNode) {

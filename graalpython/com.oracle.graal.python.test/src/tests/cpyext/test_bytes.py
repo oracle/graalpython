@@ -48,6 +48,14 @@ def _reference_from_string_n(args):
     arg_n = args[1]
     return bytes(arg_str[0:arg_n], "utf-8")
 
+def _reference_from_object(args):
+    obj = args[0]
+    if type(obj) == bytes:
+        return obj
+    if isinstance(obj, (list, tuple, memoryview)) or (not isinstance(obj, str) and hasattr(obj, "__iter__")):
+        return bytes(obj)
+    raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
+
 
 def _as_string_and_size(args):
     arg_bytes = args[0]
@@ -60,6 +68,9 @@ def _reference_format(args):
     fmt_args = tuple(args[1:])
     return (fmt % fmt_args).encode()
 
+class CIter:
+    def __iter__(self):
+        return iter([1, 2, 3])
 
 class TestPyBytes(CPyExtTestCase):
 
@@ -148,10 +159,25 @@ class TestPyBytes(CPyExtTestCase):
         argspec="sssi",
         arguments=["char* fmt", "char* arg0", "char* arg1", "int arg2"],
     )
+    
+    # PyBytes_FromObject
+    test_PyBytes_FromObject = CPyExtFunction(
+        _reference_from_object,
+        lambda: (("hello", ),
+                 (bytes(1), ),
+                 (1, ),
+                 ([1, 2, 4], ),
+                 ((1, 2, 3), ),
+                 (memoryview(b'abc'), ),
+                 (CIter(),)),
+        resultspec="O",
+        argspec="O",
+        cmpfunc=unhandled_error_compare
+    )
 
     # PyBytes_Concat
     test_PyBytes_Concat = CPyExtFunctionOutVars(
-        lambda args: (0, args[0] + args[1]),
+        lambda args: (0, args[0] + args[1]),        
         lambda: tuple([tuple(["hello".encode(), " world".encode()])]),
         code='''int wrap_PyBytes_Concat(PyObject** arg0, PyObject* arg1) {
             if(*arg0) {
@@ -277,6 +303,17 @@ class TestPyBytes(CPyExtTestCase):
         argspec="On",
         arguments=["PyObject* bytesObj", "Py_ssize_t new_size"],
         callfunction="wrap_PyBytes_Resize",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test__PyBytes_Join = CPyExtFunction(
+        lambda args: args[0].join(args[1]),
+        lambda: ( 
+            (b"hello", b"world"),
+        ),        
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* original", "PyObject* newPart"],
         cmpfunc=unhandled_error_compare
     )
 

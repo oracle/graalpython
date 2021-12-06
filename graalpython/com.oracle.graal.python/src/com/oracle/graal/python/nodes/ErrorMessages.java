@@ -87,8 +87,10 @@ public abstract class ErrorMessages {
     public static final String ATTR_VALUE_MUST_BE_BOOL = "attribute value type must be bool";
     public static final String B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P = "%%b requires a bytes-like object, or an object that implements __bytes__, not '%p'";
     public static final String ARG_TYPE_MUST_BE = "%s argument type must be %s";
+    public static final String S_S_BAD_ARG_TO_INTERNAL_FUNC = "%s:%s: bad argument to internal function.";
     public static final String BAD_ARG_TO_INTERNAL_FUNC = "bad argument to internal function";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_P = "bad argument to internal function %p";
+    public static final String BAD_ARG_TO_INTERNAL_FUNC_S = "bad argument to internal function %s";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P = "bad argument to internal function, was '%s' (type '%p')";
     public static final String BAD_ARG_TYPE_FOR_BUILTIN_OP = "bad argument type for built-in operation";
     public static final String BAD_COMPRESSION_LEVEL = "Bad compression level";
@@ -140,6 +142,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CONVERT_FLOAT_F_TO_INT = "cannot convert float %f to integer";
     public static final String CANNOT_CONVERT_OBJ_TO_C_STRING = "Cannot convert object of type %p to C string.";
     public static final String CANNOT_CONVERT_P_OBJ_TO_S = "cannot convert '%p' object to %s";
+    public static final String CANNOT_CONVERT_S_OBJ_TO_P = "cannot convert '%s' object to %p";
     public static final String CANNOT_CONVERT_S_TO_INT = "cannot convert %s to integer";
     public static final String CANNOT_CONVERT_S_TO_INT_RATIO = "cannot convert %s to integer ratio";
     public static final String CANNOT_CONVERT_TO = "cannot convert %s to %s";

@@ -45,8 +45,11 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
+import static com.oracle.graal.python.nodes.ErrorMessages.LIST_INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
@@ -56,6 +59,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -85,11 +89,16 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.FrozenSetNode;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.AddNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.JoinNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -215,6 +224,9 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListExtendNode;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListInsertNode;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
@@ -225,10 +237,15 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetNodes.ConstructSetNode;
+import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -248,6 +265,7 @@ import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -271,7 +289,9 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -299,6 +319,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -681,7 +702,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyDictSizeNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        public Object size(PDict dict,
+        public int size(PDict dict,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -958,12 +979,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyDictContainsNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        public Object contains(VirtualFrame frame, PDict dict, Object key,
+        public int contains(VirtualFrame frame, PDict dict, Object key,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame);
+                return PInt.intValue(lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
@@ -1140,7 +1161,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached KeysNode keysNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return listNode.execute(frame, keysNode.execute(frame, obj));
             } catch (PException e) {
@@ -1155,7 +1176,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return getKeys(frame, obj, getAttrNode, callNode, listNode);
             } catch (PException e) {
@@ -1179,7 +1200,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached ItemsNode itemsNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return listNode.execute(frame, itemsNode.execute(frame, obj));
             } catch (PException e) {
@@ -1194,7 +1215,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 Object attr = getAttrNode.execute(frame, obj, ITEMS);
                 return listNode.execute(frame, callNode.execute(frame, attr));
@@ -1213,7 +1234,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached ConstructListNode listNode,
                         @Cached ValuesNode valuesNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return listNode.execute(frame, valuesNode.execute(frame, obj));
             } catch (PException e) {
@@ -1228,7 +1249,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 Object attr = getAttrNode.execute(frame, obj, VALUES);
                 return listNode.execute(frame, callNode.execute(frame, attr));
@@ -1236,6 +1257,962 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 return getNativeNullNode.execute();
             }
+        }
+    }
+
+    @Builtin(name = "PySequence_DelItem", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PySequence_DelItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object run(VirtualFrame frame, Object o, Object i,
+                        @Cached PyObjectDelItem delItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                delItemNode.execute(frame, o, i);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+            return 0;
+        }
+    }
+
+    @Builtin(name = "PyModule_GetNameObject", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyModule_GetNameObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object run(VirtualFrame frame, Object o,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return lookupAttrNode.execute(frame, o, __NAME__);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    ///////////// mappingproxy /////////////
+
+    @Builtin(name = "PyDictProxy_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyDictProxyNewNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object values(VirtualFrame frame, Object obj,
+                        @Cached MappingproxyNode mappingNode) {
+            return mappingNode.execute(frame, PythonBuiltinClassType.PMappingproxy, obj);
+        }
+    }
+
+    @Builtin(name = "Py_DECREF", minNumOfPositionalArgs = 1)
+    @Builtin(name = "Py_INCREF", minNumOfPositionalArgs = 1)
+    @Builtin(name = "Py_XINCREF", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyChangeREFNode extends PythonUnaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object values(Object obj) {
+            // pass
+            return PNone.NONE;
+        }
+    }
+
+    ///////////// set, frozenset /////////////
+
+    @Builtin(name = "PySet_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PySetNewNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
+        public Object newSet(VirtualFrame frame, Object iterable,
+                        @Cached ConstructSetNode constructSetNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return constructSetNode.executeWith(frame, iterable);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object newSet(PNone iterable) {
+            return factory().createSet();
+        }
+    }
+
+    @Builtin(name = "PySet_Contains", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PySetContainsNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        public int contains(VirtualFrame frame, PSet anyset, Object item,
+                        @Cached ConditionProfile hasFrameProfile,
+                        @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                HashingStorage storage = anyset.getDictStorage();
+                // TODO: FIXME: this might call __hash__ twice
+                return PInt.intValue(lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(limit = "3")
+        public int contains(VirtualFrame frame, PFrozenSet anyset, Object item,
+                        @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                HashingStorage storage = anyset.getDictStorage();
+                // TODO: FIXME: this might call __hash__ twice
+                return PInt.intValue(lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)", limit = "1")
+        public Object containsNative(VirtualFrame frame, @SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object item,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
+        }
+
+        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"}, limit = "1")
+        public Object contains(VirtualFrame frame, Object anyset, @SuppressWarnings("unused") Object item,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, anyset), anyset);
+        }
+
+        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet) || isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PFrozenSet);
+        }
+    }
+
+    @Builtin(name = "PySet_NextEntry", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    public abstract static class PySetNextEntryNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "pos < size(frame, set, sizeNode)", limit = "3")
+        Object nextEntry(VirtualFrame frame, PSet set, long pos,
+                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
+                        @CachedLibrary("set.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return next(frame, (int) pos, set.getDictStorage(), lib, loopProfile, hashNode, transformExceptionToNativeNode, getNativeNullNode, factory());
+        }
+
+        @Specialization(guards = "pos < size(frame, set, sizeNode)", limit = "3")
+        Object nextEntry(VirtualFrame frame, PFrozenSet set, long pos,
+                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
+                        @CachedLibrary("set.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return next(frame, (int) pos, set.getDictStorage(), lib, loopProfile, hashNode, transformExceptionToNativeNode, getNativeNullNode, factory());
+        }
+
+        @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(frame, set, sizeNode)"}, limit = "1")
+        Object nextEntry(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object set, @SuppressWarnings("unused") long pos,
+                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return getNativeNullNode.execute();
+        }
+
+        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"})
+        public Object nextNative(VirtualFrame frame, @SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
+        }
+
+        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"})
+        public Object nextEntry(VirtualFrame frame, Object anyset, @SuppressWarnings("unused") Object pos,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, anyset), anyset);
+        }
+
+        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet) || isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PFrozenSet);
+        }
+
+        protected int size(VirtualFrame frame, Object set, PyObjectSizeNode sizeNode) {
+            return sizeNode.execute(frame, set);
+        }
+
+        private static Object next(VirtualFrame frame, int pos, HashingStorage storage, HashingStorageLibrary lib, LoopConditionProfile loopProfile, PyObjectHashNode hashNode,
+                        TransformExceptionToNativeNode transformExceptionToNativeNode, GetNativeNullNode getNativeNullNode, PythonObjectFactory factory) {
+            try {
+                HashingStorageIterator<DictEntry> it = lib.entries(storage).iterator();
+                DictEntry e = null;
+                loopProfile.profileCounted(pos);
+                for (int i = 0; loopProfile.inject(i <= pos); i++) {
+                    e = it.next();
+                }
+                return factory.createTuple(new Object[]{e.key, hashNode.execute(frame, e.key)});
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PySet_Pop", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PySetPopNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object pop(VirtualFrame frame, PSet set,
+                        @Cached com.oracle.graal.python.builtins.objects.set.SetBuiltins.PopNode popNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return popNode.execute(frame, set);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isPSet(set)", "isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
+        public Object popNative(VirtualFrame frame, @SuppressWarnings("unused") Object set,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
+        }
+
+        @Specialization(guards = {"!isPSet(set)", "!isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
+        public Object pop(VirtualFrame frame, Object set,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, set), set);
+        }
+
+        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet);
+        }
+    }
+
+    @Builtin(name = "PyFrozenSet_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyFrozenSetNewNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
+        public Object newFrozenSet(VirtualFrame frame, Object iterable,
+                        @Cached FrozenSetNode frozenSetNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return frozenSetNode.execute(frame, PythonBuiltinClassType.PFrozenSet, iterable);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object newFrozenSet(PNone iterable) {
+            return factory().createFrozenSet(PythonBuiltinClassType.PFrozenSet);
+        }
+    }
+
+    @Builtin(name = "PySet_Discard", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PySetDiscardNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
+        public Object discard(VirtualFrame frame, PSet s, Object key,
+                        @Cached DiscardNode discardNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return discardNode.execute(frame, s, key) ? 1 : 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isPSet(set)", "isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
+        public Object popNative(VirtualFrame frame, @SuppressWarnings("unused") Object set, @SuppressWarnings("unused") Object key,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
+        }
+
+        @Specialization(guards = {"!isPSet(set)", "!isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
+        public Object discard(VirtualFrame frame, Object set, @SuppressWarnings("unused") Object key,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, set), set);
+        }
+
+        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet);
+        }
+    }
+
+    ///////////// bytes /////////////
+
+    @Builtin(name = "PyBytes_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyBytesSizeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public int size(VirtualFrame frame, PBytes obj,
+                        @Cached PyObjectSizeNode sizeNode) {
+            return sizeNode.execute(frame, obj);
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public int sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public int size(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+    }
+
+    @Builtin(name = "PyBytes_Check", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyBytesCheckNode extends PythonUnaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object check(PBytes obj) {
+            return true;
+        }
+
+        @Specialization(guards = "!isPBytes(obj)")
+        public Object check(VirtualFrame frame, Object obj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+    }
+
+    @Builtin(name = "PyBytes_Concat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyBytesConcatNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public Object concat(VirtualFrame frame, PBytes original, Object newPart,
+                        @Cached AddNode addNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return addNode.execute(frame, original, newPart);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isPBytes(original)", "isBytesSubtype(frame, original, getClassNode, isSubtypeNode)"})
+        public Object concatNative(VirtualFrame frame, @SuppressWarnings("unused") Object original, @SuppressWarnings("unused") Object newPart,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
+        }
+
+        @Specialization(guards = {"!isPBytes(original)", "!isBytesSubtype(frame, original, getClassNode, isSubtypeNode)"})
+        public Object concat(VirtualFrame frame, Object original, @SuppressWarnings("unused") Object newPart,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, original), original);
+        }
+
+        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+    }
+
+    @Builtin(name = "PyBytes_Join", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyBytesJoinNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public Object join(VirtualFrame frame, PBytes original, Object newPart,
+                        @Cached JoinNode joinNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return joinNode.execute(frame, original, newPart);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isPBytes(original)", "isBytesSubtype(frame, original, getClassNode, isSubtypeNode)"})
+        public Object joinNative(VirtualFrame frame, @SuppressWarnings("unused") Object original, @SuppressWarnings("unused") Object newPart,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
+        }
+
+        @Specialization(guards = {"!isPBytes(original)", "!isBytesSubtype(frame, original, getClassNode, isSubtypeNode)"})
+        public Object join(VirtualFrame frame, @SuppressWarnings("unused") Object original, @SuppressWarnings("unused") Object newPart,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, original), original);
+        }
+
+        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+    }
+
+    @Builtin(name = "PyBytes_FromFormat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyBytesFromFormatNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public Object fromFormat(VirtualFrame frame, String fmt, Object args,
+                        @Cached ModNode modeNode,
+                        @Cached EncodeNode encodeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object formated = modeNode.execute(frame, fmt, args);
+                return encodeNode.execute(frame, formated, PNone.NONE, PNone.NONE);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyBytes_FromObject", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyBytesFromObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = {"isPBytes(obj) || isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object fromObject(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            return obj;
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)", "isAcceptedSubtype(frame, obj, getClassNode, isSubtypeNode, lookupAttrNode)"})
+        public Object fromObject(VirtualFrame frame, Object obj,
+                        @Cached BytesNode bytesNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return bytesNode.execute(frame, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)", "!isAcceptedSubtype(frame, obj, getClassNode, isSubtypeNode, lookupAttrNode)"})
+        public Object fromObject(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
+        }
+
+        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+
+        protected boolean isAcceptedSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
+            Object klass = getClassNode.execute(obj);
+            return isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PList) ||
+                            isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PTuple) ||
+                            isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PMemoryView) ||
+                            (!isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PString) && lookupAttrNode.execute(frame, obj, __ITER__) != PNone.NO_VALUE);
+        }
+    }
+
+    ///////////// list /////////////
+    @Builtin(name = "PyList_New", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    public abstract static class PyListNewNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "size < 0")
+        public Object newList(VirtualFrame frame, long size,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "size == 0")
+        public Object newEmptyList(long size) {
+            return factory().createList(PythonUtils.EMPTY_OBJECT_ARRAY);
+        }
+
+        @Specialization(guards = "size > 0")
+        public Object newList(long size) {
+            return factory().createList(array(size));
+        }
+
+        private static Object[] array(long size) {
+            Object[] a = new Object[(int) size];
+            Arrays.fill(a, PNone.NO_VALUE);
+            return a;
+        }
+    }
+
+    @Builtin(name = "PyList_GetItem", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    abstract static class PyListGetItemNode extends PythonBinaryBuiltinNode {
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "pos < 0")
+        Object getItem(VirtualFrame frame, @SuppressWarnings("unused") Object list, @SuppressWarnings("unused") long pos,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.IndexError, LIST_INDEX_OUT_OF_RANGE);
+        }
+
+        @Specialization(guards = "pos >= 0")
+        Object getItem(VirtualFrame frame, PList list, long pos,
+                        @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return getItemNode.execute(frame, list, pos);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getItemNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object pos,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+        }
+
+        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object pos,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    @Builtin(name = "PyList_Append", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyListAppendNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object append(PList list, Object newItem,
+                        @Cached AppendNode appendNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                appendNode.execute(list, newItem);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object appendNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object newItem,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+        }
+
+        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object append(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object newItem,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    @Builtin(name = "PyList_AsTuple", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyListAsTupleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object append(VirtualFrame frame, PList list,
+                        @Cached ConstructTupleNode constructTupleNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return constructTupleNode.execute(frame, list);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asTupleNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+        }
+
+        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asTuple(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    @Builtin(name = "PyList_GetSlice", minNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    abstract static class PyListGetSliceNode extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        Object getSlice(VirtualFrame frame, PList list, long iLow, long iHigh,
+                        @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached BranchProfile isIntRangeProfile,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                if (PInt.isIntRange(iLow) && PInt.isIntRange(iHigh)) {
+                    isIntRangeProfile.enter();
+                    return getItemNode.execute(frame, list, sliceNode.execute(frame, (int) iLow, (int) iHigh, PNone.NONE));
+                }
+                return getItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization
+        Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh,
+                        @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return getItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getSliceNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+        }
+
+        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    @Builtin(name = "PyList_SetSlice", minNumOfPositionalArgs = 4)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    abstract static class PyListSetSliceNode extends PythonQuaternaryBuiltinNode {
+
+        @Specialization
+        Object getSlice(VirtualFrame frame, PList list, long iLow, long iHigh, Object s,
+                        @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached BranchProfile isIntRangeProfile,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                if (PInt.isIntRange(iLow) && PInt.isIntRange(iHigh)) {
+                    isIntRangeProfile.enter();
+                    setItemNode.execute(frame, list, sliceNode.execute(frame, (int) iLow, (int) iHigh, PNone.NONE), s);
+                }
+                setItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE), s);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization
+        Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh, Object s,
+                        @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                setItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE), s);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getSliceNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh,
+                        @SuppressWarnings("unused") Object s,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+        }
+
+        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh, @SuppressWarnings("unused") Object s,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    @Builtin(name = "PyList_Extend", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyListExtendItemNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object getItem(VirtualFrame frame, PList list, Object iterable,
+                        @Cached ListExtendNode extendNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                extendNode.execute(frame, list, iterable);
+                return PNone.NONE;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getItemNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object iterable,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+        }
+
+        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object iterable,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    @Builtin(name = "PyList_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyListSizeNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object append(PList list,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return lenNode.execute(list.getSequenceStorage());
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asTupleNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+        }
+
+        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asTuple(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    @Builtin(name = "PyList_Sort", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyListSortNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object append(VirtualFrame frame, PList list,
+                        @Cached ListSortNode sortNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                sortNode.execute(frame, list);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asTupleNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+        }
+
+        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asTuple(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    @Builtin(name = "PyList_Insert", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyListInsertNode extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        Object append(VirtualFrame frame, PList list, int i, Object item,
+                        @Cached ListInsertNode insertNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                insertNode.execute(frame, list, i, item);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asTupleNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") int i, @SuppressWarnings("unused") Object item,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+        }
+
+        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asTuple(VirtualFrame frame, Object obj, @SuppressWarnings("unused") int i, @SuppressWarnings("unused") Object item,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
         }
     }
 
