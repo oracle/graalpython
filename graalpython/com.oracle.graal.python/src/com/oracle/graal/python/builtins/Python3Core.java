@@ -46,6 +46,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -473,6 +477,10 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new StopIterationBuiltins(),
                         new SyntaxErrorBuiltins(),
                         new OsErrorBuiltins(),
+                        new UnicodeErrorBuiltins(),
+                        new UnicodeEncodeErrorBuiltins(),
+                        new UnicodeDecodeErrorBuiltins(),
+                        new UnicodeTranslateErrorBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),

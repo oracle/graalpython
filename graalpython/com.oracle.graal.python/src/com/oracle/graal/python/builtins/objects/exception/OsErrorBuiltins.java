@@ -90,6 +90,14 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         return OsErrorBuiltinsFactory.getFactories();
     }
 
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+        final PythonBuiltinClass osError = core.lookupType(PythonBuiltinClassType.OSError);
+        builtinConstants.put("EnvironmentError", osError);
+        builtinConstants.put("IOError", osError);
+    }
+
     static boolean osErrorUseInit(VirtualFrame frame, Python3Core core, Object type, PyObjectGetAttr getAttr) {
         // When __init__ is defined in an OSError subclass, we want any extraneous argument
         // to __new__ to be ignored. The only reasonable solution, given __new__ takes a

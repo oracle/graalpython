@@ -622,6 +622,10 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(VirtualFrame frame, Object source, Object encoding, Object errors);
 
+        public final byte[] execute(VirtualFrame frame, Object source) {
+            return execute(frame, source, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+
         @Specialization
         static byte[] none(@SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return PythonUtils.EMPTY_BYTE_ARRAY;
