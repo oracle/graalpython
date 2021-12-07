@@ -1540,17 +1540,28 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyCode_NewEmpty", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyCodeNewEmpty extends PythonTernaryBuiltinNode {
+        public abstract PCode execute(String filename, String funcname, int lineno);
+
+        @Specialization
+        static PCode newEmpty(String filename, String funcname, int lineno,
+                        @Cached CodeNodes.CreateCodeNode createCodeNode) {
+            return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
+                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY,
+                            filename, funcname, lineno, EMPTY_BYTE_ARRAY);
+        }
+    }
+
     @Builtin(name = "_PyTraceback_Add", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTracebackAdd extends PythonTernaryBuiltinNode {
         @Specialization
         Object tbHere(String funcname, String filename, int lineno,
-                        @Cached CodeNodes.CreateCodeNode createCodeNode,
+                        @Cached PyCodeNewEmpty newCode,
                         @Cached PyTraceBackHereNode pyTraceBackHereNode) {
-            PCode code = createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
-                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY,
-                            filename, funcname, lineno, EMPTY_BYTE_ARRAY);
-            PFrame frame = factory().createPFrame(null, code, factory().createDict(), factory().createDict());
+            PFrame frame = factory().createPFrame(null, newCode.execute(filename, funcname, lineno), factory().createDict(), factory().createDict());
             pyTraceBackHereNode.execute(null, frame);
             return PNone.NONE;
         }
