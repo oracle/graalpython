@@ -822,6 +822,11 @@ public abstract class Python3Core extends ParserErrorCallback {
         return builtinsModule;
     }
 
+    public final void registerTypeInBuiltins(String name, PythonBuiltinClassType type) {
+        assert builtinsModule != null : "builtins module was not yet initialized: cannot register type";
+        builtinsModule.setAttribute(name, lookupType(type));
+    }
+
     public final PythonModule getSysModule() {
         return sysModule;
     }

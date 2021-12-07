@@ -94,10 +94,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        final PythonModule builtins = core.getBuiltins();
-        final PythonBuiltinClass osError = core.lookupType(PythonBuiltinClassType.OSError);
-        builtins.setAttribute("EnvironmentError", osError);
-        builtins.setAttribute("IOError", osError);
+        core.registerTypeInBuiltins("EnvironmentError", PythonBuiltinClassType.OSError);
+        core.registerTypeInBuiltins("IOError", PythonBuiltinClassType.OSError);
     }
 
     static boolean osErrorUseInit(VirtualFrame frame, Python3Core core, Object type, PyObjectGetAttr getAttr) {

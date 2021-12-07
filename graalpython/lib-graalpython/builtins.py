@@ -76,5 +76,3 @@ FunctionType = type(_f)
 descriptor = type(FunctionType.__code__)
 
 __import__("%s/functions.py", "builtins")
-__import__("%s/super.py", "builtins")
-__import__("%s/ellipsis.py", "builtins")

@@ -85,4 +85,7 @@ public abstract class SpecialAttributeNames {
     public static final String __FLAGS__ = "__flags__";
     public static final String __ABSTRACTMETHODS__ = "__abstractmethods__";
     public static final String __ORIG_BASES__ = "__orig_bases__";
+    // specific to super
+    public static final String __THISCLASS__ = "__thisclass__";
+    public static final String __SELF_CLASS__ = "__self_class__";
 }
