@@ -132,7 +132,10 @@ def _reference_as_unicode_escape_string(args):
 
 def _reference_tailmatch(args):
     if not isinstance(args[0], str) or not isinstance(args[1], str):
-        return -1;
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            raise TypeError
 
     s = args[0]
     substr = args[1]
@@ -580,7 +583,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("abc", 1, 1, 0, 1),
         ),
         resultspec="i",
-        argspec='OOiii',
+        argspec='OOnni',
         arguments=["PyObject* left", "PyObject* right", "Py_ssize_t start", "Py_ssize_t end", "int direction"],
         cmpfunc=unhandled_error_compare
     )

@@ -3427,8 +3427,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isAnyString(frame, string, getClassNode, isSubtypeNode) || !isAnyString(frame, substring, getClassNode, isSubtypeNode)"})
         public Object find(VirtualFrame frame, Object string, Object substring, Object start, Object end, Object direction,
                         @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            return -1;
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, string);
         }
 
         protected boolean isAnyString(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
