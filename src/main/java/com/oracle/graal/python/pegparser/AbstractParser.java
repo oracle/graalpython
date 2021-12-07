@@ -364,6 +364,7 @@ abstract class AbstractParser {
                 for (Object[] kwAssoc : kwlist) {
                     if (txt.equals(kwAssoc[0])) {
                         token.type = (int)kwAssoc[1];
+                        break;
                     }
                 }
             }
