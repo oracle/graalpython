@@ -65,7 +65,11 @@ def _reference_realasdouble(args):
             raise SystemError
         else:
             return -1.0
-
+        
+def _reference_fromdoubles(args):
+    if isinstance(args[0], float) and isinstance(args[1], float):
+        return complex(args[0], args[1])
+    raise SystemError
 
 class DummyNonComplex():
     pass
@@ -165,5 +169,17 @@ class TestPyComplex(CPyExtTestCase):
         resultspec="f",
         argspec='O',
         arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+    
+    test_PyComplex_FromDoubles = CPyExtFunction(
+        _reference_fromdoubles,
+        lambda: (
+            (float(0.0), float(2.0), ),
+            (1.0, 2.0, ),
+        ),
+        resultspec="O",
+        argspec='dd',
+        arguments=["double r", "double i"],
         cmpfunc=unhandled_error_compare
     )

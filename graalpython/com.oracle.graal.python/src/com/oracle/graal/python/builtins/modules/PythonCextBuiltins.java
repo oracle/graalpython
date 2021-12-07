@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.M
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.LIST_INDEX_OUT_OF_RANGE;
@@ -58,8 +59,9 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -90,9 +92,15 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.ComplexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.FrozenSetNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AbsNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.DivModNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -204,6 +212,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.DelItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
@@ -213,6 +222,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins.IntNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -221,6 +231,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.NegNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -2213,6 +2224,459 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    ///////////// long /////////////
+
+    @Builtin(name = "_PyLong_Sign", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyLongSignNode extends PythonUnaryBuiltinNode {
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n == 0")
+        int sign(int n) {
+            return 0;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n < 0")
+        int signNeg(int n) {
+            return -1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n > 0")
+        int signPos(int n) {
+            return 1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n == 0")
+        int sign(long n) {
+            return 0;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n < 0")
+        int signNeg(long n) {
+            return -1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n > 0")
+        int signPos(long n) {
+            return 1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "b")
+        int signTrue(boolean b) {
+            return 1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!b")
+        int signFalse(boolean b) {
+            return 0;
+        }
+
+        @Specialization
+        int sign(PInt n,
+                        @Cached BranchProfile zeroProfile,
+                        @Cached BranchProfile negProfile) {
+            if (n.isNegative()) {
+                negProfile.enter();
+                return -1;
+            } else if (n.isZero()) {
+                zeroProfile.enter();
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object signNative(VirtualFrame frame, Object obj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            // function returns int, but -1 is expected result for 'n < 0'
+            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+        }
+
+        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(frame, obj,getClassNode,isSubtypeNode)"})
+        public Object sign(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            // assert(PyLong_Check(v));
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        protected boolean isPIntSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PInt);
+        }
+    }
+
+    @Builtin(name = "PyLong_FromDouble", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyLongFromDoubleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object fromDouble(VirtualFrame frame, double d,
+                        @Cached IntNode intNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return intNode.execute(frame, d);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyLong_FromString", minNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    abstract static class PyLongFromStringNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = "negative == 0")
+        Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
+                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
+                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return intNode.executeWith(frame, s, base);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "negative != 0")
+        Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
+                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
+                        @Cached NegNode negNode,
+                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return negNode.execute(frame, intNode.executeWith(frame, s, base));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    ///////////// float /////////////
+
+    @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyFloatFromDoubleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        double fromDouble(double d) {
+            return d;
+        }
+
+        @Specialization(guards = {"!isDouble(obj)"})
+        public Object fromDouble(VirtualFrame frame, Object obj,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            // cpython PyFloat_FromDouble takes only 'double'
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+    }
+
+    ///////////// complex /////////////
+
+    @Builtin(name = "PyComplex_AsCComplex", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyComplexAsCComplexNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PTuple asComplex(PComplex c) {
+            return factory().createTuple(new Object[]{c.getReal(), c.getImag()});
+        }
+
+        @Specialization(guards = "!isPComplex(obj)")
+        Object asComplex(VirtualFrame frame, Object obj,
+                        @Cached ComplexNode complexNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                PComplex c = (PComplex) complexNode.execute(frame, PythonBuiltinClassType.PComplex, obj, PNone.NO_VALUE);
+                return factory().createTuple(new Object[]{c.getReal(), c.getImag()});
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyComplex_RealAsDouble", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyComplexRealAsDoubleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        double asDouble(PComplex d) {
+            return d.getReal();
+        }
+
+        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asDouble(VirtualFrame frame, Object obj,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached CallNode callNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return callNode.execute(getAttr.execute(frame, obj, "real"));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1.0;
+            }
+        }
+
+        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asDoubleFloat(VirtualFrame frame, Object obj,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached CallNode callNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return callNode.execute(getAttr.execute(frame, obj, __FLOAT__));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1.0;
+            }
+        }
+
+        protected boolean isComplexSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PComplex);
+        }
+    }
+
+    @Builtin(name = "PyComplex_ImagAsDouble", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyComplexImagAsDoubleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        double asDouble(PComplex d) {
+            return d.getImag();
+        }
+
+        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asDouble(VirtualFrame frame, Object obj,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached CallNode callNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return callNode.execute(getAttr.execute(frame, obj, "imag"));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asDouble(VirtualFrame frame, Object obj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            return 0.0;
+        }
+
+        protected boolean isComplexSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PComplex);
+        }
+    }
+
+    @Builtin(name = "PyComplex_FromDoubles", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyComplexFromDoublesNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        public PComplex asDouble(double r, double i) {
+            return factory().createComplex(r, i);
+        }
+    }
+
+    ///////////// number /////////////
+
+    @Builtin(name = "PyNumber_Check", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    abstract static class PyNumberCheckNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object check(VirtualFrame frame, Object obj,
+                        @Cached com.oracle.graal.python.lib.PyNumberCheckNode checkNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return checkNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyNumber_Index", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyNumberIndexNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object index(VirtualFrame frame, Object obj,
+                        @Cached com.oracle.graal.python.lib.PyNumberIndexNode indexNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return indexNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyNumber_Long", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyNumberLongNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        int nlong(int i) {
+            return i;
+        }
+
+        @Specialization
+        long nlong(long i) {
+            return i;
+        }
+
+        @Fallback
+        Object nlong(VirtualFrame frame, Object obj,
+                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return intNode.executeWith(frame, obj, PNone.NO_VALUE);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyNumber_Absolute", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyNumberAbsoluteNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object abs(VirtualFrame frame, Object obj,
+                        @Cached AbsNode absNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return absNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyNumber_Divmod", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyNumberDivmodeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object div(VirtualFrame frame, Object a, Object b,
+                        @Cached DivModNode divNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return divNode.execute(frame, a, b);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyNumber_ToBase", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyNumberToBaseNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "base == 2")
+        Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
+                        @Cached com.oracle.graal.python.lib.PyNumberIndexNode indexNode,
+                        @Cached BinNode binNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object i = indexNode.execute(frame, n);
+                return binNode.execute(frame, i);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "base == 8")
+        Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
+                        @Cached OctNode octNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return octNode.execute(frame, n);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "base == 10")
+        Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
+                        @Cached com.oracle.graal.python.lib.PyNumberIndexNode indexNode,
+                        @Cached StrNode strNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object i = indexNode.execute(frame, n);
+                if (i instanceof Boolean) {
+                    i = ((boolean) i) ? 1 : 0;
+                }
+                return strNode.executeWith(frame, i);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "base == 16")
+        Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached HexNode hexNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object i = indexNode.execute(frame, n);
+                return hexNode.execute(frame, i);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!checkBase(base)")
+        Object toBase(VirtualFrame frame, @SuppressWarnings("unused") Object n, @SuppressWarnings("unused") int base,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BASE_MUST_BE);
+        }
+
+        protected boolean checkBase(int base) {
+            return base == 2 || base == 8 || base == 10 || base == 16;
         }
     }
 

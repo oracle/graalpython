@@ -91,6 +91,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.HexNodeFactory;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.OctNodeFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes;
@@ -611,6 +613,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected String prefix() {
             return "0o";
         }
+
+        public static OctNode create() {
+            return OctNodeFactory.create();
+        }
     }
 
     // hex(object)
@@ -633,6 +639,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Override
         protected String prefix() {
             return "0x";
+        }
+
+        public static HexNode create() {
+            return HexNodeFactory.create();
         }
     }
 

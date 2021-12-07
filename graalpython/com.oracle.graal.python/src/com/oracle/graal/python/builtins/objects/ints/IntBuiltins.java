@@ -1247,7 +1247,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__NEG__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class NegNode extends PythonUnaryBuiltinNode {
+    public abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization(rewriteOn = ArithmeticException.class)
         static int neg(int arg) {
             return Math.negateExact(arg);
@@ -1924,7 +1924,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
+    public abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean doII(int left, int right) {
             return left < right;
@@ -2045,7 +2045,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class GtNode extends PythonBinaryBuiltinNode {
+    public abstract static class GtNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         static boolean doII(int left, int right) {
@@ -2832,7 +2832,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__FLOAT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FloatNode extends PythonUnaryBuiltinNode {
+    public abstract static class FloatNode extends PythonUnaryBuiltinNode {
         @Specialization
         static double doBoolean(boolean self) {
             return self ? 1.0 : 0.0;
