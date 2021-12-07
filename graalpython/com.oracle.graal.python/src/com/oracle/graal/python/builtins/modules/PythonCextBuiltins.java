@@ -2386,8 +2386,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isDouble(obj)"})
         public Object fromDouble(VirtualFrame frame, Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             // cpython PyFloat_FromDouble takes only 'double'
