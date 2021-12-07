@@ -76,10 +76,10 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class UnicodeTranslateErrorInitNode extends PythonBuiltinNode {
-        public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args);
+        public abstract Object execute(PBaseException self, Object[] args);
 
         @Specialization
-        Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args,
+        Object initNoArgs(PBaseException self, Object[] args,
                         @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
@@ -90,6 +90,7 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
             data.setStart(getArgAsInt(args, 1, this, toJavaIntExactNode));
             data.setEnd(getArgAsInt(args, 2, this, toJavaIntExactNode));
             data.setReason(getArgAsString(args, 3, this, toJavaStringNode));
+            self.setData(data);
             return PNone.NONE;
         }
     }

@@ -48,7 +48,6 @@ import java.util.Map;
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
@@ -166,7 +165,7 @@ public class StringUtils {
                         if (Character.isValidCodePoint(code)) {
                             sb.append(Character.toChars(code));
                         } else {
-                            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + ILLEGAl_CHARACTER, i, i + 9);
+                            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", st, i, i + 9, ILLEGAl_CHARACTER);
                         }
                         i += 9;
                         continue;
@@ -229,17 +228,17 @@ public class StringUtils {
                 if (digit == -1) {
                     // Like cpython, raise error with the wrong character first,
                     // even if there are not enough characters
-                    throw createTruncatedError(start - 2, index - 1, len);
+                    throw createTruncatedError(text, start - 2, index - 1, len);
                 }
                 result = result * 16 + digit;
             } else {
-                throw createTruncatedError(start - 2, index - 1, len);
+                throw createTruncatedError(text, start - 2, index - 1, len);
             }
         }
         return result;
     }
 
-    private static PException createTruncatedError(int startIndex, int endIndex, int len) {
+    private static PException createTruncatedError(String text, int startIndex, int endIndex, int len) {
         String truncatedMessage = null;
         switch (len) {
             case 2:
@@ -252,7 +251,7 @@ public class StringUtils {
                 truncatedMessage = TRUNCATED_UXXXXXXXX_ERROR;
                 break;
         }
-        return PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
+        return PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, startIndex, endIndex, truncatedMessage);
     }
 
     /**
@@ -266,15 +265,15 @@ public class StringUtils {
     @CompilerDirectives.TruffleBoundary
     private static int doCharacterName(String text, StringBuilder sb, int offset) {
         if (offset >= text.length()) {
-            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset - 1, MALFORMED_ERROR);
         }
         char ch = text.charAt(offset);
         if (ch != '{') {
-            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset - 1, MALFORMED_ERROR);
         }
         int closeIndex = text.indexOf("}", offset + 1);
         if (closeIndex == -1) {
-            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + MALFORMED_ERROR, offset - 2, text.length() - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, text.length() - 1, MALFORMED_ERROR);
         }
         String charName = text.substring(offset + 1, closeIndex).toUpperCase();
         // When JDK 1.8 will not be supported, we can replace with Character.codePointOf(String
@@ -283,7 +282,7 @@ public class StringUtils {
         if (cp >= 0) {
             sb.append(Character.toChars(cp));
         } else {
-            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError(UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, closeIndex, UNKNOWN_UNICODE_ERROR);
         }
         return closeIndex;
     }

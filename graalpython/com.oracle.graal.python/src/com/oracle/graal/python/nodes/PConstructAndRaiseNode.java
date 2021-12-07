@@ -271,16 +271,20 @@ public abstract class PConstructAndRaiseNode extends Node {
         return pException;
     }
 
-    public final PException raiseUnicodeEncodeError(Frame frame, String message, Object... formatArgs) {
-        return raise(frame, PythonBuiltinClassType.UnicodeEncodeError, message, formatArgs);
+    public final PException raiseUnicodeEncodeError(Frame frame, String encoding, String object, int start, int end, String reason) {
+        return executeWithArgsOnly(frame, PythonBuiltinClassType.UnicodeEncodeError, new Object[]{encoding, object, start, end, reason});
     }
 
-    public final PException raiseUnicodeDecodeError(Frame frame, String message, Object... formatArgs) {
-        return raise(frame, PythonBuiltinClassType.UnicodeDecodeError, message, formatArgs);
+    public final PException raiseUnicodeDecodeError(Frame frame, String encoding, Object object, int start, int end, String reason) {
+        return executeWithArgsOnly(frame, PythonBuiltinClassType.UnicodeDecodeError, new Object[]{encoding, object, start, end, reason});
     }
 
-    public static PException raiseUncachedUnicodeDecodeError(String message, Object... formatArgs) {
-        return getUncached().raiseUnicodeDecodeError(null, message, formatArgs);
+    public final PException raiseUnicodeTranslateError(Frame frame, String object, int start, int end, String reason) {
+        return executeWithArgsOnly(frame, PythonBuiltinClassType.UnicodeTranslateError, new Object[]{object, start, end, reason});
+    }
+
+    public static PException raiseUncachedUnicodeDecodeError(String encoding, Object object, int start, int end, String reason) {
+        return getUncached().raiseUnicodeDecodeError(null, encoding, object, start, end, reason);
     }
 
     public static PConstructAndRaiseNode create() {

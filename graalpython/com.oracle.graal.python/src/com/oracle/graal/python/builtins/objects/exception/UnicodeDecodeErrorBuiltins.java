@@ -96,6 +96,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
             data.setStart(getArgAsInt(args, 2, this, toJavaIntExactNode));
             data.setEnd(getArgAsInt(args, 3, this, toJavaIntExactNode));
             data.setReason(getArgAsString(args, 4, this, toJavaStringNode));
+            self.setData(data);
             return PNone.NONE;
         }
     }
