@@ -104,7 +104,7 @@ public class Tokenizer {
     /** {@code tok_state->indstack} */
     private final int[] indentationStack = new int[MAXINDENT];
     /** {@code tok_state->atbol} */
-    private boolean atBeginningOfLine = false;
+    private boolean atBeginningOfLine = true;
     /** {@code tok_state->pendin} */
     private int pendingIndents = 0;
     /** {@code tok_state->lineno, we count lines from one} */
