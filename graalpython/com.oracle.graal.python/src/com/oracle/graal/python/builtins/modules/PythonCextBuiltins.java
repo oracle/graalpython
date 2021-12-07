@@ -231,8 +231,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.GtNode;
-import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.LtNode;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.NegNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
@@ -2284,19 +2282,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int sign(VirtualFrame frame, PInt n,
-                        @Cached LtNode ltNode,
-                        @Cached GtNode gtNode,
-                        @Cached BranchProfile gtProfile,
-                        @Cached BranchProfile ltProfile) {
-            if ((boolean) gtNode.execute(frame, n, 0)) {
-                gtProfile.enter();
-                return 1;
-            } else if ((boolean) ltNode.execute(frame, n, 0)) {
-                ltProfile.enter();
+        int sign(PInt n,
+                        @Cached BranchProfile zeroProfile,
+                        @Cached BranchProfile negProfile) {
+            if (n.isNegative()) {
+                negProfile.enter();
                 return -1;
-            } else {
+            } else if (n.isZero()) {
+                zeroProfile.enter();
                 return 0;
+            } else {
+                return 1;
             }
         }
 
