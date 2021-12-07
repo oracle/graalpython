@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.i
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.LIST_INDEX_OUT_OF_RANGE;
@@ -61,13 +62,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
@@ -111,14 +110,12 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TupleNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ChrNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
-import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.DecodeNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.InternNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.AddNode;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.JoinNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.DecodeNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -1666,7 +1663,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyBytesConcatNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object concat(VirtualFrame frame, PBytes original, Object newPart,
-                        @Cached AddNode addNode,
+                        @Cached BytesBuiltins.AddNode addNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
@@ -1706,7 +1703,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyBytesJoinNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object join(VirtualFrame frame, PBytes original, Object newPart,
-                        @Cached JoinNode joinNode,
+                        @Cached BytesBuiltins.JoinNode joinNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
@@ -2902,7 +2899,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"})
         Object concat(VirtualFrame frame, Object s1, Object s2,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
-                        @Cached("createAdd()") com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode addNode,
+                        @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
@@ -2921,8 +2918,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
 
-        protected com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode createAdd() {
-            return (com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
+        protected BinaryArithmetic.AddNode createAdd() {
+            return (BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
         }
     }
 
@@ -2934,7 +2931,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object concat(VirtualFrame frame, Object s1, Object s2,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
-                        @Cached("createAdd()") com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode addNode,
+                        @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
@@ -2958,8 +2955,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
 
-        protected com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode createAdd() {
-            return (com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
+        protected BinaryArithmetic.AddNode createAdd() {
+            return (BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
         }
     }
 
@@ -3087,7 +3084,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isString(left) || isStringSubtype(frame, left, getClassNode, isSubtypeNode)", "isString(right) || isStringSubtype(frame, right, getClassNode, isSubtypeNode)"})
         public Object concat(VirtualFrame frame, Object left, Object right,
-                        @Cached com.oracle.graal.python.builtins.objects.str.StringBuiltins.AddNode addNode,
+                        @Cached StringBuiltins.AddNode addNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -3321,7 +3318,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyUnicodeJoinNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isString(separator) || isStringSubtype(frame, separator, getClassNode, isSubtypeNode)"})
         public Object find(VirtualFrame frame, Object separator, Object seq,
-                        @Cached com.oracle.graal.python.builtins.objects.str.StringBuiltins.JoinNode joinNode,
+                        @Cached StringBuiltins.JoinNode joinNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -3389,7 +3386,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyUnicodeTailmatchNode extends PythonBuiltinNode {
         @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction > 0"})
-        public Object tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
+        public int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached CallNode callNode,
@@ -3408,7 +3405,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
-        public Object tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
+        public int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached CallNode callNode,
@@ -3462,13 +3459,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object encode(VirtualFrame frame, Object obj, @SuppressWarnings("unused") String encoding, @SuppressWarnings("unused") String errors,
-                        @Cached StrNode strNode,
+        public Object encode(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") String encoding, @SuppressWarnings("unused") String errors,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         protected static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -3553,13 +3549,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object escape(VirtualFrame frame, Object obj,
+        public Object escape(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StrNode strNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         protected static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {

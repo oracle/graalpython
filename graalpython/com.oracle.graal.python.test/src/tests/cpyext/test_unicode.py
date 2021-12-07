@@ -114,10 +114,7 @@ def _reference_compare(args):
 
 def _reference_as_encoded_string(args):
     if not isinstance(args[0], str):
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise TypeError  
+        raise TypeError  
 
     s = args[0]
     encoding = args[1]
@@ -127,10 +124,7 @@ def _reference_as_encoded_string(args):
 _codecs_module = None
 def _reference_as_unicode_escape_string(args):
     if not isinstance(args[0], str):
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise TypeError  
+        raise TypeError  
     global _codecs_module
     if not _codecs_module:
         import _codecs as _codecs_module
