@@ -139,6 +139,11 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
+    public static byte[] getEncoded(X509Certificate cert) throws CertificateEncodingException {
+        return cert.getEncoded();
+    }
+
+    @TruffleBoundary
     static boolean isSelfSigned(X509Certificate cert) {
         try {
             cert.verify(cert.getPublicKey());
