@@ -109,13 +109,13 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemNode getitemNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached PyObjectStrAsJavaStringNode strNode) {
-            assert self.getData() instanceof UnicodeErrorBuiltins.UnicodeErrorData;
-            UnicodeErrorBuiltins.UnicodeErrorData data = (UnicodeErrorBuiltins.UnicodeErrorData) self.getData();
-
-            if (data.getObject() == null) {
+            if (self.getData() == null) {
                 // Not properly initialized.
                 return "";
             }
+
+            assert self.getData() instanceof UnicodeErrorBuiltins.UnicodeErrorData;
+            UnicodeErrorBuiltins.UnicodeErrorData data = (UnicodeErrorBuiltins.UnicodeErrorData) self.getData();
 
             // Get reason and encoding as strings, which they might not be if they've been
             // modified after we were constructed.

@@ -102,13 +102,13 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
         Object str(VirtualFrame frame, PBaseException self,
                         @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached PyObjectStrAsJavaStringNode strNode) {
-            assert self.getData() instanceof UnicodeErrorBuiltins.UnicodeErrorData;
-            UnicodeErrorBuiltins.UnicodeErrorData data = (UnicodeErrorBuiltins.UnicodeErrorData) self.getData();
-
-            if (data.getObject() == null) {
+            if (self.getData() == null) {
                 // Not properly initialized.
                 return "";
             }
+
+            assert self.getData() instanceof UnicodeErrorBuiltins.UnicodeErrorData;
+            UnicodeErrorBuiltins.UnicodeErrorData data = (UnicodeErrorBuiltins.UnicodeErrorData) self.getData();
 
             // Get reason and encoding as strings, which they might not be if they've been
             // modified after we were constructed.
