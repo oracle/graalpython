@@ -365,7 +365,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @ReportPolymorphism
-    protected abstract static class BindNew extends PNodeWithContext {
+    public abstract static class BindNew extends PNodeWithContext {
         public abstract Object execute(VirtualFrame frame, Object descriptor, Object type);
 
         @Specialization
