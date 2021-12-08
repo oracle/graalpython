@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyArgCheckPositionalNode;
@@ -460,6 +459,33 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         protected void set(PBaseException.Data data, Object value) {
             assert data instanceof OSErrorData;
             ((OSErrorData) data).setFilename2(value);
+        }
+    }
+
+    @Builtin(name = "characters_written", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception characters written")
+    @GenerateNodeFactory
+    public abstract static class OSErrorCharsWrittenNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        public Object getAttr(PBaseException self, @SuppressWarnings("unused") PNone none) {
+            assert self.getData() instanceof OSErrorData : "data field is not OSErrorData, perhaps __init__ was not called?";
+            final int written = ((OSErrorData) self.getData()).getWritten();
+            if (written == -1) {
+                throw raise(PythonBuiltinClassType.AttributeError, "characters_written");
+            }
+            return written;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        public Object setAttr(VirtualFrame frame, PBaseException self, Object value,
+                              @Cached PyNumberAsSizeNode numberAsSizeNode) {
+            assert self.getData() instanceof OSErrorData : "data field is not OSErrorData, perhaps __init__ was not called?";
+            int written = ((OSErrorData) self.getData()).getWritten();
+            if (written == -1) {
+                throw raise(PythonBuiltinClassType.AttributeError, "characters_written");
+            }
+            written = numberAsSizeNode.executeExact(frame, value, PythonBuiltinClassType.ValueError);
+            ((OSErrorData) self.getData()).setWritten(written);
+            return PNone.NONE;
         }
     }
 
