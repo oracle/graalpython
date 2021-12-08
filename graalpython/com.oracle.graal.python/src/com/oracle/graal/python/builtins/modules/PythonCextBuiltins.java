@@ -2541,9 +2541,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getNativeNullNode.execute();
-                }
             }
         }
+    }
 
     @Builtin(name = "PyNumber_Index", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
@@ -3360,7 +3360,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (eqProfile.profile((boolean) eqNode.execute(frame, left, right))) {
                 return 0;
             } else {
-                return (boolean) ltNode.execute(frame, left, right) ? -1 : 0;
+                return (boolean) ltNode.execute(frame, left, right) ? -1 : 1;
             }
         }
 
