@@ -70,7 +70,7 @@ free_upcall_fun_t free_upcall;
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
-    PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");    
+    PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
     PY_BUILTIN = (void*)polyglot_eval("python", "import builtins\nbuiltins");
 
     pytruffle_decorate_function = ((void*(*)(void *fun0, void* fun1))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Decorate_Function", SRC_CS)));

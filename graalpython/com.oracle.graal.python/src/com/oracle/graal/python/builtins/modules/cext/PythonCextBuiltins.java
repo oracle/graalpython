@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.ComplexNode;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.FrozenSetNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AbsNode;
@@ -213,7 +212,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
@@ -256,12 +254,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.set.PBaseSet;
-import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
-import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.set.SetBuiltins.ClearNode;
-import com.oracle.graal.python.builtins.objects.set.SetNodes.ConstructSetNode;
-import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
@@ -295,7 +287,6 @@ import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
@@ -409,7 +400,6 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -448,6 +438,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         PythonModule cext = core.lookupBuiltinModule(PYTHON_CEXT);
         addModuleDict(cext, PYTHON_CEXT_DICT, core);
+        addModuleDict(cext, PYTHON_CEXT_SET, core);
     }
 
     private void addModuleDict(PythonModule cext, String module, Python3Core core) {
@@ -792,264 +783,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         public Object values(Object obj) {
             // pass
             return PNone.NONE;
-        }
-    }
-
-    ///////////// set, frozenset /////////////
-
-    @Builtin(name = "PySet_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PySetNewNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
-        public Object newSet(VirtualFrame frame, Object iterable,
-                        @Cached ConstructSetNode constructSetNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return constructSetNode.executeWith(frame, iterable);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        public Object newSet(PNone iterable) {
-            return factory().createSet();
-        }
-    }
-
-    @Builtin(name = "PySet_Contains", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class PySetContainsNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
-        public int contains(VirtualFrame frame, PSet anyset, Object item,
-                        @Cached ConditionProfile hasFrameProfile,
-                        @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                HashingStorage storage = anyset.getDictStorage();
-                // TODO: FIXME: this might call __hash__ twice
-                return PInt.intValue(lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
-            }
-        }
-
-        @Specialization(limit = "3")
-        public int contains(VirtualFrame frame, PFrozenSet anyset, Object item,
-                        @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached ConditionProfile hasFrameProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                HashingStorage storage = anyset.getDictStorage();
-                // TODO: FIXME: this might call __hash__ twice
-                return PInt.intValue(lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
-            }
-        }
-
-        @Specialization(guards = "isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)", limit = "1")
-        public Object containsNative(VirtualFrame frame, @SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object item,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
-        }
-
-        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"}, limit = "1")
-        public Object contains(VirtualFrame frame, Object anyset, @SuppressWarnings("unused") Object item,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StrNode strNode,
-                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, anyset), anyset);
-        }
-
-        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet) || isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PFrozenSet);
-        }
-    }
-
-    @Builtin(name = "PySet_NextEntry", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
-    public abstract static class PySetNextEntryNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "pos < size(frame, set, sizeNode)", limit = "3")
-        Object nextEntry(VirtualFrame frame, PSet set, long pos,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary("set.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached PyObjectHashNode hashNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return next(frame, (int) pos, set.getDictStorage(), lib, loopProfile, hashNode, transformExceptionToNativeNode, getNativeNullNode, factory());
-        }
-
-        @Specialization(guards = "pos < size(frame, set, sizeNode)", limit = "3")
-        Object nextEntry(VirtualFrame frame, PFrozenSet set, long pos,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary("set.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached PyObjectHashNode hashNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return next(frame, (int) pos, set.getDictStorage(), lib, loopProfile, hashNode, transformExceptionToNativeNode, getNativeNullNode, factory());
-        }
-
-        @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(frame, set, sizeNode)"}, limit = "1")
-        Object nextEntry(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object set, @SuppressWarnings("unused") long pos,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return getNativeNullNode.execute();
-        }
-
-        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"})
-        public Object nextNative(VirtualFrame frame, @SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
-        }
-
-        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"})
-        public Object nextEntry(VirtualFrame frame, Object anyset, @SuppressWarnings("unused") Object pos,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StrNode strNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, anyset), anyset);
-        }
-
-        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet) || isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PFrozenSet);
-        }
-
-        protected int size(VirtualFrame frame, Object set, PyObjectSizeNode sizeNode) {
-            return sizeNode.execute(frame, set);
-        }
-
-        private static Object next(VirtualFrame frame, int pos, HashingStorage storage, HashingStorageLibrary lib, LoopConditionProfile loopProfile, PyObjectHashNode hashNode,
-                        TransformExceptionToNativeNode transformExceptionToNativeNode, GetNativeNullNode getNativeNullNode, PythonObjectFactory factory) {
-            try {
-                HashingStorageIterator<DictEntry> it = lib.entries(storage).iterator();
-                DictEntry e = null;
-                loopProfile.profileCounted(pos);
-                for (int i = 0; loopProfile.inject(i <= pos); i++) {
-                    e = it.next();
-                }
-                return factory.createTuple(new Object[]{e.key, hashNode.execute(frame, e.key)});
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
-    @Builtin(name = "PySet_Pop", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PySetPopNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object pop(VirtualFrame frame, PSet set,
-                        @Cached com.oracle.graal.python.builtins.objects.set.SetBuiltins.PopNode popNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return popNode.execute(frame, set);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @Specialization(guards = {"!isPSet(set)", "isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object popNative(VirtualFrame frame, @SuppressWarnings("unused") Object set,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
-        }
-
-        @Specialization(guards = {"!isPSet(set)", "!isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object pop(VirtualFrame frame, Object set,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, set), set);
-        }
-
-        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet);
-        }
-    }
-
-    @Builtin(name = "PyFrozenSet_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyFrozenSetNewNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
-        public Object newFrozenSet(VirtualFrame frame, Object iterable,
-                        @Cached FrozenSetNode frozenSetNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return frozenSetNode.execute(frame, PythonBuiltinClassType.PFrozenSet, iterable);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        public Object newFrozenSet(PNone iterable) {
-            return factory().createFrozenSet(PythonBuiltinClassType.PFrozenSet);
-        }
-    }
-
-    @Builtin(name = "PySet_Discard", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class PySetDiscardNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
-        public Object discard(VirtualFrame frame, PSet s, Object key,
-                        @Cached DiscardNode discardNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return discardNode.execute(frame, s, key) ? 1 : 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
-            }
-        }
-
-        @Specialization(guards = {"!isPSet(set)", "isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object popNative(VirtualFrame frame, @SuppressWarnings("unused") Object set, @SuppressWarnings("unused") Object key,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
-        }
-
-        @Specialization(guards = {"!isPSet(set)", "!isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object discard(VirtualFrame frame, Object set, @SuppressWarnings("unused") Object key,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, set), set);
-        }
-
-        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet);
         }
     }
 
@@ -2403,45 +2136,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected BinaryArithmetic.AddNode createAdd() {
             return (BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
-        }
-    }
-
-    @Builtin(name = "PySet_Clear", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PySetClearNode extends PythonUnaryBuiltinNode {
-
-        @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
-        public Object clear(VirtualFrame frame, PSet s,
-                        @Cached ClearNode clearNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                clearNode.execute(frame, s);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
-            }
-        }
-
-        @Specialization(guards = {"!isPSet(set)", "isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object clearNative(VirtualFrame frame, @SuppressWarnings("unused") Object set,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
-        }
-
-        @Specialization(guards = {"!isPSet(set)", "!isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object clear(VirtualFrame frame, Object set,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, set), set);
-        }
-
-        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet);
         }
     }
 
@@ -4947,30 +4641,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PySet_Add", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class PySet_Add extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        int add(VirtualFrame frame, PBaseSet self, Object o,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                setItemNode.execute(frame, self, o, PNone.NO_VALUE);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
-            }
-            return 0;
-        }
-
-        @Specialization(guards = "!isAnySet(self)")
-        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a set object", self);
-        }
-    }
-
     @Builtin(name = "_PyBytes_Resize", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
@@ -7156,16 +6826,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
              * So, we just throw a fatal exception which is not a Python exception.
              */
             throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    @Builtin(name = "PySet_Size", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PySetSize extends PythonUnaryBuiltinNode {
-        @Specialization
-        static int doSet(PSet type,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            return lib.length(type.getDictStorage());
         }
     }
 
