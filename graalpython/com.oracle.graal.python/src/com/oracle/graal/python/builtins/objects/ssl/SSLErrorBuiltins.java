@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import java.util.List;
@@ -48,12 +49,15 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionDataAttrNode;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -118,19 +122,18 @@ public class SSLErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "strerror", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class OSErrorStrerrorNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof OsErrorBuiltins.OSErrorData;
-            return ((OsErrorBuiltins.OSErrorData) data).getStrerror();
-        }
+    public abstract static class SSLErrorInitNode extends PythonBuiltinNode {
+        public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds);
 
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof OsErrorBuiltins.OSErrorData;
-            ((OsErrorBuiltins.OSErrorData) data).setStrerror(value);
+        @Specialization
+        Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds,
+                    @Cached OsErrorBuiltins.OSErrorInitNode initNode) {
+            initNode.execute(frame, self, args, kwds);
+            SSLErrorData sslData = new SSLErrorData((OsErrorBuiltins.OSErrorData) self.getData());
+            self.setData(sslData);
+            return PNone.NONE;
         }
     }
 

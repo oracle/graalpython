@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.errorType2errno;
 import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode.ERROR_CERT_VERIFICATION;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -229,11 +230,6 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, null));
     }
 
-    public final PException raiseFileNotFoundError(Frame frame, String format, Object... fmtArgs) {
-        String message = getFormattedMessage(format, fmtArgs);
-        return executeWithArgsOnly(frame, PythonBuiltinClassType.FileNotFoundError, new Object[]{OSErrorEnum.ENOENT.getNumber(), message});
-    }
-
     public final PException raiseOSError(Frame frame, int errno, String message, Object filename, Object filename2) {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, filename2));
     }
@@ -252,23 +248,40 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, String format, Object... formatArgs) {
         String message = getFormattedMessage(format, formatArgs);
-        final PException pException = executeWithFmtMessageAndArgs(frame, errorCode.getType(), null, null,
-                        new Object[]{errorCode.getErrno(), message});
-        final PBaseException ex = pException.getUnreifiedException();
-        assert ex.getData() instanceof OsErrorBuiltins.OSErrorData;
-        SSLErrorBuiltins.SSLErrorData data = new SSLErrorBuiltins.SSLErrorData((OsErrorBuiltins.OSErrorData) ex.getData());
-        ex.setData(data);
-        String mnemonic = errorCode.getMnemonic();
-        data.setReason(mnemonic != null ? mnemonic : message);
-        data.setLibrary("[SSL]");
-        if (errorCode == ERROR_CERT_VERIFICATION) {
-            // not trying to be 100% correct,
-            // use code = 1 (X509_V_ERR_UNSPECIFIED) and msg from jdk exception instead
-            // see openssl x509_txt.c#X509_verify_cert_error_string
-            data.setVerifyCode(1);
-            data.setVerifyMessage(message);
+        try {
+            return executeWithFmtMessageAndArgs(frame, errorCode.getType(), null, null, new Object[]{errorCode.getErrno(), message});
+        } catch (PException pException) {
+            final PBaseException ex = pException.getUnreifiedException();
+            assert ex.getData() instanceof OsErrorBuiltins.OSErrorData;
+            SSLErrorBuiltins.SSLErrorData data = new SSLErrorBuiltins.SSLErrorData((OsErrorBuiltins.OSErrorData) ex.getData());
+            ex.setData(data);
+            String mnemonic = errorCode.getMnemonic();
+            data.setReason(mnemonic != null ? mnemonic : message);
+            data.setLibrary("[SSL]");
+            if (errorCode == ERROR_CERT_VERIFICATION) {
+                // not trying to be 100% correct,
+                // use code = 1 (X509_V_ERR_UNSPECIFIED) and msg from jdk exception instead
+                // see openssl x509_txt.c#X509_verify_cert_error_string
+                data.setVerifyCode(1);
+                data.setVerifyMessage(message);
+            }
+            return pException;
         }
-        return pException;
+    }
+
+    public final PException raiseOSErrorSubType(Frame frame, PythonBuiltinClassType osErrorSubtype, String format, Object... fmtArgs) {
+        String message = getFormattedMessage(format, fmtArgs);
+        final OSErrorEnum osErrorEnum = errorType2errno(osErrorSubtype);
+        assert osErrorEnum != null: "could not determine an errno for this error, either not an OSError subtype or multiple errno codes are available";
+        return executeWithArgsOnly(frame, osErrorSubtype, new Object[]{osErrorEnum.getNumber(), message});
+    }
+
+    public final PException raiseFileNotFoundError(Frame frame, String format, Object... fmtArgs) {
+        return raiseOSErrorSubType(frame, PythonBuiltinClassType.FileNotFoundError, format, fmtArgs);
+    }
+
+    public final PException raiseSocketTimeoutError(Frame frame, String format, Object... fmtArgs) {
+        return raiseOSErrorSubType(frame, PythonBuiltinClassType.SocketTimeout, format, fmtArgs);
     }
 
     public final PException raiseUnicodeEncodeError(Frame frame, String encoding, String object, int start, int end, String reason) {

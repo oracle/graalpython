@@ -214,7 +214,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         int offset1 = networkInboundBIO.getWritePosition();
                         try {
                             Object posixSupport = context.getPosixSupport();
-                            int recvlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
+                            int recvlen = SocketUtils.callSocketFunctionWithRetry(frame, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
                                             () -> posixLib.recv(posixSupport, socket.getSocket().getFd(), bytes1, offset1, len1, 0),
                                             true, false, timeoutHelper);
                             if (recvlen == 0) {
@@ -242,7 +242,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         int len2 = networkOutboundBIO.getPending();
                         try {
                             Object posixSupport = context.getPosixSupport();
-                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
+                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(frame, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
                                             () -> posixLib.send(posixSupport, socket.getSocket().getFd(), bytes2, offset2, len2, 0),
                                             true, false, timeoutHelper);
                             networkOutboundBIO.advanceReadPosition(writtenBytes);

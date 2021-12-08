@@ -40,6 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ECHILD;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ECONNABORTED;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ECONNREFUSED;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ECONNRESET;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EEXIST;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EISDIR;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOENT;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTDIR;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ESRCH;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ETIMEDOUT;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
@@ -153,6 +165,37 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 return PythonBuiltinClassType.ProcessLookupError;
             case ETIMEDOUT:
                 return PythonBuiltinClassType.TimeoutError;
+            default:
+                return null;
+        }
+    }
+
+    public static OSErrorEnum errorType2errno(PythonBuiltinClassType type) {
+        switch (type) {
+            case IsADirectoryError:
+                return EISDIR;
+            case ChildProcessError:
+                return ECHILD;
+            case ConnectionAbortedError:
+                return ECONNABORTED;
+            case ConnectionRefusedError:
+                return ECONNREFUSED;
+            case ConnectionResetError:
+                return ECONNRESET;
+            case FileExistsError:
+                return EEXIST;
+            case FileNotFoundError:
+                return ENOENT;
+            case NotADirectoryError:
+                return ENOTDIR;
+            case InterruptedError:
+                return EINTR;
+            case ProcessLookupError:
+                return ESRCH;
+            case TimeoutError:
+                return ETIMEDOUT;
+            case SocketTimeout:
+                return EAGAIN;
             default:
                 return null;
         }
@@ -349,6 +392,10 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             OSErrorData parsedArgs = osErrorParseArgs(args, checkPositionalNode);
             osErrorInit(frame, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
             return PNone.NONE;
+        }
+
+        public static OSErrorInitNode create() {
+            return OsErrorBuiltinsFactory.OSErrorInitNodeFactory.create(null);
         }
     }
 
