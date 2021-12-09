@@ -20,24 +20,25 @@ To try GraalPython with a full GraalVM, including the support for Java embedding
 and interop with other languages, you can use the bundled releases from
 [www.graalvm.org](https://www.graalvm.org/downloads/).
 
-If you want to build GraalPython from source, checkout this repository and the
-[mx](https://github.com/graalvm/mx) build tool, and run `mx --dy /compiler
-python-gvm` in the `graalpython` repository root. If the build is fine, it will
-print the full path to the `graalpython` executable as the last line of output.
+### Building from source
+#### Requirements
+
+* [mx](https://github.com/graalvm/mx) - a separate Python tool co-developed for GraalVM development. This tool must be
+  downloaded and put onto your PATH:
+```
+git clone https://github.com/graalvm/mx.git
+export PATH=$PWD/mx:$PATH
+```
+
+#### Building
+
+Run `mx --dy /compiler python-gvm` in the `graalpython` repository root. If the build is fine, it will print the full
+path to the `graalpython` executable as the last line of output.
 
 For more information and some examples of what you can do with GraalPython,
 check out the [reference](https://www.graalvm.org/reference-manual/python/).
 
 ### Create a virtual environment
-#### Requirements:
----
-* [mx](https://github.com/graalvm/mx) - a separate Python tool co-developed for GraalVM development. This tool must be downloaded and put onto your PATH:
-
-```
-git clone https://github.com/graalvm/mx.git
-export PATH=$PWD/mx:$PATH
-```
----
 The best way of using the GraalVM implementation of Python is out of a virtual environment. To do so
 execute the following command in the project directory:
 
