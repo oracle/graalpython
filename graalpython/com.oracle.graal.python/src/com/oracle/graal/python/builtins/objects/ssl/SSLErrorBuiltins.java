@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.IDX_STRERROR;
+import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.IDX_WRITTEN;
+import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode.ERROR_CERT_VERIFICATION;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
@@ -50,7 +53,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.BaseExceptionDataAttrNode;
+import com.oracle.graal.python.builtins.objects.exception.BaseExceptionAttrNode;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -59,7 +62,8 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -69,57 +73,42 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.SSLError)
 public class SSLErrorBuiltins extends PythonBuiltins {
 
+    static final int IDX_REASON = IDX_WRITTEN + 1;
+    static final int IDX_LIB = IDX_WRITTEN + 2;
+    static final int IDX_VERIFY_CODE = IDX_WRITTEN + 3;
+    static final int IDX_VERIFY_MESSAGE = IDX_WRITTEN + 4;
+    static final int SSL_ERR_NUM_ATTRS = IDX_VERIFY_MESSAGE + 1;
+
+    public static final BaseExceptionAttrNode.StorageFactory SSL_ERROR_ATTR_FACTORY = (args, factory) -> {
+        return new Object[SSL_ERR_NUM_ATTRS];
+    };
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SSLErrorBuiltinsFactory.getFactories();
     }
 
-    @CompilerDirectives.ValueType
-    public static class SSLErrorData extends OsErrorBuiltins.OSErrorData {
-        private Object reason;
-        private Object library;
-        private Object verifyCode;
-        private Object verifyMessage;
+    public static void setSSLErrorAttributes(PException exception, SSLErrorCode errorCode, String message) {
+        setSSLErrorAttributes(exception.getUnreifiedException(), errorCode, message);
+    }
 
-        public SSLErrorData(OsErrorBuiltins.OSErrorData data) {
-            this.setMyerrno(data.getMyerrno());
-            this.setFilename(data.getFilename());
-            this.setFilename2(data.getFilename2());
-            this.setStrerror(data.getStrerror());
-            this.setWinerror(data.getWinerror());
+    public static void setSSLErrorAttributes(PBaseException self, SSLErrorCode errorCode, String message) {
+        Object[] data = new Object[SSL_ERR_NUM_ATTRS];
+        final Object[] attrs = self.getExceptionAttributes();
+        if (attrs != null) {
+            PythonUtils.arraycopy(attrs, 0, data, 0, attrs.length);
         }
-
-        public Object getReason() {
-            return reason;
+        String mnemonic = errorCode.getMnemonic();
+        data[IDX_REASON] = mnemonic != null ? mnemonic : message;
+        data[IDX_LIB] = "[SSL]";
+        if (errorCode == ERROR_CERT_VERIFICATION) {
+            // not trying to be 100% correct,
+            // use code = 1 (X509_V_ERR_UNSPECIFIED) and msg from jdk exception instead
+            // see openssl x509_txt.c#X509_verify_cert_error_string
+            data[IDX_VERIFY_CODE] = 1;
+            data[IDX_VERIFY_MESSAGE] = message;
         }
-
-        public void setReason(Object reason) {
-            this.reason = reason;
-        }
-
-        public Object getLibrary() {
-            return library;
-        }
-
-        public void setLibrary(Object library) {
-            this.library = library;
-        }
-
-        public Object getVerifyCode() {
-            return verifyCode;
-        }
-
-        public void setVerifyCode(Object verifyCode) {
-            this.verifyCode = verifyCode;
-        }
-
-        public Object getVerifyMessage() {
-            return verifyMessage;
-        }
-
-        public void setVerifyMessage(Object verifyMessage) {
-            this.verifyMessage = verifyMessage;
-        }
+        self.setExceptionAttributes(data);
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -129,75 +118,52 @@ public class SSLErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds,
-                    @Cached OsErrorBuiltins.OSErrorInitNode initNode) {
+                        @Cached OsErrorBuiltins.OSErrorInitNode initNode) {
             initNode.execute(frame, self, args, kwds);
-            SSLErrorData sslData = new SSLErrorData((OsErrorBuiltins.OSErrorData) self.getData());
-            self.setData(sslData);
+            Object[] sslAttrs = SSL_ERROR_ATTR_FACTORY.create(args, factory());
+            PythonUtils.arraycopy(self.getExceptionAttributes(), 0, sslAttrs, 0, self.getExceptionAttributes().length);
+            self.setExceptionAttributes(sslAttrs);
             return PNone.NONE;
         }
     }
 
     @Builtin(name = "reason", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
     @GenerateNodeFactory
-    public abstract static class SSLErrorReasonNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SSLErrorData;
-            return ((SSLErrorData) data).getReason();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SSLErrorData;
-            ((SSLErrorData) data).setReason(value);
+    public abstract static class SSLErrorReasonNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_REASON, SSL_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "library", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
     @GenerateNodeFactory
-    public abstract static class SSLErrorLibNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SSLErrorData;
-            return ((SSLErrorData) data).getLibrary();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SSLErrorData;
-            ((SSLErrorData) data).setLibrary(value);
+    public abstract static class SSLErrorLibNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_LIB, SSL_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "verify_code", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
     @GenerateNodeFactory
-    public abstract static class SSLErrorVerifCodeNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SSLErrorData;
-            return ((SSLErrorData) data).getVerifyCode();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SSLErrorData;
-            ((SSLErrorData) data).setVerifyCode(value);
+    public abstract static class SSLErrorVerifyCodeNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_VERIFY_CODE, SSL_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "verify_message", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
     @GenerateNodeFactory
-    public abstract static class SSLErrorVerifMsgNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SSLErrorData;
-            return ((SSLErrorData) data).getVerifyMessage();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SSLErrorData;
-            ((SSLErrorData) data).setVerifyMessage(value);
+    public abstract static class SSLErrorVerifyMsgNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_VERIFY_MESSAGE, SSL_ERROR_ATTR_FACTORY);
         }
     }
 
@@ -207,8 +173,7 @@ public class SSLErrorBuiltins extends PythonBuiltins {
         @Specialization
         static Object str(VirtualFrame frame, PBaseException self,
                         @Cached PyObjectStrAsObjectNode strNode) {
-            assert self.getData() instanceof OsErrorBuiltins.OSErrorData;
-            Object strerror = ((OsErrorBuiltins.OSErrorData) self.getData()).getStrerror();
+            Object strerror = self.getExceptionAttribute(IDX_STRERROR);
             if (PGuards.isString(strerror)) {
                 return strerror;
             }

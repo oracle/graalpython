@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketTimeout;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
@@ -49,7 +48,6 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -69,8 +67,9 @@ public class SocketUtils {
      * Rough equivalent of CPython's {@code sock_call}. Takes care of calling select for connections
      * with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
-    public static <T> T callSocketFunctionWithRetry(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket, SocketFunction<T> function,
-                                                    boolean writing, boolean connect) throws PosixException {
+    public static <T> T callSocketFunctionWithRetry(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket,
+                    SocketFunction<T> function,
+                    boolean writing, boolean connect) throws PosixException {
         return callSocketFunctionWithRetry(frame, constructAndRaiseNode, posixLib, posixSupport, gil, socket, function, writing, connect, null);
     }
 
@@ -78,8 +77,9 @@ public class SocketUtils {
      * Rough equivalent of CPython's {@code sock_call_ex}. Takes care of calling select for
      * connections with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
-    public static <T> T callSocketFunctionWithRetry(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket, SocketFunction<T> function,
-                                                    boolean writing, boolean connect, TimeoutHelper timeoutHelperIn) throws PosixException {
+    public static <T> T callSocketFunctionWithRetry(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket,
+                    SocketFunction<T> function,
+                    boolean writing, boolean connect, TimeoutHelper timeoutHelperIn) throws PosixException {
         TimeoutHelper timeoutHelper = timeoutHelperIn;
         if (timeoutHelper == null && socket.getTimeoutNs() > 0) {
             timeoutHelper = new TimeoutHelper(socket.getTimeoutNs());

@@ -578,9 +578,9 @@ public final class SuperBuiltins extends PythonBuiltins {
     public abstract static class SuperReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object repr(SuperObject self,
-                    @Cached TypeNodes.GetNameNode getNameNode,
-                    @Cached GetTypeNode getType,
-                    @Cached GetObjectTypeNode getObjectType) {
+                        @Cached TypeNodes.GetNameNode getNameNode,
+                        @Cached GetTypeNode getType,
+                        @Cached GetObjectTypeNode getObjectType) {
             final Object type = getType.execute(self);
             final Object objType = getObjectType.execute(self);
             final String typeName = type != null ? getNameNode.execute(type) : "NULL";

@@ -41,16 +41,14 @@
 package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.errorType2errno;
-import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode.ERROR_CERT_VERIFICATION;
+import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins.setSSLErrorAttributes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -251,20 +249,7 @@ public abstract class PConstructAndRaiseNode extends Node {
         try {
             return executeWithFmtMessageAndArgs(frame, errorCode.getType(), null, null, new Object[]{errorCode.getErrno(), message});
         } catch (PException pException) {
-            final PBaseException ex = pException.getUnreifiedException();
-            assert ex.getData() instanceof OsErrorBuiltins.OSErrorData;
-            SSLErrorBuiltins.SSLErrorData data = new SSLErrorBuiltins.SSLErrorData((OsErrorBuiltins.OSErrorData) ex.getData());
-            ex.setData(data);
-            String mnemonic = errorCode.getMnemonic();
-            data.setReason(mnemonic != null ? mnemonic : message);
-            data.setLibrary("[SSL]");
-            if (errorCode == ERROR_CERT_VERIFICATION) {
-                // not trying to be 100% correct,
-                // use code = 1 (X509_V_ERR_UNSPECIFIED) and msg from jdk exception instead
-                // see openssl x509_txt.c#X509_verify_cert_error_string
-                data.setVerifyCode(1);
-                data.setVerifyMessage(message);
-            }
+            setSSLErrorAttributes(pException, errorCode, message);
             return pException;
         }
     }
@@ -272,7 +257,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     public final PException raiseOSErrorSubType(Frame frame, PythonBuiltinClassType osErrorSubtype, String format, Object... fmtArgs) {
         String message = getFormattedMessage(format, fmtArgs);
         final OSErrorEnum osErrorEnum = errorType2errno(osErrorSubtype);
-        assert osErrorEnum != null: "could not determine an errno for this error, either not an OSError subtype or multiple errno codes are available";
+        assert osErrorEnum != null : "could not determine an errno for this error, either not an OSError subtype or multiple errno codes are available";
         return executeWithArgsOnly(frame, osErrorSubtype, new Object[]{osErrorEnum.getNumber(), message});
     }
 

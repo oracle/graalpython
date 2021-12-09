@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_END;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_OBJECT;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_REASON;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_START;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsInt;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -65,7 +69,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.UnicodeTranslateError})
+@CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeTranslateError)
 public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
 
     @Override
@@ -85,12 +89,15 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UnnU"), TODO: add proper error messages
-            UnicodeErrorBuiltins.UnicodeErrorData data = new UnicodeErrorBuiltins.UnicodeErrorData();
-            data.setObject(getArgAsString(args, 0, this, toJavaStringNode));
-            data.setStart(getArgAsInt(args, 1, this, toJavaIntExactNode));
-            data.setEnd(getArgAsInt(args, 2, this, toJavaIntExactNode));
-            data.setReason(getArgAsString(args, 3, this, toJavaStringNode));
-            self.setData(data);
+            self.setExceptionAttributes(new Object[]{
+                            null, // placeholder for object so we do not redefine the access indexes
+                                  // for the other attributes, although this exception does not have
+                                  // an encoding set
+                            getArgAsString(args, 0, this, toJavaStringNode),
+                            getArgAsInt(args, 1, this, toJavaIntExactNode),
+                            getArgAsInt(args, 2, this, toJavaIntExactNode),
+                            getArgAsString(args, 3, this, toJavaStringNode)
+            });
             return PNone.NONE;
         }
     }
@@ -102,20 +109,20 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
         Object str(VirtualFrame frame, PBaseException self,
                         @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached PyObjectStrAsJavaStringNode strNode) {
-            if (self.getData() == null) {
+            if (self.getExceptionAttributes() == null) {
                 // Not properly initialized.
                 return "";
             }
 
-            assert self.getData() instanceof UnicodeErrorBuiltins.UnicodeErrorData;
-            UnicodeErrorBuiltins.UnicodeErrorData data = (UnicodeErrorBuiltins.UnicodeErrorData) self.getData();
-
             // Get reason and encoding as strings, which they might not be if they've been
             // modified after we were constructed.
-            final String object = toJavaStringNode.execute(data.getObject());
-            String fmt;
-            if (data.getStart() < object.length() && data.getEnd() == data.getStart() + 1) {
-                final int badChar = object.codePointAt(data.getStart());
+            final String object = toJavaStringNode.execute(self.getExceptionAttribute(IDX_OBJECT));
+            final int start = self.getExceptionIntAttribute(IDX_START);
+            final int end = self.getExceptionIntAttribute(IDX_END);
+            final String reason = strNode.execute(frame, self.getExceptionAttribute(IDX_REASON));
+            if (start < object.length() && end == start + 1) {
+                final int badChar = object.codePointAt(start);
+                String fmt;
                 if (badChar <= 0xFF) {
                     fmt = "can't translate character '\\\\x%02x' in position %d: %s";
                 } else if (badChar <= 0xFFFF) {
@@ -123,9 +130,9 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
                 } else {
                     fmt = "can't translate character '\\\\U%08x' in position %d: %s";
                 }
-                return PythonUtils.format(fmt, badChar, data.getStart(), data.getReason(frame, strNode));
+                return PythonUtils.format(fmt, badChar, start, reason);
             } else {
-                return PythonUtils.format("can't translate characters in position %d-%d: %s", data.getStart(), data.getEnd() - 1, data.getReason(frame, strNode));
+                return PythonUtils.format("can't translate characters in position %d-%d: %s", start, end - 1, reason);
             }
         }
     }

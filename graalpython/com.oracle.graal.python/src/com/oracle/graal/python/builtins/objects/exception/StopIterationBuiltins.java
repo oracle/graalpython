@@ -49,46 +49,26 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.StopIteration)
 public final class StopIterationBuiltins extends PythonBuiltins {
 
+    public static final BaseExceptionAttrNode.StorageFactory STOP_ITERATION_ATTR_FACTORY = (args, factory) -> {
+        if (args != null && args.length >= 1) {
+            return new Object[]{args[0]};
+        }
+        return new Object[1];
+    };
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return StopIterationBuiltinsFactory.getFactories();
-    }
-
-    @CompilerDirectives.ValueType
-    public static final class StopIterationData extends PBaseException.Data {
-        private Object value;
-
-        private StopIterationData() {
-
-        }
-
-        public Object getValue() {
-            return value;
-        }
-
-        public void setValue(Object value) {
-            this.value = value;
-        }
-
-        public static StopIterationData create(Object val) {
-            final StopIterationData data = new StopIterationData();
-            data.setValue((val != null) ? val : PNone.NONE);
-            return data;
-        }
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
@@ -98,8 +78,7 @@ public final class StopIterationBuiltins extends PythonBuiltins {
         Object init(PBaseException self, Object[] args,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            Object val = (args.length == 1) ? args[0] : PNone.NONE;
-            self.setData(StopIterationData.create(val));
+            self.setExceptionAttributes(new Object[]{(args.length == 1) ? args[0] : PNone.NONE});
             return PNone.NONE;
         }
     }
@@ -107,35 +86,10 @@ public final class StopIterationBuiltins extends PythonBuiltins {
     @Builtin(name = "value", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "generator return value")
     @GenerateNodeFactory
     public abstract static class StopIterationValueNode extends PythonBuiltinNode {
-        protected boolean withData(PBaseException self) {
-            return self.getData() instanceof StopIterationData;
-        }
-
-        @Specialization(guards = {"isNoValue(none)", "withData(self)"})
-        public Object getWithData(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            final Object data = self.getData();
-            assert data instanceof StopIterationData;
-            return ((StopIterationData) data).getValue();
-        }
-
-        @Specialization(guards = {"isNoValue(none)", "!withData(self)"})
-        public Object getNoData(VirtualFrame frame, PBaseException self, @SuppressWarnings("unused") PNone none,
-                        @Cached TupleBuiltins.GetItemNode getTupleItem) {
-            final PTuple args = self.getArgs();
-            Object value = PNone.NONE;
-            if (args != null) {
-                value = getTupleItem.execute(frame, args, 0);
-            }
-            self.setData(StopIterationData.create(value));
-            return value;
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        public Object set(PBaseException self, Object value) {
-            final Object data = self.getData();
-            assert data instanceof StopIterationData;
-            ((StopIterationData) data).setValue(value);
-            return PNone.NONE;
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, 0, STOP_ITERATION_ATTR_FACTORY);
         }
     }
 }

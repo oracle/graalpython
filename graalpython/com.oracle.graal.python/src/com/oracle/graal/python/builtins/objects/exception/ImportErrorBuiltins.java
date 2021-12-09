@@ -59,11 +59,11 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -79,48 +79,18 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         return ImportErrorBuiltinsFactory.getFactories();
     }
 
-    @CompilerDirectives.ValueType
-    public static final class ImportErrorData extends PBaseException.Data {
-        private Object msg;
-        private Object name;
-        private Object path;
+    protected static final int IDX_MSG = 0;
+    protected static final int IDX_NAME = 1;
+    protected static final int IDX_PATH = 2;
+    public static final int IMPORT_ERR_NUM_ATTRS = IDX_PATH + 1;
 
-        private ImportErrorData() {
-
+    public static final BaseExceptionAttrNode.StorageFactory IMPORT_ERROR_ATTR_FACTORY = (args, factory) -> {
+        Object[] attrs = new Object[IMPORT_ERR_NUM_ATTRS];
+        if (args.length == 1) {
+            attrs[0] = args[0];
         }
-
-        public Object getMsg() {
-            return msg;
-        }
-
-        public void setMsg(Object msg) {
-            this.msg = msg;
-        }
-
-        public Object getName() {
-            return name;
-        }
-
-        public void setName(Object name) {
-            this.name = name;
-        }
-
-        public Object getPath() {
-            return path;
-        }
-
-        public void setPath(Object path) {
-            this.path = path;
-        }
-
-        public static ImportErrorData create(Object msg, Object name, Object path) {
-            final ImportErrorData data = new ImportErrorData();
-            data.setMsg(msg);
-            data.setName(name);
-            data.setPath(path);
-            return data;
-        }
-    }
+        return attrs;
+    };
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
@@ -129,74 +99,51 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         Object init(PBaseException self, Object[] args, PKeyword[] kwargs,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            Object msg = null;
-            Object name = null;
-            Object path = null;
-            if (args.length == 1) {
-                msg = args[0];
-            }
+            Object[] attrs = IMPORT_ERROR_ATTR_FACTORY.create(args, factory());
             for (PKeyword kw : kwargs) {
                 switch (kw.getName()) {
                     case "name":
-                        name = kw.getValue();
+                        attrs[IDX_NAME] = kw.getValue();
                         break;
                     case "path":
-                        path = kw.getValue();
+                        attrs[IDX_PATH] = kw.getValue();
                         break;
                     default:
                         throw raise(PythonBuiltinClassType.TypeError, S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "ImportError");
                 }
             }
-            self.setData(ImportErrorData.create(msg, name, path));
+            self.setExceptionAttributes(attrs);
             return PNone.NONE;
         }
     }
 
     @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception message")
     @GenerateNodeFactory
-    public abstract static class ImportErrorMsgNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof ImportErrorData;
-            return ((ImportErrorData) data).getMsg();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof ImportErrorData;
-            ((ImportErrorData) data).setMsg(value);
+    public abstract static class ImportErrorMsgNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_MSG, IMPORT_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "name", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "module name")
     @GenerateNodeFactory
-    public abstract static class ImportErrorNameNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof ImportErrorData;
-            return ((ImportErrorData) data).getName();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof ImportErrorData;
-            ((ImportErrorData) data).setName(value);
+    public abstract static class ImportErrorNameNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_NAME, IMPORT_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "path", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "module path")
     @GenerateNodeFactory
-    public abstract static class ImportErrorPathNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof ImportErrorData;
-            return ((ImportErrorData) data).getPath();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof ImportErrorData;
-            ((ImportErrorData) data).setPath(value);
+    public abstract static class ImportErrorPathNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_PATH, IMPORT_ERROR_ATTR_FACTORY);
         }
     }
 
@@ -204,11 +151,10 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ImportErrorReduceNode extends PythonUnaryBuiltinNode {
         private Object getState(PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageLibrary hashlib) {
-            assert self.getData() instanceof ImportErrorData;
-            final ImportErrorData data = (ImportErrorData) self.getData();
+            assert self.getExceptionAttributes() != null;
             PDict dict = getDictIfExistsNode.execute(self);
-            final Object name = data.getName();
-            final Object path = data.getPath();
+            final Object name = self.getExceptionAttribute(IDX_NAME);
+            final Object path = self.getExceptionAttribute(IDX_PATH);
             if (name != null || path != null) {
                 HashingStorage storage = (dict != null) ? hashlib.copy(dict.getDictStorage()) : EmptyStorage.INSTANCE;
                 if (name != null) {
@@ -248,9 +194,8 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         Object str(VirtualFrame frame, PBaseException self,
                         @Cached BaseExceptionBuiltins.StrNode exStrNode,
                         @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {
-            assert self.getData() instanceof ImportErrorData;
-            final ImportErrorData data = (ImportErrorData) self.getData();
-            final Object msg = data.getMsg();
+            assert self.getExceptionAttributes() != null;
+            final Object msg = self.getExceptionAttribute(IDX_MSG);
             if (msg != null && unicodeCheckExactNode.execute(msg)) {
                 return msg;
             } else {

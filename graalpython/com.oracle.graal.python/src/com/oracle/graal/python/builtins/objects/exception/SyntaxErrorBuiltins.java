@@ -77,86 +77,21 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.SyntaxError, PythonBuiltinClassType.IndentationError, PythonBuiltinClassType.TabError})
 public final class SyntaxErrorBuiltins extends PythonBuiltins {
 
+    static final int IDX_MSG = 0;
+    static final int IDX_FILENAME = 1;
+    static final int IDX_LINENO = 2;
+    static final int IDX_OFFSET = 3;
+    static final int IDX_TEXT = 4;
+    static final int IDX_PRINT_FILE_AND_LINE = 5;
+    public static final int SYNTAX_ERR_NUM_ATTRS = IDX_PRINT_FILE_AND_LINE + 1;
+
+    public static final BaseExceptionAttrNode.StorageFactory SYNTAX_ERROR_ATTR_FACTORY = (args, factory) -> {
+        return new Object[SYNTAX_ERR_NUM_ATTRS];
+    };
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SyntaxErrorBuiltinsFactory.getFactories();
-    }
-
-    @CompilerDirectives.ValueType
-    public static final class SyntaxErrorData extends PBaseException.Data {
-        private Object msg;
-        private Object filename;
-        private Object lineno;
-        private Object offset;
-        private Object text;
-        private Object printFileAndLine;
-
-        private SyntaxErrorData() {
-
-        }
-
-        public Object getMsg() {
-            return msg;
-        }
-
-        public void setMsg(Object msg) {
-            this.msg = msg;
-        }
-
-        public Object getFilename() {
-            return filename;
-        }
-
-        public void setFilename(Object filename) {
-            this.filename = filename;
-        }
-
-        public Object getLineno() {
-            return lineno;
-        }
-
-        public void setLineno(Object lineno) {
-            this.lineno = lineno;
-        }
-
-        public Object getOffset() {
-            return offset;
-        }
-
-        public void setOffset(Object offset) {
-            this.offset = offset;
-        }
-
-        public Object getText() {
-            return text;
-        }
-
-        public void setText(Object text) {
-            this.text = text;
-        }
-
-        public Object getPrintFileAndLine() {
-            return printFileAndLine;
-        }
-
-        public void setPrintFileAndLine(Object printFileAndLine) {
-            this.printFileAndLine = printFileAndLine;
-        }
-
-        public static SyntaxErrorData create(Object msg, Object filename, Object lineno, Object offset, Object text) {
-            return create(msg, filename, lineno, offset, text, null);
-        }
-
-        public static SyntaxErrorData create(Object msg, Object filename, Object lineno, Object offset, Object text, Object printFileAndLine) {
-            final SyntaxErrorData data = new SyntaxErrorData();
-            data.setMsg(msg);
-            data.setFilename(filename);
-            data.setLineno(lineno);
-            data.setOffset(offset);
-            data.setText(text);
-            data.setPrintFileAndLine(printFileAndLine);
-            return data;
-        }
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
@@ -267,104 +202,68 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                     msg = reportMissingParentheses(msg, castToJavaStringNode.execute(text));
                 }
             }
-            self.setData(SyntaxErrorData.create(msg, filename, lineno, offset, text, printFileAndLine));
+            self.setExceptionAttributes(new Object[]{msg, filename, lineno, offset, text, printFileAndLine});
             return PNone.NONE;
         }
     }
 
     @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception msg")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorMsgNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SyntaxErrorData;
-            return ((SyntaxErrorData) data).getMsg();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SyntaxErrorData;
-            ((SyntaxErrorData) data).setMsg(value);
+    public abstract static class SyntaxErrorMsgNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_MSG, SYNTAX_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "filename", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception filename")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorFilenameNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SyntaxErrorData;
-            return ((SyntaxErrorData) data).getFilename();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SyntaxErrorData;
-            ((SyntaxErrorData) data).setFilename(value);
+    public abstract static class SyntaxErrorFilenameNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_FILENAME, SYNTAX_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception lineno")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorLinenoNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SyntaxErrorData;
-            return ((SyntaxErrorData) data).getLineno();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SyntaxErrorData;
-            ((SyntaxErrorData) data).setLineno(value);
+    public abstract static class SyntaxErrorLinenoNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_LINENO, SYNTAX_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "offset", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception offset")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorOffsetNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SyntaxErrorData;
-            return ((SyntaxErrorData) data).getOffset();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SyntaxErrorData;
-            ((SyntaxErrorData) data).setOffset(value);
+    public abstract static class SyntaxErrorOffsetNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_OFFSET, SYNTAX_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "text", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception text")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorTextNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SyntaxErrorData;
-            return ((SyntaxErrorData) data).getText();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SyntaxErrorData;
-            ((SyntaxErrorData) data).setText(value);
+    public abstract static class SyntaxErrorTextNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_TEXT, SYNTAX_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "print_file_and_line", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception print_file_and_line")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorPrintFileAndLineNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof SyntaxErrorData;
-            return ((SyntaxErrorData) data).getPrintFileAndLine();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof SyntaxErrorData;
-            ((SyntaxErrorData) data).setPrintFileAndLine(value);
+    public abstract static class SyntaxErrorPrintFileAndLineNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_PRINT_FILE_AND_LINE, SYNTAX_ERROR_ATTR_FACTORY);
         }
     }
 
@@ -377,22 +276,20 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode,
                         @Cached PyLongCheckExactNode pyLongCheckExactNode) {
-            assert self.getData() instanceof SyntaxErrorData;
-            final SyntaxErrorData data = (SyntaxErrorData) self.getData();
             // Below, we always ignore overflow errors, just printing -1.
             // Still, we cannot allow an OverflowError to be raised, so
             // we need to call PyLong_AsLongAndOverflow.
             String filename;
-            if (data.getFilename() != null && PGuards.isString(data.getFilename())) {
-                filename = castToJavaStringNode.execute(data.getFilename());
+            if (self.getExceptionAttribute(IDX_FILENAME) != null && PGuards.isString(self.getExceptionAttribute(IDX_FILENAME))) {
+                filename = castToJavaStringNode.execute(self.getExceptionAttribute(IDX_FILENAME));
                 final int sepIdx = PythonUtils.lastIndexOf(filename, getContext().getEnv().getFileNameSeparator());
                 filename = (sepIdx != -1) ? PythonUtils.substring(filename, sepIdx + 1) : filename;
             } else {
                 filename = null;
             }
 
-            final Object lineno = data.getLineno();
-            final Object msg = data.getMsg();
+            final Object lineno = self.getExceptionAttribute(IDX_LINENO);
+            final Object msg = self.getExceptionAttribute(IDX_MSG);
             boolean heaveLineNo = lineno != null && pyLongCheckExactNode.execute(lineno);
 
             if (filename == null && !heaveLineNo) {

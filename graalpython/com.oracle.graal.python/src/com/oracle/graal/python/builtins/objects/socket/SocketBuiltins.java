@@ -380,7 +380,8 @@ public class SocketBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        static void doConnect(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket self, UniversalSockAddr connectAddr) throws PosixException {
+        static void doConnect(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket self, UniversalSockAddr connectAddr)
+                        throws PosixException {
             try {
                 gil.release(true);
                 try {

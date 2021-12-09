@@ -84,7 +84,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -96,6 +95,20 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public final class OsErrorBuiltins extends PythonBuiltins {
     static final int ARGS_MIN = 2;
     static final int ARGS_MAX = 5;
+
+    public static final int IDX_ERRNO = 0;
+    public static final int IDX_STRERROR = 1;
+    public static final int IDX_FILENAME = 2;
+    public static final int IDX_FILENAME2 = 3;
+    public static final int IDX_WINERROR = 4;
+    public static final int IDX_WRITTEN = 5;
+    public static final int OS_ERR_NUM_ATTRS = IDX_WRITTEN + 1;
+
+    public static final BaseExceptionAttrNode.StorageFactory OS_ERROR_ATTR_FACTORY = (args, factory) -> {
+        final Object[] attrs = new Object[OS_ERR_NUM_ATTRS];
+        attrs[IDX_WRITTEN] = -1;
+        return attrs;
+    };
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -200,23 +213,22 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    static void osErrorInit(Frame frame, PBaseException self, Object type, Object[] args, OSErrorData parsedArgs, PyNumberCheckNode pyNumberCheckNode,
+    static void osErrorInit(Frame frame, PBaseException self, Object type, Object[] args, Object[] parsedArgs, PyNumberCheckNode pyNumberCheckNode,
                     PyNumberAsSizeNode pyNumberAsSizeNode, BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
-        OSErrorData data = new OSErrorData();
         Object[] pArgs = args;
 
         // filename will remain None otherwise
-        Object filename = parsedArgs.getFilename();
-        Object filename2 = parsedArgs.getFilename2();
+        Object filename = parsedArgs[IDX_FILENAME];
+        Object filename2 = parsedArgs[IDX_FILENAME2];
         if (filename != null && filename != PNone.NONE) {
             if (type == PythonBuiltinClassType.BlockingIOError &&
                             pyNumberCheckNode.execute(frame, filename)) {
                 // BlockingIOError's 3rd argument can be the number of characters written.
-                data.setWritten(pyNumberAsSizeNode.executeExact(frame, filename, PythonBuiltinClassType.ValueError));
+                parsedArgs[IDX_WRITTEN] = (pyNumberAsSizeNode.executeExact(frame, filename, PythonBuiltinClassType.ValueError));
             } else {
-                data.setFilename(filename);
+                parsedArgs[IDX_FILENAME] = filename;
                 if (filename2 != null && filename2 != PNone.NONE) {
-                    data.setFilename2(filename2);
+                    parsedArgs[IDX_FILENAME2] = filename2;
                 }
                 if (args.length >= 2 && args.length <= 5) {
                     // filename, filename2, and winerror are removed from the args tuple (for
@@ -225,104 +237,18 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 }
             }
         }
-        data.setMyerrno(parsedArgs.getMyerrno());
-        data.setStrerror(parsedArgs.getStrerror());
-        data.setWinerror(parsedArgs.getWinerror());
-
         baseInitNode.execute(self, pArgs);
-        self.setData(parsedArgs);
+        self.setExceptionAttributes(parsedArgs);
     }
 
-    static OSErrorData osErrorParseArgs(Object[] args, PyArgCheckPositionalNode checkPositionalNode) {
+    static Object[] osErrorParseArgs(Object[] args, PyArgCheckPositionalNode checkPositionalNode) {
+        Object[] parsed = new Object[OS_ERR_NUM_ATTRS];
         if (args.length >= 2 && args.length <= 5) {
             checkPositionalNode.execute(PythonBuiltinClassType.OSError.getPrintName(), args, ARGS_MIN, ARGS_MAX);
-            return OSErrorData.create(args);
+            PythonUtils.arraycopy(args, 0, parsed, 0, args.length);
         }
-        return OSErrorData.create();
-    }
-
-    @CompilerDirectives.ValueType
-    public static class OSErrorData extends PBaseException.Data {
-        private Object myerrno;
-        private Object strerror;
-        private Object filename;
-        private Object filename2;
-        private Object winerror;
-        // only for BlockingIOError, -1 otherwise
-        private int written = -1;
-
-        protected OSErrorData() {
-
-        }
-
-        public Object getMyerrno() {
-            return myerrno;
-        }
-
-        public void setMyerrno(Object myerrno) {
-            this.myerrno = myerrno;
-        }
-
-        public Object getStrerror() {
-            return strerror;
-        }
-
-        public void setStrerror(Object strerror) {
-            this.strerror = strerror;
-        }
-
-        public Object getFilename() {
-            return filename;
-        }
-
-        public void setFilename(Object filename) {
-            this.filename = filename;
-        }
-
-        public Object getFilename2() {
-            return filename2;
-        }
-
-        public void setFilename2(Object filename2) {
-            this.filename2 = filename2;
-        }
-
-        public Object getWinerror() {
-            return winerror;
-        }
-
-        public void setWinerror(Object winerror) {
-            this.winerror = winerror;
-        }
-
-        public int getWritten() {
-            return written;
-        }
-
-        public void setWritten(int written) {
-            this.written = written;
-        }
-
-        public static OSErrorData create() {
-            return new OSErrorData();
-        }
-
-        public static OSErrorData create(Object[] args) {
-            assert args.length >= 2 && args.length <= 5;
-            final OSErrorData data = new OSErrorData();
-            data.setMyerrno(args[0]);
-            data.setStrerror(args[1]);
-            if (args.length >= 3) {
-                data.setFilename(args[2]);
-            }
-            if (args.length >= 4) {
-                data.setWinerror(args[3]);
-            }
-            if (args.length == 5) {
-                data.setFilename2(args[4]);
-            }
-            return data;
-        }
+        parsed[IDX_WRITTEN] = -1;
+        return parsed;
     }
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -336,7 +262,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached PyArgCheckPositionalNode checkPositionalNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
             Object type = subType;
-            OSErrorData parsedArgs = OSErrorData.create();
+            Object[] parsedArgs = new Object[IDX_WRITTEN + 1];
             final Python3Core core = getCore();
             if (!osErrorUseInit(frame, core, type, getAttr)) {
                 if (kwds.length != 0) {
@@ -344,10 +270,10 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 }
 
                 parsedArgs = osErrorParseArgs(args, checkPositionalNode);
-                final Object myerrno = parsedArgs.getMyerrno();
-                if (myerrno != null && PGuards.canBeInteger(myerrno) &&
+                final Object errnoVal = parsedArgs[IDX_ERRNO];
+                if (errnoVal != null && PGuards.canBeInteger(errnoVal) &&
                                 subType == PythonBuiltinClassType.OSError) {
-                    final int errno = pyNumberAsSizeNode.executeExact(frame, myerrno);
+                    final int errno = pyNumberAsSizeNode.executeExact(frame, errnoVal);
                     Object newType = errno2errorType(errno);
                     if (newType != null) {
                         type = newType;
@@ -388,7 +314,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
             }
 
-            OSErrorData parsedArgs = osErrorParseArgs(args, checkPositionalNode);
+            Object[] parsedArgs = osErrorParseArgs(args, checkPositionalNode);
             osErrorInit(frame, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
             return PNone.NONE;
         }
@@ -400,108 +326,71 @@ public final class OsErrorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "errno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "POSIX exception code")
     @GenerateNodeFactory
-    public abstract static class OSErrorErrnoNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof OSErrorData;
-            return ((OSErrorData) data).getMyerrno();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof OSErrorData;
-            ((OSErrorData) data).setMyerrno(value);
+    public abstract static class OSErrorErrnoNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_ERRNO, OS_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "strerror", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
     @GenerateNodeFactory
-    public abstract static class OSErrorStrerrorNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof OSErrorData;
-            return ((OSErrorData) data).getStrerror();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof OSErrorData;
-            ((OSErrorData) data).setStrerror(value);
+    public abstract static class OSErrorStrerrorNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_STRERROR, OS_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "filename", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception filename")
     @GenerateNodeFactory
-    public abstract static class OSErrorFilenameNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof OSErrorData;
-            return ((OSErrorData) data).getFilename();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof OSErrorData;
-            ((OSErrorData) data).setFilename(value);
+    public abstract static class OSErrorFilenameNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_FILENAME, OS_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "filename2", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception filename2")
     @GenerateNodeFactory
-    public abstract static class OSErrorFilename2Node extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof OSErrorData;
-            return ((OSErrorData) data).getFilename2();
+    public abstract static class OSErrorFilename2Node extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_FILENAME2, OS_ERROR_ATTR_FACTORY);
         }
+    }
 
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof OSErrorData;
-            ((OSErrorData) data).setFilename2(value);
+    @Builtin(name = "winerror", os = PythonOS.PLATFORM_WIN32, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "Win32 exception code")
+    @GenerateNodeFactory
+    public abstract static class OSErrorWinerrorNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_WINERROR, OS_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "characters_written", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception characters written")
     @GenerateNodeFactory
     public abstract static class OSErrorCharsWrittenNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(none)")
-        public Object getAttr(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            assert self.getData() instanceof OSErrorData : "data field is not OSErrorData, perhaps __init__ was not called?";
-            final int written = ((OSErrorData) self.getData()).getWritten();
-            if (written == -1) {
-                throw raise(PythonBuiltinClassType.AttributeError, "characters_written");
-            }
-            return written;
+        protected boolean isInvalid(PBaseException self) {
+            final Object[] attrs = self.getExceptionAttributes();
+            return attrs != null && attrs[IDX_WRITTEN] instanceof Integer && (int) attrs[IDX_WRITTEN] == -1;
         }
 
-        @Specialization(guards = "!isNoValue(value)")
-        public Object setAttr(VirtualFrame frame, PBaseException self, Object value,
-                              @Cached PyNumberAsSizeNode numberAsSizeNode) {
-            assert self.getData() instanceof OSErrorData : "data field is not OSErrorData, perhaps __init__ was not called?";
-            int written = ((OSErrorData) self.getData()).getWritten();
-            if (written == -1) {
-                throw raise(PythonBuiltinClassType.AttributeError, "characters_written");
-            }
-            written = numberAsSizeNode.executeExact(frame, value, PythonBuiltinClassType.ValueError);
-            ((OSErrorData) self.getData()).setWritten(written);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "winerror", os = PythonOS.PLATFORM_WIN32, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "Win32 exception code")
-    @GenerateNodeFactory
-    public abstract static class OSErrorWinerrorNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof OSErrorData;
-            return ((OSErrorData) data).getWinerror();
+        @Specialization(guards = "isInvalid(self)")
+        Object generic(PBaseException self, Object value) {
+            throw raise(PythonBuiltinClassType.AttributeError, "characters_written");
         }
 
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof OSErrorData;
-            ((OSErrorData) data).setWinerror(value);
+        @Specialization(guards = "!isInvalid(self)")
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_WRITTEN, OS_ERROR_ATTR_FACTORY);
         }
     }
 
@@ -512,29 +401,27 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         Object str(VirtualFrame frame, PBaseException self,
                         @Cached BaseExceptionBuiltins.StrNode baseStrNode,
                         @Cached PyObjectReprAsJavaStringNode reprNode) {
-            assert self.getData() instanceof OSErrorData;
-            OSErrorData data = (OSErrorData) self.getData();
             // TODO: missing windows code
-            final Object filename = data.getFilename();
-            final Object filename2 = data.getFilename2();
-            final Object myerrno = data.getMyerrno();
-            final Object strerror = data.getStrerror();
+            final Object filename = self.getExceptionAttribute(IDX_FILENAME);
+            final Object filename2 = self.getExceptionAttribute(IDX_FILENAME2);
+            final Object errno = self.getExceptionAttribute(IDX_ERRNO);
+            final Object strerror = self.getExceptionAttribute(IDX_STRERROR);
             if (filename != null && filename != PNone.NONE) {
                 if (filename2 != null && filename2 != PNone.NONE) {
                     return PythonUtils.format("[Errno %s] %s: %s -> %s",
-                                    myerrno != null ? myerrno : PNone.NONE,
+                                    errno != null ? errno : PNone.NONE,
                                     strerror != null ? strerror : PNone.NONE,
                                     reprNode.execute(frame, filename),
                                     reprNode.execute(frame, filename2));
                 } else {
                     return PythonUtils.format("[Errno %s] %s: %s",
-                                    myerrno != null ? myerrno : PNone.NONE,
+                                    errno != null ? errno : PNone.NONE,
                                     strerror != null ? strerror : PNone.NONE,
                                     reprNode.execute(frame, filename));
                 }
             }
-            if (myerrno != null && strerror != null) {
-                return PythonUtils.format("[Errno %s] %s", myerrno, strerror);
+            if (errno != null && strerror != null) {
+                return PythonUtils.format("[Errno %s] %s", errno, strerror);
             }
             return baseStrNode.execute(frame, self);
         }
@@ -549,19 +436,19 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDictNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
-            assert self.getData() instanceof OSErrorData;
-            OSErrorData data = (OSErrorData) self.getData();
             PTuple args = self.getArgs();
-            if (lenNode.execute(args.getSequenceStorage()) == 2 && data.getFilename() != null) {
-                Object[] argData = new Object[data.getFilename2() != null ? 5 : 3];
+            final Object filename = self.getExceptionAttribute(IDX_FILENAME);
+            final Object filename2 = self.getExceptionAttribute(IDX_FILENAME2);
+            if (lenNode.execute(args.getSequenceStorage()) == 2 && filename != null) {
+                Object[] argData = new Object[filename2 != null ? 5 : 3];
                 argData[0] = getItemNode.execute(frame, args.getSequenceStorage(), 0);
                 argData[1] = getItemNode.execute(frame, args.getSequenceStorage(), 1);
-                argData[2] = data.getFilename();
-                if (data.getFilename2() != null) {
+                argData[2] = filename;
+                if (filename2 != null) {
                     // This tuple is essentially used as OSError(*args). So, to recreate filename2,
                     // we need to pass in winerror as well
                     argData[3] = PNone.NONE;
-                    argData[4] = data.getFilename2();
+                    argData[4] = filename2;
                 }
                 args = factory().createTuple(argData);
             }

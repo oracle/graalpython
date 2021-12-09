@@ -42,94 +42,43 @@ package com.oracle.graal.python.builtins.objects.exception;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.UnicodeError})
+@CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeError)
 public final class UnicodeErrorBuiltins extends PythonBuiltins {
-    @CompilerDirectives.ValueType
-    public static class UnicodeErrorData extends PBaseException.Data {
-        private Object encoding;
-        private Object object;
-        private int start;
-        private int end;
-        private Object reason;
+    static final int IDX_ENCODING = 0;
+    static final int IDX_OBJECT = 1;
+    static final int IDX_START = 2;
+    static final int IDX_END = 3;
+    static final int IDX_REASON = 4;
+    public static final int UNICODE_ERR_NUM_ATTRS = IDX_REASON + 1;
 
-        protected UnicodeErrorData() {
+    public static final BaseExceptionAttrNode.StorageFactory UNICODE_ERROR_ATTR_FACTORY = (args, factory) -> {
+        return new Object[UNICODE_ERR_NUM_ATTRS];
+    };
 
-        }
-
-        public Object getEncoding() {
-            return encoding;
-        }
-
-        public String getEncoding(Frame frame, PyObjectStrAsJavaStringNode strNode) {
-            return strNode.execute(frame, encoding);
-        }
-
-        public void setEncoding(Object encoding) {
-            this.encoding = encoding;
-        }
-
-        public Object getObject() {
-            return object;
-        }
-
-        public String getObject(Frame frame, PyObjectStrAsJavaStringNode strNode) {
-            return strNode.execute(frame, object);
-        }
-
-        public void setObject(Object object) {
-            this.object = object;
-        }
-
-        public int getStart() {
-            return start;
-        }
-
-        public void setStart(int start) {
-            this.start = start;
-        }
-
-        public int getEnd() {
-            return end;
-        }
-
-        public void setEnd(int end) {
-            this.end = end;
-        }
-
-        public Object getReason() {
-            return reason;
-        }
-
-        public String getReason(Frame frame, PyObjectStrAsJavaStringNode strNode) {
-            return strNode.execute(frame, reason);
-        }
-
-        public void setReason(Object reason) {
-            this.reason = reason;
-        }
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return null;
     }
 
     public static String getArgAsString(Object[] args, int index, PNodeWithRaise raiseNode, CastToJavaStringNode castNode) {
@@ -159,106 +108,65 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return UnicodeErrorBuiltinsFactory.getFactories();
-    }
-
     @Builtin(name = "encoding", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception encoding")
     @GenerateNodeFactory
-    public abstract static class UnicodeErrorEncodingNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof UnicodeErrorData;
-            return ((UnicodeErrorData) data).getEncoding();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof UnicodeErrorData;
-            ((UnicodeErrorData) data).setEncoding(value);
+    public abstract static class UnicodeErrorEncodingNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "object", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception object")
     @GenerateNodeFactory
-    public abstract static class UnicodeErrorObjectNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof UnicodeErrorData;
-            return ((UnicodeErrorData) data).getObject();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof UnicodeErrorData;
-            ((UnicodeErrorData) data).setObject(value);
+    public abstract static class UnicodeErrorNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
         }
     }
 
-    @Builtin(name = "start", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception start")
+    @Builtin(name = "start", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, parameterNames = {"$self", "value"}, doc = "exception start")
     @GenerateNodeFactory
-    public abstract static class UnicodeErrorStartNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(none)")
-        public Object getAttr(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            assert self.getData() instanceof UnicodeErrorData : "UnicodeErrorNode data field is null, perhaps __init__ was not called?";
-            return ((UnicodeErrorData) self.getData()).getStart();
+    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
+    public abstract static class UnicodeErrorStartNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return null;
         }
 
-        @Specialization(guards = "!isNoValue(value)")
-        public Object setAttr(PBaseException self, Integer value) {
-            assert self.getData() instanceof UnicodeErrorData : "UnicodeErrorNode data field is null, perhaps __init__ was not called?";
-            ((UnicodeErrorData) self.getData()).setStart(value);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        public Object setAttr(PBaseException self, PInt value,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode) {
-            assert self.getData() instanceof UnicodeErrorData : "UnicodeErrorNode data field is null, perhaps __init__ was not called?";
-            ((UnicodeErrorData) self.getData()).setStart(castToJavaIntExactNode.execute(value));
-            return PNone.NONE;
+        @Specialization
+        Object generic(PBaseException self, int value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
     }
 
-    @Builtin(name = "end", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception end")
+    @Builtin(name = "end", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, parameterNames = {"$self", "value"}, doc = "exception end")
     @GenerateNodeFactory
-    public abstract static class UnicodeErrorEndNode extends BaseExceptionDataAttrNode {
-        @Specialization(guards = "isNoValue(none)")
-        public Object getAttr(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            assert self.getData() instanceof UnicodeErrorData : "UnicodeErrorNode data field is null, perhaps __init__ was not called?";
-            return ((UnicodeErrorData) self.getData()).getEnd();
+    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
+    public abstract static class UnicodeErrorEndNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return null;
         }
 
-        @Specialization(guards = "!isNoValue(value)")
-        public Object setAttr(PBaseException self, Integer value) {
-            assert self.getData() instanceof UnicodeErrorData : "UnicodeErrorNode data field is null, perhaps __init__ was not called?";
-            ((UnicodeErrorData) self.getData()).setEnd(value);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        public Object setAttr(PBaseException self, PInt value,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode) {
-            assert self.getData() instanceof UnicodeErrorData : "UnicodeErrorNode data field is null, perhaps __init__ was not called?";
-            ((UnicodeErrorData) self.getData()).setEnd(castToJavaIntExactNode.execute(value));
-            return PNone.NONE;
+        @Specialization
+        Object generic(PBaseException self, int value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
     }
 
     @Builtin(name = "reason", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception reason")
     @GenerateNodeFactory
-    public abstract static class UnicodeErrorReasonNode extends BaseExceptionDataAttrNode {
-        @Override
-        protected Object get(PBaseException.Data data) {
-            assert data instanceof UnicodeErrorData;
-            return ((UnicodeErrorData) data).getReason();
-        }
-
-        @Override
-        protected void set(PBaseException.Data data, Object value) {
-            assert data instanceof UnicodeErrorData;
-            ((UnicodeErrorData) data).setReason(value);
+    public abstract static class UnicodeErrorReasonNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY);
         }
     }
 }

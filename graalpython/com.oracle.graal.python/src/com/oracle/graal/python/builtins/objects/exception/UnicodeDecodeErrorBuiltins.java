@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_ENCODING;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_END;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_OBJECT;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_REASON;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_START;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsBytes;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsInt;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsString;
@@ -69,7 +74,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.UnicodeDecodeError})
+@CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeDecodeError)
 public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
 
     @Override
@@ -90,13 +95,13 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UOnnU"), TODO: add proper error messages
-            UnicodeErrorBuiltins.UnicodeErrorData data = new UnicodeErrorBuiltins.UnicodeErrorData();
-            data.setEncoding(getArgAsString(args, 0, this, toJavaStringNode));
-            data.setObject(getArgAsBytes(frame, args, 1, factory(), this, bytesInitNode));
-            data.setStart(getArgAsInt(args, 2, this, toJavaIntExactNode));
-            data.setEnd(getArgAsInt(args, 3, this, toJavaIntExactNode));
-            data.setReason(getArgAsString(args, 4, this, toJavaStringNode));
-            self.setData(data);
+            self.setExceptionAttributes(new Object[]{
+                            getArgAsString(args, 0, this, toJavaStringNode),
+                            getArgAsBytes(frame, args, 1, factory(), this, bytesInitNode),
+                            getArgAsInt(args, 2, this, toJavaIntExactNode),
+                            getArgAsInt(args, 3, this, toJavaIntExactNode),
+                            getArgAsString(args, 4, this, toJavaStringNode)
+            });
             return PNone.NONE;
         }
     }
@@ -109,22 +114,23 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemNode getitemNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached PyObjectStrAsJavaStringNode strNode) {
-            if (self.getData() == null) {
+            if (self.getExceptionAttributes() == null) {
                 // Not properly initialized.
                 return "";
             }
 
-            assert self.getData() instanceof UnicodeErrorBuiltins.UnicodeErrorData;
-            UnicodeErrorBuiltins.UnicodeErrorData data = (UnicodeErrorBuiltins.UnicodeErrorData) self.getData();
-
             // Get reason and encoding as strings, which they might not be if they've been
             // modified after we were constructed.
-            PBytesLike object = (PBytesLike) data.getObject();
-            if (data.getStart() < lenNode.execute(object.getSequenceStorage()) && data.getEnd() == data.getStart() + 1) {
+            PBytesLike object = (PBytesLike) self.getExceptionAttribute(IDX_OBJECT);
+            final int start = self.getExceptionIntAttribute(IDX_START);
+            final int end = self.getExceptionIntAttribute(IDX_END);
+            final String encoding = strNode.execute(frame, self.getExceptionAttribute(IDX_ENCODING));
+            final String reason = strNode.execute(frame, self.getExceptionAttribute(IDX_REASON));
+            if (start < lenNode.execute(object.getSequenceStorage()) && end == start + 1) {
                 final int b = (int) getitemNode.execute(frame, object.getSequenceStorage(), 0);
-                return PythonUtils.format("'%s' codec can't decode byte 0x%02x in position %d: %s", data.getEncoding(frame, strNode), b, data.getStart(), data.getReason(frame, strNode));
+                return PythonUtils.format("'%s' codec can't decode byte 0x%02x in position %d: %s", encoding, b, start, reason);
             } else {
-                return PythonUtils.format("'%s' codec can't decode bytes in position %d-%d: %s", data.getEncoding(frame, strNode), data.getStart(), data.getEnd() - 1, data.getReason(frame, strNode));
+                return PythonUtils.format("'%s' codec can't decode bytes in position %d-%d: %s", encoding, start, end - 1, reason);
             }
         }
     }
