@@ -78,7 +78,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return null;
+        return UnicodeErrorBuiltinsFactory.getFactories();
     }
 
     public static String getArgAsString(Object[] args, int index, PNodeWithRaise raiseNode, CastToJavaStringNode castNode) {
