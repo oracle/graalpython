@@ -2705,14 +2705,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_Tuple", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PySequenceTupleNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public PTuple values(PTuple obj) {
+        @Specialization(guards = "isTuple(obj, getClassNode)")
+        public PTuple values(PTuple obj,
+                @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return obj;
         }
 
-        @Specialization
-        public Object values(VirtualFrame frame, Object obj,
+        @Specialization(guards = "!isTuple(obj, getClassNode)")
+        public Object values(VirtualFrame frame, Object obj, 
                         @Cached TupleNode tupleNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
@@ -2721,6 +2723,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 return getNativeNullNode.execute();
             }
+        }
+        
+        protected boolean isTuple(Object obj, GetClassNode getClassNode) {
+            return getClassNode.execute(obj) == PythonBuiltinClassType.PTuple;
         }
     }
 
