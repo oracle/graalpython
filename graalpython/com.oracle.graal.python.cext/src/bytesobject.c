@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,20 +46,31 @@
 // taken from CPython "Objects/bytesobject.c"
 #define PyBytesObject_SIZE (offsetof(PyBytesObject, ob_sval) + 1)
 
-PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS, PyBytesObject_SIZE);
+PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS, PyBytesObject_SIZE, sizeof(char));
+
+typedef PyObject* (*fromStringAndSize_fun_t)(int8_t* str, int64_t sz);
+
+UPCALL_ID(PyBytes_Size);
+Py_ssize_t PyBytes_Size(PyObject *bytes) {
+    return UPCALL_CEXT_L(_jls_PyBytes_Size, native_to_java(bytes));
+}
 
 UPCALL_ID(PyBytes_FromStringAndSize);
 UPCALL_ID(PyTruffle_Bytes_EmptyWithCapacity);
 PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
-	if (str != NULL) {
-		return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, polyglot_from_i8_array(str, sz), sz);
-	}
-	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, sz);
+    if (sz < 0) {
+        PyErr_SetString(PyExc_SystemError, "Negative size passed to PyBytes_FromStringAndSize");
+        return NULL;
+    }
+    if (str != NULL) {
+        return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, sz), sz);
+    }
+    return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, sz);
 }
 
 PyObject * PyBytes_FromString(const char *str) {
 	if (str != NULL) {
-		return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, polyglot_from_i8_array(str, strlen(str)), strlen(str));
+		return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, strlen(str)), strlen(str));
 	}
 	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, 0);
 }
@@ -69,22 +80,16 @@ char* PyBytes_AsString(PyObject *obj) {
     return (char*)(UPCALL_CEXT_NOCAST(_jls_PyTruffle_Bytes_AsString, native_to_java(obj), ERROR_MARKER));
 }
 
-UPCALL_ID(PyBytes_AsStringCheckEmbeddedNull);
+UPCALL_ID(PyTruffle_Bytes_CheckEmbeddedNull);
 int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {
-    setlocale(LC_ALL, NULL);
-    const char* encoding = nl_langinfo(CODESET);
-    PyObject *result = UPCALL_CEXT_O(_jls_PyBytes_AsStringCheckEmbeddedNull, native_to_java(obj), polyglot_from_string(encoding, SRC_CS));
-    if(result == NULL) {
-        return -1;
-    }
-
-    *s = as_char_pointer(result);
-
+    PyObject* resolved = native_to_java(obj);
+    *s = (char*)(UPCALL_CEXT_NOCAST(_jls_PyTruffle_Bytes_AsString, resolved, ERROR_MARKER));
     if (len != NULL) {
-        *len = polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_LEN", native_to_java(obj)));
+        *len = UPCALL_CEXT_L(_jls_PyBytes_Size, resolved);
+        return 0;
+    } else {
+    	return UPCALL_CEXT_I(_jls_PyTruffle_Bytes_CheckEmbeddedNull, resolved);
     }
-
-    return 0;
 }
 
 PyObject * PyBytes_FromFormat(const char *format, ...) {
@@ -103,7 +108,7 @@ PyObject * PyBytes_FromFormat(const char *format, ...) {
 
 
 UPCALL_ID(PyBytes_FromFormat);
-UPCALL_ID(PyTuple_SetItem);
+UPCALL_TYPED_ID(PyTuple_SetItem, setitem_fun_t);
 PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     /* Unfortunately, we need to know the expected types of the arguments before we can do an upcall. */
     char *s;
@@ -213,7 +218,7 @@ PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     }
 
 
-#define SETARG(__args, __i, __arg) UPCALL_CEXT_I(_jls_PyTuple_SetItem, native_to_java(__args), (__i), (__arg))
+#define SETARG(__args, __i, __arg) _jls_PyTuple_SetItem(native_to_java(__args), (__i), (__arg))
 
     // do actual conversion using one-character type specifiers
     int conversions = strlen(buffer);
@@ -224,25 +229,25 @@ PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     	case 'i':
     	case 'x':
     	case 'd':
-            SETARG(args, i, va_arg(vargs, int));
+            SETARG(args, i, PyLong_FromLong(va_arg(vargs, int)));
     		break;
     	case 'D':
-            SETARG(args, i, va_arg(vargs, long));
+            SETARG(args, i, PyLong_FromLong(va_arg(vargs, long)));
     		break;
     	case 'u':
-            SETARG(args, i, va_arg(vargs, unsigned int));
+            SETARG(args, i, PyLong_FromUnsignedLong(va_arg(vargs, unsigned int)));
     		break;
     	case 'U':
-            SETARG(args, i, va_arg(vargs, unsigned long));
+            SETARG(args, i, PyLong_FromUnsignedLong(va_arg(vargs, unsigned long)));
     		break;
     	case 't':
-            SETARG(args, i, va_arg(vargs, size_t));
+            SETARG(args, i, PyLong_FromSize_t(va_arg(vargs, size_t)));
             break;
     	case 's':
             SETARG(args, i, polyglot_from_string(va_arg(vargs, const char*), SRC_CS));
     		break;
     	case 'p':
-            SETARG(args, i, native_to_java(va_arg(vargs, void*)));
+            SETARG(args, i, PyLong_FromVoidPtr(va_arg(vargs, void*)));
     		break;
     	}
     }
@@ -257,11 +262,6 @@ void PyBytes_Concat(PyObject **bytes, PyObject *newpart) {
 void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart) {
     PyBytes_Concat(bytes, newpart);
     Py_DECREF(newpart);
-}
-
-UPCALL_ID(PyBytes_Size);
-Py_ssize_t PyBytes_Size(PyObject *bytes) {
-    return UPCALL_CEXT_L(_jls_PyBytes_Size, native_to_java(bytes));
 }
 
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags) {
@@ -284,4 +284,9 @@ PyObject *_PyBytes_Join(PyObject *sep, PyObject *x) {
 UPCALL_ID(_PyBytes_Resize);
 int _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize) {
     return UPCALL_CEXT_I(_jls__PyBytes_Resize, native_to_java(*pv), newsize);
+}
+
+UPCALL_ID(PyBytes_FromObject);
+PyObject * PyBytes_FromObject(PyObject *x) {
+    return UPCALL_CEXT_O(_jls_PyBytes_FromObject, native_to_java(x));
 }

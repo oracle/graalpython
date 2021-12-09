@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,18 +25,17 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -49,23 +48,22 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     @Child protected GetNextNode getNext = GetNextNode.create();
     @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
 
-    private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
     private final ConditionProfile executesHeadProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
 
     private final int iteratorSlot;
 
-    public GeneratorForNode(WriteNode target, ExpressionNode getIterator, StatementNode body, int iteratorSlot) {
+    public GeneratorForNode(WriteNode target, ExpressionNode getIterator, StatementNode body, GeneratorInfo.Mutable generatorInfo) {
         this.body = body;
         this.target = target;
         this.getIterator = getIterator;
-        this.iteratorSlot = iteratorSlot;
+        this.iteratorSlot = generatorInfo.nextIteratorSlotIndex();
     }
 
-    public static GeneratorForNode create(WriteNode target, ExpressionNode getIterator, StatementNode body, int iteratorSlot) {
-        return new GeneratorForNode(target, getIterator, body, iteratorSlot);
+    public static GeneratorForNode create(WriteNode target, ExpressionNode getIterator, StatementNode body, GeneratorInfo.Mutable generatorInfo) {
+        return new GeneratorForNode(target, getIterator, body, generatorInfo);
     }
 
     @Override
@@ -91,13 +89,12 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 e.expectStopIteration(errorProfile);
                 return;
             }
-            target.doWrite(frame, value);
+            target.executeObject(frame, value);
         } else {
             iterator = startIterator;
         }
 
         Object nextIterator = null;
-        PythonContext context = contextRef.get();
         int count = 0;
         try {
             while (true) {
@@ -109,11 +106,11 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                     e.expectStopIteration(errorProfile);
                     break;
                 }
-                target.doWrite(frame, value);
+                target.executeObject(frame, value);
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
-                context.triggerAsyncActions(frame, this);
+                PythonContext.triggerAsyncActions(this);
             }
             return;
         } catch (YieldException e) {

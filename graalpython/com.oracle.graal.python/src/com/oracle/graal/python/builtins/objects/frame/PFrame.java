@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,19 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeRootNode;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
@@ -60,11 +61,11 @@ import com.oracle.truffle.api.source.SourceSection;
 public final class PFrame extends PythonBuiltinObject {
     private Object[] arguments;
     private final Object localsDict;
-    private final boolean inClassScope;
     private final Reference virtualFrameInfo;
     private Node location;
     private RootCallTarget callTarget;
     private int line = -2;
+    private int lasti = -1;
 
     private PFrame.Reference backref = null;
 
@@ -90,29 +91,27 @@ public final class PFrame extends PythonBuiltinObject {
             this.callerInfo = callerInfo;
         }
 
-        public void materialize(Frame targetFrame, PRootNode location) {
+        public void materialize(PythonLanguage lang, Frame targetFrame, PRootNode location) {
             Reference curFrameInfo = PArguments.getCurrentFrameInfo(targetFrame);
-            boolean inClassScope = PArguments.getSpecialArgument(targetFrame) instanceof ClassBodyRootNode;
-
-            if (this.pyFrame == null || this.pyFrame.virtualFrameInfo == null) {
-                location.getExitedEscapedWithoutFrameProfile().enter();
+            CompilerAsserts.partialEvaluationConstant(location);
+            if (location.getFrameEscapedWithoutAllocationProfile().profile(this.pyFrame == null || this.pyFrame.virtualFrameInfo == null)) {
                 if (this.pyFrame == null) {
                     // TODO: frames: this doesn't go through the factory
-                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, curFrameInfo, location, inClassScope);
+                    this.pyFrame = new PFrame(lang, curFrameInfo, location);
                 } else {
                     assert this.pyFrame.localsDict != null : "PFrame was set without a frame or a locals dict";
                     // this is the case when we had custom locals
-                    this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, curFrameInfo, location, this.pyFrame.localsDict, inClassScope);
+                    this.pyFrame = new PFrame(lang, curFrameInfo, location, this.pyFrame.localsDict);
                 }
             }
             // TODO: frames: update location
         }
 
-        public void setCustomLocals(Object customLocals) {
+        public void setCustomLocals(PythonLanguage lang, Object customLocals) {
             assert customLocals != null : "cannot set null custom locals";
             assert pyFrame == null : "cannot set customLocals when there's already a PFrame";
             // TODO: frames: this doesn't go through the factory
-            this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, customLocals);
+            this.pyFrame = new PFrame(lang, customLocals);
         }
 
         public void setBackref(PFrame.Reference backref) {
@@ -150,37 +149,35 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(LazyPythonClass cls, Reference virtualFrameInfo, Node location, boolean inClassScope) {
-        this(cls, virtualFrameInfo, location, null, inClassScope);
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location) {
+        this(lang, virtualFrameInfo, location, null);
     }
 
-    public PFrame(LazyPythonClass cls, Reference virtualFrameInfo, Node location, Object locals, boolean inClassScope) {
-        super(cls);
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object locals) {
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
         this.localsDict = locals;
         this.location = location;
-        this.inClassScope = inClassScope;
     }
 
-    private PFrame(LazyPythonClass cls, Object locals) {
-        super(cls);
+    private PFrame(PythonLanguage lang, Object locals) {
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = null;
         this.location = null;
-        this.inClassScope = false;
         this.localsDict = locals;
     }
 
-    public PFrame(LazyPythonClass cls, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
-        super(cls);
+    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         // TODO: frames: extract the information from the threadState object
         Object[] frameArgs = PArguments.create();
         PArguments.setGlobals(frameArgs, globals);
         Reference curFrameInfo = new Reference(null);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
-        this.location = code.getRootNode();
-        this.inClassScope = code.getRootNode() instanceof ClassBodyRootNode;
-        this.line = code.getRootNode() == null ? code.getFirstLineNo() : -2;
+        this.location = GetCodeRootNode.getUncached().execute(code);
+        this.line = this.location == null ? code.getFirstLineNo() : -2;
+        this.arguments = frameArgs;
 
         localsDict = locals;
     }
@@ -214,6 +211,10 @@ public final class PFrame extends PythonBuiltinObject {
         this.backref = backref;
     }
 
+    public void setLine(int line) {
+        this.line = line;
+    }
+
     @TruffleBoundary
     public int getLine() {
         if (line == -2) {
@@ -222,9 +223,10 @@ public final class PFrame extends PythonBuiltinObject {
             } else {
                 SourceSection sourceSection = location.getEncapsulatingSourceSection();
                 if (sourceSection == null) {
-                    line = -1;
+                    return -1;
                 } else {
-                    line = sourceSection.getStartLine();
+                    // The location can change, so we shouldn't cache the value
+                    return sourceSection.getStartLine();
                 }
             }
         }
@@ -275,24 +277,15 @@ public final class PFrame extends PythonBuiltinObject {
         return virtualFrameInfo != null;
     }
 
-    public boolean inClassScope() {
-        return inClassScope;
-    }
-
     public RootCallTarget getTarget() {
         if (callTarget == null) {
             if (location != null) {
-                callTarget = createCallTarget(location);
+                callTarget = PythonUtils.getOrCreateCallTarget(location.getRootNode());
             } else if (getRef() != null && getRef().getCallNode() != null) {
-                callTarget = createCallTarget(getRef().getCallNode());
+                callTarget = PythonUtils.getOrCreateCallTarget(getRef().getCallNode().getRootNode());
             }
         }
         return callTarget;
-    }
-
-    @TruffleBoundary
-    private static RootCallTarget createCallTarget(Node location) {
-        return Truffle.getRuntime().createCallTarget(location.getRootNode());
     }
 
     public Object[] getArguments() {
@@ -305,5 +298,17 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void setLocation(Node location) {
         this.location = location;
+    }
+
+    /**
+     * Last bytecode instruction. Since we don't have bytecode this is -1 by default, but can be set
+     * to a different value to distinguish started generators from unstarted
+     */
+    public int getLasti() {
+        return lasti;
+    }
+
+    public void setLasti(int lasti) {
+        this.lasti = lasti;
     }
 }

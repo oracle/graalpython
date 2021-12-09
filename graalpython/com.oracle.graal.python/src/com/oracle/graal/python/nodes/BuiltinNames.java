@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,9 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class BuiltinNames {
+    // special strings
+    public static final String LAMBDA_NAME = "<lambda>";
+
     // special arg names
     public static final String SELF = "self";
 
@@ -53,16 +56,37 @@ public abstract class BuiltinNames {
     public static final String __DEBUG__ = "__debug__";
 
     // sys
+    public static final String TRACEBACKLIMIT = "tracebacklimit";
     public static final String DISPLAYHOOK = "displayhook";
+    public static final String __DISPLAYHOOK__ = "__displayhook__";
     public static final String BREAKPOINTHOOK = "breakpointhook";
+    public static final String __BREAKPOINTHOOK__ = "__breakpointhook__";
     public static final String EXCEPTHOOK = "excepthook";
+    public static final String __EXCEPTHOOK__ = "__excepthook__";
+    public static final String UNRAISABLEHOOK = "unraisablehook";
+    public static final String __UNRAISABLEHOOK__ = "__unraisablehook__";
     public static final String LAST_TYPE = "last_type";
     public static final String LAST_VALUE = "last_value";
     public static final String LAST_TRACEBACK = "last_traceback";
+    public static final String __STDERR__ = "__stderr__";
+    public static final String STDERR = "stderr";
+    public static final String __STDIN__ = "__stdin__";
+    public static final String STDIN = "stdin";
+    public static final String __STDOUT__ = "__stdout__";
+    public static final String STDOUT = "stdout";
+    public static final String PYTHONBREAKPOINT = "PYTHONBREAKPOINT";
+    public static final String EXIT = "exit";
+    public static final String MODULES = "modules";
 
     // builtin functions
     public static final String ABS = "abs";
     public static final String DICT = "dict";
+    public static final String DEFAULTDICT = "defaultdict";
+    public static final String PARTIAL = "partial";
+    public static final String TUPLE_GETTER = "_tuplegetter";
+    public static final String DEQUE = "deque";
+    public static final String DEQUE_ITER = "_deque_iterator";
+    public static final String DEQUE_REV_ITER = "_deque_reverse_iterator";
     public static final String HELP = "help";
     public static final String MIN = "min";
     public static final String SETATTR = "setattr";
@@ -104,7 +128,12 @@ public abstract class BuiltinNames {
     public static final String PRINT = "print";
     public static final String TUPLE = "tuple";
     public static final String CALLABLE = "callable";
+    public static final String ENCODE = "encode";
+    public static final String DECODE = "decode";
     public static final String FORMAT = "format";
+    public static final String FORMAT_MAP = "format_map";
+    public static final String FORMATTER_PARSER = "formatter_parser";
+    public static final String FORMATTER_FIELD_NAME_SPLIT = "formatter_field_name_split";
     public static final String LEN = "len";
     public static final String PROPERTY = "property";
     public static final String TYPE = "type";
@@ -131,7 +160,24 @@ public abstract class BuiltinNames {
     public static final String HASH = "hash";
     public static final String MEMORYVIEW = "memoryview";
     public static final String SET = "set";
-    // truffle specific builtins
-    public static final String __BUILTIN__ = "__builtin__";
-    public static final String __DUMP_TRUFFLE_AST__ = "__dump_truffle_ast__";
+    public static final String BUILTINS = "builtins";
+    public static final String __GRAALPYTHON__ = "__graalpython__";
+    public static final String _CODECS = "_codecs";
+    public static final String _STRING = "_string";
+    public static final String _CODECS_TRUFFLE = "_codecs_truffle";
+    public static final String GETSET_DESCRIPTOR = "getset_descriptor";
+    public static final String MEMBER_DESCRIPTOR = "member_descriptor";
+    public static final String WRAPPER_DESCRIPTOR = "wrapper_descriptor";
+    public static final String SIMPLE_QUEUE = "SimpleQueue";
+    public static final String EMPTY = "Empty";
+
+    public static final String DICT_KEYITERATOR = "dict_keyiterator";
+    public static final String DICT_VALUEITERATOR = "dict_valueiterator";
+    public static final String DICT_ITEMITERATOR = "dict_itemiterator";
+    public static final String DICT_REVERSE_KEYITERATOR = "dict_reversekeyiterator";
+    public static final String DICT_REVERSE_VALUEITERATOR = "dict_reversevalueiterator";
+    public static final String DICT_REVERSE_ITEMITERATOR = "dict_reverseitemiterator";
+    public static final String DICT_KEYS = "dict_keys";
+    public static final String DICT_ITEMS = "dict_items";
+    public static final String DICT_VALUES = "dict_values";
 }

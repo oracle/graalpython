@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,17 +25,21 @@
  */
 package com.oracle.graal.python.builtins;
 
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import com.oracle.graal.python.util.PythonUtils;
+
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(value = Builtins.class)
 public @interface Builtin {
 
     String name() default "";
 
     String doc() default "";
 
-    PythonBuiltinClassType[] constructsClass() default {};
+    PythonBuiltinClassType constructsClass() default PythonBuiltinClassType.nil;
 
     PythonBuiltinClassType[] base() default {};
 
@@ -43,9 +47,13 @@ public @interface Builtin {
 
     int maxNumOfPositionalArgs() default -1;
 
+    int numOfPositionalOnlyArgs() default -1;
+
     boolean isGetter() default false;
 
     boolean isSetter() default false;
+
+    boolean allowsDelete() default false;
 
     boolean takesVarArgs() default false;
 
@@ -64,6 +72,13 @@ public @interface Builtin {
     boolean isStaticmethod() default false;
 
     /**
+     * Most built-ins don't ever need the frame or they should be able to deal with receiving a
+     * {@code null} frame. This should be set to {@code true} for those builtins that do need a full
+     * frame.
+     */
+    boolean needsFrame() default false;
+
+    /**
      * By default the caller frame bit is set on-demand, but for some builtins it might be useful to
      * always force passing the caller frame.
      */
@@ -75,4 +90,16 @@ public @interface Builtin {
      * self argument, set this to true.
      */
     boolean declaresExplicitSelf() default false;
+
+    /**
+     * Declares that this builtin needs to reverse the first and second argument it receives. This
+     * implements the reverse operation wrappers from CPython. This only applies to binary and
+     * ternary nodes.
+     *
+     * @see com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode BuiltinFunctionRootNode
+     */
+    boolean reverseOperation() default false;
+
+    String raiseErrorName() default PythonUtils.EMPTY_STRING;
+
 }

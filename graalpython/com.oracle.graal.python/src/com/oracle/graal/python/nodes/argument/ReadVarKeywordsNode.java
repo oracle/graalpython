@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,24 +32,25 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "**kwargs")
 public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
-    private static final String[] EMPTY = new String[0];
     @CompilationFinal(dimensions = 1) private final String[] keywordNames;
     @Child private PythonObjectFactory factory;
 
     public abstract PKeyword[] executePKeyword(VirtualFrame frame);
 
     public static ReadVarKeywordsNode create() {
-        return ReadVarKeywordsNodeGen.create(EMPTY, false);
+        return ReadVarKeywordsNodeGen.create(PythonUtils.EMPTY_STRING_ARRAY, false);
     }
 
     public static ReadVarKeywordsNode create(String[] keywordNames) {
@@ -72,7 +73,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     protected int getAndCheckKwargLen(VirtualFrame frame) {
         CompilerAsserts.neverPartOfCompilation("caching the kwarg len should never be compiled");
         int length = getKwargLen(frame);
-        if (length >= PythonOptions.getIntOption(PythonLanguage.getContextRef().get(), PythonOptions.VariableArgumentReadUnrollingLimit)) {
+        if (length >= PythonLanguage.get(this).getEngineOption(PythonOptions.VariableArgumentReadUnrollingLimit)) {
             return -1;
         }
         return length;
@@ -91,7 +92,6 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     }
 
     @Specialization(guards = {"getKwargLen(frame) == cachedLen", "cachedLen == 0"}, limit = "1")
-    @ExplodeLoop
     Object noKeywordArgs(@SuppressWarnings("unused") VirtualFrame frame,
                     @SuppressWarnings("unused") @Cached("getAndCheckKwargLen(frame)") int cachedLen) {
         return returnValue(PKeyword.EMPTY_KEYWORDS);
@@ -108,15 +108,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
         for (int j = 0; j < cachedLen; j++) {
             PKeyword keyword = keywordArguments[j];
             String kwName = keyword.getName();
-            boolean kwFound = false;
-            for (String name : keywordNames) {
-                if (kwName.equals(name)) {
-                    // Note: rather than skipping the rest of the loop,
-                    // to properly explode the loop in this case, we want
-                    // constant iteration count
-                    kwFound = true;
-                }
-            }
+            boolean kwFound = searchKeyword(kwName);
             if (!kwFound) {
                 remArguments[i] = keyword;
                 i++;
@@ -127,6 +119,16 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
         } else {
             return returnValue(remArguments);
         }
+    }
+
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    private boolean searchKeyword(String kwName) {
+        for (String name : keywordNames) {
+            if (kwName.equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Specialization(replaces = "extractKwargs")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,163 +26,79 @@
 package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotGuards;
 import com.oracle.graal.python.nodes.frame.FrameSlotNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
-import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNodeGen.WriteGeneraterFrameSlotNodeGen;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChild(value = "rightNode", type = ExpressionNode.class)
-public abstract class WriteGeneratorFrameVariableNode extends StatementNode implements WriteIdentifierNode {
-    @Child private WriteGeneraterFrameSlotNode writeNode;
+@ImportStatic(FrameSlotGuards.class)
+@SuppressWarnings("deprecation")    // new Frame API
+public abstract class WriteGeneratorFrameVariableNode extends StatementNode implements WriteIdentifierNode, FrameSlotNode {
 
-    public WriteGeneratorFrameVariableNode(FrameSlot slot) {
-        writeNode = WriteGeneraterFrameSlotNodeGen.create(slot);
+    protected final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    private final ValueProfile frameProfile = ValueProfile.createClassProfile();
+
+    public WriteGeneratorFrameVariableNode(com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+        this.frameSlot = frameSlot;
     }
 
-    public static WriteGeneratorFrameVariableNode create(FrameSlot slot, ExpressionNode right) {
-        return WriteGeneratorFrameVariableNodeGen.create(slot, right);
-    }
-
-    protected abstract static class WriteGeneraterFrameSlotNode extends FrameSlotNode {
-        public WriteGeneraterFrameSlotNode(FrameSlot slot) {
-            super(slot);
-        }
-
-        @Override
-        public final Object execute(VirtualFrame frame) {
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public final int executeInt(VirtualFrame frame) {
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public final long executeLong(VirtualFrame frame) {
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public final double executeDouble(VirtualFrame frame) {
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public final boolean executeBoolean(VirtualFrame frame) {
-            throw new IllegalStateException();
-        }
-
-        private final ValueProfile frameProfile = ValueProfile.createClassProfile();
-
-        public abstract Object executeWith(VirtualFrame frame, boolean value);
-
-        public abstract Object executeWith(VirtualFrame frame, int value);
-
-        public abstract Object executeWith(VirtualFrame frame, long value);
-
-        public abstract Object executeWith(VirtualFrame frame, double value);
-
-        public abstract Object executeWith(VirtualFrame frame, Object value);
-
-        protected Frame getGeneratorFrame(VirtualFrame frame) {
-            return frameProfile.profile(PArguments.getGeneratorFrame(frame));
-        }
-
-        @Specialization(guards = "isBooleanKind(getGeneratorFrame(frame))")
-        public boolean write(VirtualFrame frame, boolean value) {
-            getGeneratorFrame(frame).setBoolean(frameSlot, value);
-            return value;
-        }
-
-        @Specialization(guards = "isIntegerKind(getGeneratorFrame(frame))")
-        public int write(VirtualFrame frame, int value) {
-            getGeneratorFrame(frame).setInt(frameSlot, value);
-            return value;
-        }
-
-        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()", "isLongKind(getGeneratorFrame(frame))"}, rewriteOn = ArithmeticException.class)
-        public long writeSmallPIntAsLong(VirtualFrame frame, PInt value) {
-            long longValue = value.longValueExact();
-            getGeneratorFrame(frame).setLong(frameSlot, longValue);
-            return longValue;
-        }
-
-        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()"}, rewriteOn = ArithmeticException.class)
-        public long writeSmallPIntAsObject(VirtualFrame frame, PInt value) {
-            ensureObjectKind(frame);
-            long longValue = value.longValueExact();
-            getGeneratorFrame(frame).setObject(frameSlot, longValue);
-            return longValue;
-        }
-
-        @Specialization(guards = "isDoubleKind(getGeneratorFrame(frame))")
-        public double write(VirtualFrame frame, double value) {
-            getGeneratorFrame(frame).setDouble(frameSlot, value);
-            return value;
-        }
-
-        @Specialization
-        public Object write(VirtualFrame frame, Object value) {
-            ensureObjectKind(frame);
-            getGeneratorFrame(frame).setObject(frameSlot, value);
-            return value;
-        }
+    public static WriteGeneratorFrameVariableNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode right) {
+        return WriteGeneratorFrameVariableNodeGen.create(frameSlot, right);
     }
 
     public abstract ExpressionNode getRightNode();
 
     @Override
-    public ExpressionNode getRhs() {
+    public final ExpressionNode getRhs() {
         return getRightNode();
     }
 
     @Override
-    public Object getIdentifier() {
-        return writeNode.getSlot().getIdentifier();
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, boolean value) {
-        writeNode.executeWith(frame, value);
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, int value) {
-        writeNode.executeWith(frame, value);
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, long value) {
-        writeNode.executeWith(frame, value);
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, double value) {
-        writeNode.executeWith(frame, value);
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, Object value) {
-        writeNode.executeWith(frame, value);
+    public final com.oracle.truffle.api.frame.FrameSlot getSlot() {
+        return frameSlot;
     }
 
     @Override
-    public NodeCost getCost() {
-        return NodeCost.NONE;
+    public final Object getIdentifier() {
+        return frameSlot.getIdentifier();
+    }
+
+    protected final Frame getGeneratorFrame(VirtualFrame frame) {
+        return frameProfile.profile(PArguments.getGeneratorFrame(frame));
+    }
+
+    @Specialization(guards = "isBooleanKind(getGeneratorFrame(frame), frameSlot)")
+    void writeBoolean(VirtualFrame frame, boolean value) {
+        getGeneratorFrame(frame).setBoolean(frameSlot, value);
+    }
+
+    @Specialization(guards = "isIntegerKind(getGeneratorFrame(frame), frameSlot)")
+    void writeInt(VirtualFrame frame, int value) {
+        getGeneratorFrame(frame).setInt(frameSlot, value);
+    }
+
+    @Specialization(guards = "isLongKind(getGeneratorFrame(frame), frameSlot)")
+    void writeLong(VirtualFrame frame, long value) {
+        getGeneratorFrame(frame).setLong(frameSlot, value);
+    }
+
+    @Specialization(guards = "isDoubleKind(getGeneratorFrame(frame), frameSlot)")
+    void writeDouble(VirtualFrame frame, double value) {
+        getGeneratorFrame(frame).setDouble(frameSlot, value);
+    }
+
+    @Specialization(replaces = {"writeBoolean", "writeInt", "writeLong", "writeDouble"})
+    void writeObject(VirtualFrame frame, Object value) {
+        Frame generatorFrame = getGeneratorFrame(frame);
+        FrameSlotGuards.ensureObjectKind(generatorFrame, frameSlot);
+        generatorFrame.setObject(frameSlot, value);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,20 +29,61 @@ public abstract class SequenceStorage {
 
     public enum ListStorageType {
         Uninitialized,
+        Empty,
         Boolean,
         Byte,
-        Char,
         Int,
         Long,
         Double,
-        List,
-        Tuple,
-        Generic
+        Generic;
+
+        public boolean generalizesFrom(ListStorageType other) {
+            switch (this) {
+                case Uninitialized:
+                case Empty:
+                    return false;
+                case Boolean:
+                case Byte:
+                case Double:
+                case Int:
+                    return other == Uninitialized || other == Empty || other == Byte;
+                case Long:
+                    return other == Uninitialized || other == Empty || other == Byte || other == Int;
+                default:
+                    return true;
+            }
+        }
     }
 
-    public abstract int length();
+    // nominated storage length
+    protected int length;
 
-    public abstract void setNewLength(int length);
+    // physical storage length
+    protected int capacity;
+
+    protected SequenceStorage() {
+    }
+
+    protected SequenceStorage(int length, int capacity) {
+        this.length = length;
+        this.capacity = capacity;
+    }
+
+    public final int length() {
+        return length;
+    }
+
+    public void setNewLength(int length) {
+        this.length = length;
+    }
+
+    protected final void incLength() {
+        this.length++;
+    }
+
+    public final int getCapacity() {
+        return capacity;
+    }
 
     public abstract SequenceStorage copy();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISABSTRACTMETHOD__;
 
 import java.util.List;
 
@@ -50,12 +53,23 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PClassmethod})
 public class DecoratedMethodBuiltins extends PythonBuiltins {
@@ -81,6 +95,45 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         @Specialization
         protected Object func(PDecoratedMethod self) {
             return self.getCallable();
+        }
+    }
+
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
+    public abstract static class DictNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        protected Object getDict(PDecoratedMethod self, @SuppressWarnings("unused") PNone mapping,
+                        @Cached GetOrCreateDictNode getDict) {
+            return getDict.execute(self);
+        }
+
+        @Specialization
+        protected Object setDict(PDecoratedMethod self, PDict mapping,
+                        @Cached SetDictNode setDict) {
+            setDict.execute(self, mapping);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        protected Object setDict(@SuppressWarnings("unused") PDecoratedMethod self, Object mapping) {
+            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+        }
+    }
+
+    @Builtin(name = __ISABSTRACTMETHOD__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class IsAbstractMethodNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean isAbstract(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached PyObjectIsTrueNode isTrue,
+                        @Cached ConditionProfile hasAttrProfile) {
+            Object result = lookup.execute(frame, self.getCallable(), __ISABSTRACTMETHOD__);
+            if (hasAttrProfile.profile(result != PNone.NO_VALUE)) {
+                return isTrue.execute(frame, result);
+            }
+            return false;
         }
     }
 }

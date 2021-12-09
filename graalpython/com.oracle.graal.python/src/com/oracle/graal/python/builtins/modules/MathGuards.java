@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 
@@ -49,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 public class MathGuards {
 
     public static boolean fitLong(double value) {
-        return Long.MIN_VALUE <= value && value <= Long.MAX_VALUE;
+        return Long.MIN_VALUE < value && value < Long.MAX_VALUE;
     }
 
     public static boolean fitInt(double value) {
@@ -58,6 +59,10 @@ public class MathGuards {
 
     public static boolean isNumber(Object value) {
         return isInteger(value) || value instanceof Float || value instanceof Double || value instanceof PFloat;
+    }
+
+    public static boolean isComplexNumber(Object value) {
+        return isNumber(value) || value instanceof PComplex;
     }
 
     public static boolean isInteger(Object value) {

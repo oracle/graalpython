@@ -1,0 +1,20 @@
+ModuleRootNode Name: <module 'while09'> SourceSection: [0,31]`while True:↵  pass↵e...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,31]`while True:↵  pass↵e...`
+    ExpressionWithSideEffect SourceSection: [0,31]`while True:↵  pass↵e...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        ElseNode SourceSection: [0,31]`while True:↵  pass↵e...`
+          WhileNode SourceSection: None
+            WhileRepeatingNode SourceSection: None
+              YesNodeGen SourceSection: None
+                BooleanLiteralNode SourceSection: [6,10]`True`
+              ExpressionStatementNode SourceSection: [14,18]`pass`
+                EmptyNode SourceSection: [14,18]`pass`
+          ExpressionStatementNode SourceSection: [27,31]`pass`
+            EmptyNode SourceSection: [27,31]`pass`

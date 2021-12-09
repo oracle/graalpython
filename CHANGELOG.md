@@ -3,6 +3,150 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 22.0.0
+* Added support for `pyexpat` module.
+* Added partial support for `PYTHONHASHSEED` environment variable (also available via `HashSeed` context option), currently only affecting hashing in `pyexpat` module.
+* Implement `_csv` module.
+* Improved compatibility with PyPI packages `wheel` and `click`
+
+## Version 21.3.0
+
+* Remove `PYPY_VERSION` from our C extension emulation, enabling PyGame 2.0 and other extensions to work out of the box.
+* Intrinsify and optimize more of the core language for better startup and reduced footprint.
+* Implement a new binary compatible backend for HPy 0.0.3, which allows binary HPy wheels to run unmodified on CPython and GraalPython
+* Support the `multiprocessing` module via in-process nested contexts, allowing execution on multiple cores within the same process using the Python multiprocessing API
+* Add support for the `ctypes` module, enabling more native extensions to run that use the ctypes API
+* Fix multiple REPL issues reported on Github, you can now paste blocks of code and use the numpad in the REPL.
+* Make our marshal format compatible with CPython, so binary data can now be exchanged between CPython and GraalPython processes.
+* Make most `socket` module tests pass in native mode by using a native extension, allowing usage of all POSIX socket APIs where before only those supported on Java could be used.
+* Various compatibility fixes to make the `psutil` package work.
+
+## Version 21.2.0
+
+* Support the `dict` type properly in interop using the new hash interop messages.
+* Implement `_pickle` as a faster version than the pure Python version for GraalVM Enterprise Edition.
+* Support the newer multi-phase C extension module initialization.
+* Make many more tests pass: `io`, `crypt`, more functions in `socket`, `OrderedDict`, `time`,
+* Improve performance especially during warmup and in shared engine configurations by adding fast paths, intrinsifying functions, and adding optimized representations for common data structures
+* Update the supported HPy version to 0.0.2
+* Use the new Truffle safepoint mechanism for more efficient GIL releases, signal handlers, and weakref callbacks
+* Initial support for the `psutil` and `PyGame` packages
+* GraalPython not longer unconditionally creates `__pycache__` if the file name "sitecustomize.py" exists in the current working directory
+
+## Version 21.1.0
+
+* Support multi-threading with a global interpreter lock by default.
+* Added SSL/TLS support (the `ssl` module)
+* Added subclassing of Java classes in JVM mode
+* Support iterating over Python objects from Java and other languages as well as iterating over foreign objects in Python
+* Support catching exceptions from other languages or Java with catch-all except blocks
+* Support isinstance and issubclass with instances and classes of other languages
+* Use native posix functions in the GraalPython Launcher (see [Operating System Interfaces](https://www.graalvm.org/reference-manual/python/OsInterface/) for details)
+
+## Version 21.0.0
+
+* Implement name mangling for private attributes
+* Correctly raise an AttributeError when a class defines slots, but not dict
+* Fix infinite continuation prompt in REPL when pasting snippets
+* Add jarray module for compatiblity with Jython
+* Fix multiple memory leaks and crashes when running NumPy in a shared engine
+* Improved support for Pandas
+* Initial support for Matplotlib
+* Many fixes to pass the unittests of standard library types and modules:
+  abc, array, builtin, bzip2, decimal, descriptors, difflib, enum, fractions,
+  gzip, memoryview, metaclass, pickle, platform, print, reprlib, statistics,
+  strftime, strtod, sysconfig, userdict, userlist, userstring, zipfile,
+  zipfile64, zlib
+* Improve performance in multiple areas:
+  array, memoryview, unzipping packages, dictionaries with dynamic string keys,
+  string slicing
+
+## Version 20.3.0
+
+* Fix multiple memory leaks when running Python code in a shared engine.
+* Update language support target and standard library to 3.8.5
+* Hide internal catching frames from tracebacks
+* Update HPy support to the latest version with support for piconumpy
+* Many fixes to pass the unittests of standard library types and modules:
+  complex, bytes, bytearray, subclassing of special descriptors, type layouts,
+  float, generators, modules, argument passing corner cases, string literals and
+  encodings, import and importlib, decimal, glob, the builtin module, json,
+  math, operator, numeric tower, sys, warnings, random, f-strings, struct,
+  itertools
+
+## Version 20.2.0
+
+* Escaping Unicode characters using the character names in strings like
+  "\N{GREEK CAPITAL LETTER DELTA}".
+* When a `*.py` file is imported, `*.pyc` file is created. It contains binary data to speed up parsing.
+* Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable, which is also accepted now. 
+* Adding optin `DontWriteBytecodeFlag`. Equivalent to the Python -B flag. Don't write bytecode files.
+* Command option -B works
+* Implement better reference counting for native extensions to fix memory leaks
+* Fix a warning in pandas about size of datetime objects
+* Make many more CPython unittests pass for core types
+* Support parse requests with arguments for embedding Python to light up GraalVM Insight support
+* Support basic tox usage when forcing virtualenv to use venv
+* No longer support iterables as arrays in interop
+* Add initial support for HPy native extensions
+* Support magic encoding comments in Python files
+* Improve chaining of exception tracebacks - the tracebacks should now be much closer to CPython and more helpful
+
+## Version 20.1.0
+
+* Update language support target and standard library to 3.8.2
+* Improve performance of tuples with primitive elements
+* Improve performance of using Python sequences from other GraalVM languages
+* Improve performance of dictionaries and sets
+* Improve performance of allocations for list comprehensions with range iterators
+* Support `cProfile` and `trace` modules through the GraalVM CPU sampler and coverage, respectively
+* Support NumPy on macOS
+* Support setuptools-scm and pytz.timezone
+* Support new syntax for iterable unpacking from yield and return statements
+* Fix issues with inspection and printing of non-Python numbers in the Chrome debugger
+* Fix issues with AST sharing across different contexts, if these context run concurrently on multiple threads
+* Fix code serialization and deserialization with pickle
+* Fix DirEntry.stat
+* Fix passing non-ASCII strings to `gethostbyname`
+* Fix `help(numpy)` to work again in the interactive REPL
+* Fix multi-line continuation in the REPL for opening parens
+* Fix `select.select` for pipes
+* Polyglot: Rethrow AttributeError as UnknownIdentifierException in invokeMember
+* Jython mode: treat Java `null` as identical to Python `None` when comparing with the `is` operator
+* Jython mode: `isinstance` now works with Java classes and objects
+* Improve errno handling in `posix` module
+* Move all GraalPython specific functions on `sys` or `builtins` to the `__graalpython__` module
+
+## Version 20.0.0
+
+* Jython Compatiblity: Implement `from JavaType import *` to import all static members of a Java class
+* Jython Compatiblity: Implement importing Python code from inside JAR files by adding `path/to/jarfile.jar!path/inside/jar` to `sys.path`
+* Added support for date and time interop.
+* Added support for setting the time zone via `Context.Builder.timeZone`.
+* PEP 570 - Python Positional-Only Parameters implemented
+
+## Version 19.3.0
+
+* Implement `gc.{enable,disable,isenabled}` as stubs
+* Implement `charmap_build` function
+* Implement `hexversion` in sys module
+* Implement `_lzma` module
+* Implement enough of `socket.socket` to run `graalpython -m http.server` and download non-encrypted http resources
+* Fix printing of Pandas data frames
+* Fix a bug in `bytes.startswith` for tuple arguments
+* Fix destructuring assignments of arbitrary iterators
+* Fix `dict.__contains__` for dictionaries with only `str` keys for subclasses of `str`
+* Support NumPy 1.16.4 and Pandas 0.25.0
+* Support `timeit` module
+* Support basic usage of `pytest`
+* Improve performance across many Python and C extension benchmarks
+* Improve performance of our parser
+* Improve performance of catching exceptions when the exception does not leave the handler block and the traceback is not accessed
+* Improve performance of Java interop when Python objects are accessed from Java
+* Add a new `--python.EmulateJython` flag to support importing Java classes using normal Python import syntax and to catch Java exceptions from Python code
+* Update standard library to Python 3.7.4
+* Initial implementatin of PEP 498 -- Literal String Interpolation
+
 ## Version 19.2.0
 
 * Implement PyStructSequence_* C API functions

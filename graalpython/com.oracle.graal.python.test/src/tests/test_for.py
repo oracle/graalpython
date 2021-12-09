@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -113,6 +113,7 @@ def test_else_break_from_while():
             break
     assert iters == 11, "if the while-loop doesn't break, the else should be executed and break out of the outer loop"
 
+
 class A(object):
     def __iter__(self):
         return iter(['key', 'value'])
@@ -128,3 +129,26 @@ def test_for_iter():
         assert 'value' in value
         iterator += 1
     assert iterator==2
+
+
+def test_for_comprehension_with_nested_loop_and_conditional():
+    d1 = [1, 2]
+    d2 = ['a', 'b', 'c']
+
+    # with conditional
+    res = [
+        b
+        for a in d1 if d1
+        for b in d2
+    ]
+
+    assert res == ['a', 'b', 'c', 'a', 'b', 'c']
+
+    # without conditional
+    res = [
+        b
+        for a in d1
+        for b in d2
+    ]
+
+    assert res == ['a', 'b', 'c', 'a', 'b', 'c']

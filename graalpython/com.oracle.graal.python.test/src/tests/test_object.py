@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -151,3 +151,6 @@ def test_class_attr():
 
     AAA().foo()
     CCC().bar()
+
+def test_reduce_ex_with_none():
+    assert_raises(TypeError, object(), None)

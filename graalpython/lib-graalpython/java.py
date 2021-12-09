@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,35 +36,72 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import posix
 import sys
 import _frozen_importlib
 
 
 class JavaPackageLoader:
     @staticmethod
-    def _make_getattr(modname):
-        if modname.startswith("java."):
-            modname_wo = modname[len("java."):] + "."
-        else:
-            modname_wo = None
-        modname = modname + "."
-        def __getattr__(key, default=None):
-            try:
-                return type(modname + key)
-            except KeyError:
-                pass
-            if modname_wo:
+    def is_java_package(name):
+        try:
+            package = type("java.lang.Package")
+            return any(p.getName().startswith(name) for p in package.getPackages())
+        except KeyError:
+            if name in ("java.lang", "java.util"):
+                # Some well-known packages that we always allow
+                return True
+            if sys.flags.verbose:
+                from _warnings import warn
+                warn("Host lookup allowed, but java.lang.Package not available. Importing from Java cannot work.")
+            return False
+    if __graalpython__.jython_emulation_enabled:
+        @staticmethod
+        def _make_getattr(modname):
+            modname = modname + "."
+            def __getattr__(key, default=None):
+                if __graalpython__.host_import_enabled:
+                    loadname = modname + key
+                    if JavaPackageLoader.is_java_package(loadname):
+                        return JavaPackageLoader._create_module(loadname)
+                    else:
+                        try:
+                            return type(modname + key)
+                        except KeyError:
+                            pass
+                raise AttributeError(key)
+            return __getattr__
+    else:
+        @staticmethod
+        def _make_getattr(modname):
+            if modname.startswith("java."):
+                modname_wo = modname[len("java."):] + "."
+            else:
+                modname_wo = None
+            modname = modname + "."
+            def __getattr__(key, default=None):
                 try:
-                    return type(modname_wo + key)
+                    return type(modname + key)
                 except KeyError:
                     pass
-            raise AttributeError(key)
-        return __getattr__
+                if modname_wo:
+                    try:
+                        return type(modname_wo + key)
+                    except KeyError:
+                        pass
+                if JavaPackageLoader.is_java_package(modname + key):
+                    return JavaPackageLoader._create_module(modname + key)
+                raise AttributeError(key)
+            return __getattr__
 
     @staticmethod
     def create_module(spec):
-        newmod = _frozen_importlib._new_module(spec.name)
-        newmod.__getattr__ = JavaPackageLoader._make_getattr(spec.name)
+        return JavaPackageLoader._create_module(spec.name)
+
+    @staticmethod
+    def _create_module(name):
+        newmod = _frozen_importlib._new_module(name)
+        newmod.__getattr__ = JavaPackageLoader._make_getattr(name)
         newmod.__path__ = __path__
         return newmod
 
@@ -78,25 +115,90 @@ class JavaTypeLoader:
     def create_module(spec):
         pass
 
-    @staticmethod
-    def exec_module(module):
-        try:
+    if __graalpython__.jython_emulation_enabled:
+        @staticmethod
+        def exec_module(module):
             sys.modules[module.__name__] = type(module.__name__)
-        except KeyError:
-            if module.__name__.startswith("java."):
-                sys.modules[module.__name__] = type(module.__name__[len("java."):])
-            else:
-                raise
+    else:
+        @staticmethod
+        def exec_module(module):
+            try:
+                sys.modules[module.__name__] = type(module.__name__)
+            except KeyError:
+                if module.__name__.startswith("java."):
+                    sys.modules[module.__name__] = type(module.__name__[len("java."):])
+                else:
+                    raise
 
 
 class JavaImportFinder:
-    @staticmethod
-    def find_spec(fullname, path, target=None):
-        if path and path == __path__:
-            if fullname.rpartition('.')[2].islower():
-                return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
-            else:
+    def is_type(self, name):
+        try:
+            type(name)
+            return True
+        except KeyError:
+            return False
+
+    if __graalpython__.jython_emulation_enabled:
+        def find_spec(self, fullname, path, target=None):
+            # Because of how Jython allows you to import classes that have not
+            # been loaded, yet, we need attempt to load types very eagerly.
+            if self.is_type(fullname):
+                # the fullname is already a type, let's load it
                 return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
+            else:
+                current_import_name = __graalpython__.current_import()
+                if current_import_name and self.is_type(current_import_name):
+                    # We are currently handling an import that will lead to a
+                    # Java type. The fullname is not a type itself, so it must
+                    # be a package, not an enclosing class.
+                    return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
+                else:
+                    # We are not currently handling an import statement, and the
+                    # fullname is not a type. Thus we can only check if it is a
+                    # known package.
+                    if JavaPackageLoader.is_java_package(fullname):
+                        return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
+    else:
+        def find_spec(self, fullname, path, target=None):
+            if path and path == __path__:
+                if fullname.rpartition('.')[2].islower():
+                   return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
+                else:
+                    return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
 
 
-sys.meta_path.append(JavaImportFinder)
+if __graalpython__.jython_emulation_enabled:
+    class JarImportLoader:
+        def __init__(self, code):
+            self.code = code
+
+        def create_module(self, spec):
+            newmod = _frozen_importlib._new_module(spec.name)
+            newmod.__path__ = self.code.co_filename
+            return newmod
+
+        def exec_module(self, module):
+            exec(self.code, module.__dict__)
+
+
+    class JarImportFinder:
+        def __init__(self):
+            self.zipimport = __import__("zipimport")
+
+        def find_spec(self, fullname, path, target=None):
+            for path in sys.path:
+                if ".jar!" in path:
+                    zipimport_path = path.replace(".jar!/", ".jar/").replace(".jar!", ".jar/")
+                    zipimporter = self.zipimport.zipimporter(zipimport_path)
+                    if zipimporter.find_module(fullname):
+                        if zipimporter.is_package(fullname):
+                            return _frozen_importlib.ModuleSpec(fullname, JarImportLoader(zipimporter.get_code(fullname)), is_package=True)
+                        else:
+                            return _frozen_importlib.ModuleSpec(fullname, JarImportLoader(zipimporter.get_code(fullname)), is_package=False)
+
+
+    sys.meta_path.append(JarImportFinder())
+
+
+sys.meta_path.append(JavaImportFinder())

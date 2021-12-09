@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,32 +40,161 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.graal.python.nodes.expression.CastToListExpressionNode;
-import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.literal.StarredExpressionNodeFactory.AppendToSetNodeGen;
+import com.oracle.graal.python.nodes.literal.StarredExpressionNodeFactory.AppendToStorageNodeGen;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class StarredExpressionNode extends LiteralNode {
-    @Child private CastToListExpressionNode childNode;
+    @Child private ExpressionNode childNode;
+    @Child private AppendToStorageNode appendToStorageNode;
+    @Child private AppendToSetNode appendToSetNode;
 
-    private StarredExpressionNode(CastToListExpressionNode childNode) {
+    private StarredExpressionNode(ExpressionNode childNode) {
         this.childNode = childNode;
     }
 
     public static StarredExpressionNode create(ExpressionNode child) {
-        return new StarredExpressionNode(CastToListExpressionNodeGen.create(child));
+        return new StarredExpressionNode(child);
     }
 
     public ExpressionNode getValue() {
-        return childNode.getOperand();
+        return childNode;
     }
 
-    public Object[] getArray(VirtualFrame frame) {
-        return childNode.getArray(frame);
+    public static boolean isStarredExpression(ExpressionNode node) {
+        return node.unwrap() instanceof StarredExpressionNode;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
         return childNode.execute(frame);
+    }
+
+    public HashingStorage appendToSet(VirtualFrame frame, HashingStorage storage, HashingStorageLibrary storageLib, ThreadState state, Object values) {
+        return ensureAppendToSetNode().execute(frame, storage, storageLib, values, state);
+    }
+
+    public SequenceStorage appendToStorage(VirtualFrame frame, SequenceStorage storage, Object values) {
+        return ensureAppendToStorageNode().execute(frame, storage, values);
+    }
+
+    private AppendToStorageNode ensureAppendToStorageNode() {
+        if (appendToStorageNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            appendToStorageNode = insert(AppendToStorageNodeGen.create());
+        }
+        return appendToStorageNode;
+    }
+
+    private AppendToSetNode ensureAppendToSetNode() {
+        if (appendToSetNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            appendToSetNode = insert(AppendToSetNodeGen.create());
+        }
+        return appendToSetNode;
+    }
+
+    @ImportStatic(PGuards.class)
+    public abstract static class AppendToSetNode extends Node {
+        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage storage, HashingStorageLibrary storageLib, Object values, ThreadState state);
+
+        @Specialization(guards = "cannotBeOverridden(values, getClassNode)", limit = "1")
+        static HashingStorage doSetPSequence(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, PSequence values, ThreadState state,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+            HashingStorage storage = storageIn;
+            SequenceStorage valuesStorage = values.getSequenceStorage();
+            int n = lenNode.execute(valuesStorage);
+            for (int i = 0; i < n; i++) {
+                Object element = getItemNode.execute(frame, valuesStorage, i);
+                storage = storageLib.setItemWithState(storage, element, PNone.NONE, state);
+            }
+            return storage;
+        }
+
+        @Specialization(guards = "!isPSequence(values) || !cannotBeOverridden(values, getClassNode)", limit = "1")
+        static HashingStorage doSetIterable(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, Object values, ThreadState state,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached GetNextNode next,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PyObjectGetIter getIter) {
+            Object iterator = getIter.execute(frame, values);
+            HashingStorage storage = storageIn;
+            while (true) {
+                try {
+                    Object nextValue = next.execute(frame, iterator);
+                    storage = storageLib.setItemWithState(storage, nextValue, PNone.NONE, state);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+            }
+            return storage;
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    public abstract static class AppendToStorageNode extends Node {
+        public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage storage, Object values);
+
+        @Specialization(guards = "cannotBeOverridden(values, getClassNode)", limit = "1")
+        SequenceStorage doPSequence(SequenceStorage storage, PSequence values,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached("createConcatStorageNode()") SequenceStorageNodes.ConcatNode concatNode) {
+            return concatNode.execute(storage, values.getSequenceStorage());
+        }
+
+        @Specialization(guards = "!isPSequence(values) || !cannotBeOverridden(values, getClassNode)", limit = "1")
+        SequenceStorage doIterable(VirtualFrame frame, SequenceStorage storageIn, Object values,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached GetNextNode next,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @Cached PyObjectGetIter getIter) {
+            Object iterator = getIter.execute(frame, values);
+            SequenceStorage storage = storageIn;
+            while (true) {
+                try {
+                    Object nextValue = next.execute(frame, iterator);
+                    storage = appendNode.execute(storage, nextValue, ListGeneralizationNode.SUPPLIER);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+            }
+            return storage;
+        }
+
+        static SequenceStorageNodes.ConcatNode createConcatStorageNode() {
+            return SequenceStorageNodes.ConcatNode.create(new Supplier<GeneralizationNode>() {
+                @Override
+                public GeneralizationNode get() {
+                    return ListGeneralizationNode.create();
+                }
+            });
+        }
     }
 }

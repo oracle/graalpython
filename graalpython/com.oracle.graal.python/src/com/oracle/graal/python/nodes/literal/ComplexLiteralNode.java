@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,21 +26,31 @@
 package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public final class ComplexLiteralNode extends LiteralNode {
-    private final PComplex value;
+public final class ComplexLiteralNode extends SimpleLiteralNode {
+    private final double real;
+    private final double imag;
+    @Child private PythonObjectFactory factory;
 
-    public ComplexLiteralNode(PComplex value) {
-        this.value = value;
+    public ComplexLiteralNode(double real, double imag) {
+        this.real = real;
+        this.imag = imag;
     }
 
+    @Override
     public PComplex getValue() {
-        return value;
+        return PythonObjectFactory.getUncached().createComplex(real, imag);
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        return value;
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
+        return factory.createComplex(real, imag);
     }
 }

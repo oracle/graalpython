@@ -1,0 +1,12 @@
+*graalpython.lib-python.3.test.test_urllibnet.URLTimeoutTest.testURLread
+*graalpython.lib-python.3.test.test_urllibnet.urlopenNetworkTests.test_bad_address
+*graalpython.lib-python.3.test.test_urllibnet.urlopenNetworkTests.test_basic
+*graalpython.lib-python.3.test.test_urllibnet.urlopenNetworkTests.test_getcode
+*graalpython.lib-python.3.test.test_urllibnet.urlopenNetworkTests.test_geturl
+*graalpython.lib-python.3.test.test_urllibnet.urlopenNetworkTests.test_info
+*graalpython.lib-python.3.test.test_urllibnet.urlopenNetworkTests.test_readlines
+*graalpython.lib-python.3.test.test_urllibnet.urlretrieveNetworkTests.test_basic
+*graalpython.lib-python.3.test.test_urllibnet.urlretrieveNetworkTests.test_data_header
+*graalpython.lib-python.3.test.test_urllibnet.urlretrieveNetworkTests.test_header
+*graalpython.lib-python.3.test.test_urllibnet.urlretrieveNetworkTests.test_reporthook
+*graalpython.lib-python.3.test.test_urllibnet.urlretrieveNetworkTests.test_specified_path

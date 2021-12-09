@@ -66,6 +66,10 @@ class EnvBuilder:
         self.setup_python(context)
         if self.with_pip:
             self._setup_pip(context)
+        # Truffle change: patch shebang
+        self._patch_shebang(context)
+        self._install_compilers(context)
+        # End of Truffle change
         if not self.upgrade:
             self.setup_scripts(context)
             self.post_setup(context)
@@ -105,8 +109,7 @@ class EnvBuilder:
         prompt = self.prompt if self.prompt is not None else context.env_name
         context.prompt = '(%s) ' % prompt
         create_if_needed(env_dir)
-        env = os.environ
-        executable = getattr(sys, '_base_executable', sys.executable)
+        executable = sys._base_executable
         dirname, exename = os.path.split(os.path.abspath(executable))
         context.executable = executable
         context.python_dir = dirname
@@ -126,6 +129,7 @@ class EnvBuilder:
         # Truffle change: our executable may not just be a file (e.g. we're
         # running through java), we always provide a script for launching in
         # venv
+        context.libpath = libpath
         exename = context.python_exe = "graalpython"
 
         import atexit, tempfile
@@ -137,13 +141,15 @@ class EnvBuilder:
         with open(script, "w") as f:
             if sys.platform != "win32":
                 f.write("#!/bin/sh\n")
-            f.write(sys.executable)
-            f.write(" --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s'" % (
-                sys.graal_python_core_home,
-                sys.graal_python_stdlib_home,
+            f.write(" ".join(__graalpython__.executable_list))
+            f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'  --python.JNIHome='%s'" % (
+                __graalpython__.core_home,
+                __graalpython__.stdlib_home,
                 context.env_dir,
                 sys.base_prefix,
                 os.path.join(context.env_dir, binname, exename),
+                __graalpython__.capi_home,
+                __graalpython__.jni_home,
             ))
             if sys.platform == "win32":
                 f.write(" %*")
@@ -155,7 +161,7 @@ class EnvBuilder:
 
         atexit.register(lambda: shutil.rmtree(tempdir, ignore_errors=True))
 
-        dirname = context.python_dir = sys.graal_python_home
+        dirname = context.python_dir = __graalpython__.home
         context.executable = script
 
         if self.symlinks:
@@ -178,6 +184,64 @@ class EnvBuilder:
         create_if_needed(binpath)
         return context
 
+
+    def _install_compilers(self, context):
+        """Puts the Graal LLVM compiler tools on the path"""
+        
+        # Table of well-known LLVM tools that must be queried by a variable name.
+        llvm_tools = {
+            "AR": ("ar",),
+            "RANLIB": ("ranlib",),
+            "NM": ("nm",),
+            "LD": ("ld.lld", "ld", "lld"),
+            "CC": ("clang", "cc"),
+            "CXX": ("clang++", "c++"),
+        }
+        # Table of additional LLVM tools to use if they are available.
+        _llvm_bins = {
+            "llvm-as": ("as",),
+            "clang-cl": ("cl",),
+            "clang-cpp": ("cpp",),
+        }
+        bin_dir = os.path.join(context.env_dir, context.bin_name)
+        def create_symlinks(table, resolver):
+            for tool_var in table:
+                tool_path = resolver(tool_var)
+                if os.path.exists(tool_path):
+                    for name in llvm_tools[tool_var]:
+                        dest = os.path.join(bin_dir, name)
+                        if not os.path.exists(dest):
+                            os.symlink(tool_path, dest)
+        
+        create_symlinks(llvm_tools, __graalpython__.get_toolchain_tool_path)
+        # NOTE: function 'get_toolcahin_paths' returns a tuple
+        llvm_path = __graalpython__.get_toolchain_paths("PATH")
+        if llvm_path and llvm_path[0]:
+            create_symlinks(_llvm_bins, lambda binary_name: os.path.join(llvm_path[0], binary_name))
+
+
+    def _patch_shebang(self, context):
+        # Truffle change: we need to patch the pip/pip3 (and maybe other) 
+        # launchers on Darwin because the shebang tries to invoke our 
+        # graalpython shell script but Darwin strictly requires a binary 
+        # in the shebang.
+        if sys.platform == "darwin":
+            bin_dir = os.path.join(context.env_dir, context.bin_name)
+            python_exe = os.path.join(bin_dir, context.python_exe)
+            for entry in os.listdir(bin_dir):
+                abs_entry = os.path.join(bin_dir, entry)
+                if os.path.isfile(abs_entry):
+                    with open(abs_entry, "r+") as f:
+                        content = f.read()
+                        expected_shebang = "#!" + python_exe
+                        if content.startswith(expected_shebang):
+                            f.seek(0)
+                            f.truncate()
+                            logging.info("replacing shebang of {} (originally '{}') with '{}'".format(entry, expected_shebang, "#!/bin/sh " + python_exe))
+                            content = content.replace(expected_shebang, "#!/bin/sh " + python_exe)
+                            f.write(content)
+
+
     def create_configuration(self, context):
         """
         Create a configuration file indicating where the environment's Python
@@ -196,40 +260,69 @@ class EnvBuilder:
                 incl = 'false'
             f.write('include-system-site-packages = %s\n' % incl)
             f.write('version = %d.%d.%d\n' % sys.version_info[:3])
+            if self.prompt is not None:
+                f.write(f'prompt = {self.prompt!r}\n')
 
-    def symlink_or_copy(self, src, dst, relative_symlinks_ok=False):
-        """
-        Try symlinking a file, and if that fails, fall back to copying.
-        """
-        force_copy = not self.symlinks
-        if not force_copy:
-            try:
-                if not os.path.islink(dst): # can't link to itself!
+    if os.name != 'nt':
+        def symlink_or_copy(self, src, dst, relative_symlinks_ok=False):
+            """
+            Try symlinking a file, and if that fails, fall back to copying.
+            """
+            force_copy = not self.symlinks
+            if not force_copy:
+                try:
+                    if not os.path.islink(dst): # can't link to itself!
+                        if relative_symlinks_ok:
+                            assert os.path.dirname(src) == os.path.dirname(dst)
+                            os.symlink(os.path.basename(src), dst)
+                        else:
+                            os.symlink(src, dst)
+                except Exception:   # may need to use a more specific exception
+                    logger.warning('Unable to symlink %r to %r', src, dst)
+                    force_copy = True
+            if force_copy:
+                shutil.copyfile(src, dst)
+    else:
+        def symlink_or_copy(self, src, dst, relative_symlinks_ok=False):
+            """
+            Try symlinking a file, and if that fails, fall back to copying.
+            """
+            bad_src = os.path.lexists(src) and not os.path.exists(src)
+            if self.symlinks and not bad_src and not os.path.islink(dst):
+                try:
                     if relative_symlinks_ok:
                         assert os.path.dirname(src) == os.path.dirname(dst)
                         os.symlink(os.path.basename(src), dst)
                     else:
                         os.symlink(src, dst)
-            except Exception:   # may need to use a more specific exception
-                logger.warning('Unable to symlink %r to %r', src, dst)
-                force_copy = True
-        if force_copy:
-            if os.name == 'nt':
-                # On Windows, we rewrite symlinks to our base python.exe into
-                # copies of venvlauncher.exe
-                basename, ext = os.path.splitext(os.path.basename(src))
+                    return
+                except Exception:   # may need to use a more specific exception
+                    logger.warning('Unable to symlink %r to %r', src, dst)
+
+            # On Windows, we rewrite symlinks to our base python.exe into
+            # copies of venvlauncher.exe
+            basename, ext = os.path.splitext(os.path.basename(src))
+            srcfn = os.path.join(os.path.dirname(__file__),
+                                 "scripts",
+                                 "nt",
+                                 basename + ext)
+            # Builds or venv's from builds need to remap source file
+            # locations, as we do not put them into Lib/venv/scripts
+            if sysconfig.is_python_build(True) or not os.path.isfile(srcfn):
                 if basename.endswith('_d'):
                     ext = '_d' + ext
                     basename = basename[:-2]
-                if sysconfig.is_python_build(True):
-                    if basename == 'python':
-                        basename = 'venvlauncher'
-                    elif basename == 'pythonw':
-                        basename = 'venvwlauncher'
-                    scripts = os.path.dirname(src)
-                else:
-                    scripts = os.path.join(os.path.dirname(__file__), "scripts", "nt")
-                src = os.path.join(scripts, basename + ext)
+                if basename == 'python':
+                    basename = 'venvlauncher'
+                elif basename == 'pythonw':
+                    basename = 'venvwlauncher'
+                src = os.path.join(os.path.dirname(src), basename + ext)
+            else:
+                src = srcfn
+            if not os.path.exists(src):
+                if not bad_src:
+                    logger.warning('Unable to copy %r', src)
+                return
 
             shutil.copyfile(src, dst)
 
@@ -250,7 +343,9 @@ class EnvBuilder:
                 os.chmod(path, 0o755)
             for suffix in ('python', 'python3'):
                 path = os.path.join(binpath, suffix)
-                if not os.path.exists(path):
+                # Truffle change: always re-create Python executables if not symlinks
+                if not self.symlinks:
+                    # End of Truffle change
                     # Issue 18807: make copies if
                     # symlinks are not wanted
                     copier(context.env_exe, path, relative_symlinks_ok=True)
@@ -277,7 +372,7 @@ class EnvBuilder:
 
             for suffix in suffixes:
                 src = os.path.join(dirname, suffix)
-                if os.path.exists(src):
+                if os.path.lexists(src):
                     copier(src, os.path.join(binpath, suffix))
 
             if sysconfig.is_python_build(True):

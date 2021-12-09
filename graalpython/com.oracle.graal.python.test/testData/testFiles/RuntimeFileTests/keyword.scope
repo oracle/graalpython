@@ -1,0 +1,10 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: main
+        Kind: Function
+        FrameDescriptor: [line, format, match, start, optfile, fp, sys, args, strprog, re, iptfile, end, lines, <return_val>, nl]
+        CellVars: Empty
+        FreeVars: Empty

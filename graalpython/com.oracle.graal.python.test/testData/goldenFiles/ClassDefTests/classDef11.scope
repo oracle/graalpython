@@ -1,0 +1,20 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: make_named_tuple_class
+        Kind: Function
+        FrameDescriptor: [named_tuple, name, fields, <return_val>]
+        CellVars: [fields, name]
+        FreeVars: Empty
+        Scope: named_tuple
+            Kind: Class
+            FrameDescriptor: [n_sequence_fields, __name__, name, __repr__, fields]
+            CellVars: Empty
+            FreeVars: [fields, name]
+            Scope: __repr__
+                Kind: Function
+                FrameDescriptor: [f, name, self, fields, <return_val>, sb]
+                CellVars: Empty
+                FreeVars: [fields, name]

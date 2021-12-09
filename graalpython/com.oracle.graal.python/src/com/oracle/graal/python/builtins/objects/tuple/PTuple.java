@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,34 +25,33 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
 
-public final class PTuple extends PImmutableSequence {
+@ExportLibrary(InteropLibrary.class)
+public final class PTuple extends PSequence {
 
     private SequenceStorage store;
+    private long hash = -1;
 
-    public PTuple(LazyPythonClass cls, Object[] elements) {
-        super(cls);
+    public PTuple(Object cls, Shape instanceShape, Object[] elements) {
+        super(cls, instanceShape);
         this.store = new ObjectSequenceStorage(elements);
     }
 
-    public PTuple(LazyPythonClass cls, SequenceStorage store) {
-        super(cls);
+    public PTuple(Object cls, Shape instanceShape, SequenceStorage store) {
+        super(cls, instanceShape);
         this.store = store;
-    }
-
-    public Object[] getArray() {
-        // TODO disallow direct array access
-        if (store instanceof ObjectSequenceStorage) {
-            return ((ObjectSequenceStorage) store).getInternalArray();
-        }
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -92,6 +91,7 @@ public final class PTuple extends PImmutableSequence {
     }
 
     @Override
+    @ExportMessage.Ignore
     public boolean equals(Object other) {
         CompilerAsserts.neverPartOfCompilation();
         if (!(other instanceof PTuple)) {
@@ -108,19 +108,35 @@ public final class PTuple extends PImmutableSequence {
         return super.hashCode();
     }
 
-    public static PTuple require(Object value) {
-        if (value instanceof PTuple) {
-            return (PTuple) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new AssertionError("PTuple required.");
+    public long getHash() {
+        return hash;
     }
 
-    public static PTuple expect(Object value) throws UnexpectedResultException {
-        if (value instanceof PTuple) {
-            return (PTuple) value;
-        }
-        throw new UnexpectedResultException(value);
+    public void setHash(long hash) {
+        this.hash = hash;
     }
 
+    @SuppressWarnings({"static-method", "unused"})
+    public static void setItem(int idx, Object value) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.PTuple, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementModifiable(PTuple self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementInsertable(PTuple self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementRemovable(PTuple self, long index) {
+        return false;
+    }
 }

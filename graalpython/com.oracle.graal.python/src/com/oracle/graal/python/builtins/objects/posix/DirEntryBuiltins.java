@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,130 +40,149 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
-import java.nio.file.LinkOption;
+import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.opaquePathToBytes;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_DIR;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_LNK;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_REG;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_UNKNOWN;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFDIR;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFLNK;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFMT;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
+
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFd;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDirEntry)
 public class DirEntryBuiltins extends PythonBuiltins {
-
-    private static final LinkOption[] NOFOLLOW_LINKS_OPTIONS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-    private static final LinkOption[] NO_LINK_OPTIONS = new LinkOption[0];
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DirEntryBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = "name", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class NameNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "self.produceBytes()")
+        PBytes nameAsBytes(VirtualFrame frame, PDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return opaquePathToBytes(posixLib.dirEntryGetName(getPosixSupport(), self.dirEntryData), posixLib, getPosixSupport(), factory());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Specialization(guards = "!self.produceBytes()")
+        String nameAsString(VirtualFrame frame, PDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getPathAsString(getPosixSupport(), posixLib.dirEntryGetName(getPosixSupport(), self.dirEntryData));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        String repr(PDirEntry self) {
-            return "<DirEntry '" + self.getFile().getName() + "'>";
+        static String repr(VirtualFrame frame, PDirEntry self,
+                        @Cached NameNode nameNode,
+                        @Cached("create(Repr)") LookupAndCallUnaryNode reprNode,
+                        @Cached CastToJavaStringNode castToStringNode) {
+            StringBuilder sb = PythonUtils.newStringBuilder("<DirEntry ");
+            PythonUtils.append(sb, castToStringNode.execute(reprNode.executeObject(frame, nameNode.execute(frame, self))));
+            PythonUtils.append(sb, '>');
+            return PythonUtils.sbToString(sb);
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FSPATH__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class FspathNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        String fspath(PDirEntry self) {
-            return self.getFile().getPath();
-        }
-    }
+    abstract static class GetOpaquePathHelperNode extends PythonBuiltinBaseNode {
 
-    @Builtin(name = "inode", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class InodeNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        PNone inode(@SuppressWarnings("unused") PDirEntry self) {
-            return PNone.NONE;
-        }
-    }
+        abstract Object execute(VirtualFrame frame, Object dirEntryData, PosixFileHandle path);
 
-    private static LinkOption[] getLinkOption(boolean followSymlinks) {
-        return followSymlinks ? NO_LINK_OPTIONS : NOFOLLOW_LINKS_OPTIONS;
-    }
-
-    @Builtin(name = "is_symlink", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class IsSymNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean test(PDirEntry self) {
-            return self.getFile().isSymbolicLink();
-        }
-    }
-
-    @Builtin(name = "is_dir", minNumOfPositionalArgs = 1, keywordOnlyNames = {"follow_symlinks"})
-    @GenerateNodeFactory
-    abstract static class IsDirNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean testBool(PDirEntry self, boolean followSymlinks) {
-            return self.getFile().isDirectory(getLinkOption(followSymlinks));
+        Object getName(VirtualFrame frame, Object dirEntryData, @SuppressWarnings("unused") PosixFd fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.dirEntryGetName(getPosixSupport(), dirEntryData);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
 
         @Specialization
-        boolean testNone(PDirEntry self, @SuppressWarnings("unused") PNone followSymlinks) {
-            return testBool(self, true);
-        }
-
-        @Specialization
-        boolean testAny(VirtualFrame frame, Object self, Object followSymlinks,
-                        @Cached("createIfTrueNode()") CastToBooleanNode isTrue) {
-            if (self instanceof PDirEntry) {
-                return testBool((PDirEntry) self, isTrue.executeBoolean(frame, followSymlinks));
-            } else {
-                throw raise(PythonBuiltinClassType.TypeError, "descriptor 'is_dir' requires a 'posix.DirEntry' object but received a '%p'", self);
+        Object getPath(VirtualFrame frame, Object dirEntryData, PosixPath path,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.dirEntryGetPath(getPosixSupport(), dirEntryData, path.value);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
         }
     }
 
-    @Builtin(name = "is_file", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class IsFileNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        boolean test(PDirEntry self) {
-            return self.getFile().isRegularFile();
+    abstract static class CachedPosixPathNode extends PythonBuiltinBaseNode {
+
+        abstract PosixPath execute(VirtualFrame frame, PDirEntry self);
+
+        @Specialization(guards = "self.pathCache != null")
+        static PosixPath cached(PDirEntry self) {
+            return self.pathCache;
         }
-    }
 
-    @Builtin(name = "stat", minNumOfPositionalArgs = 1, doc = "return stat_result object for the entry; cached per entry")
-    @GenerateNodeFactory
-    abstract static class StatNode extends PythonUnaryBuiltinNode {
-        private static final String STAT_RESULT = "__stat_result__";
+        @Specialization(guards = {"self.pathCache == null", "self.produceBytes()"})
+        PosixPath createBytes(VirtualFrame frame, PDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GetOpaquePathHelperNode getOpaquePathHelperNode) {
+            Object opaquePath = getOpaquePathHelperNode.execute(frame, self.dirEntryData, self.scandirPath);
+            self.pathCache = new PosixPath(opaquePathToBytes(opaquePath, posixLib, getPosixSupport(), factory()), opaquePath, true);
+            return self.pathCache;
+        }
 
-        @Specialization
-        Object test(VirtualFrame frame, PDirEntry self,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode,
-                        @Cached("create()") PosixModuleBuiltins.StatNode statNode) {
-            Object stat_result = readNode.execute(self, STAT_RESULT);
-            if (stat_result == PNone.NO_VALUE) {
-                stat_result = statNode.execute(frame, self.getFile().getAbsoluteFile().getPath(), PNone.NO_VALUE);
-                writeNode.execute(self, STAT_RESULT, stat_result);
-            }
-            return stat_result;
+        @Specialization(guards = {"self.pathCache == null", "!self.produceBytes()"})
+        PosixPath createString(VirtualFrame frame, PDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GetOpaquePathHelperNode getOpaquePathHelperNode) {
+            Object opaquePath = getOpaquePathHelperNode.execute(frame, self.dirEntryData, self.scandirPath);
+            self.pathCache = new PosixPath(posixLib.getPathAsString(getPosixSupport(), opaquePath), opaquePath, false);
+            return self.pathCache;
         }
     }
 
@@ -171,17 +190,212 @@ public class DirEntryBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PathNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String path(PDirEntry self) {
-            return self.getFile().getPath();
+        static Object path(VirtualFrame frame, PDirEntry self,
+                        @Cached CachedPosixPathNode cachedPosixPathNode) {
+            return cachedPosixPathNode.execute(frame, self).originalObject;
         }
     }
 
-    @Builtin(name = "name", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __FSPATH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class NameNode extends PythonUnaryBuiltinNode {
+    abstract static class FspathNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String path(PDirEntry self) {
-            return self.getName();
+        static Object fspath(VirtualFrame frame, PDirEntry self,
+                        @Cached PathNode pathNode) {
+            return pathNode.execute(frame, self);
+        }
+    }
+
+    @Builtin(name = "inode", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class InodeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        long inode(VirtualFrame frame, PDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.dirEntryGetInode(getPosixSupport(), self.dirEntryData);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, varArgsMarker = true, keywordOnlyNames = {
+                    "follow_symlinks"}, doc = "return stat_result object for the entry; cached per entry")
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class StatNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return DirEntryBuiltinsClinicProviders.StatNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static Object stat(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
+                        @Cached StatHelperNode statHelperNode) {
+            return statHelperNode.execute(frame, self, followSymlinks, false);
+        }
+    }
+
+    abstract static class StatHelperNode extends PythonBuiltinBaseNode {
+
+        abstract PTuple execute(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent);
+
+        @Specialization(guards = {"followSymlinks", "self.statCache != null"})
+        @SuppressWarnings("unused")
+        static PTuple cachedStat(PDirEntry self, boolean followSymlinks, boolean catchNoent) {
+            return self.statCache;
+        }
+
+        @Specialization(guards = {"!followSymlinks", "self.lstatCache != null"})
+        @SuppressWarnings("unused")
+        static PTuple cachedLStat(PDirEntry self, boolean followSymlinks, boolean catchNoent) {
+            return self.lstatCache;
+        }
+
+        @Specialization(guards = "self.getStatCache(followSymlinks) == null")
+        PTuple stat(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached IsSymlinkNode isSymlinkNode,
+                        @Cached StatHelperNode recursiveNode,
+                        @Cached CachedPosixPathNode cachedPosixPathNode,
+                        @Cached ConditionProfile positiveLongProfile,
+                        @Cached ConditionProfile noSymlinkProfile) {
+            PTuple res;
+            // There are two caches - one for `follow_symlinks=True` and the other for
+            // 'follow_symlinks=False`. They are different only when the dir entry is a symlink.
+            // If it is not, they need to be the same, so we must make sure that fstatat() gets
+            // called only once.
+            if (noSymlinkProfile.profile(followSymlinks && !isSymlinkNode.execute(frame, self))) {
+                // The entry is not a symlink, so both stat caches need to have the
+                // same value. Also, the `follow_symlinks=False` cache might already be filled
+                // in. (In fact, the call to isSymlinkNode in the condition may fill it.)
+                // So we call ourselves recursively to either use or fill that cache first, and
+                // the `follow_symlinks=True` cache will be filled below.
+                res = recursiveNode.execute(frame, self, false, catchNoent);
+            } else {
+                int dirFd = self.scandirPath instanceof PosixFd ? ((PosixFd) self.scandirPath).fd : AT_FDCWD.value;
+                PosixPath posixPath = cachedPosixPathNode.execute(frame, self);
+                try {
+                    long[] rawStat = posixLib.fstatat(getPosixSupport(), dirFd, posixPath.value, followSymlinks);
+                    res = PosixModuleBuiltins.createStatResult(factory(), positiveLongProfile, rawStat);
+                } catch (PosixException e) {
+                    if (catchNoent && e.getErrorCode() == OSErrorEnum.ENOENT.getNumber()) {
+                        return null;
+                    }
+                    throw raiseOSErrorFromPosixException(frame, e, posixPath.originalObject);
+                }
+            }
+            self.setStatCache(followSymlinks, res);
+            return res;
+        }
+    }
+
+    abstract static class TestModeNode extends PythonBuiltinBaseNode {
+
+        private final long expectedMode;
+        private final int expectedDirEntryType;
+        private StatHelperNode statHelperNode;
+
+        protected TestModeNode(long expectedMode, int expectedDirEntryType) {
+            this.expectedMode = expectedMode;
+            this.expectedDirEntryType = expectedDirEntryType;
+        }
+
+        abstract boolean execute(VirtualFrame frame, PDirEntry self, boolean followSymlinks);
+
+        @Specialization(guards = "followSymlinks")
+        boolean testModeUsingStat(VirtualFrame frame, PDirEntry self, boolean followSymlinks) {
+            PTuple statResult = getStatHelperNode().execute(frame, self, followSymlinks, true);
+            if (statResult == null) {
+                // file not found
+                return false;
+            }
+            // TODO constants for stat_result indices
+            long mode = (long) statResult.getSequenceStorage().getItemNormalized(0) & S_IFMT.value;
+            return mode == expectedMode;
+        }
+
+        @Specialization(guards = "!followSymlinks")
+        boolean useTypeIfKnown(VirtualFrame frame, PDirEntry self, @SuppressWarnings("unused") boolean followSymlinks,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            int entryType = posixLib.dirEntryGetType(getPosixSupport(), self.dirEntryData);
+            if (entryType != DT_UNKNOWN.value) {
+                return entryType == expectedDirEntryType;
+            }
+            return testModeUsingStat(frame, self, false);
+        }
+
+        private StatHelperNode getStatHelperNode() {
+            if (statHelperNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                statHelperNode = insert(DirEntryBuiltinsFactory.StatHelperNodeGen.create());
+            }
+            return statHelperNode;
+        }
+
+        static TestModeNode create(long expectedMode, int expectedDirEntryType) {
+            return DirEntryBuiltinsFactory.TestModeNodeGen.create(expectedMode, expectedDirEntryType);
+        }
+
+        static TestModeNode createLnk() {
+            return create(S_IFLNK.value, DT_LNK.value);
+        }
+
+        static TestModeNode createReg() {
+            return create(S_IFREG.value, DT_REG.value);
+        }
+
+        static TestModeNode createDir() {
+            return create(S_IFDIR.value, DT_DIR.value);
+        }
+    }
+
+    @Builtin(name = "is_symlink", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsSymlinkNode extends PythonUnaryBuiltinNode {
+
+        abstract boolean execute(VirtualFrame frame, PDirEntry self);
+
+        @Specialization
+        static boolean isSymlink(VirtualFrame frame, PDirEntry self,
+                        @Cached("createLnk()") TestModeNode testModeNode) {
+            return testModeNode.execute(frame, self, false);
+        }
+    }
+
+    @Builtin(name = "is_file", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, varArgsMarker = true, keywordOnlyNames = {"follow_symlinks"})
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class IsFileNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return DirEntryBuiltinsClinicProviders.IsFileNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static boolean isFile(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
+                        @Cached("createReg()") TestModeNode testModeNode) {
+            return testModeNode.execute(frame, self, followSymlinks);
+        }
+    }
+
+    @Builtin(name = "is_dir", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, varArgsMarker = true, keywordOnlyNames = {"follow_symlinks"})
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class IsDirNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return DirEntryBuiltinsClinicProviders.IsDirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static boolean isDir(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
+                        @Cached("createDir()") TestModeNode testModeNode) {
+            return testModeNode.execute(frame, self, followSymlinks);
         }
     }
 }

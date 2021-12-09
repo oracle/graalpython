@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,111 +40,108 @@
  */
 package com.oracle.graal.python.builtins.objects.random;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.security.SecureRandom;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public class RandomBuiltins extends PythonBuiltins {
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return RandomBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "seed", minNumOfPositionalArgs = 2)
+    @Builtin(name = "seed", minNumOfPositionalArgs = 1, parameterNames = {"$self", "seed"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SeedNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        PNone seedNone(PRandom random, @SuppressWarnings("unused") PNone none) {
+            SecureRandom secureRandom = getContext().getSecureRandom();
+            int[] seed = new int[PRandom.N];
+            for (int i = 0; i < seed.length; ++i) {
+                seed[i] = secureRandom.nextInt();
+            }
+            random.seed(seed);
+            return PNone.NONE;
+        }
 
         @Specialization
         @TruffleBoundary
-        PNone seed(PRandom random, @SuppressWarnings("unused") PNone none) {
-            random.setSeed(System.currentTimeMillis());
-            return PNone.NONE;
-        }
-
-        @Specialization
-        PNone seed(PRandom random, long inputSeed) {
-            random.setSeed(inputSeed);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        PNone seed(PRandom random, PInt inputSeed) {
-            random.setSeed(inputSeed.longValue());
-            return PNone.NONE;
-        }
-
-        @Specialization
-        PNone seed(PRandom random, double inputSeed) {
-            random.setSeed((long) ((Long.MAX_VALUE - inputSeed) * 412316924));
-            return PNone.NONE;
-        }
-
-        @CompilationFinal boolean gotUnexpectedHashResult = false;
-        @Child LookupAndCallUnaryNode callHash;
-
-        @Fallback
-        PNone seedNonLong(VirtualFrame frame, Object random, Object inputSeed) {
-            if (random instanceof PRandom) {
-                if (callHash == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callHash = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__HASH__));
-                }
-                Object hashResult = null;
-                if (!gotUnexpectedHashResult) {
-                    try {
-                        long hash = callHash.executeLong(frame, inputSeed);
-                        ((PRandom) random).setSeed(hash);
-                        return PNone.NONE;
-                    } catch (UnexpectedResultException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        gotUnexpectedHashResult = true;
-                        hashResult = e.getResult();
-                    }
-                }
-                if (gotUnexpectedHashResult) {
-                    if (hashResult == null) {
-                        hashResult = callHash.executeObject(frame, inputSeed);
-                    }
-                    if (PGuards.isInteger(hashResult)) {
-                        ((PRandom) random).setSeed(((Number) hashResult).intValue());
-                    } else if (PGuards.isPInt(hashResult)) {
-                        ((PRandom) random).setSeed(((PInt) hashResult).intValue());
-                    } else {
-                        throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
-                    }
-                    return PNone.NONE;
-                } else {
-                    assert false : "cannot reach here";
-                    return PNone.NONE;
-                }
+        PNone seedLong(PRandom random, long inputSeed) {
+            long absSeed = Math.abs(inputSeed);
+            // absSeed is negative if inputSeed is Long.MIN_VALUE (-2^63), but its bit pattern
+            // 0x8000000000000000 still represents positive 2^63 if interpreted as unsigned long
+            int hi = (int) (absSeed >>> 32);
+            int lo = (int) absSeed;
+            if (hi == 0) {
+                random.seed(new int[]{lo});
             } else {
-                throw raise(PythonErrorType.TypeError, "descriptor 'seed' requires a '_random.Random' object but received a '%p'", random);
+                random.seed(new int[]{lo, hi});
             }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        PNone seedBigInteger(PRandom random, PInt inputSeed) {
+            byte[] bytes = inputSeed.abs().toByteArray();
+            int startPos = bytes.length > 1 && bytes[0] == 0 ? 1 : 0;
+            int numberOfBytes = bytes.length - startPos;
+            int numberOfInts = (numberOfBytes + 3) >> 2;
+
+            ByteBuffer bb = ByteBuffer.allocate(numberOfInts * 4);
+            bb.order(ByteOrder.BIG_ENDIAN);
+            bb.position(bb.capacity() - numberOfBytes);
+            bb.put(bytes, startPos, numberOfBytes);
+            bb.rewind();
+
+            int[] ints = new int[numberOfInts];
+            for (int i = numberOfInts - 1; i >= 0; --i) {
+                ints[i] = bb.getInt();
+            }
+            random.seed(ints);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!canBeInteger(inputSeed)", "!isPNone(inputSeed)"})
+        PNone seedGeneric(VirtualFrame frame, PRandom random, Object inputSeed,
+                        @Cached PyObjectHashNode hash) {
+            return seedLong(random, hash.execute(frame, inputSeed));
         }
     }
 
@@ -153,18 +150,30 @@ public class RandomBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        public PNone setstate(PRandom random, PTuple tuple) {
-            Object[] arr = tuple.getArray();
-            if (arr.length == 1) {
-                Object object = arr[0];
-                if (object instanceof Long) {
-                    random.resetJavaRandom();
-                    random.setSeed((Long) object);
-                    return PNone.NONE;
-                }
+        PNone setstate(PRandom random, PTuple tuple,
+                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Cached CastToJavaUnsignedLongNode castNode) {
+            Object[] arr = getObjectArrayNode.execute(tuple);
+            if (arr.length != PRandom.N + 1) {
+                throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
-            throw raise(PythonErrorType.SystemError, "state vector invalid.");
+            int[] state = new int[PRandom.N];
+            for (int i = 0; i < PRandom.N; ++i) {
+                long l = castNode.execute(arr[i]);
+                state[i] = (int) l;
+            }
+            long index = castNode.execute(arr[PRandom.N]);
+            if (index < 0 || index > PRandom.N) {
+                throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
+            }
+            random.restore(state, (int) index);
+            return PNone.NONE;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object setstate(Object random, Object state) {
+            throw raise(TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
         }
     }
 
@@ -173,9 +182,23 @@ public class RandomBuiltins extends PythonBuiltins {
     public abstract static class GetStateNode extends PythonBuiltinNode {
 
         @Specialization
+        PTuple getstate(PRandom random) {
+            return factory().createTuple(encodeState(random));
+        }
+
         @TruffleBoundary
-        public PTuple getstate(PRandom random) {
-            return factory().createTuple(new Object[]{random.getSeed()});
+        private static Object[] encodeState(PRandom random) {
+            int[] state = random.getState();
+            Object[] encodedState = new Object[PRandom.N + 1];
+            for (int i = 0; i < PRandom.N; ++i) {
+                if (state[i] < 0) {
+                    encodedState[i] = state[i] & 0xFFFFFFFFL;
+                } else {
+                    encodedState[i] = state[i];
+                }
+            }
+            encodedState[PRandom.N] = random.getIndex();
+            return encodedState;
         }
     }
 
@@ -185,23 +208,58 @@ public class RandomBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public double random(PRandom random) {
+        double random(PRandom random) {
             return random.nextDouble();
         }
     }
 
-    @Builtin(name = "getrandbits", minNumOfPositionalArgs = 2)
+    @Builtin(name = "getrandbits", minNumOfPositionalArgs = 2, parameterNames = {"$self", "k"})
+    @ArgumentClinic(name = "k", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class GetRandBitsNode extends PythonBuiltinNode {
+    public abstract static class GetRandBitsNode extends PythonBinaryClinicBuiltinNode {
 
-        @TruffleBoundary
-        private static BigInteger createRandomBits(PRandom random, int k) {
-            return new BigInteger(k, random.getJavaRandom());
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return RandomBuiltinsClinicProviders.GetRandBitsNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
-        public PInt getrandbits(PRandom random, int k) {
-            return factory().createInt(createRandomBits(random, k));
+        @Specialization(guards = "k <= 0")
+        @SuppressWarnings("unused")
+        int nonPositive(PRandom random, int k) {
+            throw raise(ValueError, "number of bits must be greater than zero");
+        }
+
+        @Specialization(guards = {"k >= 1", "k <= 31"})
+        @TruffleBoundary
+        int genInt(PRandom random, int k) {
+            return random.nextInt() >>> (32 - k);
+        }
+
+        @Specialization(guards = "k == 32")
+        @TruffleBoundary
+        long gen32Bits(PRandom random, @SuppressWarnings("unused") int k) {
+            return random.nextInt() & 0xFFFFFFFFL;
+        }
+
+        @Specialization(guards = {"k >= 33", "k <= 63"})
+        @TruffleBoundary
+        long genLong(PRandom random, int k) {
+            long x = random.nextInt() & 0xFFFFFFFFL;
+            long y = random.nextInt() >>> (64 - k);
+            return (y << 32) | x;
+        }
+
+        @Specialization(guards = "k >= 64")
+        @TruffleBoundary
+        PInt genBigInteger(PRandom random, int k) {
+            int ints = ((k + 31) / 32);
+            ByteBuffer bb = ByteBuffer.wrap(new byte[4 * ints]).order(ByteOrder.BIG_ENDIAN);
+            for (int i = ints - 1; i > 0; --i) {
+                int x = random.nextInt();
+                bb.putInt(4 * i, x);
+            }
+            bb.putInt(0, random.nextInt() >>> (32 - (k % 32)));
+            return factory().createInt(new BigInteger(1, bb.array()));
         }
     }
 }

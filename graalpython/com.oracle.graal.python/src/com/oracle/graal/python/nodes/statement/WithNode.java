@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -31,43 +31,39 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-public class WithNode extends StatementNode {
+public class WithNode extends ExceptionHandlingStatementNode {
     @Child private StatementNode body;
     @Child private WriteNode targetNode;
     @Child private ExpressionNode withContext;
-    @Child private LookupInheritedAttributeNode enterGetter = LookupInheritedAttributeNode.create(__ENTER__);
-    @Child private LookupInheritedAttributeNode exitGetter = LookupInheritedAttributeNode.create(__EXIT__);
-    @Child private CallNode enterDispatch = CallNode.create();
-    @Child private CallNode exitDispatch = CallNode.create();
-    @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
+    @Child private LookupSpecialMethodSlotNode enterSpecialGetter = LookupSpecialMethodSlotNode.create(SpecialMethodSlot.Enter);
+    @Child private LookupSpecialMethodSlotNode exitSpecialGetter = LookupSpecialMethodSlotNode.create(SpecialMethodSlot.Exit);
+    @Child private CallUnaryMethodNode enterDispatch = CallUnaryMethodNode.create();
+    @Child private CallQuaternaryMethodNode exitDispatch = CallQuaternaryMethodNode.create();
+    @Child private CoerceToBooleanNode toBooleanNode = CoerceToBooleanNode.createIfTrueNode();
     @Child private GetClassNode getClassNode = GetClassNode.create();
     @Child private PRaiseNode raiseNode;
-    @Child private PythonObjectFactory factory;
-    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
-    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
-    @Child private MaterializeFrameNode materializeFrameNode;
+    @Child private GetTracebackNode getTracebackNode;
 
     private final BranchProfile noEnter = BranchProfile.create();
     private final BranchProfile noExit = BranchProfile.create();
@@ -86,7 +82,7 @@ public class WithNode extends StatementNode {
         if (targetNode == null) {
             return;
         } else {
-            targetNode.doWrite(frame, asNameValue);
+            targetNode.executeObject(frame, asNameValue);
             return;
         }
     }
@@ -109,27 +105,47 @@ public class WithNode extends StatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        boolean gotException = false;
+        executeImpl(frame, false);
+    }
+
+    @Override
+    public Object returnExecute(VirtualFrame frame) {
+        return executeImpl(frame, true);
+    }
+
+    private Object executeImpl(VirtualFrame frame, boolean isReturn) {
         Object withObject = getWithObject(frame);
-        Object enterCallable = enterGetter.execute(withObject);
+        Object clazz = getClassNode.execute(withObject);
+        Object enterCallable = enterSpecialGetter.execute(frame, clazz, withObject);
         if (enterCallable == PNone.NO_VALUE) {
             noEnter.enter();
-            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __ENTER__);
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __ENTER__);
         }
-        Object exitCallable = exitGetter.execute(withObject);
+        Object exitCallable = exitSpecialGetter.execute(frame, clazz, withObject);
         if (exitCallable == PNone.NO_VALUE) {
             noExit.enter();
-            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __EXIT__);
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __EXIT__);
         }
-        ExceptionState exceptionState = doEnter(frame, withObject, enterCallable);
+        doEnter(frame, withObject, enterCallable);
+        Object result = null;
         try {
-            doBody(frame);
+            result = doBody(frame, isReturn);
         } catch (PException exception) {
-            gotException = true;
             handleException(frame, withObject, exitCallable, exception);
-        } finally {
-            doLeave(frame, withObject, exceptionState, gotException, exitCallable);
+            return PNone.NONE;
+        } catch (ControlFlowException e) {
+            doLeave(frame, withObject, exitCallable);
+            throw e;
+        } catch (Throwable e) {
+            PException pe = wrapJavaExceptionIfApplicable(e);
+            if (pe == null) {
+                throw e;
+            }
+            handleException(frame, withObject, exitCallable, pe);
+            return PNone.NONE;
         }
+        doLeave(frame, withObject, exitCallable);
+        return result;
     }
 
     /**
@@ -142,55 +158,57 @@ public class WithNode extends StatementNode {
     /**
      * Execute the body
      */
-    protected void doBody(VirtualFrame frame) {
-        body.executeVoid(frame);
+    protected Object doBody(VirtualFrame frame, boolean isReturn) {
+        return body.genericExecute(frame, isReturn);
     }
 
     /**
      * Leave the with-body. Call __exit__ if it hasn't already happened because of an exception, and
      * reset the exception state.
      */
-    protected void doLeave(VirtualFrame frame, Object withObject, ExceptionState exceptionState, boolean gotException, Object exitCallable) {
-        if (!gotException) {
-            exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
-        }
-        restoreExceptionState(frame, exceptionState);
+    protected void doLeave(VirtualFrame frame, Object withObject, Object exitCallable) {
+        exitDispatch.execute(frame, exitCallable, withObject, PNone.NONE, PNone.NONE, PNone.NONE);
     }
 
     /**
-     * Call the __enter__ method and return the exception state as it was before starting the with
-     * statement
+     * Call the __enter__ method
      */
-    protected ExceptionState doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
-        ExceptionState caughtException = saveExceptionStateNode.execute(frame);
-        applyValues(frame, enterDispatch.execute(frame, enterCallable, new Object[]{withObject}, PKeyword.EMPTY_KEYWORDS));
-        return caughtException;
+    protected void doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
+        applyValues(frame, enterDispatch.executeObject(frame, enterCallable, withObject));
     }
 
     /**
      * Call __exit__ to handle the exception
      */
-    protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e) {
-        if (materializeFrameNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            materializeFrameNode = insert(MaterializeFrameNodeGen.create());
-        }
-        PFrame escapedFrame = materializeFrameNode.execute(frame, this, true, false);
-        PBaseException value = e.getExceptionObject();
-        PythonAbstractClass type = getClassNode.execute(value);
-        if (factory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
-        }
-        PTraceback tb = factory.createTraceback(escapedFrame, e);
-        value.setTraceback(tb);
-        Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, tb}, PKeyword.EMPTY_KEYWORDS);
+    protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException pException) {
+        PBaseException caughtException = pException.setCatchingFrameAndGetEscapedException(frame, this);
+        tryChainPreexistingException(frame, caughtException);
+        ExceptionState savedExceptionState = saveExceptionState(frame);
+        SetCaughtExceptionNode.execute(frame, pException);
+        Object type = getClassNode.execute(caughtException);
+        LazyTraceback caughtTraceback = caughtException.getTraceback();
+        PTraceback tb = getTraceback(caughtTraceback);
         // If exit handler returns 'true', suppress
-        if (toBooleanNode.executeBoolean(frame, returnValue)) {
-            return;
-        } else {
-            // else re-raise exception
-            throw e;
+        boolean handled;
+        try {
+            Object returnValue = exitDispatch.execute(frame, exitCallable, withObject, type, caughtException, tb != null ? tb : PNone.NONE);
+            handled = toBooleanNode.executeBoolean(frame, returnValue);
+        } catch (PException handlerException) {
+            tryChainExceptionFromHandler(handlerException, pException);
+            throw handlerException;
+        } catch (Throwable e) {
+            PException handlerException = wrapJavaExceptionIfApplicable(e);
+            if (handlerException == null) {
+                throw e;
+            }
+            tryChainExceptionFromHandler(handlerException, pException);
+            throw handlerException.getExceptionForReraise();
+        } finally {
+            restoreExceptionState(frame, savedExceptionState);
+        }
+        if (!handled) {
+            // re-raise exception
+            throw caughtException.getExceptionForReraise(caughtTraceback);
         }
     }
 
@@ -198,13 +216,14 @@ public class WithNode extends StatementNode {
         return withContext;
     }
 
-    private void restoreExceptionState(VirtualFrame frame, ExceptionState exceptionState) {
-        if (exceptionState != null) {
-            if (restoreExceptionStateNode == null) {
+    private PTraceback getTraceback(LazyTraceback tb) {
+        if (tb != null) {
+            if (getTracebackNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+                getTracebackNode = insert(GetTracebackNode.create());
             }
-            restoreExceptionStateNode.execute(frame, exceptionState);
+            return getTracebackNode.execute(tb);
         }
+        return null;
     }
 }

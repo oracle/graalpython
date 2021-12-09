@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -75,17 +77,23 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public class BufferBuiltins extends PythonBuiltins {
 
     @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+        builtinConstants.put(__HASH__, PNone.NONE);
+    }
+
+    @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object repr(VirtualFrame frame, PBuffer self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
+        static Object repr(VirtualFrame frame, PBuffer self,
+                        @Cached("create(Repr)") LookupAndCallUnaryNode repr) {
             return createReprString(repr.executeObject(frame, self.getDelegate()));
         }
 
@@ -101,35 +109,35 @@ public class BufferBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, boolean key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+        public static Object iter(VirtualFrame frame, PBuffer self, boolean key,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, int key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+        public static Object iter(VirtualFrame frame, PBuffer self, int key,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, long key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+        public static Object iter(VirtualFrame frame, PBuffer self, long key,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, PInt key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+        public static Object iter(VirtualFrame frame, PBuffer self, PInt key,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Fallback
         protected Object doGeneric(Object self, Object idx) {
             if (!PGuards.isInteger(idx)) {
-                throw raise(TypeError, "buffer indices must be integers, not %p", idx);
+                throw raise(TypeError, ErrorMessages.BUFFER_INDICES_MUST_BE_INTS, idx);
             }
-            throw raise(TypeError, "descriptor '__getitem__' requires a 'buffer' object but received a '%p'", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__getitem__", "buffer", self);
         }
     }
 
@@ -138,8 +146,8 @@ public class BufferBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object len(VirtualFrame frame, PBuffer self,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
+        public static Object len(VirtualFrame frame, PBuffer self,
+                        @Cached("create(Len)") LookupAndCallUnaryNode callLenNode) {
             return callLenNode.executeObject(frame, self.getDelegate());
         }
     }
@@ -149,23 +157,14 @@ public class BufferBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self,
-                        @Cached("create(__ITER__)") LookupAndCallUnaryNode callIterNode) {
+        static Object doPBuffer(VirtualFrame frame, PBuffer self,
+                        @Cached("create(Iter)") LookupAndCallUnaryNode callIterNode) {
             return callIterNode.executeObject(frame, self.getDelegate());
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
+        static Object doGeneric(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class HashNode extends PythonBuiltinNode {
-        @Specialization
-        Object doGeneric(Object self) {
-            throw raise(TypeError, "unhashable type: '%p'", self);
         }
     }
 }

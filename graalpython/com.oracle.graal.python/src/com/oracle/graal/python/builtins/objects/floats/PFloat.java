@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -23,10 +23,13 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.floats;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -34,14 +37,16 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
 public class PFloat extends PythonBuiltinObject {
 
     protected final double value;
 
-    public PFloat(LazyPythonClass clazz, double value) {
-        super(clazz);
+    public PFloat(Object clazz, Shape instanceShape, double value) {
+        super(clazz, instanceShape);
         this.value = value;
     }
 
@@ -54,6 +59,7 @@ public class PFloat extends PythonBuiltinObject {
         return Double.valueOf(value).hashCode();
     }
 
+    @Ignore
     @Override
     public boolean equals(Object obj) {
         return obj != null && PFloat.class == obj.getClass() && value == (((PFloat) obj).getValue());
@@ -66,15 +72,15 @@ public class PFloat extends PythonBuiltinObject {
     }
 
     public boolean isNative() {
-        return getNativeWrapper() != null && getNativeWrapper().isNative();
+        return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
-    public static PFloat create(double value) {
-        return create(null, value);
+    public static PFloat create(PythonLanguage lang, double value) {
+        return create(PythonBuiltinClassType.PFloat, PythonBuiltinClassType.PFloat.getInstanceShape(lang), value);
     }
 
-    public static PFloat create(LazyPythonClass cls, double value) {
-        return new PFloat(cls, value);
+    public static PFloat create(Object cls, Shape instanceShape, double value) {
+        return new PFloat(cls, instanceShape, value);
     }
 
     @TruffleBoundary

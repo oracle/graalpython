@@ -1,11 +1,11 @@
-/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
+/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 #include "capi.h"
 
-PyTypeObject PyComplex_Type = PY_TRUFFLE_TYPE("complex", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyComplexObject));
+PyTypeObject PyComplex_Type = PY_TRUFFLE_TYPE("complex", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyComplexObject));
 
 static Py_complex c_error = {-1., 0.};
 
@@ -72,6 +72,10 @@ _Py_c_prod(Py_complex a, Py_complex b)
     return r;
 }
 
+/* Avoid bad optimization on Windows ARM64 until the compiler is fixed */
+#ifdef _M_ARM64
+#pragma optimize("", off)
+#endif
 Py_complex
 _Py_c_quot(Py_complex a, Py_complex b)
 {
@@ -129,6 +133,9 @@ _Py_c_quot(Py_complex a, Py_complex b)
     }
     return r;
 }
+#ifdef _M_ARM64
+#pragma optimize("", on)
+#endif
 
 Py_complex
 _Py_c_pow(Py_complex a, Py_complex b)
@@ -223,4 +230,23 @@ _Py_c_abs(Py_complex z)
     else
         errno = 0;
     return result;
+}
+
+UPCALL_ID(PyComplex_RealAsDouble);
+double PyComplex_RealAsDouble(PyObject *op) {
+	return UPCALL_CEXT_D(_jls_PyComplex_RealAsDouble, native_to_java(op));
+}
+
+UPCALL_ID(PyComplex_ImagAsDouble);
+double PyComplex_ImagAsDouble(PyObject *op) {
+	return UPCALL_CEXT_D(_jls_PyComplex_ImagAsDouble, native_to_java(op));
+}
+
+UPCALL_ID(PyComplex_FromDoubles);
+PyObject * PyComplex_FromDoubles(double real, double imag) {
+	return UPCALL_CEXT_O(_jls_PyComplex_FromDoubles, real, imag);
+}
+
+PyObject * PyComplex_FromCComplex(Py_complex cval) {
+	return UPCALL_CEXT_O(_jls_PyComplex_FromDoubles, cval.real, cval.imag);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,8 +27,10 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -38,7 +40,8 @@ public class YieldNode extends AbstractYieldNode implements GeneratorControlNode
     @Child private ExpressionNode right;
     @Child private GeneratorAccessNode access = GeneratorAccessNode.create();
 
-    public YieldNode(ExpressionNode right) {
+    public YieldNode(ExpressionNode right, GeneratorInfo.Mutable generatorInfo) {
+        super(generatorInfo);
         this.right = right;
     }
 
@@ -55,16 +58,20 @@ public class YieldNode extends AbstractYieldNode implements GeneratorControlNode
             if (specialArgument == null) {
                 gotNothing.enter();
                 return PNone.NONE;
-            } else if (specialArgument instanceof PException) {
+            } else if (specialArgument instanceof ThrowData) {
                 gotException.enter();
-                throw (PException) specialArgument;
+                ThrowData throwData = (ThrowData) specialArgument;
+                // The exception needs to appear as if raised from the yield
+                throw PException.fromObject(throwData.pythonException, this, throwData.withJavaStacktrace);
             } else {
                 gotValue.enter();
                 return specialArgument;
             }
         } else {
+            Object result = right.execute(frame);
             access.setActive(frame, flagSlot, true);
-            throw new YieldException(right.execute(frame));
+            access.setLastYieldIndex(frame, yieldIndex);
+            throw new YieldException(result);
         }
     }
 }

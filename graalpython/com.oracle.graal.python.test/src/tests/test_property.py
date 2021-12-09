@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,29 @@ class D(object):
         del self._x
 
 
+class X(object):
+    @property
+    def prop_x(self):
+        return self._prop_x
+
+    @prop_x.setter
+    def prop_x(self, new_val):
+        self._prop_x = new_val
+        return new_val
+
+class Y(X):
+    @X.prop_x.setter
+    def prop_x(self, ax):
+        X.prop_x.fset(self, ax)
+
+
+ERROR_FROM_GETTER = "ERROR FROM GETTER"
+class Z:
+    @property
+    def prop_x(self):
+        raise AttributeError(ERROR_FROM_GETTER)
+
+
 def test_properties():
     c = C(10)
     assert c.prop_x == 10
@@ -96,3 +119,78 @@ def test_properties():
     except AttributeError:
         not_found = True
     assert not_found
+
+    assert X.prop_x is not Y.prop_x
+
+
+def test_property_error():
+    try:
+        Z().prop_x
+    except BaseException as e:
+        assert isinstance(e, AttributeError), "did not get AttributeError, was %s" % type(e)
+        assert str(e) == ERROR_FROM_GETTER, "did not get expected error message; was %s" % str(e)
+
+def test_get_set_propert_attr():
+    p = C.__dict__['prop_x']
+    got_error = False
+    try:
+        p.a
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.a = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        del p.a
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.fget = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.fset = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.fdel = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.getter = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.setter = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.deleter = 1
+    except AttributeError:
+        got_error = True
+    assert got_error

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,45 +40,57 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.ProcessBuilder.Redirect;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.util.ArrayList;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
-import org.graalvm.nativeimage.ImageInfo;
-
-import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.ObjectToOpaquePathNode;
+import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltinsClinicProviders.NewForkExecNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltinsFactory.EnvConversionNodeGen;
+import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltinsFactory.ProcessArgsConversionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
-import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
-import com.oracle.graal.python.runtime.PosixResources;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
 public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
@@ -87,184 +99,248 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         return PosixSubprocessModuleBuiltinsFactory.getFactories();
     }
 
+    /**
+     * Helper converter which iterates the argv argument and converts each element to the opaque
+     * path representation used by {@link PosixSupportLibrary}.
+     */
+    abstract static class ProcessArgsConversionNode extends ArgumentCastNodeWithRaise {
+        @Specialization
+        static Object[] doNone(@SuppressWarnings("unused") PNone processArgs) {
+            // CPython passes NULL to execve() in this case. man execve explicitly discourages this,
+            // but says that on Linux it is equivalent to an empty array.
+            return new Object[0];
+        }
+
+        @Specialization
+        Object[] doSequence(VirtualFrame frame, Object processArgs,
+                        @Cached FastConstructListNode fastConstructListNode,
+                        @Cached GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
+                        @Cached LenNode lenNode,
+                        @Cached("createNotNormalized()") GetItemNode getItemNode) {
+            PSequence argsSequence;
+            try {
+                argsSequence = fastConstructListNode.execute(frame, processArgs);
+            } catch (PException e) {
+                e.expect(TypeError, isBuiltinClassProfile);
+                throw raise(TypeError, ErrorMessages.S_MUST_BE_S, "argv", "a tuple");
+            }
+
+            SequenceStorage argsStorage = getSequenceStorageNode.execute(argsSequence);
+            int len = lenNode.execute(argsStorage);
+            Object[] argsArray = new Object[len];
+            for (int i = 0; i < len; ++i) {
+                SequenceStorage newStorage = getSequenceStorageNode.execute(argsSequence);
+                if (newStorage != argsStorage || lenNode.execute(newStorage) != len) {
+                    // TODO write a test for this
+                    throw raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
+                }
+                Object o = getItemNode.execute(frame, argsStorage, i);
+                argsArray[i] = objectToOpaquePathNode.execute(frame, o, false);
+            }
+            return argsArray;
+        }
+
+        @ClinicConverterFactory
+        static ProcessArgsConversionNode create() {
+            return ProcessArgsConversionNodeGen.create();
+        }
+    }
+
+    abstract static class EnvConversionNode extends ArgumentCastNodeWithRaise {
+        @Specialization
+        static Object doNone(@SuppressWarnings("unused") PNone env) {
+            return null;
+        }
+
+        @Specialization(guards = "!isPNone(env)")
+        Object doSequence(VirtualFrame frame, Object env,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached ToBytesNode toBytesNode,
+                        @Cached PyObjectGetItem getItem,
+                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
+            // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
+            int length = sizeNode.execute(frame, env);
+            Object[] result = new Object[length];
+            for (int i = 0; i < length; ++i) {
+                Object o = getItem.execute(frame, env, i);
+                byte[] bytes = toBytesNode.execute(frame, o);
+                Object o1 = posixLib.createPathFromBytes(getContext().getPosixSupport(), bytes);
+                if (o1 == null) {
+                    throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+                }
+                result[i] = o1;
+            }
+            return result;
+        }
+
+        @ClinicConverterFactory
+        static EnvConversionNode create() {
+            return EnvConversionNodeGen.create();
+        }
+    }
+
     @Builtin(name = "fork_exec", minNumOfPositionalArgs = 17, parameterNames = {"args", "executable_list", "close_fds",
                     "fds_to_keep", "cwd", "env", "p2cread", "p2cwrite", "c2pread", "c2pwrite", "errread", "errwrite",
                     "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"})
+    @ArgumentClinic(name = "args", conversionClass = ProcessArgsConversionNode.class)
+    @ArgumentClinic(name = "close_fds", conversion = ClinicConversion.Boolean)
+    @ArgumentClinic(name = "env", conversionClass = EnvConversionNode.class)
+    @ArgumentClinic(name = "p2cread", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "p2cwrite", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "c2pread", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "c2pwrite", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "errread", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "errwrite", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "errpipe_read", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "errpipe_write", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "restore_signals", conversion = ClinicConversion.IntToBoolean)
+    @ArgumentClinic(name = "call_setsid", conversion = ClinicConversion.IntToBoolean)
     @GenerateNodeFactory
-    abstract static class ForkExecNode extends PythonBuiltinNode {
-        @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+    abstract static class NewForkExecNode extends PythonClinicBuiltinNode {
 
-        @Specialization
-        @SuppressWarnings("try")
-        int forkExec(VirtualFrame frame, PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
-                        @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
-                        int p2cread, int p2cwrite, int c2pread, int c2pwrite,
-                        int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
-                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
-
-            try (DefaultContextManager cm = withGlobalState(frame)) {
-                return forkExec(args, execList, closeFds, fdsToKeep, cwd, env, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, errpipe_read, errpipe_write, restore_signals, call_setsid,
-                                preexec_fn);
-            }
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return NewForkExecNodeClinicProviderGen.INSTANCE;
         }
 
         @TruffleBoundary
-        private synchronized int forkExec(PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
-                        @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
-                        int p2cread, int p2cwrite, int c2pread, int c2pwrite,
-                        int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
-                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
-            PythonContext context = getContext();
-            PosixResources resources = context.getResources();
-            if (!context.isExecutableAccessAllowed()) {
-                return -1;
-            }
+        private static byte[] fsEncode(String s) {
+            // This is needed for the special case when someone uses sys.executable in call to
+            // POpen, which converts it to bytes using os.fsencode
+            // TODO Implement fsencode
+            return s.getBytes();
+        }
 
-            ArrayList<String> argStrings = new ArrayList<>();
-            Object[] copyOfInternalArray = args.getSequenceStorage().getCopyOfInternalArray();
-            for (Object o : copyOfInternalArray) {
-                if (o instanceof String) {
-                    argStrings.add((String) o);
-                } else if (o instanceof PString) {
-                    argStrings.add(((PString) o).getValue());
-                } else {
-                    throw raise(PythonBuiltinClassType.OSError, "illegal argument");
-                }
+        private Object createPathFromBytes(byte[] bytes, PosixSupportLibrary posixLib) {
+            Object o = posixLib.createPathFromBytes(getPosixSupport(), bytes);
+            if (o == null) {
+                // TODO reconsider the contract of PosixSupportLibrary#createPathFromBytes w.r.t.
+                // embedded null checks (we need to review that anyway since PosixSupportLibrary
+                // cannot do Python-specific fsencode)
+                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
             }
+            return o;
+        }
 
-            // TODO: fix this better? sys.executable is often used in subprocess tests, but on Java
-            // that actually gives you a whole cmdline, which we need to split up for process
-            // builder
-            if (!ImageInfo.inImageCode() && !argStrings.isEmpty()) {
-                if (argStrings.get(0).equals(PythonOptions.getOption(context, PythonOptions.Executable))) {
-                    String[] executableList = PythonOptions.getExecutableList();
-                    argStrings.remove(0);
-                    for (int i = executableList.length - 1; i >= 0; i--) {
-                        argStrings.add(0, executableList[i]);
+        @Specialization(guards = "errPipeValid(closeFds, errPipeWrite)")
+        int forkExec(VirtualFrame frame, Object[] args, Object executableList, boolean closeFds,
+                        PTuple fdsToKeepTuple, Object cwdObj, Object env,
+                        int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
+                        int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
+                        boolean restoreSignals, boolean callSetsid, @SuppressWarnings("unused") PNone preexecFn,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached LenNode lenNode,
+                        @Cached("createNotNormalized()") GetItemNode tupleGetItem,
+                        @Cached PyObjectGetItem getItem,
+                        @Cached CastToJavaIntExactNode castToIntNode,
+                        @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached GilNode gil,
+                        @Cached ToBytesNode toBytesNode) {
+
+            Object[] processArgs = args;
+            int[] fdsToKeep = convertFdSequence(frame, fdsToKeepTuple, lenNode, tupleGetItem, castToIntNode);
+            Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
+
+            byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable));
+            // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
+            int length = sizeNode.execute(frame, executableList);
+            Object[] executables = new Object[length];
+            for (int i = 0; i < length; ++i) {
+                byte[] bytes = toBytesNode.execute(frame, getItem.execute(frame, executableList, i));
+                if (Arrays.equals(bytes, sysExecutable)) {
+                    if (length != 1) {
+                        throw raise(ValueError, ErrorMessages.UNSUPPORTED_USE_OF_SYS_EXECUTABLE);
                     }
-                }
-            }
-
-            PythonLanguage.getLogger().fine(() -> "_posixsubprocess.fork_exec: " + String.join(" ", argStrings));
-            ProcessBuilder pb = new ProcessBuilder(argStrings);
-            if (p2cread != -1 && p2cwrite != -1) {
-                pb.redirectInput(Redirect.PIPE);
-            } else {
-                pb.redirectInput(Redirect.INHERIT);
-            }
-
-            if (c2pread != -1 && c2pwrite != -1) {
-                pb.redirectOutput(Redirect.PIPE);
-            } else {
-                pb.redirectOutput(Redirect.INHERIT);
-            }
-
-            if (errread != -1 && errwrite != -1) {
-                pb.redirectError(Redirect.PIPE);
-            } else {
-                pb.redirectError(Redirect.INHERIT);
-            }
-
-            try {
-                if (getContext().getEnv().getTruffleFile(cwd).exists()) {
-                    pb.directory(new File(cwd));
+                    String[] additionalArgs = PythonOptions.getExecutableList(getContext());
+                    Object[] extendedArgs = new Object[additionalArgs.length + (processArgs.length == 0 ? 0 : processArgs.length - 1)];
+                    for (int j = 0; j < additionalArgs.length; ++j) {
+                        extendedArgs[j] = createPathFromBytes(fsEncode(additionalArgs[j]), posixLib);
+                    }
+                    if (processArgs.length > 1) {
+                        PythonUtils.arraycopy(processArgs, 1, extendedArgs, additionalArgs.length, processArgs.length - 1);
+                    }
+                    processArgs = extendedArgs;
+                    executables[i] = extendedArgs[0];
                 } else {
-                    throw raise(PythonBuiltinClassType.OSError, "working directory %s is not accessible", cwd);
+                    executables[i] = createPathFromBytes(bytes, posixLib);
                 }
+            }
+
+            gil.release(true);
+            try {
+                return posixLib.forkExec(getPosixSupport(), executables, processArgs, cwd, env == null ? null : (Object[]) env, stdinRead, stdinWrite, stdoutRead, stdoutWrite, stderrRead, stderrWrite,
+                                errPipeRead, errPipeWrite, closeFds, restoreSignals, callSetsid, fdsToKeep);
+            } catch (PosixException e) {
+                gil.acquire();
+                throw raiseOSErrorFromPosixException(frame, e);
             } catch (SecurityException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
-            }
-
-            Map<String, String> environment = pb.environment();
-            for (Object keyValue : env.getSequenceStorage().getInternalArray()) {
-                if (keyValue instanceof PBytes) {
-                    // NOTE: passing 'null' frame means we took care of the global state in the
-                    // callers
-                    String[] string = new String(toBytes.execute(null, keyValue)).split("=", 2);
-                    if (string.length == 2) {
-                        environment.put(string[0], string[1]);
-                    }
-                }
-            }
-
-            try {
-                Process process = pb.start();
-                if (p2cwrite != -1) {
-                    // user code is expected to close the unused ends of the pipes
-                    resources.getFileChannel(p2cwrite).close();
-                    resources.fdopen(p2cwrite, Channels.newChannel(process.getOutputStream()));
-                }
-                if (c2pread != -1) {
-                    resources.getFileChannel(c2pread).close();
-                    resources.fdopen(c2pread, Channels.newChannel(process.getInputStream()));
-                }
-                if (errread != -1) {
-                    resources.getFileChannel(errread).close();
-                    resources.fdopen(errread, Channels.newChannel(process.getErrorStream()));
-                }
-
-                return resources.registerChild(process);
-            } catch (IOException e) {
-                Channel err = null;
-                if (errpipe_write != -1) {
-                    // write exec error information here. Data format: "exception name:hex
-                    // errno:description"
-                    err = resources.getFileChannel(errpipe_write);
-                    if (!(err instanceof WritableByteChannel)) {
-                        throw raise(PythonBuiltinClassType.OSError, "there was an error writing the fork_exec error to the error pipe");
-                    } else {
-                        try {
-                            ((WritableByteChannel) err).write(ByteBuffer.wrap(("SubprocessError:0:" + e.getMessage()).getBytes()));
-                        } catch (IOException e1) {
-                        }
-                    }
-                }
-                return -1;
+                gil.acquire();
+                throw raiseOSError(frame, OSErrorEnum.EPERM);
+            } finally {
+                gil.acquire();
             }
         }
 
-        @Specialization(replaces = "forkExec")
-        int forkExecDefault(VirtualFrame frame, Object args, Object executable_list, Object close_fds,
+        @Specialization(guards = "!isPTuple(fdsToKeep)")
+        @SuppressWarnings("unused")
+        int fdsToKeepNotATuple(VirtualFrame frame, Object processArgs, Object executableList, boolean closeFds,
                         Object fdsToKeep, Object cwd, Object env,
-                        Object p2cread, Object p2cwrite, Object c2pread, Object c2pwrite,
-                        Object errread, Object errwrite, Object errpipe_read, Object errpipe_write,
-                        Object restore_signals, Object call_setsid, PNone preexec_fn,
-                        @Cached("create()") CastToListNode castArgs,
-                        @Cached("create()") CastToListNode castExecList,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castCloseFds,
-                        @Cached("create()") CastToListNode castFdsToKeep,
-                        @Cached("create()") CastToStringNode castCwd,
-                        @Cached("create()") CastToListNode castEnv,
-                        @Cached("create()") CastToIndexNode castP2cread,
-                        @Cached("create()") CastToIndexNode castP2cwrite,
-                        @Cached("create()") CastToIndexNode castC2pread,
-                        @Cached("create()") CastToIndexNode castC2pwrite,
-                        @Cached("create()") CastToIndexNode castErrread,
-                        @Cached("create()") CastToIndexNode castErrwrite,
-                        @Cached("create()") CastToIndexNode castErrpipeRead,
-                        @Cached("create()") CastToIndexNode castErrpipeWrite,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castRestoreSignals,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castSetsid) {
-
-            String actualCwd;
-            if (cwd instanceof PNone) {
-                actualCwd = getContext().getEnv().getCurrentWorkingDirectory().getPath();
-            } else {
-                actualCwd = castCwd.execute(frame, cwd);
-            }
-
-            PList actualEnv;
-            if (env instanceof PNone) {
-                actualEnv = factory().createList();
-            } else {
-                actualEnv = castEnv.execute(frame, env);
-            }
-
-            return forkExec(castArgs.execute(frame, args), castExecList.execute(frame, executable_list), castCloseFds.executeBoolean(frame, close_fds),
-                            castFdsToKeep.execute(frame, fdsToKeep), actualCwd, actualEnv,
-                            castP2cread.execute(p2cread), castP2cwrite.execute(p2cwrite), castC2pread.execute(c2pread), castC2pwrite.execute(c2pwrite),
-                            castErrread.execute(errread), castErrwrite.execute(errwrite), castErrpipeRead.execute(errpipe_read), castErrpipeWrite.execute(errpipe_write),
-                            castRestoreSignals.executeBoolean(frame, restore_signals), castSetsid.executeBoolean(frame, call_setsid), preexec_fn);
+                        int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
+                        int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
+                        boolean restoreSignals, boolean callSetsid, Object preexecFn) {
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeep);
         }
+
+        @Specialization(guards = "!isPNone(preexecFn)")
+        @SuppressWarnings("unused")
+        int preexecFn(VirtualFrame frame, Object processArgs, Object executableList, boolean closeFds,
+                        PTuple fdsToKeep, Object cwd, Object env,
+                        int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
+                        int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
+                        boolean restoreSignals, boolean callSetsid, Object preexecFn) {
+            throw raise(RuntimeError, ErrorMessages.S_NOT_SUPPORTED, "preexec_fn");
+        }
+
+        @Specialization(guards = "!errPipeValid(closeFds, errPipeWrite)")
+        @SuppressWarnings("unused")
+        int errPipePrecondition(VirtualFrame frame, Object processArgs, Object executableList, boolean closeFds,
+                        PTuple fdsToKeep, Object cwd, Object env,
+                        int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
+                        int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
+                        boolean restoreSignals, boolean callSetsid, PNone preexecFn) {
+            throw raise(ValueError, ErrorMessages.S_MUST_BE_S, "errpipe_write", ">= 3");
+        }
+
+        protected static boolean errPipeValid(boolean closeFds, int errPipeWrite) {
+            return !(closeFds && errPipeWrite < 3);
+        }
+
+        /**
+         * Checks that the tuple contains only valid fds (positive integers fitting into an int) in
+         * ascending order.
+         */
+        private int[] convertFdSequence(VirtualFrame frame, PTuple fdSequence, LenNode lenNode, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode) {
+            SequenceStorage storage = fdSequence.getSequenceStorage();
+            int len = lenNode.execute(storage);
+            int[] fds = new int[len];
+            int prevFd = -1;
+            for (int i = 0; i < len; ++i) {
+                try {
+                    int fd = castToIntNode.execute(getItemNode.execute(frame, storage, i));
+                    if (fd > prevFd) {
+                        prevFd = fds[i] = fd;
+                        continue;
+                    }
+                } catch (PException | CannotCastException e) {
+                    // 'handled' by raise() below
+                }
+                throw raise(ValueError, ErrorMessages.BAD_VALUES_IN_FDS_TO_KEEP);
+            }
+            return fds;
+        }
+
     }
 }

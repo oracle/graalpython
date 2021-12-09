@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,225 +40,301 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.nodes.NodeContextManager;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@GenerateUncached
 @NodeInfo(shortName = "cpython://Objects/abstract.c/recursive_issubclass")
-@ImportStatic(PythonOptions.class)
+@ImportStatic({PythonOptions.class, PGuards.class})
 public abstract class IsSubtypeNode extends PNodeWithContext {
+    protected abstract boolean executeInternal(Frame frame, Object derived, Object cls);
 
-    @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
-    @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
-    @Child private GetMroStorageNode getMroNode;
-    @Child private IsSameTypeNode isSameTypeNode;
-    @Child private PRaiseNode raise;
+    public final boolean execute(VirtualFrame frame, Object derived, Object cls) {
+        return executeInternal(frame, derived, cls);
+    }
 
-    private final ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
+    public final boolean execute(Object derived, Object cls) {
+        return executeInternal(null, derived, cls);
+    }
 
-    public abstract boolean execute(VirtualFrame frame, Object derived, Object cls);
-
-    protected static boolean isSameType(IsSameTypeNode isSameTypeNode, LazyPythonClass cls, LazyPythonClass cachedCls) {
+    protected static boolean isSameType(IsSameTypeNode isSameTypeNode, Object cls, Object cachedCls) {
         return isSameTypeNode.execute(cls, cachedCls);
     }
 
-    @Specialization(guards = { //
-                    "isSameType(isSameDerivedNode, derived, cachedDerived)", //
-                    "isSameType(isSameClsNode, cls, cachedCls)", //
-                    "mro.getInternalClassArray().length < 32" //
-    }, //
-                    limit = "getVariableArgumentInlineCacheLimit()", //
-                    assumptions = { //
-                                    "mro.getLookupStableAssumption()", //
-                                    "singleContextAssumption()"
-                    })
-    @ExplodeLoop
-    boolean isSubtypeOfCached(@SuppressWarnings("unused") LazyPythonClass derived, @SuppressWarnings("unused") PythonAbstractClass cls,
-                    @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
-                    @Cached("cls") PythonAbstractClass cachedCls,
-                    @Cached("getMro(cachedDerived)") MroSequenceStorage mro,
-                    @Cached("createFast()") @SuppressWarnings("unused") IsSameTypeNode isSameDerivedNode,
-                    @Cached("createFast()") @SuppressWarnings("unused") IsSameTypeNode isSameClsNode) {
-        for (PythonAbstractClass n : mro.getInternalClassArray()) {
-            if (isSameType(n, cachedCls)) {
+    /**
+     * This method is used to search for a constant base type in the mro of non-constant potential
+     * subtypes when all subtypes' MROs have the same length. Since the entire base mro must
+     * strictly be behind the base, we only need to search from the beginning of the mro to the
+     * length difference.
+     */
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    protected boolean isSubMro(Object base, PythonAbstractClass[] derivedMroAry, int mroDiff, IsSameTypeNode isSameTypeNode) {
+        CompilerAsserts.partialEvaluationConstant(base);
+        CompilerAsserts.partialEvaluationConstant(mroDiff);
+        for (int i = 0; i <= mroDiff; i++) {
+            if (isSameType(isSameTypeNode, derivedMroAry[i], base)) {
                 return true;
             }
         }
         return false;
     }
 
-    @Specialization(guards = { //
-                    "isSameType(isSameDerivedNode, derived, cachedDerived)", //
-                    "mro.getInternalClassArray().length < 32" //
-    }, //
-                    limit = "getVariableArgumentInlineCacheLimit()", //
-                    replaces = "isSubtypeOfCached", //
-                    assumptions = { //
-                                    "mro.getLookupStableAssumption()", //
-                                    "singleContextAssumption()"
-                    })
-    @ExplodeLoop
-    boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") LazyPythonClass derived, LazyPythonClass cls,
-                    @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
-                    @Cached("getMro(cachedDerived)") MroSequenceStorage mro,
-                    @Cached("createFast()") @SuppressWarnings("unused") IsSameTypeNode isSameDerivedNode) {
-        for (PythonAbstractClass n : mro.getInternalClassArray()) {
-            if (isSameType(n, cls)) {
+    /**
+     * This method is used to search in a constant length subtype mro for a (non-constant) base
+     * type. It has to loop over the entire mro to do this.
+     */
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    protected boolean isInMro(Object cls, MroSequenceStorage mro, int sz, IsSameTypeNode isSameTypeNode) {
+        PythonAbstractClass[] mroAry = mro.getInternalClassArray();
+        for (int i = 0; i < sz; i++) {
+            if (isSameType(isSameTypeNode, mroAry[i], cls)) {
                 return true;
             }
         }
         return false;
     }
 
-    @Specialization(guards = { //
-                    "derived == cachedDerived", //
-                    "cls == cachedCls", //
-                    "mro.getInternalClassArray().length < 32" //
-    }, //
-                    limit = "getVariableArgumentInlineCacheLimit()", //
-                    assumptions = "mro.getLookupStableAssumption()")
-    @ExplodeLoop
-    boolean isSubtypeOfConstantType(@SuppressWarnings("unused") LazyPythonClass derived, @SuppressWarnings("unused") PythonAbstractClass cls,
-                    @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
-                    @Cached("cls") PythonAbstractClass cachedCls,
-                    @Cached("getMro(cachedDerived)") MroSequenceStorage mro) {
-        for (PythonAbstractClass n : mro.getInternalClassArray()) {
-            if (isSameType(n, cachedCls)) {
+    protected PythonBuiltinClassType getType(Object cls, ConditionProfile builtinType, ConditionProfile builtinClass) {
+        if (builtinType.profile(cls instanceof PythonBuiltinClassType)) {
+            return (PythonBuiltinClassType) cls;
+        } else if (builtinClass.profile(cls instanceof PythonBuiltinClass)) {
+            return ((PythonBuiltinClass) cls).getType();
+        } else {
+            return null;
+        }
+    }
+
+    @Specialization(guards = "isSameType(isSameTypeNode, derived, cls)")
+    @SuppressWarnings("unused")
+    static boolean isIdentical(Object derived, Object cls,
+                    @Cached IsSameTypeNode isSameTypeNode) {
+        // trivial case: derived == cls
+        return true;
+    }
+
+    @Specialization(guards = {
+                    "cachedDerived != null",
+                    "cachedCls != null",
+                    "getType(derived, builtinTypeProfile, builtinClassProfile) == cachedDerived",
+                    "getType(cls, builtinTypeProfile, builtinClassProfile) == cachedCls"
+    }, limit = "getVariableArgumentInlineCacheLimit()")
+    @SuppressWarnings("unused")
+    // n.b.: in multi-context, we only cache PythonBuiltinClassType, so no need
+    // for assumptions. we also use a larger limit here, because these generate
+    // very little code
+    boolean isSubtypeOfCachedMultiContext(Object derived, Object cls,
+                    @Cached ConditionProfile builtinTypeProfile,
+                    @Cached ConditionProfile builtinClassProfile,
+                    @Cached("getType(derived, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedDerived,
+                    @Cached("getType(cls, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedCls,
+                    @SuppressWarnings("unused") @Cached IsSameTypeNode isSameTypeNode,
+                    @Cached GetMroStorageNode getMro,
+                    @Cached("isInMro(cachedCls, getMro.execute(cachedDerived), getMro.execute(cachedDerived).getInternalClassArray().length, isSameTypeNode)") boolean isInMro) {
+        return isInMro;
+    }
+
+    protected static int sub(int a, int b) {
+        return a - b;
+    }
+
+    @Specialization(guards = {
+                    "cachedCls != null",
+                    "getType(cls, builtinTypeProfile, builtinClassProfile) == cachedCls",
+                    "isKindOfBuiltinClass(derived)", // see assertion in isSubMro
+                    "mroAry.length == derivedMroLen",
+                    "mroDiff < 16",
+    }, replaces = "isSubtypeOfCachedMultiContext", limit = "getVariableArgumentInlineCacheLimit()")
+    boolean isVariableSubtypeOfConstantTypeCachedMultiContext(Object derived, @SuppressWarnings("unused") Object cls,
+                    @SuppressWarnings("unused") @Cached ConditionProfile builtinTypeProfile,
+                    @SuppressWarnings("unused") @Cached ConditionProfile builtinClassProfile,
+                    @Cached IsSameTypeNode isSameTypeNode,
+                    @Cached GetMroStorageNode getMro,
+                    @Bind("getMro.execute(derived).getInternalClassArray()") PythonAbstractClass[] mroAry,
+                    @Cached("mroAry.length") int derivedMroLen,
+                    @Cached("getType(cls, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedCls,
+                    @Cached("sub(derivedMroLen, getMro.execute(cachedCls).getInternalClassArray().length)") int mroDiff) {
+        return isSubMro(cachedCls, mroAry, mroDiff, isSameTypeNode);
+    }
+
+    @Specialization(guards = {
+                    "isTypeDerived.execute(derived)", "isTypeCls.execute(cls)",
+                    "isSameType(isSameDerivedNode, derived, cachedDerived)",
+                    "isSameType(isSameClsNode, cls, cachedCls)",
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+    }, assumptions = {
+                    "mro.getLookupStableAssumption()",
+                    "singleContextAssumption()"
+    })
+    @SuppressWarnings("unused")
+    boolean isSubtypeOfCached(Object derived, Object cls,
+                    @Cached("derived") Object cachedDerived,
+                    @Cached("cls") Object cachedCls,
+                    @Cached TypeNodes.IsTypeNode isTypeDerived,
+                    @Cached TypeNodes.IsTypeNode isTypeCls,
+                    @Cached IsSameTypeNode isSameDerivedNode,
+                    @Cached IsSameTypeNode isSameClsNode,
+                    @Cached IsSameTypeNode isSameTypeInLoopNode,
+                    @Cached GetMroStorageNode getMro,
+                    @Cached("getMro.execute(cachedDerived)") MroSequenceStorage mro,
+                    @Cached("isInMro(cachedCls, mro, mro.getInternalClassArray().length, isSameTypeInLoopNode)") boolean isInMro) {
+        return isInMro;
+    }
+
+    @Specialization(guards = {
+                    "isTypeDerived.execute(derived)", "isTypeCls.execute(cls)",
+                    "isSameType(isSameDerivedNode, derived, cachedDerived)",
+                    "mro.getInternalClassArray().length < 32"
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+                    "isSubtypeOfCached"
+    }, assumptions = {
+                    "mro.getLookupStableAssumption()",
+                    "singleContextAssumption()"
+    })
+    boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") Object derived, Object cls,
+                    @Cached("derived") @SuppressWarnings("unused") Object cachedDerived,
+                    @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeDerived,
+                    @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeCls,
+                    @SuppressWarnings("unused") @Cached GetMroStorageNode getMro,
+                    @Cached("getMro.execute(cachedDerived)") MroSequenceStorage mro,
+                    @Cached("mro.getInternalClassArray().length") int sz,
+                    @Cached IsSameTypeNode isSameTypeInLoopNode,
+                    @Cached @SuppressWarnings("unused") IsSameTypeNode isSameDerivedNode) {
+        return isInMro(cls, mro, sz, isSameTypeInLoopNode);
+    }
+
+    @Specialization(guards = {
+                    "isKindOfBuiltinClass(derived)", // see assertion in isSubMro
+                    "isKindOfBuiltinClass(cls)", // see assertion in isSubMro
+                    "mroAry.length == derivedMroLen",
+                    "mroDiff < 16",
+                    "isSameType(isSameClsNode, cls, cachedCls)",
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+                    "isSubtypeOfCached",
+                    "isSubtypeOfVariableTypeCached",
+    }, assumptions = {
+                    "baseMro.getLookupStableAssumption()",
+                    "singleContextAssumption()"
+    })
+    boolean isVariableSubtypeOfConstantTypeCached(Object derived, @SuppressWarnings("unused") Object cls,
+                    @Cached("cls") @SuppressWarnings("unused") Object cachedCls,
+                    @Cached GetMroStorageNode getMro,
+                    @SuppressWarnings("unused") @Cached("getMro.execute(cachedCls)") MroSequenceStorage baseMro,
+                    @Cached IsSameTypeNode isSameTypeInLoopNode,
+                    @Bind("getMro.execute(derived).getInternalClassArray()") PythonAbstractClass[] mroAry,
+                    @Cached("mroAry.length") int derivedMroLen,
+                    @Cached("sub(derivedMroLen, baseMro.getInternalClassArray().length)") int mroDiff,
+                    @Cached @SuppressWarnings("unused") IsSameTypeNode isSameClsNode) {
+        return isSubMro(cachedCls, mroAry, mroDiff, isSameTypeInLoopNode);
+    }
+
+    @Specialization(guards = {
+                    "isTypeDerived.execute(derived)", "isTypeCls.execute(cls)",
+                    "mro.getInternalClassArray().length == sz",
+                    "sz < 16"
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+                    "isSubtypeOfCached",
+                    "isSubtypeOfVariableTypeCached",
+                    "isVariableSubtypeOfConstantTypeCached",
+    })
+    boolean isSubtypeGenericCachedLen(@SuppressWarnings("unused") Object derived, Object cls,
+                    @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeDerived,
+                    @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeCls,
+                    @SuppressWarnings("unused") @Cached GetMroStorageNode getMro,
+                    @Bind("getMro.execute(derived)") MroSequenceStorage mro,
+                    @Cached("mro.getInternalClassArray().length") int sz,
+                    @Cached IsSameTypeNode isSameTypeInLoopNode) {
+        return isInMro(cls, mro, sz, isSameTypeInLoopNode);
+    }
+
+    @Specialization(guards = {"isTypeDerived.execute(derived)", "isTypeCls.execute(cls)"}, replaces = {
+                    "isVariableSubtypeOfConstantTypeCached",
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+                    "isSubtypeOfCached",
+                    "isSubtypeOfVariableTypeCached",
+                    "isSubtypeGenericCachedLen"
+    }, limit = "1")
+    @Megamorphic
+    boolean issubTypeGeneric(Object derived, Object cls,
+                    @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeDerived,
+                    @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeCls,
+                    @Cached ConditionProfile builtinClassIsSubtypeProfile,
+                    @Cached IsSameTypeNode isSameTypeNode,
+                    @Cached GetMroStorageNode getMro) {
+        // a builtin class will never be a subclass of a non-builtin class
+        if (builtinClassIsSubtypeProfile.profile(isBuiltinClass(derived) && !isBuiltinClass(cls))) {
+            return false;
+        }
+        for (PythonAbstractClass n : getMro.execute(derived).getInternalClassArray()) {
+            if (isSameType(isSameTypeNode, n, cls)) {
                 return true;
             }
         }
         return false;
     }
 
-    @Specialization(guards = { //
-                    "derived == cachedDerived", //
-                    "mro.getInternalClassArray().length < 32" //
-    }, //
-                    limit = "getVariableArgumentInlineCacheLimit()", //
-                    replaces = "isSubtypeOfConstantType", //
-                    assumptions = "mro.getLookupStableAssumption()" //
-    )
-    @ExplodeLoop
-    boolean isSubtypeOfVariableType(@SuppressWarnings("unused") LazyPythonClass derived, LazyPythonClass cls,
-                    @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
-                    @Cached("getMro(cachedDerived)") MroSequenceStorage mro) {
-        for (PythonAbstractClass n : mro.getInternalClassArray()) {
-            if (isSameType(n, cls)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Specialization(replaces = {"isSubtypeOfCached", "isSubtypeOfVariableTypeCached", "isSubtypeOfConstantType", "isSubtypeOfVariableType"})
-    boolean issubTypeGeneric(LazyPythonClass derived, LazyPythonClass cls) {
-        for (PythonAbstractClass n : getMro(derived).getInternalClassArray()) {
-            if (isSameType(n, cls)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Fallback
-    public boolean isSubclass(VirtualFrame frame, Object derived, Object cls) {
-        if (raise == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raise = insert(PRaiseNode.create());
-        }
-
+    @Specialization(guards = {"!isTypeDerived.execute(derived) || !isTypeCls.execute(cls)"}, limit = "1")
+    @Megamorphic
+    boolean fallback(VirtualFrame frame, Object derived, Object cls,
+                    @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeDerived,
+                    @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeCls,
+                    @Cached AbstractObjectGetBasesNode getBasesNode,
+                    @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
+                    @Cached ConditionProfile exceptionDerivedProfile,
+                    @Cached ConditionProfile exceptionClsProfile,
+                    @Cached PRaiseNode raise) {
         if (exceptionDerivedProfile.profile(getBasesNode.execute(frame, derived) == null)) {
-            throw raise.raise(PythonErrorType.TypeError, "issubclass() arg 1 must be a class");
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
         }
 
         if (exceptionClsProfile.profile(getBasesNode.execute(frame, cls) == null)) {
-            throw raise.raise(PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
         }
 
         return abstractIsSubclassNode.execute(frame, derived, cls);
     }
 
-    protected MroSequenceStorage getMro(LazyPythonClass clazz) {
-        if (getMroNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getMroNode = insert(GetMroStorageNode.create());
-        }
-        return getMroNode.execute(clazz);
-    }
-
-    private boolean isSameType(LazyPythonClass left, LazyPythonClass right) {
-        if (isSameTypeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isSameTypeNode = insert(IsSameTypeNode.createFast());
-        }
-        return isSameTypeNode.execute(left, right);
+    private static boolean isBuiltinClass(Object cls) {
+        return cls instanceof PythonBuiltinClass || cls instanceof PythonBuiltinClassType;
     }
 
     public static IsSubtypeNode create() {
         return IsSubtypeNodeGen.create();
     }
 
-    @GenerateUncached
-    public abstract static class IsSubtypeWithoutFrameNode extends PNodeWithGlobalState<IsSubtypeContextManager> {
-
-        protected abstract boolean execute(Object derived, Object cls);
-
-        @Specialization
-        public boolean execute(Object derived, Object cls,
-                        @Cached GetMroStorageNode getMroStorageNode,
-                        @Cached IsSameTypeNode isSameTypeNode) {
-            for (PythonAbstractClass n : getMroStorageNode.execute(derived).getInternalClassArray()) {
-                if (isSameTypeNode.execute(n, cls)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public IsSubtypeContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new IsSubtypeContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public IsSubtypeContextManager passState() {
-            return new IsSubtypeContextManager(this, null, null);
-        }
+    public static IsSubtypeNode getUncached() {
+        return IsSubtypeNodeGen.getUncached();
     }
-
-    public static final class IsSubtypeContextManager extends NodeContextManager {
-
-        private final IsSubtypeWithoutFrameNode delegate;
-
-        private IsSubtypeContextManager(IsSubtypeWithoutFrameNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public boolean execute(Object derived, Object cls) {
-            return delegate.execute(derived, cls);
-        }
-    }
-
 }

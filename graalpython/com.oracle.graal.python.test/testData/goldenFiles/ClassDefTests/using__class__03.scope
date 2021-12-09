@@ -1,0 +1,25 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: XN
+        Kind: Class
+        FrameDescriptor: [fn1, fn3, fn2, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: fn3
+            Kind: Function
+            FrameDescriptor: [<return_val>, __class__, slef]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: fn2
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: fn1
+            Kind: Function
+            FrameDescriptor: [self, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]

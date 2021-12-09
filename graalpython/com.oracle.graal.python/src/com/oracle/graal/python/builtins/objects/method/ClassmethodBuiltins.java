@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,13 +53,15 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltinsFactory.MakeMethodNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -70,7 +72,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PClassmethod})
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PBuiltinClassMethod})
 public class ClassmethodBuiltins extends PythonBuiltins {
 
     @Override
@@ -78,21 +80,46 @@ public class ClassmethodBuiltins extends PythonBuiltins {
         return ClassmethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class GetNode extends PythonBuiltinNode {
+    @ReportPolymorphism
+    abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Child MakeMethodNode makeMethod = MakeMethodNode.create();
 
-        @Specialization(guards = {"isNoValue(type)"})
-        protected Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Cached("create()") GetClassNode getClass,
-                        @Cached("create()") BranchProfile uninitialized) {
+        /**
+         * N.b.: cachedCallable.notNull is sufficient here, because
+         * {@link PDecoratedMethod#setCallable} can only be called when the callable was previously
+         * {@code null}. So if it ever was not null and we cached that, it is being held alive by
+         * the {@code self} argument now and there cannot be a race.
+         */
+        @Specialization(guards = {"isNoValue(type)", "cachedSelf == self"}, assumptions = "singleContextAssumption()")
+        Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
+                        @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
+                        @Cached GetClassNode getClass) {
+            return makeMethod.execute(getClass.execute(obj), cachedCallable);
+        }
+
+        @Specialization(guards = "isNoValue(type)", replaces = "getCached")
+        Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Cached GetClassNode getClass,
+                        @Cached BranchProfile uninitialized) {
             return doGet(self, getClass.execute(obj), uninitialized);
         }
 
-        @Specialization(guards = "!isNoValue(type)")
-        protected Object doIt(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
-                        @Cached("create()") BranchProfile uninitialized) {
+        /**
+         * @see #getCached
+         */
+        @Specialization(guards = {"!isNoValue(type)", "cachedSelf == self"}, assumptions = "singleContextAssumption()")
+        Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
+                        @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable) {
+            return makeMethod.execute(type, cachedCallable);
+        }
+
+        @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")
+        Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
+                        @Cached BranchProfile uninitialized) {
             return doGet(self, type, uninitialized);
         }
 
@@ -100,7 +127,7 @@ public class ClassmethodBuiltins extends PythonBuiltins {
             Object callable = self.getCallable();
             if (callable == null) {
                 uninitialized.enter();
-                throw raise(PythonBuiltinClassType.RuntimeError, "uninitialized classmethod object");
+                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
             }
             return makeMethod.execute(type, callable);
         }
@@ -145,9 +172,9 @@ public class ClassmethodBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        public Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
+            PythonUtils.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
     }

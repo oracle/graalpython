@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,70 +42,193 @@ package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import java.util.function.Supplier;
-
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public enum UnaryArithmetic {
-    Pos(SpecialMethodNames.__POS__, "+"),
-    Neg(SpecialMethodNames.__NEG__, "-"),
-    Invert(SpecialMethodNames.__INVERT__, "~");
+    Pos(UnaryArithmeticFactory.PosNodeGen::create),
+    Neg(UnaryArithmeticFactory.NegNodeGen::create),
+    Invert(UnaryArithmeticFactory.InvertNodeGen::create);
 
-    private final String methodName;
-    private final String operator;
-    private final Supplier<NoAttributeHandler> noAttributeHandler;
+    interface CreateUnaryOp {
+        UnaryOpNode create(ExpressionNode left);
+    }
 
-    UnaryArithmetic(String methodName, String operator) {
-        this.methodName = methodName;
-        this.operator = operator;
-        this.noAttributeHandler = () -> new NoAttributeHandler() {
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+    private final CreateUnaryOp create;
 
-            @Override
-            public Object execute(Object receiver) {
-                throw raiseNode.raise(TypeError, "bad operand type for unary %s: '%p'", operator, receiver);
+    UnaryArithmetic(CreateUnaryOp create) {
+        this.create = create;
+    }
+
+    /**
+     * A helper root node that dispatches to {@link LookupAndCallUnaryNode} to execute the provided
+     * unary operator. This node is mostly useful to use such operators from a location without a
+     * frame (e.g. from interop). Note: this is just a root node and won't do any signature
+     * checking.
+     */
+    static final class CallUnaryArithmeticRootNode extends CallArithmeticRootNode {
+        private static final Signature SIGNATURE_UNARY = new Signature(1, false, -1, false, new String[]{"$self"}, null);
+
+        @Child private UnaryOpNode callUnaryNode;
+
+        private final UnaryArithmetic unaryOperator;
+
+        CallUnaryArithmeticRootNode(PythonLanguage language, UnaryArithmetic unaryOperator) {
+            super(language);
+            this.unaryOperator = unaryOperator;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE_UNARY;
+        }
+
+        @Override
+        protected Object doCall(VirtualFrame frame) {
+            if (callUnaryNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callUnaryNode = insert(unaryOperator.create());
             }
-        };
-    }
-
-    public String getMethodName() {
-        return methodName;
-    }
-
-    public String getOperator() {
-        return operator;
-    }
-
-    public static final class UnaryArithmeticExpression extends ExpressionNode {
-        @Child private LookupAndCallUnaryNode callNode;
-        @Child private ExpressionNode operand;
-
-        private UnaryArithmeticExpression(LookupAndCallUnaryNode callNode, ExpressionNode operand) {
-            this.callNode = callNode;
-            this.operand = operand;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            return callNode.executeObject(frame, operand.execute(frame));
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
+            return callUnaryNode.execute(frame, PArguments.getArgument(frame, 0));
         }
     }
 
     public ExpressionNode create(ExpressionNode receiver) {
-        return new UnaryArithmeticExpression(LookupAndCallUnaryNode.create(methodName, noAttributeHandler), receiver);
+        return create.create(receiver);
     }
 
-    public LookupAndCallUnaryNode create() {
-        return LookupAndCallUnaryNode.create(methodName, noAttributeHandler);
+    public UnaryOpNode create() {
+        return create.create(null);
+    }
+
+    /**
+     * Creates a root node for this unary operator such that the operator can be executed via a full
+     * call.
+     */
+    public RootNode createRootNode(PythonLanguage language) {
+        return new CallUnaryArithmeticRootNode(language, this);
+    }
+
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class UnaryArithmeticNode extends UnaryOpNode {
+
+        static Supplier<NoAttributeHandler> createHandler(String operator) {
+
+            return () -> new NoAttributeHandler() {
+                @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
+                @Override
+                public Object execute(Object receiver) {
+                    throw raiseNode.raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "unary ", operator, receiver);
+                }
+            };
+        }
+
+        static LookupAndCallUnaryNode createCallNode(String name, Supplier<NoAttributeHandler> handler) {
+            return LookupAndCallUnaryNode.create(name, handler);
+        }
+    }
+
+    /*
+     *
+     * All the following fast paths need to be kept in sync with the corresponding builtin functions
+     * in IntBuiltins and FloatBuiltins.
+     *
+     */
+
+    public abstract static class PosNode extends UnaryArithmeticNode {
+
+        static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("+");
+
+        @Specialization
+        static int pos(int arg) {
+            return arg;
+        }
+
+        @Specialization
+        static long pos(long arg) {
+            return arg;
+        }
+
+        @Specialization
+        static double pos(double arg) {
+            return arg;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object arg,
+                        @Cached("createCallNode(__POS__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
+            return callNode.executeObject(frame, arg);
+        }
+    }
+
+    public abstract static class NegNode extends UnaryArithmeticNode {
+
+        static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("-");
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static int neg(int arg) {
+            return Math.negateExact(arg);
+        }
+
+        @Specialization
+        static long negOvf(int arg) {
+            return -((long) arg);
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static long neg(long arg) {
+            return Math.negateExact(arg);
+        }
+
+        @Specialization
+        static double neg(double arg) {
+            return -arg;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object arg,
+                        @Cached("createCallNode(__NEG__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
+            return callNode.executeObject(frame, arg);
+        }
+    }
+
+    public abstract static class InvertNode extends UnaryArithmeticNode {
+
+        static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("~");
+
+        @Specialization
+        static int invert(boolean arg) {
+            return ~(arg ? 1 : 0);
+        }
+
+        @Specialization
+        static int invert(int arg) {
+            return ~arg;
+        }
+
+        @Specialization
+        static long invert(long arg) {
+            return ~arg;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object arg,
+                        @Cached("createCallNode(__INVERT__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
+            return callNode.executeObject(frame, arg);
+        }
     }
 }

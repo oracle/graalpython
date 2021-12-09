@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -54,6 +54,18 @@ class ListTest(list_tests.CommonTest):
         l[0] = "hello"
         self.assertEqual(l, ["hello", 1, 2, 3, 4])
 
+    def test_literal(self):
+        self.assertEqual([1,2,3], [*[1,2,3]])
+        self.assertEqual([1,2,3], [*(1,2,3)])
+        self.assertEqual([1,2,3,4,5,6], [*(1,2,3), *(4,5,6)])
+
+        # this will certainly create a list where the capacity of the storage is not exhausted, i.e., 'length < cap',
+        # and so the storage contains null elements
+        l = []
+        for c in "abcdefghijk":
+            l.append(c)
+        self.assertEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'], [*l])
+
     def test_truth(self):
         super().test_truth()
         self.assertTrue(not [])
@@ -78,6 +90,10 @@ class ListTest(list_tests.CommonTest):
 
         self.assertRaises((MemoryError, OverflowError), mul, lst, n)
         self.assertRaises((MemoryError, OverflowError), imul, lst, n)
+
+    def test_large_index(self):
+        lst = [0]
+        self.assertRaises(IndexError, lambda: lst[2**100])
 
     def test_repr_large(self):
 
@@ -372,6 +388,10 @@ class ListTest(list_tests.CommonTest):
             self.assertEqual([1, 2, 3, 4], a)
         else:
             assert False, "expected ValueError"
+            
+        a = [1, 2, 3, 4]
+        a[:] = map(next, [iter([None,]), iter([None,])])
+        self.assertEqual([None, None], a)
 
 
     def test_set_slice_class_iter(self):

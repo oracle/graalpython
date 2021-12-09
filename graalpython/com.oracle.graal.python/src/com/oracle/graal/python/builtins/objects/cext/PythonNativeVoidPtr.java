@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,33 +38,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(PythonObjectLibrary.class)
+/**
+ * Represents the value of a native pointer as Python int.<br/>
+ * Such objects are created using C API function {@code PyLong_FromVoidPtr} and semantics are best
+ * explained by looking at how CPython constructs the value:
+ * {@code PyLong_FromUnsignedLong((unsigned long)(uintptr_t)p)}. CPython casts the {@code (void *)}
+ * to an integer and this will be the value for the Python int. In our case, to get a numeric
+ * representation of a pointer, we would need to send a to-native message. However, we try to avoid
+ * this eager transformation using this wrapper.
+ */
 public class PythonNativeVoidPtr extends PythonAbstractObject {
-    public final TruffleObject object;
+    private final Object object;
+    private final long nativePointerValue;
+    private final boolean hasNativePointer;
 
-    public PythonNativeVoidPtr(TruffleObject object) {
+    public PythonNativeVoidPtr(Object object) {
         this.object = object;
+        this.nativePointerValue = 0;
+        this.hasNativePointer = false;
     }
 
+    public PythonNativeVoidPtr(Object object, long nativePointerValue) {
+        this.object = object;
+        this.nativePointerValue = nativePointerValue;
+        this.hasNativePointer = true;
+    }
+
+    public Object getPointerObject() {
+        return object;
+    }
+
+    public long getNativePointer() {
+        return nativePointerValue;
+    }
+
+    public boolean isNativePointer() {
+        return hasNativePointer;
+    }
+
+    @Override
     public int compareTo(Object o) {
         return 0;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public LazyPythonClass getLazyPythonClass() {
-        return PythonBuiltinClassType.PInt;
     }
 
     @Override
@@ -72,5 +92,4 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
         CompilerAsserts.neverPartOfCompilation();
         return String.format("PythonNativeVoidPtr(%s)", object);
     }
-
 }

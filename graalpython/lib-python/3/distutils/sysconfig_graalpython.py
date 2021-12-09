@@ -12,6 +12,7 @@ available.
 import sys
 import os
 import _imp
+import _sysconfig
 
 from distutils.errors import DistutilsPlatformError
 
@@ -25,16 +26,14 @@ python_build = False
 
 
 def get_python_inc(plat_specific=0, prefix=None):
-    if prefix is None:
-        prefix = plat_specific and BASE_EXEC_PREFIX or BASE_PREFIX
-    return os.path.join(prefix, 'include')
+    return _sysconfig.get_python_inc()
 
 def get_python_version():
     """Return a string containing the major and minor Python version,
     leaving off the patchlevel.  Sample return values could be '1.5'
     or '2.2'.
     """
-    return sys.version[:3]
+    return _sysconfig.get_python_version()
 
 
 def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
@@ -53,40 +52,24 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
     """
     if prefix is None:
         prefix = PREFIX
+    # Keep in sync with sysconfig module, distutils.install and site module
     if standard_lib:
-        return os.path.join(prefix, "lib-python", sys.version[0])
-    return os.path.join(prefix, 'site-packages')
+        return os.path.join(prefix, "lib-python", str(sys.version_info[0]))
+    return os.path.join(prefix, "lib", 'python%d.%d' % sys.version_info[:2], "site-packages")
 
 
 _config_vars = None
 
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
-    so_ext = _imp.extension_suffixes()[0]
-
-    g = {}
-    g['CC'] = "%s --experimental-options -CC %s" % (sys.executable, "-v" if sys.flags.verbose else "")
-    g['CXX'] = "%s --experimental-options -CC %s" % (sys.executable, "-v" if sys.flags.verbose else "")
-    g['OPT'] = "-DNDEBUG -O1"
-    g['CFLAGS'] = "-DNDEBUG -O1"
-    g['CCSHARED'] = "-fPIC"
-    g['LDSHARED'] = "%s --experimental-options -LD %s" % (sys.executable, "-v" if sys.flags.verbose else "")
-    g['EXT_SUFFIX'] = so_ext
-    g['SHLIB_SUFFIX'] = so_ext
-    g['SO'] = so_ext  # deprecated in Python 3, for backward compatibility
-    g['AR'] = "ar"
-    g['ARFLAGS'] = "rc"
-    g['EXE'] = ""
-    g['LIBDIR'] = os.path.join(sys.prefix, 'lib')
-    g['VERSION'] = get_python_version()
-
     global _config_vars
-    _config_vars = g
+    _config_vars = _sysconfig._get_posix_vars()
 
 
 def _init_nt():
     """Initialize the module as appropriate for NT"""
     g = {}
+    g['EXT_SUFFIX'] = _imp.extension_suffixes()[0]
     g['EXE'] = ".exe"
     g['SO'] = ".pyd"
     g['SOABI'] = g['SO'].rsplit('.')[0]   # xxx?
@@ -155,9 +138,11 @@ def customize_compiler(compiler):
                 _osx_support.customize_compiler(_config_vars)
                 _config_vars['CUSTOMIZED_OSX_COMPILER'] = 'True'
 
-        (cc, cxx, opt, cflags, ccshared, ldshared, shlib_suffix, ar, ar_flags) = \
+        # TRUFFLE CHANGE BEGIN: added 'ranlib'
+        (cc, cxx, opt, cflags, ccshared, ldshared, shlib_suffix, ar, ar_flags, ranlib) = \
             get_config_vars('CC', 'CXX', 'OPT', 'CFLAGS',
-                            'CCSHARED', 'LDSHARED', 'SHLIB_SUFFIX', 'AR', 'ARFLAGS')
+                            'CCSHARED', 'LDSHARED', 'SHLIB_SUFFIX', 'AR', 'ARFLAGS', 'RANLIB')
+        # TRUFFLE CHANGE END
 
         if 'CC' in os.environ:
             newcc = os.environ['CC']
@@ -191,6 +176,13 @@ def customize_compiler(compiler):
             archiver = ar + ' ' + os.environ['ARFLAGS']
         else:
             archiver = ar + ' ' + ar_flags
+        # TRUFFLE CHANGE BEGIN: added 'ranlib'
+        if compiler.executables['ranlib']:
+            if 'RANLIB' in os.environ:
+                ranlib = os.environ['RANLIB']
+        else:
+            ranlib = None
+        # TRUFFLE CHANGE END
 
         cc_cmd = cc + ' ' + cflags
         compiler.set_executables(
@@ -200,6 +192,11 @@ def customize_compiler(compiler):
             compiler_cxx=cxx,
             linker_so=ldshared,
             linker_exe=cc,
-            archiver=archiver)
+            archiver=archiver,
+            # TRUFFLE CHANGE BEGIN: added 'ranlib'
+            # Note: it will only be !=None if compiler already had a default indicating that it needs ranlib
+            ranlib=ranlib
+            # TRUFFLE CHANGE END
+            )
 
         compiler.shared_lib_extension = shlib_suffix

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -46,11 +46,11 @@ import tempfile
 
 
 class VenvTest():
-    def setUp(self):
+    def setUpClass(self):
         self.env_dir = os.path.realpath(tempfile.mkdtemp())
         self.env_dir2 = os.path.realpath(tempfile.mkdtemp())
 
-    def tearDown(self):
+    def tearDownClass(self):
         shutil.rmtree(self.env_dir)
         shutil.rmtree(self.env_dir2)
 

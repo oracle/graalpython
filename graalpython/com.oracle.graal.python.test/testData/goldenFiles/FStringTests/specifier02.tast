@@ -1,0 +1,23 @@
+ModuleRootNode Name: <module 'specifier02'> SourceSection: [0,31]`f'result is:{result:...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,31]`f'result is:{result:...`
+    FormatStringLiteralNode SourceSection: [0,31]`f'result is:{result:...`
+      Parts: 2
+      StringLiteralNode SourceSection: [2,12]`result is:`
+      FormatStringExpressionNode SourceSection: [13,29]`result:{width}.2`
+        ReadNameNodeGen SourceSection: [1,7]`result`
+          Identifier: result
+          IsBuiltinClassProfile SourceSection: None
+            GetClassNodeGen SourceSection: None
+        FormatStringLiteralNode SourceSection: [20,29]`{width}.2`
+          Parts: 2
+          FormatStringExpressionNode SourceSection: [21,26]`width`
+            ReadNameNodeGen SourceSection: [1,6]`width`
+              Identifier: width
+              IsBuiltinClassProfile SourceSection: None
+                GetClassNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [27,29]`.2`

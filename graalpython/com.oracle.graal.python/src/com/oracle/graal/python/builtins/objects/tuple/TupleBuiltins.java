@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -43,41 +44,52 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import java.math.BigInteger;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -86,6 +98,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
 public class TupleBuiltins extends PythonBuiltins {
@@ -96,170 +110,48 @@ public class TupleBuiltins extends PythonBuiltins {
     }
 
     // index(element)
-    @Builtin(name = "index", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "value", "start", "stop"})
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0")
+    @ArgumentClinic(name = "stop", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE")
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class IndexNode extends PythonBuiltinNode {
+    public abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
 
-        private static final String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IndexNodeClinicProviderGen.INSTANCE;
+        }
 
-        @Child private SequenceStorageNodes.GetItemNode getItemNode;
-        @Child private SequenceStorageNodes.LenNode lenNode;
-
-        public abstract int execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3, Object arg4);
-
-        private int correctIndex(PTuple tuple, long index) {
-            long resultIndex = index;
-            if (resultIndex < 0) {
-                resultIndex += getLength(tuple);
-                if (resultIndex < 0) {
-                    return 0;
+        @Specialization
+        int index(VirtualFrame frame, PTuple self, Object value, int startIn, int endIn,
+                        @Cached BranchProfile startLe0Profile,
+                        @Cached BranchProfile endLe0Profile,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+            SequenceStorage storage = self.getSequenceStorage();
+            int start = startIn;
+            if (start < 0) {
+                startLe0Profile.enter();
+                start += lenNode.execute(storage);
+                if (start < 0) {
+                    start = 0;
                 }
             }
-            return (int) Math.min(resultIndex, Integer.MAX_VALUE);
-        }
 
-        @TruffleBoundary
-        private int correctIndex(PTuple tuple, PInt index) {
-            BigInteger value = index.getValue();
-            if (value.compareTo(BigInteger.ZERO) < 0) {
-                BigInteger resultAdd = value.add(BigInteger.valueOf(getLength(tuple)));
-                if (resultAdd.compareTo(BigInteger.ZERO) < 0) {
-                    return 0;
-                }
-                return resultAdd.intValue();
+            int end = endIn;
+            if (end < 0) {
+                endLe0Profile.enter();
+                end += lenNode.execute(storage);
             }
-            return value.min(BigInteger.valueOf(Integer.MAX_VALUE)).intValue();
-        }
 
-        private int findIndex(VirtualFrame frame, PTuple tuple, Object value, int start, int end, BinaryComparisonNode eqNode) {
-            SequenceStorage tupleStore = tuple.getSequenceStorage();
-            int len = tupleStore.length();
-            for (int i = start; i < end && i < len; i++) {
-                Object object = getGetItemNode().execute(tupleStore, i);
-                if (eqNode.executeBool(frame, object, value)) {
-                    return i;
-                }
+            // Note: ItemIndexNode normalizes the end to min(end, length(storage))
+            int idx = itemIndexNode.execute(frame, storage, value, start, end);
+            if (idx != -1) {
+                return idx;
             }
-            throw raise(PythonErrorType.ValueError, "tuple.index(x): x not in tuple");
+            throw raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
         }
-
-        private SequenceStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());
-            }
-            return getItemNode;
-        }
-
-        @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, 0, getLength(self), eqNode);
-        }
-
-        @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, long start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), eqNode);
-        }
-
-        @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, long start, long end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
-        }
-
-        @Specialization
-        int indexPI(VirtualFrame frame, PTuple self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), eqNode);
-        }
-
-        @Specialization
-        int indexPIPI(VirtualFrame frame, PTuple self, Object value, PInt start, PInt end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
-        }
-
-        @Specialization
-        int indexLPI(VirtualFrame frame, PTuple self, Object value, long start, PInt end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
-        }
-
-        @Specialization
-        int indexPIL(VirtualFrame frame, PTuple self, Object value, PInt start, Long end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        int indexDO(PTuple self, Object value, double start, Object end) {
-            throw raise(TypeError, ERROR_TYPE_MESSAGE);
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        int indexOD(PTuple self, Object value, Object start, double end) {
-            throw raise(TypeError, ERROR_TYPE_MESSAGE);
-        }
-
-        @Specialization(guards = "!isNumber(start)")
-        int indexO(VirtualFrame frame, PTuple self, Object value, Object start, PNone end,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode startNode,
-                        @Cached("createIndexNode()") IndexNode indexNode) {
-
-            Object startValue = startNode.executeObject(frame, start);
-            if (PNone.NO_VALUE == startValue || !MathGuards.isNumber(startValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
-            return indexNode.execute(frame, self, value, startValue, end);
-        }
-
-        @Specialization(guards = {"!isNumber(end)"})
-        int indexLO(VirtualFrame frame, PTuple self, Object value, long start, Object end,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,
-                        @Cached("createIndexNode()") IndexNode indexNode) {
-
-            Object endValue = endNode.executeObject(frame, end);
-            if (PNone.NO_VALUE == endValue || !MathGuards.isNumber(endValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
-            return indexNode.execute(frame, self, value, start, endValue);
-        }
-
-        @Specialization(guards = {"!isNumber(start) || !isNumber(end)"})
-        int indexOO(VirtualFrame frame, PTuple self, Object value, Object start, Object end,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode startNode,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,
-                        @Cached("createIndexNode()") IndexNode indexNode) {
-
-            Object startValue = startNode.executeObject(frame, start);
-            if (PNone.NO_VALUE == startValue || !MathGuards.isNumber(startValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
-            Object endValue = endNode.executeObject(frame, end);
-            if (PNone.NO_VALUE == endValue || !MathGuards.isNumber(endValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
-            return indexNode.execute(frame, self, value, startValue, endValue);
-        }
-
-        protected int getLength(PTuple t) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return lenNode.execute(t.getSequenceStorage());
-        }
-
-        protected IndexNode createIndexNode() {
-            return TupleBuiltinsFactory.IndexNodeFactory.create(new ReadArgumentNode[0]);
-        }
-
     }
 
     @Builtin(name = "count", minNumOfPositionalArgs = 2)
@@ -269,12 +161,12 @@ public class TupleBuiltins extends PythonBuiltins {
         @Specialization
         long count(VirtualFrame frame, PTuple self, Object value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             long count = 0;
             SequenceStorage tupleStore = self.getSequenceStorage();
             for (int i = 0; i < tupleStore.length(); i++) {
-                Object object = getItemNode.execute(tupleStore, i);
-                if (eqNode.executeBool(frame, object, value)) {
+                Object object = getItemNode.execute(frame, tupleStore, i);
+                if (eqNode.execute(frame, value, object)) {
                     count++;
                 }
             }
@@ -287,7 +179,7 @@ public class TupleBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int doManaged(PTuple self,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             return lenNode.execute(self.getSequenceStorage());
         }
 
@@ -295,8 +187,8 @@ public class TupleBuiltins extends PythonBuiltins {
         public int doNative(PythonNativeObject self,
                         @Cached PCallCapiFunction callSizeNode,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached CastToJavaLongNode castToLongNode) {
-            return (int) castToLongNode.execute(callSizeNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self)));
+                        @Cached PyLongAsIntNode asIntNode) {
+            return asIntNode.execute(null, callSizeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self)));
         }
     }
 
@@ -304,81 +196,70 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
-        public String toString(VirtualFrame frame, Object item, BuiltinFunctions.ReprNode reprNode) {
+        public static String toString(VirtualFrame frame, Object item, PyObjectReprAsJavaStringNode reprNode) {
             if (item != null) {
-                Object value = reprNode.execute(frame, item);
-                if (value instanceof String) {
-                    return (String) value;
-                } else if (value instanceof PString) {
-                    return ((PString) value).getValue();
-                }
-                CompilerDirectives.transferToInterpreter();
-                throw new AssertionError("should not reach");
+                return reprNode.execute(frame, item);
             }
             return "(null)";
         }
 
         @Specialization
-        public String repr(VirtualFrame frame, PTuple self,
-                        @Cached("create()") SequenceStorageNodes.LenNode getLen,
+        public static String repr(VirtualFrame frame, PTuple self,
+                        @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("createRepr()") BuiltinFunctions.ReprNode reprNode) {
+                        @Cached PyObjectReprAsJavaStringNode reprNode) {
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
-            StringBuilder buf = new StringBuilder();
-            append(buf, "(");
-            for (int i = 0; i < len - 1; i++) {
-                append(buf, toString(frame, getItemNode.execute(tupleStore, i), reprNode));
-                append(buf, ", ");
+            if (len == 0) {
+                return "()";
             }
-
-            if (len > 0) {
-                append(buf, toString(frame, getItemNode.execute(tupleStore, len - 1), reprNode));
+            if (!PythonContext.get(reprNode).reprEnter(self)) {
+                return "(...)";
             }
+            try {
+                StringBuilder buf = PythonUtils.newStringBuilder();
+                PythonUtils.append(buf, "(");
+                for (int i = 0; i < len - 1; i++) {
+                    PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
+                    PythonUtils.append(buf, ", ");
+                }
 
-            if (len == 1) {
-                append(buf, ",");
+                if (len > 0) {
+                    PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
+                }
+
+                if (len == 1) {
+                    PythonUtils.append(buf, ",");
+                }
+
+                PythonUtils.append(buf, ")");
+                return PythonUtils.sbToString(buf);
+            } finally {
+                PythonContext.get(reprNode).reprLeave(self);
             }
-
-            append(buf, ")");
-            return toString(buf);
-        }
-
-        @TruffleBoundary
-        private static void append(StringBuilder sb, String s) {
-            sb.append(s);
-        }
-
-        @TruffleBoundary
-        private static String toString(StringBuilder sb) {
-            return sb.toString();
-        }
-
-        protected static BuiltinFunctions.ReprNode createRepr() {
-            return BuiltinFunctionsFactory.ReprNodeFactory.create();
         }
     }
 
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
-    @ImportStatic(MathGuards.class)
+    @ImportStatic({MathGuards.class, PGuards.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        private static final String TYPE_ERROR_MESSAGE = "tuple indices must be integers or slices, not %p";
+        private static final String TYPE_ERROR_MESSAGE = "tuple " + ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES;
 
-        public abstract Object execute(PTuple tuple, Object index);
+        public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
 
         @Specialization(guards = "!isPSlice(key)")
-        Object doPTuple(PTuple tuple, Object key,
+        Object doPTuple(VirtualFrame frame, PTuple tuple, Object key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(tuple.getSequenceStorage(), key);
+            return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
         @Specialization
-        Object doPTuple(PTuple tuple, PSlice key,
+        Object doPTuple(VirtualFrame frame, PTuple tuple, PSlice key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(tuple.getSequenceStorage(), key);
+            return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
         @Specialization
@@ -386,15 +267,11 @@ public class TupleBuiltins extends PythonBuiltins {
                         @Cached PCallCapiFunction callSetItem,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
-            return asPythonObjectNode.execute(callSetItem.call(NativeCAPISymbols.FUN_PY_TRUFFLE_TUPLE_GET_ITEM, toSulongNode.execute(tuple), key));
+            return asPythonObjectNode.execute(callSetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_TUPLE_GET_ITEM, toSulongNode.execute(tuple), key));
         }
 
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
             return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), TYPE_ERROR_MESSAGE, (s, f) -> f.createTuple(s));
-        }
-
-        protected boolean isPSlice(Object object) {
-            return object instanceof PSlice;
         }
     }
 
@@ -427,8 +304,8 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        boolean doOther(Object left, Object right) {
-            return true;
+        PNotImplemented doOther(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -504,30 +381,39 @@ public class TupleBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBuiltinNode {
         @Specialization
         PTuple doPTuple(PTuple left, PTuple right,
-                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+                        @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
             return factory().createTuple(concatenated);
         }
 
+        protected static SequenceStorageNodes.ConcatNode createConcat() {
+            return SequenceStorageNodes.ConcatNode.create(() -> SequenceStorageNodes.ListGeneralizationNode.create());
+        }
+
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, "can only concatenate tuple (not \"%p\") to tuple", right);
-        }
-    }
-
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class MulNode extends PythonBuiltinNode {
-        @Specialization
-        PTuple mul(PTuple left, Object right,
-                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            return factory().createTuple(repeatNode.execute(left.getSequenceStorage(), right));
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
         }
     }
 
     @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
+    abstract static class MulNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        PTuple mul(VirtualFrame frame, PTuple left, Object right,
+                        @Cached GetClassNode getClassNode,
+                        @Cached ConditionProfile isSingleRepeat,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode) {
+            int repeats = asSizeNode.executeExact(frame, right);
+            if (isSingleRepeat.profile(PGuards.isPythonBuiltinClassType(getClassNode.execute(left)) && repeats == 1)) {
+                return left;
+            } else {
+                return factory().createTuple(repeatNode.execute(frame, left.getSequenceStorage(), repeats));
+            }
+        }
     }
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
@@ -535,7 +421,7 @@ public class TupleBuiltins extends PythonBuiltins {
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean contains(VirtualFrame frame, PTuple self, Object other,
-                        @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
+                        @Cached SequenceStorageNodes.ContainsNode containsNode) {
             return containsNode.execute(frame, self.getSequenceStorage(), other);
         }
 
@@ -546,7 +432,7 @@ public class TupleBuiltins extends PythonBuiltins {
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doPTuple(PTuple self,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             return lenNode.execute(self.getSequenceStorage()) != 0;
         }
 
@@ -559,60 +445,86 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        PSequenceIterator doPTuple(PTuple self) {
-            return factory().createSequenceIterator(self);
+        @Specialization(guards = {"isIntStorage(primary)"})
+        PIntegerSequenceIterator doPListInt(PTuple primary) {
+            return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"isObjectStorage(primary)"})
+        PObjectSequenceIterator doPListObject(PTuple primary) {
+            return factory().createObjectSequenceIterator((ObjectSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"isLongStorage(primary)"})
+        PLongSequenceIterator doPListLong(PTuple primary) {
+            return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"isDoubleStorage(primary)"})
+        PDoubleSequenceIterator doPListDouble(PTuple primary) {
+            return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
+        PSequenceIterator doPList(PTuple primary) {
+            return factory().createSequenceIterator(primary);
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        static Object doGeneric(@SuppressWarnings("unused") Object self) {
+            return PNone.NONE;
         }
     }
 
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public long tupleHash(VirtualFrame frame, PTuple self,
-                        @Cached("create()") SequenceStorageNodes.LenNode getLen,
+        protected static long HASH_UNSET = -1;
+
+        @Specialization(guards = {"self.getHash() != HASH_UNSET"})
+        public long getHash(PTuple self) {
+            return self.getHash();
+        }
+
+        @Specialization(guards = {"self.getHash() == HASH_UNSET"})
+        public long computeHash(VirtualFrame frame, PTuple self,
+                        @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
-                        @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode,
-                        @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
+                        @Cached PyObjectHashNode hashNode) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
             long multiplier = 0xf4243;
-            long x = 0x345678;
-            long y;
+            long hash = 0x345678;
             for (int i = 0; i < len; i++) {
-                Object item = getItemNode.execute(tupleStore, i);
-                Object hashValue = lookupHashAttributeNode.executeObject(frame, item);
-                if (!isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
-                    throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
-                }
-                y = castToLongNode.execute(hashValue);
-                if (y == -1) {
-                    return -1;
-                }
-
-                x = (x ^ y) * multiplier;
+                Object item = getItemNode.execute(frame, tupleStore, i);
+                long tmp = hashNode.execute(frame, item);
+                hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }
 
-            x += 97531;
+            hash += 97531;
 
-            if (x == Long.MAX_VALUE) {
-                x = -2;
+            if (hash == Long.MAX_VALUE) {
+                hash = -2;
             }
 
-            return x;
+            self.setHash(hash);
+            return hash;
         }
 
         @Fallback
         Object genericHash(@SuppressWarnings("unused") Object self) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PTuple doIt(PTuple self) {
+            return factory().createTuple(new Object[]{factory().createTuple(self.getSequenceStorage())});
         }
     }
 }

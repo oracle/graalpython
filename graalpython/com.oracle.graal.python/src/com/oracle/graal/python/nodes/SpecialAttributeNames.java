@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,12 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class SpecialAttributeNames {
+    public static final String __ = "_";
     public static final String __DOC__ = "__doc__";
     public static final String __DEFAULTS__ = "__defaults__";
     public static final String __CODE__ = "__code__";
     public static final String __GLOBALS__ = "__globals__";
+    public static final String __CLASSCELL__ = "__classcell__";
     public static final String __CLOSURE__ = "__closure__";
     public static final String __ANNOTATIONS__ = "__annotations__";
     public static final String __KWDEFAULTS__ = "__kwdefaults__";
@@ -54,25 +56,33 @@ public abstract class SpecialAttributeNames {
     public static final String __DICT__ = "__dict__";
     public static final String __CLASS__ = "__class__";
     public static final String __BASE__ = "__base__";
+    public static final String __NEWOBJ__ = "__newobj__";
+    public static final String __NEWOBJ_EX__ = "__newobj_ex__";
     public static final String __BASES__ = "__bases__";
     public static final String __NAME__ = "__name__";
     public static final String __QUALNAME__ = "__qualname__";
     public static final String __MRO__ = "__mro__";
+    public static final String __MRO_ENTRIES__ = "__mro_entries__";
     public static final String __LOADER__ = "__loader__";
     public static final String __PACKAGE__ = "__package__";
     public static final String __SPEC__ = "__spec__";
     public static final String __PATH__ = "__path__";
     public static final String __FILE__ = "__file__";
     public static final String __CACHED__ = "__cached__";
+    public static final String __TEXT_SIGNATURE__ = "__text_signature__";
     public static final String __TRACEBACK__ = "__traceback__";
     public static final String __CAUSE__ = "__cause__";
     public static final String __CONTEXT__ = "__context__";
+    public static final String __SUPPRESS_CONTEXT__ = "__suppress_context__";
     public static final String __BASICSIZE__ = "__basicsize__";
-    public static final String __NEW__ = "__new__";
     public static final String __SLOTS__ = "__slots__";
+    public static final String __SLOTNAMES__ = "__slotnames__";
     public static final String __DICTOFFSET__ = "__dictoffset__";
     public static final String __ITEMSIZE__ = "__itemsize__";
     public static final String __WEAKREF__ = "__weakref__";
     public static final String __WEAKLISTOFFSET__ = "__weaklistoffset__";
     public static final String __ALL__ = "__all__";
+    public static final String __FLAGS__ = "__flags__";
+    public static final String __ABSTRACTMETHODS__ = "__abstractmethods__";
+    public static final String __ORIG_BASES__ = "__orig_bases__";
 }

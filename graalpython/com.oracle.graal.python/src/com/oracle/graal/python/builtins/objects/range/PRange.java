@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -23,107 +23,27 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.range;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
-import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives;
 
-public final class PRange extends PImmutableSequence {
+public abstract class PRange extends PythonBuiltinObject {
 
-    private final int start;
-    private final int stop;
-    private final int step;
-    private final int length;
-
-    public PRange(LazyPythonClass clazz, int stop) {
-        this(clazz, 0, stop, 1);
+    public PRange(PythonLanguage lang) {
+        super(PythonBuiltinClassType.PRange, PythonBuiltinClassType.PRange.getInstanceShape(lang));
     }
 
-    public PRange(LazyPythonClass clazz, int start, int stop) {
-        this(clazz, start, stop, 1);
-    }
+    public abstract Object getStart();
 
-    public PRange(LazyPythonClass clazz, int start, int stop, int step) {
-        super(clazz);
-        if (step == 0) {
-            CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getCore().raise(ValueError, "range() arg 3 must not be zero");
-        }
+    public abstract Object getStep();
 
-        int n;
-        if (step > 0) {
-            n = getLenOfRange(start, stop, step);
-        } else {
-            n = getLenOfRange(stop, start, -step);
-        }
+    public abstract Object getStop();
 
-        this.start = start;
-        this.stop = stop;
-        this.step = step;
-        this.length = n;
-    }
-
-    public static int getLenOfRange(int lo, int hi, int step) {
-        int n = 0;
-        if (lo < hi) {
-            // the base difference may be > Integer.MAX_VALUE
-            long diff = (long) hi - (long) lo - 1;
-            // any long > Integer.MAX_VALUE or < Integer.MIN_VALUE gets casted
-            // to a
-            // negative number
-            n = (int) ((diff / step) + 1);
-            if (n < 0) {
-                CompilerDirectives.transferToInterpreter();
-                throw PythonLanguage.getCore().raise(OverflowError, "range() result has too many items");
-            }
-        }
-        return n;
-    }
-
-    public int getStart() {
-        return start;
-    }
-
-    public int getStep() {
-        return step;
-    }
-
-    public int getStop() {
-        return stop;
-    }
-
-    public int getItemNormalized(int index) {
-        assert index < length;
-        return index * step + start;
-    }
-
-    public int len() {
-        return length;
-    }
-
-    @Override
-    public SequenceStorage getSequenceStorage() {
-        return new RangeSequenceStorage(this);
-    }
-
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        if (step == 1) {
-            return String.format("range(%d, %d)", start, stop);
-        } else {
-            return String.format("range(%d, %d, %d)", start, stop, step);
-        }
-
-    }
+    public abstract Object getLength();
 
     @Override
     public int hashCode() {
@@ -131,12 +51,19 @@ public final class PRange extends PImmutableSequence {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (other instanceof PRange) {
-            PRange otherRange = (PRange) other;
-            return otherRange.getStart() == getStart() && otherRange.getStop() == getStop() && otherRange.getStep() == getStep();
+    public int compareTo(Object o) {
+        return this.hashCode() - o.hashCode();
+    }
+
+    protected abstract boolean withStep();
+
+    @Override
+    @CompilerDirectives.TruffleBoundary
+    public String toString() {
+        if (this.withStep()) {
+            return String.format("range(%s, %s, %s)", getStart(), getStop(), getStep());
         } else {
-            return false;
+            return String.format("range(%s, %s)", getStart(), getStop());
         }
     }
 }

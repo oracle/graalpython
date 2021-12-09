@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,17 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.cell;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PCell extends PythonAbstractObject {
     private final Assumption effectivelyFinal;
     private Object ref;
@@ -59,19 +55,32 @@ public final class PCell extends PythonAbstractObject {
         this.effectivelyFinal = effectivelyFinalAssumption;
     }
 
+    public static PCell[] toCellArray(Object[] closure) {
+        PCell[] cells = new PCell[closure.length];
+        PythonUtils.arraycopy(closure, 0, cells, 0, closure.length);
+        return cells;
+    }
+
     public Object getRef() {
         return ref;
+    }
+
+    public void clearRef(Assumption assumption) {
+        setRef(null, assumption);
     }
 
     public void clearRef() {
         setRef(null);
     }
 
+    @TruffleBoundary
+    private static void invalidateAssumption(Assumption assumption) {
+        assumption.invalidate();
+    }
+
     public void setRef(Object ref) {
-        if (effectivelyFinal.isValid()) {
-            if (this.ref != null) {
-                effectivelyFinal.invalidate();
-            }
+        if (this.ref != null) {
+            invalidateAssumption(effectivelyFinal);
         }
         this.ref = ref;
     }
@@ -83,7 +92,7 @@ public final class PCell extends PythonAbstractObject {
         assert constantAssumption == effectivelyFinal;
         if (constantAssumption.isValid()) {
             if (this.ref != null) {
-                constantAssumption.invalidate();
+                invalidateAssumption(constantAssumption);
             }
         }
         this.ref = ref;
@@ -104,13 +113,7 @@ public final class PCell extends PythonAbstractObject {
 
     @Override
     public int compareTo(Object o) {
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public LazyPythonClass getLazyPythonClass() {
-        return PythonBuiltinClassType.PCell;
     }
 }

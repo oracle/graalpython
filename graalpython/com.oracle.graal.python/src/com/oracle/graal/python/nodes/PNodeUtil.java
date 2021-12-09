@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -29,9 +29,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.InnerRootNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.SourceSection;
 
 public class PNodeUtil {
 
@@ -49,7 +53,7 @@ public class PNodeUtil {
 
             current = current.getParent();
         }
-
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException();
     }
 
@@ -57,6 +61,7 @@ public class PNodeUtil {
         List<ExpressionNode> expressions = new ArrayList<>();
 
         root.accept(new NodeVisitor() {
+            @Override
             public boolean visit(Node node) {
                 if (node instanceof PNode) {
                     PNode pnode = (PNode) node;
@@ -72,6 +77,23 @@ public class PNodeUtil {
         });
 
         return expressions;
+    }
+
+    @TruffleBoundary
+    public static SourceSection getRootSourceSection(RootNode root) {
+        SourceSection rootSourceSection = root.getSourceSection();
+        if (rootSourceSection == null) {
+            SourceSection[] rootSection = new SourceSection[]{null};
+            root.accept(n -> {
+                if (n instanceof InnerRootNode) {
+                    rootSection[0] = n.getSourceSection();
+                    return false;
+                }
+                return true;
+            });
+            rootSourceSection = rootSection[0];
+        }
+        return rootSourceSection;
     }
 
     public static void clearSourceSections(PNode node) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -23,43 +23,21 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.set;
 
-import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PBaseSet extends PHashingCollection {
 
-    protected final HashingStorage set;
-
-    public PBaseSet(LazyPythonClass clazz) {
-        super(clazz);
-        this.set = EconomicMapStorage.create(true);
+    public PBaseSet(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape, EmptyStorage.INSTANCE);
     }
 
-    public PBaseSet(LazyPythonClass clazz, HashingStorage set) {
-        super(clazz);
-        this.set = set;
-    }
-
-    public final boolean contains(Object key, Equivalence eq) {
-        return set.hasKey(key, eq);
-    }
-
-    public final Iterable<Object> values() {
-        return set.keys();
-    }
-
-    @Override
-    public int size() {
-        return set.length();
-    }
-
-    @Override
-    public HashingStorage getDictStorage() {
-        return set;
+    public PBaseSet(Object clazz, Shape instanceShape, HashingStorage set) {
+        super(clazz, instanceShape, set);
     }
 }

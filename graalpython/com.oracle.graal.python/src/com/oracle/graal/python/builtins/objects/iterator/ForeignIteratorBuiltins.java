@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,9 +35,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -62,16 +64,21 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
         @Specialization
         public Object next(PForeignArrayIterator foreignIter,
                         @Cached PForeignToPTypeNode fromForeignNode,
-                        @CachedLibrary(limit = "3") InteropLibrary interop) {
-            if (foreignIter.getCursor() >= foreignIter.getSize()) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @CachedLibrary(limit = "3") InteropLibrary interop,
+                        @Cached GilNode gil) {
+            if (foreignIter.getCursor() >= foreignIter.getSize(interop, asSizeNode)) {
                 throw raise(StopIteration);
             }
 
+            gil.release(true);
             try {
                 Object element = interop.readArrayElement(foreignIter.getForeignArray(), foreignIter.advance());
                 return fromForeignNode.executeConvert(element);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw raise(PythonErrorType.StopIteration);
+            } finally {
+                gil.acquire();
             }
         }
     }
@@ -81,7 +88,7 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object __iter__(PForeignArrayIterator self) {
+        static PForeignArrayIterator doForeignArrayIterator(PForeignArrayIterator self) {
             return self;
         }
     }

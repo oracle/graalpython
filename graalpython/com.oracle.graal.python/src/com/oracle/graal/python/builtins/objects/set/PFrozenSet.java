@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,16 +26,18 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.Shape;
 
 public class PFrozenSet extends PBaseSet {
 
-    public PFrozenSet(LazyPythonClass clazz) {
-        super(clazz);
+    private long hash = -1;
+
+    public PFrozenSet(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
-    public PFrozenSet(LazyPythonClass clazz, HashingStorage storage) {
-        super(clazz, storage);
+    public PFrozenSet(Object clazz, Shape instanceShape, HashingStorage store) {
+        super(clazz, instanceShape, store);
     }
 
     @Override
@@ -43,12 +45,11 @@ public class PFrozenSet extends PBaseSet {
         return "frozenset(" + super.toString() + ")";
     }
 
-    @Override
-    public void setDictStorage(HashingStorage newStorage) {
-        // ignore if storage stays unchanged
-        if (newStorage != getDictStorage()) {
-            throw new RuntimeException("frozenSet is unmodifiable");
-        }
+    public long getHash() {
+        return hash;
     }
 
+    public void setHash(long hash) {
+        this.hash = hash;
+    }
 }

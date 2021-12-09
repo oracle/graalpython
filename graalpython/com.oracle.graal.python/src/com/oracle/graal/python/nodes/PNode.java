@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,15 +27,23 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.interop.PythonScopes;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
+import com.oracle.truffle.api.interop.NodeLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.source.SourceSection;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
+@ExportLibrary(NodeLibrary.class)
 public abstract class PNode extends PNodeWithContext implements InstrumentableNode {
     public static final PNode[] EMPTY_ARRAY = new PNode[0];
     @CompilationFinal private SourceSection sourceSection;
@@ -63,7 +71,31 @@ public abstract class PNode extends PNodeWithContext implements InstrumentableNo
         this.sourceSection = source;
     }
 
+    @Override
     public boolean isInstrumentable() {
         return getSourceSection() != null;
+    }
+
+    // NodeLibrary
+
+    @ExportMessage
+    boolean accepts(
+                    @Cached(value = "this", adopt = false) PNode cachedNode) {
+        return this == cachedNode;
+    }
+
+    @ExportMessage
+    final boolean hasScope(@SuppressWarnings("unused") Frame frame) {
+        // hasScope == isAdoptable(), getParent() != null is a fast way to check if adoptable.
+        return this.getParent() != null;
+    }
+
+    @ExportMessage
+    final Object getScope(Frame frame, @SuppressWarnings("unused") boolean nodeEnter) throws UnsupportedMessageException {
+        if (hasScope(frame)) {
+            return PythonScopes.create(this, frame != null ? frame.materialize() : null);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,14 +44,14 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Read the locals from the passed frame, updating them from the frame if that is needed. This does
@@ -62,10 +62,6 @@ public abstract class ReadLocalsNode extends Node {
 
     protected static boolean isGeneratorFrame(PFrame frame) {
         return PArguments.isGeneratorFrame(frame.getArguments());
-    }
-
-    protected static boolean inClassBody(PFrame frame) {
-        return PArguments.getSpecialArgument(frame.getArguments()) instanceof ClassBodyRootNode;
     }
 
     protected static PFrame getPFrame(Frame frame) {
@@ -80,21 +76,31 @@ public abstract class ReadLocalsNode extends Node {
         return localsDict;
     }
 
-    @Specialization(guards = {"inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    static Object freshLocalsInClassBody(@SuppressWarnings("unused") VirtualFrame callingFrame, PFrame frame) {
-        // the namespace argument stores the locals
-        return PArguments.getArgument(frame.getArguments(), 0);
-    }
-
-    @Specialization(guards = {"inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    Object frameInClassBody(PFrame frame,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+    @Specialization(guards = {"!isGeneratorFrame(frame)"})
+    static Object frameToUpdate(PFrame frame,
+                    @Cached PythonObjectFactory factory) {
         return frame.getLocals(factory);
     }
 
-    @Specialization(guards = {"!inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    Object frameToUpdate(PFrame frame,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
-        return frame.getLocals(factory);
+    public static ReadLocalsNode create() {
+        return ReadLocalsNodeGen.create();
+    }
+
+    /**
+     * Fast access to custom locals if a custom dict was provided by the caller and the python frame
+     * does not escape.
+     *
+     * @param frame the current frame
+     * @param havePyFrame profile if we do have a python frame (PFrame)
+     * @param haveCustomLocals profile if the python frame has a custom set locals dict
+     * @return the custom locals (if found) or the globals
+     */
+    public static PythonObject fastGetCustomLocalsOrGlobals(VirtualFrame frame, ConditionProfile havePyFrame, ConditionProfile haveCustomLocals) {
+        PFrame pyFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
+        if (havePyFrame.profile(pyFrame != null) && haveCustomLocals.profile(pyFrame.getLocals(null) != null)) {
+            return (PythonObject) pyFrame.getLocals(null);
+        }
+        // return the globals
+        return PArguments.getGlobals(frame);
     }
 }

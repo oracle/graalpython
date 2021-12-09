@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,14 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_HAS_NO_LEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -36,13 +40,22 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,26 +77,33 @@ public class ReversedBuiltins extends PythonBuiltins {
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object next(VirtualFrame frame, PSequenceReverseIterator self,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
-                        @Cached("create()") IsBuiltinClassProfile profile) {
-            if (self.index < 0) {
-                throw raise(StopIteration);
-            }
-            try {
-                return callGetItem.executeObject(frame, self.getObject(), self.index--);
-            } catch (PException e) {
-                e.expectIndexError(profile);
-                throw raise(StopIteration);
-            }
+
+        @Specialization(guards = "self.isExhausted()")
+        public Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
+            throw raise(StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!self.isExhausted()")
+        Object next(VirtualFrame frame, PSequenceReverseIterator self,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItem,
+                        @Cached IsBuiltinClassProfile profile) {
+            if (self.index >= 0) {
+                try {
+                    return callGetItem.executeObject(frame, self.getObject(), self.index--);
+                } catch (PException e) {
+                    e.expectIndexError(profile);
+                }
+            }
+            self.setExhausted();
+            throw raise(StopIteration);
+        }
+
+        @Specialization(guards = "!self.isExhausted()")
         Object next(PStringReverseIterator self) {
             if (self.index >= 0) {
                 return Character.toString(self.value.charAt(self.index--));
             }
+            self.setExhausted();
             throw raise(StopIteration);
         }
     }
@@ -93,7 +113,7 @@ public class ReversedBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object __iter__(PythonBuiltinObject self) {
+        static Object doGeneric(Object self) {
             return self;
         }
     }
@@ -101,14 +121,95 @@ public class ReversedBuiltins extends PythonBuiltins {
     @Builtin(name = __LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object next(PSequenceReverseIterator self) {
+
+        @Specialization(guards = "self.isExhausted()")
+        public int exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
+            return 0;
+        }
+
+        @Specialization(guards = "!self.isExhausted()")
+        public int lengthHint(PStringReverseIterator self) {
             return self.index + 1;
         }
 
-        @Specialization
-        public int next(PStringReverseIterator self) {
+        @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
+        public int lengthHint(PSequenceReverseIterator self,
+                        @Cached SequenceNodes.LenNode lenNode) {
+            int len = lenNode.execute(self.getPSequence());
+            if (len == -1) {
+                throw raise(TypeError, OBJ_HAS_NO_LEN, self);
+            }
+            if (len < self.index) {
+                return 0;
+            }
             return self.index + 1;
+        }
+
+        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
+        public int lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
+                        @Cached PyObjectSizeNode sizeNode) {
+            int len = sizeNode.execute(frame, self.getObject());
+            if (len < self.index) {
+                return 0;
+            }
+            return self.index + 1;
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        public Object reduce(PStringReverseIterator self,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
+            if (self.isExhausted()) {
+                return reduceInternal(self, "", null, getClassNode);
+            }
+            return reduceInternal(self, self.value, self.index, getClassNode);
+        }
+
+        @Specialization(guards = "self.isPSequence()")
+        public Object reduce(PSequenceReverseIterator self,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
+            if (self.isExhausted()) {
+                return reduceInternal(self, factory().createList(), null, getClassNode);
+            }
+            return reduceInternal(self, self.getPSequence(), self.index, getClassNode);
+        }
+
+        @Specialization(guards = "!self.isPSequence()")
+        public Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
+                        @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callReduce,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
+            Object content = callReduce.executeObject(frame, self.getPSequence());
+            return reduceInternal(self, content, self.index, getClassNode);
+        }
+
+        private PTuple reduceInternal(Object self, Object arg, Object state, GetClassNode getClassNode) {
+            Object revIter = getClassNode.execute(self);
+            PTuple args = factory().createTuple(new Object[]{arg});
+            // callable, args, state (optional)
+            if (state != null) {
+                return factory().createTuple(new Object[]{revIter, args, state});
+            } else {
+                return factory().createTuple(new Object[]{revIter, args});
+            }
+        }
+    }
+
+    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public static Object setState(VirtualFrame frame, PBuiltinIterator self, Object index,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int idx = asSizeNode.executeExact(frame, index);
+            if (idx < -1) {
+                idx = -1;
+            }
+            self.index = idx;
+            return PNone.NONE;
         }
     }
 }

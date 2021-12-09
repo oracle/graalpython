@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,9 +28,6 @@ package com.oracle.graal.python.test.grammar;
 import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import org.junit.Test;
 
 public class ArgumentsTests {
@@ -51,16 +48,6 @@ public class ArgumentsTests {
                         "    print(b)\n" + //
                         "foo(a=1)\n";
         assertPrints("1\n3\n", source);
-    }
-
-    /**
-     * TODO: (zwei) Default args are not behaving correctly. Maybe we want to consider using
-     * assumptions.
-     */
-    // @Test
-    public void defaultArgUsingVariable() {
-        Path script = Paths.get("function-default-args-test.py");
-        assertPrints("do stuff A\ndo stuff B\n", script);
     }
 
     @Test

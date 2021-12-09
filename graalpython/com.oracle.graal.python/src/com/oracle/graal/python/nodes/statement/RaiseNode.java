@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,116 +25,202 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.BaseException;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeChild(value = "type", type = ExpressionNode.class)
 @NodeChild(value = "cause", type = ExpressionNode.class)
 public abstract class RaiseNode extends StatementNode {
-
-    private final IsBuiltinClassProfile simpleBaseCheckProfile = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile iterativeBaseCheckProfile = IsBuiltinClassProfile.create();
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
-    @Child private GetMroNode getMroNode;
 
-    @Specialization
-    public void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause,
-                    @Cached PRaiseNode raise,
-                    @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                    @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
-        PException currentException = getCaughtExceptionNode.execute(frame);
-        if (hasCurrentException.profile(currentException == null)) {
-            throw raise.raise(RuntimeError, "No active exception to reraise");
+    public abstract void execute(VirtualFrame frame, Object typeOrExceptionObject, Object cause);
+
+    public final void execute(Object typeOrExceptionObject, Object cause) {
+        execute(null, typeOrExceptionObject, cause);
+    }
+
+    @ImportStatic(PGuards.class)
+    public abstract static class SetExceptionCauseNode extends Node {
+        public abstract void execute(VirtualFrame frame, PBaseException exception, Object cause);
+
+        // raise * from <exception>
+        @Specialization
+        static void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, PBaseException cause) {
+            exception.setCause(cause);
         }
-        throw currentException;
-    }
 
-    @Specialization
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause,
-                    @Cached PRaiseNode raise) {
-        throw raise.raise(exception);
-    }
-
-    @Specialization(guards = "!isPNone(cause)")
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause,
-                    @Cached PRaiseNode raise,
-                    @Cached("create()") WriteAttributeToObjectNode writeCause) {
-        writeCause.execute(exception, SpecialAttributeNames.__CAUSE__, cause);
-        throw raise.raise(exception);
-    }
-
-    private void checkBaseClass(PythonAbstractClass pythonClass, PRaiseNode raise) {
-        if (simpleBaseCheckProfile.profileClass(pythonClass, BaseException)) {
-            return;
-        }
-        for (PythonAbstractClass klass : getMro(pythonClass)) {
-            if (iterativeBaseCheckProfile.profileClass(klass, BaseException)) {
-                return;
+        // raise * from <class>
+        @Specialization(guards = "isTypeNode.execute(causeClass)", limit = "1")
+        static void setCause(VirtualFrame frame, PBaseException exception, Object causeClass,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached BranchProfile baseCheckFailedProfile,
+                        @Cached ValidExceptionNode validException,
+                        @Cached CallNode callConstructor,
+                        @Cached PRaiseNode raise) {
+            if (!validException.execute(frame, causeClass)) {
+                baseCheckFailedProfile.enter();
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
+            }
+            Object cause = callConstructor.execute(frame, causeClass);
+            if (cause instanceof PBaseException) {
+                exception.setCause((PBaseException) cause);
+            } else {
+                // msimacek: CPython currently (3.8.2) has a bug that it's not checking the type of
+                // the value returned by the constructor, you can set a non-exception as a cause
+                // this way and see the exception printer TypeError on it. I don't want to raise an
+                // exception because CPython doesn't do it and I don't want to change the cause type
+                // to Object either, because it's not meant to be that way.
+                exception.setCause(null);
             }
         }
-        baseCheckFailedProfile.enter();
-        throw raiseNoException(raise);
+
+        // raise * from None
+        @Specialization(guards = "isNone(cause)")
+        static void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause) {
+            setCause(frame, exception, (PBaseException) null);
+        }
+
+        // raise * from <invalid>
+        @Specialization(guards = "!isValidCause(cause)")
+        static void setCause(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PBaseException exception, @SuppressWarnings("unused") Object cause,
+                        @Cached PRaiseNode raise) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
+        }
+
+        protected static boolean isValidCause(Object object) {
+            return object instanceof PBaseException || PGuards.isPythonClass(object) || PGuards.isNone(object);
+        }
     }
 
-    @Specialization
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractClass pythonClass, @SuppressWarnings("unused") PNone cause,
-                    @Cached PRaiseNode raise) {
-        checkBaseClass(pythonClass, raise);
-        throw raise.raise(pythonClass);
-    }
-
-    @Specialization(guards = "!isPNone(cause)")
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractClass pythonClass, Object cause,
-                    @Cached PythonObjectFactory factory,
+    // raise
+    @Specialization(guards = "isNoValue(type)")
+    static void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause,
                     @Cached PRaiseNode raise,
-                    @Cached("create()") WriteAttributeToObjectNode writeCause) {
-        checkBaseClass(pythonClass, raise);
-        PBaseException pythonException = factory.createBaseException(pythonClass);
-        writeCause.execute(pythonException, SpecialAttributeNames.__CAUSE__, cause);
-        throw raise.raise(pythonException);
+                    @Cached GetCaughtExceptionNode getCaughtExceptionNode,
+                    @Cached ConditionProfile hasCurrentException) {
+        PException caughtException = getCaughtExceptionNode.execute(frame);
+        if (hasCurrentException.profile(caughtException == null)) {
+            throw raise.raise(RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);
+        }
+        throw caughtException.getExceptionForReraise();
     }
 
-    @Specialization(guards = "!isAnyPythonObject(exception)")
-    @SuppressWarnings("unused")
-    void doRaise(VirtualFrame frame, Object exception, Object cause,
+    // raise <exception>
+    @Specialization(guards = "isNoValue(cause)")
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause,
+                    @Cached BranchProfile isReraise) {
+        if (exception.getException() != null) {
+            isReraise.enter();
+            exception.ensureReified();
+        }
+        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+    }
+
+    // raise <exception> from *
+    @Specialization(guards = "!isNoValue(cause)")
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause,
+                    @Cached BranchProfile isReraise,
+                    @Cached SetExceptionCauseNode setExceptionCauseNode) {
+        if (exception.getException() != null) {
+            isReraise.enter();
+            exception.ensureReified();
+        }
+        setExceptionCauseNode.execute(frame, exception, cause);
+        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+    }
+
+    private void checkBaseClass(VirtualFrame frame, Object pythonClass, ValidExceptionNode validException, PRaiseNode raise) {
+        if (!validException.execute(frame, pythonClass)) {
+            baseCheckFailedProfile.enter();
+            throw raiseNoException(raise);
+        }
+    }
+
+    // raise <class>
+    @Specialization(guards = {"isPythonClass(pythonClass)", "isNoValue(cause)"})
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, Object pythonClass, @SuppressWarnings("unused") PNone cause,
+                    @Cached ValidExceptionNode validException,
+                    @Cached CallNode callConstructor,
+                    @Cached BranchProfile constructorTypeErrorProfile,
                     @Cached PRaiseNode raise) {
+        checkBaseClass(frame, pythonClass, validException, raise);
+        Object newException = callConstructor.execute(frame, pythonClass);
+        if (newException instanceof PBaseException) {
+            throw raise.raiseExceptionObject((PBaseException) newException);
+        } else {
+            constructorTypeErrorProfile.enter();
+            throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
+        }
+    }
+
+    // raise <class> from *
+    @Specialization(guards = {"isPythonClass(pythonClass)", "!isNoValue(cause)"})
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, Object pythonClass, Object cause,
+                    @Cached ValidExceptionNode validException,
+                    @Cached PRaiseNode raise,
+                    @Cached CallNode callConstructor,
+                    @Cached SetExceptionCauseNode setExceptionCauseNode) {
+        checkBaseClass(frame, pythonClass, validException, raise);
+        Object newException = callConstructor.execute(frame, pythonClass);
+        if (newException instanceof PBaseException) {
+            setExceptionCauseNode.execute(frame, (PBaseException) newException, cause);
+            throw raise.raiseExceptionObject((PBaseException) newException);
+        } else {
+            throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
+        }
+    }
+
+    // raise <invalid> [from *]
+    @Specialization(guards = "!isBaseExceptionOrPythonClass(exception)", limit = "3")
+    @SuppressWarnings("unused")
+    static void doRaise(VirtualFrame frame, Object exception, Object cause,
+                    @CachedLibrary("exception") InteropLibrary lib,
+                    @Cached PRaiseNode raise) {
+        if (lib.isException(exception)) {
+            try {
+                throw lib.throwException(exception);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
         throw raiseNoException(raise);
     }
 
     private static PException raiseNoException(PRaiseNode raise) {
-        throw raise.raise(TypeError, "exceptions must derive from BaseException");
-    }
-
-    private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
-        if (getMroNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getMroNode = insert(GetMroNode.create());
-        }
-        return getMroNode.execute(clazz);
+        throw raise.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
     }
 
     public static RaiseNode create(ExpressionNode type, ExpressionNode cause) {
         return RaiseNodeGen.create(type, cause);
+    }
+
+    protected static boolean isBaseExceptionOrPythonClass(Object object) {
+        return object instanceof PBaseException || PGuards.isPythonClass(object);
     }
 }

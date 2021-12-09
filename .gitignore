@@ -8,6 +8,8 @@ com.oracle.graal.python.test.iml
 nbproject
 *.jar
 *.zip
+*.jar.files
+*.zip.files
 *.sha1
 env
 *.pyc
@@ -21,6 +23,7 @@ GRAALPYTHON_UNIT_TESTS.dist
 mx.graalpython/eclipse-launches
 asv
 *.json
+!**/resources/*.json
 language
 *.bc
 *.iml
@@ -34,13 +37,9 @@ language
 /*.py
 *.o
 *.so
+*.dylib
 *.rej
 .checkstyle
-/graalpython/com.oracle.graal.python.cext/compile_flags.txt
-/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/*.interp
-/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/*.tokens
-/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3*.java
-/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3.g4.stamp
 /mx.imports
 .pydevproject
 ## local dev and debug files
@@ -55,12 +54,27 @@ language
 /org.eclipse.jdt.core.prefs
 Python3.g4.stamp
 *.orig
-/graalpython/com.oracle.graal.python.test/src/tests/cpyext/Py*.c
-/graalpython/com.oracle.graal.python.test/src/tests/cpyext/Test*.c
 /*.diff
+/testenv
 ## generated from: pyhocon -i ci.hocon -f json -o ci.json
 /ci.json
 /*.err
 /graalpython/include/*
-/graalpython/com.oracle.graal.python.test/src/tests/cpyext/As_FileDescriptor_Testfile
 /.*.csv*
+/graal_dumps
+*.jfr
+.DS_Store
+
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/.antlr/
+graalpython/lib-python/3/test/data
+!graalpython/lib-python/3/test/data/README
+/venv
+*.code-workspace
+graalpython/com.oracle.graal.python.test/src/tests/cpyext/*.c
+graalpython/com.oracle.graal.python.test/src/tests/cpyext/*.sha256
+graalpython/com.oracle.graal.python.test/src/tests/cpyext/As_FileDescriptor_Testfile
+graalpython/lib-python/3/lib2to3/Grammar3.8.5.alpha.0.pickle
+graalpython/lib-python/3/lib2to3/PatternGrammar3.8.5.alpha.0.pickle
+graalpython.bench.src.zip.files/
+graalpython.tests.src.zip.files/
+graalpython.src.zip.files/

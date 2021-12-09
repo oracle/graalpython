@@ -11,6 +11,9 @@
 <module name="Checker">
   <property name="severity" value="error"/>
   <module name="TreeWalker">
+    <module name="IllegalType">
+      <property name="illegalClassNames" value="TruffleObject"/>
+    </module>
     <module name="AvoidStarImport">
       <property name="allowClassImports" value="true"/>
       <property name="allowStaticMemberImports" value="true"/>

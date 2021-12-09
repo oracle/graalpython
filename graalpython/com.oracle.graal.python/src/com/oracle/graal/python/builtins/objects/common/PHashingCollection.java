@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,30 +41,38 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PHashingCollection extends PythonBuiltinObject {
 
-    public PHashingCollection(LazyPythonClass cls) {
-        super(cls);
+    protected HashingStorage storage;
+
+    public PHashingCollection(Object cls, Shape instanceShape, HashingStorage storage) {
+        super(cls, instanceShape);
+        this.storage = storage;
     }
 
-    public abstract HashingStorage getDictStorage();
-
-    public abstract void setDictStorage(HashingStorage newStorage);
-
-    public abstract int size();
-
-    public Iterable<Object> items() {
-        return getDictStorage().values();
+    public final HashingStorage getDictStorage() {
+        return storage;
     }
 
-    public Iterable<Object> keys() {
-        return getDictStorage().keys();
+    public final void setDictStorage(HashingStorage storage) {
+        assert storage == this.storage || !(this instanceof PFrozenSet) : "frozenSet is unmodifiable";
+        this.storage = storage;
     }
 
-    public Iterable<DictEntry> entries() {
-        return getDictStorage().entries();
+    public HashingStorageIterable<Object> items() {
+        return HashingStorageLibrary.getUncached().values(getDictStorage());
+    }
+
+    public HashingStorageIterable<Object> keys() {
+        return HashingStorageLibrary.getUncached().keys(getDictStorage());
+    }
+
+    public HashingStorageIterable<DictEntry> entries() {
+        return HashingStorageLibrary.getUncached().entries(getDictStorage());
     }
 }

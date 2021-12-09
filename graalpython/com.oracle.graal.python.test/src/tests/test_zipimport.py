@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -35,7 +35,7 @@ GR15813_PATH = os.path.join(DIR_PATH, GR15813_FILE_NAME)
 
 class ZipImportBaseTestCase(unittest.TestCase):
 
-    def setUp(self):
+    def setUpClass(self):
         zipimport._zip_directory_cache.clear()
         self.path = sys.path[:]
         self.meta_path = sys.meta_path[:]
@@ -43,7 +43,7 @@ class ZipImportBaseTestCase(unittest.TestCase):
         sys.path_importer_cache.clear()
         self.modules_before = support.modules_setup()
 
-    def tearDown(self):
+    def tearDownClass(self):
         sys.path[:] = self.path
         sys.meta_path[:] = self.meta_path
         sys.path_hooks[:] = self.path_hooks
@@ -52,8 +52,8 @@ class ZipImportBaseTestCase(unittest.TestCase):
 
 class BasicZipImportTests(ZipImportBaseTestCase):
 
-    def setUp(self):
-        ZipImportBaseTestCase.setUp(self)
+    def setUpClass(self):
+        ZipImportBaseTestCase.setUpClass(self)
         self.z = zipimport.zipimporter(ZIP_PATH)
 
     def test_zipimporter_attribute(self):
@@ -147,11 +147,11 @@ class BasicZipImportTests(ZipImportBaseTestCase):
 
 class ZipImportWithPrefixTests(ZipImportBaseTestCase):
 
-    def setUp(self):
-        ZipImportBaseTestCase.setUp(self)
+    def setUpClass(self):
+        ZipImportBaseTestCase.setUpClass(self)
         self.z = zipimport.zipimporter(ZIP_PATH + "/cesta")
 
-    def tearDown(self):
+    def tearDownClass(self):
         zipimport._zip_directory_cache.clear()
 
     def test_zipimporter_with_prefix_attribute(self):
@@ -172,8 +172,8 @@ class ZipImportWithPrefixTests(ZipImportBaseTestCase):
 
 class ImportTests(ZipImportBaseTestCase):
 
-    def setUp(self):
-        ZipImportBaseTestCase.setUp(self)
+    def setUpClass(self):
+        ZipImportBaseTestCase.setUpClass(self)
         sys.path.insert(0, ZIP_PATH)
 
     def test_module_import(self):
@@ -184,8 +184,8 @@ class ImportTests(ZipImportBaseTestCase):
 
 class BasicEggImportTests(ZipImportBaseTestCase):
 
-    def setUp(self):
-        ZipImportBaseTestCase.setUp(self)
+    def setUpClass(self):
+        ZipImportBaseTestCase.setUpClass(self)
         self.z = zipimport.zipimporter(EGG_PATH)
 
     def test_zipimporter_egg(self):
@@ -208,8 +208,8 @@ class BasicEggImportTests(ZipImportBaseTestCase):
 class GR15813ImportTests(ZipImportBaseTestCase):
 
     # don't edit the zip file !!!
-    def setUp(self):
-        ZipImportBaseTestCase.setUp(self)
+    def setUpClass(self):
+        ZipImportBaseTestCase.setUpClass(self)
         self.z = zipimport.zipimporter(GR15813_PATH)
 
     def test_zipimporter_gr_18813(self):

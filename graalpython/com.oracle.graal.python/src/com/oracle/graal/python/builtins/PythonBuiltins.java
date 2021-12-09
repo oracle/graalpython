@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,37 +33,49 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.BiConsumer;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.util.BiConsumer;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 public abstract class PythonBuiltins {
-    protected final Map<String, Object> builtinConstants = new HashMap<>();
+    protected final Map<Object, Object> builtinConstants = new HashMap<>();
     private final Map<String, BoundBuiltinCallable<?>> builtinFunctions = new HashMap<>();
     private final Map<PythonBuiltinClass, Map.Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = new HashMap<>();
 
     protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
 
+    private boolean initialized;
+
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    public void setInitialized(boolean initialized) {
+        this.initialized = initialized;
+    }
+
     /**
      * Initialize everything that is truly independent of commandline arguments and that can be
-     * initialized and frozen into an SVM image.
+     * initialized and frozen into an SVM image. When in a subclass, any modifications to
+     * {@link #builtinConstants} or such should be made before calling
+     * {@code super.initialize(core)}.
      */
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         if (builtinFunctions.size() > 0) {
             return;
         }
         initializeEachFactoryWith((factory, builtin) -> {
             CoreFunctions annotation = getClass().getAnnotation(CoreFunctions.class);
             final boolean declaresExplicitSelf;
-            if (annotation.defineModule().length() > 0 && builtin.constructsClass().length == 0) {
+            PythonBuiltinClassType constructsClass = builtin.constructsClass();
+            if (annotation.defineModule().length() > 0 && constructsClass == PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter();
                 assert !builtin.isSetter();
                 assert annotation.extendClasses().length == 0;
@@ -72,31 +84,35 @@ public abstract class PythonBuiltins {
             } else {
                 declaresExplicitSelf = true;
             }
-            RootCallTarget callTarget = core.getLanguage().builtinCallTargetCache.computeIfAbsent(factory.getNodeClass(),
-                            (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf)));
+            RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
+                            builtin.name());
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
-            if (builtin.constructsClass().length > 0) {
+            int flags = PBuiltinFunction.getFlags(builtin, callTarget);
+            if (constructsClass != PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
-                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, numDefaults(builtin), callTarget);
-                for (PythonBuiltinClassType type : builtin.constructsClass()) {
-                    PythonBuiltinClass builtinClass = core.lookupType(type);
-                    builtinClass.setAttributeUnsafe(__NEW__, newFunc);
+                // we explicitly do not make these "staticmethods" here, since CPython also doesn't
+                // for builtin types
+                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), flags, callTarget);
+                PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
+                builtinClass.setAttributeUnsafe(__NEW__, newFunc);
+                final Object currentBuiltinDoc = builtinClass.getAttribute(__DOC__);
+                if (PGuards.isPNone(currentBuiltinDoc)) {
                     builtinClass.setAttribute(__DOC__, builtinDoc);
                 }
             } else {
-                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, numDefaults(builtin), callTarget);
+                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, numDefaults(builtin), flags, callTarget);
                 function.setAttribute(__DOC__, builtinDoc);
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
                     assert !builtin.isClassmethod() && !builtin.isStaticmethod();
                     PBuiltinFunction get = builtin.isGetter() ? function : null;
                     PBuiltinFunction set = builtin.isSetter() ? function : null;
-                    callable = core.factory().createGetSetDescriptor(get, set, builtin.name(), null);
+                    callable = core.factory().createGetSetDescriptor(get, set, builtin.name(), null, builtin.allowsDelete());
                 } else if (builtin.isClassmethod()) {
                     assert !builtin.isStaticmethod();
-                    callable = core.factory().createClassmethod(function);
+                    callable = core.factory().createBuiltinClassmethodFromCallableObj(function);
                 } else if (builtin.isStaticmethod()) {
-                    callable = core.factory().createStaticmethod(function);
+                    callable = core.factory().createStaticmethodFromCallableObj(function);
                 }
                 setBuiltinFunction(builtin.name(), callable);
             }
@@ -107,7 +123,7 @@ public abstract class PythonBuiltins {
      * Run any actions that can only be run in the post-initialization step, that is, if we're
      * actually going to start running rather than just pre-initializing.
      */
-    public void postInitialize(@SuppressWarnings("unused") PythonCore core) {
+    public void postInitialize(@SuppressWarnings("unused") Python3Core core) {
         // nothing to do by default
     }
 
@@ -115,8 +131,15 @@ public abstract class PythonBuiltins {
         List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> factories = getNodeFactories();
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
         for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
-            Builtin builtin = factory.getNodeClass().getAnnotation(Builtin.class);
-            func.accept(factory, builtin);
+            Boolean needsFrame = null;
+            for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
+                if (needsFrame == null) {
+                    needsFrame = builtin.needsFrame();
+                } else if (needsFrame != builtin.needsFrame()) {
+                    throw new IllegalStateException(String.format("Implementation error in %s: all @Builtin annotations must agree if the node needs a frame.", factory.getNodeClass().getName()));
+                }
+                func.accept(factory, builtin);
+            }
         }
     }
 
@@ -144,7 +167,7 @@ public abstract class PythonBuiltins {
         return tmp;
     }
 
-    protected Map<String, Object> getBuiltinConstants() {
+    protected Map<Object, Object> getBuiltinConstants() {
         return builtinConstants;
     }
 }

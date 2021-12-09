@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,8 +45,8 @@ import java.lang.ref.WeakReference;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.Shape;
 
 public class PReferenceType extends PythonBuiltinObject {
     public static class WeakRefStorage extends WeakReference<Object> {
@@ -69,11 +69,11 @@ public class PReferenceType extends PythonBuiltinObject {
     }
 
     private final WeakRefStorage store;
-    private int hash = -1;
+    private long hash = -1;
 
     @TruffleBoundary
-    public PReferenceType(LazyPythonClass cls, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
-        super(cls);
+    public PReferenceType(Object cls, Shape instanceShape, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
+        super(cls, instanceShape);
         this.store = new WeakRefStorage(this, pythonObject, callback, queue);
     }
 
@@ -98,16 +98,11 @@ public class PReferenceType extends PythonBuiltinObject {
         return (this.getObject() == null) ? 0 : 1;
     }
 
-    @TruffleBoundary
-    public int getHash() {
-        if (this.hash != -1) {
-            return this.hash;
-        }
+    public long getHash() {
+        return hash;
+    }
 
-        Object object = getObject();
-        if (object != null) {
-            this.hash = object.hashCode();
-        }
-        return this.hash;
+    public void setHash(long hash) {
+        this.hash = hash;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,29 +27,34 @@ package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTargetNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
-@ReportPolymorphism
+@GenerateUncached
 public abstract class CallDispatchNode extends Node {
 
-    protected static InvokeNode createInvokeNode(PFunction callee) {
-        return InvokeNode.create(callee);
+    protected static FunctionInvokeNode createInvokeNode(PFunction callee) {
+        return FunctionInvokeNode.create(callee);
     }
 
-    protected static InvokeNode createInvokeNode(PBuiltinFunction callee) {
-        return InvokeNode.create(callee);
+    protected static FunctionInvokeNode createInvokeNode(PBuiltinFunction callee) {
+        return FunctionInvokeNode.create(callee);
     }
 
     protected static CallTargetInvokeNode createCtInvokeNode(PFunction callee) {
@@ -64,19 +69,31 @@ public abstract class CallDispatchNode extends Node {
         return CallDispatchNodeGen.create();
     }
 
-    protected Assumption singleContextAssumption() {
-        return PythonLanguage.getCurrent().singleContextAssumption;
+    public static CallDispatchNode getUncached() {
+        return CallDispatchNodeGen.getUncached();
     }
 
-    public abstract Object executeCall(VirtualFrame frame, PFunction callee, Object[] arguments);
+    protected Assumption singleContextAssumption() {
+        return PythonLanguage.get(this).singleContextAssumption;
+    }
 
-    public abstract Object executeCall(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments);
+    public final Object executeCall(VirtualFrame frame, PFunction callee, Object[] arguments) {
+        return executeInternal(frame, callee, arguments);
+    }
+
+    public final Object executeCall(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments) {
+        return executeInternal(frame, callee, arguments);
+    }
+
+    protected abstract Object executeInternal(Frame frame, PFunction callee, Object[] arguments);
+
+    protected abstract Object executeInternal(Frame frame, PBuiltinFunction callee, Object[] arguments);
 
     // We only have a single context and this function never changed its code
     @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()", "cachedCallee.getCodeStableAssumption()"})
     protected Object callFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                    @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
         return invoke.execute(frame, arguments);
     }
 
@@ -89,24 +106,30 @@ public abstract class CallDispatchNode extends Node {
     @Specialization(guards = {"callee == cachedCallee", "getCode(getFunctionCodeNode, callee) == cachedCode"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()"})
     protected Object callFunctionCachedCode(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                    @SuppressWarnings("unused") @Cached("create()") GetFunctionCodeNode getFunctionCodeNode,
+                    @SuppressWarnings("unused") @Cached GetFunctionCodeNode getFunctionCodeNode,
                     @SuppressWarnings("unused") @Cached("getCode(getFunctionCodeNode, callee)") PCode cachedCode,
-                    @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
         return invoke.execute(frame, arguments);
     }
 
+    protected static RootCallTarget getCallTargetUncached(PFunction callee) {
+        CompilerAsserts.neverPartOfCompilation();
+        return GetCallTargetNode.getUncached().execute(callee);
+    }
+
     // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
-    @Specialization(guards = {"callee.getCallTarget() == ct"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"getCt.execute(callee.getCode()) == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
     protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
-                    @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("getCallTargetUncached(callee)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached GetCodeCallTargetNode getCt,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), arguments);
+        return invoke.execute(frame, callee, callee.getGlobals(), callee.getClosure(), arguments);
     }
 
     @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     protected Object callBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PBuiltinFunction cachedCallee,
-                    @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
         return invoke.execute(frame, arguments);
     }
 
@@ -114,18 +137,20 @@ public abstract class CallDispatchNode extends Node {
     protected Object callBuiltinFunctionCachedCt(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, null, null, arguments);
+        return invoke.execute(frame, null, null, null, arguments);
     }
 
-    @Specialization(replaces = {"callFunctionCached", "callFunctionCachedCt"})
-    protected Object callFunctionUncached(VirtualFrame frame, PFunction callee, Object[] arguments,
-                    @Cached("create()") GenericInvokeNode invoke) {
-        return invoke.execute(frame, callee, arguments);
+    @Specialization(replaces = {"callFunctionCached", "callFunctionCachedCode", "callFunctionCachedCt"})
+    @Megamorphic
+    protected Object callFunctionUncached(Frame frame, PFunction callee, Object[] arguments,
+                    @Cached GenericInvokeNode invoke) {
+        return invoke.executeInternal(frame, callee, arguments);
     }
 
     @Specialization(replaces = {"callBuiltinFunctionCached", "callBuiltinFunctionCachedCt"})
-    protected Object callBuiltinFunctionUncached(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments,
-                    @Cached("create()") GenericInvokeNode invoke) {
-        return invoke.execute(frame, callee, arguments);
+    @Megamorphic
+    protected Object callBuiltinFunctionUncached(Frame frame, PBuiltinFunction callee, Object[] arguments,
+                    @Cached GenericInvokeNode invoke) {
+        return invoke.executeInternal(frame, callee, arguments);
     }
 }

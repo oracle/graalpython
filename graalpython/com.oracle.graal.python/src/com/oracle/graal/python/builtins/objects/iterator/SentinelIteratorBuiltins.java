@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
@@ -37,12 +35,13 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -59,31 +58,24 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
-        // TODO: see also the TODO in BinaryComparisonNode about factoring out comparison nodes that
-        // we need to convert to booleans
-        @Child private BinaryComparisonNode equalNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==");
-        @Child private LookupAndCallVarargsNode callNode = LookupAndCallVarargsNode.create(__CALL__);
-
-        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
-
-        private Object callSentinalIteratorTarget(PSentinelIterator iterator) {
-            return callNode.execute(null, iterator.getCallTarget(), new Object[]{iterator.getCallTarget()});
-        }
-
         @Specialization
-        protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator) {
+        protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator,
+                        @Cached CallNode callNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             if (iterator.sentinelReached()) {
                 throw raise(StopIteration);
             }
             Object nextValue;
             try {
-                nextValue = callSentinalIteratorTarget(iterator);
+                nextValue = callNode.execute(frame, iterator.getCallTarget());
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 iterator.markSentinelReached();
                 throw e;
             }
-            if (equalNode.executeBool(frame, nextValue, iterator.getSentinel())) {
+            boolean iteratorDone = eqNode.execute(frame, nextValue, iterator.getSentinel());
+            if (iteratorDone) {
                 iterator.markSentinelReached();
                 throw raise(StopIteration);
             }
@@ -96,7 +88,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object __iter__(PSentinelIterator self) {
+        static Object doPSentinelIterator(PSentinelIterator self) {
             return self;
         }
     }

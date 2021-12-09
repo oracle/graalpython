@@ -1,0 +1,12 @@
+diff --git a/setup.py b/setup.py
+index a181c95..b0cd3b9 100644
+--- a/setup.py
++++ b/setup.py
+@@ -93,7 +93,6 @@ LONG = (
+     ).group(1)
+     + "\n\n`Full changelog "
+     + "<{url}en/stable/changelog.html>`_.\n\n".format(url=URL)
+-    + read("AUTHORS.rst")
+ )
+ 
+ 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -185,6 +185,34 @@ def test_setitem():
         pass
 
 
+class BaseGetSlice:
+    def assertEqualWithType(self, a, b):
+        self.assertEqual(a, b)
+        self.assertEqual(type(a), type(b))
+
+    def test_getslice(self):
+        # whole sequence
+        b = self.type2test(b"hello")
+        self.assertEqualWithType(b[:], self.type2test(b"hello"))
+
+        # whole same length as slice
+        b = self.type2test(b"hellohellohello")
+        self.assertEqualWithType(b[5:10], self.type2test(b"hello"))
+
+        # shrink
+        b = self.type2test(b"hellohellohello")
+        self.assertEqualWithType(b[:10], self.type2test(b"hellohello"))
+
+        # extend
+        b = self.type2test(b"hellohelloworld")
+        self.assertEqualWithType(b[5:], self.type2test(b"helloworld"))
+
+class BytesGetSliceTest(BaseGetSlice, unittest.TestCase):
+    type2test = bytes
+
+class ByteArrayGetSliceTest(BaseGetSlice, unittest.TestCase):
+    type2test = bytearray
+
 def test_setslice():
     # whole sequence
     b = bytearray(b"hello")
@@ -209,6 +237,13 @@ def test_setslice():
     # assign list with integers
     b = bytearray(b"hellohellohello")
     b[5:10] = [4, 5, 6, 7, 8]
+    assert b == bytearray(b"hello\x04\x05\x06\x07\x08hello")
+
+    # assign list with integers backed by generic storage
+    b = bytearray(b"hellohellohello")
+    rhs = ['hello', 5, 6, 7, 8]
+    rhs[0] = 4
+    b[5:10] = rhs
     assert b == bytearray(b"hello\x04\x05\x06\x07\x08hello")
 
     # assign range
@@ -283,6 +318,7 @@ def test_delitem():
     assert b == bytearray()
 
 
+@unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
 def test_subclass():
 
     class MyByteArray(bytearray):
@@ -293,7 +329,7 @@ def test_subclass():
     b1 = bytearray(range(10))
     b2 = MyByteArray(range(10))
     assert b1 == b2
-    assert "<<%s>>" % str(b1) == str(b2)
+    assert "<<%s>>" % str(b1).replace('bytearray', 'MyByteArray') == str(b2)
 
     class MyBytes(bytes):
 
@@ -530,6 +566,10 @@ def test_find():
     else:
         assert False, "should not reach here"
 
+    class SubInt(int):
+        pass
+    assert ba.find(i, SubInt(6)) == 7
+
 
 def test_same_id():
     empty_ids = set([id(bytes()) for i in range(100)])
@@ -646,12 +686,72 @@ def test_add_mv_to_bytes():
     mv = memoryview(b'world')
     b += mv
     assert b == b'hello world'
+    assert type(b) == bytes
 
 def test_add_mv_to_bytearray():
     ba = bytearray(b'hello ')
     mv = memoryview(b'world')
     ba += mv
     assert ba == b'hello world'
+
+def test_bytearray_init():
+    ba = bytearray(b'abc')
+    assert_raises(TypeError, bytearray.__init__, ba, encoding='latin1')
+    assert_raises(TypeError, bytearray.__init__, ba, errors='replace', encoding='latin1')
+    assert_raises(TypeError, bytearray.__init__, ba, errors='replace')
+
+    bytearray.__init__(ba, b'xxx')
+    assert ba == bytearray(b'xxx')
+    bytearray.__init__(ba, 'zzz', encoding='latin1')
+    assert ba == bytearray(b'zzz')
+    bytearray.__init__(ba, 1)
+    assert ba == bytearray(b'\x00')
+
+def test_bytes_init():
+    ba = bytes(b'abc')
+
+    bytes.__init__(ba, b'zzz')
+    assert ba == bytes(b'abc')
+
+    ba = bytes('abc', encoding='utf-8')
+    assert ba == b'abc'
+
+def test_bytes_mod():
+    assert b'%s' % (b'a') == b'a'
+    raised = False
+    try:
+        b'%s' % (b'a', b'b')
+    except TypeError:
+        raised = True
+    assert raised
+
+def test__bytes__():
+    class C: pass
+    setattr(C, "__bytes__", bytes)
+    assert bytes(C()) == b''
+
+    class C(int): pass
+    setattr(C, "__bytes__", bytes)
+    assert bytes(C()) == b''
+    assert bytes(C(1)) == b''
+
+    setattr(C, "__bytes__", complex)
+    raised = False
+    try:
+        bytes(C(1))
+    except(TypeError):
+        raised = True
+    assert raised
+
+    def b(o):
+        return b'abc'
+
+    class BA(bytearray): pass
+    setattr(BA, "__bytes__", b)
+    assert bytes(BA(b'cde')) == b'abc'
+
+    class BAA(BA): pass
+    assert bytes(BAA(b'cde')) == b'abc'
 
 class BaseLikeBytes:
 
@@ -695,6 +795,10 @@ class BaseLikeBytes:
             self.assertEqual(c, b'hee')
             c = b.translate(None, delete=b'e')
             self.assertEqual(c, b'hllo')
+
+        t = bytearray(range(256))
+        self.assertEqual(b'\xff'.translate(t), b'\xff')
+        self.assertEqual(b'\xff'.translate(t, t), b'')
 
 class BytesTest(BaseLikeBytes, unittest.TestCase):
     type2test = bytes

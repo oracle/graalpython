@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.mmap;
 
+import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_COPY;
+import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_READ;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_CHANGED_LENGTH;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_INDEX_OUT_OF_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.READ_BYTE_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
@@ -56,128 +61,73 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
-import java.nio.channels.SeekableByteChannel;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins.BytesLikeNoGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsFactory.InternalLenNodeGen;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.FindNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.FlushNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.SeekNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.WriteNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.function.builtins.clinic.LongIndexConverterNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
-import com.oracle.graal.python.nodes.util.ChannelNodes;
-import com.oracle.graal.python.nodes.util.ChannelNodes.ReadByteFromChannelNode;
-import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
-import com.oracle.graal.python.nodes.util.ChannelNodes.WriteByteToChannelNode;
-import com.oracle.graal.python.nodes.util.ChannelNodes.WriteToChannelNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMMap)
 public class MMapBuiltins extends PythonBuiltins {
-
-    protected interface MMapBaseNode {
-        @TruffleBoundary
-        default long position(SeekableByteChannel ch) throws IOException {
-            return ch.position();
-        }
-
-        @TruffleBoundary
-        default void position(SeekableByteChannel ch, long offset) throws IOException {
-            ch.position(offset);
-        }
-
-        @TruffleBoundary
-        default long size(SeekableByteChannel ch) throws IOException {
-            return ch.size();
-        }
-    }
-
-    protected interface ByteReadingNode extends MMapBaseNode {
-
-        default ReadByteFromChannelNode createValueError(PRaiseNode raise) {
-            return ReadByteFromChannelNode.create(() -> new ChannelNodes.ReadByteErrorHandler() {
-
-                @Override
-                public int execute(Channel channel) {
-                    throw raise.raise(PythonBuiltinClassType.ValueError, "read byte out of range");
-                }
-            });
-        }
-
-        default ReadByteFromChannelNode createIndexError(PRaiseNode raise) {
-            return ReadByteFromChannelNode.create(() -> new ChannelNodes.ReadByteErrorHandler() {
-
-                @Override
-                public int execute(Channel channel) {
-                    throw raise.raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
-                }
-            });
-
-        }
-    }
-
-    protected interface ByteWritingNode extends MMapBaseNode {
-
-        default WriteByteToChannelNode createValueError(PRaiseNode raise) {
-            return WriteByteToChannelNode.create(() -> new ChannelNodes.WriteByteErrorHandler() {
-
-                @Override
-                public void execute(Channel channel, byte b) {
-                    throw raise.raise(PythonBuiltinClassType.ValueError, "write byte out of range");
-                }
-            });
-        }
-
-        default WriteByteToChannelNode createIndexError(PRaiseNode raise) {
-            return WriteByteToChannelNode.create(() -> new ChannelNodes.WriteByteErrorHandler() {
-
-                @Override
-                public void execute(Channel channel, byte b) {
-                    throw raise.raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
-                }
-            });
-
-        }
-    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -189,14 +139,10 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBinaryBuiltinNode {
     }
 
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBuiltinNode {
-    }
-
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
+    abstract static class MulNode extends PythonBinaryBuiltinNode {
     }
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
@@ -244,142 +190,116 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends StrNode {
     }
 
+    private static PBytes createEmptyBytes(PythonObjectFactory factory) {
+        if (CompilerDirectives.inInterpreter()) {
+            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+        } else {
+            return factory.createBytes(new byte[0]);
+        }
+    }
+
+    private static byte[] readBytes(PythonBuiltinBaseNode node, VirtualFrame frame, PMMap self, PosixSupportLibrary posixLib, long pos, int len) {
+        try {
+            assert len > 0;
+            assert pos + len <= self.getLength();
+            byte[] buffer = new byte[len];
+            posixLib.mmapReadBytes(node.getPosixSupport(), self.getPosixSupportHandle(), pos, buffer, buffer.length);
+            return buffer;
+        } catch (PosixException e) {
+            throw node.raiseOSErrorFromPosixException(frame, e);
+        }
+    }
+
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBuiltinNode implements ByteReadingNode {
-
-        public abstract Object executeObject(VirtualFrame frame, PMMap self, Object idxObj);
-
-        public abstract int executeInt(VirtualFrame frame, PMMap self, Object idxObj);
-
-        public abstract long executeLong(VirtualFrame frame, PMMap self, Object idxObj);
+    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!isPSlice(idxObj)")
         int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
-                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
-                        @Cached("createIndexError(raise)") ReadByteFromChannelNode readByteNode,
-                        @Cached("create()") CastToJavaLongNode castToLongNode,
-                        @Cached("create()") InternalLenNode lenNode) {
-
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
+                        @Cached PyLongAsLongNode asLongNode) {
+            long i = asLongNode.execute(frame, idxObj);
+            long len = self.getLength();
+            long idx = i < 0 ? i + len : i;
+            if (idx < 0 || idx >= len) {
+                throw raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
+            }
             try {
-                long i = castToLongNode.execute(idxObj);
-                long len = lenNode.execute(frame, self);
-                SeekableByteChannel channel = self.getChannel();
-                long idx = i < 0 ? i + len : i;
-
-                // save current position
-                long oldPos = position(channel);
-
-                position(channel, idx);
-                int res = readByteNode.execute(channel) & 0xFF;
-
-                // restore position
-                position(channel, oldPos);
-
-                return res;
-
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
+                return posixSupportLib.mmapReadByte(getPosixSupport(), self.getPosixSupportHandle(), idx) & 0xFF;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
         }
 
         @Specialization
         Object doSlice(VirtualFrame frame, PMMap self, PSlice idx,
-                        @Cached("create()") ReadFromChannelNode readNode,
-                        @Cached("create()") InternalLenNode lenNode) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
+                        @Cached ConditionProfile emptyProfile,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute,
+                        @Cached LenOfRangeNode sliceLenNode) {
             try {
-                long len = lenNode.execute(frame, self);
-                SliceInfo info = idx.computeIndices(PInt.intValueExact(len));
-                SeekableByteChannel channel = self.getChannel();
-
-                // save current position
-                long oldPos = position(channel);
-
-                position(channel, info.start);
-                ByteSequenceStorage s = readNode.execute(channel, info.length);
-
-                // restore position
-                position(channel, oldPos);
-
-                return factory().createBytes(s);
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
+                SliceInfo info = compute.execute(frame, sliceCast.execute(idx), PInt.intValueExact(self.getLength()));
+                int len = sliceLenNode.len(info);
+                if (emptyProfile.profile(len == 0)) {
+                    return createEmptyBytes(factory());
+                }
+                byte[] result = readBytes(this, frame, self, posixSupportLib, info.start, len);
+                return factory().createBytes(result);
+            } catch (OverflowException e) {
+                throw raise(PythonBuiltinClassType.OverflowError, e);
             }
-        }
-
-        public static GetItemNode create() {
-            return MMapBuiltinsFactory.GetItemNodeFactory.create(null);
         }
     }
 
     @Builtin(name = SpecialMethodNames.__SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class SetItemNode extends PythonBuiltinNode implements ByteWritingNode {
+    public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "!isPSlice(idxObj)")
         PNone doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object val,
-                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
-                        @Cached("createIndexError(raise)") WriteByteToChannelNode writeByteNode,
-                        @Cached("create()") CastToJavaLongNode castToLongNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
+                        @Cached PyLongAsLongNode asLongNode,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
-                        @Cached("create()") InternalLenNode lenNode,
-                        @Cached("createBinaryProfile()") ConditionProfile outOfRangeProfile) {
-
-            try {
-                long i = castToLongNode.execute(idxObj);
-                long len = lenNode.execute(frame, self);
-                SeekableByteChannel channel = self.getChannel();
-                long idx = i < 0 ? i + len : i;
-
-                if (outOfRangeProfile.profile(idx < 0 || idx >= len)) {
-                    throw raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
-                }
-
-                // save current position
-                long oldPos = position(channel);
-
-                position(channel, idx);
-                writeByteNode.execute(channel, castToByteNode.execute(val));
-
-                // restore position
-                position(channel, oldPos);
-
-                return PNone.NONE;
-
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
+                        @Cached ConditionProfile outOfRangeProfile) {
+            long i = asLongNode.execute(frame, idxObj);
+            long len = self.getLength();
+            long idx = i < 0 ? i + len : i;
+            if (outOfRangeProfile.profile(idx < 0 || idx >= len)) {
+                throw raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
             }
+            byte[] bytes = {castToByteNode.execute(frame, val)};
+            writeBuffer(frame, posixSupportLib, self, idx, bytes, 1);
+            return PNone.NONE;
         }
 
         @Specialization
-        PNone doSlice(VirtualFrame frame, PMMap self, PSlice idx, PIBytesLike val,
-                        @Cached("create()") WriteToChannelNode writeNode,
-                        @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached("create()") InternalLenNode lenNode,
-                        @Cached("createBinaryProfile()") ConditionProfile invalidStepProfile) {
-
+        PNone doSlice(VirtualFrame frame, PMMap self, PSlice idx, PBytesLike val,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
+                        @Cached ToByteArrayNode toByteArrayNode,
+                        @Cached ConditionProfile invalidStepProfile,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached ComputeIndices compute,
+                        @Cached LenOfRangeNode sliceLen) {
             try {
-                long len = lenNode.execute(frame, self);
-                SliceInfo info = idx.computeIndices(PInt.intValueExact(len));
-                SeekableByteChannel channel = self.getChannel();
-
+                long len = self.getLength();
+                SliceInfo info = compute.execute(frame, sliceCast.execute(idx), PInt.intValueExact(len));
                 if (invalidStepProfile.profile(info.step != 1)) {
-                    throw raise(PythonBuiltinClassType.SystemError, "step != 1 not supported");
+                    throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.STEP_1_NOT_SUPPORTED);
                 }
-
-                // save current position
-                long oldPos = position(channel);
-
-                position(channel, info.start);
-                writeNode.execute(channel, getStorageNode.execute(val), info.length);
-
-                // restore position
-                position(channel, oldPos);
-
+                byte[] bytes = toByteArrayNode.execute(val.getSequenceStorage());
+                writeBuffer(frame, posixSupportLib, self, info.start, bytes, sliceLen.len(info));
                 return PNone.NONE;
+            } catch (OverflowException e) {
+                throw raise(PythonBuiltinClassType.OverflowError, e);
+            }
+        }
 
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
+        private void writeBuffer(VirtualFrame frame, PosixSupportLibrary posixSupportLib, PMMap mmap, long idx, byte[] bytes, int len) {
+            try {
+                posixSupportLib.mmapWriteBytes(getPosixSupport(), mmap.getPosixSupportHandle(), idx, bytes, len);
+            } catch (PosixException ex) {
+                throw raiseOSErrorFromPosixException(frame, ex);
             }
         }
 
@@ -390,11 +310,10 @@ public class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonBuiltinNode {
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long len(VirtualFrame frame, PMMap self,
-                        @Cached("create()") InternalLenNode lenNode) {
-            return lenNode.execute(frame, self);
+        static long len(PMMap self) {
+            return self.getLength();
         }
     }
 
@@ -402,7 +321,7 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object size(PMMap self) {
+        static Object size(PMMap self) {
             return self;
         }
     }
@@ -413,7 +332,7 @@ public class MMapBuiltins extends PythonBuiltins {
         protected static final String CLOSE = "close";
 
         @Specialization
-        Object size(VirtualFrame frame, PMMap self, @SuppressWarnings("unused") Object typ, @SuppressWarnings("unused") Object val, @SuppressWarnings("unused") Object tb,
+        static Object size(VirtualFrame frame, PMMap self, @SuppressWarnings("unused") Object typ, @SuppressWarnings("unused") Object val, @SuppressWarnings("unused") Object tb,
                         @Cached("create(CLOSE)") LookupAndCallUnaryNode callCloseNode) {
             return callCloseNode.executeObject(frame, self);
         }
@@ -424,18 +343,14 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PNone doClose(PMMap self) {
+        PNone close(PMMap self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib) {
             try {
-                close(self);
-            } catch (IOException e) {
-                // TODO(fa): ignore ?
+                self.close(posixSupportLib, getPosixSupport());
+            } catch (PosixException e) {
+                throw raise(PythonErrorType.BufferError, ErrorMessages.CANNOT_CLOSE_EXPORTED_PTRS_EXIST);
             }
             return PNone.NONE;
-        }
-
-        @TruffleBoundary
-        private static void close(PMMap self) throws IOException {
-            self.getChannel().close();
         }
     }
 
@@ -444,9 +359,8 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class ClosedNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        boolean close(PMMap self) {
-            return !self.getChannel().isOpen();
+        static boolean close(PMMap self) {
+            return self.isClosed();
         }
     }
 
@@ -455,36 +369,50 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class SizeNode extends PythonBuiltinNode {
 
         @Specialization
-        long size(VirtualFrame frame, PMMap self,
-                        @Cached("create()") InternalLenNode lenNode) {
-            return lenNode.execute(frame, self);
+        static long size(PMMap self) {
+            return self.getLength();
+        }
+    }
+
+    @Builtin(name = "resize", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ResizeNode extends PythonBuiltinNode {
+
+        @Specialization
+        @SuppressWarnings("unused")
+        long resize(PMMap self, Object n) {
+            // TODO: implement resize in NFI
+            throw raise(PythonBuiltinClassType.SystemError, "mmap: resizing not available--no mremap()");
         }
     }
 
     @Builtin(name = "tell", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class TellNode extends PythonBuiltinNode implements ByteReadingNode {
+    abstract static class TellNode extends PythonBuiltinNode {
         @Specialization
-        long readline(VirtualFrame frame, PMMap self) {
-            try {
-                SeekableByteChannel channel = self.getChannel();
-                return position(channel) - self.getOffset();
-            } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EIO, e);
-            }
+        static long readline(PMMap self) {
+            return self.getPos();
         }
     }
 
     @Builtin(name = "read_byte", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class ReadByteNode extends PythonUnaryBuiltinNode implements ByteReadingNode {
+    abstract static class ReadByteNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        int readByte(PMMap self,
-                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
-                        @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
-            return readByteNode.execute(self.getChannel());
+        int readByte(VirtualFrame frame, PMMap self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib) {
+            if (self.getPos() >= self.getLength()) {
+                throw raise(PythonBuiltinClassType.ValueError, READ_BYTE_OUT_OF_RANGE);
+            }
+            try {
+                byte res = posixSupportLib.mmapReadByte(getPosixSupport(), self.getPosixSupportHandle(), self.getPos());
+                self.setPos(self.getPos() + 1);
+                return res & 0xFF;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 
@@ -494,300 +422,293 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class ReadNode extends PythonBuiltinNode {
 
         @Specialization
-        PBytes readUnlimited(PMMap self, @SuppressWarnings("unused") PNone n,
-                        @Cached("create()") ReadFromChannelNode readChannelNode) {
-            // intentionally accept NO_VALUE and NONE; both mean that we read unlimited amount of
-            // bytes
-            ByteSequenceStorage res = readChannelNode.execute(self.getChannel(), ReadFromChannelNode.MAX_READ);
-            return factory().createBytes(res);
+        PBytes readUnlimited(VirtualFrame frame, PMMap self, @SuppressWarnings("unused") PNone n,
+                        @Cached ConditionProfile emptyProfile,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            // intentionally accept NO_VALUE and NONE; both mean that we read unlimited # of bytes
+            return readBytes(frame, self, posixLib, self.getRemaining(), emptyProfile);
         }
 
         @Specialization(guards = "!isNoValue(n)")
-        PBytes read(PMMap self, Object n,
-                        @Cached("create()") ReadFromChannelNode readChannelNode,
-                        @Cached("create()") CastToIndexNode castToIndexNode,
-                        @Cached("createBinaryProfile()") ConditionProfile negativeProfile) {
-            int nread = castToIndexNode.execute(n);
-            if (negativeProfile.profile(nread < 0)) {
-                return readUnlimited(self, PNone.NO_VALUE, readChannelNode);
+        PBytes read(VirtualFrame frame, PMMap self, Object n,
+                        @Cached ConditionProfile emptyProfile,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached ConditionProfile negativeProfile) {
+            // _Py_convert_optional_to_ssize_t:
+            if (!indexCheckNode.execute(n)) {
+                throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, n);
             }
-            ByteSequenceStorage res = readChannelNode.execute(self.getChannel(), nread);
-            return factory().createBytes(res);
+            long nread = asSizeNode.executeExact(frame, n);
+
+            if (negativeProfile.profile(nread < 0)) {
+                return readUnlimited(frame, self, PNone.NO_VALUE, emptyProfile, posixLib);
+            }
+            if (nread > self.getRemaining()) {
+                nread = self.getRemaining();
+            }
+            return readBytes(frame, self, posixLib, nread, emptyProfile);
         }
 
+        private PBytes readBytes(VirtualFrame frame, PMMap self, PosixSupportLibrary posixLib, long nread, ConditionProfile emptyProfile) {
+            if (emptyProfile.profile(nread == 0)) {
+                return createEmptyBytes(factory());
+            }
+            try {
+                byte[] buffer = MMapBuiltins.readBytes(this, frame, self, posixLib, self.getPos(), PythonUtils.toIntExact(nread));
+                self.setPos(self.getPos() + buffer.length);
+                return factory().createBytes(buffer);
+            } catch (OverflowException e) {
+                throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.TOO_MANY_REMAINING_BYTES_TO_BE_STORED);
+            }
+        }
     }
 
     @Builtin(name = "readline", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReadlineNode extends PythonUnaryBuiltinNode implements ByteReadingNode {
+    abstract static class ReadlineNode extends PythonUnaryBuiltinNode {
+        private static final int BUFFER_SIZE = 1024;
 
         @Specialization
-        Object readline(PMMap self,
+        Object readline(VirtualFrame frame, PMMap self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SequenceStorageNodes.AppendNode appendNode) {
-
-            try {
-                ByteBuffer buf = ByteBuffer.allocate(4096);
-                SeekableByteChannel channel = self.getChannel();
-                ByteSequenceStorage res = new ByteSequenceStorage(16);
-                // search for newline char
-                outer: while (readIntoBuffer(channel, buf) > 0) {
-                    buf.flip();
-                    while (buf.hasRemaining()) {
-                        byte b = buf.get();
-                        // CPython really tests for '\n' only
-                        if (b != (byte) '\n') {
-                            appendNode.execute(res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
-                        } else {
-                            // recover correct position (i.e. number of remaining bytes in buffer)
-                            position(channel, position(channel) - buf.remaining() - 1);
-                            break outer;
-                        }
-                    }
-                    buf.clear();
+            // Posix abstraction is leaking here a bit: with read mmapped memory, we'd just read
+            // byte by byte, but that would be very inefficient with emulated mmap, so we use a
+            // small buffer
+            ByteSequenceStorage res = new ByteSequenceStorage(16);
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int nread;
+            outer: while (self.getPos() < self.getLength()) {
+                try {
+                    nread = posixLib.mmapReadBytes(getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), buffer, (int) Math.min(self.getRemaining(), buffer.length));
+                } catch (PosixException e) {
+                    throw raiseOSErrorFromPosixException(frame, e);
                 }
-                return factory().createBytes(res);
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
+                for (int i = 0; i < nread; i++) {
+                    byte b = buffer[i];
+                    appendNode.execute(res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
+                    if (b == '\n') {
+                        self.setPos(self.getPos() + i + 1);
+                        break outer;
+                    }
+                }
+                self.setPos(self.getPos() + nread);
+            }
+            return factory().createBytes(res);
+        }
+    }
+
+    @Builtin(name = "write", parameterNames = {"$self", "data"})
+    @ArgumentClinic(name = "data", conversion = ClinicConversion.ReadableBuffer)
+    @GenerateNodeFactory
+    abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return WriteNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(limit = "3")
+        int doIt(VirtualFrame frame, PMMap self, Object dataBuffer,
+                        @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                if (!self.isWriteable()) {
+                    throw raise(TypeError, ErrorMessages.MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+                }
+                byte[] dataBytes = bufferLib.getInternalOrCopiedByteArray(dataBuffer);
+                int dataLen = bufferLib.getBufferLength(dataBuffer);
+                if (self.getPos() > self.getLength() || self.getLength() - self.getPos() < dataLen) {
+                    throw raise(ValueError, ErrorMessages.DATA_OUT_OF_RANGE);
+                }
+                posixLib.mmapWriteBytes(getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), dataBytes, dataLen);
+                return dataLen;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                bufferLib.release(dataBuffer, frame, this);
             }
         }
-
-        @TruffleBoundary(allowInlining = true)
-        private static int readIntoBuffer(SeekableByteChannel ch, ByteBuffer dst) throws IOException {
-            return ch.read(dst);
-        }
     }
 
-    @Builtin(name = "write", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class WriteNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        int writeBytesLike(PMMap self, PIBytesLike bytesLike,
-                        @Cached("create()") WriteToChannelNode writeNode,
-                        @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode) {
-            SeekableByteChannel channel = self.getChannel();
-            return writeNode.execute(channel, getStorageNode.execute(bytesLike), Integer.MAX_VALUE);
-        }
-
-        @Specialization
-        int writeMemoryview(VirtualFrame frame, PMMap self, PMemoryView memoryView,
-                        @Cached("create()") WriteToChannelNode writeNode,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            byte[] data = toBytesNode.execute(frame, memoryView);
-            return writeNode.execute(self.getChannel(), new ByteSequenceStorage(data), Integer.MAX_VALUE);
-        }
-    }
-
-    @Builtin(name = "seek", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "seek", parameterNames = {"$self", "dist", "how"})
+    @ArgumentClinic(name = "dist", conversion = ClinicConversion.LongIndex)
+    @ArgumentClinic(name = "how", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class SeekNode extends PythonBuiltinNode implements MMapBaseNode {
-        @Child private CastToIndexNode castToLongNode;
-
-        private final BranchProfile errorProfile = BranchProfile.create();
-
-        @Specialization(guards = "isNoValue(how)")
-        Object seek(VirtualFrame frame, PMMap self, long dist, @SuppressWarnings("unused") PNone how) {
-            return seek(frame, self, dist, 0);
+    abstract static class SeekNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SeekNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        Object seek(VirtualFrame frame, PMMap self, long dist, Object how) {
-            try {
-                SeekableByteChannel channel = self.getChannel();
-                long size;
-                if (self.getLength() == 0) {
-                    size = size(channel) - self.getOffset();
-                } else {
-                    size = self.getLength();
-                }
-                long where;
-                int ihow = castToInt(how);
-                switch (ihow) {
-                    case 0: /* relative to start */
-                        where = dist;
-                        break;
-                    case 1: /* relative to current position */
-                        where = position(channel) + dist;
-                        break;
-                    case 2: /* relative to end */
-                        where = size + dist;
-                        break;
-                    default:
-                        errorProfile.enter();
-                        throw raise(PythonBuiltinClassType.ValueError, "unknown seek type");
-                }
-                if (where > size || where < 0) {
+        Object seek(PMMap self, long dist, int how,
+                        @Cached BranchProfile errorProfile) {
+            long where;
+            switch (how) {
+                case 0: // relative to start
+                    where = dist;
+                    break;
+                case 1: // relative to current position
+                    where = self.getPos() + dist;
+                    break;
+                case 2: // relative to end
+                    where = self.getLength() + dist;
+                    break;
+                default:
                     errorProfile.enter();
-                    throw raise(PythonBuiltinClassType.ValueError, "seek out of range");
-                }
-                position(channel, where);
-                return PNone.NONE;
-            } catch (IOException e) {
-                errorProfile.enter();
-                throw raiseOSError(frame, OSErrorEnum.EIO, e);
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_S_TYPE, "seek");
             }
-        }
-
-        private int castToInt(Object val) {
-            if (castToLongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToLongNode = insert(CastToIndexNode.create(PythonBuiltinClassType.TypeError, (obj) -> 0));
+            if (where > self.getLength() || where < 0) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SEEK_OUT_OF_RANGE);
             }
-            return castToLongNode.execute(val);
-        }
-    }
-
-    @Builtin(name = "find", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class FindNode extends PythonBuiltinNode implements ByteReadingNode {
-
-        @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
-
-        public abstract long execute(PMMap bytes, Object sub, Object starting, Object ending);
-
-        @Specialization
-        long find(PMMap primary, PIBytesLike sub, Object starting, Object ending,
-                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
-                        @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
-            try {
-                SeekableByteChannel channel = primary.getChannel();
-                long len1 = size(channel);
-
-                SequenceStorage needle = sub.getSequenceStorage();
-                int len2 = needle.length();
-
-                long s = castToLong(starting, 0);
-                long e = castToLong(ending, len1);
-
-                long start = s < 0 ? s + len1 : s;
-                long end = e < 0 ? e + len1 : e;
-
-                if (start >= len1 || len1 < len2) {
-                    return -1;
-                } else if (end > len1) {
-                    end = len1;
-                }
-
-                // TODO implement a more efficient algorithm
-                outer: for (long i = start; i < end; i++) {
-                    // TODO(fa) don't seek but use circular buffer
-                    position(channel, i);
-                    for (int j = 0; j < len2; j++) {
-                        int hb = readByteNode.execute(channel);
-                        int nb = getGetRightItemNode().executeInt(needle, j);
-                        if (nb != hb || i + j >= end) {
-                            continue outer;
-                        }
-                    }
-                    return i;
-                }
-                return -1;
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
-            }
-        }
-
-        @Specialization
-        long find(PMMap primary, int sub, Object starting, @SuppressWarnings("unused") Object ending,
-                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
-                        @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
-            try {
-                SeekableByteChannel channel = primary.getChannel();
-                long len1 = size(channel);
-
-                long s = castToLong(starting, 0);
-                long e = castToLong(ending, len1);
-
-                long start = s < 0 ? s + len1 : s;
-                long end = Math.max(e < 0 ? e + len1 : e, len1);
-
-                position(channel, start);
-
-                for (long i = start; i < end; i++) {
-                    int hb = readByteNode.execute(channel);
-                    if (hb == sub) {
-                        return i;
-                    }
-                }
-                return -1;
-            } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
-            }
-        }
-
-        // TODO(fa): use node
-        private static long castToLong(Object obj, long defaultVal) {
-            if (obj instanceof Integer || obj instanceof Long) {
-                return ((Number) obj).longValue();
-            } else if (obj instanceof PInt) {
-                try {
-                    return ((PInt) obj).longValueExact();
-                } catch (ArithmeticException e) {
-                    return defaultVal;
-                }
-            }
-            return defaultVal;
-        }
-
-        private SequenceStorageNodes.GetItemNode getGetRightItemNode() {
-            if (getRightItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getRightItemNode = insert(SequenceStorageNodes.GetItemNode.create());
-            }
-            return getRightItemNode;
-        }
-    }
-
-    abstract static class InternalLenNode extends PNodeWithContext implements MMapBaseNode {
-
-        public abstract long execute(VirtualFrame frame, PMMap self);
-
-        @Specialization(guards = "self.getLength() == 0")
-        long doFull(VirtualFrame frame, PMMap self,
-                        @Cached PRaiseOSErrorNode raise,
-                        @Cached("create()") BranchProfile profile) {
-            try {
-                return size(self.getChannel()) - self.getOffset();
-            } catch (IOException e) {
-                profile.enter();
-                throw raise.raiseOSError(frame, OSErrorEnum.EIO, e);
-            }
-        }
-
-        @Specialization(guards = "self.getLength() > 0")
-        long doWindow(@SuppressWarnings("unused") VirtualFrame frame, PMMap self) {
-            return self.getLength();
-        }
-
-        @Specialization
-        long doGeneric(VirtualFrame frame, PMMap self,
-                        @Cached PRaiseOSErrorNode raise) {
-            if (self.getLength() == 0) {
-                try {
-                    return size(self.getChannel()) - self.getOffset();
-                } catch (IOException e) {
-                    throw raise.raiseOSError(frame, OSErrorEnum.EIO, e);
-                }
-            }
-            return self.getLength();
-        }
-
-        public static InternalLenNode create() {
-            return InternalLenNodeGen.create();
-        }
-    }
-
-    @Builtin(name = "flush", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class FlushNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        Object seek(@SuppressWarnings("unused") PMMap self) {
+            self.setPos(where);
             return PNone.NONE;
         }
-
     }
 
+    @Builtin(name = "find", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
+    @ArgumentClinic(name = "sub", conversion = ClinicConversion.ReadableBuffer)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class FindNode extends PythonQuaternaryClinicBuiltinNode {
+        private static final int BUFFER_SIZE = 1024; // keep in sync with test_mmap.py
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FindNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(limit = "3")
+        long find(VirtualFrame frame, PMMap self, Object subBuffer, Object startIn, Object endIn,
+                        @CachedLibrary("subBuffer") PythonBufferAccessLibrary bufferLib,
+                        @Cached LongIndexConverterNode startConverter,
+                        @Cached LongIndexConverterNode endConverter,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                long start = normalizeIndex(frame, startConverter, startIn, self.getLength(), self.getPos());
+                long end = normalizeIndex(frame, endConverter, endIn, self.getLength(), self.getLength());
+
+                /*
+                 * We use two arrays to implement circular buffer, once the search for the needle
+                 * would overflow the second buffer, we load more data into the other buffer and
+                 * then swap the buffers and continue. This is way more complicated than it needs to
+                 * be, but we do not want to access the mmap byte-by-byte as with some
+                 * implementations that could be very inefficient.
+                 */
+                byte[] sub = bufferLib.getInternalOrCopiedByteArray(subBuffer);
+                int subLen = bufferLib.getBufferLength(subBuffer);
+                int bufferSize = Math.max(BUFFER_SIZE, subLen);
+                int buffersIndex = bufferSize;
+                byte[] firstBuffer = new byte[bufferSize];
+                byte[] secondBuffer = new byte[bufferSize];
+
+                readBytes(frame, self, posixLib, start, secondBuffer);
+                for (long selfIdx = start; selfIdx <= end - subLen; selfIdx++, buffersIndex++) {
+                    // Make sure that the buffers have enough room for the search
+                    if (buffersIndex + subLen > bufferSize * 2) {
+                        byte[] tmp = firstBuffer;
+                        firstBuffer = secondBuffer;
+                        secondBuffer = tmp;
+                        buffersIndex -= bufferSize; // move to the tail of the first buffer now
+                        long readIndex = selfIdx + subLen - 1;
+                        readBytes(frame, self, posixLib, readIndex, secondBuffer);
+                        // It's OK if we read less than buffer size, the outer loop condition
+                        // 'selfIdx <= end' and the check in readBytes should cover that we don't
+                        // read
+                        // garbage from the buffer
+                    }
+                    boolean found = true;
+                    for (int subIdx = 0; subIdx < subLen; subIdx++) {
+                        byte value;
+                        int currentBuffersIdx = buffersIndex + subIdx;
+                        if (currentBuffersIdx >= bufferSize) {
+                            value = secondBuffer[currentBuffersIdx % bufferSize];
+                        } else {
+                            value = firstBuffer[currentBuffersIdx];
+                        }
+                        if (sub[subIdx] != value) {
+                            found = false;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        return selfIdx;
+                    }
+                }
+                return -1;
+            } finally {
+                bufferLib.release(subBuffer, frame, this);
+            }
+        }
+
+        private void readBytes(VirtualFrame frame, PMMap self, PosixSupportLibrary posixLib, long index, byte[] buffer) {
+            try {
+                long remaining = self.getLength() - index;
+                int toReadLen = remaining > buffer.length ? buffer.length : (int) remaining;
+                int nread = posixLib.mmapReadBytes(getPosixSupport(), self.getPosixSupportHandle(), index, buffer, toReadLen);
+                if (toReadLen != nread) {
+                    throw raise(PythonBuiltinClassType.SystemError, MMAP_CHANGED_LENGTH);
+                }
+            } catch (PosixException ex) {
+                throw raiseOSErrorFromPosixException(frame, ex);
+            }
+        }
+
+        private static long normalizeIndex(VirtualFrame frame, LongIndexConverterNode converter, Object idxObj, long len, long defaultValue) {
+            if (PGuards.isNoValue(idxObj)) {
+                return defaultValue;
+            }
+            long idx = converter.executeLong(frame, idxObj);
+            if (idx < 0) {
+                idx += len;
+            }
+            if (idx < 0) {
+                idx = 0;
+            } else if (idx > len) {
+                idx = len;
+            }
+            return idx;
+        }
+    }
+
+    @Builtin(name = "flush", minNumOfPositionalArgs = 1, parameterNames = {"$self", "offset", "size"})
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "offset", conversion = ClinicConversion.LongIndex, defaultValue = "0")
+    abstract static class FlushNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FlushNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object flush(VirtualFrame frame, PMMap self, long offset, Object sizeObj,
+                        @Cached LongIndexConverterNode sizeConversion,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            long size;
+            if (sizeObj == PNone.NO_VALUE) {
+                size = self.getLength();
+            } else {
+                size = sizeConversion.executeLong(frame, sizeObj);
+            }
+
+            if (size < 0 || offset < 0 || self.getLength() - offset < size) {
+                throw raise(PythonBuiltinClassType.ValueError, "flush values out of range");
+            }
+            if (self.getAccess() == ACCESS_READ || self.getAccess() == ACCESS_COPY) {
+                return PNone.NONE;
+            }
+
+            try {
+                posixLib.mmapFlush(getPosixSupport(), self.getPosixSupportHandle(), offset, self.getLength());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
 }

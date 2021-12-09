@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,47 +25,124 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
+import static com.oracle.graal.python.nodes.ErrorMessages.TIMESTAMP_OUT_OF_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_CLOCK;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
+import java.lang.management.ManagementFactory;
 import java.text.DateFormatSymbols;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.Year;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.GetClockInfoNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.StrfTimeNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.StrptimeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final int DELAY_NANOS = 10;
+    private static final String CTIME_FORMAT = "%s %s %2d %02d:%02d:%02d %d";
+    private static final ZoneId GMT = ZoneId.of("GMT");
+
+    private static final HiddenKey CURRENT_ZONE_ID = new HiddenKey("currentZoneID");
+    private static final HiddenKey TIME_SLEPT = new HiddenKey("timeSlept");
+
+    private static final StructSequence.BuiltinTypeDescriptor STRUCT_TIME_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PStructTime,
+                    // @formatter:off The formatter joins these lines making it less readable
+            "The time value as returned by gmtime(), localtime(), and strptime(), and\n" +
+                    " accepted by asctime(), mktime() and strftime().  May be considered as a\n" +
+                    " sequence of 9 integers.\n\n" +
+                    " Note that several fields' values are not the same as those defined by\n" +
+                    " the C language standard for struct tm.  For example, the value of the\n" +
+                    " field tm_year is the actual year, not year - 1900.  See individual\n" +
+                    " fields' descriptions for details.",
+            // @formatter:on
+                    9,
+                    new String[]{
+                                    "tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min", "tm_sec",
+                                    "tm_wday", "tm_yday", "tm_isdst", "tm_zone", "tm_gmtoff"
+                    },
+                    new String[]{
+                                    "year, for example, 1993",
+                                    "month of year, range [1, 12]",
+                                    "day of month, range [1, 31]",
+                                    "hours, range [0, 23]",
+                                    "minutes, range [0, 59]",
+                                    // compatibility note: CPython has an extra ')'
+                                    "seconds, range [0, 61]",
+                                    "day of week, range [0, 6], Monday is 0",
+                                    "day of year, range [1, 366]",
+                                    "1 if summer time is in effect, 0 if not, and -1 if unknown",
+                                    "abbreviation of timezone name",
+                                    "offset from UTC in seconds"
+                    });
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -73,9 +150,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
-        TimeZone defaultTimeZone = TimeZone.getDefault();
+        // Should we read TZ env variable?
+        ZoneId defaultZoneId = core.getContext().getEnv().getTimeZone();
+        core.lookupBuiltinModule("time").setAttribute(CURRENT_ZONE_ID, defaultZoneId);
+
+        TimeZone defaultTimeZone = TimeZone.getTimeZone(defaultZoneId);
         String noDaylightSavingZone = defaultTimeZone.getDisplayName(false, TimeZone.SHORT);
         String daylightSavingZone = defaultTimeZone.getDisplayName(true, TimeZone.SHORT);
 
@@ -87,6 +168,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         builtinConstants.put("daylight", PInt.intValue(hasDaylightSaving));
+        int rawOffsetSeconds = defaultTimeZone.getRawOffset() / -1000;
+        builtinConstants.put("timezone", rawOffsetSeconds);
+        builtinConstants.put("altzone", rawOffsetSeconds - 3600);
+        builtinConstants.put("_STRUCT_TM_ITEMS", 11);
+        StructSequence.initType(core, STRUCT_TIME_DESC);
     }
 
     @TruffleBoundary
@@ -94,73 +180,139 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         return System.currentTimeMillis() / 1000.0;
     }
 
+    private static final int TM_YEAR = 0; /* year */
+    private static final int TM_MON = 1; /* month */
+    private static final int TM_MDAY = 2; /* day of the month */
+    private static final int TM_HOUR = 3; /* hours */
+    private static final int TM_MIN = 4; /* minutes */
+    private static final int TM_SEC = 5; /* seconds */
+    private static final int TM_WDAY = 6; /* day of the week */
+    private static final int TM_YDAY = 7; /* day in the year */
+    private static final int TM_ISDST = 8; /* daylight saving time */
+
     @TruffleBoundary
-    private static Object[] getTimeStruct(double seconds, boolean local) {
+    private static Object[] getTimeStruct(ZoneId zone, long seconds) {
         Object[] timeStruct = new Object[11];
-        Instant instant = Instant.ofEpochSecond((long) seconds);
-        ZoneId zone = (local) ? ZoneId.systemDefault() : ZoneId.of("GMT");
+        Instant instant = Instant.ofEpochSecond(seconds);
         ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
-        timeStruct[0] = zonedDateTime.getYear();
-        timeStruct[1] = zonedDateTime.getMonth().getValue();
-        timeStruct[2] = zonedDateTime.getDayOfMonth();
-        timeStruct[3] = zonedDateTime.getHour();
-        timeStruct[4] = zonedDateTime.getMinute();
-        timeStruct[5] = zonedDateTime.getSecond();
-        timeStruct[6] = zonedDateTime.getDayOfWeek().getValue() - 1;
-        timeStruct[7] = zonedDateTime.getDayOfYear();
-        timeStruct[8] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
-        timeStruct[9] = zone.getId();
+        timeStruct[TM_YEAR] = zonedDateTime.getYear();
+        timeStruct[TM_MON] = zonedDateTime.getMonth().ordinal() + 1; /* Want January == 1 */
+        timeStruct[TM_MDAY] = zonedDateTime.getDayOfMonth();
+        timeStruct[TM_HOUR] = zonedDateTime.getHour();
+        timeStruct[TM_MIN] = zonedDateTime.getMinute();
+        timeStruct[TM_SEC] = zonedDateTime.getSecond();
+        timeStruct[TM_WDAY] = zonedDateTime.getDayOfWeek().getValue() - 1; /* Want Monday == 0 */
+        timeStruct[TM_YDAY] = zonedDateTime.getDayOfYear(); /* Want January, 1 == 1 */
+        boolean isDaylightSavings = zonedDateTime.getZone().getRules().isDaylightSavings(instant);
+        timeStruct[TM_ISDST] = (isDaylightSavings) ? 1 : 0;
+        timeStruct[9] = TimeZone.getTimeZone(zone.getId()).getDisplayName(isDaylightSavings, TimeZone.SHORT);
         timeStruct[10] = zonedDateTime.getOffset().getTotalSeconds();
 
         return timeStruct;
     }
 
+    @TruffleBoundary
+    private static int[] getIntLocalTimeStruct(ZoneId zone, long seconds) {
+        int[] timeStruct = new int[9];
+        Instant instant = Instant.ofEpochSecond(seconds);
+        ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
+        timeStruct[TM_YEAR] = zonedDateTime.getYear();
+        timeStruct[TM_MON] = zonedDateTime.getMonth().ordinal() + 1; /* Want January == 1 */
+        timeStruct[TM_MDAY] = zonedDateTime.getDayOfMonth();
+        timeStruct[TM_HOUR] = zonedDateTime.getHour();
+        timeStruct[TM_MIN] = zonedDateTime.getMinute();
+        timeStruct[TM_SEC] = zonedDateTime.getSecond();
+        timeStruct[TM_WDAY] = zonedDateTime.getDayOfWeek().getValue() - 1; /* Want Monday == 0 */
+        timeStruct[TM_YDAY] = zonedDateTime.getDayOfYear(); /* Want January, 1 == 1 */
+        timeStruct[TM_ISDST] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
+
+        return timeStruct;
+    }
+
+    protected abstract static class ToLongTime extends PNodeWithContext {
+
+        private static final long MIN_TIME = Instant.MIN.getEpochSecond();
+        private static final long MAX_TIME = Instant.MAX.getEpochSecond();
+
+        @Child PRaiseNode raiseNode = PRaiseNode.create();
+
+        public abstract long execute(VirtualFrame frame, Object secs);
+
+        @Specialization
+        long doNone(@SuppressWarnings("unused") PNone none) {
+            return (long) timeSeconds();
+        }
+
+        @Specialization
+        long doLong(long t,
+                        @Shared("e") @Cached ConditionProfile err) {
+            check(t, err);
+            return t;
+        }
+
+        @Specialization
+        long doDouble(double t,
+                        @Shared("e") @Cached ConditionProfile err) {
+            check(t, err);
+            return (long) t;
+        }
+
+        @Specialization(guards = "!isPNone(obj)")
+        long doObject(VirtualFrame frame, Object obj,
+                        @Cached CastToJavaDoubleNode castToDouble,
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Shared("e") @Cached ConditionProfile err) {
+            long t;
+            try {
+                t = (long) castToDouble.execute(obj);
+            } catch (CannotCastException e) {
+                t = asLongNode.execute(frame, obj);
+            }
+            check(t, err);
+            return t;
+        }
+
+        protected static boolean isValidTime(double t) {
+            return t >= MIN_TIME && t <= MAX_TIME;
+        }
+
+        private void check(double time, ConditionProfile err) {
+            if (err.profile(!isValidTime(time))) {
+                throw raiseNode.raise(OverflowError, TIMESTAMP_OUT_OF_RANGE);
+            }
+        }
+    }
+
     // time.gmtime([seconds])
-    @Builtin(name = "__truffle_gmtime_tuple__", minNumOfPositionalArgs = 1)
+    @Builtin(name = "gmtime", maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
 
         @Specialization
-        public PTuple gmtime(@SuppressWarnings("unused") PNone seconds) {
-            return factory().createTuple(getTimeStruct(timeSeconds(), false));
-        }
-
-        @Specialization
-        public PTuple gmtime(long seconds) {
-            return factory().createTuple(getTimeStruct(seconds, false));
-        }
-
-        @Specialization
-        public PTuple gmtime(double seconds) {
-            return factory().createTuple(getTimeStruct(seconds, false));
+        public PTuple gmtime(VirtualFrame frame, Object seconds,
+                        @Cached ToLongTime toLongTime) {
+            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, seconds)));
         }
     }
 
     // time.localtime([seconds])
-    @Builtin(name = "__truffle_localtime_tuple__", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
+    @Builtin(name = "localtime", maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
+    public abstract static class PythonLocalTimeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PTuple localtime(@SuppressWarnings("unused") PNone seconds) {
-            return factory().createTuple(getTimeStruct(timeSeconds(), true));
-        }
-
-        @Specialization
-        public PTuple localtime(long seconds) {
-            return factory().createTuple(getTimeStruct(seconds, true));
-        }
-
-        @Specialization
-        public PTuple localtime(double seconds) {
-            return factory().createTuple(getTimeStruct(seconds, true));
+        public PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
+                        @Cached ReadAttributeFromDynamicObjectNode readZoneId,
+                        @Cached ToLongTime toLongTime) {
+            ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
+            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(zoneId, toLongTime.execute(frame, seconds)));
         }
     }
 
     // time.time()
-    @Builtin(name = "time", minNumOfPositionalArgs = 0)
+    @Builtin(name = "time")
     @GenerateNodeFactory
     public abstract static class PythonTimeNode extends PythonBuiltinNode {
 
@@ -171,90 +323,217 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
          */
 
         @Specialization
-        @TruffleBoundary
         public double time() {
             return timeSeconds();
         }
     }
 
+    // time.time_ns()
+    @Builtin(name = "time_ns", doc = "Similar to time() but returns time as an integer number of nanoseconds since the epoch.")
+    @GenerateNodeFactory
+    public abstract static class PythonTimeNsNode extends PythonBuiltinNode {
+
+        /**
+         * The maximum date, which are systems able to handle is 2262 04 11. This corresponds to the
+         * 64 bit long.
+         */
+        @Specialization
+        public long time() {
+            return timeNanoSeconds();
+        }
+
+        @TruffleBoundary
+        private static long timeNanoSeconds() {
+            Instant now = Instant.now();
+            // From java we are not able to obtain the nano seconds resolution. It depends on the
+            // jdk
+            // JKD 1.8 the resolution is usually miliseconds (for example 1576081173486000000)
+            // From JDK 9 including JDK 11 the resolution is usually microseconds (for example
+            // 1576082578022393000)
+            // To obtain really nanosecond resulution we have to fake the nanoseconds
+            return now.getEpochSecond() * 1000_000_000L + now.getNano();
+        }
+    }
+
     // time.monotonic()
-    @Builtin(name = "monotonic", minNumOfPositionalArgs = 0)
+    @Builtin(name = "monotonic")
     @GenerateNodeFactory
     public abstract static class PythonMonotonicNode extends PythonBuiltinNode {
 
         @Specialization
         @TruffleBoundary
         public double time() {
+            return System.nanoTime() / 1000_000_000D;
+        }
+    }
+
+    // time.monotonic_ns()
+    @Builtin(name = "monotonic_ns", maxNumOfPositionalArgs = 1, doc = "Similar to monotonic(), but return time as nanoseconds.")
+    @GenerateNodeFactory
+    public abstract static class PythonMonotonicNsNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        static long time(@SuppressWarnings("unused") Object dummy) {
             return System.nanoTime();
         }
     }
 
-    @Builtin(name = "perf_counter", minNumOfPositionalArgs = 0)
+    @Builtin(name = "perf_counter")
     @GenerateNodeFactory
-    public abstract static class PythonPerfCounterNode extends PythonClockNode {
-    }
-
-    // time.clock()
-    @Builtin(name = "clock", minNumOfPositionalArgs = 0)
-    @GenerateNodeFactory
-    public abstract static class PythonClockNode extends PythonBuiltinNode {
-        /**
-         * Python's time.clock() returns a positive number, which {@link System#nanoTime()} does not
-         * guarantee. Also, we cannot statically assign the first value of nanoTime in AOT, because
-         * that would freeze a completely useless constant.
-         */
-        protected static final boolean isAOT = TruffleOptions.AOT;
-        @CompilationFinal protected static long start = isAOT ? 0 : System.nanoTime();
-
-        @Specialization(guards = {"isAOT", "start == 0"})
+    public abstract static class PythonPerfCounterNode extends PythonBuiltinNode {
+        @Specialization
         @TruffleBoundary
-        double firstClock() {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            start = System.nanoTime();
-            return clock();
-        }
-
-        @Specialization(replaces = "firstClock")
-        @TruffleBoundary
-        double clock() {
-            return (System.nanoTime() - start) / 1000_000_000.0;
+        public double counter() {
+            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart()) / 1000_000_000.0;
         }
     }
 
-    @Builtin(name = "sleep", minNumOfPositionalArgs = 1)
+    @Builtin(name = "perf_counter_ns")
+    @GenerateNodeFactory
+    public abstract static class PythonPerfCounterNsNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public long counter() {
+            return System.nanoTime() - PythonContext.get(this).getPerfCounterStart();
+        }
+    }
+
+    @Builtin(name = "process_time", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ProcessTimeNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object getProcesTime(PythonModule self) {
+            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - timeSlept(self)) / 1000_000_000.0;
+        }
+    }
+
+    @Builtin(name = "process_time_ns", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ProcessTimeNsNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object getProcesNsTime(PythonModule self) {
+            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - timeSlept(self));
+        }
+    }
+
+    private static long timeSlept(PythonModule self) {
+        try {
+            return DynamicObjectLibrary.getUncached().getLongOrDefault(self, TIME_SLEPT, 0L);
+        } catch (UnexpectedResultException ex) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @Builtin(name = "thread_time")
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ThreadTimeNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object getProcesTime() {
+            return !ImageInfo.inImageCode() ? (ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime()) / 1000_000_000.0 : 0;
+        }
+    }
+
+    @Builtin(name = "thread_time_ns")
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ThreadTimeNsNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object getProcesNsTime() {
+            return !ImageInfo.inImageCode() ? ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime() : 0;
+        }
+    }
+
+    @Builtin(name = "sleep", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SleepNode extends PythonBuiltinNode {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 
-        @Specialization
-        @TruffleBoundary
-        Object sleep(long seconds) {
-            long secs = seconds;
+        protected abstract Object execute(VirtualFrame frame, PythonModule self, double seconds);
 
-            long deadline = (long) timeSeconds() + secs;
-            do {
-                try {
-                    Thread.sleep(seconds * 1000);
-                } catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
-                }
-
-                secs = deadline - (long) timeSeconds();
-                if (secs < 0) {
-                    break;
-                }
-            } while (true);
-
+        @Specialization(guards = "isPositive(seconds)", limit = "1")
+        Object sleep(PythonModule self, long seconds,
+                        @Cached GilNode gil,
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+            long t = nanoTime();
+            long deadline = (long) timeSeconds() + seconds;
+            gil.release(true);
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                gil.acquire();
+                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
+            }
+            PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
         }
 
-        @Specialization
-        @TruffleBoundary
-        Object sleep(double seconds) {
-            double secs = seconds;
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isPositive(seconds)")
+        Object err(PythonModule self, long seconds) {
+            throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
+        }
 
-            double deadline = timeSeconds() + secs;
+        @Specialization(guards = "isPositive(seconds)", limit = "1")
+        Object sleep(PythonModule self, double seconds,
+                        @Cached GilNode gil,
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+            long t = nanoTime();
+            double deadline = timeSeconds() + seconds;
+            gil.release(true);
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                gil.acquire();
+                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
+            }
+            PythonContext.triggerAsyncActions(this);
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isPositive(seconds)")
+        Object err(PythonModule self, double seconds) {
+            throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
+        }
+
+        @Specialization(guards = "!isInteger(secondsObj)")
+        Object sleepObj(VirtualFrame frame, PythonModule self, Object secondsObj,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached SleepNode recursive) {
+            return recursive.execute(frame, self, asDoubleNode.execute(frame, secondsObj));
+        }
+
+        protected static boolean isPositive(double t) {
+            return t >= 0;
+        }
+
+        @TruffleBoundary
+        private static void doSleep(long seconds, long deadline) {
+            long secs = seconds;
+            do {
+                try {
+                    Thread.sleep(secs * 1000);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                secs = deadline - (long) timeSeconds();
+            } while (secs >= 0);
+        }
+
+        @TruffleBoundary
+        private static void doSleep(double seconds, double deadline) {
+            double secs = seconds;
             do {
                 double milliseconds = secs * 1000;
                 long millis = Math.round(Math.floor(milliseconds));
@@ -264,164 +543,158 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     Thread.sleep(millis, nanos);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
+                    return;
                 }
                 secs = deadline - timeSeconds();
-                if (secs < 0) {
-                    break;
-                }
-            } while (true);
+            } while (secs >= 0);
+        }
 
-            return PNone.NONE;
+        @TruffleBoundary
+        public static long nanoTime() {
+            return System.nanoTime();
+        }
+
+        public static SleepNode create() {
+            return TimeModuleBuiltinsFactory.SleepNodeFactory.create(null);
         }
     }
 
     // time.strftime(format[, t])
-    @Builtin(name = "strftime", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = "strftime", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "format", "time"})
+    @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class StrfTimeNode extends PythonBuiltinNode {
-        private static final int IMPOSSIBLE = -2;
-        @Child private CastToIntegerFromIntNode castIntNode;
-
-        @CompilationFinal private ConditionProfile outOfRangeProfile;
-
-        private CastToIntegerFromIntNode getCastIntNode() {
-            if (castIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castIntNode = insert(CastToIntegerFromIntNode.create(val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
-                }));
-            }
-            return castIntNode;
+    public abstract static class StrfTimeNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StrfTimeNodeClinicProviderGen.INSTANCE;
         }
 
-        private ConditionProfile getOutOfRangeProfile() {
-            if (outOfRangeProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                outOfRangeProfile = ConditionProfile.createBinaryProfile();
-            }
-            return outOfRangeProfile;
+        private static String format(String format, int arg1) {
+            return PythonUtils.format(format, arg1);
         }
 
-        private int getIntValue(Object oValue, int min, int max, String errorMessage) {
-            Object iValue = getCastIntNode().execute(oValue);
-            long value = IMPOSSIBLE;
-            if (iValue instanceof Long) {
-                value = (long) iValue;
-            } else if (iValue instanceof Integer) {
-                value = (int) iValue;
-            } else if (iValue instanceof PInt) {
-                value = ((PInt) iValue).longValueExact();
-            }
-            if (getOutOfRangeProfile().profile(min > value || value > max)) {
-                throw raise(PythonBuiltinClassType.ValueError, errorMessage);
-            }
-            return (int) value;
+        private static String dateFormat(int[] date) {
+            return PythonUtils.format("%02d/%02d/", date[TM_MON], date[TM_MDAY]) + truncYear(date[TM_YEAR]);
         }
 
-        private static String padInt(int i, int target, char addChar) {
-            String s = Integer.toString(i);
-            int sz = s.length();
-            if (target <= sz) { // no truncation
-                return s;
-            }
-            if (target == sz + 1) {
-                return addChar + s;
-            }
-            if (target == sz + 2) {
-                return new String(new char[]{addChar, addChar}) + s;
-            } else {
-                char[] c = new char[target - sz];
-                Arrays.fill(c, addChar);
-                return new String(c) + s;
-            }
+        private static String timeFormat(int[] date) {
+            return PythonUtils.format("%02d:%02d:%02d", date[TM_HOUR], date[TM_MIN], date[TM_SEC]);
         }
 
-        private static String twoDigit(int i) {
-            return padInt(i, 2, '0');
-        }
+        protected static int[] checkStructtime(VirtualFrame frame, PTuple time,
+                        SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
+                        SequenceStorageNodes.LenNode lenNode,
+                        PyNumberAsSizeNode asSizeNode,
+                        PRaiseNode raise) {
+            Object[] otime = getInternalObjectArrayNode.execute(time.getSequenceStorage());
+            if (lenNode.execute(time.getSequenceStorage()) != 9) {
+                throw raise.raise(TypeError, ErrorMessages.S_ILLEGAL_TIME_TUPLE_ARG, "asctime()");
+            }
+            int[] date = new int[9];
+            for (int i = 0; i < 9; i++) {
+                date[i] = asSizeNode.executeExact(frame, otime[i]);
+            }
 
-        public int[] checkStructtime(PTuple time) {
-            Object[] date = time.getArray();
-            if (date.length < 9) {
-                throw raise(PythonBuiltinClassType.TypeError, "function takes at least 9 arguments (%d given)", date.length);
+            // This is specific to java
+            if (date[TM_YEAR] < Year.MIN_VALUE || date[TM_YEAR] > Year.MAX_VALUE) {
+                throw raise.raise(OverflowError, "year out of range");
             }
-            int year = getIntValue(getCastIntNode().execute(date[0]), Integer.MIN_VALUE, Integer.MAX_VALUE, "year");
-            int mon = getIntValue(getCastIntNode().execute(date[1]), 0, 12, "month out of range");
-            if (mon == 0) {
-                mon = 1;
+
+            if (date[TM_MON] == 0) {
+                date[TM_MON] = 1;
+            } else if (date[TM_MON] < 0 || date[TM_MON] > 12) {
+                throw raise.raise(ValueError, "month out of range");
             }
-            int day = getIntValue(getCastIntNode().execute(date[2]), 0, 31, "day of month out of range");
-            if (day == 0) {
-                day = 1;
+
+            if (date[TM_MDAY] == 0) {
+                date[TM_MDAY] = 1;
+            } else if (date[TM_MDAY] < 0 || date[TM_MDAY] > 31) {
+                throw raise.raise(ValueError, "day of month out of range");
             }
-            int hour = getIntValue(getCastIntNode().execute(date[3]), 0, 23, "hour out of range");
-            int min = getIntValue(getCastIntNode().execute(date[4]), 0, 59, "minute out of range");
-            int sec = getIntValue(getCastIntNode().execute(date[5]), 0, 61, "seconds out of range");
-            int wday = getIntValue(getCastIntNode().execute(date[6]), -1, Integer.MAX_VALUE,
-                            "1 when daylight savings time is in effect, and 0 when it is not. A value of -1 indicates that this is not known");
-            if (wday == -1) {
-                wday = 6;
-            } else if (wday > 6) {
-                wday = wday % 7;
+
+            if (date[TM_HOUR] < 0 || date[TM_HOUR] > 23) {
+                throw raise.raise(ValueError, "hour out of range");
             }
-            int yday = getIntValue(getCastIntNode().execute(date[7]), 0, 366, "day of year out of range");
-            if (yday == 0) {
-                yday = 1;
+
+            if (date[TM_MIN] < 0 || date[TM_MIN] > 59) {
+                throw raise.raise(ValueError, "minute out of range");
             }
-            int isdst = getIntValue(getCastIntNode().execute(date[7]), Integer.MIN_VALUE, Integer.MAX_VALUE, "daylight savings time out of range");
-            return new int[]{year, mon, day, hour, min, sec, wday, yday, isdst};
+
+            if (date[TM_SEC] < 0 || date[TM_SEC] > 61) {
+                throw raise.raise(ValueError, "seconds out of range");
+            }
+
+            if (date[TM_WDAY] == -1) {
+                date[TM_WDAY] = 6;
+            } else if (date[TM_WDAY] < 0) {
+                throw raise.raise(ValueError, "day of week out of range");
+            } else if (date[TM_WDAY] > 6) {
+                date[TM_WDAY] = date[TM_WDAY] % 7;
+            }
+
+            if (date[TM_YDAY] == 0) {
+                date[TM_YDAY] = 1;
+            } else if (date[TM_YDAY] < 0 || date[TM_YDAY] > 366) {
+                throw raise.raise(ValueError, "day of year out of range");
+            }
+
+            if (date[TM_ISDST] < -1) {
+                date[TM_ISDST] = -1;
+            } else if (date[TM_ISDST] > 1) {
+                date[TM_ISDST] = 1;
+            }
+            return date;
         }
 
         protected static DateFormatSymbols datesyms = new DateFormatSymbols();
 
         @TruffleBoundary
         private static String getDayShortName(int day) {
+            assert day < 7;
             String[] names = datesyms.getShortWeekdays();
+            // "":0, "Sun", .., "Sat":7
             return names[day == 6 ? 1 : day + 2];
         }
 
         @TruffleBoundary
         private static String getDayLongName(int day) {
+            assert day < 7;
             String[] names = datesyms.getWeekdays();
+            // "":0, "Sunday", .., "Saturday":7
             return names[day == 6 ? 1 : day + 2];
         }
 
         @TruffleBoundary
         private static String getMonthShortName(int month) {
+            assert month > 0;
             String[] names = datesyms.getShortMonths();
-            return names[month == 0 ? 0 : month - 1];
+            // "Jan":0, .., "Dec":11, "":12
+            return names[month - 1];
         }
 
         @TruffleBoundary
         private static String getMonthLongName(int month) {
+            assert month > 0;
             String[] names = datesyms.getMonths();
-            return names[month == 0 ? 0 : month - 1];
+            // "January":0, .., "December":11, "":12
+            return names[month - 1];
         }
 
         @TruffleBoundary
         private static String truncYear(int year) {
-            String yearstr = padInt(year, 4, '0');
-            return yearstr.substring(yearstr.length() - 2, yearstr.length());
-        }
-
-        public static String localeAsctime(int[] time) {
-            int day = time[6];
-            int mon = time[1];
-            return getDayShortName(day) + " " + getMonthShortName(mon) + " " + padInt(time[2], 2, ' ') + " " + twoDigit(time[3]) + ":" + twoDigit(time[4]) + ":" + twoDigit(time[5]) + " " + time[0];
+            String yearstr = format("%04d", year);
+            return yearstr.substring(yearstr.length() - 2);
         }
 
         private static GregorianCalendar getCalendar(int[] time) {
-            return new GregorianCalendar(time[0], time[1], time[2], time[3], time[4], time[5]);
+            Month month = Month.of(time[1]); // GregorianCalendar expect months that starts from 0
+            return new GregorianCalendar(time[0], month.ordinal(), time[2], time[3], time[4], time[5]);
         }
 
         // This taken from JPython + some switches were corrected to provide the
         // same result as CPython
         @TruffleBoundary
-        private String format(String format, PTuple date) {
-
-            int[] items = checkStructtime(date);
-
+        private static String format(String format, int[] date) {
             String s = "";
             int lastc = 0;
             int j;
@@ -446,58 +719,58 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 switch (format.charAt(i)) {
                     case 'a':
                         // abbrev weekday
-                        j = items[6];
+                        j = date[TM_WDAY];
                         s = s + getDayShortName(j);
                         break;
                     case 'A':
                         // full weekday
-                        j = items[6];
+                        j = date[TM_WDAY];
                         s = s + getDayLongName(j);
                         break;
                     case 'b':
                         // abbrev month
-                        j = items[1];
+                        j = date[TM_MON];
                         s = s + getMonthShortName(j);
                         break;
                     case 'B':
                         // full month
-                        j = items[1];
+                        j = date[TM_MON];
                         s = s + getMonthLongName(j);
                         break;
                     case 'c':
-                        s = s + localeAsctime(items);
+                        s = s + CTimeNode.format(date);
                         break;
                     case 'd':
                         // day of month (01-31)
-                        s = s + twoDigit(items[2]);
+                        s = s + format("%02d", date[TM_MDAY]);
                         break;
                     case 'H':
                         // hour (00-23)
-                        s = s + twoDigit(items[3]);
+                        s = s + format("%02d", date[TM_HOUR]);
                         break;
                     case 'I':
                         // hour (01-12)
-                        j = items[3] % 12;
+                        j = date[TM_HOUR] % 12;
                         if (j == 0) {
-                            j = 12;                  // midnight or noon
+                            j = 12;  // midnight or noon
                         }
-                        s = s + twoDigit(j);
+                        s = s + format("%02d", j);
                         break;
                     case 'j':
                         // day of year (001-366)
-                        s = s + padInt(items[7], 3, '0');
+                        s = s + format("%03d", date[TM_YDAY]);
                         break;
                     case 'm':
                         // month (01-12)
-                        s = s + twoDigit(items[1]);
+                        s = s + format("%02d", date[TM_MON]);
                         break;
                     case 'M':
                         // minute (00-59)
-                        s = s + twoDigit(items[4]);
+                        s = s + format("%02d", date[TM_MIN]);
                         break;
                     case 'p':
                         // AM/PM
-                        j = items[3];
+                        j = date[TM_HOUR];
                         syms = datesyms.getAmPmStrings();
                         if (0 <= j && j < 12) {
                             s = s + syms[0];
@@ -507,7 +780,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         break;
                     case 'S':
                         // seconds (00-61)
-                        s = s + twoDigit(items[5]);
+                        s = s + format("%02d", date[TM_SEC]);
                         break;
                     case 'U':
                         // week of year (sunday is first day) (00-53). all days in
@@ -517,7 +790,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // TODO this is not correct, CPython counts the week of year
                         // from day of year item [8]
                         if (cal == null) {
-                            cal = getCalendar(items);
+                            cal = getCalendar(date);
                         }
 
                         cal.setFirstDayOfWeek(Calendar.SUNDAY);
@@ -526,11 +799,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52) {
                             j = 0;
                         }
-                        s = s + twoDigit(j);
+                        s = s + format("%02d", j);
                         break;
                     case 'w':
                         // weekday as decimal (0=Sunday-6)
-                        j = (items[6] + 1) % 7;
+                        j = (date[TM_WDAY] + 1) % 7;
                         s = s + j;
                         break;
                     case 'W':
@@ -542,7 +815,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // from day of year item [8]
 
                         if (cal == null) {
-                            cal = getCalendar(items);
+                            cal = getCalendar(date);
                         }
                         cal.setFirstDayOfWeek(Calendar.MONDAY);
                         cal.setMinimalDaysInFirstWeek(7);
@@ -551,7 +824,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52) {
                             j = 0;
                         }
-                        s = s + twoDigit(j);
+                        s = s + format("%02d", j);
                         break;
                     case 'x':
                         // TBD: A note about %x and %X. Python's time.strftime()
@@ -570,32 +843,28 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // %x == mm/dd/yy
                         // %X == HH:mm:SS
                         //
-                        s = s + twoDigit(items[1] + 1) + "/" +
-                                        twoDigit(items[2]) + "/" +
-                                        truncYear(items[0]);
+                        s = s + dateFormat(date);
                         break;
                     case 'X':
                         // See comment for %x above
-                        s = s + twoDigit(items[3]) + ":" +
-                                        twoDigit(items[4]) + ":" +
-                                        twoDigit(items[5]);
+                        s = s + timeFormat(date);
                         break;
                     case 'Y':
                         // year w/ century
-                        s = s + items[0];
+                        s = s + date[TM_YEAR];
                         break;
                     case 'y':
                         // year w/o century (00-99)
-                        s = s + truncYear(items[0]);
+                        s = s + truncYear(date[TM_YEAR]);
                         break;
                     case 'Z':
                         // timezone name
                         if (cal == null) {
-                            cal = getCalendar(items);
+                            cal = getCalendar(date);
                         }
                         // If items[8] == 1, we're in daylight savings time.
                         // -1 means the information was not available; treat this as if not in dst.
-                        s = s + cal.getTimeZone().getDisplayName(items[8] > 0, 0);
+                        s = s + cal.getTimeZone().getDisplayName(date[TM_ISDST] > 0, 0);
                         break;
                     case '%':
                         // %
@@ -613,54 +882,216 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String formatTime(String format, @SuppressWarnings("unused") PNone time) {
-            return format(format, factory().createTuple(getTimeStruct(timeSeconds(), true)));
+        public String formatTime(PythonModule module, String format, @SuppressWarnings("unused") PNone time,
+                        @Cached ReadAttributeFromDynamicObjectNode readZoneId) {
+            if (format.indexOf(0) > -1) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
+            }
+            ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
+            return format(format, getIntLocalTimeStruct(zoneId, (long) timeSeconds()));
         }
 
         @Specialization
-        public String formatTime(String format, PTuple time) {
-            return format(format, time);
+        public String formatTime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, String format, PTuple time,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            if (format.indexOf(0) > -1) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
+            }
+            int[] date = checkStructtime(frame, time, getArray, lenNode, asSizeNode, getRaiseNode());
+            return format(format, date);
         }
 
         @Specialization
-        public String formatTime(@SuppressWarnings("unused") String format, @SuppressWarnings("unused") Object time) {
-            throw raise(PythonBuiltinClassType.TypeError, "Tuple or struct_time argument required");
-        }
-
-        @Fallback
-        public String formatTime(Object format, @SuppressWarnings("unused") Object time) {
-            throw raise(PythonBuiltinClassType.TypeError, "strftime() argument 1 must be str, not %p", format);
+        @SuppressWarnings("unused")
+        public String formatTime(PythonModule module, String format, Object time) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
         }
     }
 
-    @Builtin(name = "mktime", minNumOfPositionalArgs = 1, doc = "mktime(tuple) -> floating point number\n\n" +
+    @Builtin(name = "mktime", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "mktime(tuple) -> floating point number\n\n" +
                     "Convert a time tuple in local time to seconds since the Epoch.\n" +
                     "Note that mktime(gmtime(0)) will not generally return zero for most\n" +
                     "time zones; instead the returned value will either be equal to that\n" +
                     "of the timezone or altzone attributes on the time module.")
     @GenerateNodeFactory
-    abstract static class MkTimeNode extends PythonUnaryBuiltinNode {
+    abstract static class MkTimeNode extends PythonBinaryBuiltinNode {
         private static final int ELEMENT_COUNT = 9;
-        @Child CastToIndexNode castInt = CastToIndexNode.create();
 
         @Specialization
         @ExplodeLoop
-        double mktime(PTuple tuple) {
-            Object[] items = tuple.getArray();
-            if (items.length != 9) {
-                throw raise(PythonBuiltinClassType.TypeError, "function takes exactly 9 arguments (%d given)", items.length);
+        double mktime(VirtualFrame frame, PythonModule module, PTuple tuple,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Cached ReadAttributeFromDynamicObjectNode readZoneId) {
+            Object[] items = getObjectArrayNode.execute(tuple);
+            if (items.length != ELEMENT_COUNT) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS, ELEMENT_COUNT, items.length);
             }
-            int[] integers = new int[9];
+            int[] integers = new int[ELEMENT_COUNT];
             for (int i = 0; i < ELEMENT_COUNT; i++) {
-                integers[i] = castInt.execute(items[i]);
+                integers[i] = asSizeNode.executeExact(frame, items[i]);
             }
-            return op(integers);
+            ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
+            return op(zoneId, integers);
         }
 
         @TruffleBoundary
-        private static long op(int[] integers) {
+        private static long op(ZoneId timeZone, int[] integers) {
             LocalDateTime localtime = LocalDateTime.of(integers[0], integers[1], integers[2], integers[3], integers[4], integers[5]);
-            return localtime.toEpochSecond(ZoneOffset.UTC);
+            return localtime.toEpochSecond(timeZone.getRules().getOffset(localtime));
+        }
+    }
+
+    // time.ctime([secs])
+    @Builtin(name = "ctime", maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class CTimeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        public static String localtime(VirtualFrame frame, PythonModule module, Object seconds,
+                        @Cached ReadAttributeFromDynamicObjectNode readZoneId,
+                        @Cached ToLongTime toLongTime) {
+            ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
+            return format(getIntLocalTimeStruct(zoneId, toLongTime.execute(frame, seconds)));
+        }
+
+        protected static String format(int[] tm) {
+            return ASCTimeNode.format(CTIME_FORMAT, tm);
+        }
+    }
+
+    // time.asctime([t])
+    @Builtin(name = "asctime", maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class ASCTimeNode extends PythonBinaryBuiltinNode {
+
+        static final String[] WDAY_NAME = new String[]{
+                        "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
+        };
+        static final String[] MON_NAME = new String[]{"",
+                        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        };
+
+        @Specialization
+        public static String localtime(PythonModule module, @SuppressWarnings("unused") PNone time,
+                        @Cached ReadAttributeFromDynamicObjectNode readZoneId) {
+            ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
+            return format(getIntLocalTimeStruct(zoneId, (long) timeSeconds()));
+        }
+
+        @Specialization
+        public String localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, PTuple time,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            return format(StrfTimeNode.checkStructtime(frame, time, getArray, lenNode, asSizeNode, getRaiseNode()));
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object localtime(Object module, Object time) {
+            throw raise(TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
+        }
+
+        protected static String format(int[] tm) {
+            return format(CTIME_FORMAT, tm);
+        }
+
+        @TruffleBoundary
+        protected static String format(String format, int[] tm) {
+            assert tm[TM_WDAY] >= 0;
+            assert tm[TM_MON] > 0;
+            String day = WDAY_NAME[tm[TM_WDAY]];
+            String month = MON_NAME[tm[TM_MON]];
+            return PythonUtils.format(format, day, month, tm[TM_MDAY], tm[TM_HOUR], tm[TM_MIN], tm[TM_SEC], tm[TM_YEAR]);
+        }
+    }
+
+    // time.get_clock_info(name)
+    @Builtin(name = "get_clock_info", parameterNames = {"name"}, doc = "get_clock_info(name: str) -> dict\n" +
+                    "\n" +
+                    "Get information of the specified clock.")
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    public abstract static class GetClockInfoNode extends PythonUnaryClinicBuiltinNode {
+        public static final String TIME_IMPL_MONOTONIC = "monotonic";
+        public static final String TIME_IMPL_PERF_COUNTER = "perf_counter";
+        public static final String TIME_IMPL_PROCESS_TIME = "process_time";
+        public static final String TIME_IMPL_THREAD_TIME = "thread_time";
+        public static final String TIME_IMPL_TIME = "time";
+
+        // cpython gives resolution 1e-9 in some cases, but jdks System.nanoTime() does not
+        // guarantee that
+        public static final double TIME_RESOLUTION = 1e-6;
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GetClockInfoNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object getClockInfo(String name,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib) {
+            final boolean adjustable;
+            final boolean monotonic;
+
+            switch (name) {
+                case TIME_IMPL_MONOTONIC:
+                case TIME_IMPL_PERF_COUNTER:
+                case TIME_IMPL_THREAD_TIME:
+                case TIME_IMPL_PROCESS_TIME:
+                    adjustable = false;
+                    monotonic = true;
+                    break;
+                case TIME_IMPL_TIME:
+                    adjustable = true;
+                    monotonic = false;
+                    break;
+                default:
+                    throw raise(PythonBuiltinClassType.ValueError, UNKNOWN_CLOCK);
+            }
+
+            final PSimpleNamespace ns = factory().createSimpleNamespace();
+            dyLib.put(ns, "adjustable", adjustable);
+            dyLib.put(ns, "implementation", name);
+            dyLib.put(ns, "monotonic", monotonic);
+            dyLib.put(ns, "resolution", TIME_RESOLUTION);
+            return ns;
+        }
+    }
+
+    // time.strptime(string[, format])
+    @Builtin(name = "strptime", parameterNames = {"data_string", "format"}, doc = "strftime(format[, tuple]) -> string\n" +
+                    "\n" +
+                    "Convert a time tuple to a string according to a format specification.\n" +
+                    "See the library reference manual for formatting codes. When the time tuple\n" +
+                    "is not present, current time as returned by localtime() is used.\n" +
+                    "\n")
+    @ArgumentClinic(name = "data_string", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"%a %b %d %H:%M:%S %Y\"", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public abstract static class StrptimeNode extends PythonBinaryClinicBuiltinNode {
+        public static final String MOD_STRPTIME = "_strptime";
+        public static final String FUNC_STRPTIME_TIME = "_strptime_time";
+
+        static ImportNode.ImportExpression createImportStrptime() {
+            return ImportNode.createAsExpression(MOD_STRPTIME);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StrptimeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object strptime(VirtualFrame frame, String dataString, String format,
+                        @Cached("createImportStrptime()") ImportNode.ImportExpression importNode,
+                        @Cached PyObjectCallMethodObjArgs callNode) {
+            final Object module = importNode.execute(frame);
+            return callNode.execute(frame, module, FUNC_STRPTIME_TIME, dataString, format);
         }
     }
 }

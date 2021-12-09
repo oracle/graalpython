@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -61,12 +61,20 @@ public class ImportNode extends AbstractImportNode {
 
     }
 
-    public ExpressionNode asExpression() {
+    public ImportExpression asExpression() {
         return new ImportExpression(this);
     }
 
     @Override
     public WrapperNode createWrapper(ProbeNode probe) {
         return new ImportNodeWrapper(this, this, probe);
+    }
+
+    public String getModuleName() {
+        return moduleName;
+    }
+
+    public static ImportExpression createAsExpression(String moduleName) {
+        return new ImportNode(moduleName).asExpression();
     }
 }

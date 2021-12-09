@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,34 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.mappingproxy;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
 
-public class PMappingproxy extends PHashingCollection {
-    private final HashingStorage dictStorage;
+public final class PMappingproxy extends PythonBuiltinObject {
+    private final Object mapping;
 
-    public PMappingproxy(LazyPythonClass klass, HashingStorage dictStorage) {
-        super(klass);
-        this.dictStorage = dictStorage;
+    public PMappingproxy(Object klass, Shape instanceShape, Object mapping) {
+        super(klass, instanceShape);
+        this.mapping = mapping;
     }
 
-    @Override
-    public HashingStorage getDictStorage() {
-        return dictStorage;
-    }
-
-    @Override
-    public void setDictStorage(HashingStorage newStorage) {
-        CompilerDirectives.transferToInterpreter();
-        throw new AssertionError();
-    }
-
-    @Override
-    public int size() {
-        return dictStorage.length();
+    public Object getMapping() {
+        return mapping;
     }
 }

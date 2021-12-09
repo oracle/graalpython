@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,22 +25,81 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundLocalError;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "read_local")
-public final class ReadLocalVariableNode extends ReadVariableNode {
+@SuppressWarnings("deprecation")    // new Frame API
+public abstract class ReadLocalVariableNode extends ExpressionNode implements ReadLocalNode, FrameSlotNode {
 
-    private ReadLocalVariableNode(FrameSlot slot) {
-        super(slot);
+    protected final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+
+    protected ReadLocalVariableNode(com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+        this.frameSlot = frameSlot;
     }
 
-    public static ReadLocalVariableNode create(FrameSlot slot) {
-        return new ReadLocalVariableNode(slot);
+    public static ReadLocalVariableNode create(com.oracle.truffle.api.frame.FrameSlot slot) {
+        assert slot != null;
+        return ReadLocalVariableNodeGen.create(slot);
+    }
+
+    @Override
+    public final com.oracle.truffle.api.frame.FrameSlot getSlot() {
+        return frameSlot;
+    }
+
+    @Specialization(guards = "frame.isBoolean(frameSlot)")
+    boolean readLocalBoolean(VirtualFrame frame) {
+        return com.oracle.truffle.api.frame.FrameUtil.getBooleanSafe(frame, frameSlot);
+    }
+
+    @Specialization(guards = "frame.isInt(frameSlot)")
+    int readLocalInt(VirtualFrame frame) {
+        return com.oracle.truffle.api.frame.FrameUtil.getIntSafe(frame, frameSlot);
+    }
+
+    @Specialization(guards = "frame.isLong(frameSlot)")
+    long readLocalLong(VirtualFrame frame) {
+        return com.oracle.truffle.api.frame.FrameUtil.getLongSafe(frame, frameSlot);
+    }
+
+    @Specialization(guards = "frame.isDouble(frameSlot)")
+    double readLocalDouble(VirtualFrame frame) {
+        return com.oracle.truffle.api.frame.FrameUtil.getDoubleSafe(frame, frameSlot);
+    }
+
+    protected final Object getObjectResult(VirtualFrame frame) {
+        return com.oracle.truffle.api.frame.FrameUtil.getObjectSafe(frame, frameSlot);
+    }
+
+    @Specialization(guards = {"frame.isObject(frameSlot)", "result != null"})
+    static Object readLocalObject(@SuppressWarnings("unused") VirtualFrame frame,
+                    @Bind("getObjectResult(frame)") Object result) {
+        return result;
+    }
+
+    @Specialization(guards = {"frame.isObject(frameSlot)", "getObjectResult(frame) == null"})
+    Object readLocalObjectNull(@SuppressWarnings("unused") VirtualFrame frame,
+                    @Cached PRaiseNode raise) {
+        if (frameSlot.getIdentifier() == RETURN_SLOT_ID) {
+            return PNone.NONE;
+        } else {
+            throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, frameSlot.getIdentifier());
+        }
     }
 
     @Override
@@ -49,7 +108,12 @@ public final class ReadLocalVariableNode extends ReadVariableNode {
     }
 
     @Override
-    protected Frame getAccessingFrame(VirtualFrame frame) {
-        return frame;
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return StandardTags.ReadVariableTag.class == tag || super.hasTag(tag);
+    }
+
+    @Override
+    public Object getNodeObject() {
+        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, frameSlot.getIdentifier());
     }
 }

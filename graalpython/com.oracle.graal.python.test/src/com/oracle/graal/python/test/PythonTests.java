@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -45,11 +45,14 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Map;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
+import org.junit.Assert;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -59,6 +62,8 @@ import com.oracle.graal.python.test.interop.JavaInteropTest;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.LiteralBuilder;
@@ -69,7 +74,7 @@ public class PythonTests {
         try {
             openConnection = JavaInteropTest.class.getProtectionDomain().getCodeSource().getLocation().openConnection();
             if (!(openConnection instanceof JarURLConnection)) {
-                System.setProperty("python.home", GraalPythonEnvVars.graalpythonHome());
+                System.setProperty("org.graalvm.language.python.home", GraalPythonEnvVars.graalpythonHome());
             }
         } catch (IOException e) {
         }
@@ -83,7 +88,7 @@ public class PythonTests {
     private static Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
     private static Context context = null;
 
-    private static final String executable;
+    protected static final String executable;
     static {
         StringBuilder sb = new StringBuilder();
         sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
@@ -96,16 +101,19 @@ public class PythonTests {
         executable = sb.toString();
     }
 
-    public static void enterContext(String... newArgs) {
+    public static Context enterContext(String... newArgs) {
+        return enterContext(Collections.emptyMap(), newArgs);
+    }
+
+    public static Context enterContext(Map<String, String> options, String[] args) {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         Context prevContext = context;
-        context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).arguments("python", newArgs).option("python.Executable", executable).build();
+        context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).options(options).arguments("python", args).option("python.Executable", executable).build();
         context.initialize("python");
-        if (prevContext != null) {
-            closeContext(prevContext);
-        }
+        assert prevContext == null;
         context.enter();
+        return context;
     }
 
     private static void closeContext(Context ctxt) {
@@ -242,9 +250,9 @@ public class PythonTests {
     }
 
     public static File getBenchFile(Path filename) {
-        Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "benchmarks", "src");
+        Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "com.oracle.graal.python.benchmarks", "python");
         if (!Files.isDirectory(path)) {
-            throw new RuntimeException("Unable to locate benchmarks/src/");
+            throw new RuntimeException("Unable to locate com.oracle.graal.python.benchmarks/python/");
         }
 
         Path fullPath = Paths.get(path.toString(), filename.toString());
@@ -284,11 +292,15 @@ public class PythonTests {
     }
 
     public static RootNode getParseResult(com.oracle.truffle.api.source.Source source, PrintStream out, PrintStream err) {
-        PythonTests.enterContext();
-        PythonContext ctx = PythonLanguage.getContextRef().get();
-        ctx.setOut(out);
-        ctx.setErr(err);
-        return (RootNode) ctx.getCore().getParser().parse(ParserMode.File, ctx.getCore(), source, null);
+        enterContext();
+        try {
+            PythonContext ctx = PythonContext.get(null);
+            ctx.setOut(out);
+            ctx.setErr(err);
+            return (RootNode) ctx.getParser().parse(ParserMode.File, 0, ctx, source, null, null);
+        } finally {
+            closeContext();
+        }
     }
 
     public static RootNode getParseResult(String code) {
@@ -330,6 +342,17 @@ public class PythonTests {
             throw new RuntimeException(e);
         } finally {
             flush(out, err);
+            closeContext();
+        }
+    }
+
+    public static Value runScript(Map<String, String> options, String[] args, String source, OutputStream out, OutputStream err) {
+        try {
+            enterContext(options, args);
+            return context.eval(org.graalvm.polyglot.Source.create("python", source));
+        } finally {
+            flush(out, err);
+            closeContext();
         }
     }
 
@@ -339,6 +362,7 @@ public class PythonTests {
             return context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             flush(out, err);
+            closeContext();
         }
     }
 
@@ -348,22 +372,29 @@ public class PythonTests {
             return context.eval(source);
         } finally {
             flush(out, err);
+            closeContext();
         }
     }
 
     public static Value runScript(String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
+        return runScript(Collections.emptyMap(), args, source, out, err, cb);
+    }
+
+    public static Value runScript(Map<String, String> options, String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
         try {
-            enterContext(args);
+            enterContext(options, args);
             return context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             cb.run();
             flush(out, err);
+            closeContext();
         }
     }
 
     public static void runThrowableScript(String[] args, String source, OutputStream out, OutputStream err) {
         try {
-            runScript(args, source, out, err);
+            enterContext(args);
+            context.eval(org.graalvm.polyglot.Source.create("python", source));
         } catch (PolyglotException t) {
             Object e;
             try {
@@ -383,6 +414,27 @@ public class PythonTests {
             } else {
                 throw new RuntimeException(e.toString());
             }
+        } finally {
+            flush(out, err);
+            closeContext();
+        }
+    }
+
+    /**
+     * This method returns the properly formatted error message of the given Python exception. It
+     * does not use {@code PException.toString} since this method is just meant for debugging an
+     * does not reliably return a properly formatted string. Instead, this method uses the
+     * {@link InteropLibrary} which provides interop messages to get the error message.
+     */
+    public static String getExceptionMessage(PException e) {
+        InteropLibrary interop = InteropLibrary.getUncached();
+        Assert.assertTrue("PException claims to be not an exception", interop.isException(e));
+        try {
+            Object exceptionMessageObject = interop.getExceptionMessage(e);
+            Assert.assertTrue("returned message object is not a string", interop.isString(exceptionMessageObject));
+            return interop.asString(exceptionMessageObject);
+        } catch (UnsupportedMessageException ume) {
+            throw new IllegalStateException("should not be reached");
         }
     }
 }

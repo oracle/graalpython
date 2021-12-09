@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,12 +25,17 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -46,6 +51,7 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
     @Child private PythonObjectFactory factory;
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
     @Child private PRaiseNode raise = PRaiseNode.create();
+    @Child private IsBuiltinClassProfile errorProfile;
 
     private final BranchProfile returnProfile = BranchProfile.create();
     private final BranchProfile fallthroughProfile = BranchProfile.create();
@@ -53,15 +59,27 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
 
     private final int flagSlot;
 
-    public GeneratorReturnTargetNode(StatementNode parameters, StatementNode body, ExpressionNode returnValue, int activeFlagIndex) {
+    public GeneratorReturnTargetNode(StatementNode parameters, StatementNode body, ExpressionNode returnValue, GeneratorInfo.Mutable generatorInfo) {
         this.body = body;
         this.returnValue = returnValue;
         this.parameters = parameters;
-        this.flagSlot = activeFlagIndex;
+        this.flagSlot = generatorInfo.nextActiveFlagIndex();
     }
 
     public StatementNode getParameters() {
         return parameters;
+    }
+
+    public int getFlagSlot() {
+        return flagSlot;
+    }
+
+    private IsBuiltinClassProfile getErrorProfile() {
+        if (errorProfile == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            errorProfile = insert(IsBuiltinClassProfile.create());
+        }
+        return errorProfile;
     }
 
     @Override
@@ -72,7 +90,14 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
         }
 
         try {
-            body.executeVoid(frame);
+            try {
+                body.executeVoid(frame);
+            } catch (PException pe) {
+                // PEP 479 - StopIteration raised from generator body needs to be wrapped in
+                // RuntimeError
+                pe.expectStopIteration(getErrorProfile());
+                throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
+            }
             fallthroughProfile.enter();
             throw raise.raise(StopIteration);
         } catch (YieldException eye) {
@@ -87,7 +112,7 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     factory = insert(PythonObjectFactory.create());
                 }
-                throw raise.raise(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})));
+                throw raise.raiseExceptionObject(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})));
             } else {
                 throw raise.raise(StopIteration);
             }

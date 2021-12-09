@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,11 +42,19 @@ package com.oracle.graal.python.test.interop;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
+import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyArray;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -122,7 +130,99 @@ public class InteropLibraryTest extends PythonTests {
     }
 
     @Test
+    public void testPListInsertable() {
+        org.graalvm.polyglot.Source source = org.graalvm.polyglot.Source.create("python", "import polyglot\nmutableObj = [1,2,3,4]\nprint(polyglot.__element_info__(mutableObj, 0, \"insertable\"))");
+        assertPrints("False\n", source);
+    }
+
+    @Test
+    public void testPListRemovable() {
+        org.graalvm.polyglot.Source source = org.graalvm.polyglot.Source.create("python", "import polyglot\nmutableObj = [1,2,3,4]\nprint(polyglot.__element_info__(mutableObj, 0, \"removable\"))");
+        assertPrints("True\n", source);
+    }
+
+    @Test
     public void testIsNull() {
         assertTrue(v("None").isNull());
     }
+
+    @Test
+    public void testForItemInLazyArray() {
+        // @formatter:off
+        Value collect = context.eval("python", ""
+                + "def iter (arr):\n"
+                + "\tcollect = []\n"
+                + "\tfor item in arr:\n"
+                + "\t\tcollect.append(item)\n"
+                + "\t\tcollect.append(item)\n"
+                + "\t\tcollect.append(item)\n"
+                + "\treturn collect\n"
+                + "iter\n"
+        );
+        // @formatter:on
+
+        final List<Integer> list = Arrays.asList(5, 7, 11, 13, 17, 23);
+
+        Value tripples = collect.execute(new LazyArray(list.iterator()));
+        assertTrue("Array returned", tripples.hasArrayElements());
+        assertEquals(list.size() * 3, tripples.getArraySize());
+    }
+
+    @Test
+    public void testException() {
+        try {
+            context.eval("python", "1/0");
+        } catch (PolyglotException e) {
+            Value exception = e.getGuestObject();
+            assertTrue(exception.isException());
+            Value clazz = exception.getMetaObject();
+            assertTrue(clazz.isMetaObject());
+            assertEquals("ZeroDivisionError", clazz.getMetaSimpleName());
+            assertTrue(exception.hasMember("args"));
+            Value args = exception.getMember("args");
+            assertTrue(args.hasArrayElements());
+            assertEquals(1, args.getArraySize());
+            assertEquals("division by zero", args.getArrayElement(0).asString());
+            // This excercises isIdenticalOrUndefined message internally
+            assertNotEquals(exception, args);
+            return;
+        }
+        fail("didn't throw exception");
+    }
+
+    private static final class LazyArray implements ProxyArray {
+
+        private final Iterator<?> it;
+        private long at;
+
+        LazyArray(Iterator<?> it) {
+            this.it = it;
+            this.at = 0;
+        }
+
+        @Override
+        public Object get(long index) {
+            if (index == at) {
+                at++;
+                return it.next();
+            }
+            return null;
+        }
+
+        @Override
+        public void set(long index, Value value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean remove(long index) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getSize() {
+            return it.hasNext() ? at + 1 : at;
+        }
+    }
+
 }

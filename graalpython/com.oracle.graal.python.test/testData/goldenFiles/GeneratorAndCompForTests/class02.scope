@@ -1,0 +1,20 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: Counter
+        Kind: Class
+        FrameDescriptor: [_keep_positive]
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: _keep_positive
+            Kind: Function
+            FrameDescriptor: [elem, nonpositive, self, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
+            Scope: <genexpr>
+                Kind: ListComp
+                FrameDescriptor: [elem, count, <>temp2, <>temp3, <return_val>]
+                CellVars: Empty
+                FreeVars: Empty

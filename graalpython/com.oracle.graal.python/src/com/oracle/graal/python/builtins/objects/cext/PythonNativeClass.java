@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.object.HiddenKey;
 
 /**
  * A simple wrapper around types objects created through the Python C API that can be cast to
@@ -51,7 +51,13 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 public interface PythonNativeClass extends PythonAbstractClass {
 
-    TruffleObject getPtr();
+    public static final HiddenKey INSTANCESHAPE = new HiddenKey("instanceshape");
+
+    Object getPtr();
+
+    default String getName() {
+        return String.format("PythonNativeClass(%s)", getPtr());
+    }
 
     static boolean isInstance(Object object) {
         return object instanceof PythonAbstractNativeObject;

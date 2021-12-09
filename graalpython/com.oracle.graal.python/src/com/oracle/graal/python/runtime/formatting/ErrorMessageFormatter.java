@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
@@ -70,11 +72,9 @@ public class ErrorMessageFormatter {
 
     private static Pattern fsPattern = Pattern.compile(formatSpecifier);
 
+    @TruffleBoundary
     public String format(String format, Object... args) {
-        return format(null, format, args);
-    }
-
-    public String format(GetLazyClassNode getClassNode, String format, Object... args) {
+        CompilerAsserts.neverPartOfCompilation();
         Matcher m = fsPattern.matcher(format);
         StringBuilder sb = new StringBuilder(format);
         int removedCnt = 0;
@@ -84,13 +84,19 @@ public class ErrorMessageFormatter {
         while (m.find(idx)) {
             String group = m.group();
             if ("%p".equals(group)) {
-                String name = getClassName(getClassNode, args[matchIdx]);
+                String name = getClassName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
             } else if ("%P".equals(group)) {
-                String name = "<class \'" + getClassName(getClassNode, args[matchIdx]) + "\'>";
+                String name = "<class \'" + getClassName(args[matchIdx]) + "\'>";
+                sb.replace(m.start() + offset, m.end() + offset, name);
+                offset += name.length() - (m.end() - m.start());
+                args[matchIdx] = REMOVED_MARKER;
+                removedCnt++;
+            } else if ("%N".equals(group)) {
+                String name = getClassNameOfClass(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
@@ -111,7 +117,7 @@ public class ErrorMessageFormatter {
                 matchIdx++;
             }
         }
-        return String.format(sb.toString(), compact(args, removedCnt));
+        return PythonUtils.format(sb.toString(), compact(args, removedCnt));
     }
 
     @TruffleBoundary
@@ -119,11 +125,12 @@ public class ErrorMessageFormatter {
         return exception.getClass().getSimpleName() + ": " + exception.getMessage();
     }
 
-    private static String getClassName(GetLazyClassNode getClassNode, Object obj) {
-        if (getClassNode != null) {
-            return GetNameNode.doSlowPath(getClassNode.execute(obj));
-        }
-        return GetNameNode.doSlowPath(GetLazyClassNode.getUncached().execute(obj));
+    private static String getClassName(Object obj) {
+        return getClassNameOfClass(GetClassNode.getUncached().execute(obj));
+    }
+
+    private static String getClassNameOfClass(Object obj) {
+        return GetNameNode.doSlowPath(obj);
     }
 
     /**
@@ -134,7 +141,7 @@ public class ErrorMessageFormatter {
         int pidx = -1;
         while ((pidx = format.indexOf('%', pidx + 1)) != -1 && pidx + 1 < format.length()) {
             char c = format.charAt(pidx + 1);
-            if (c == 'p' || c == 'P' || c == 'm') {
+            if (c == 'p' || c == 'P' || c == 'm' || c == 'N') {
                 return true;
             }
         }

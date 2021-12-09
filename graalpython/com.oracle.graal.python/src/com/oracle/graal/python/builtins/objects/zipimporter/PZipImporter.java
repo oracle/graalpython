@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,12 +33,12 @@ import java.util.EnumSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.Shape;
 
 public class PZipImporter extends PythonBuiltinObject {
     /**
@@ -113,8 +113,8 @@ public class PZipImporter extends PythonBuiltinObject {
         PACKAGE
     }
 
-    public PZipImporter(LazyPythonClass cls, PDict zipDirectoryCache, String separator) {
-        super(cls);
+    public PZipImporter(Object cls, Shape instanceShape, PDict zipDirectoryCache, String separator) {
+        super(cls, instanceShape);
         this.archive = null;
         this.prefix = null;
         this.separator = separator;
@@ -126,7 +126,7 @@ public class PZipImporter extends PythonBuiltinObject {
         return new SearchOrderEntry[]{
                         new SearchOrderEntry(joinStrings(separator, "__init__.py"),
                                         enumSetOf(EntryType.IS_PACKAGE, EntryType.IS_SOURCE)),
-                        new SearchOrderEntry(".py", enumSetOf(EntryType.IS_SOURCE))
+                        new SearchOrderEntry(PythonLanguage.EXTENSION, enumSetOf(EntryType.IS_SOURCE))
         };
     }
 
@@ -213,8 +213,8 @@ public class PZipImporter extends PythonBuiltinObject {
      * @return code
      * @throws IOException
      */
-    @CompilerDirectives.TruffleBoundary
-    private String getCode(String filenameAndSuffix) throws IOException {
+    @TruffleBoundary
+    public static String getCodeFromArchive(String filenameAndSuffix, String archive) throws IOException {
         ZipFile zip = null;
         try {
             zip = new ZipFile(archive);
@@ -236,7 +236,7 @@ public class PZipImporter extends PythonBuiltinObject {
             reader.close();
             return code.toString();
         } catch (IOException e) {
-            throw new IOException("Can not read code from " + makePackagePath(filenameAndSuffix), e);
+            throw e;
         } finally {
             if (zip != null) {
                 try {
@@ -270,6 +270,22 @@ public class PZipImporter extends PythonBuiltinObject {
             return ModuleInfo.MODULE;
         }
         return ModuleInfo.NOT_FOUND;
+    }
+
+    @TruffleBoundary
+    protected boolean isDir(String path) {
+        String dirPath = path + separator;
+        for (Object key : files.keys()) {
+            if (key.equals(dirPath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @TruffleBoundary
+    protected String getModulePath(String modPath) {
+        return this.archive + separator + modPath;
     }
 
     /**
@@ -306,8 +322,12 @@ public class PZipImporter extends PythonBuiltinObject {
 
             boolean isPackage = entry.type.contains(EntryType.IS_PACKAGE);
 
-            String code = "";
-            code = getCode(searchPath);
+            String code;
+            try {
+                code = getCodeFromArchive(searchPath, archive);
+            } catch (IOException e) {
+                throw new IOException("Can not read code from " + makePackagePath(searchPath), e);
+            }
             return new ModuleCodeData(code, isPackage, fullSearchPath);
         }
         return null;

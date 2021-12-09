@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,16 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import java.util.function.Supplier;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -56,101 +58,95 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChild("arg")
 @NodeChild("arg2")
+@NodeChild("arg3")
 public abstract class LookupAndCallInplaceNode extends ExpressionNode {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
         public abstract Object execute(Object arg, Object arg2);
     }
 
-    protected final String inplaceOpName;
-    protected final String binaryOpName;
-    protected final String reverseBinaryOpName;
-    protected final Supplier<NotImplementedHandler> handlerFactory;
-
-    @Child private CallBinaryMethodNode dispatchNode;
+    @Child private CallBinaryMethodNode callBinaryMethodNode;
+    @Child private BinaryOpNode binaryOpNode;
+    @Child private LookupAndCallTernaryNode lookupAndCallTernaryNode;
     @Child private NotImplementedHandler handler;
 
-    LookupAndCallInplaceNode(String inplaceOpName, String binaryOpName, String reverseBinaryOpName, Supplier<NotImplementedHandler> handlerFactory) {
-        this.inplaceOpName = inplaceOpName;
-        this.binaryOpName = binaryOpName;
-        this.reverseBinaryOpName = reverseBinaryOpName;
-        this.handlerFactory = handlerFactory;
+    final InplaceArithmetic arithmetic;
+
+    LookupAndCallInplaceNode(InplaceArithmetic arithmetic) {
+        this.arithmetic = arithmetic;
     }
 
-    public static LookupAndCallInplaceNode create(String inplaceOpName) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, null, null, null, null, null);
+    public static LookupAndCallInplaceNode create(InplaceArithmetic arithmetic, ExpressionNode x, ExpressionNode y, ExpressionNode z) {
+        return LookupAndCallInplaceNodeGen.create(arithmetic, x, y, z);
     }
 
-    public static LookupAndCallInplaceNode createWithBinary(String inplaceOpName, ExpressionNode left, ExpressionNode right, Supplier<LookupAndCallInplaceNode.NotImplementedHandler> handlerFactory) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, inplaceOpName.replaceFirst("__i", "__"), inplaceOpName.replaceFirst("__i", "__r"), handlerFactory, left, right);
-    }
-
-    public static LookupAndCallInplaceNode create(String inplaceOpName, String binaryOpName) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, null, null, null, null);
-    }
-
-    public static LookupAndCallInplaceNode create(String inplaceOpName, String binaryOpName, String reverseBinaryOpName, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, reverseBinaryOpName, handlerFactory, null, null);
-    }
-
-    private CallBinaryMethodNode ensureDispatch() {
-        if (dispatchNode == null) {
+    private CallBinaryMethodNode ensureBinaryCallNode() {
+        if (callBinaryMethodNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            dispatchNode = insert(CallBinaryMethodNode.create());
+            callBinaryMethodNode = insert(CallBinaryMethodNode.create());
         }
-        return dispatchNode;
+        return callBinaryMethodNode;
     }
 
-    protected boolean hasBinaryVersion() {
-        return binaryOpName != null;
+    private BinaryOpNode ensureLookupAndCallBinaryNode() {
+        if (binaryOpNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            binaryOpNode = insert(arithmetic.binary.create());
+        }
+        return binaryOpNode;
     }
 
-    @Specialization(guards = "!hasBinaryVersion()")
-    Object callObject(VirtualFrame frame, Object left, Object right,
-                    @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattr) {
-        Object leftCallable = getattr.execute(left);
-        Object result;
-        if (leftCallable == PNone.NO_VALUE) {
-            result = PNotImplemented.NOT_IMPLEMENTED;
+    private LookupAndCallTernaryNode ensureLookupAndCallTernaryNode() {
+        if (lookupAndCallTernaryNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lookupAndCallTernaryNode = insert(LookupAndCallTernaryNode.createReversible(arithmetic.binaryOpName, null));
+        }
+        return lookupAndCallTernaryNode;
+    }
+
+    public final Object execute(VirtualFrame frame, Object left, Object right) {
+        return executeTernary(frame, left, right, PNone.NO_VALUE);
+    }
+
+    public abstract Object executeTernary(VirtualFrame frame, Object x, Object y, Object z);
+
+    protected final LookupInMROBaseNode createInplaceLookup() {
+        if (arithmetic.slot != null) {
+            return LookupCallableSlotInMRONode.create(arithmetic.slot);
         } else {
-            result = ensureDispatch().executeObject(frame, leftCallable, left, right);
+            return LookupAttributeInMRONode.create(arithmetic.methodName);
         }
-        if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            if (handler == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handler = insert(handlerFactory.get());
-            }
-            return handler.execute(left, right);
-        }
-        return result;
     }
 
-    @Specialization(guards = "hasBinaryVersion()")
-    Object callObject(VirtualFrame frame, Object left, Object right,
-                    @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattrInplace,
-                    @Cached("create(binaryOpName, reverseBinaryOpName)") LookupAndCallBinaryNode binaryNode) {
-        Object result = PNotImplemented.NOT_IMPLEMENTED;
-        Object inplaceCallable = getattrInplace.execute(left);
+    @Specialization
+    Object doBinary(VirtualFrame frame, Object left, Object right, Object z,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("createInplaceLookup()") LookupInMROBaseNode lookupInplace) {
+        Object result;
+        Object inplaceCallable = lookupInplace.execute(getClassNode.execute(left));
         if (inplaceCallable != PNone.NO_VALUE) {
-            result = ensureDispatch().executeObject(frame, inplaceCallable, left, right);
+            // nb.: The only ternary in-place operator is '__ipow__' but according to 'typeobject.c:
+            // slot_nb_inplace_power', this is always called as binary.
+            result = ensureBinaryCallNode().executeObject(frame, inplaceCallable, left, right);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
         }
-        if (binaryNode != null) {
-            result = binaryNode.executeObject(frame, left, right);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
-        }
-        if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            if (handler == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handler = insert(handlerFactory.get());
-            }
-            return handler.execute(left, right);
-        }
-        return result;
-    }
 
+        // try non-inplace variant
+        boolean isBinary = PGuards.isPNone(z);
+        if (isBinary) {
+            result = ensureLookupAndCallBinaryNode().executeObject(frame, left, right);
+        } else {
+            result = ensureLookupAndCallTernaryNode().execute(frame, left, right, z);
+        }
+        if (result != PNotImplemented.NOT_IMPLEMENTED) {
+            return result;
+        }
+        if (handler == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            handler = insert(arithmetic.notImplementedHandler.get());
+        }
+        return handler.execute(left, right);
+    }
 }

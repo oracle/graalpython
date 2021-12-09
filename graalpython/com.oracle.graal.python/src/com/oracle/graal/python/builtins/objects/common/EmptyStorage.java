@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,66 +40,116 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@ExportLibrary(HashingStorageLibrary.class)
 public class EmptyStorage extends HashingStorage {
+    public static final EmptyStorage INSTANCE = new EmptyStorage();
+
+    // Singleton
+    private EmptyStorage() {
+    }
 
     @Override
+    @ExportMessage
     public int length() {
         return 0;
     }
 
-    @Override
-    public void addAll(HashingStorage other, Equivalence eq) {
-        throw UnmodifiableStorageException.INSTANCE;
-    }
-
-    @Override
-    public boolean hasKey(Object key, Equivalence eq) {
-        return false;
-    }
-
-    @Override
-    public Object getItem(Object key, Equivalence eq) {
+    @ExportMessage
+    public Object getItemWithState(Object key, ThreadState state,
+                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Shared("notStringProfile") @Cached ConditionProfile notString) {
+        if (notString.profile(!(key instanceof String))) {
+            // must call __hash__ for potential side-effect
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            hashNode.execute(frame, key);
+        }
         return null;
     }
 
-    @Override
-    public void setItem(Object key, Object value, Equivalence eq) {
-        throw UnmodifiableStorageException.INSTANCE;
+    @ExportMessage
+    public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
+        HashingStorage newStore = PDict.createNewStorage(key instanceof String, 1);
+        if (gotState.profile(state != null)) {
+            lib.setItemWithState(newStore, key, value, state);
+        } else {
+            lib.setItem(newStore, key, value);
+        }
+        return newStore;
     }
 
-    @Override
-    public boolean remove(Object key, Equivalence eq) {
-        throw UnmodifiableStorageException.INSTANCE;
-    }
-
-    @Override
-    @TruffleBoundary
-    public Iterable<Object> keys() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    @TruffleBoundary
-    public Iterable<Object> values() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public Iterable<DictEntry> entries() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void clear() {
-    }
-
-    @Override
-    public HashingStorage copy(Equivalence eq) {
+    @ExportMessage
+    public HashingStorage delItemWithState(Object key, ThreadState state,
+                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Shared("notStringProfile") @Cached ConditionProfile notString) {
+        if (notString.profile(!(key instanceof String))) {
+            // must call __hash__ for potential side-effect
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            hashNode.execute(frame, key);
+        }
         return this;
+    }
+
+    @Override
+    @ExportMessage
+    Object forEachUntyped(@SuppressWarnings("unused") ForEachNode<Object> node, Object arg) {
+        return arg;
+    }
+
+    @Override
+    @ExportMessage
+    public HashingStorage clear() {
+        return this;
+    }
+
+    @Override
+    @ExportMessage
+    public HashingStorage copy() {
+        return this;
+    }
+
+    private static final Iterator<Object> KEYS_ITERATOR = new Iterator<Object>() {
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public Object next() {
+            throw new NoSuchElementException();
+        }
+    };
+
+    @Override
+    @ExportMessage
+    public HashingStorageIterable<Object> keys() {
+        return new HashingStorageIterable<>(KEYS_ITERATOR);
+    }
+
+    @ExportMessage
+    @Override
+    public HashingStorageIterable<Object> reverseKeys() {
+        return new HashingStorageIterable<>(KEYS_ITERATOR);
     }
 
 }

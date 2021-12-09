@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,12 +48,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -81,7 +80,7 @@ public class ZipImportModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put(ZIP_DIRECTORY_CACHE_NAME, core.factory().createDict());
 
@@ -92,8 +91,8 @@ public class ZipImportModuleBuiltins extends PythonBuiltins {
     public abstract static class ZipImporterNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PZipImporter createNew(LazyPythonClass cls, @SuppressWarnings("unused") Object path,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+        public PZipImporter createNew(Object cls, @SuppressWarnings("unused") Object path,
+                        @Cached ReadAttributeFromObjectNode readNode) {
             PythonModule module = getCore().lookupBuiltinModule(ZIPIMPORT_MODULE_NAME);
             return factory().createZipImporter(cls, (PDict) readNode.execute(module, ZIP_DIRECTORY_CACHE_NAME), getContext().getEnv().getFileNameSeparator());
         }

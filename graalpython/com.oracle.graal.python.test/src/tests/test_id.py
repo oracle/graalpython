@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,18 +37,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
+
+
 def test_small_int_id_is_constant():
     assert id(12) == id(12)
     x = 128
     y = 128
     assert id(x) == id(y) == id(128)
-
-
-def test_string_id_is_constant():
-    assert id("str") == id("str")
-    x = "str"
-    y = "str"
-    assert id(x) == id(y) == id("str")
 
 
 def test_object_id_is_constant():
@@ -70,3 +66,29 @@ def test_id_is_constant_even_when_object_changes():
     lid = id(l)
     l.append(12)
     assert id(l) == lid
+
+def test_identity():
+    assert True is True
+    assert memoryview(b"").readonly is True # compare a PInt bool (from C) to a boolean
+
+    assert 12 is 12
+    assert memoryview(b"123").nbytes == 3 # compare PInt (from C) to an int
+    class I(int): pass
+    assert I(12) is not 12
+    assert 12.0 is 12.0
+
+    nan = float('nan')
+    assert nan is nan
+
+def test_string_interned():
+    x='1234'
+    y='1234'
+    assert id(x) == id(y) == id('1234') == id(sys.intern('1234')) == id(sys.intern(x)) == id(sys.intern(y))
+
+# skip until is fixed: GR-28568
+# def test_string_noninterned():
+#     x = '1234'
+#     y = x * 2
+#     z = x * 2
+#     assert id(y) != id(z)
+

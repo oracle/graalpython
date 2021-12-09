@@ -1,0 +1,30 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: X
+        Kind: Class
+        FrameDescriptor: [createY, methodX, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty
+        Scope: methodX
+            Kind: Function
+            FrameDescriptor: [yy, this, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+        Scope: createY
+            Kind: Function
+            FrameDescriptor: [this, Y, <return_val>, __class__]
+            CellVars: Empty
+            FreeVars: [__class__]
+            Scope: Y
+                Kind: Class
+                FrameDescriptor: [<>freevar__class__, z, methodY, __class__]
+                CellVars: [__class__]
+                FreeVars: [__class__]
+                Scope: methodY
+                    Kind: Function
+                    FrameDescriptor: [this, y, <return_val>, __class__]
+                    CellVars: Empty
+                    FreeVars: [__class__]

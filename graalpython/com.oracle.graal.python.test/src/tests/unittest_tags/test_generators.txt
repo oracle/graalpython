@@ -1,0 +1,17 @@
+*graalpython.lib-python.3.test.test_generators.ExceptionTest.test_except_gen_except
+*graalpython.lib-python.3.test.test_generators.ExceptionTest.test_except_next
+*graalpython.lib-python.3.test.test_generators.ExceptionTest.test_except_throw
+*graalpython.lib-python.3.test.test_generators.ExceptionTest.test_except_throw_exception_context
+*graalpython.lib-python.3.test.test_generators.ExceptionTest.test_return_stopiteration
+*graalpython.lib-python.3.test.test_generators.ExceptionTest.test_return_tuple
+*graalpython.lib-python.3.test.test_generators.ExceptionTest.test_stopiteration_error
+*graalpython.lib-python.3.test.test_generators.ExceptionTest.test_tutorial_stopiteration
+*graalpython.lib-python.3.test.test_generators.FinalizationTest.test_frame_resurrect
+*graalpython.lib-python.3.test.test_generators.FinalizationTest.test_lambda_generator
+*graalpython.lib-python.3.test.test_generators.FinalizationTest.test_refcycle
+*graalpython.lib-python.3.test.test_generators.GeneratorTest.test_copy
+*graalpython.lib-python.3.test.test_generators.GeneratorTest.test_name
+*graalpython.lib-python.3.test.test_generators.GeneratorTest.test_pickle
+*graalpython.lib-python.3.test.test_generators.SignalAndYieldFromTest.test_raise_and_yield_from
+*graalpython.lib-python.3.test.test_generators.TestMain.test_main
+*graalpython.lib-python.3.test.test_generators.YieldFromTests.test_generator_gi_yieldfrom

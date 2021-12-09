@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,9 +52,43 @@ int PyDict_SetItem(PyObject* d, PyObject* k, PyObject* v) {
     return UPCALL_CEXT_I(_jls_PyDict_SetItem, native_to_java(d), native_to_java(k), native_to_java(v));
 }
 
+UPCALL_ID(PyDict_SetItem_KnownHash);
+int _PyDict_SetItem_KnownHash(PyObject *d, PyObject *k, PyObject *v, Py_hash_t hash) {
+    return UPCALL_CEXT_I(_jls_PyDict_SetItem_KnownHash, native_to_java(d), native_to_java(k), native_to_java(v), hash);
+}
+
+PyObject* _PyDict_NewPresized(Py_ssize_t minused) {
+    /* we ignore requests to capacity for now */
+    return UPCALL_CEXT_O(_jls_PyDict_New);
+}
+
 UPCALL_ID(PyDict_GetItem);
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
-    return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
+}
+
+UPCALL_ID(PyDict_GetItemWithError);
+PyObject* PyDict_GetItemWithError(PyObject* d, PyObject* k) {
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
+}
+
+/* Same as PyDict_GetItemWithError() but with hash supplied by caller.
+   This returns NULL *with* an exception set if an exception occurred.
+   It returns NULL *without* an exception set if the key wasn't present.
+*/
+PyObject * _PyDict_GetItem_KnownHash(PyObject *d, PyObject *k, Py_hash_t hash) {
+    /* we ignore the known hash for now */
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
+}
+
+PyObject *
+_PyDict_GetItemIdWithError(PyObject *dp, struct _Py_Identifier *key)
+{
+    PyObject *kv;
+    kv = _PyUnicode_FromId(key); /* borrowed */
+    if (kv == NULL)
+        return NULL;
+    return PyDict_GetItemWithError(dp, kv);
 }
 
 PyObject* _PyDict_GetItemId(PyObject* d, _Py_Identifier* id) {
@@ -67,8 +101,12 @@ int PyDict_DelItem(PyObject *d, PyObject *k) {
 }
 
 
-UPCALL_ID(PyDict_Next);
 int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
+	return _PyDict_Next(d, ppos, pkey, pvalue, NULL);
+}
+
+UPCALL_ID(PyDict_Next);
+int _PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue, Py_hash_t *phash) {
     PyObject *tresult = UPCALL_CEXT_O(_jls_PyDict_Next, native_to_java(d), *ppos);
     if (tresult == NULL) {
     	if(pkey != NULL) {
@@ -86,7 +124,21 @@ int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalu
     if (pvalue != NULL) {
     	*pvalue = PyTuple_GetItem(tresult, 1);
     }
+    if (phash != NULL) {
+    	*phash = PyLong_AsSsize_t(PyTuple_GetItem(tresult, 2));
+    }
     return 1;
+
+}
+
+UPCALL_ID(PyDict_Pop);
+PyObject *
+_PyDict_Pop(PyObject *dict, PyObject *key, PyObject *deflt)
+{
+    if (deflt) {
+        return UPCALL_CEXT_O(_jls_PyDict_Pop, native_to_java(dict), native_to_java(key), native_to_java(deflt));
+    }
+    return UPCALL_CEXT_O(_jls_PyDict_Pop, native_to_java(dict), native_to_java(key));
 }
 
 UPCALL_ID(PyDict_Size);
@@ -106,7 +158,11 @@ int PyDict_Contains(PyObject *d, PyObject *k) {
 }
 
 PyObject * PyDict_GetItemString(PyObject *d, const char *key) {
-    return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
+}
+
+PyObject*_PyDict_GetItemStringWithError(PyObject *d, const char *k){
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItemWithError, native_to_java(d), polyglot_from_string(k, SRC_CS));
 }
 
 int PyDict_SetItemString(PyObject *d, const char *key, PyObject *item) {
@@ -136,6 +192,7 @@ PyObject* _PyObject_GenericGetDict(PyObject* obj) {
     if (dict == NULL) {
         *dictptr = dict = PyDict_New();
     }
+    Py_XINCREF(dict);
     return dict;
 }
 
@@ -174,4 +231,18 @@ PyObject** _PyObject_GetDictPtr(PyObject* obj) {
         dictoffset += (long)size;
     }
     return (PyObject **) ((char *)obj + dictoffset);
+}
+
+void PyDict_Clear(PyObject *obj) {
+	(void) UPCALL_O(to_java(obj), polyglot_from_string("clear", SRC_CS));
+}
+
+UPCALL_ID(PyDict_Merge);
+int PyDict_Merge(PyObject *a, PyObject *b, int override) {
+    return UPCALL_CEXT_I(_jls_PyDict_Merge, native_to_java(a), native_to_java(b), override);
+}
+
+UPCALL_ID(PyDict_Values);
+PyObject * PyDict_Values(PyObject *dict) {
+    return UPCALL_CEXT_O(_jls_PyDict_Values, native_to_java(dict));
 }

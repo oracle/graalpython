@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,9 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.BoundsC
 import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.NormalizeIndexWithBoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.NormalizeIndexWithoutBoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -56,15 +58,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class IndexNodes {
 
     public static final class NormalizeIndexNode extends Node {
-        public static final String INDEX_OUT_OF_BOUNDS = "index out of range";
-        public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
-        public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
-        public static final String TUPLE_ASSIGN_OUT_OF_BOUNDS = "tuple assignment index out of range";
-        public static final String LIST_OUT_OF_BOUNDS = "list index out of range";
-        public static final String LIST_ASSIGN_OUT_OF_BOUNDS = "list assignment index out of range";
-        public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
-        public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
-        public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
 
         @Child private NormalizeIndexCustomMessageNode subNode;
 
@@ -95,12 +88,16 @@ public abstract class IndexNodes {
             return subNode.execute(index, length, errorMessage);
         }
 
+        public long executeLong(long index, long length) {
+            return subNode.executeLong(index, length, errorMessage);
+        }
+
         protected final String getErrorMessage() {
             return errorMessage;
         }
 
         public static NormalizeIndexNode create() {
-            return new NormalizeIndexNode(INDEX_OUT_OF_BOUNDS, true);
+            return new NormalizeIndexNode(ErrorMessages.INDEX_OUT_OF_RANGE, true);
         }
 
         public static NormalizeIndexNode create(String errorMessage) {
@@ -108,7 +105,7 @@ public abstract class IndexNodes {
         }
 
         public static NormalizeIndexNode create(boolean boundsCheck) {
-            return new NormalizeIndexNode(INDEX_OUT_OF_BOUNDS, boundsCheck);
+            return new NormalizeIndexNode(ErrorMessages.INDEX_OUT_OF_RANGE, boundsCheck);
         }
 
         public static NormalizeIndexNode create(String errorMessage, boolean boundsCheck) {
@@ -116,35 +113,39 @@ public abstract class IndexNodes {
         }
 
         public static NormalizeIndexNode forList() {
-            return create(LIST_OUT_OF_BOUNDS);
+            return create(ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
         }
 
         public static NormalizeIndexNode forListAssign() {
-            return create(LIST_ASSIGN_OUT_OF_BOUNDS);
+            return create(ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);
         }
 
         public static NormalizeIndexNode forTuple() {
-            return create(TUPLE_OUT_OF_BOUNDS);
+            return create(ErrorMessages.TUPLE_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forTupleAssign() {
-            return create(TUPLE_ASSIGN_OUT_OF_BOUNDS);
+            return create(ErrorMessages.TUPLE_ASSIGN_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forArray() {
-            return create(ARRAY_OUT_OF_BOUNDS);
+            return create(ErrorMessages.ARRAY_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forArrayAssign() {
-            return create(ARRAY_ASSIGN_OUT_OF_BOUNDS);
+            return create(ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS);
+        }
+
+        public static NormalizeIndexNode forPop() {
+            return create(ErrorMessages.POP_INDEX_OUT_OF_RANGE);
         }
 
         public static NormalizeIndexNode forRange() {
-            return create(RANGE_OUT_OF_BOUNDS);
+            return create(ErrorMessages.RANGE_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forBytearray() {
-            return create(BYTEARRAY_OUT_OF_BOUNDS);
+            return create(ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
         }
     }
 
@@ -156,6 +157,8 @@ public abstract class IndexNodes {
         public abstract int execute(long index, int length, String errorMessage);
 
         public abstract int execute(int index, int length, String errorMessage);
+
+        public abstract long executeLong(long index, long length, String errorMessage);
 
         public static NormalizeIndexCustomMessageNode create() {
             return NormalizeIndexWithBoundsCheckNodeGen.create();
@@ -178,8 +181,8 @@ public abstract class IndexNodes {
     abstract static class NormalizeIndexWithBoundsCheckNode extends NormalizeIndexCustomMessageNode {
 
         @Specialization
-        int doInt(int index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+        static int doInt(int index, int length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
             int normalizedIndex = index;
             if (negativeIndexProfile.profile(normalizedIndex < 0)) {
@@ -190,51 +193,63 @@ public abstract class IndexNodes {
         }
 
         @Specialization
-        int doBool(boolean bIndex, int length, String errorMessage,
+        static int doBool(boolean bIndex, int length, String errorMessage,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
             int index = PInt.intValue(bIndex);
             boundsCheckNode.execute(errorMessage, index, length);
             return index;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doLong(long lIndex, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
+        @Specialization(rewriteOn = OverflowException.class)
+        static int doLong(long lIndex, int length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
+                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
             int index = PInt.intValueExact(lIndex);
             return doInt(index, length, errorMessage, negativeIndexProfile, boundsCheckNode);
         }
 
         @Specialization(replaces = "doLong")
         int doLongOvf(long index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doLong(index, length, errorMessage, negativeIndexProfile, boundsCheckNode);
-            } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError();
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doPInt(PInt index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
+        @Specialization(rewriteOn = OverflowException.class)
+        static int doPInt(PInt index, int length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
+                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
             int idx = index.intValueExact();
             return doInt(idx, length, errorMessage, negativeIndexProfile, boundsCheckNode);
         }
 
         @Specialization(replaces = "doPInt")
         int doPIntOvf(PInt index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doPInt(index, length, errorMessage, negativeIndexProfile, boundsCheckNode);
-            } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError();
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
+        }
+
+        @Specialization
+        static long doLongLong(long lIndex, long length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
+                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
+            long normalizedIndex = lIndex;
+            if (negativeIndexProfile.profile(normalizedIndex < 0)) {
+                normalizedIndex += length;
+            }
+            boundsCheckNode.execute(errorMessage, normalizedIndex, length);
+            return normalizedIndex;
         }
 
     }
@@ -243,8 +258,8 @@ public abstract class IndexNodes {
     abstract static class NormalizeIndexWithoutBoundsCheckNode extends NormalizeIndexCustomMessageNode {
 
         @Specialization
-        int doInt(int index, int length, @SuppressWarnings("unused") String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) {
+        static int doInt(int index, int length, @SuppressWarnings("unused") String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile) {
             int idx = index;
             if (negativeIndexProfile.profile(idx < 0)) {
                 idx += length;
@@ -253,45 +268,54 @@ public abstract class IndexNodes {
         }
 
         @Specialization
-        int doBool(boolean index, @SuppressWarnings("unused") int length, @SuppressWarnings("unused") String errorMessage) {
-            int idx = PInt.intValue(index);
-            return idx;
+        static int doBool(boolean index, @SuppressWarnings("unused") int length, @SuppressWarnings("unused") String errorMessage) {
+            return PInt.intValue(index);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doLong(long index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) {
+        @Specialization(rewriteOn = OverflowException.class)
+        static int doLong(long index, int length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile) throws OverflowException {
             int idx = PInt.intValueExact(index);
             return doInt(idx, length, errorMessage, negativeIndexProfile);
         }
 
         @Specialization(replaces = "doLong")
-        int doLongOvf(long index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+        static int doLongOvf(long index, int length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doLong(index, length, errorMessage, negativeIndexProfile);
-            } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError();
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doPInt(PInt index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) {
+        @Specialization(rewriteOn = OverflowException.class)
+        static int doPInt(PInt index, int length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile) throws OverflowException {
             int idx = index.intValueExact();
             return doInt(idx, length, errorMessage, negativeIndexProfile);
         }
 
         @Specialization(replaces = "doPInt")
-        int doPIntOvf(PInt index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+        static int doPIntOvf(PInt index, int length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doPInt(index, length, errorMessage, negativeIndexProfile);
-            } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError();
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
+        }
+
+        @Specialization
+        static long doLongLong(long index, long length, @SuppressWarnings("unused") String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile) {
+            long idx = index;
+            if (negativeIndexProfile.profile(idx < 0)) {
+                idx += length;
+            }
+            return idx;
         }
     }
 
@@ -300,10 +324,21 @@ public abstract class IndexNodes {
 
         public abstract void execute(String errorMessage, int idx, int length);
 
+        public abstract void execute(String errorMessage, long idx, long length);
+
         @Specialization
-        void doBoundsCheck(String errorMessage, int idx, int length,
-                        @Cached("createBinaryProfile()") ConditionProfile outOfBoundsProfile,
-                        @Cached PRaiseNode raiseNode) {
+        static void doBoundsCheck(String errorMessage, int idx, int length,
+                        @Cached ConditionProfile outOfBoundsProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            if (outOfBoundsProfile.profile(idx < 0 || idx >= length)) {
+                throw raiseNode.raise(PythonBuiltinClassType.IndexError, errorMessage);
+            }
+        }
+
+        @Specialization
+        static void doBoundsCheck(String errorMessage, long idx, long length,
+                        @Cached ConditionProfile outOfBoundsProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (outOfBoundsProfile.profile(idx < 0 || idx >= length)) {
                 throw raiseNode.raise(PythonBuiltinClassType.IndexError, errorMessage);
             }

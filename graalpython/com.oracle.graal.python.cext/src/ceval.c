@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,11 +58,25 @@ int PyEval_ThreadsInitialized() {
     return 1;
 }
 
+typedef PyThreadState* (*save_thread_fun_t)();
+UPCALL_TYPED_ID(PyEval_SaveThread, save_thread_fun_t);
 PyThreadState* PyEval_SaveThread() {
-    return NULL;
+    return _jls_PyEval_SaveThread();
 }
 
+typedef void (*restore_thread_fun_t)();
+UPCALL_TYPED_ID(PyEval_RestoreThread, restore_thread_fun_t);
 void PyEval_RestoreThread(PyThreadState *ptr) {
+    return _jls_PyEval_RestoreThread();
+}
+
+UPCALL_ID(PyEval_GetBuiltins);
+PyObject* PyEval_GetBuiltins() {
+	return UPCALL_CEXT_O(_jls_PyEval_GetBuiltins);
+}
+
+int PyEval_MergeCompilerFlags(PyCompilerFlags *cf) {
+    return 0;
 }
 
 UPCALL_ID(PyThread_allocate_lock);
@@ -72,10 +86,69 @@ void* PyThread_allocate_lock() {
 
 UPCALL_ID(PyThread_acquire_lock);
 int PyThread_acquire_lock(PyThread_type_lock aLock, int waitflag) {
-    return UPCALL_CEXT_O(_jls_PyThread_acquire_lock, native_to_java(aLock), waitflag ? -1 : 0);
+    return UPCALL_CEXT_I(_jls_PyThread_acquire_lock, native_to_java(aLock), waitflag ? -1 : 0);
 }
 
 UPCALL_ID(PyThread_release_lock);
 void PyThread_release_lock(PyThread_type_lock aLock) {
     UPCALL_CEXT_O(_jls_PyThread_release_lock, native_to_java(aLock));
+}
+
+
+void PyThread_free_lock(PyThread_type_lock lock) {
+}
+
+PyObject *
+PyEval_EvalCode(PyObject *co, PyObject *globals, PyObject *locals)
+{
+    return PyEval_EvalCodeEx(co,
+                      globals, locals,
+                      (PyObject **)NULL, 0,
+                      (PyObject **)NULL, 0,
+                      (PyObject **)NULL, 0,
+                      NULL, NULL);
+}
+
+PyObject *
+PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
+                  PyObject *const *args, int argcount,
+                  PyObject *const *kws, int kwcount,
+                  PyObject *const *defs, int defcount,
+                  PyObject *kwdefs, PyObject *closure)
+{
+    return _PyEval_EvalCodeWithName(_co, globals, locals,
+                                    args, argcount,
+                                    kws, kws != NULL ? kws + 1 : NULL,
+                                    kwcount, 2,
+                                    defs, defcount,
+                                    kwdefs, closure,
+                                    NULL, NULL);
+}
+
+typedef PyObject *(*eval_code_ex_fun_t)(PyObject *_co, PyObject *globals, PyObject *locals,
+                  PyObject *const *args,
+                  PyObject *const *kwnames,
+                  PyObject *const *kwargs,
+                  PyObject *const *defs,
+                  PyObject *kwdefs, PyObject *closure);
+UPCALL_TYPED_ID(PyEval_EvalCodeEx, eval_code_ex_fun_t);
+PyObject *
+_PyEval_EvalCodeWithName(PyObject *_co, PyObject *globals, PyObject *locals,
+           PyObject *const *args, Py_ssize_t argcount,
+           PyObject *const *kwnames, PyObject *const *kwargs,
+           Py_ssize_t kwcount, int kwstep,
+           PyObject *const *defs, Py_ssize_t defcount,
+           PyObject *kwdefs, PyObject *closure,
+           PyObject *name, PyObject *qualname)
+{
+    if (globals == NULL) {
+        PyErr_SetString(PyExc_SystemError, "PyEval_EvalCodeEx: NULL globals");
+        return NULL;
+    }
+    /* TODO(fa): do not ignore 'name' and 'qualname' */
+    return _jls_PyEval_EvalCodeEx(native_to_java(_co), native_to_java(globals), native_to_java(locals != NULL ? locals : Py_None),
+                                  polyglot_from_PyObjectPtr_array(args, argcount),
+                                  polyglot_from_PyObjectPtr_array(kwnames, kwcount), polyglot_from_PyObjectPtr_array(kwargs, kwcount),
+                                  polyglot_from_PyObjectPtr_array(defs, defcount),
+                                  native_to_java(kwdefs), native_to_java(closure));
 }

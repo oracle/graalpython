@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,11 @@ def test_monotonic():
     times = [time.monotonic() for _ in range(100)]
     for t1, t2 in zip(times[:-1], times[1:]):
         assert t1 <= t2
+
+class ClockInfoTests(unittest.TestCase):
+    def test_get_clock_info(self):
+        self.assertRaises(TypeError, time.get_clock_info, 1)
+        self.assertRaises(ValueError, time.get_clock_info, 'bogus')
 
 class StructTimeTests(unittest.TestCase):
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,7 +30,7 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 /**
  * An sequence store cannot meet its target's storage type.
  */
-public class SequenceStoreException extends ControlFlowException {
+public final class SequenceStoreException extends ControlFlowException {
 
     private static final long serialVersionUID = -2938582159978230604L;
 

@@ -209,6 +209,7 @@ class CommonTest(unittest.TestCase):
         a = self.type2test([0,1,2,3,4])
         self.assertEqual(a[ -pow(2,128): 3 ], self.type2test([0,1,2]))
         self.assertEqual(a[ 3: pow(2,145) ], self.type2test([3,4]))
+        self.assertEqual(a[3::sys.maxsize], self.type2test([3]))
 
     def test_contains(self):
         u = self.type2test([0, 1, 2])
@@ -319,6 +320,7 @@ class CommonTest(unittest.TestCase):
             self.assertEqual(self.type2test(s)*(-4), self.type2test([]))
             self.assertEqual(id(s), id(s*1))
 
+    @support.impl_detail("timeout", graalvm=False)
     def test_bigrepeat(self):
         if sys.maxsize <= 2147483647:
             x = self.type2test([0])
@@ -411,6 +413,7 @@ class CommonTest(unittest.TestCase):
             self.assertEqual(lst2, lst)
             self.assertNotEqual(id(lst2), id(lst))
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_free_after_iterating(self):
         support.check_free_after_iterating(self, iter, self.type2test)
         support.check_free_after_iterating(self, reversed, self.type2test)

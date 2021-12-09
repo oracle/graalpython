@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,14 +43,34 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS, offsetof(PyLongObject, ob_digit));
+PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS, offsetof(PyLongObject, ob_digit), sizeof(PyObject *));
 
 PyObject * _PyLong_Zero;
 PyObject * _PyLong_One;
 
-UPCALL_ID(PyLong_AsPrimitive);
+/* 
+ * There are 4 different modes for 'PyLong_AsPrimitive:
+ * - MODE_COERCE_UNSIGNED
+ *     Will coerce the object to a Python integer and returns it as unsigned primitive.
+ * - MODE_COERCE_SIGNED 1
+ *     Will coerce the object to a Python integer and returns it as signed primitive.
+ * - MODE_PINT_UNSIGNED 2
+ *     Requires the object to be a Python integer and returns it as unsigned primitive.
+ * - MODE_PINT_SIGNED 3
+ *     Requires the object to be a Python integer and returns it as signed primitive.
+ * - MODE_COERCE_MASK 4
+ *     Will coerce the object to a Python integer and does a lossy cast to an unsigned primitive.
+ */
+#define MODE_COERCE_UNSIGNED 0
+#define MODE_COERCE_SIGNED 1
+#define MODE_PINT_UNSIGNED 2
+#define MODE_PINT_SIGNED 3
+#define MODE_COERCE_MASK 4
+
+typedef uint64_t (*as_primitive_t)(PyObject*, int32_t, size_t);
+UPCALL_TYPED_ID(PyLong_AsPrimitive, as_primitive_t);
 long PyLong_AsLong(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long));
+    return (long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
 }
 
 long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
@@ -58,13 +78,17 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
         PyErr_BadInternalCall();
         return -1;
     }
-    long result = UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long));
+    long result = _jls_PyLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
     *overflow = result == -1L && PyErr_Occurred() != NULL;
     return result;
 }
 
 long long PyLong_AsLongLong(PyObject *obj) {
-    return as_long_long(obj);
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return -1;
+    }
+    return (long long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
 }
 
 long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
@@ -74,16 +98,37 @@ long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
 }
 
 unsigned long long PyLong_AsUnsignedLongLong(PyObject *obj) {
-    return as_unsigned_long_long(obj);
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long long) -1;
+    }
+    return (unsigned long long) _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long long));
+}
+
+unsigned long long PyLong_AsUnsignedLongLongMask(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long long) -1;
+    }
+    return (unsigned long long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long long));
 }
 
 unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
     if (obj == NULL) {
         PyErr_BadInternalCall();
-        return (unsigned long)-1;
+        return (unsigned long) -1;
     }
-    return (unsigned long) UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 0, sizeof(unsigned long));
+    return (unsigned long) _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long));
 }
+
+unsigned long PyLong_AsUnsignedLongMask(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long) -1;
+    }
+    return (unsigned long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long));
+}
+
 PyObject * PyLong_FromSsize_t(Py_ssize_t n) {
 	return PyLong_FromLongLong(n);
 }
@@ -94,16 +139,21 @@ PyObject * PyLong_FromDouble(double n) {
 }
 
 Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(Py_ssize_t));
+    return _jls_PyLong_AsPrimitive(obj, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
 }
 
-UPCALL_ID(PyLong_FromLongLong);
+size_t PyLong_AsSize_t(PyObject *obj) {
+    return _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(size_t));
+}
+
+typedef PyObject* (*from_long_fun_t)(int64_t, int32_t);
+UPCALL_TYPED_ID(PyLong_FromLongLong, from_long_fun_t);
 PyObject * PyLong_FromLong(long n)  {
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 1);
+    return _jls_PyLong_FromLongLong(n, 1);
 }
 
 PyObject * PyLong_FromLongLong(long long n)  {
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 1);
+    return _jls_PyLong_FromLongLong(n, 1);
 }
 
 PyObject * PyLong_FromUnsignedLong(unsigned long n) {
@@ -111,12 +161,14 @@ PyObject * PyLong_FromUnsignedLong(unsigned long n) {
 }
 
 PyObject * PyLong_FromUnsignedLongLong(unsigned long long n) {
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 0);
+    return _jls_PyLong_FromLongLong(n, 0);
 }
 
+typedef PyObject* (*fromVoidPtr_fun_t)(void*);
+UPCALL_TYPED_ID(PyLong_FromVoidPtr, fromVoidPtr_fun_t);
 PyObject * PyLong_FromVoidPtr(void *p) {
-	// directly do the upcall to avoid a cast to primitive
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, p, 0);
+	// directly do the upcall to avoid a cast to primitive and reference counting
+    return _jls_PyLong_FromVoidPtr(p);
 }
 
 UPCALL_ID(PyLong_AsVoidPtr);
@@ -229,3 +281,149 @@ unsigned char _PyLong_DigitValue[256] = {
     37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
     37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
 };
+
+
+// taken from CPython "Objects/longobject.c"
+int _PyLong_AsByteArray(PyLongObject* v, unsigned char* bytes, size_t n, int little_endian, int is_signed) {
+    Py_ssize_t i;               /* index into v->ob_digit */
+    Py_ssize_t ndigits;         /* |v->ob_size| */
+    twodigits accum;            /* sliding register */
+    unsigned int accumbits;     /* # bits in accum */
+    int do_twos_comp;           /* store 2's-comp?  is_signed and v < 0 */
+    digit carry;                /* for computing 2's-comp */
+    size_t j;                   /* # bytes filled */
+    unsigned char* p;           /* pointer to next byte in bytes */
+    int pincr;                  /* direction to move p */
+
+    assert(v != NULL && PyLong_Check(v));
+
+    if (Py_SIZE(v) < 0) {
+        ndigits = -(Py_SIZE(v));
+        if (!is_signed) {
+            PyErr_SetString(PyExc_OverflowError,
+                            "can't convert negative int to unsigned");
+            return -1;
+        }
+        do_twos_comp = 1;
+    }
+    else {
+        ndigits = Py_SIZE(v);
+        do_twos_comp = 0;
+    }
+
+    if (little_endian) {
+        p = bytes;
+        pincr = 1;
+    }
+    else {
+        p = bytes + n - 1;
+        pincr = -1;
+    }
+
+    /* Copy over all the Python digits.
+       It's crucial that every Python digit except for the MSD contribute
+       exactly PyLong_SHIFT bits to the total, so first assert that the int is
+       normalized. */
+    assert(ndigits == 0 || v->ob_digit[ndigits - 1] != 0);
+    j = 0;
+    accum = 0;
+    accumbits = 0;
+    carry = do_twos_comp ? 1 : 0;
+    for (i = 0; i < ndigits; ++i) {
+        digit thisdigit = v->ob_digit[i];
+        if (do_twos_comp) {
+            thisdigit = (thisdigit ^ PyLong_MASK) + carry;
+            carry = thisdigit >> PyLong_SHIFT;
+            thisdigit &= PyLong_MASK;
+        }
+        /* Because we're going LSB to MSB, thisdigit is more
+           significant than what's already in accum, so needs to be
+           prepended to accum. */
+        accum |= (twodigits)thisdigit << accumbits;
+
+        /* The most-significant digit may be (probably is) at least
+           partly empty. */
+        if (i == ndigits - 1) {
+            /* Count # of sign bits -- they needn't be stored,
+             * although for signed conversion we need later to
+             * make sure at least one sign bit gets stored. */
+            digit s = do_twos_comp ? thisdigit ^ PyLong_MASK : thisdigit;
+            while (s != 0) {
+                s >>= 1;
+                accumbits++;
+            }
+        }
+        else
+            accumbits += PyLong_SHIFT;
+
+        /* Store as many bytes as possible. */
+        while (accumbits >= 8) {
+            if (j >= n)
+                goto Overflow;
+            ++j;
+            *p = (unsigned char)(accum & 0xff);
+            p += pincr;
+            accumbits -= 8;
+            accum >>= 8;
+        }
+    }
+
+    /* Store the straggler (if any). */
+    assert(accumbits < 8);
+    assert(carry == 0);  /* else do_twos_comp and *every* digit was 0 */
+    if (accumbits > 0) {
+        if (j >= n)
+            goto Overflow;
+        ++j;
+        if (do_twos_comp) {
+            /* Fill leading bits of the byte with sign bits
+               (appropriately pretending that the int had an
+               infinite supply of sign bits). */
+            accum |= (~(twodigits)0) << accumbits;
+        }
+        *p = (unsigned char)(accum & 0xff);
+        p += pincr;
+    }
+    else if (j == n && n > 0 && is_signed) {
+        /* The main loop filled the byte array exactly, so the code
+           just above didn't get to ensure there's a sign bit, and the
+           loop below wouldn't add one either.  Make sure a sign bit
+           exists. */
+        unsigned char msb = *(p - pincr);
+        int sign_bit_set = msb >= 0x80;
+        assert(accumbits == 0);
+        if (sign_bit_set == do_twos_comp)
+            return 0;
+        else
+            goto Overflow;
+    }
+
+    /* Fill remaining bytes with copies of the sign bit. */
+    {
+        unsigned char signbyte = do_twos_comp ? 0xffU : 0U;
+        for ( ; j < n; ++j, p += pincr)
+            *p = signbyte;
+    }
+
+    return 0;
+
+  Overflow:
+    PyErr_SetString(PyExc_OverflowError, "int too big to convert");
+    return -1;
+
+}
+
+// Taken from CPython 3.8.1
+int _PyLong_AsInt(PyObject *obj) {
+    int overflow;
+    long result = PyLong_AsLongAndOverflow(obj, &overflow);
+    if (overflow || result > INT_MAX || result < INT_MIN) {
+        /* XXX: could be cute and give a different
+           message for overflow == -1 */
+        PyErr_SetString(PyExc_OverflowError,
+                        "Python int too large to convert to C int");
+        return -1;
+    }
+    return (int)result;
+}
+

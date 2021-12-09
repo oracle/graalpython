@@ -183,6 +183,18 @@ class TestBasic(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             n in d
 
+    def test_contains_count_stop_crashes(self):
+        class A:
+            def __eq__(self, other):
+                d.clear()
+                return NotImplemented
+        d = deque([A(), A()])
+        with self.assertRaises(RuntimeError):
+            _ = 3 in d
+        d = deque([A(), A()])
+        with self.assertRaises(RuntimeError):
+            _ = d.count(3)
+
     def test_extend(self):
         d = deque('a')
         self.assertRaises(TypeError, d.extend, 1)
@@ -287,6 +299,14 @@ class TestBasic(unittest.TestCase):
                             d.index(element, start, stop)
                     else:
                         self.assertEqual(d.index(element, start, stop), target)
+
+        # Test large start argument
+        d = deque(range(0, 10000, 10))
+        for step in range(100):
+            i = d.index(8500, 700)
+            self.assertEqual(d[i], 8500)
+            # Repeat test with a different internal offset
+            d.rotate()
 
     def test_index_bug_24913(self):
         d = deque('A' * 3)
@@ -876,6 +896,7 @@ class TestSubclass(unittest.TestCase):
             for d in DequeWithBadIter('abc'), DequeWithBadIter('abc', 2):
                 self.assertRaises(TypeError, pickle.dumps, d, proto)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_weakref(self):
         d = deque('gallahad')
         p = weakref.proxy(d)

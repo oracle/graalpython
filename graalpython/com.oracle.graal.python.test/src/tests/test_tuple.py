@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -21,6 +21,9 @@ class TupleTest(seq_tests.CommonTest):
         self.assertEqual(tuple([0, 1, 2, 3]), (0, 1, 2, 3))
         self.assertEqual(tuple(''), ())
         self.assertEqual(tuple('spam'), ('s', 'p', 'a', 'm'))
+
+    def test_literal(self):
+        self.assertEqual((1,2,3), (*[1,2,3],))
 
     def test_truth(self):
         super().test_truth()
@@ -219,7 +222,7 @@ class TupleTest(seq_tests.CommonTest):
                 return 1.0;
 
         raiseTypeError(t, IndexF())
-        
+
         t = (NotImplemented,)
         self.assertEqual(t[0], NotImplemented)
 
@@ -233,12 +236,10 @@ class TupleTest(seq_tests.CommonTest):
         t = (2,)
         tt = tuple((2,))
         self.assertEqual(t,tt)
-        self.assertFalse(t is tt)
 
         ttt = tuple(t)
         self.assertEqual(t,ttt)
         self.assertEqual(tt,ttt)
-        self.assertFalse(ttt is tt)
         self.assertTrue(ttt is t)
 
         m = MyTuple((2,))
@@ -276,7 +277,7 @@ class TupleTest(seq_tests.CommonTest):
         self.assertTrue(maketuple(b) is maketuple(b))
         self.assertTrue(tuple(b) is b)
         self.assertFalse(tuple(a) is a)
-        
+
 
 class TupleCompareTest(CompareTest):
 
@@ -382,3 +383,13 @@ class TupleCompareTest(CompareTest):
 def test_same_id():
     empty_ids = set([id(tuple()) for i in range(100)])
     assert len(empty_ids) == 1
+
+
+def test_hashing():
+    assert isinstance(hash((1,2)), int)
+    try:
+        hash(([],))
+    except TypeError as e:
+        assert "unhashable type: 'list'" in str(e)
+    else:
+        assert False

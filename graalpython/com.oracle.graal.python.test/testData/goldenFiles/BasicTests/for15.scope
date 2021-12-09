@@ -1,0 +1,10 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: formatyear
+        Kind: Function
+        FrameDescriptor: [<>temp2, i, <>temp3, row, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty

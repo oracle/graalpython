@@ -1,0 +1,8 @@
+ModuleRootNode Name: <module 'twoStrings01'> SourceSection: [0,12]`'123'  '456'`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: `123456`
+  InnerRootNode SourceSection: [0,12]`'123'  '456'`
+    StringLiteralNode SourceSection: [0,12]`'123'  '456'`

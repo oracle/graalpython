@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,18 +26,16 @@
 package com.oracle.graal.python.builtins.objects.complex;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PComplex extends PythonBuiltinObject {
-    /* Prime multiplier used in string and various other hashes in CPython. */
-    public static final int IMAG_MULTIPLIER = 1000003; /* 0xf4243 */
 
     private final double real;
     private final double imag;
 
-    public PComplex(LazyPythonClass clazz, double real, double imaginary) {
-        super(clazz);
+    public PComplex(Object clazz, Shape instanceShape, double real, double imaginary) {
+        super(clazz, instanceShape);
         this.real = real;
         this.imag = imaginary;
     }
@@ -92,14 +90,14 @@ public final class PComplex extends PythonBuiltinObject {
     @TruffleBoundary
     public String toString() {
         if (Double.compare(real, 0.0) == 0) {
-            return toString(imag) + "j";
+            return Double.compare(imag, 0.0) >= 0 ? toString(imag) + "j" : String.format("-%sj", toString(-imag));
         } else {
             String realString = toString(real);
             if (real == 0.0) {
                 // special case where real is actually -0.0
                 realString = "-0";
             }
-            if (imag >= 0) {
+            if (Double.compare(imag, 0.0) >= 0) {
                 return String.format("(%s+%sj)", realString, toString(imag));
             } else {
                 return String.format("(%s-%sj)", realString, toString(-imag));
@@ -111,6 +109,14 @@ public final class PComplex extends PythonBuiltinObject {
         if (value == Math.floor(value) && value <= Long.MAX_VALUE && value >= Long.MIN_VALUE) {
             return Long.toString((long) value);
         } else {
+            if (Double.isInfinite(value)) {
+                if (Double.NEGATIVE_INFINITY == value) {
+                    return "-inf";
+                }
+                return "inf";
+            } else if (Double.isNaN(value)) {
+                return "nan";
+            }
             return Double.toString(value);
         }
     }

@@ -1,6 +1,6 @@
-test_future1
-test_future2
-test_future3
-test_multiple_features
-test_parserhack
-test_unicode_literals_exec
+*graalpython.lib-python.3.test.test_future.FutureTest.test_future1
+*graalpython.lib-python.3.test.test_future.FutureTest.test_future2
+*graalpython.lib-python.3.test.test_future.FutureTest.test_future3
+*graalpython.lib-python.3.test.test_future.FutureTest.test_multiple_features
+*graalpython.lib-python.3.test.test_future.FutureTest.test_parserhack
+*graalpython.lib-python.3.test.test_future.FutureTest.test_unicode_literals_exec

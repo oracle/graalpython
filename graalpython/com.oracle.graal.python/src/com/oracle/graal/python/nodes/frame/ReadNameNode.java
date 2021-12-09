@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,12 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -53,10 +55,13 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class ReadNameNode extends ExpressionNode implements ReadNode, AccessNameNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNode;
-    protected final IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
+    @Child protected IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
     protected final String attributeId;
 
     protected ReadNameNode(String attributeId) {
@@ -80,11 +85,19 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
         return getReadGlobalNode().execute(frame);
     }
 
+    protected static HashingStorage getStorage(VirtualFrame frame) {
+        return ((PDict) PArguments.getSpecialArgument(frame)).getDictStorage();
+    }
+
+    @Specialization(guards = "!hasLocals(frame)")
+    protected Object readFromLocals(VirtualFrame frame) {
+        return getReadGlobalNode().execute(frame);
+    }
+
     @Specialization(guards = "hasLocalsDict(frame)")
     protected Object readFromLocalsDict(VirtualFrame frame,
-                    @Cached("create()") HashingStorageNodes.GetItemNode getItem) {
-        PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
-        Object result = getItem.execute(frame, frameLocals.getDictStorage(), attributeId);
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+        Object result = hlib.getItem(getStorage(frame), attributeId);
         if (result == null) {
             return getReadGlobalNode().execute(frame);
         } else {
@@ -94,7 +107,7 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
 
     @Specialization(guards = "hasLocals(frame)", replaces = "readFromLocalsDict")
     protected Object readFromLocals(VirtualFrame frame,
-                    @Cached("create()") GetItemNode getItem) {
+                    @Cached GetItemNode getItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         try {
             return getItem.execute(frame, frameLocals, attributeId);
@@ -103,16 +116,21 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
         }
     }
 
-    @Specialization(guards = "!hasLocals(frame)")
-    protected Object readFromLocals(VirtualFrame frame) {
-        return getReadGlobalNode().execute(frame);
-    }
-
     public StatementNode makeWriteNode(ExpressionNode rhs) {
         return WriteNameNode.create(attributeId, rhs);
     }
 
     public String getAttributeId() {
         return attributeId;
+    }
+
+    @Override
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return StandardTags.ReadVariableTag.class == tag || super.hasTag(tag);
+    }
+
+    @Override
+    public Object getNodeObject() {
+        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, attributeId);
     }
 }

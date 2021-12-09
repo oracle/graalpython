@@ -5,7 +5,7 @@ import os, glob, time, shutil
 import unicodedata
 
 import unittest
-from test.support import (run_unittest, rmtree, change_cwd,
+from test.support import (run_unittest, rmtree, change_cwd, impl_detail,
     TESTFN_ENCODING, TESTFN_UNICODE, TESTFN_UNENCODABLE, create_empty_file)
 
 if not os.path.supports_unicode_filenames:
@@ -40,7 +40,7 @@ class TestUnicodeFiles(unittest.TestCase):
         self._do_copyish(filename, filename)
         # Filename should appear in glob output
         self.assertTrue(
-            os.path.abspath(filename)==os.path.abspath(glob.glob(filename)[0]))
+            os.path.abspath(filename)==os.path.abspath(glob.glob(glob.escape(filename))[0]))
         # basename should appear in listdir.
         path, base = os.path.split(os.path.abspath(filename))
         file_list = os.listdir(path)
@@ -117,11 +117,13 @@ class TestUnicodeFiles(unittest.TestCase):
 
     # The 'test' functions are unittest entry points, and simply call our
     # _test functions with each of the filename combinations we wish to test
+    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
     def test_single_files(self):
         self._test_single(TESTFN_UNICODE)
         if TESTFN_UNENCODABLE is not None:
             self._test_single(TESTFN_UNENCODABLE)
 
+    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
     def test_directories(self):
         # For all 'equivalent' combinations:
         #  Make dir with encoded, chdir with unicode, checkdir with encoded

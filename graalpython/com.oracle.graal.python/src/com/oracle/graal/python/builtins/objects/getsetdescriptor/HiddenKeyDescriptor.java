@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.object.HiddenKey;
 
 public final class HiddenKeyDescriptor extends PythonBuiltinObject {
     private final HiddenKey key;
-    private final LazyPythonClass type;
+    private final Object type;
 
-    public HiddenKeyDescriptor(LazyPythonClass cls, HiddenKey key, LazyPythonClass type) {
-        super(cls);
+    public HiddenKeyDescriptor(PythonLanguage lang, HiddenKey key, Object type) {
+        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang));
         this.key = key;
         this.type = type;
     }
@@ -58,7 +59,7 @@ public final class HiddenKeyDescriptor extends PythonBuiltinObject {
         return key;
     }
 
-    public LazyPythonClass getType() {
+    public Object getType() {
         return type;
     }
 }

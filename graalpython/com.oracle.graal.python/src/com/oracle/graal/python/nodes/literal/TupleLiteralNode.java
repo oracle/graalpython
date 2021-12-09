@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,28 +25,31 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public final class TupleLiteralNode extends LiteralNode {
+public final class TupleLiteralNode extends SequenceLiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-    @Children private final ExpressionNode[] values;
-    protected final boolean hasStarredExpressions;
-
-    public ExpressionNode[] getValues() {
-        return values;
-    }
+    @Child private SequenceStorageNodes.AppendNode appendNode;
+    private final boolean hasStarredExpressions;
 
     public TupleLiteralNode(ExpressionNode[] values) {
-        this.values = values;
+        super(values);
         for (PNode v : values) {
             if (v instanceof StarredExpressionNode) {
                 hasStarredExpressions = true;
@@ -54,6 +57,15 @@ public final class TupleLiteralNode extends LiteralNode {
             }
         }
         hasStarredExpressions = false;
+    }
+
+    public static TupleLiteralNode create(ExpressionNode... values) {
+        return new TupleLiteralNode(values);
+    }
+
+    @Override
+    protected int getCapacityEstimate() {
+        return values.length;
     }
 
     @Override
@@ -66,51 +78,59 @@ public final class TupleLiteralNode extends LiteralNode {
     }
 
     @ExplodeLoop
-    private Object expandingTuple(VirtualFrame frame) {
-        List<Object> elements = makeList();
+    private PTuple expandingTuple(VirtualFrame frame) {
+        SequenceStorage storage;
+        // we will usually have more than 'values.length' elements
+        switch (type) {
+            case Uninitialized:
+            case Empty:
+                storage = EmptySequenceStorage.INSTANCE;
+                break;
+            case Boolean:
+                storage = new BoolSequenceStorage(values.length);
+                break;
+            case Byte:
+                storage = new ByteSequenceStorage(values.length);
+                break;
+            case Double:
+                storage = new DoubleSequenceStorage(values.length);
+                break;
+            case Int:
+                storage = new IntSequenceStorage(values.length);
+                break;
+            case Long:
+                storage = new LongSequenceStorage(values.length);
+                break;
+            default:
+                storage = new ObjectSequenceStorage(values.length);
+                break;
+        }
         for (ExpressionNode n : values) {
-            if (n instanceof StarredExpressionNode) {
-                Object[] array = ((StarredExpressionNode) n).getArray(frame);
-                addAllElements(elements, array);
+            Object element = n.execute(frame);
+            if (StarredExpressionNode.isStarredExpression(n)) {
+                storage = ((StarredExpressionNode) n.unwrap()).appendToStorage(frame, storage, element);
             } else {
-                Object element = n.execute(frame);
-                addElement(elements, element);
+                storage = ensureAppendNode().execute(storage, element, ListGeneralizationNode.SUPPLIER);
             }
         }
-        return factory.createTuple(listToArray(elements));
-    }
-
-    @TruffleBoundary
-    private static Object[] listToArray(List<Object> elements) {
-        return elements.toArray();
-    }
-
-    @TruffleBoundary
-    private static void addElement(List<Object> elements, Object element) {
-        elements.add(element);
-    }
-
-    @TruffleBoundary
-    private static void addAllElements(List<Object> elements, Object[] array) {
-        elements.addAll(asList(array));
-    }
-
-    @TruffleBoundary
-    private static List<Object> asList(Object[] results) {
-        return Arrays.asList(results);
-    }
-
-    @TruffleBoundary
-    private ArrayList<Object> makeList() {
-        return new ArrayList<>(values.length);
+        if (type != storage.getElementType()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            type = storage.getElementType();
+        }
+        return factory.createTuple(storage);
     }
 
     @ExplodeLoop
-    private Object directTuple(VirtualFrame frame) {
-        final Object[] elements = new Object[values.length];
-        for (int i = 0; i < values.length; i++) {
-            elements[i] = values[i].execute(frame);
+    private PTuple directTuple(VirtualFrame frame) {
+        SequenceStorage storage = createSequenceStorageForDirect(frame);
+        return factory.createTuple(storage);
+    }
+
+    private SequenceStorageNodes.AppendNode ensureAppendNode() {
+        if (appendNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            appendNode = insert(SequenceStorageNodes.AppendNode.create());
         }
-        return factory.createTuple(elements);
+        return appendNode;
     }
 }

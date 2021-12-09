@@ -437,6 +437,7 @@ class TestContext(unittest.TestCase):
 
         f()
 
+    @support.impl_detail("relies on reference counting", graalvm=False)
     def test_3611(self):
         # A re-raised exception in a __del__ caused the __context__
         # to be cleared
@@ -459,8 +460,11 @@ class TestContext(unittest.TestCase):
                 self.assertNotEqual(e.__context__, None)
                 self.assertIsInstance(e.__context__, AttributeError)
 
-        with support.captured_output("stderr"):
+        with support.catch_unraisable_exception() as cm:
             f()
+
+            self.assertEqual(ZeroDivisionError, cm.unraisable.exc_type)
+
 
 class TestRemovedFunctionality(unittest.TestCase):
     def test_tuples(self):

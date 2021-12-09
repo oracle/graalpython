@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,7 @@ import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.debug.Breakpoint;
+import com.oracle.truffle.api.debug.DebugScope;
 import com.oracle.truffle.api.debug.DebugStackFrame;
 import com.oracle.truffle.api.debug.DebugValue;
 import com.oracle.truffle.api.debug.DebuggerSession;
@@ -201,13 +202,13 @@ public class PythonDebugTest {
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
                 assertEquals(5, frame.getSourceSection().getStartLine());
-                assertEquals("3", frame.eval("a + b").as(String.class));
+                assertEquals("3", frame.eval("a + b").toDisplayString());
                 event.prepareContinue();
             });
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
                 assertEquals(7, frame.getSourceSection().getStartLine());
-                assertEquals("6", frame.eval("bar() * 2").as(String.class));
+                assertEquals("6", frame.eval("bar() * 2").toDisplayString());
                 event.prepareContinue();
             });
             assertEquals("10", tester.expectDone());
@@ -237,8 +238,8 @@ public class PythonDebugTest {
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
                 assertEquals(9, frame.getSourceSection().getStartLine());
-                assertEquals("10", frame.eval("sum").as(String.class));
-                assertEquals("16", frame.eval("prod(4)").as(String.class));
+                assertEquals("10", frame.eval("sum").toDisplayString());
+                assertEquals("16", frame.eval("prod(4)").toDisplayString());
                 event.prepareContinue();
             });
             assertEquals("45", tester.expectDone());
@@ -252,7 +253,7 @@ public class PythonDebugTest {
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
                 assertEquals(9, frame.getSourceSection().getStartLine());
-                assertEquals("4", frame.eval("i").as(String.class));
+                assertEquals("4", frame.eval("i").toDisplayString());
                 event.prepareContinue();
             });
             assertEquals("45", tester.expectDone());
@@ -275,7 +276,7 @@ public class PythonDebugTest {
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
                 assertEquals(3, frame.getSourceSection().getStartLine());
-                assertEquals("10", frame.eval("sum(values)").as(String.class));
+                assertEquals("10", frame.eval("sum(values)").toDisplayString());
                 event.prepareContinue();
             });
             assertEquals("45", tester.expectDone());
@@ -336,6 +337,7 @@ public class PythonDebugTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testGettersSetters() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
                         "class GetterOnly:\n" +
@@ -370,7 +372,7 @@ public class PythonDebugTest {
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
                 assertEquals(1, frame.getSourceSection().getStartLine());
-                event.prepareStepOver(7);
+                event.prepareStepOver(2);
             });
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
@@ -384,23 +386,67 @@ public class PythonDebugTest {
                 assertTrue(x.hasWriteSideEffects());
                 assertTrue(x.isReadable());
                 assertTrue(x.isWritable());
-                DebugValue nx = p.getProperty("__nx");
-                assertEquals(0, nx.as(Number.class).intValue());
-                assertEquals("None", x.as(String.class));
-                assertEquals(1, nx.as(Number.class).intValue());
-                x.set(42);
-                assertEquals(2, nx.as(Number.class).intValue());
-                assertEquals("42", x.as(String.class));
-                assertEquals(3, nx.as(Number.class).intValue());
+                assertEquals(0, p.getProperty("_P__nx").asInt());
+                assertEquals("None", x.toDisplayString());
+                assertEquals(1, p.getProperty("_P__nx").asInt());
+                x.set(x.getSession().createPrimitiveValue(42, null));
+                assertEquals(2, p.getProperty("_P__nx").asInt());
+                assertEquals("42", x.toDisplayString());
+                assertEquals(3, p.getProperty("_P__nx").asInt());
                 DebugValue y = p.getProperty("y");
                 assertTrue(y.hasReadSideEffects());
                 assertFalse(y.hasWriteSideEffects());
                 assertTrue(y.isReadable());
                 assertTrue(y.isWritable());
-                DebugValue ny = p.getProperty("__ny");
-                assertEquals(0, ny.as(Number.class).intValue());
-                y.set(24);
-                assertEquals("24", y.as(String.class));
+                DebugValue ny = p.getProperty("_P__ny");
+                assertEquals(0, ny.asInt());
+                y.set(y.getSession().createPrimitiveValue(24, null));
+                assertEquals("24", y.toDisplayString());
+            });
+        }
+    }
+
+    @Test
+    public void testInspectJavaArray() throws Throwable {
+        final Source source = Source.newBuilder("python", "" +
+                        "import java\n" +
+                        "a_int = java.type('int[]')(3)\n" +
+                        "a_long = java.type('long[]')(3)\n" +
+                        "a_short = java.type('short[]')(3)\n" +
+                        "a_byte = java.type('byte[]')(3)\n" +
+                        "a_float = java.type('float[]')(3)\n" +
+                        "a_double = java.type('double[]')(3)\n" +
+                        "a_char = java.type('char[]')(3)\n" +
+                        "print()\n" +
+                        "\n", "testInspectJavaArray.py").buildLiteral();
+        try (DebuggerSession session = tester.startSession()) {
+            session.install(Breakpoint.newBuilder(DebuggerTester.getSourceImpl(source)).lineIs(9).build());
+            tester.startEval(source);
+            expectSuspended((SuspendedEvent event) -> {
+                DebugScope globalScope = session.getTopScope("python");
+                DebugValue intValue = globalScope.getDeclaredValue("a_int").getArray().get(0);
+                // Truffle will now use our language to get a Python view on the primitive object
+                // for inspection
+                intValue.getMetaObject();
+                assertEquals("0", intValue.toDisplayString());
+                DebugValue longValue = globalScope.getDeclaredValue("a_long").getArray().get(0);
+                longValue.getMetaObject();
+                assertEquals("0", longValue.toDisplayString());
+                DebugValue shortValue = globalScope.getDeclaredValue("a_short").getArray().get(0);
+                shortValue.getMetaObject();
+                assertEquals("0", shortValue.toDisplayString());
+                DebugValue byteValue = globalScope.getDeclaredValue("a_byte").getArray().get(0);
+                byteValue.getMetaObject();
+                assertEquals("0", byteValue.toDisplayString());
+                DebugValue floatValue = globalScope.getDeclaredValue("a_float").getArray().get(0);
+                floatValue.getMetaObject();
+                assertEquals("0.0", floatValue.toDisplayString());
+                DebugValue doubleValue = globalScope.getDeclaredValue("a_double").getArray().get(0);
+                doubleValue.getMetaObject();
+                assertEquals("0.0", doubleValue.toDisplayString());
+                DebugValue charValue = globalScope.getDeclaredValue("a_char").getArray().get(0);
+                charValue.getMetaObject();
+                assertEquals("'\\x00'", charValue.toDisplayString());
             });
         }
     }
@@ -408,7 +454,7 @@ public class PythonDebugTest {
     @Test
     public void testSourceFileURI() throws Throwable {
         if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-            // on the mac slaves we run with symlinked directories and such and it's annoying to
+            // on the mac machines we run with symlinked directories and such and it's annoying to
             // cater for that
             return;
         }
@@ -480,7 +526,7 @@ public class PythonDebugTest {
             String expectedValue = expectedFrame[i + 1];
             DebugValue value = valMap.get(expectedIdentifier);
             assertNotNull(expectedIdentifier + " not found", value);
-            assertEquals(expectedValue, value.as(String.class));
+            assertEquals(expectedValue, value.toDisplayString());
         }
     }
 

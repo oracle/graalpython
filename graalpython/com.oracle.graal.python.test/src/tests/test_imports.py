@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -135,21 +135,41 @@ def test_recursive_import_from():
         import package.recpkg
         assert package.recpkg.context is package.recpkg.reduction.context
 
-
-if sys.implementation.name == "graalpython":
-    def test_imp_cached_imports():
-        import _imp
-
-        finder = _imp.CachedImportFinder
-
-        spec = finder.find_spec("encodings", None)
-        assert spec.submodule_search_locations
-
-        spec = finder.find_spec("encodings.utf_8", None)
-        assert not spec.submodule_search_locations
-
-
 def test_import_package_all() :
     import package1
-    assert hasattr(package1, "moduleX"), "'package1' does not have attribute 'moduleX'"
+    expected_syms = ["moduleX", "lib1_hello", "lib1_world"]
+    cnt = 0
+    for expected_sym in expected_syms:
+        assert hasattr(package1, expected_sym), "'package1' does not have attribute '%s'" % expected_sym
+        cnt += 1
     assert package1.exported.__testname__ == "package1.exported", "expected 'test_import_package_all' but was '%s'" % str(package1.exported.__testname__)
+
+def test_circular_import():
+    if sys.version_info.minor >= 8:
+        # the message was chaged in CPython 3.8
+        try:
+            import circularimport.source
+        except AttributeError as ae:
+            assert str(ae) == "partially initialized module 'circularimport.source' has no attribute 'spam' (most likely due to a circular import)"
+        else:
+            assert False
+
+def test_circular_import_valid():
+    from circularimport_valid.mod1 import getvalue
+    assert getvalue() == 5
+
+import time as package25274  #has to be in global space for the next test
+def test_local_property_25274():
+    
+    def mytest():
+        assert len(locals()) == 0
+        import package25274.sub25274
+        assert 'package25274' in locals()
+        assert package25274.top_property == 10
+        assert package25274.sub25274.sub_property == 20
+        
+    mytest()
+    assert hasattr(package25274, 'tzname')
+
+
+    

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+    
 def some_fun(self, key):
     return "hello from %s" % key
 
@@ -52,3 +60,19 @@ def test_callCustomAttr():
 def test_getattr():
     assert getattr(CustomAttr(), "uff") == "hello from uff"
     
+def test_key_is_string():
+    assert_raises(TypeError, type.__getattribute__, list, type)
+    assert_raises(TypeError, object.__getattribute__, list, type)
+    
+    import types
+    class M(types.ModuleType): 
+        def m(self):
+            pass
+    
+    assert_raises(TypeError, types.ModuleType.__getattribute__, M('a'), type)
+    assert_raises(TypeError, types.MethodType.__getattribute__, M('a').m, type)
+    
+    
+    assert_raises(TypeError, types.ModuleType.__getattribute__, list, type)
+    assert_raises(TypeError, types.MethodType.__getattribute__, list, type)
+

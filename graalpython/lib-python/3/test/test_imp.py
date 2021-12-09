@@ -332,6 +332,17 @@ class ImportTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             create_dynamic(BadSpec())
 
+    def test_issue_35321(self):
+        # Both _frozen_importlib and _frozen_importlib_external
+        # should have a spec origin of "frozen" and
+        # no need to clean up imports in this case.
+
+        import _frozen_importlib_external
+        self.assertEqual(_frozen_importlib_external.__spec__.origin, "frozen")
+
+        import _frozen_importlib
+        self.assertEqual(_frozen_importlib.__spec__.origin, "frozen")
+
     def test_source_hash(self):
         self.assertEqual(_imp.source_hash(42, b'hi'), b'\xc6\xe7Z\r\x03:}\xab')
         self.assertEqual(_imp.source_hash(43, b'hi'), b'\x85\x9765\xf8\x9a\x8b9')
@@ -432,6 +443,7 @@ class PEP3147Tests(unittest.TestCase):
 
 
 class NullImporterTests(unittest.TestCase):
+    @support.impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
     @unittest.skipIf(support.TESTFN_UNENCODABLE is None,
                      "Need an undecodeable filename")
     def test_unencodeable(self):

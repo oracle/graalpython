@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,30 +40,32 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.FinalLocationException;
-import com.oracle.truffle.api.object.IncompatibleLocationException;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 
+/**
+ * Writes attribute directly to the underlying {@link DynamicObject} regardless of whether the
+ * object has dict, also bypasses any other additional logic in
+ * {@link WriteAttributeToDynamicObjectNode}. The only functionality this node provides on top of
+ * {@link DynamicObjectLibrary} is casting of the key to {@code java.lang.String}.
+ */
 @ImportStatic(PythonOptions.class)
-@ReportPolymorphism
 @GenerateUncached
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
 
-    public abstract boolean execute(Object primary, Object key, Object value);
+    public abstract boolean execute(Object primary, HiddenKey key, Object value);
 
     public abstract boolean execute(Object primary, String key, Object value);
+
+    public abstract boolean execute(Object primary, Object key, Object value);
 
     public static WriteAttributeToDynamicObjectNode create() {
         return WriteAttributeToDynamicObjectNodeGen.create();
@@ -73,97 +75,25 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         return WriteAttributeToDynamicObjectNodeGen.getUncached();
     }
 
-    protected static boolean compareKey(Object cachedKey, Object key) {
-        return cachedKey == key;
-    }
-
-    @SuppressWarnings("unused")
-    @Specialization(guards = {
-                    "dynamicObject.getShape() == cachedShape",
-                    "!layoutAssumption.isValid()"
-    })
-    protected boolean updateShapeAndWrite(DynamicObject dynamicObject, Object key, Object value,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("create()") WriteAttributeToDynamicObjectNode nextNode) {
-        dynamicObject.updateShape();
-        return nextNode.execute(dynamicObject, key, value);
-    }
-
-    @SuppressWarnings("unused")
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
-                    guards = {
-                                    "dynamicObject.getShape() == cachedShape",
-                                    "compareKey(cachedKey, key)",
-                                    "loc != null",
-                                    "loc.canSet(value)"
-                    }, //
-                    assumptions = {
-                                    "layoutAssumption"
-
-                    })
-    protected boolean doDirect(DynamicObject dynamicObject, Object key, Object value,
-                    @Cached("key") Object cachedKey,
-                    @Cached("attrKey(cachedKey)") Object attrKey,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc) {
-        try {
-            loc.set(dynamicObject, value);
-        } catch (IncompatibleLocationException | FinalLocationException e) {
-            CompilerDirectives.transferToInterpreter();
-            // cannot happen due to guard
-            throw new RuntimeException("Location.canSet is inconsistent with Location.set");
-        }
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
+    static boolean writeDirect(DynamicObject dynamicObject, String key, Object value,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        dylib.put(dynamicObject, key, value);
         return true;
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
-                    guards = {
-                                    "dynamicObject.getShape() == cachedShape",
-                                    "compareKey(cachedKey, key)",
-                                    "loc == null || !loc.canSet(value)",
-                                    "newLoc.canSet(value)"
-                    }, //
-                    assumptions = {
-                                    "layoutAssumption",
-                                    "newLayoutAssumption"
-                    })
-    protected boolean defineDirect(DynamicObject dynamicObject, Object key, Object value,
-                    @Cached("key") Object cachedKey,
-                    @Cached("attrKey(key)") Object attrKey,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
-                    @Cached("cachedShape.defineProperty(attrKey, value, 0)") Shape newShape,
-                    @Cached("newShape.getValidAssumption()") Assumption newLayoutAssumption,
-                    @Cached("getLocationOrNull(newShape.getProperty(attrKey))") Location newLoc) {
-        try {
-            newLoc.set(dynamicObject, value, cachedShape, newShape);
-        } catch (IncompatibleLocationException e) {
-            CompilerDirectives.transferToInterpreter();
-            // cannot happen due to guard
-            throw new RuntimeException("Location.canSet is inconsistent with Location.set");
-        }
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
+    static boolean writeDirectHidden(DynamicObject dynamicObject, HiddenKey key, Object value,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        dylib.put(dynamicObject, key, value);
         return true;
     }
 
-    @TruffleBoundary
-    @Specialization(guards = {
-                    "dynamicObject.getShape().isValid()"
-    }, replaces = {"doDirect", "defineDirect", "updateShapeAndWrite"})
-    protected static boolean doIndirect(DynamicObject dynamicObject, Object key, Object value) {
-        Object attrKey = attrKey(key);
-        CompilerAsserts.neverPartOfCompilation();
-        dynamicObject.define(attrKey, value);
+    @Specialization(guards = "!isHiddenKey(key)", replaces = "writeDirect", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    static boolean write(DynamicObject dynamicObject, Object key, Object value,
+                    @Cached CastToJavaStringNode castNode,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        dylib.put(dynamicObject, attrKey(key, castNode), value);
         return true;
-    }
-
-    @Specialization(guards = "!dynamicObject.getShape().isValid()")
-    protected static boolean defineDirect2(DynamicObject dynamicObject, Object key, Object value) {
-        CompilerDirectives.transferToInterpreter();
-        dynamicObject.updateShape();
-        return doIndirect(dynamicObject, key, value);
     }
 }

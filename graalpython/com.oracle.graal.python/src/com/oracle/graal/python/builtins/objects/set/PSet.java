@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,23 +26,15 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PSet extends PBaseSet {
 
-    public PSet(LazyPythonClass clazz) {
-        super(clazz);
+    public PSet(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
-    public PSet(LazyPythonClass clazz, HashingStorage storage) {
-        super(clazz, storage);
-    }
-
-    @Override
-    public void setDictStorage(HashingStorage newStorage) {
-        // ignore if storage stays unchanged
-        if (newStorage != getDictStorage()) {
-            throw new RuntimeException("set has fixed storage");
-        }
+    public PSet(Object clazz, Shape instanceShape, HashingStorage store) {
+        super(clazz, instanceShape, store);
     }
 }

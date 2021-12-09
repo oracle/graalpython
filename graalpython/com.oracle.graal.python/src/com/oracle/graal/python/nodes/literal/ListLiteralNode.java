@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,148 +25,131 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import java.lang.reflect.Array;
-
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
-import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-public final class ListLiteralNode extends LiteralNode {
+public final class ListLiteralNode extends SequenceLiteralNode {
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ListLiteralNode.class);
+
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-    @Children protected final ExpressionNode[] values;
+    @Child private SequenceStorageNodes.AppendNode appendNode;
 
-    @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
+    /**
+     * This class serves the purpose of updating the size estimate for the lists constructed here
+     * over time. The estimate is updated slowly, it takes {@link #NUM_DIGITS_POW2} lists to reach a
+     * size one larger than the current estimate to increase the estimate for new lists.
+     */
+    @ValueType
+    private static final class SizeEstimate {
+        private static final int NUM_DIGITS = 3;
+        private static final int NUM_DIGITS_POW2 = 1 << NUM_DIGITS;
+
+        @CompilationFinal private int shiftedStorageSizeEstimate;
+
+        private SizeEstimate(int storageSizeEstimate) {
+            shiftedStorageSizeEstimate = storageSizeEstimate * NUM_DIGITS_POW2;
+        }
+
+        private int estimate() {
+            return shiftedStorageSizeEstimate >> NUM_DIGITS;
+        }
+
+        private int updateFrom(int newSizeEstimate) {
+            shiftedStorageSizeEstimate = shiftedStorageSizeEstimate + newSizeEstimate - estimate();
+            return shiftedStorageSizeEstimate;
+        }
+    }
+
+    private final SizeEstimate initialCapacity;
+    private final boolean hasStarredExpressions;
 
     public ListLiteralNode(ExpressionNode[] values) {
-        this.values = values;
-    }
-
-    public ExpressionNode[] getValues() {
-        return values;
-    }
-
-    @Override
-    @ExplodeLoop
-    public Object execute(VirtualFrame frame) {
-        SequenceStorage storage;
-        if (type == ListStorageType.Uninitialized) {
-            try {
-                Object[] elements = new Object[values.length];
-                for (int i = 0; i < values.length; i++) {
-                    elements[i] = values[i].execute(frame);
-                }
-                storage = SequenceStorageFactory.createStorage(elements);
-                if (storage instanceof IntSequenceStorage) {
-                    type = ListStorageType.Int;
-                } else if (storage instanceof LongSequenceStorage) {
-                    type = ListStorageType.Long;
-                } else if (storage instanceof DoubleSequenceStorage) {
-                    type = ListStorageType.Double;
-                } else if (storage instanceof ListSequenceStorage) {
-                    type = ListStorageType.List;
-                } else if (storage instanceof TupleSequenceStorage) {
-                    type = ListStorageType.Tuple;
-                } else {
-                    type = ListStorageType.Generic;
-                }
-            } catch (Throwable t) {
-                type = ListStorageType.Generic;
-                throw t;
+        super(values);
+        this.initialCapacity = new SizeEstimate(values.length);
+        for (PNode v : values) {
+            if (v instanceof StarredExpressionNode) {
+                hasStarredExpressions = true;
+                return;
             }
-        } else {
-            int i = 0;
-            Object array = null;
-            try {
-                switch (type) {
-                    case Int: {
-                        int[] elements = new int[values.length];
-                        array = elements;
-                        for (; i < values.length; i++) {
-                            elements[i] = values[i].executeInt(frame);
-                        }
-                        storage = new IntSequenceStorage(elements);
-                        break;
-                    }
-                    case Long: {
-                        long[] elements = new long[values.length];
-                        array = elements;
-                        for (; i < values.length; i++) {
-                            elements[i] = values[i].executeLong(frame);
-                        }
-                        storage = new LongSequenceStorage(elements);
-                        break;
-                    }
-                    case Double: {
-                        double[] elements = new double[values.length];
-                        array = elements;
-                        for (; i < values.length; i++) {
-                            elements[i] = values[i].executeDouble(frame);
-                        }
-                        storage = new DoubleSequenceStorage(elements);
-                        break;
-                    }
-                    case List: {
-                        PList[] elements = new PList[values.length];
-                        array = elements;
-                        for (; i < values.length; i++) {
-                            elements[i] = PList.expect(values[i].execute(frame));
-                        }
-                        storage = new ListSequenceStorage(elements);
-                        break;
-                    }
-                    case Tuple: {
-                        PTuple[] elements = new PTuple[values.length];
-                        array = elements;
-                        for (; i < values.length; i++) {
-                            elements[i] = PTuple.expect(values[i].execute(frame));
-                        }
-                        storage = new TupleSequenceStorage(elements);
-                        break;
-                    }
-                    case Generic: {
-                        Object[] elements = new Object[values.length];
-                        for (; i < values.length; i++) {
-                            elements[i] = values[i].execute(frame);
-                        }
-                        storage = new ObjectSequenceStorage(elements);
-                        break;
-                    }
-                    default:
-                        throw new RuntimeException("unexpected state");
-                }
-            } catch (UnexpectedResultException e) {
-                storage = genericFallback(frame, array, i, e.getResult());
+        }
+        hasStarredExpressions = false;
+    }
+
+    @ExplodeLoop
+    private PList expandingList(VirtualFrame frame) {
+        // we will usually have more than 'values.length' elements
+        SequenceStorage storage = new ObjectSequenceStorage(values.length);
+        for (ExpressionNode n : values) {
+            Object element = n.execute(frame);
+            if (StarredExpressionNode.isStarredExpression(n)) {
+                storage = ((StarredExpressionNode) n.unwrap()).appendToStorage(frame, storage, element);
+            } else {
+                storage = ensureAppendNode().execute(storage, element, ListGeneralizationNode.SUPPLIER);
             }
         }
         return factory.createList(storage);
     }
 
-    private SequenceStorage genericFallback(VirtualFrame frame, Object array, int count, Object result) {
-        type = ListStorageType.Generic;
-        Object[] elements = new Object[values.length];
-        int i = 0;
-        for (; i < count; i++) {
-            elements[i] = Array.get(array, i);
+    @Override
+    public PList execute(VirtualFrame frame) {
+        if (!hasStarredExpressions) {
+            return directList(frame);
+        } else {
+            return expandingList(frame);
         }
-        elements[i++] = result;
-        for (; i < values.length; i++) {
-            elements[i] = values[i].execute(frame);
+    }
+
+    private PList directList(VirtualFrame frame) {
+        SequenceStorage storage = createSequenceStorageForDirect(frame);
+        return factory.createList(storage, this);
+    }
+
+    @Override
+    protected int getCapacityEstimate() {
+        return initialCapacity.estimate();
+    }
+
+    private SequenceStorageNodes.AppendNode ensureAppendNode() {
+        if (appendNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            appendNode = insert(SequenceStorageNodes.AppendNode.create());
         }
-        return new ObjectSequenceStorage(elements);
+        return appendNode;
+    }
+
+    public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
+        if (CompilerDirectives.inInterpreter()) {
+            if (PythonContext.get(this).getOption(PythonOptions.OverallocateLiteralLists)) {
+                if (newStore.getCapacity() > initialCapacity.estimate()) {
+                    initialCapacity.updateFrom(newStore.getCapacity());
+                    LOGGER.finest(() -> String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection().toString(), newStore.getCapacity(),
+                                    initialCapacity.estimate()));
+                }
+                if (newStore.getElementType().generalizesFrom(type)) {
+                    type = newStore.getElementType();
+                    LOGGER.finest(() -> String.format("Updating list type estimate at %s. New type: %s", getSourceSection().toString(), type.name()));
+                }
+            }
+        }
+        // n.b.: it's ok that this races when the code is already being compiled
+        // or if we're running on multiple threads. if the update isn't seen, we
+        // are not incorrect, we just don't benefit from the optimization
     }
 
     public static ListLiteralNode create(ExpressionNode[] values) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,44 +28,40 @@ package com.oracle.graal.python.nodes.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
-
-    // name = "generator_exp:" + line number of the generator;
     private final String name;
+    private final String qualname;
     private final RootCallTarget callTarget;
+    @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
-    private final int numOfActiveFlags;
-    private final int numOfGeneratorBlockNode;
-    private final int numOfGeneratorForNode;
+    private final GeneratorInfo generatorInfo;
 
     @CompilationFinal private FrameDescriptor enclosingFrameDescriptor;
     @CompilationFinal private boolean isEnclosingFrameGenerator;
-    @CompilationFinal private boolean isOptimized;
     @Child private ExpressionNode getIterator;
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorExpressionNode(String name, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
-                    ExecutionCellSlots executionCellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+    public GeneratorExpressionNode(String name, String qualname, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
+                    ExecutionCellSlots executionCellSlots, GeneratorInfo generatorInfo) {
         super(definitionCellSlots, executionCellSlots);
         this.name = name;
+        this.qualname = qualname;
         this.callTarget = callTarget;
         this.getIterator = getIterator;
         this.frameDescriptor = descriptor;
-        this.numOfActiveFlags = numOfActiveFlags;
-        this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
-        this.numOfGeneratorForNode = numOfGeneratorForNode;
+        this.generatorInfo = generatorInfo;
     }
 
     public String getName() {
@@ -97,47 +93,30 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         isEnclosingFrameGenerator = value;
     }
 
-    public boolean isOptimized() {
-        return isOptimized;
-    }
-
-    public void setAsOptimized() {
-        isOptimized = true;
-    }
-
-    public int getNumOfActiveFlags() {
-        return numOfActiveFlags;
-    }
-
-    public int getNumOfGeneratorBlockNode() {
-        return numOfGeneratorBlockNode;
-    }
-
-    public int getNumOfGeneratorForNode() {
-        return numOfGeneratorForNode;
-    }
-
-    public RootNode getFunctionRootNode() {
-        return callTarget.getRootNode();
+    public GeneratorInfo getGeneratorInfo() {
+        return generatorInfo;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
         Object[] arguments;
+        Object iterator = null;
         if (getIterator == null) {
             arguments = PArguments.create(0);
         } else {
             arguments = PArguments.create(1);
-            PArguments.setArgument(arguments, 0, getIterator.execute(frame));
+            iterator = getIterator.execute(frame);
+            PArguments.setArgument(arguments, 0, iterator);
         }
         PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
 
-        // The generator doesn't capture the currently handled exception at creation time.
-        PArguments.setException(arguments, PException.NO_EXCEPTION);
+        if (callTargets == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            callTargets = GeneratorFunctionRootNode.createYieldTargets(callTarget);
+        }
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return factory.createGenerator(name, callTarget, frameDescriptor, arguments, closure, executionCellSlots,
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, arguments, closure, executionCellSlots, generatorInfo, iterator);
     }
 
     @Override

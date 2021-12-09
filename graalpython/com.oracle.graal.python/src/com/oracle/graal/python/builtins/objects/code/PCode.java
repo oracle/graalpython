@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,35 +43,66 @@ package com.oracle.graal.python.builtins.objects.code;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
+import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.GlobalNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
+import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
+import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
+@ExportLibrary(InteropLibrary.class)
 public final class PCode extends PythonBuiltinObject {
-    static final String[] EMPTY_STRINGS = new String[0];
-    static final long FLAG_GENERATOR = 32;
-    static final long FLAG_VAR_ARGS = 0x0004;
-    static final long FLAG_VAR_KW_ARGS = 0x0008;
-    static final long FLAG_MODULE = 0x0040; // CO_NOFREE on CPython, we only set it on
-                                            // modules
+    static final long FLAG_VAR_ARGS = 0x4;
+    static final long FLAG_VAR_KW_ARGS = 0x8;
+    static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
+    static final long FLAG_GENERATOR = 0x20;
+    static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
+                                          // redundant anyway
 
-    private final RootCallTarget callTarget;
-    private final Signature signature;
+    // callTargetSupplier may be null, in which case callTarget and signature will be
+    // set. Otherwise, these are lazily created from the supplier.
+    private Supplier<CallTarget> callTargetSupplier;
+    RootCallTarget callTarget;
+    Signature signature;
 
     // number of local variables
     private int nlocals = -1;
@@ -83,11 +114,9 @@ public final class PCode extends PythonBuiltinObject {
     // the function uses the **keywords syntax to accept arbitrary keyword arguments; bit 0x20 is
     // set if the function is a generator.
     private int flags = -1;
-    // is a string representing the sequence of bytecode instructions
-    private byte[] codestring;
     // tuple of constants used in the bytecode
     private Object[] constants;
-    // tuple containing the literals used by the bytecode
+    // tuple containing the literals (builtins/globals) used by the bytecode
     private Object[] names;
     // is a tuple containing the names of the local variables (starting with the argument names)
     private Object[] varnames;
@@ -104,27 +133,35 @@ public final class PCode extends PythonBuiltinObject {
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
 
-    public PCode(LazyPythonClass cls, RootCallTarget callTarget) {
-        super(cls);
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget) {
+        super(cls, instanceShape);
         this.callTarget = callTarget;
-        if (callTarget.getRootNode() instanceof PRootNode) {
-            this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
-        } else {
-            this.signature = Signature.createVarArgsAndKwArgsOnly();
-        }
+        initializeSignature(callTarget);
     }
 
-    public PCode(LazyPythonClass cls, RootCallTarget callTarget, Signature signature,
-                    int nlocals, int stacksize, int flags,
-                    byte[] codestring, Object[] constants, Object[] names,
-                    Object[] varnames, Object[] freevars, Object[] cellvars,
-                    String filename, String name, int firstlineno,
-                    byte[] lnotab) {
-        super(cls);
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] lnotab, String filename) {
+        this(cls, instanceShape, callTarget);
+        this.flags = flags;
+        this.firstlineno = firstlineno;
+        this.lnotab = lnotab;
+        this.filename = filename;
+    }
+
+    public PCode(Object cls, Shape instanceShape, Supplier<CallTarget> callTargetSupplier, int flags, int firstlineno, byte[] lnotab, String filename) {
+        super(cls, instanceShape);
+        this.callTargetSupplier = callTargetSupplier;
+        this.flags = flags;
+        this.firstlineno = firstlineno;
+        this.lnotab = lnotab;
+        this.filename = filename;
+    }
+
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names,
+                    Object[] varnames, Object[] freevars, Object[] cellvars, String filename, String name, int firstlineno, byte[] lnotab) {
+        super(cls, instanceShape);
         this.nlocals = nlocals;
         this.stacksize = stacksize;
         this.flags = flags;
-        this.codestring = codestring;
         this.constants = constants;
         this.names = names;
         this.varnames = varnames;
@@ -144,45 +181,55 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static String[] extractFreeVars(RootNode rootNode) {
-        if (rootNode instanceof FunctionRootNode) {
-            return ((FunctionRootNode) rootNode).getFreeVars();
-        } else if (rootNode instanceof GeneratorFunctionRootNode) {
-            return ((GeneratorFunctionRootNode) rootNode).getFreeVars();
-        } else if (rootNode instanceof ModuleRootNode) {
-            return ((ModuleRootNode) rootNode).getFreeVars();
+        if (rootNode instanceof PClosureRootNode) {
+            return ((PClosureRootNode) rootNode).getFreeVars();
         } else {
-            return EMPTY_STRINGS;
+            return PythonUtils.EMPTY_STRING_ARRAY;
         }
     }
 
     private static String[] extractCellVars(RootNode rootNode) {
-        if (rootNode instanceof FunctionRootNode) {
-            return ((FunctionRootNode) rootNode).getCellVars();
-        } else if (rootNode instanceof GeneratorFunctionRootNode) {
-            return ((GeneratorFunctionRootNode) rootNode).getCellVars();
+        if (rootNode instanceof PClosureFunctionRootNode) {
+            return ((PClosureFunctionRootNode) rootNode).getCellVars();
         } else {
-            return EMPTY_STRINGS;
-        }
-    }
-
-    private static String extractFileName(RootNode rootNode) {
-        RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
-        SourceSection src = funcRootNode.getSourceSection();
-        if (src != null) {
-            if (src.getSource().getPath() == null) {
-                return src.getSource().getName();
-            }
-            return src.getSource().getPath();
-        } else if (funcRootNode instanceof ModuleRootNode) {
-            return funcRootNode.getName();
-        } else {
-            return "<unknown source>";
+            return PythonUtils.EMPTY_STRING_ARRAY;
         }
     }
 
     @TruffleBoundary
+    private static void setRootNodeFileName(RootNode rootNode, String filename) {
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        PythonContext.get(rootNode).setCodeFilename(funcRootNode.getCallTarget(), filename);
+    }
+
+    @TruffleBoundary
+    public static String extractFileName(RootNode rootNode) {
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        SourceSection src = funcRootNode.getSourceSection();
+
+        String filename = PythonContext.get(rootNode).getCodeFilename(funcRootNode.getCallTarget());
+        if (filename != null) {
+            // for compiled modules, _imp._fix_co_filename will set the filename
+            return filename;
+        } else if (src != null) {
+            return getSourceSectionFileName(src);
+        } else {
+            return funcRootNode.getName();
+        }
+    }
+
+    @TruffleBoundary
+    private static String getSourceSectionFileName(SourceSection src) {
+        String path = src.getSource().getPath();
+        if (path == null) {
+            return src.getSource().getName();
+        }
+        return path;
+    }
+
+    @TruffleBoundary
     private static int extractFirstLineno(RootNode rootNode) {
-        RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection sourceSection = funcRootNode.getSourceSection();
         if (sourceSection != null) {
             return sourceSection.getStartLine();
@@ -190,23 +237,19 @@ public final class PCode extends PythonBuiltinObject {
         return 1;
     }
 
+    @TruffleBoundary
     private static String extractName(RootNode rootNode) {
-        String name;
-        if (rootNode instanceof ModuleRootNode) {
-            name = rootNode.getName();
-        } else if (rootNode instanceof FunctionRootNode) {
-            name = ((FunctionRootNode) rootNode).getName();
-        } else {
-            name = rootNode.getName();
-        }
-        return name;
+        return rootNode.getName();
     }
 
+    @TruffleBoundary
+    @SuppressWarnings("deprecation")    // new Frame API
     private static int extractStackSize(RootNode rootNode) {
         return rootNode.getFrameDescriptor().getSize();
     }
 
     @TruffleBoundary
+    @SuppressWarnings("deprecation")    // new Frame API
     private static Object[] extractVarnames(RootNode rootNode, String[] parameterIds, String[] keywordNames, Object[] freeVars, Object[] cellVars) {
         Set<Object> freeVarsSet = asSet(freeVars);
         Set<Object> cellVarsSet = asSet(cellVars);
@@ -219,10 +262,8 @@ public final class PCode extends PythonBuiltinObject {
             if (identifier instanceof String) {
                 String varName = (String) identifier;
 
-                if (FrameSlotIDs.RETURN_SLOT_ID.equals(varName) || varName.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX)) {
-                    // pass
-                } else if (!varNameList.contains(varName)) {
-                    if (PythonLanguage.getCore().getParser().isIdentifier(PythonLanguage.getCore(), varName)) {
+                if (!varNameList.contains(varName)) {
+                    if (StringUtils.isIdentifier(varName)) {
                         if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
                             varNameList.add(varName);
                         }
@@ -232,6 +273,84 @@ public final class PCode extends PythonBuiltinObject {
         }
 
         return varNameList.toArray();
+    }
+
+    @TruffleBoundary
+    private static Object[] extractConstants(RootNode rootNode) {
+        ConstantsVisitor visitor = new ConstantsVisitor();
+        return visitor.findConstants(rootNodeForExtraction(rootNode));
+    }
+
+    private static class ConstantsVisitor implements NodeVisitor {
+        HashSet<Object> constants;
+
+        Object[] findConstants(Node node) {
+            constants = new HashSet<>();
+
+            this.visit(node);
+            return constants.toArray();
+        }
+
+        @Override
+        public boolean visit(Node node) {
+            if (node instanceof FunctionRootNode) {
+                ExpressionNode doc = ((FunctionRootNode) node).getDoc();
+                if (doc != null) {
+                    doc.accept(this);
+                }
+            } else if (node instanceof SimpleLiteralNode) {
+                constants.add(((SimpleLiteralNode) node).getValue());
+            } else if (node instanceof TupleLiteralNode) {
+                List<Object> tlConstants = new ArrayList<>();
+                node.accept(new NodeVisitor() {
+                    @Override
+                    public boolean visit(Node aNode) {
+                        if (aNode instanceof SimpleLiteralNode) {
+                            tlConstants.add(((SimpleLiteralNode) aNode).getValue());
+                        }
+                        return true;
+                    }
+                });
+                if (!tlConstants.isEmpty()) {
+                    constants.add(PythonObjectFactory.getUncached().createTuple(tlConstants.toArray()));
+                }
+                return false;
+            } else if (node instanceof FunctionDefinitionNode) {
+                FunctionDefinitionNode fdNode = (FunctionDefinitionNode) node;
+                constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(PythonLanguage.get(node)), fdNode.getCallTarget()));
+                constants.add(fdNode.getQualname());
+                return true;
+            } else if (node instanceof GeneratorExpressionNode) {
+                // TODO: we do it this way here since we cannot deserialize generator
+                // expressions right now
+                constants.addAll(Arrays.asList(extractConstants(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
+            }
+            NodeUtil.forEachChild(node, this);
+            return true;
+        }
+
+    }
+
+    @TruffleBoundary
+    private static Object[] extractNames(RootNode rootNode) {
+        List<Object> names = new ArrayList<>();
+        rootNodeForExtraction(rootNode).accept(new NodeVisitor() {
+            public boolean visit(Node node) {
+                if (node instanceof GlobalNode) {
+                    names.add(((GlobalNode) node).getAttributeId());
+                } else if (node instanceof GeneratorExpressionNode) {
+                    // TODO: since we do *not* add GeneratorExpressionNodes in #extractConstants, we
+                    // need to find the names referenced in them here
+                    names.addAll(Arrays.asList(extractNames(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
+                }
+                return true;
+            }
+        });
+        return names.toArray();
+    }
+
+    private static RootNode rootNodeForExtraction(RootNode rootNode) {
+        return (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
     }
 
     @TruffleBoundary
@@ -255,24 +374,15 @@ public final class PCode extends PythonBuiltinObject {
             if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarKeywordsNode.class) != null) {
                 flags |= FLAG_VAR_KW_ARGS;
             }
+            // 0x10 - lambda, not on CPython
+            if (funcRootNode instanceof FunctionRootNode && ((FunctionRootNode) funcRootNode).isLambda()) {
+                flags |= FLAG_LAMBDA;
+            }
         }
         return flags;
     }
 
-    @TruffleBoundary
-    private static byte[] extractCodeString(RootNode rootNode) {
-        RootNode funcRootNode = rootNode;
-        if (rootNode instanceof GeneratorFunctionRootNode) {
-            funcRootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
-        }
-        SourceSection sourceSection = funcRootNode.getSourceSection();
-        if (sourceSection != null) {
-            return sourceSection.getCharacters().toString().getBytes();
-        }
-        return new byte[0];
-    }
-
-    public RootNode getRootNode() {
+    RootNode getRootNode() {
         return getRootCallTarget().getRootNode();
     }
 
@@ -291,7 +401,16 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public void setFilename(String filename) {
+        CompilerAsserts.neverPartOfCompilation();
         this.filename = filename;
+        RootNode rootNode = getRootNode();
+        setRootNodeFileName(rootNode, filename);
+        constants = extractConstants(rootNode);
+        for (Object ob : constants) {
+            if (ob instanceof PCode) {
+                ((PCode) ob).setFilename(filename);
+            }
+        }
     }
 
     public String getFilename() {
@@ -317,6 +436,11 @@ public final class PCode extends PythonBuiltinObject {
 
     public int getArgcount() {
         return signature.getMaxNumOfPositionalArgs();
+    }
+
+    public int getPositionalOnlyArgCount() {
+        int positionalMarkIndex = signature.getPositionalOnlyArgIndex();
+        return positionalMarkIndex == -1 ? 0 : positionalMarkIndex;
     }
 
     public int getKwonlyargcount() {
@@ -352,17 +476,25 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public byte[] getCodestring() {
-        if (codestring == null) {
-            this.codestring = extractCodeString(getRootNode());
+        RootNode rootNode = getRootNode();
+        if (rootNode instanceof PRootNode) {
+            return ((PRootNode) rootNode).getCode();
+        } else {
+            return PythonUtils.EMPTY_BYTE_ARRAY;
         }
-        return codestring;
     }
 
     public Object[] getConstants() {
+        if (constants == null) {
+            constants = extractConstants(getRootNode());
+        }
         return constants;
     }
 
     public Object[] getNames() {
+        if (names == null) {
+            names = extractNames(getRootNode());
+        }
         return names;
     }
 
@@ -372,6 +504,10 @@ public final class PCode extends PythonBuiltinObject {
 
     public boolean isGenerator() {
         return (getFlags() & FLAG_GENERATOR) > 0;
+    }
+
+    public static boolean isModule(int flags) {
+        return (flags & FLAG_MODULE) > 0;
     }
 
     static boolean takesVarArgs(int flags) {
@@ -390,11 +526,161 @@ public final class PCode extends PythonBuiltinObject {
         return PCode.takesVarKeywordArgs(getFlags());
     }
 
-    public Signature getSignature() {
+    private Signature getSignature() {
+        if (signature == null) {
+            initializeSignature(getRootCallTarget());
+        }
         return signature;
     }
 
-    public RootCallTarget getRootCallTarget() {
+    @TruffleBoundary
+    synchronized Signature initializeSignature(RootCallTarget rootCallTarget) {
+        if (signature == null) {
+            if (rootCallTarget.getRootNode() instanceof PRootNode) {
+                signature = ((PRootNode) rootCallTarget.getRootNode()).getSignature();
+            } else {
+                signature = Signature.createVarArgsAndKwArgsOnly();
+            }
+        }
+        return signature;
+    }
+
+    private RootCallTarget getRootCallTarget() {
+        if (callTarget == null) {
+            initializeCallTarget();
+        }
         return callTarget;
+    }
+
+    @TruffleBoundary
+    synchronized RootCallTarget initializeCallTarget() {
+        if (callTarget == null) {
+            callTarget = (RootCallTarget) callTargetSupplier.get();
+            callTargetSupplier = null;
+        }
+        return callTarget;
+    }
+
+    @ExportMessage
+    public SourceSection getSourceLocation(@Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            SourceSection result = readSourceLocation();
+            if (result != null) {
+                return result;
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @TruffleBoundary
+    private SourceSection readSourceLocation() {
+        return getRootNode().getSourceSection();
+    }
+
+    @ExportMessage
+    public boolean hasSourceLocation(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readSourceLocation() != null;
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    public String toString() {
+        String codeName = this.getName() == null ? "None" : this.getName();
+        String codeFilename = this.getFilename() == null ? "None" : this.getFilename();
+        int codeFirstLineNo = this.getFirstLineNo() == 0 ? -1 : this.getFirstLineNo();
+        return String.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
+    }
+
+    private static PTuple createTuple(Object[] array, PythonObjectFactory factory) {
+        Object[] data = array;
+        if (data == null) {
+            data = PythonUtils.EMPTY_OBJECT_ARRAY;
+        }
+        return factory.createTuple(data);
+    }
+
+    private static PBytes createBytes(byte[] array, PythonObjectFactory factory) {
+        byte[] bytes = array;
+        if (bytes == null) {
+            bytes = PythonUtils.EMPTY_BYTE_ARRAY;
+        }
+        return factory.createBytes(bytes);
+    }
+
+    public String co_name() {
+        String codeName = this.getName();
+        assert codeName != null : "PCode.co_name cannot be null!";
+        return codeName;
+    }
+
+    public String co_filename() {
+        String fName = this.getFilename();
+        assert fName != null : "PCode.co_filename cannot be null";
+        return fName;
+    }
+
+    public PBytes co_code(PythonObjectFactory factory) {
+        return createBytes(this.getCodestring(), factory);
+    }
+
+    public PBytes co_lnotab(PythonObjectFactory factory) {
+        return createBytes(this.getLnotab(), factory);
+    }
+
+    public PTuple co_consts(PythonObjectFactory factory) {
+        return createTuple(this.getConstants(), factory);
+    }
+
+    public PTuple co_names(PythonObjectFactory factory) {
+        return createTuple(this.getNames(), factory);
+    }
+
+    public PTuple co_varnames(PythonObjectFactory factory) {
+        return createTuple(this.getVarnames(), factory);
+    }
+
+    public PTuple co_freevars(PythonObjectFactory factory) {
+        return createTuple(this.getFreeVars(), factory);
+    }
+
+    public PTuple co_cellvars(PythonObjectFactory factory) {
+        return createTuple(this.getCellVars(), factory);
+    }
+
+    public int co_argcount() {
+        return this.getArgcount();
+    }
+
+    public int co_posonlyargcount() {
+        return this.getPositionalOnlyArgCount();
+    }
+
+    public int co_kwonlyargcount() {
+        return this.getKwonlyargcount();
+    }
+
+    public int co_nlocals() {
+        return this.getNlocals();
+    }
+
+    public int co_flags() {
+        return this.getFlags();
+    }
+
+    public int co_firstlineno() {
+        return this.getFirstLineNo();
+    }
+
+    public int co_stacksize() {
+        return this.getStacksize();
     }
 }

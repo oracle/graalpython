@@ -1,0 +1,24 @@
+ModuleRootNode Name: <module 'basic05'> SourceSection: [0,27]`import sys, math as ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,27]`import sys, math as ...`
+    ExpressionWithSideEffect SourceSection: [0,27]`import sys, math as ...`
+      Expression:
+        ExpressionWithSideEffect SourceSection: None
+          Expression:
+            EmptyNode SourceSection: None
+          SideEffect:
+            WriteNameNodeGen SourceSection: [12,27]`math as my_math`
+              Identifier: my_math
+              ImportExpression SourceSection: None
+                ImportNode SourceSection: None
+                  Module: math
+      SideEffect:
+        WriteNameNodeGen SourceSection: [7,10]`sys`
+          Identifier: sys
+          ImportExpression SourceSection: None
+            ImportNode SourceSection: None
+              Module: sys

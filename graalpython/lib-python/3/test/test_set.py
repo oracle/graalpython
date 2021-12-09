@@ -1,4 +1,3 @@
-import sys
 import unittest
 from test import support
 import gc
@@ -308,7 +307,6 @@ class TestJointOps:
             self.assertRaises(RuntimeError, s.discard, BadCmp())
             self.assertRaises(RuntimeError, s.remove, BadCmp())
 
-    @unittest.skipIfGraalPython()
     def test_cyclical_repr(self):
         w = ReprWrapper()
         s = self.thetype([w])
@@ -319,7 +317,6 @@ class TestJointOps:
             name = repr(s).partition('(')[0]    # strip class name
             self.assertEqual(repr(s), '%s({%s(...)})' % (name, name))
 
-    @unittest.skipIfGraalPython()
     def test_cyclical_print(self):
         w = ReprWrapper()
         s = self.thetype([w])
@@ -353,6 +350,7 @@ class TestJointOps:
         self.assertEqual(sum(elem.hash_count for elem in d), n)
         self.assertEqual(d3, dict.fromkeys(d, 123))
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_container_iterator(self):
         # Bug #3680: tp_traverse was not implemented for set iterator object
         class C(object):
@@ -365,6 +363,7 @@ class TestJointOps:
         gc.collect()
         self.assertTrue(ref() is None, "Cycle was not collected")
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_free_after_iterating(self):
         support.check_free_after_iterating(self, iter, self.thetype)
 
@@ -604,6 +603,7 @@ class TestSet(TestJointOps, unittest.TestCase):
         t ^= t
         self.assertEqual(t, self.thetype())
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_weakref(self):
         s = self.thetype('gallahad')
         p = weakref.proxy(s)
@@ -897,6 +897,12 @@ class TestBasicOps:
             copy = pickle.loads(p)
             self.assertEqual(self.set, copy,
                              "%s != %s" % (self.set, copy))
+
+    def test_issue_37219(self):
+        with self.assertRaises(TypeError):
+            set().difference(123)
+        with self.assertRaises(TypeError):
+            set().difference_update(123)
 
 #------------------------------------------------------------------------------
 

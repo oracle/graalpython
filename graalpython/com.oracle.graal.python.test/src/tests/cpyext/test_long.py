@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,12 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
-
+def raise_Py6_SystemError():
+    if sys.version_info.minor >= 6:
+        raise SystemError
+    else:
+        return -1
+    
 def _reference_aslong(args):
     # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
     n = int(args[0])
@@ -56,9 +61,11 @@ def _reference_aslong(args):
 def _reference_as_unsigned_long(args):
     # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
     n = args[0]
-    if n > 0x7fffffff or n < 0:
+    if n > 0xffffffff or n < 0:
         if sys.version_info.minor >= 6:
-            raise SystemError
+            exc = SystemError()
+            exc.__cause__ = OverflowError()
+            raise exc
         else:
             return -1
     return int(n)
@@ -86,6 +93,14 @@ def _reference_fromlong(args):
     n = args[0]
     return n
 
+def _reference_sign(args):
+    n = args[0]
+    if n==0:
+        return 0
+    elif n < 0:
+        return -1
+    else:
+        return 1
 
 class DummyNonInt():
     pass
@@ -101,6 +116,15 @@ class DummyIntSubclass(float):
 
     def __int__(self):
         return 0xBABE
+
+
+class DummyIndexable:
+
+    def __int__(self):
+        return 0xDEAD
+
+    def __index__(self):
+        return 0xBEEF
 
 
 class TestPyLong(CPyExtTestCase):
@@ -119,6 +143,7 @@ class TestPyLong(CPyExtTestCase):
             (DummyIntable(), 0xCAFE),
             (DummyIntSubclass(), 0xBABE),
             (DummyNonInt(), -1),
+            (DummyIndexable(), 0xBEEF if sys.version_info >= (3, 8, 0) else 0xDEAD),
         ),
         code='''int wrap_PyLong_AsLong(PyObject* obj, long expected) {
             long res = PyLong_AsLong(obj);
@@ -161,11 +186,15 @@ class TestPyLong(CPyExtTestCase):
         _reference_as_unsigned_long,
         lambda: (
             (0,),
-            # TODO disable because CPython 3.4.1 does not correctly catch exceptions from native
-            # (-1,),
+            (-1,),
+            (-2,),
+            (True,),
+            (False,),
             (0x7fffffff,),
+            (0xffffffff,),
+            # we could use larger values on 64-bit systems but how should we know?
         ),
-        resultspec="l",
+        resultspec="k",
         argspec='O',
         arguments=["PyObject* obj"],
         cmpfunc=unhandled_error_compare
@@ -348,4 +377,50 @@ class TestPyLong(CPyExtTestCase):
         resultspec="O",
         argspec="si",
         arguments=["char* string", "int base"],
+    )
+
+    test_PyLong_AsByteArray = CPyExtFunction(
+        lambda args: args[4],
+        lambda: (
+            (0, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x00\x00'),
+            (4294967299, 8, False, True, b'\x00\x00\x00\x01\x00\x00\x00\x03'),
+            (1234, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x04\xd2'),
+            (0xdeadbeefdead, 8, False, True, b'\x00\x00\xde\xad\xbe\xef\xde\xad'),
+            (0xdeadbeefdead, 8, True, True, b'\xad\xde\xef\xbe\xad\xde\x00\x00'),
+            (0xdeadbeefdeadbeefbeefdeadcafebabe, 17, False, True, b'\x00\xde\xad\xbe\xef\xde\xad\xbe\xef\xbe\xef\xde\xad\xca\xfe\xba\xbe'),
+        ),
+        code='''PyObject* wrap_PyLong_AsByteArray(PyObject* object, Py_ssize_t n, int little_endian, int is_signed, PyObject* unused) {
+            unsigned char* buf = (unsigned char *) malloc(n * sizeof(unsigned char));
+            PyObject* result;
+            
+            Py_INCREF(object);
+            if (_PyLong_AsByteArray((PyLongObject*) object, buf, n, little_endian, is_signed)) {
+                Py_DECREF(object);
+                return NULL;
+            }
+            Py_DECREF(object);
+            result = PyBytes_FromStringAndSize((const char *) buf, n);
+            free(buf);
+            return result;
+        }''',
+        callfunction="wrap_PyLong_AsByteArray",
+        resultspec="O",
+        argspec="OniiO",
+        arguments=["PyObject* object", "Py_ssize_t n", "int little_endian", "int is_signed", "PyObject* unused"],
+    )
+    
+    test__PyLong_Sign = CPyExtFunction(
+        _reference_sign,
+        lambda: (
+            (0,),
+            (-1,),
+            (0xffffffff,),
+            (0xfffffffffffffffffffffff,),
+            (True,),
+            (False,),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
     )

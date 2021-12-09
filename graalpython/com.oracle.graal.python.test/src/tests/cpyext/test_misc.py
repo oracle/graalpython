@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,11 +39,25 @@
 
 import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+import builtins
 __dir__ = __file__.rpartition("/")[0]
+
+__global_builtins_dict = builtins.__dict__
 
 
 def _reference_importmodule(args):
     return __import__(args[0], fromlist=["*"])
+
+
+def _reference_format_float(args):
+    val, format_spec, prec = args
+    if format_spec == b'r':
+        return repr(val)
+    return float(val).__format__("." + str(prec) + format_spec.decode())
+
+
+def _reference_builtins(args):
+    return type(__global_builtins_dict)
 
 
 class TestMisc(CPyExtTestCase):
@@ -180,8 +194,10 @@ class TestMisc(CPyExtTestCase):
         lambda: (
             (True, lambda arg0, *args: arg0),
             (False, lambda arg0, *args: arg0),
+            (1000, lambda arg0, *args: arg0),
             (10, lambda arg0, *args: arg0),
             (10.0, lambda arg0, *args: arg0),
+            (float('nan'), lambda arg0, *args: arg0),
             ("ten", lambda arg0, *args: arg0),
         ),
         code="""PyObject* PointerEquality_Primitive(PyObject* pyVal, PyObject* fun) {
@@ -209,5 +225,44 @@ class TestMisc(CPyExtTestCase):
         resultspec="O",
         argspec="OO",
         arguments=["PyObject* pyVal", "PyObject* fun"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyOS_double_to_string = CPyExtFunction(
+        _reference_format_float,
+        lambda: (
+            (1.2, b"f", 2),
+            (float('nan'), b"f", 2),
+            (1.23456789, b"f", 2),
+            (123.456789, b"f", 6),
+            (123.456789, b"e", 6),
+            (123.456789, b"r", 0),
+        ),
+        code="""
+        char* wrap_PyOS_double_to_string(double val, char format, int prec) {
+            return PyOS_double_to_string(val, format, prec, 0, NULL);
+        }
+        """,
+        resultspec="s",
+        argspec="dci",
+        arguments=["double val", "char format", "int prec"],
+        callfunction="wrap_PyOS_double_to_string",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyEval_GetBuiltins = CPyExtFunction(
+        _reference_builtins,
+        lambda: (
+            tuple(),
+        ),
+        code="""
+        PyObject* wrap_PyEval_GetBuiltins() {
+            return (PyObject *) Py_TYPE(PyEval_GetBuiltins());
+        }
+        """,
+        resultspec="O",
+        argspec="",
+        arguments=[],
+        callfunction="wrap_PyEval_GetBuiltins",
         cmpfunc=unhandled_error_compare
     )

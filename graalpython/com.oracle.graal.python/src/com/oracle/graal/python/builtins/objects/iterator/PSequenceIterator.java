@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,32 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.object.Shape;
 
-public final class PSequenceIterator extends PBuiltinIterator {
-    protected final Object sequence;
-    protected int index = 0;
-
-    public PSequenceIterator(LazyPythonClass clazz, Object sequence) {
-        super(clazz);
-        this.sequence = sequence;
-    }
-
-    public Object getObject() {
-        return sequence;
-    }
-
-    public PSequence getPSequence() {
-        return (PSequence) sequence;
-    }
-
-    public boolean isPSequence() {
-        return sequence instanceof PSequence;
-    }
-
-    public boolean isPList() {
-        return sequence instanceof PList;
+public final class PSequenceIterator extends PBaseSequenceIterator {
+    public PSequenceIterator(Object clazz, Shape instanceShape, Object sequence) {
+        super(clazz, instanceShape, sequence);
     }
 }

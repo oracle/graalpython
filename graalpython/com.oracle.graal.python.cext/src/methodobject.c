@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,16 +42,22 @@
 
 typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
 
-PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
+PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyCFunctionObject), offsetof(PyCFunctionObject, vectorcall));
 
+typedef PyObject* (*PyCFunction_NewEx_fun_t)(void* name, 
+                                                    void* methObj, 
+                                                    int flags, 
+                                                    int wrapper,
+                                                    void* self,
+                                                    void* module, 
+                                                    const char* doc);
+UPCALL_TYPED_ID(PyCFunction_NewEx, PyCFunction_NewEx_fun_t);
 PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
-    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
-                                               "PyCFunction_NewEx",
-                                               polyglot_from_string((const char*)(ml->ml_name), SRC_CS),
-                                               ml->ml_meth,
-                                               get_method_flags_cwrapper(ml->ml_flags),
+    return _jls_PyCFunction_NewEx(polyglot_from_string(ml->ml_name, SRC_CS),
+                                               function_pointer_to_java(ml->ml_meth),
+                                               ml->ml_flags,
                                                get_method_flags_wrapper(ml->ml_flags),
-                                               self,
+                                               native_to_java(self),
                                                native_to_java(module),
-                                               polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS)));
+                                               ml->ml_doc);
 }

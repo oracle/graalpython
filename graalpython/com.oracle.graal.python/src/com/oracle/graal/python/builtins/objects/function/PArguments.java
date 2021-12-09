@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,13 +28,18 @@ package com.oracle.graal.python.builtins.objects.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 //@formatter:off
 /**
@@ -85,7 +90,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  */
 //@formatter:on
 public final class PArguments {
-    public static final Object[] EMPTY_VARARGS = new Object[0];
+    private static final FrameDescriptor EMTPY_FD = new FrameDescriptor();
 
     private static final int INDEX_VARIABLE_ARGUMENTS = 0;
     private static final int INDEX_KEYWORD_ARGUMENTS = 1;
@@ -127,7 +132,7 @@ public final class PArguments {
 
     public static Object[] create(int userArgumentLength) {
         Object[] initialArguments = new Object[USER_ARGUMENTS_OFFSET + userArgumentLength];
-        initialArguments[INDEX_VARIABLE_ARGUMENTS] = EMPTY_VARARGS;
+        initialArguments[INDEX_VARIABLE_ARGUMENTS] = PythonUtils.EMPTY_OBJECT_ARRAY;
         initialArguments[INDEX_KEYWORD_ARGUMENTS] = PKeyword.EMPTY_KEYWORDS;
         return initialArguments;
     }
@@ -156,6 +161,12 @@ public final class PArguments {
         return (PKeyword[]) frame[INDEX_KEYWORD_ARGUMENTS];
     }
 
+    /**
+     * Special arguments used to communicate various things to the callee. It is important than any
+     * usage be documented and ensured that they cannot overlap.
+     *
+     * @see #getSpecialArgument(Frame)
+     */
     public static void setSpecialArgument(Object[] arguments, Object value) {
         arguments[INDEX_SPECIAL_ARGUMENT] = value;
     }
@@ -165,13 +176,17 @@ public final class PArguments {
      * <ul>
      * <li>The value sent to a generator via <code>send</code></li>
      * <li>An exception thrown through a generator via <code>throw</code></li>
-     * <li>The {@link ClassBodyRootNode} when we are executing a class body</li>
+     * <li>The custom locals in a module or class scope when called through <code>exec</code> or
+     * <code>__build_class__</code></li>
      * </ul>
      */
     public static Object getSpecialArgument(Frame frame) {
         return getSpecialArgument(frame.getArguments());
     }
 
+    /**
+     * @see #getSpecialArgument(Frame)
+     */
     public static Object getSpecialArgument(Object[] arguments) {
         return arguments[INDEX_SPECIAL_ARGUMENT];
     }
@@ -237,7 +252,11 @@ public final class PArguments {
     }
 
     public static PException getException(Frame frame) {
-        return (PException) frame.getArguments()[INDEX_CURRENT_EXCEPTION];
+        return (PException) getExceptionUnchecked(frame);
+    }
+
+    public static Object getExceptionUnchecked(Frame frame) {
+        return frame.getArguments()[INDEX_CURRENT_EXCEPTION];
     }
 
     public static void setException(Frame frame, PException exc) {
@@ -245,6 +264,10 @@ public final class PArguments {
     }
 
     public static void setException(Object[] arguments, PException exc) {
+        setExceptionUnchecked(arguments, exc);
+    }
+
+    public static void setExceptionUnchecked(Object[] arguments, Object exc) {
         arguments[INDEX_CURRENT_EXCEPTION] = exc;
     }
 
@@ -309,6 +332,18 @@ public final class PArguments {
         arguments[INDEX_GENERATOR_FRAME] = generatorFrame;
     }
 
+    /**
+     * This should be used only in GeneratorFunctionRootNode, later the slot is overwritten with
+     * generator frame
+     */
+    public static PFunction getGeneratorFunction(Object[] arguments) {
+        return (PFunction) arguments[INDEX_GENERATOR_FRAME];
+    }
+
+    public static void setGeneratorFunction(Object[] arguments, PFunction generatorFunction) {
+        arguments[INDEX_GENERATOR_FRAME] = generatorFunction;
+    }
+
     public static void setControlData(Object[] arguments, GeneratorControlData generatorArguments) {
         MaterializedFrame generatorFrame = (MaterializedFrame) arguments[INDEX_GENERATOR_FRAME];
         generatorFrame.getArguments()[INDEX_GENERATOR_FRAME] = generatorArguments;
@@ -316,6 +351,10 @@ public final class PArguments {
 
     public static GeneratorControlData getControlDataFromGeneratorFrame(Frame generatorFrame) {
         return (GeneratorControlData) generatorFrame.getArguments()[INDEX_GENERATOR_FRAME];
+    }
+
+    public static GeneratorControlData getControlDataFromGeneratorArguments(Object[] arguments) {
+        return getControlDataFromGeneratorFrame((MaterializedFrame) arguments[INDEX_GENERATOR_FRAME]);
     }
 
     public static Object[] insertSelf(Object[] arguments, Object self) {
@@ -340,5 +379,65 @@ public final class PArguments {
 
     public static PDict getGeneratorFrameLocals(Object[] arguments) {
         return (PDict) arguments[INDEX_CALLER_FRAME_INFO];
+    }
+
+    /**
+     * Synchronizes the arguments array of a Truffle frame with a {@link PFrame}. Copies only those
+     * arguments that are necessary to be synchronized between the two.
+     *
+     * NOTE: such arguments usually need to be preserved in {@link ThreadState} so that when we are
+     * materializing a frame restored from {@link ThreadState}, the newly created instance of
+     * {@link PFrame} will contain those arguments.
+     */
+    public static void synchronizeArgs(Frame frameToMaterialize, PFrame escapedFrame) {
+        Object[] arguments = frameToMaterialize.getArguments();
+        Object[] copiedArgs = new Object[arguments.length];
+
+        // copy only some carefully picked internal arguments
+        setSpecialArgument(copiedArgs, getSpecialArgument(arguments));
+        setGeneratorFrame(copiedArgs, getGeneratorFrameSafe(arguments));
+        setGlobals(copiedArgs, getGlobals(arguments));
+        setClosure(copiedArgs, getClosure(arguments));
+
+        // copy all user arguments
+        PythonUtils.arraycopy(arguments, USER_ARGUMENTS_OFFSET, copiedArgs, USER_ARGUMENTS_OFFSET, getUserArgumentLength(arguments));
+
+        escapedFrame.setArguments(copiedArgs);
+    }
+
+    public static ThreadState getThreadState(VirtualFrame frame) {
+        assert frame != null : "cannot get thread state without a frame";
+        return new ThreadState(PArguments.getCurrentFrameInfo(frame),
+                        PArguments.getExceptionUnchecked(frame),
+                        PArguments.getGlobals(frame));
+    }
+
+    public static ThreadState getThreadStateOrNull(VirtualFrame frame, ConditionProfile hasFrameProfile) {
+        return hasFrameProfile.profile(frame != null) ? getThreadState(frame) : null;
+    }
+
+    public static VirtualFrame frameForCall(ThreadState frame) {
+        Object[] args = PArguments.create();
+        PArguments.setCurrentFrameInfo(args, frame.info);
+        PArguments.setExceptionUnchecked(args, frame.exc);
+        args[INDEX_GLOBALS_ARGUMENT] = frame.globals;
+        return Truffle.getRuntime().createVirtualFrame(args, EMTPY_FD);
+    }
+
+    /**
+     * Represents the current thread state information that needs to be passed between calls.
+     */
+    @ValueType
+    public static final class ThreadState {
+        private final PFrame.Reference info;
+        // The type is object because it is Object in the frame and casting it slows things down
+        private final Object exc;
+        private final Object globals;
+
+        private ThreadState(Reference info, Object exc, Object globals) {
+            this.info = info;
+            this.exc = exc;
+            this.globals = globals;
+        }
     }
 }

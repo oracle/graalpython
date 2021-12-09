@@ -28,6 +28,15 @@ WINDOWS_SCHEME = {
 }
 
 INSTALL_SCHEMES = {
+    # GraalVM change: our install scheme
+    # Keep in sync with sysconfig module, distutils.sysconfig_graalpython and site module
+    'graalpython': {
+        'purelib': '$base/lib/python$py_version_short/site-packages',
+        'platlib': '$base/lib/python$py_version_short/site-packages',
+        'headers': '$base/include/$dist_name',
+        'scripts': '$base/bin',
+        'data'   : '$base',
+    },
     'unix_prefix': {
         'purelib': '$base/lib/python$py_version_short/site-packages',
         'platlib': '$platbase/lib/python$py_version_short/site-packages',
@@ -223,7 +232,7 @@ class install(Command):
 
     def finalize_options(self):
         """Finalizes options."""
-        # This method (and its pliant slaves, like 'finalize_unix()',
+        # This method (and its helpers, like 'finalize_unix()',
         # 'finalize_other()', and 'select_scheme()') is where the default
         # installation directories for modules, extension modules, and
         # anything else we care to install from a Python module
@@ -454,6 +463,9 @@ class install(Command):
     def select_scheme(self, name):
         """Sets the install directories by applying the install schemes."""
         # it's the caller's problem if they supply a bad name!
+        # GraalVM change: select our scheme
+        if sys.implementation.name == 'graalpython' and not name.endswith(('_user', '_home')):
+            name = 'graalpython'
         scheme = INSTALL_SCHEMES[name]
         for key in SCHEME_KEYS:
             attrname = 'install_' + key

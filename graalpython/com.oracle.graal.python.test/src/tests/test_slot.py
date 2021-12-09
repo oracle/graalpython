@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -55,7 +55,123 @@ class TestSlots(unittest.TestCase):
             obj.world
         obj.world = "world"
         self.assertEqual(obj.world, "world")
+        
+    def test_slots_must_be_identifiers(self):
+        class C: __slots__ = ['a', '_1', '_', 'a1']
+        with self.assertRaises(TypeError):
+            class C: __slots__ = ['']
+            class C: __slots__ = ['1']
+            class C: __slots__ = ['1']
+            class C: __slots__ = ['a$']
+        
+        
+    def test_dict_and_weakref_are_listed_in_slots(self):
+        class D: __slots__ = ['__dict__']
+        self.assertEqual(tuple(D.__slots__), ('__dict__',))
+        self.assertEqual(tuple(D().__slots__), ('__dict__',))
 
+        class WR: __slots__ = ['__weakref__']
+        self.assertEqual(tuple(WR.__slots__), ('__weakref__',))
+        self.assertEqual(tuple(WR().__slots__), ('__weakref__',))
+
+        class DWR: __slots__ = ['__dict__', '__weakref__']
+        self.assertEqual(tuple(DWR.__slots__), ('__dict__', '__weakref__',))
+        self.assertEqual(tuple(DWR().__slots__), ('__dict__', '__weakref__',))
+
+    def test_dict_if_slots(self):
+        class C: __slots__ = ['a']
+        self.assertEqual(tuple(C.__dict__['__slots__']), ('a',))
+        
+    def test_slots_are_not_sorted(self):
+        class C: __slots__ = ['b', 'a']
+        self.assertEqual(tuple(C.__slots__), ('b', 'a',))
+
+    def test_forbidden_slot_names(self):
+            raised = False
+            try:
+                class C: 
+                    __slots__ = ['__slots__']
+            except ValueError:
+                raised = True
+            assert raised
+            
+            raised = False
+            try:
+                class C: 
+                    v = 1
+                    __slots__ = ['v']
+            except ValueError:
+                raised = True
+            assert raised
+
+    def test_bases_have_class_layout_conflict(self):    
+        class A: __slots__ = ["a"]
+        class B: __slots__ = ["b"]
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): pass
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): __slots__ = ["a"]
+        class B: __slots__ = ["a"]    
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): pass
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): __slots__ = ["a"]
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): __slots__ = ["a", "a"]
+            
+    def test_no_bases_have_class_layout_conflict(self):
+        class A: __slots__ = ["__dict__"]
+        class B: __slots__ = ["__dict__"]        
+        class C(A, B): pass
+        class C(A, B): __slots__ = ["a"]
+        class C(A, B): __slots__ = ["__weakref__"]
+                
+        class A: __slots__ = ["__weakref__"]
+        class B: __slots__ = ["__weakref__"]       
+        class C(A, B): pass
+        class C(A, B): __slots__ = ["a"]
+        class C(A, B): __slots__ = ["_dict_"]
+        
+    def test_slot_disallowed(self):    
+        class A: __slots__ = ["__dict__"]
+        class B: __slots__ = ["__dict__"]                
+        with self.assertRaisesRegex(TypeError, '__dict__ slot disallowed: we already got one'):
+            class C(A, B): __slots__ = ["__dict__"]
+        
+        class A: pass
+        class B: __slots__ = ["__dict__"]        
+        with self.assertRaisesRegex(TypeError, '__dict__ slot disallowed: we already got one'):
+            class C(A, B): __slots__ = ["__dict__"]
+        
+        class A: __slots__ = ["__weakref__"]
+        class B: __slots__ = ["__weakref__"]
+        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
+            class C(A, B): __slots__ = ["__weakref__"]
+
+        class A: pass
+        class B: __slots__ = ["__weakref__"]        
+        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
+            class C(A, B): __slots__ = ["__weakref__"]                
+        
+        class A: pass
+        class B: pass
+        with self.assertRaisesRegex(TypeError, '__dict__ slot disallowed: we already got one'):
+            class C(A, B): __slots__ = ["__dict__", "__dict__"]
+        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
+            class C(A, B): __slots__ = ["__weakref__", "__weakref__"]
+            
+    def test_itemsize_and_non_empty_slots(self):
+        raised = False
+        try:
+            class C(tuple): __slots__ = ['a']
+        except TypeError:
+            raised = True
+        assert raised
+
+    def test_write_attr(self):
+        class C:
+            __slots__ = ('a', 'b')
+        self.assertRaises(AttributeError, setattr, C(), 'c', 42)
 
 if __name__ == "__main__":
     unittest.main()

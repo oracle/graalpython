@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,10 +27,12 @@ package com.oracle.graal.python.test.runtime;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static org.junit.Assert.assertEquals;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,11 +42,10 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -57,7 +58,7 @@ public class PythonModuleTests {
         public PythonModuleTestRootNode(PythonLanguage language, CallNode body) {
             super(language);
             this.body = body;
-            Truffle.getRuntime().createCallTarget(this);
+            this.getCallTarget(); // Ensure call target is initialized
         }
 
         @Override
@@ -77,16 +78,22 @@ public class PythonModuleTests {
     @Before
     public void setUp() {
         PythonTests.enterContext();
-        context = PythonLanguage.getContextRef().get();
+        context = PythonContext.get(null);
+    }
+
+    @After
+    public void tearDown() {
+        context = null;
+        PythonTests.closeContext();
     }
 
     @Test
     public void pythonModuleTest() {
-        PythonModule module = context.getCore().factory().createPythonModule("testModule");
-
+        PythonModule module = context.factory().createPythonModule("testModule");
         assertEquals("testModule", module.getAttribute(__NAME__).toString());
         assertEquals("None", module.getAttribute(__DOC__).toString());
         assertEquals("None", module.getAttribute(__PACKAGE__).toString());
+        assertEquals("NoValue", module.getAttribute(__FILE__).toString());
     }
 
     @Test
@@ -101,7 +108,7 @@ public class PythonModuleTests {
     public void builtinsIntTest() {
         final PythonModule builtins = context.getBuiltins();
         PythonBuiltinClass intClass = (PythonBuiltinClass) builtins.getAttribute(BuiltinNames.INT);
-        Object intNew = intClass.getAttribute(SpecialAttributeNames.__NEW__);
+        Object intNew = intClass.getAttribute(SpecialMethodNames.__NEW__);
         Object returnValue = callBuiltin(intNew, PythonBuiltinClassType.PInt, "42");
         assertEquals(42, returnValue);
     }
@@ -112,6 +119,6 @@ public class PythonModuleTests {
         PythonModule builtins = (PythonModule) main.getAttribute(__BUILTINS__);
         PBuiltinMethod abs = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.ABS);
         Object returned = callBuiltin(abs, -42);
-        assertEquals(42, returned);
+        assertEquals(42, (int) returned);
     }
 }

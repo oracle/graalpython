@@ -1,0 +1,10 @@
+*graalpython.lib-python.3.test.test_code.CodeConstsTest.test_interned_string
+*graalpython.lib-python.3.test.test_code.CodeConstsTest.test_interned_string_default
+*graalpython.lib-python.3.test.test_code.CodeConstsTest.test_interned_string_in_frozenset
+*graalpython.lib-python.3.test.test_code.CodeConstsTest.test_interned_string_in_tuple
+*graalpython.lib-python.3.test.test_code.CodeConstsTest.test_interned_string_with_null
+*graalpython.lib-python.3.test.test_code.CodeTest.test_closure_injection
+*graalpython.lib-python.3.test.test_code.CodeTest.test_constructor
+*graalpython.lib-python.3.test.test_code.CodeTest.test_newempty
+*graalpython.lib-python.3.test.test_code.CodeTest.test_replace
+*graalpython.lib-python.3.test.test_code.CodeWeakRefTest.test_basic

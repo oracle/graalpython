@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest, sys
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -45,6 +46,49 @@ def assert_raises(err, fn, *args, **kwargs):
     except err:
         raised = True
     assert raised
+
+
+def test_equality():
+
+    class EqualTo:
+        def __init__(self, to):
+            self.to = to
+
+        def __eq__(self, other):
+            return other == self.to
+
+        def __hash__(self):
+            return hash(self.to)
+
+        def __repr__(self):
+            return f"<equal to {self.to}>"
+
+    dicts = [
+        {'a': 'a'},
+        {'a': 'b'},
+        {'a': 'a', 'b': 'b'},
+        {str(i): i for i in range(101)},
+        {str(i): str(i) for i in range(101)},
+        {1: 1},
+        {1: 2},
+        {1: 1, 2: 2},
+    ]
+
+    for d1 in dicts:
+        for d2 in dicts:
+
+            def check(a, b):
+                if d1 is d2:
+                    assert a == b, f"{a} should be equal to {b}"
+                else:
+                    assert a != b, f"{a} should not be equal to {b}"
+
+            eq1 = {EqualTo(k): EqualTo(v) for k, v in d1.items()}
+            eq2 = {EqualTo(k): EqualTo(v) for k, v in d2.items()}
+
+            check(d1, d2)
+            check(d1, eq2)
+            check(eq1, d2)
 
 
 def test_views():
@@ -103,6 +147,31 @@ def test_fromkeys():
     assert set(d.keys()) == {'a', 'b', 'c'}
     assert set(d.values()) == {o}
 
+    class preset(dict):
+        def __init__(self):
+            self['a'] = 1
+    assert preset.fromkeys(['b']) == {'a':1, 'b':None}        
+    assert preset.fromkeys(['b'], 2) == {'a':1, 'b':2}
+
+    class morethanoneinitargraiseserror(dict):        
+        def __init__(self, anotherArg):
+            self.__init__()        
+    assert_raises(TypeError, morethanoneinitargraiseserror.fromkeys, [1])
+    
+    class nosetitem:
+        pass
+
+    class nosetitem2(dict):
+        def __new__(cls):
+            return nosetitem()
+    assert_raises(TypeError, nosetitem2.fromkeys, [1])
+
+    # Regression test for GitHub issue #232
+    def foo(**kwargs):
+        return dict.fromkeys(kwargs, 1)
+
+    assert foo(a=5, b=6) == {'a': 1, 'b': 1}
+
 
 def test_init():
     d = dict(a=1, b=2, c=3)
@@ -121,13 +190,21 @@ def test_init():
 
     assert_raises(TypeError, dict.fromkeys, 10)
 
+    d = {'a':1, 'b':2}
+    d.__init__()
+    assert d == {'a':1, 'b':2}
+    d.__init__({'c':3})
+    assert d == {'a':1, 'b':2, 'c':3}
+    d.__init__({'d':4})
+    assert d == {'a':1, 'b':2, 'c':3, 'd':4}
 
 def test_init1():
     try:
         dict([("a", 1), ("b", 2)], [("c", 3), ("d", 4)])
         assert False, "expected TypeError"
     except TypeError as e:
-        assert "dict expected at most 1 arguments, got 2" == str(e), "invalid error message"
+        import re
+        assert re.match(r"dict expected at most 1 arguments?, got 2", str(e)), "invalid error message: %s" % e
 
 
 def test_init2():
@@ -135,12 +212,25 @@ def test_init2():
         dict([("a", 1), ("b", 2), ("c", 3), ("d", 4), 5])
         assert False, "expected TypeError"
     except TypeError as e:
-        assert "cannot convert dictionary update sequence element #4 to a sequence" == str(e), "invalid error message: %s" % str(e)
+        assert "cannot convert dictionary update sequence element #4 to a sequence" == str(
+            e), "invalid error message: %s" % str(e)
 
 
 def test_init3():
     try:
         dict([("a", 1), ("b", 2), ("c", 3), ("d", 4), [5]])
+        assert False, "expected ValueError"
+    except ValueError as e:
+        assert "dictionary update sequence element #4 has length 1; 2 is required" == str(e), "invalid error message"
+        
+    try:
+        dict("5")
+        assert False, "expected ValueError"
+    except ValueError as e:
+        assert "dictionary update sequence element #0 has length 1; 2 is required" == str(e), "invalid error message"
+        
+    try:
+        dict([("a", 1), ("b", 2), ("c", 3), ("d", 4), "5"])
         assert False, "expected ValueError"
     except ValueError as e:
         assert "dictionary update sequence element #4 has length 1; 2 is required" == str(e), "invalid error message"
@@ -155,7 +245,7 @@ def test_init4():
 
 
 def test_init5():
-    key_set = { 'a', 'b', 'c', 'd' }
+    key_set = {'a', 'b', 'c', 'd'}
 
     class CustomMappingObject:
         def __init__(self, keys):
@@ -171,17 +261,26 @@ def test_init5():
 
         def __len__(self):
             return len(self.keys)
+
     d = dict(CustomMappingObject(key_set))
     assert len(d) == 4, "invalid length, expected 4 but was %d" % len(d)
     assert set(d.keys()) == key_set, "unexpected keys: %s" % str(d.keys())
-    assert set(d.values()) == { 97, 98, 99, 100 }, "unexpected values: %s" % str(d.values())
+    assert set(d.values()) == {97, 98, 99, 100}, "unexpected values: %s" % str(d.values())
 
+def test_init6():
+    try:
+        dict(1)
+        assert False, "expected TypeError"
+    except TypeError as e:
+        assert "'int' object is not iterable" == str(e), "invalid error message"
+        
 def test_init_kwargs():
-    kwargs = {'ONE':'one', 'TWO' : 'two'}
-    d = dict([(1,11),(2,22)], **kwargs)
+    kwargs = {'ONE': 'one', 'TWO': 'two'}
+    d = dict([(1, 11), (2, 22)], **kwargs)
     assert len(d) == 4, "invalid length, expected 4 but was %d" % len(d)
-    assert set(d.keys()) == {1,2,'ONE','TWO'}, "unexpected keys: %s" % str(d.keys())
-    assert set(d.values()) == { 11, 22, 'one', 'two' }, "unexpected values: %s" % str(d.values())
+    assert set(d.keys()) == {1, 2, 'ONE', 'TWO'}, "unexpected keys: %s" % str(d.keys())
+    assert set(d.values()) == {11, 22, 'one', 'two'}, "unexpected values: %s" % str(d.values())
+
 
 def test_custom_key_object0():
     class CollisionKey:
@@ -195,11 +294,12 @@ def test_custom_key_object0():
             if type(other) == type(self):
                 return self.val == other.val
             return False
+
     key0 = CollisionKey(0)
     key1 = CollisionKey(1)
     key1eq = CollisionKey(1)
     key2 = CollisionKey(2)
-    d = { key0: "hello", key1: "world"}
+    d = {key0: "hello", key1: "world"}
     assert key0 in d, "key0 should be contained"
     assert key1 in d, "key1 should be contained"
     assert key1 is not key1eq, "key1 and key1eq are not the same object"
@@ -214,9 +314,9 @@ def test_custom_key_object1():
 
     class LongInt(int):
         def __hash__(self):
-            return 2**32 + int.__hash__(self) - 2**32
+            return 2 ** 32 + int.__hash__(self) - 2 ** 32
 
-    d = { i:r for i,r in enumerate(range(100)) }
+    d = {i: r for i, r in enumerate(range(100))}
     d[MyInt(10)] = "hello"
     d[LongInt(20)] = "world"
     assert MyInt(10) in d, "MyInt(10) should be contained"
@@ -232,10 +332,11 @@ def test_mutable_key():
             assert False, "unhashable key must raise exception"
         except TypeError as e:
             assert "unhashable" in str(e), "invalid exception %s" % str(e)
-    insert_unhashable(dict(), [1,2,3])
-    insert_unhashable(dict(), {"a" : 1, "b" : 2})
+
+    insert_unhashable(dict(), [1, 2, 3])
+    insert_unhashable(dict(), {"a": 1, "b": 2})
     # this should work since tuples are imutable
-    d = { }
+    d = {}
     d[("a", "b")] = "hello"
 
 
@@ -264,6 +365,7 @@ def test_keywords():
         assert kwargs["a"] == 1
         assert kwargs["b"] == 2
         return res
+
     res = reading(a=1, b=2)
     assert res["a"] == 10
     assert res["b"] == 20
@@ -272,6 +374,7 @@ def test_keywords():
 def test_fixed_storage():
     class Foo:
         pass
+
     obj = Foo()
     d = obj.__dict__
     for i in range(200):
@@ -322,7 +425,181 @@ def test_dictview_set_operations_on_keys():
     assert k1 | k2 == {1, 2, 3}
     assert k1 ^ k2 == {3}
     assert k1 ^ k3 == {1, 2, 4}
+    
+def test_dictview_keys_operations():
+    d1 = {'a': 1, 'b': 2}
+    
+    # &
+    assert d1.keys() & 'b' == {'b'}
+    assert d1.keys() & 'ab'  == {'a', 'b'}
+    assert d1.keys() & ['a'] == {'a'}
+    assert d1.keys() & ['a', 'b'] == {'a', 'b'}
+    assert d1.keys() & [1, 2] == set()
+    assert d1.keys() & ('a') == {'a'}
+    assert d1.keys() & ('a', 'b') == {'a', 'b'}
+    assert d1.keys() & {('a', 1)} == set()
+    assert d1.keys() & d1 == {'a', 'b'}
+    assert d1.keys() & d1.values() == set()
+    assert d1.keys() & {1:'a', 2:'b'}.values() == {'a', 'b'}
+    assert {1:1, 2:2}.keys() & range(1,3) == {1, 2}
 
+    def chargen(c1, c2):
+        for c in range(ord(c1), ord(c2)+1):
+            yield chr(c)
+    assert d1.keys() & chargen('a', 'b') == {'a', 'b'}    
+        
+    assert_raises(TypeError, lambda: d1.keys() & 1)
+    class TC:
+        pass
+    assert_raises(TypeError, lambda: d1.keys() & TC())
+    
+    # |
+    assert d1.keys() | 'b' == {'a', 'b'}
+    assert d1.keys() | 'bc' == {'a', 'c', 'b'}
+    assert d1.keys() | ['a'] == {'a', 'b'}
+    assert d1.keys() | ['a', 'b'] == {'a', 'b'}
+    assert d1.keys() | ['c', 'b'] == {'a', 'c', 'b'}
+    assert d1.keys() | [1, 2] == {'a', 1, 2, 'b'}
+    assert d1.keys() | ('a') == {'a', 'b'}
+    assert d1.keys() | ('a', 'b') == {'a', 'b'}
+    assert d1.keys() | {('a', 1)} == {'a', ('a', 1), 'b'}
+    assert d1.keys() | d1 == {'a', 'b'}
+    assert d1.keys() | d1.values() == {'a', 1, 2, 'b'}
+    assert d1.keys() | {1:'a', 2:'b'}.values() == {'a', 'b'}
+    assert {1:1, 2:2}.keys() | range(1,3) == {1, 2}
+
+    assert d1.keys() | chargen('a', 'c') == {'a', 'b', 'c'}
+
+    assert_raises(TypeError, lambda: d1.keys() | 1)
+    assert_raises(TypeError, lambda: d1.keys() | TC())
+    
+    # ^
+    assert d1.keys() ^ 'a' == {'b'}
+    assert d1.keys() ^ "ab" == set()
+    assert d1.keys() ^ ['a'] == {'b'}
+    assert d1.keys() ^ ['a', 'b'] == set()
+    assert d1.keys() ^ [1, 2] == {'a', 1, 2, 'b'}
+    assert d1.keys() ^ ('a') == {'b'}
+    assert d1.keys() ^ ('a', 'b') == set()
+    assert d1.keys() ^ {('a', 1)} == {'a', ('a', 1), 'b'}
+    assert d1.keys() ^ d1 == set()
+    assert d1.keys() ^ d1.values() == {'a', 1, 2, 'b'}
+    assert d1.keys() ^ {1:'a', 2:'b'}.values() == set()
+    assert {1:1, 2:2}.keys() ^ range(1,3) == set()
+    
+    assert d1.keys() ^ chargen('b', 'c') == {'a', 'c'}    
+    
+    assert_raises(TypeError, lambda: d1.keys() ^ 1)
+    assert_raises(TypeError, lambda: d1.keys() ^ TC())
+    
+    # -
+    assert d1.keys() - 'a' == {'b'}
+    assert d1.keys() - "ab" == set()
+    assert d1.keys() - ['a'] == {'b'}
+    assert d1.keys() - ['a', 'b'] == set()
+    assert d1.keys() - [1, 2] == {'a', 'b'}
+    assert d1.keys() - ('a') == {'b'}
+    assert d1.keys() - ('a', 'b') == set()
+    assert d1.keys() - {('a', 1)} == {'a', 'b'}
+    assert d1.keys() - d1 == set()
+    assert d1.keys() - d1.values() == {'a', 'b'}
+    assert d1.keys() - {1:'a', 2:'b'}.values() == set()
+    assert {1:1, 2:2}.keys() - range(1,3) == set()
+    
+    assert d1.keys() - chargen('b', 'c') == {'a'}
+    
+    assert_raises(TypeError, lambda: d1.keys() - 1)
+    assert_raises(TypeError, lambda: d1.keys() - TC())
+    
+def test_dictview_items_operations():
+    d1 = {'a': 1, 'b': 2}
+    
+    # &
+    assert d1.items() & 'b' == set()
+    assert d1.items() & "ab" == set()
+    assert d1.items() & ['a'] == set()
+    assert d1.items() & ['a', 'b'] == set()
+    assert d1.items() & [1, 2] == set()
+    assert d1.items() & ('a') == set()
+    assert d1.items() & ('a', 'b') == set()
+    assert d1.items() & {('a', 1)} == {('a', 1)}
+    assert d1.items() & d1 == set()
+    assert d1.items() & d1.values() == set()
+    assert d1.items() & {1:'a', 2:'b'}.values() == set()
+    assert d1.items() & tuple(d1.items()) == {('a', 1), ('b', 2)}
+    assert d1.items() & tuple(('a', 1)) == set()
+    assert {1:1, 2:2}.items() & range(1,3) == set()
+
+    def tuplegen(i, c1, c2):
+        for c in range(ord(c1), ord(c2)+1):
+            i += 1
+            yield (chr(c), i)
+
+    assert d1.items() & tuplegen(0, 'a', 'b') == {('a', 1), ('b', 2)}
+        
+    assert_raises(TypeError, lambda: d1.items() & 1)
+    class TC:
+        pass
+    assert_raises(TypeError, lambda: d1.items() & TC())
+    
+    # |
+    assert d1.items() | 'b' == {('a', 1), ('b', 2), 'b'}
+    assert d1.items() | "ab" == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | ['a'] == {('a', 1), ('b', 2), 'a'}
+    assert d1.items() | ['a', 'b'] == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | [1, 2] == {('a', 1), ('b', 2), 1, 2}
+    assert d1.items() | ('a') == {('a', 1), ('b', 2), 'a'}
+    assert d1.items() | ('a', 'b') == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | {('a', 1)} == {('a', 1), ('b', 2)}
+    assert d1.items() | d1 == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | d1.values() == {('a', 1), ('b', 2), 1, 2}
+    assert d1.items() | {1:'a', 2:'b'}.values() == {('a', 1), ('b', 2), 'a', 'b'}
+    assert d1.items() | tuple(d1.items()) == {('a', 1), ('b', 2)}
+    assert d1.items() | tuple(('a', 1)) == {('a', 1), ('b', 2), 'a', 1}
+    assert {1:1, 2:2}.items() | range(1,3) == {1, 2, (1, 1), (2, 2)}
+
+    assert d1.items() | tuplegen(0, 'a', 'c') == {('a', 1), ('b', 2), ('c', 3)}
+        
+    assert_raises(TypeError, lambda: d1.items() | 1)
+    assert_raises(TypeError, lambda: d1.items() | TC())
+    
+    # ^
+    assert d1.items() ^ 'a' == {('a', 1), 'a', ('b', 2)}
+    assert d1.items() ^ "ab" == {('a', 1), 'a', ('b', 2), 'b'}
+    assert d1.items() ^ ['a'] == {('a', 1), 'a', ('b', 2)}
+    assert d1.items() ^ ['a', 'b'] == {('a', 1), 'a', ('b', 2), 'b'}
+    assert d1.items() ^ [1, 2] == {('a', 1), 1, 2, ('b', 2)}
+    assert d1.items() ^ ('a') == {('a', 1), 'a', ('b', 2)}
+    assert d1.items() ^ ('a', 'b') == {('a', 1), 'a', ('b', 2), 'b'}
+    assert d1.items() ^ {('a', 1)} == {('b', 2)}
+    assert d1.items() ^ d1 == {('a', 1), 'a', ('b', 2), 'b'}
+    assert d1.items() ^ d1.values() == {('a', 1), 1, 2, ('b', 2)}
+    assert d1.items() ^ {1:'a', 2:'b'}.values() == {('a', 1), 'a', ('b', 2), 'b'}
+    assert {1:1, 2:2}.items() ^ range(1,3) == {1, 2, (1, 1), (2, 2)}
+    
+    assert d1.items() ^ tuplegen(1, 'b', 'c') == {('a', 1), ('c', 3)}
+    
+    assert_raises(TypeError, lambda: d1.items() ^ 1)
+    assert_raises(TypeError, lambda: d1.items() ^ TC())
+    
+    # -
+    assert d1.items() - 'a' == {('a', 1), ('b', 2)}
+    assert d1.items() - "ab" == {('a', 1), ('b', 2)}
+    assert d1.items() - ['a'] == {('a', 1), ('b', 2)}
+    assert d1.items() - ['a', 'b'] == {('a', 1), ('b', 2)}
+    assert d1.items() - [1, 2] == {('a', 1), ('b', 2)}
+    assert d1.items() - ('a') == {('a', 1), ('b', 2)}
+    assert d1.items() - ('a', 'b') == {('a', 1), ('b', 2)}
+    assert d1.items() - {('a', 1)} == {('b', 2)}
+    assert d1.items() - d1 == {('a', 1), ('b', 2)}
+    assert d1.items() - d1.values() == {('a', 1), ('b', 2)}
+    assert d1.items() - {1:'a', 2:'b'}.values() ==  {('a', 1), ('b', 2)}
+    assert {1:1, 2:2}.items() - range(1,3) == {(1, 1), (2, 2)}
+    
+    assert d1.items() - tuplegen(1, 'b', 'c') == {('a', 1)}
+
+    assert_raises(TypeError, lambda: d1.items() - 1)
+    assert_raises(TypeError, lambda: d1.items() - TC())
 
 def test_dictview_set_operations_on_items():
     k1 = {1: 1, 2: 2}.items()
@@ -458,6 +735,7 @@ def test_unhashable_key():
     key_tuple_list = (key_list, 2)
     assert_raises(TypeError, lambda: d[key_tuple_list])
 
+
 class EncodedString(str):
     # unicode string subclass to keep track of the original encoding.
     # 'encoding' is None for unicode strings and the source encoding
@@ -486,10 +764,279 @@ class EncodedString(str):
         return bytes_literal(self.utf8encode(), 'utf8')
 
 
-def test_wrapped_string_contains():
-    testString = EncodedString('something')
-    dict = {'something': (1, 0), 'nothing': (2, 0)}
+def test_wrapped_string_contains1():
+    test_string = EncodedString('something')
+    d = {'something': (1, 0), 'nothing': (2, 0)}
     reached = False
-    if testString in dict:
+    if test_string in d:
         reached = True
     assert reached
+
+
+def test_wrapped_string_contains2():
+    test_string = EncodedString('something')
+    dict = {'something', 'nothing'}
+    reached = False
+    if test_string in dict:
+        reached = True
+    assert reached
+
+
+def test_wrapped_string_get():
+    a = 'test'
+    dict = locals()
+    assert dict['a']
+ 
+@unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 8), "skipping for cPython versions < 3.8")
+def test_reverse_locals():
+    a = 'atest'
+    b = 'btest'
+    r = list(reversed(locals()))
+    assert r == ['b', 'a'], "expected ['b', 'a'] got " + str(r) + " instead "
+
+def test_concat():
+    r = {**{}}
+    assert len(r) == 0
+
+    r = {**{1: 2}}
+    assert len(r) == 1
+    assert set(r.keys()) == {1}
+    assert set(r.values()) == {2}
+
+    r = {**{}, 1: 2}
+    assert len(r) == 1
+    assert set(r.keys()) == {1}
+    assert set(r.values()) == {2}
+
+    r = {**{1: 2}, 3: 4, 6: 8}
+    assert len(r) == 3
+    assert set(r.keys()) == {1, 3, 6}
+    assert set(r.values()) == {2, 4, 8}
+
+
+def test_custom_ob_with_eq_and_hash():
+    class MyClass(object):
+        def __init__(self, x):
+            self.x = x
+
+        def __hash__(self):
+            return id(self)
+
+        def __eq__(self, other):
+            return isinstance(other, MyClass) and self.x == other.x
+
+    d = {}
+    a = MyClass(10)
+    d[a] = 20
+    b = MyClass(10)
+
+    assert a in d
+    assert b not in d
+    assert d.get(a, -1) == 20
+    assert d.get(b, -1) == -1
+
+
+def test_calling_hash_and_eq():
+    count_hash = 0
+    count_eq = 0
+
+    class MyClass(object):
+        def __init__(self, x):
+            self.x = x
+
+        def __hash__(self):
+            nonlocal count_hash
+            count_hash += 1
+            return 12
+
+        def __eq__(self, other):
+            nonlocal count_eq
+            count_eq += 1
+            return isinstance(other, MyClass) and self.x == other.x
+
+    d = {}
+    a = MyClass(10)
+
+    try:
+        d[a] # we must not omit the call to __hash__, even when the dict is
+             # empty
+    except KeyError:
+        assert count_hash == 1
+    else:
+        assert False
+
+    d[a] = 20
+    b = MyClass(10)
+
+    assert a in d
+    assert b in d
+    assert count_hash == 4, count_hash
+    assert count_eq == 1, count_eq
+
+
+def test_hash_and_eq_for_dynamic_object_storage():
+    class MyObject:
+        def __init__(self, string):
+            self.string = string
+
+        def __eq__(self, other):
+            return self.string == other
+
+        def __hash__(self):
+            return hash(self.string)
+
+    d = {"1": 42}
+
+    d2 = MyObject("1").__dict__
+    d2["1"] = 42
+
+    assert MyObject("1") in d
+    assert d[MyObject("1")] == 42
+    d[MyObject("1")] = 112
+    assert d[MyObject("1")] == 112
+    del d[MyObject("1")]
+    assert "1" not in d
+
+    assert MyObject("1") in d2
+    assert d2[MyObject("1")] == 42
+    d2[MyObject("1")] = 112
+    assert d2[MyObject("1")] == 112
+    del d2[MyObject("1")]
+    assert "1" not in d2
+
+def test_update_side_effect_on_other():
+    class X:
+        def __hash__(self):
+            return 0
+        def __eq__(self, o):        
+            other.clear()
+            return False
+
+    other = {'a':1, 'b': 2, X(): 3, 'c':4}    
+    d = {X(): 0, 1: 1}
+    assert_raises(RuntimeError, d.update, other)
+    assert 'c' not in d
+    
+    other = {'a':1, 'b': 2, X(): 3, 'c':4}
+    d = {X(): 0, 1: 0}
+    kw = {'kw': 1}
+    
+    raised = False
+    try:
+        d.update(other, **kw)
+    except RuntimeError:
+        raised = True
+    assert raised
+        
+    assert 'kw' not in d
+    
+def test_iter_changed_size():
+    def just_iterate(it):
+        for i in it:
+            pass
+
+    def iterate_and_update(it):
+        for i in it:
+            d.update({3:3})
+
+    # dict
+    d = {1:1, 2:2} 
+    it = iter(d)
+    del d[1]
+    assert_raises(RuntimeError, just_iterate, it)
+    
+    d = {1:1, 2:2}
+    assert_raises(RuntimeError, iterate_and_update, d)
+
+    # keys
+    d = {1:1, 2:2}
+    it = iter(d.keys())
+    del d[1]
+    assert_raises(RuntimeError, just_iterate, it)
+
+    d = {1:1}
+    assert_raises(RuntimeError, iterate_and_update, d.keys())
+
+    # values
+    d = {1:1, 2:2} 
+    it = iter(d.values())
+    del d[1]
+    assert_raises(RuntimeError, just_iterate, it)
+
+    d = {1:1}
+    assert_raises(RuntimeError, iterate_and_update, d.values())
+
+    # items
+    d = {1:1, 2:2}
+    it = iter(d.items())
+    del d[1]
+    assert_raises(RuntimeError, just_iterate, it)
+
+    d = {1:1}
+    assert_raises(RuntimeError, iterate_and_update, d.items())
+    
+def test_decorated_method_dict():
+    def assert_bogus_dict_raises(dm):
+        raised = False
+        try:
+            dm.__dict__ = 'a'
+        except TypeError as e:
+            raised = True
+            assert "__dict__ must be set to a dictionary, not a 'str'" == str(e), "invalid error message"
+        assert raised
+
+    class A:
+        def f():
+            pass
+
+    cm = classmethod(A.f)
+    cm.x = 42
+    assert cm.__dict__ == {'x': 42}
+    cm.__dict__ = {1:1}
+    assert cm.__dict__ == {1:1}
+
+    sm = staticmethod(A.f)
+    sm.x = 42
+    assert sm.__dict__ == {'x': 42}
+    sm.__dict__ = {1:1}
+    assert sm.__dict__ == {1:1}
+
+    assert_bogus_dict_raises(classmethod(A.f))
+    assert_bogus_dict_raises(staticmethod(A.f))
+
+    def f(): pass
+    assert_bogus_dict_raises(classmethod(f))
+    assert_bogus_dict_raises(staticmethod(f))
+
+    class A:
+        def f(self):
+            def ff(): pass
+            assert_bogus_dict_raises(classmethod(ff))
+            assert_bogus_dict_raises(staticmethod(ff))
+    A().f()
+
+def test_update():
+    x = {1: 0, 2: 1}
+    y = {}
+    y.update(x)
+    assert y == x
+
+def test_module_dict():    
+    import sys
+    ModuleType = type(sys)
+
+    foo = ModuleType.__new__(ModuleType)
+    assert foo.__dict__ == None
+
+    foo = ModuleType.__new__(ModuleType)
+    foo.f = 1
+    assert foo.__dict__ == {"f" : 1}
+
+    del foo.f 
+    assert foo.__dict__ == {}    
+    
+    foo = ModuleType.__new__(ModuleType)
+    foo.f = 1
+    del foo.f 
+    assert foo.__dict__ == {}
+

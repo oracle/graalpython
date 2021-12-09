@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,31 +42,33 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -76,7 +78,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.HiddenKey;
 
-@CoreFunctions(defineModule = "_weakref")
+@CoreFunctions(defineModule = "_weakref", isEager = true)
 public class WeakRefModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey weakRefQueueKey = new HiddenKey("weakRefQueue");
     private final ReferenceQueue<Object> weakRefQueue = new ReferenceQueue<>();
@@ -86,41 +88,60 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         return WeakRefModuleBuiltinsFactory.getFactories();
     }
 
-    private static class WeakrefCallbackAction implements AsyncHandler.AsyncAction {
-        private final WeakRefStorage reference;
+    private static class WeakrefCallbackAction extends AsyncHandler.AsyncPythonAction {
+        private final WeakRefStorage[] references;
+        private int index;
 
-        public WeakrefCallbackAction(PReferenceType.WeakRefStorage reference) {
-            this.reference = reference;
+        public WeakrefCallbackAction(WeakRefStorage[] weakRefStorages) {
+            this.references = weakRefStorages;
+            this.index = 0;
         }
 
+        @Override
         public Object callable() {
-            return reference.getCallback();
+            return references[index].getCallback();
         }
 
+        @Override
         public Object[] arguments() {
-            return new Object[]{reference.getRef()};
+            return new Object[]{references[index].getRef()};
+        }
+
+        @Override
+        public boolean proceed() {
+            index++;
+            return index < references.length;
         }
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule weakrefModule = core.lookupBuiltinModule("_weakref");
         weakrefModule.setAttribute(weakRefQueueKey, weakRefQueue);
         core.lookupType(PythonBuiltinClassType.PReferenceType).setAttribute(weakRefQueueKey, weakRefQueue);
-
+        final PythonContext ctx = core.getContext();
         core.getContext().registerAsyncAction(() -> {
+            if (!ctx.isGcEnabled()) {
+                return null;
+            }
             Reference<? extends Object> reference = null;
             try {
                 reference = weakRefQueue.remove();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            if (reference instanceof PReferenceType.WeakRefStorage) {
-                return new WeakrefCallbackAction((PReferenceType.WeakRefStorage) reference);
-            } else {
-                return null;
+            ArrayList<PReferenceType.WeakRefStorage> refs = new ArrayList<>();
+            do {
+                if (reference instanceof PReferenceType.WeakRefStorage) {
+                    refs.add((PReferenceType.WeakRefStorage) reference);
+                }
+                reference = weakRefQueue.poll();
+            } while (reference != null);
+            if (!refs.isEmpty()) {
+                return new WeakrefCallbackAction(refs.toArray(new PReferenceType.WeakRefStorage[0]));
             }
+            return null;
         });
     }
 
@@ -132,25 +153,21 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         @Child private CExtNodes.GetTypeMemberNode getTpWeaklistoffsetNode;
 
         @Specialization(guards = "!isNativeObject(object)")
-        public PReferenceType refType(LazyPythonClass cls, Object object, @SuppressWarnings("unused") PNone none) {
+        public PReferenceType refType(Object cls, Object object, @SuppressWarnings("unused") PNone none) {
             return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
         }
 
-        @Specialization(guards = "!isNativeObject(object)")
-        public PReferenceType refType(LazyPythonClass cls, Object object, Object callback) {
-            if (callback instanceof PNone) {
-                return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
-            } else {
-                return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
-            }
+        @Specialization(guards = {"!isNativeObject(object)", "!isPNone(callback)"})
+        public PReferenceType refTypeWithCallback(Object cls, Object object, Object callback) {
+            return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
         }
 
         @Specialization
-        public PReferenceType refType(LazyPythonClass cls, PythonAbstractNativeObject pythonObject, Object callback,
-                        @Cached("create()") GetLazyClassNode getClassNode,
-                        @Cached("create()") IsBuiltinClassProfile profile) {
+        public PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsBuiltinClassProfile profile) {
             Object actualCallback = callback instanceof PNone ? null : callback;
-            LazyPythonClass clazz = getClassNode.execute(pythonObject);
+            Object clazz = getClassNode.execute(pythonObject);
 
             // if the object is a type, a weak ref is allowed
             if (profile.profileClass(clazz, PythonBuiltinClassType.PythonClass)) {
@@ -163,7 +180,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create());
                 }
-                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMemberNames.TP_WEAKLISTOFFSET);
+                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMember.TP_WEAKLISTOFFSET);
                 if (tpWeaklistoffset != PNone.NO_VALUE) {
                     return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
                 }
@@ -173,18 +190,18 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         public PReferenceType refType(@SuppressWarnings("unused") Object cls, Object object, @SuppressWarnings("unused") Object callback) {
-            throw raise(PythonErrorType.TypeError, "cannot create weak reference to '%p' object", object);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
         }
 
+        @SuppressWarnings("unchecked")
         private ReferenceQueue<Object> getWeakReferenceQueue() {
             Object queueObject = readQueue.execute(getCore().lookupType(PythonBuiltinClassType.PReferenceType), weakRefQueueKey);
             if (queueObject instanceof ReferenceQueue) {
-                @SuppressWarnings("unchecked")
                 ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
                 return queue;
             } else {
-                if (getContext().getCore().isInitialized()) {
-                    CompilerDirectives.transferToInterpreter();
+                if (getContext().isCoreInitialized()) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("the weak reference queue was modified!");
                 } else {
                     // returning a null reference queue is fine, it just means
@@ -204,8 +221,8 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             return pReferenceType.getWeakRefCount();
         }
 
-        @Specialization
-        public Object getCount(@SuppressWarnings("unused") PNone none) {
+        @Fallback
+        public Object getCount(@SuppressWarnings("unused") Object none) {
             return 0;
         }
     }

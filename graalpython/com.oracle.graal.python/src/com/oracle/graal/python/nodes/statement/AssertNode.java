@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,11 +29,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Assertio
 
 import java.io.PrintStream;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -41,22 +38,18 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class AssertNode extends StatementNode {
     @Child private PRaiseNode raise;
-    @Child private CastToBooleanNode condition;
+    @Child private CoerceToBooleanNode condition;
     @Child private ExpressionNode message;
-    @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
-    @CompilationFinal private boolean javaExceptionsFailAssertions;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
-    public AssertNode(CastToBooleanNode condition, ExpressionNode message) {
+    public AssertNode(CoerceToBooleanNode condition, ExpressionNode message) {
         this.condition = condition;
         this.message = message;
     }
@@ -65,9 +58,7 @@ public class AssertNode extends StatementNode {
     public void executeVoid(VirtualFrame frame) {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            PythonContext context = PythonLanguage.getContextRef().get();
-            assertionsEnabled = !PythonOptions.getOption(context, PythonOptions.PythonOptimizeFlag);
-            javaExceptionsFailAssertions = PythonOptions.getOption(context, PythonOptions.CatchAllExceptions);
+            assertionsEnabled = !getContext().getOption(PythonOptions.PythonOptimizeFlag);
         }
         if (assertionsEnabled) {
             try {
@@ -78,7 +69,7 @@ public class AssertNode extends StatementNode {
                 // Python exceptions just fall through
                 throw e;
             } catch (Exception e) {
-                if (javaExceptionsFailAssertions) {
+                if (getLanguage().getEngineOption(PythonOptions.CatchAllExceptions)) {
                     // catch any other exception and convert to Python exception
                     throw assertionFailed(frame);
                 } else {
@@ -89,23 +80,17 @@ public class AssertNode extends StatementNode {
     }
 
     private PException assertionFailed(VirtualFrame frame) {
-        String assertionMessage = "";
+        Object assertionMessage = null;
         if (message != null) {
             try {
-                Object messageObj = message.execute(frame);
-                if (callNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__STR__));
-                }
-                assertionMessage = (String) callNode.executeObject(frame, messageObj);
+                assertionMessage = message.execute(frame);
             } catch (PException e) {
                 // again, Python exceptions just fall through
                 throw e;
             } catch (Exception e) {
                 assertionMessage = "internal exception occurred";
-                PythonContext context = getContext();
-                if (PythonOptions.getOption(context, PythonOptions.WithJavaStacktrace)) {
-                    printStackTrace(context, e);
+                if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
+                    printStackTrace(getContext(), e);
                 }
             }
         }
@@ -113,10 +98,13 @@ public class AssertNode extends StatementNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             raise = insert(PRaiseNode.create());
         }
+        if (assertionMessage == null) {
+            return raise.raise(AssertionError);
+        }
         return raise.raise(AssertionError, assertionMessage);
     }
 
-    public CastToBooleanNode getCondition() {
+    public CoerceToBooleanNode getCondition() {
         return condition;
     }
 
@@ -127,13 +115,5 @@ public class AssertNode extends StatementNode {
     @TruffleBoundary
     private static void printStackTrace(PythonContext context, Exception e) {
         e.printStackTrace(new PrintStream(context.getStandardErr()));
-    }
-
-    private PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
     }
 }

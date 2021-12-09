@@ -1,0 +1,15 @@
+ModuleRootNode Name: <module 'assignment01'> SourceSection: [0,5]`a = 1`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,5]`a = 1`
+    ExpressionWithSideEffect SourceSection: [0,5]`a = 1`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,5]`a = 1`
+          Identifier: a
+          IntegerLiteralNode SourceSection: [4,5]`1`
+            Value: 1

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,21 +33,13 @@ public interface WriteNode extends NodeInterface {
 
     ExpressionNode getRhs();
 
-    default void doWrite(VirtualFrame frame, boolean value) {
-        doWrite(frame, (Object) value);
-    }
+    void executeBoolean(VirtualFrame frame, boolean value);
 
-    default void doWrite(VirtualFrame frame, int value) {
-        doWrite(frame, (Object) value);
-    }
+    void executeInt(VirtualFrame frame, int value);
 
-    default void doWrite(VirtualFrame frame, long value) {
-        doWrite(frame, (Object) value);
-    }
+    void executeLong(VirtualFrame frame, long value);
 
-    default void doWrite(VirtualFrame frame, double value) {
-        doWrite(frame, (Object) value);
-    }
+    void executeDouble(VirtualFrame frame, double value);
 
-    void doWrite(VirtualFrame frame, Object value);
+    void executeObject(VirtualFrame frame, Object value);
 }

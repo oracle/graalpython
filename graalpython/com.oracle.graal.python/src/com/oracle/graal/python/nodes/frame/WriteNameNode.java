@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,57 +63,27 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
         return WriteNameNodeGen.create(attributeId, rhs);
     }
 
+    @Specialization(guards = "!hasLocals(frame)")
+    protected static void writeGlobal(VirtualFrame frame, Object value,
+                    @Cached("create(attributeId)") WriteGlobalNode setItem) {
+        setItem.executeObject(frame, value);
+    }
+
     @Specialization(guards = "hasLocalsDict(frame)")
     protected void writeLocalsDict(VirtualFrame frame, Object value,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode setItem) {
+                    @Cached HashingCollectionNodes.SetItemNode setItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
         setItem.execute(frame, frameLocals, attributeId, value);
     }
 
     @Specialization(guards = "hasLocals(frame)")
     protected void writeLocal(VirtualFrame frame, Object value,
-                    @Cached("create()") SetItemNode setItem) {
+                    @Cached SetItemNode setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         setItem.executeWith(frame, frameLocals, attributeId, value);
     }
 
-    @Specialization(guards = "!hasLocals(frame)")
-    protected void writeGlobal(VirtualFrame frame, Object value,
-                    @Cached("create(attributeId)") WriteGlobalNode setItem) {
-        setItem.executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, boolean value) {
-        executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, int value) {
-        executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, long value) {
-        executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, double value) {
-        executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, Object value) {
-        executeWithValue(frame, value);
-    }
-
-    public abstract void executeWithValue(VirtualFrame frame, boolean value);
-
-    public abstract void executeWithValue(VirtualFrame frame, int value);
-
-    public abstract void executeWithValue(VirtualFrame frame, long value);
-
-    public abstract void executeWithValue(VirtualFrame frame, double value);
-
-    public abstract void executeWithValue(VirtualFrame frame, Object value);
-
-    public String getAttributeId() {
+    public final String getAttributeId() {
         return attributeId;
     }
 }

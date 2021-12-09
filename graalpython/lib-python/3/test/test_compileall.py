@@ -57,7 +57,6 @@ class CompileallTestsBase:
         compare = struct.pack('<4sll', importlib.util.MAGIC_NUMBER, 0, mtime)
         return data, compare
 
-    @unittest.skipUnless(hasattr(os, 'stat'), 'test needs os.stat()')
     def recreation_check(self, metadata):
         """Check that compileall recreates bytecode when the new metadata is
         used."""
@@ -576,7 +575,48 @@ class CommandLineTestsBase:
                         new=[sys.executable, self.directory, "-j0"]):
             compileall.main()
             self.assertTrue(compile_dir.called)
-            self.assertEqual(compile_dir.call_args[-1]['workers'], None)
+            self.assertEqual(compile_dir.call_args[-1]['workers'], 0)
+
+    def _test_ddir_only(self, *, ddir, parallel=True):
+        """Recursive compile_dir ddir must contain package paths; bpo39769."""
+        fullpath = ["test", "foo"]
+        path = self.directory
+        mods = []
+        for subdir in fullpath:
+            path = os.path.join(path, subdir)
+            os.mkdir(path)
+            script_helper.make_script(path, "__init__", "")
+            mods.append(script_helper.make_script(path, "mod",
+                                                  "def fn(): 1/0\nfn()\n"))
+        compileall.compile_dir(
+                self.directory, quiet=True, ddir=ddir,
+                workers=2 if parallel else 1)
+        self.assertTrue(mods)
+        for mod in mods:
+            self.assertTrue(mod.startswith(self.directory), mod)
+            modcode = importlib.util.cache_from_source(mod)
+            modpath = mod[len(self.directory+os.sep):]
+            _, _, err = script_helper.assert_python_failure(modcode)
+            expected_in = os.path.join(ddir, modpath)
+            mod_code_obj = test.test_importlib.util._get_code_from_pyc(modcode)
+            self.assertEqual(mod_code_obj.co_filename, expected_in)
+            self.assertIn(f'"{expected_in}"', os.fsdecode(err))
+
+    def test_ddir_only_one_worker(self):
+        """Recursive compile_dir ddir= contains package paths; bpo39769."""
+        return self._test_ddir_only(ddir="<a prefix>", parallel=False)
+
+    def test_ddir_multiple_workers(self):
+        """Recursive compile_dir ddir= contains package paths; bpo39769."""
+        return self._test_ddir_only(ddir="<a prefix>", parallel=True)
+
+    def test_ddir_empty_only_one_worker(self):
+        """Recursive compile_dir ddir='' contains package paths; bpo39769."""
+        return self._test_ddir_only(ddir="", parallel=False)
+
+    def test_ddir_empty_multiple_workers(self):
+        """Recursive compile_dir ddir='' contains package paths; bpo39769."""
+        return self._test_ddir_only(ddir="", parallel=True)
 
 
 class CommmandLineTestsWithSourceEpoch(CommandLineTestsBase,

@@ -1,1 +1,11 @@
-test_decodestring_double_equals
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_decode
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_decode_header
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_decodestring
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_decodestring_double_equals
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_embedded_ws
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_encode
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_encode_header
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_encodestring
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_idempotent_string
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_scriptdecode
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_scriptencode

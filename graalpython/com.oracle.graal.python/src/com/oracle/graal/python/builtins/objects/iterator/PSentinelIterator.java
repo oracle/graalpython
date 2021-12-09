@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,10 +38,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PSentinelIterator extends PythonBuiltinObject {
 
@@ -49,8 +50,8 @@ public final class PSentinelIterator extends PythonBuiltinObject {
     private final Object sentinel;
     private boolean sentinelReached;
 
-    public PSentinelIterator(LazyPythonClass cls, Object callable, Object sentinel) {
-        super(cls);
+    public PSentinelIterator(Object cls, Shape instanceShape, Object callable, Object sentinel) {
+        super(cls, instanceShape);
         this.callTarget = callable;
         this.sentinel = sentinel;
     }

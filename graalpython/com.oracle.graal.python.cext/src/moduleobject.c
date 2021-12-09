@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,25 @@
 #include "capi.h"
 
 PyTypeObject PyModule_Type = PY_TRUFFLE_TYPE("module", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(PyModuleObject));
+PyTypeObject PyModuleDef_Type = PY_TRUFFLE_TYPE("moduledef", &PyType_Type, 0, sizeof(struct PyModuleDef));
 
-/* Modules */
+
+UPCALL_ID(_PyModule_GetAndIncMaxModuleNumber);
+// partially taken from CPython "Objects/moduleobject.c"
+PyObject*
+PyModuleDef_Init(struct PyModuleDef* def)
+{
+    if (def->m_base.m_index == 0) {
+        Py_REFCNT(def) = 1;
+        Py_TYPE(def) = &PyModuleDef_Type;
+        def->m_base.m_index = UPCALL_CEXT_L(_jls__PyModule_GetAndIncMaxModuleNumber);
+    }
+    return (PyObject*)def;
+}
+
+//                                  cls         dict     name    cfunc  flags  sig  doc
+typedef int (*AddFunction_fun_t)(PyObject *, PyObject *, void *, void *, int , int, char *);
+UPCALL_TYPED_ID(AddFunction, AddFunction_fun_t);
 int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
     if (!methods) {
         return -1;
@@ -50,15 +67,13 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
     int idx = 0;
     PyMethodDef def = methods[idx];
     while (def.ml_name != NULL) {
-        polyglot_invoke(PY_TRUFFLE_CEXT,
-                       "AddFunction",
-                       native_to_java(mod),
+        _jls_AddFunction(native_to_java(mod),
 					   NULL,
-                       polyglot_from_string((const char*)(def.ml_name), SRC_CS),
-                       def.ml_meth,
-                       get_method_flags_cwrapper(def.ml_flags),
+                       polyglot_from_string(def.ml_name, SRC_CS),
+                       function_pointer_to_java(def.ml_meth),
+                       def.ml_flags,
                        get_method_flags_wrapper(def.ml_flags),
-                       polyglot_from_string((const char*)(def.ml_doc ? def.ml_doc : ""), SRC_CS));
+					   (def.ml_doc ? def.ml_doc : ""));
         def = methods[++idx];
     }
     return 0;
@@ -70,8 +85,11 @@ int PyModule_SetDocString(PyObject* m, const char* doc) {
     return 0;
 }
 
+POLYGLOT_DECLARE_TYPE(PyModuleDef);
 UPCALL_ID(_PyModule_CreateInitialized_PyModule_New);
 PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
+    if (!PyModuleDef_Init(moduledef))
+        return NULL;
     if (moduledef->m_slots) {
         PyErr_Format(
             PyExc_SystemError,
@@ -103,19 +121,17 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
         }
     }
 
-    mod->md_def = moduledef;
+    mod->md_def = polyglot_from_PyModuleDef(moduledef);
     return (PyObject*) mod;
 }
 
 UPCALL_ID(PyModule_AddObject);
 int PyModule_AddObject(PyObject* m, const char* k, PyObject* v) {
-    UPCALL_CEXT_VOID(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), native_to_java(v));
-    return 0;
+    return UPCALL_CEXT_I(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), native_to_java(v));
 }
 
 int PyModule_AddIntConstant(PyObject* m, const char* k, long constant) {
-    UPCALL_CEXT_VOID(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), PyLong_FromLong(constant));
-    return 0;
+    return UPCALL_CEXT_I(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), PyLong_FromLong(constant));
 }
 
 PyObject* PyModule_Create2(PyModuleDef* moduledef, int apiversion) {
@@ -135,10 +151,36 @@ PyObject* PyModule_NewObject(PyObject* name) {
     return UPCALL_CEXT_O(_jls_PyModule_NewObject, native_to_java(name));
 }
 
+PyObject* PyModule_New(const char *name) {
+    return UPCALL_CEXT_O(_jls_PyModule_NewObject, polyglot_from_string(name, SRC_CS));
+}
+
+PyModuleDef* PyModule_GetDef(PyObject* m) {
+    if (!PyModule_Check(m)) {
+        PyErr_BadArgument();
+        return NULL;
+    }
+    return ((PyModuleObject *)m)->md_def;
+}
+
 void* PyModule_GetState(PyObject *m) {
     if (!PyModule_Check(m)) {
         PyErr_BadArgument();
         return NULL;
     }
     return ((PyModuleObject *)m)->md_state;
+}
+
+UPCALL_ID(PyModule_GetNameObject);
+PyObject* PyModule_GetNameObject(PyObject *m) {
+	return UPCALL_CEXT_O(_jls_PyModule_GetNameObject, native_to_java(m));
+}
+
+// partially taken from CPython "Objects/moduleobject.c"
+const char * PyModule_GetName(PyObject *m) {
+    PyObject *name = PyModule_GetNameObject(m);
+    if (name == NULL) {
+        return NULL;
+    }
+    return PyUnicode_AsUTF8(name);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,25 +40,29 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-public class NativeSequenceStorage extends SequenceStorage {
+@ExportLibrary(PythonBufferAccessLibrary.class)
+public final class NativeSequenceStorage extends SequenceStorage {
 
     /* native pointer object */
     private Object ptr;
 
-    /* length of contents */
-    protected int len;
-
-    /* allocated capacity */
-    protected int capacity;
-
-    protected final ListStorageType elementType;
+    private final ListStorageType elementType;
 
     public NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
+        super(length, capacity);
         this.ptr = ptr;
-        this.capacity = capacity;
-        this.len = length;
         this.elementType = elementType;
     }
 
@@ -68,10 +72,6 @@ public class NativeSequenceStorage extends SequenceStorage {
 
     public void setPtr(Object ptr) {
         this.ptr = ptr;
-    }
-
-    public int getCapacity() {
-        return capacity;
     }
 
     public void setCapacity(int capacity) {
@@ -84,99 +84,126 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final int length() {
-        return len;
-    }
-
-    @Override
     public void setNewLength(int length) {
         assert length <= capacity;
-        this.len = length;
+        this.length = length;
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("<NativeSequenceStorage(type=%s, len=%d, cap=%d) at %s>", elementType, len, capacity, ptr);
+        return String.format("<NativeSequenceStorage(type=%s, len=%d, cap=%d) at %s>", elementType, length, capacity, ptr);
     }
 
-    /**
-     * Ensure that the current capacity is big enough. If not, we increase capacity to the next
-     * designated size (not necessarily the requested one).
-     */
     @Override
-    public void ensureCapacity(int newCapacity) {
-        throw new AssertionError("should not reach");
+    public void ensureCapacity(@SuppressWarnings("unused") int newCapacity) {
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public SequenceStorage copy() {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public SequenceStorage createEmpty(int newCapacity) {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public Object[] getInternalArray() {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public Object[] getCopyOfInternalArray() {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public Object getItemNormalized(int idx) {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public void insertItem(int idx, Object value) throws SequenceStoreException {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int length) {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public void reverse() {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public boolean equals(SequenceStorage other) {
-        CompilerAsserts.neverPartOfCompilation();
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public SequenceStorage generalizeFor(Object value, SequenceStorage other) {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public Object getIndicativeValue() {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public void copyItem(int idxTo, int idxFrom) {
-        throw new AssertionError("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public Object getInternalArrayObject() {
         return ptr;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
+        return elementType == ListStorageType.Byte;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isReadonly() {
+        return false;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return length;
+    }
+
+    @ExportMessage
+    byte readByte(int byteOffset,
+                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        try {
+            return (byte) interopLib.readArrayElement(ptr, byteOffset);
+        } catch (InvalidArrayIndexException | UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere("native storage read failed");
+        }
+    }
+
+    @ExportMessage
+    void writeByte(int byteOffset, byte value,
+                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        try {
+            interopLib.writeArrayElement(ptr, byteOffset, value);
+        } catch (InvalidArrayIndexException | UnsupportedMessageException | UnsupportedTypeException e) {
+            throw CompilerDirectives.shouldNotReachHere("native storage write failed");
+        }
     }
 }

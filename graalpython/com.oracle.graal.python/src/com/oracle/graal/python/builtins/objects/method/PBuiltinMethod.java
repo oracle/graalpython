@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,23 +25,28 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
 
 // Corresponds to PyCFunction, but that name is just confusing
+@ExportLibrary(InteropLibrary.class)
 public final class PBuiltinMethod extends PythonBuiltinObject {
 
-    private final Object function;
+    private final PBuiltinFunction function;
     private final Object self;
 
-    public PBuiltinMethod(LazyPythonClass clazz, Object self, Object function) {
-        super(clazz);
+    public PBuiltinMethod(Object clazz, Shape instanceShape, Object self, PBuiltinFunction function) {
+        super(clazz, instanceShape);
         this.self = self;
         this.function = function;
     }
 
-    public Object getFunction() {
+    public PBuiltinFunction getFunction() {
         return function;
     }
 
@@ -53,5 +58,16 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return "<builtin-method '" + function + "' of '" + self + "' objects>";
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasExecutableName() {
+        return true;
+    }
+
+    @ExportMessage
+    Object getExecutableName() {
+        return function.getName();
     }
 }

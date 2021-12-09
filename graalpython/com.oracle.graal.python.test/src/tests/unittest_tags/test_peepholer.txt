@@ -1,1 +1,4 @@
-test_bug_11510
+*graalpython.lib-python.3.test.test_peepholer.TestBuglets.test_bug_11510
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_condition_with_binop_with_bools
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_if_with_if_expression
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_trailing_nops

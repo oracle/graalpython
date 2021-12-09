@@ -48,7 +48,7 @@ def testformat(formatstr, args, output=None, limit=None, overflowok=False):
 
 def testcommon(formatstr, args, output=None, limit=None, overflowok=False):
     # if formatstr is a str, test str, bytes, and bytearray;
-    # otherwise, test bytes and bytearry
+    # otherwise, test bytes and bytearray
     if isinstance(formatstr, str):
         testformat(formatstr, args, output, limit, overflowok)
         b_format = formatstr.encode('ascii')
@@ -483,9 +483,6 @@ class FormatTest(unittest.TestCase):
         c = complex(f)
         with self.assertRaises(ValueError) as cm:
             format(c, ".%sf" % (INT_MAX + 1))
-            
-    def test_format_class(self):
-        self.assertEqual(format(type("")), "<class 'str'>")
 
 
 if __name__ == "__main__":

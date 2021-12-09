@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,7 +27,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
 
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.graal.python.util.PythonUtils;
 
 public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
@@ -71,7 +71,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         }
 
         values[idx] = value;
-        length++;
+        incLength();
     }
 
     @Override
@@ -84,7 +84,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         Object[] newArray = new Object[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new ObjectSequenceStorage(newArray);
         }
 
@@ -93,26 +93,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         }
 
         return new ObjectSequenceStorage(newArray);
-    }
-
-    public void setObjectSliceInBound(int start, int stop, int step, ObjectSequenceStorage sequence, ConditionProfile sameLengthProfile) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
-            minimizeCapacity();
-            return;
-        }
-
-        ensureCapacity(stop);
-
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        length = length > stop ? length : stop;
     }
 
     @Override
@@ -132,12 +112,12 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
     @Override
     public Object[] getCopyOfInternalArray() {
-        return Arrays.copyOf(values, length);
+        return PythonUtils.arrayCopyOf(values, length);
     }
 
     @Override
     public void increaseCapacityExactWithCopy(int newCapacity) {
-        values = Arrays.copyOf(values, newCapacity);
+        values = PythonUtils.arrayCopyOf(values, newCapacity);
         capacity = values.length;
     }
 
@@ -145,12 +125,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     public void increaseCapacityExact(int newCapacity) {
         values = new Object[newCapacity];
         capacity = values.length;
-    }
-
-    public Object popObject() {
-        Object pop = values[length - 1];
-        length--;
-        return pop;
     }
 
     @Override

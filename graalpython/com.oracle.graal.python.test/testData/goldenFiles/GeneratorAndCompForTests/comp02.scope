@@ -1,0 +1,20 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: mro
+        Kind: Function
+        FrameDescriptor: [other, cls, abcs, <return_val>, base]
+        CellVars: [abcs, base]
+        FreeVars: Empty
+        Scope: <genexpr>
+            Kind: ListComp
+            FrameDescriptor: [abcs, <return_val>, base]
+            CellVars: Empty
+            FreeVars: [abcs]
+        Scope: <genexpr>
+            Kind: GenExp
+            FrameDescriptor: [b, <return_val>, base]
+            CellVars: Empty
+            FreeVars: [base]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,15 +26,13 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PArrayIterator extends PBuiltinIterator {
-
     final PArray array;
-    int index;
 
-    public PArrayIterator(LazyPythonClass clazz, PArray array) {
-        super(clazz);
+    public PArrayIterator(Object clazz, Shape instanceShape, PArray array) {
+        super(clazz, instanceShape);
         this.array = array;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,20 +41,26 @@
 package com.oracle.graal.python.runtime;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.nio.channels.Channels;
+import java.nio.channels.FileLock;
 import java.nio.channels.Pipe;
+import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import java.util.Locale;
 
 /**
  * This class manages the set of file descriptors and child PIDs of a context. File descriptors are
@@ -62,148 +68,420 @@ import java.util.Locale;
  * kind of channel.
  *
  * It also manages the list of virtual child PIDs.
+ *
+ * This class is an implementation detail of {@link EmulatedPosixSupport}.
  */
-public class PosixResources {
+abstract class PosixResources extends PosixSupport {
+    private static final int FD_STDIN = 0;
+    private static final int FD_STDOUT = 1;
+    private static final int FD_STDERR = 2;
+
     /** Context-local file-descriptor mappings and PID mappings */
-    private final List<Channel> files;
-    private final List<String> filePaths;
+    protected final PythonContext context;
+    private final SortedMap<Integer, ChannelWrapper> files;
+    protected final Map<Integer, String> filePaths;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
 
-    public PosixResources() {
-        files = Collections.synchronizedList(new ArrayList<>());
-        filePaths = Collections.synchronizedList(new ArrayList<>());
+    private static class ProcessGroup extends Process {
+        private final List<Process> children;
+
+        ProcessGroup(List<Process> children) {
+            this.children = children;
+        }
+
+        @Override
+        public int waitFor() throws InterruptedException {
+            for (Process child : children) {
+                if (child != null && child != this) {
+                    int exitCode = child.waitFor();
+                    int childIndex = children.indexOf(child);
+                    if (childIndex > 0) {
+                        children.set(childIndex, null);
+                    }
+                    return exitCode;
+                }
+            }
+            throw new IndexOutOfBoundsException();
+        }
+
+        @Override
+        public OutputStream getOutputStream() {
+            throw new RuntimeException();
+        }
+
+        @Override
+        public InputStream getInputStream() {
+            throw new RuntimeException();
+        }
+
+        @Override
+        public InputStream getErrorStream() {
+            throw new RuntimeException();
+        }
+
+        @Override
+        public int exitValue() {
+            for (Process child : children) {
+                if (child != null && child != this && !child.isAlive()) {
+                    return child.exitValue();
+                }
+            }
+            throw new IllegalThreadStateException();
+        }
+
+        @Override
+        public void destroy() {
+            for (Process child : children) {
+                if (child != null && child != this) {
+                    child.destroy();
+                }
+            }
+        }
+
+        @Override
+        public Process destroyForcibly() {
+            for (Process child : children) {
+                if (child != null && child != this) {
+                    child.destroyForcibly();
+                }
+            }
+            return this;
+        }
+    }
+
+    private static class ChannelWrapper {
+        Channel channel;
+        int cnt;
+        FileLock lock;
+        boolean isStandardStream;
+
+        ChannelWrapper(Channel channel) {
+            this(channel, 1);
+        }
+
+        ChannelWrapper(Channel channel, int cnt) {
+            this(channel, cnt, false);
+        }
+
+        ChannelWrapper(Channel channel, int cnt, boolean isStandardStream) {
+            this.channel = channel;
+            this.cnt = cnt;
+            this.isStandardStream = isStandardStream;
+        }
+
+        static ChannelWrapper createForStandardStream() {
+            return new ChannelWrapper(null, 0, true);
+        }
+
+        void setNewChannel(InputStream inputStream) {
+            this.channel = Channels.newChannel(inputStream);
+            this.cnt = 1;
+        }
+
+        void setNewChannel(OutputStream outputStream) {
+            this.channel = Channels.newChannel(outputStream);
+            this.cnt = 1;
+        }
+    }
+
+    protected PosixResources(PythonContext context) {
+        this.context = context;
+        files = Collections.synchronizedSortedMap(new TreeMap<>());
+        filePaths = Collections.synchronizedMap(new HashMap<>());
         children = Collections.synchronizedList(new ArrayList<>());
         String osProperty = System.getProperty("os.name");
+
+        files.put(FD_STDIN, ChannelWrapper.createForStandardStream());
+        files.put(FD_STDOUT, ChannelWrapper.createForStandardStream());
+        files.put(FD_STDERR, ChannelWrapper.createForStandardStream());
         if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).contains("win")) {
-            filePaths.add("STDIN");
-            filePaths.add("STDOUT");
-            filePaths.add("STDERR");
+            filePaths.put(FD_STDIN, "STDIN");
+            filePaths.put(FD_STDOUT, "STDOUT");
+            filePaths.put(FD_STDERR, "STDERR");
         } else {
-            filePaths.add("/dev/stdin");
-            filePaths.add("/dev/stdout");
-            filePaths.add("/dev/stderr");
+            filePaths.put(FD_STDIN, "/dev/stdin");
+            filePaths.put(FD_STDOUT, "/dev/stdout");
+            filePaths.put(FD_STDERR, "/dev/stderr");
         }
-        files.add(null);
-        files.add(null);
-        files.add(null);
+
+        children.add(new ProcessGroup(children)); // PID 0 is special, and refers to all processes
+                                                  // in the process group
         inodes = new HashMap<>();
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
+    @Override
+    public void setEnv(Env env) {
+        synchronized (files) {
+            files.get(FD_STDIN).setNewChannel(env.in());
+            files.get(FD_STDOUT).setNewChannel(env.out());
+            files.get(FD_STDERR).setNewChannel(env.err());
+        }
+    }
+
+    private void addFD(int fd, Channel channel) {
+        addFD(fd, channel, null);
+    }
+
+    @TruffleBoundary
+    private void addFD(int fd, Channel channel, String path) {
+        files.put(fd, new ChannelWrapper(channel));
+        if (path != null) {
+            filePaths.put(fd, path);
+        }
+    }
+
+    @TruffleBoundary
+    protected boolean removeFD(int fd) throws IOException {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+
+        if (channelWrapper != null) {
+            synchronized (files) {
+                if (channelWrapper.cnt == 1) {
+                    channelWrapper.channel.close();
+                } else if (channelWrapper.cnt > 1) {
+                    channelWrapper.cnt -= 1;
+                }
+
+                files.remove(fd);
+                filePaths.remove(fd);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * ATTENTION: This method must be used in a synchronized block (sync on {@link #files}) until.
+     */
+    @TruffleBoundary
+    private void dupFD(int fd1, int fd2) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd1, null);
+        String path = filePaths.get(fd1);
+        if (channelWrapper != null) {
+            channelWrapper.cnt += 1;
+            files.put(fd2, channelWrapper);
+            if (path != null) {
+                filePaths.put(fd2, path);
+            }
+        }
+    }
+
+    protected boolean isStandardStream(int fd) {
+        ChannelWrapper channelWrapper = files.get(fd);
+        return channelWrapper != null && channelWrapper.isStandardStream;
+    }
+
+    @TruffleBoundary
     public Channel getFileChannel(int fd, ValueProfile classProfile) {
-        if (files.size() > fd) {
-            return classProfile.profile(files.get(fd));
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null) {
+            return classProfile.profile(channelWrapper.channel);
         }
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
+    public FileLock getFileLock(int fd) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null) {
+            return channelWrapper.lock;
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    public void setFileLock(int fd, FileLock lock) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null) {
+            channelWrapper.lock = lock;
+        }
+    }
+
+    @TruffleBoundary
     public Channel getFileChannel(int fd) {
-        if (files.size() > fd && fd >= 0) {
-            return files.get(fd);
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper != null) {
+            return channelWrapper.channel;
         }
         return null;
     }
 
     @TruffleBoundary
     public String getFilePath(int fd) {
-        if (filePaths.size() > fd) {
-            return filePaths.get(fd);
+        return filePaths.getOrDefault(fd, null);
+    }
+
+    @TruffleBoundary
+    public void close(int fd) {
+        try {
+            removeFD(fd);
+        } catch (IOException ignored) {
+        }
+    }
+
+    @TruffleBoundary
+    public void fdopen(int fd, Channel fc) {
+        files.get(fd).channel = fc;
+    }
+
+    /**
+     * Open a newly created Channel
+     *
+     * @param path the path associated with the newly open Channel
+     * @param fc the newly created Channel
+     * @return the file descriptor associated with the new Channel
+     */
+    @TruffleBoundary
+    public int open(TruffleFile path, Channel fc) {
+        synchronized (files) {
+            int fd = nextFreeFd();
+            addFD(fd, fc, path.getAbsoluteFile().getPath());
+            return fd;
+        }
+    }
+
+    @TruffleBoundary
+    public int dup(int fd) {
+        synchronized (files) {
+            int dupFd = nextFreeFd();
+            dupFD(fd, dupFd);
+            return dupFd;
+        }
+    }
+
+    @TruffleBoundary
+    public int dup2(int fd, int fd2) throws IOException {
+        synchronized (files) {
+            removeFD(fd2);
+            dupFD(fd, fd2);
+            return fd2;
+        }
+    }
+
+    @TruffleBoundary
+    public boolean fsync(int fd) {
+        return files.getOrDefault(fd, null) != null;
+    }
+
+    @TruffleBoundary
+    public Object ftruncate(int fd, long size) throws IOException {
+        Channel channel = getFileChannel(fd);
+        if (channel instanceof SeekableByteChannel) {
+            return ((SeekableByteChannel) channel).truncate(size);
         }
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public void close(int fd) {
-        if (filePaths.size() > fd) {
-            files.set(fd, null);
-            filePaths.set(fd, null);
-        }
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public void fdopen(int fd, Channel fc) {
-        files.set(fd, fc);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public int open(TruffleFile path, Channel fc) {
-        int fd = nextFreeFd();
-        files.set(fd, fc);
-        filePaths.set(fd, path.getAbsoluteFile().getPath());
-        return fd;
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public int dup(int fd) {
-        int dupFd = nextFreeFd();
-        files.set(dupFd, getFileChannel(fd));
-        filePaths.set(dupFd, getFilePath(fd));
-        return dupFd;
-    }
-
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public int[] pipe() throws IOException {
-        Pipe pipe = Pipe.open();
-        int read = nextFreeFd();
-        files.set(read, pipe.source());
-        int write = nextFreeFd();
-        files.set(write, pipe.sink());
-        return new int[]{read, write};
-    }
+        synchronized (files) {
+            Pipe pipe = Pipe.open();
+            int readFD = nextFreeFd();
+            addFD(readFD, pipe.source());
 
-    @TruffleBoundary(allowInlining = true)
-    private int nextFreeFd() {
-        synchronized (filePaths) {
-            for (int i = 0; i < filePaths.size(); i++) {
-                String openPath = filePaths.get(i);
-                Channel openChannel = files.get(i);
-                if (openPath == null && openChannel == null) {
-                    return i;
-                }
-            }
-            files.add(null);
-            filePaths.add(null);
-            return filePaths.size() - 1;
+            int writeFD = nextFreeFd();
+            addFD(writeFD, pipe.sink());
+
+            return new int[]{readFD, writeFD};
         }
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public void setEnv(Env env) {
-        files.set(0, Channels.newChannel(env.in()));
-        files.set(1, Channels.newChannel(env.out()));
-        files.set(2, Channels.newChannel(env.err()));
+    /**
+     * ATTENTION: This method must be used in a synchronized block (sync on {@link #files}) until
+     * the gained file descriptors are written to the map. Otherwise, concurrent threads may get the
+     * same FDs.
+     */
+    @TruffleBoundary
+    private int nextFreeFd() {
+        int fd1 = files.firstKey();
+        for (int fd2 : files.keySet()) {
+            if (fd2 == fd1) {
+                continue;
+            }
+            if (fd2 - fd1 > 1) {
+                return fd1 + 1;
+            } else {
+                fd1 = fd2;
+            }
+        }
+        return files.lastKey() + 1;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public int registerChild(Process child) {
-        int pid = nextFreePid();
-        children.set(pid, child);
-        return pid;
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private int nextFreePid() {
+    @TruffleBoundary
+    protected int registerChild(Process child) {
         synchronized (children) {
             for (int i = 0; i < children.size(); i++) {
                 Process openPath = children.get(i);
                 if (openPath == null) {
+                    children.set(i, child);
                     return i;
                 }
             }
-            children.add(null);
+            children.add(child);
             return children.size() - 1;
         }
     }
 
+    private Process getChild(int pid) throws IndexOutOfBoundsException {
+        if (pid < -1) {
+            throw new IndexOutOfBoundsException("we do not support process groups");
+        } else if (pid == -1) {
+            // -1 - any child process.
+            // 0 - any child process with the same process group.
+            return children.get(0);
+        } else {
+            return children.get(pid);
+        }
+    }
+
     @TruffleBoundary(allowInlining = true)
-    public int waitpid(int pid) throws ArrayIndexOutOfBoundsException, InterruptedException {
-        Process process = children.get(pid);
+    public void sigdfl(int pid) throws IndexOutOfBoundsException {
+        getChild(pid); // just for the side-effect
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public void sigterm(int pid) throws IndexOutOfBoundsException {
+        Process process = getChild(pid);
+        process.destroy();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public void sigkill(int pid) throws IndexOutOfBoundsException {
+        Process process = getChild(pid);
+        process.destroyForcibly();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public int waitpid(int pid) throws IndexOutOfBoundsException, InterruptedException {
+        Process process = getChild(pid);
         int exitStatus = process.waitFor();
-        children.set(pid, null);
+        if (pid > 0) { // cannot delete process groups
+            children.set(pid, null);
+        }
         return exitStatus;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public int[] exitStatus(int pid) throws IndexOutOfBoundsException {
+        if (pid == -1) {
+            for (int childPid = 1; childPid < children.size(); ++childPid) {
+                Process child = children.get(childPid);
+                if (child != null && !child.isAlive()) {
+                    children.set(childPid, null);
+                    return new int[]{childPid, child.exitValue()};
+                }
+            }
+        } else {
+            Process process = getChild(pid);
+            if (!process.isAlive()) {
+                children.set(pid, null);
+                return new int[]{pid, process.exitValue()};
+            }
+        }
+        return new int[]{0, 0};
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -218,5 +496,23 @@ public class PosixResources {
             }
             return inodeId;
         }
+    }
+
+    @TruffleBoundary
+    int assignFileDescriptor(Channel channel) {
+        synchronized (files) {
+            int fd = nextFreeFd();
+            addFD(fd, channel);
+            return fd;
+        }
+    }
+
+    @TruffleBoundary
+    Channel getChannel(int fd) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper == null) {
+            return null;
+        }
+        return channelWrapper.channel;
     }
 }

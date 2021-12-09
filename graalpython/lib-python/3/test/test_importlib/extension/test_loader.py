@@ -10,6 +10,7 @@ import unittest
 import importlib.util
 import importlib
 from test.support.script_helper import assert_python_failure
+from test.support import impl_detail
 
 class LoaderTests(abc.LoaderTests):
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,10 +37,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
+from unittest import skipIf
+
 import sys
 
 if sys.implementation.name == "graalpython":
     import polyglot
+    from __graalpython__ import is_native
 
     def test_import():
         def some_function():
@@ -50,7 +54,7 @@ if sys.implementation.name == "graalpython":
         assert imported_fun0 is some_function
         assert imported_fun0() == "hello, polyglot world!"
 
-        polyglot.export_value(some_function, "same_function")
+        polyglot.export_value("same_function", some_function)
         imported_fun1 = polyglot.import_value("same_function")
         assert imported_fun1 is some_function
         assert imported_fun1() == "hello, polyglot world!"
@@ -106,32 +110,19 @@ if sys.implementation.name == "graalpython":
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field
         assert polyglot.__read__(o, 10) == o[10]
-        assert polyglot.__read__(o, "@field") == o.field
-        assert polyglot.__read__(o, "[field") == o["field"]
 
     def test_write():
         o = CustomMutable()
         o2 = CustomObject()
 
         polyglot.__write__(o, "field", 32)
-        assert o.field == 42
-        assert o["field"] == 32
-        polyglot.__write__(o, "[field", 42)
-        assert o.field == 42
-        assert o["field"] == 42
-        polyglot.__write__(o, "@field", 32)
         assert o.field == 32
-        assert o["field"] == 42
 
         polyglot.__write__(o, "__getattribute__", 321)
-        assert o["__getattribute__"] == 321
-        assert o.__getattribute__ != 321
+        assert o.__getattribute__ == 321
 
         polyglot.__write__(o, "grrrr", 42)
-        assert not hasattr(o, "grrrr")
-        assert o["grrrr"] == 42
-        polyglot.__write__(o, "@grrrr", 42)
-        assert o.grrrr == 42
+        assert hasattr(o, "grrrr")
         polyglot.__write__(o2, "grrrr", 42)
         assert o2.grrrr == 42
 
@@ -153,15 +144,7 @@ if sys.implementation.name == "graalpython":
         o.direct_field = 12
         o["direct_field"] = 32
         assert "direct_field" in list(o.keys())
-        polyglot.__remove__(o, "[direct_field")
-        assert hasattr(o, "direct_field")
-        assert "direct_field" not in list(o.keys())
-        polyglot.__remove__(o, "@direct_field")
-        assert not hasattr(o, "direct_field")
 
-        o["grrrr"] = 12
-        polyglot.__remove__(o, "grrrr")
-        assert "grrrr" not in list(o.keys())
 
     def test_execute():
         assert polyglot.__execute__(abs, -10) == 10
@@ -250,7 +233,6 @@ if sys.implementation.name == "graalpython":
 
         assert polyglot.__key_info__(o, "__getattribute__", "readable")
         assert polyglot.__key_info__(o, "__getattribute__", "invokable")
-        assert not polyglot.__key_info__(o, "__getattribute__", "modifiable")
         assert not polyglot.__key_info__(o, "__getattribute__", "removable")
         assert not polyglot.__key_info__(o, "__getattribute__", "insertable")
 
@@ -261,6 +243,20 @@ if sys.implementation.name == "graalpython":
         assert not polyglot.__key_info__(builtinObj, "__len__", "removable")
         assert not polyglot.__key_info__(builtinObj, "__len__", "insertable")
 
+    @skipIf(is_native, "not supported in native mode")
+    def test_java_classpath():
+        import java
+        try:
+            java.add_to_classpath(1)
+        except TypeError as e:
+            assert "classpath argument 1 must be string, not int" in str(e)
+
+        try:
+            java.add_to_classpath('a', 1)
+        except TypeError as e:
+            assert "classpath argument 2 must be string, not int" in str(e)
+
+    @skipIf(is_native, "not supported in native mode")
     def test_host_lookup():
         import java
         try:
@@ -286,16 +282,18 @@ if sys.implementation.name == "graalpython":
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
 
+    @skipIf(is_native, "not supported in native mode")
     def test_non_index_array_access():
         import java
         try:
             al = java.type("java.util.ArrayList")()
-            assert al.size() == al["size"]()
+            assert al.size() == len(al) == 0
         except IndexError:
             assert False, "using __getitem__ to access keys of an array-like foreign object should work"
         except NotImplementedError as e:
             assert "host lookup is not allowed" in str(e)
 
+    @skipIf(is_native, "not supported in native mode")
     def test_direct_call_of_truffle_object_methods():
         import java
         try:
@@ -325,6 +323,7 @@ if sys.implementation.name == "graalpython":
         assert polyglot.__element_info__(mutableObj, 0, "modifiable")
         assert polyglot.__element_info__(mutableObj, 4, "insertable")
 
+    @skipIf(is_native, "not supported in native mode")
     def test_java_imports():
         import java
         try:
@@ -338,8 +337,80 @@ if sys.implementation.name == "graalpython":
             from java.util import ArrayList
             assert repr(ArrayList()) == "[]"
 
-            assert java.util.ArrayList == ArrayList
+            if __graalpython__.jython_emulation_enabled:
+                assert java.util.ArrayList == ArrayList
 
+                import sun
+                assert type(sun.misc) is type(java)
+
+                import sun.misc.Signal
+                assert sun.misc.Signal is not None
+
+    def test_java_import_from_jar():
+        if __graalpython__.jython_emulation_enabled:
+            import tempfile
+            import zipfile
+
+            # import a single file with jar!prefix/
+            tempname = tempfile.mktemp() + ".jar"
+            with zipfile.ZipFile(tempname, mode="w") as z:
+                with z.open("scriptDir/test_java_jar_import.py", mode="w") as member:
+                    member.write(b"MEMBER = 42\n")
+            try:
+                sys.path.append(tempname + "!scriptDir")
+                try:
+                    import test_java_jar_import
+                    assert test_java_jar_import.MEMBER == 42
+                    assert test_java_jar_import.__path__ == tempname + "/scriptDir/test_java_jar_import.py"
+                finally:
+                    sys.path.pop()
+            finally:
+                os.unlink(tempname)
+
+            # import a single file with jar!/prefix/
+            tempname = tempfile.mktemp() + ".jar"
+            with zipfile.ZipFile(tempname, mode="w") as z:
+                with z.open("scriptDir/test_java_jar_import_2.py", mode="w") as member:
+                    member.write(b"MEMBER = 43\n")
+            try:
+                sys.path.append(tempname + "!/scriptDir")
+                try:
+                    import test_java_jar_import_2
+                    assert test_java_jar_import_2.MEMBER == 43
+                    assert test_java_jar_import_2.__path__ == tempname + "/scriptDir/test_java_jar_import_2.py"
+                finally:
+                    sys.path.pop()
+            finally:
+                os.unlink(tempname)
+
+            # import a package with jar!/prefix/
+            tempname = tempfile.mktemp() + ".jar"
+            with zipfile.ZipFile(tempname, mode="w") as z:
+                with z.open("scriptDir/test_java_jar_pkg/__init__.py", mode="w") as member:
+                    member.write(b"MEMBER = 44\n")
+            try:
+                sys.path.append(tempname + "!/scriptDir")
+                try:
+                    import test_java_jar_pkg
+                    assert test_java_jar_pkg.MEMBER == 44
+                    assert test_java_jar_pkg.__path__ == tempname + "/scriptDir/test_java_jar_pkg/__init__.py"
+                finally:
+                    sys.path.pop()
+            finally:
+                os.unlink(tempname)
+
+
+    def test_java_exceptions():
+        if __graalpython__.jython_emulation_enabled:
+            from java.lang import Integer, NumberFormatException
+            try:
+                Integer.parseInt("99", 8)
+            except NumberFormatException as e:
+                assert True
+            else:
+                assert False
+
+    @skipIf(is_native, "not supported in native mode")
     def test_foreign_object_does_not_leak_Javas_toString():
         try:
             from java.util import ArrayList
@@ -370,3 +441,196 @@ if sys.implementation.name == "graalpython":
                 del ArrayList.bar
             except AttributeError as e:
                 assert "@" not in str(e) # the @ from Java's default toString
+
+    def test_java_import_star():
+        if __graalpython__.jython_emulation_enabled:
+            d = {}
+            exec("from java.util.logging.Logger import *", globals=d, locals=d)
+            assert "getGlobal" in d
+            assert d["getGlobal"]().getName() == d["GLOBAL_LOGGER_NAME"]
+
+    @skipIf(is_native, "not supported in native mode")
+    def test_java_null_is_none():
+        import java.lang.Integer as Integer
+        x = Integer.getInteger("something_what_does_not_exists")
+        y = Integer.getInteger("something_what_does_not_exists2")
+        z = None
+
+        if __graalpython__.jython_emulation_enabled:
+
+            assert x == None
+            assert (x != None) == False
+            assert x is None
+            assert (x is not None) == False
+
+            assert x == y
+            assert (x != y) == False
+            assert x is y
+            assert (x is not y) == False
+
+            assert x == z
+            assert (x != z) == False
+            assert x is z
+            assert (x is not z) == False
+
+        else:
+
+            assert x == None
+            assert (x != None) == False
+            assert (x is None) == False
+            assert x is not None
+
+            assert x == y
+            assert (x != y) == False
+            assert x is y
+            assert (x is not y) == False
+
+            assert x == z
+            assert (x != z) == False
+            assert (x is z) == False
+            assert x is not z
+
+    def test_isinstance01():
+        if __graalpython__.jython_emulation_enabled:
+            import java.lang.Integer as Integer
+            i = Integer(1)
+            assert isinstance(i, Integer)
+
+    def test_isinstance02():
+        if __graalpython__.jython_emulation_enabled:
+            import java.util.Map as Map
+            import java.util.HashMap as HashMap
+            h = HashMap()
+            assert isinstance(h, HashMap)
+            assert isinstance(h, Map)
+
+    @skipIf(is_native, "not supported in native mode")
+    def test_is_type():
+        import java
+        from java.util.logging import Handler
+        from java.util import Set
+        from java.util.logging import LogRecord
+        from java.util.logging import Level
+
+        assert java.is_type(Handler)
+        assert java.is_type(LogRecord)
+        assert java.is_type(Set)
+        assert java.is_type(Level)
+
+        lr = LogRecord(Level.ALL, "message")
+        assert not java.is_type(lr)
+        assert not java.is_type(Level.ALL)
+        assert not java.is_type("ahoj")
+
+    @skipIf(is_native, "not supported in native mode")
+    def test_extend_java_class_01():
+        from java.util.logging import Handler
+        from java.util.logging import LogRecord
+        from java.util.logging import Level
+
+        lr = LogRecord(Level.ALL, "The first message")
+
+        # extender object
+        class MyHandler (Handler):
+            "This is MyHandler doc"
+            counter = 0;
+            def isLoggable(self, logrecord):
+                self.counter = self.counter + 1
+                return self.__super__.isLoggable(logrecord)
+            def sayHello(self):
+                return 'Hello'
+
+        h = MyHandler()
+
+        # accessing extender object via this property
+        assert hasattr(h, 'this')
+        assert hasattr(h.this, 'sayHello')
+        assert hasattr(h.this, 'counter')
+        assert hasattr(h.this, 'isLoggable')
+
+        #accessing java methods or methods from extender object directly
+        assert hasattr(h, 'close')
+        assert hasattr(h, 'flush')
+        assert hasattr(h, 'getEncoding')
+        assert hasattr(h, 'setEncoding')
+
+
+        assert h.this.counter == 0
+        assert h.isLoggable(lr)
+        assert h.this.counter == 1
+        assert h.isLoggable(lr)
+        assert h.isLoggable(lr)
+        assert h.this.counter == 3
+
+        assert 'Hello' == h.this.sayHello()
+
+        h2 = MyHandler()
+        assert h2.this.counter == 0
+        assert h2.isLoggable(lr)
+        assert h2.this.counter == 1
+        assert h.this.counter == 3
+
+    @skipIf(is_native, "not supported in native mode")
+    def test_extend_java_class_02():
+        from java.math import BigDecimal
+        try:
+            class MyDecimal(BigDecimal):
+                pass
+        except TypeError:
+            assert True
+        else:
+            assert False
+
+    @skipIf(is_native, "not supported in native mode")
+    def test_extend_java_class_03():
+        #test of java constructor
+        from java.util.logging import LogRecord
+        from java.util.logging import Level
+
+        class MyLogRecord(LogRecord):
+            def getLevel(self):
+                if self.__super__.getLevel() == Level.FINEST:
+                    self.__super__.setLevel(Level.WARNING)
+                return self.__super__.getLevel()
+
+        message = "log message"
+        my_lr1 = MyLogRecord(Level.WARNING, message)
+        assert my_lr1.getLevel() == Level.WARNING
+        assert my_lr1.getMessage() == message
+
+        my_lr2 = MyLogRecord(Level.FINEST, message)
+        assert my_lr2.getLevel() == Level.WARNING
+
+    def test_foreign_slice_setting():
+        import java
+        il = java.type("int[]")(20)
+        try:
+            il[0:2] = 1
+        except TypeError:
+            assert True
+        else:
+            assert False, "should throw a type error"
+        il[0] = 12
+        assert il[0] == 12
+        il[0:10] = [10] * 10
+        assert list(il) == [10] * 10 + [0] * 10, "not equal"
+        try:
+            il[0] = 1.2
+        except TypeError:
+            assert True
+        else:
+            assert False, "should throw a type error again"
+
+    @skipIf(is_native, "not supported in native mode")
+    def test_foreign_repl():
+        from java.util.logging import LogRecord
+        from java.util.logging import Level
+
+        lr = LogRecord(Level.ALL, "message")
+        assert repr(LogRecord).startswith('<JavaClass[java.util.logging.LogRecord] at')
+        assert repr(lr).startswith('<JavaObject[java.util.logging.LogRecord] at')
+
+        from java.lang import Integer
+        i = Integer('22')
+        assert repr(Integer).startswith('<JavaClass[java.lang.Integer] at')
+        assert repr(i) == '22'

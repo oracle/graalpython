@@ -3,7 +3,7 @@ from .. import util
 
 machinery = util.import_importlib('importlib.machinery')
 
-from test.support import captured_stdout
+from test.support import captured_stdout, impl_detail
 import types
 import unittest
 import warnings
@@ -25,6 +25,7 @@ class ExecModuleTests(abc.LoaderTests):
             self.assertEqual(module.__spec__.origin, 'frozen')
             return module, stdout.getvalue()
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module(self):
         name = '__hello__'
         module, output = self.exec_module(name)
@@ -34,6 +35,7 @@ class ExecModuleTests(abc.LoaderTests):
         self.assertEqual(output, 'Hello world!\n')
         self.assertTrue(hasattr(module, '__spec__'))
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_package(self):
         name = '__phello__'
         module, output = self.exec_module(name)
@@ -46,6 +48,7 @@ class ExecModuleTests(abc.LoaderTests):
                                  expected=value))
         self.assertEqual(output, 'Hello world!\n')
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_lacking_parent(self):
         name = '__phello__.spam'
         with util.uncache('__phello__'):
@@ -59,6 +62,7 @@ class ExecModuleTests(abc.LoaderTests):
                                  expected=value))
             self.assertEqual(output, 'Hello world!\n')
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module_repr(self):
         name = '__hello__'
         module, output = self.exec_module(name)
@@ -68,6 +72,7 @@ class ExecModuleTests(abc.LoaderTests):
         self.assertEqual(repr_str,
                          "<module '__hello__' (frozen)>")
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module_repr_indirect(self):
         name = '__hello__'
         module, output = self.exec_module(name)
@@ -77,6 +82,7 @@ class ExecModuleTests(abc.LoaderTests):
     # No way to trigger an error in a frozen module.
     test_state_after_failure = None
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_unloadable(self):
         assert self.machinery.FrozenImporter.find_module('_not_real') is None
         with self.assertRaises(ImportError) as cm:
@@ -91,6 +97,7 @@ class ExecModuleTests(abc.LoaderTests):
 
 class LoaderTests(abc.LoaderTests):
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module(self):
         with util.uncache('__hello__'), captured_stdout() as stdout:
             with warnings.catch_warnings():
@@ -105,6 +112,7 @@ class LoaderTests(abc.LoaderTests):
             self.assertEqual(stdout.getvalue(), 'Hello world!\n')
             self.assertFalse(hasattr(module, '__file__'))
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_package(self):
         with util.uncache('__phello__'),  captured_stdout() as stdout:
             with warnings.catch_warnings():
@@ -123,6 +131,7 @@ class LoaderTests(abc.LoaderTests):
             self.assertEqual(stdout.getvalue(), 'Hello world!\n')
             self.assertFalse(hasattr(module, '__file__'))
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_lacking_parent(self):
         with util.uncache('__phello__', '__phello__.spam'), \
              captured_stdout() as stdout:
@@ -141,6 +150,7 @@ class LoaderTests(abc.LoaderTests):
             self.assertEqual(stdout.getvalue(), 'Hello world!\n')
             self.assertFalse(hasattr(module, '__file__'))
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module_reuse(self):
         with util.uncache('__hello__'), captured_stdout() as stdout:
             with warnings.catch_warnings():
@@ -151,6 +161,7 @@ class LoaderTests(abc.LoaderTests):
             self.assertEqual(stdout.getvalue(),
                              'Hello world!\nHello world!\n')
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module_repr(self):
         with util.uncache('__hello__'), captured_stdout():
             with warnings.catch_warnings():
@@ -160,6 +171,7 @@ class LoaderTests(abc.LoaderTests):
             self.assertEqual(repr_str,
                              "<module '__hello__' (frozen)>")
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module_repr_indirect(self):
         with util.uncache('__hello__'), captured_stdout():
             module = self.machinery.FrozenImporter.load_module('__hello__')
@@ -169,6 +181,7 @@ class LoaderTests(abc.LoaderTests):
     # No way to trigger an error in a frozen module.
     test_state_after_failure = None
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_unloadable(self):
         assert self.machinery.FrozenImporter.find_module('_not_real') is None
         with self.assertRaises(ImportError) as cm:
@@ -185,6 +198,7 @@ class InspectLoaderTests:
 
     """Tests for the InspectLoader methods for FrozenImporter."""
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_get_code(self):
         # Make sure that the code object is good.
         name = '__hello__'
@@ -195,11 +209,13 @@ class InspectLoaderTests:
             self.assertTrue(hasattr(mod, 'initialized'))
             self.assertEqual(stdout.getvalue(), 'Hello world!\n')
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_get_source(self):
         # Should always return None.
         result = self.machinery.FrozenImporter.get_source('__hello__')
         self.assertIsNone(result)
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_is_package(self):
         # Should be able to tell what is a package.
         test_for = (('__hello__', False), ('__phello__', True),
@@ -208,6 +224,7 @@ class InspectLoaderTests:
             result = self.machinery.FrozenImporter.is_package(name)
             self.assertEqual(bool(result), is_package)
 
+    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_failure(self):
         # Raise ImportError for modules that are not frozen.
         for meth_name in ('get_code', 'get_source', 'is_package'):

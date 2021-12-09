@@ -1,0 +1,8 @@
+ModuleRootNode Name: <module 'longString02'> SourceSection: [0,27]`'''↵ahoj↵hello↵good ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: `↵ahoj↵hello↵good bye...`
+  InnerRootNode SourceSection: [0,27]`'''↵ahoj↵hello↵good ...`
+    StringLiteralNode SourceSection: [0,27]`'''↵ahoj↵hello↵good ...`

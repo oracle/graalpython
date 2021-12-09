@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,19 +25,56 @@
  */
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Option;
-import com.oracle.truffle.api.TruffleLanguage.Env;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.graalvm.options.OptionCategory;
+import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionStability;
+import org.graalvm.options.OptionType;
+import org.graalvm.options.OptionValues;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Option;
+import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+
+/**
+ * The options for Python. Note that some options have an effect on the AST structure, and thus must
+ * be the same for all contexts in an engine. We annotate these with {@link EngineOption} and the
+ * PythonLanguage will ensure that these are matched across contexts.
+ */
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
     private static final String EXECUTABLE_LIST_SEPARATOR = "🏆";
+
+    public enum HPyBackendMode {
+        NFI,
+        JNI
+    }
+
+    static final OptionType<HPyBackendMode> HPY_BACKEND_TYPE = new OptionType<>("HPyBackend", s -> {
+        try {
+            return HPyBackendMode.valueOf(s.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Backend can be one of: " + Arrays.toString(HPyBackendMode.values()));
+        }
+    });
 
     private PythonOptions() {
         // no instances
@@ -73,6 +110,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONPATH environment variable for the standard launcher. ':'-separated list of directories prefixed to the default module search path.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> PythonPath = new OptionKey<>("");
 
+    @EngineOption @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONIOENCODING environment variable for the standard launcher. Format: Encoding[:errors]", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> StandardStreamEncoding = new OptionKey<>("");
+
     @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
 
@@ -85,35 +125,98 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -I flag. Isolate from the users environment by not adding the cwd to the path", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> IsolateFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -B flag. Don't write bytecode files.", stability = OptionStability.STABLE) //
+    public static final OptionKey<Boolean> DontWriteBytecodeFlag = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.USER, help = "If this is set, GraalPython will write .pyc files in a mirror directory tree at this path, " +
+                    "instead of in __pycache__ directories within the source tree. " +
+                    "Equivalent to setting the PYTHONPYCACHEPREFIX environment variable for the standard launcher.", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> PyCachePrefix = new OptionKey<>("");
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONWARNINGS environment variable for the standard launcher.", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> WarnOptions = new OptionKey<>("");
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to setting PYTHONHASHSEED environment variable", stability = OptionStability.STABLE) //
+    public static final OptionKey<Optional<Integer>> HashSeed = new OptionKey<>(Optional.empty(),
+                    new OptionType<>("HashSeed", input -> {
+                        if ("random".equals(input)) {
+                            return Optional.empty();
+                        }
+                        try {
+                            return Optional.of(Integer.parseUnsignedInt(input));
+                        } catch (NumberFormatException e) {
+                            throw new IllegalArgumentException("PYTHONHASHSEED must be \"random\" or an integer in range [0; 4294967295]");
+                        }
+                    }));
+
+    @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module. Valid values are 'java', 'native', 'llvm'.") //
+    public static final OptionKey<String> PosixModuleBackend = new OptionKey<>("java");
+
+    @Option(category = OptionCategory.USER, help = "Value of the --check-hash-based-pycs command line option" +
+                    "- 'default' means the 'check_source' flag in hash-based pycs" +
+                    "  determines invalidation" +
+                    "- 'always' causes the interpreter to hash the source file for" +
+                    "  invalidation regardless of value of 'check_source' bit" +
+                    "- 'never' causes the interpreter to always assume hash-based pycs are" +
+                    "  valid" +
+                    "The default value is 'default'." +
+                    "See PEP 552 'Deterministic pycs' for more details.", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> CheckHashPycsMode = new OptionKey<>("default");
+
+    @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> CAPI = new OptionKey<>("");
+
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace if enabled") //
-    public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace. Possible modes:" +
+                    "    1   Print Java stacktrace for Java exceptions only." +
+                    "    2   Print Java stacktrace for Python exceptions only (ATTENTION: this will have a notable performance impact)." +
+                    "    3   Combines 1 and 2.") //
+    public static final OptionKey<Integer> WithJavaStacktrace = new OptionKey<>(0);
 
     @Option(category = OptionCategory.INTERNAL, help = "") //
     public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.INTERNAL, help = "Enable catching all Exceptions in generic try-catch statements.") //
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Enable catching all Exceptions in generic try-catch statements.") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, help = "") //
-    public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Choose the backend for HPy binary mode.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<HPyBackendMode> HPyBackend = new OptionKey<>(HPyBackendMode.JNI, HPY_BACKEND_TYPE);
 
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "If {@code true}, code is enabled that tries to reduce expensive upcalls into the runtime" +
+                    "when HPy API functions are used. This is achieved by mirroring data in native memory.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<Boolean> HPyEnableJNIFastPaths = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.INTERNAL, help = "Specify the directory where the JNI library is located.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<String> JNIHome = new OptionKey<>("");
+
+    @Option(category = OptionCategory.EXPERT, help = "Prints path to parsed files") //
+    public static final OptionKey<Boolean> ParserLogFiles = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Prints parser time statistics after number of parsed files, set by this option. 0 or <0 means no statistics are printed.") //
+    public static final OptionKey<Integer> ParserStatistics = new OptionKey<>(0);
+
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(5);
 
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(4);
 
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> VariableArgumentReadUnrollingLimit = new OptionKey<>(5);
 
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> VariableArgumentInlineCacheLimit = new OptionKey<>(3);
 
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Integer> NodeRecursionLimit = new OptionKey<>(1);
+
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Boolean> ForceInlineGeneratorCalls = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Force to automatically import site.py module.") //
+    public static final OptionKey<Boolean> ForceImportSite = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "Minimal size of string, when lazy strings are used. Default 20") //
     public static final OptionKey<Integer> MinLazyStringLength = new OptionKey<>(20);
@@ -121,16 +224,21 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, help = "This option control builtin _thread module support") //
-    public static final OptionKey<Boolean> WithThread = new OptionKey<>(false);
+    @Option(category = OptionCategory.INTERNAL, help = "Used by the launcher to pass the path to be executed") //
+    public static final OptionKey<String> InputFilePath = new OptionKey<>("");
 
-    @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine and call the CPython sre engine only as a fallback. Default true") //
+    // disabling TRegex has an effect on the _sre Python functions that are
+    // dynamically created, so we cannot change that option again.
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine. Default true") //
     public static final OptionKey<Boolean> WithTRegex = new OptionKey<>(true);
+
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Use the CPython sre engine as a fallback to the TRegex engine.") //
+    public static final OptionKey<Boolean> TRegexUsesSREFallback = new OptionKey<>(true);
 
     @Option(category = OptionCategory.EXPERT, help = "Switch on/off using lazy strings for performance reasons. Default true.") //
     public static final OptionKey<Boolean> LazyStrings = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default false.") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default false.") //
     public static final OptionKey<Boolean> EnableForcedSplits = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "Set by the launcher if an interactive console is used to run Python.") //
@@ -154,82 +262,238 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Embedder option: what to print in response to PythonLanguage#toString.") //
     public static final OptionKey<Boolean> UseReprForPrintString = new OptionKey<>(true);
 
-    public static OptionDescriptors createDescriptors() {
-        return new PythonOptionsOptionDescriptors();
-    }
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Stop inlining of builtins if caller's cumulative tree size would exceed this limit") //
+    public static final OptionKey<Integer> BuiltinsInliningMaxCallerSize = new OptionKey<>(2250);
 
-    @TruffleBoundary
-    public static <T> T getOption(PythonContext context, OptionKey<T> key) {
-        if (context == null) {
-            return key.getDefaultValue();
+    @Option(category = OptionCategory.EXPERT, help = "Disable weakref callback processing, signal handling, and other periodic async actions.") //
+    public static final OptionKey<Boolean> NoAsyncActions = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Propagate append operations to lists created as literals back to where they were created, to inform overallocation to avoid having to grow them later.") //
+    public static final OptionKey<Boolean> OverallocateLiteralLists = new OptionKey<>(true);
+
+    @EngineOption @Option(category = OptionCategory.USER, help = "Emulate some Jython features that can cause performance degradation") //
+    public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
+    public static final OptionKey<Boolean> TraceNativeMemory = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "If native memory tracing is enabled, also capture stack.") //
+    public static final OptionKey<Boolean> TraceNativeMemoryCalls = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Max native memory heap size (default: 2 GB).") //
+    public static final OptionKey<Long> MaxNativeMemory = new OptionKey<>(1L << 31);
+
+    @Option(category = OptionCategory.EXPERT, help = "Set by the launcher to true (false means that GraalPython is being embedded in an application).") //
+    public static final OptionKey<Boolean> RunViaLauncher = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Enable built-in functions on the __graalpython__ module that are useful for debugging.") //
+    public static final OptionKey<Boolean> EnableDebuggingBuiltins = new OptionKey<>(false);
+
+    public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
+
+    @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;
+    @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] OPTION_KEYS;
+    static {
+        List<OptionKey<?>> options = new ArrayList<>();
+        for (OptionDescriptor desc : DESCRIPTORS) {
+            options.add(desc.getKey());
         }
-        return context.getOptions().get(key);
-    }
+        OPTION_KEYS = options.toArray(new OptionKey<?>[options.size()]);
 
-    @TruffleBoundary
-    public static <T> T getOption(Env env, OptionKey<T> key) {
-        return env.getOptions().get(key);
-    }
-
-    @TruffleBoundary
-    public static int getIntOption(PythonContext context, OptionKey<Integer> key) {
-        if (context == null) {
-            return key.getDefaultValue();
+        List<OptionKey<?>> engineOptions = new ArrayList<>();
+        for (Field f : PythonOptions.class.getDeclaredFields()) {
+            if (f.getAnnotation(EngineOption.class) != null) {
+                for (OptionDescriptor desc : DESCRIPTORS) {
+                    if (desc.getName().endsWith(f.getName())) {
+                        engineOptions.add(desc.getKey());
+                    }
+                }
+            }
         }
-        return context.getOptions().get(key);
+        ENGINE_OPTION_KEYS = engineOptions.toArray(new OptionKey<?>[engineOptions.size()]);
     }
 
-    @TruffleBoundary
-    public static boolean getFlag(PythonContext context, OptionKey<Boolean> key) {
-        if (context == null) {
-            return key.getDefaultValue();
+    /**
+     * A CompilationFinal array of option keys defined here. Do not modify!
+     */
+    public static OptionKey<?>[] getOptionKeys() {
+        return OPTION_KEYS;
+    }
+
+    /**
+     * A CompilationFinal array of engine option keys defined here. Do not modify!
+     */
+    public static OptionKey<?>[] getEngineOptionKeys() {
+        return ENGINE_OPTION_KEYS;
+    }
+
+    /**
+     * Copy values into an array for compilation final storage and unrolling lookup.
+     */
+    public static Object[] createOptionValuesStorage(Env env) {
+        Object[] values = new Object[OPTION_KEYS.length];
+        for (int i = 0; i < OPTION_KEYS.length; i++) {
+            values[i] = env.getOptions().get(OPTION_KEYS[i]);
         }
-        return context.getOptions().get(key);
+        return values;
+    }
+
+    public static Object[] createEngineOptionValuesStorage(Env env) {
+        Object[] values = new Object[ENGINE_OPTION_KEYS.length];
+        for (int i = 0; i < ENGINE_OPTION_KEYS.length; i++) {
+            values[i] = env.getOptions().get(ENGINE_OPTION_KEYS[i]);
+        }
+        return values;
+    }
+
+    public static OptionValues createEngineOptions(Env env) {
+        return new EngineOptionValues(env.getOptions());
+    }
+
+    @ExplodeLoop
+    @SuppressWarnings("unchecked")
+    public static <T> T getOptionUnrolling(Object[] optionValuesStorage, OptionKey<?>[] optionKeys, OptionKey<T> key) {
+        assert optionValuesStorage.length == optionKeys.length;
+        CompilerAsserts.partialEvaluationConstant(optionKeys);
+        for (int i = 0; i < optionKeys.length; i++) {
+            CompilerAsserts.partialEvaluationConstant(optionKeys[i]);
+            if (optionKeys[i] == key) {
+                return (T) optionValuesStorage[i];
+            }
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("Using Python options with a non-Python option key");
+    }
+
+    @ExplodeLoop
+    public static boolean isEngineOption(OptionKey<?> key) {
+        CompilerAsserts.partialEvaluationConstant(ENGINE_OPTION_KEYS);
+        for (int i = 0; i < ENGINE_OPTION_KEYS.length; i++) {
+            CompilerAsserts.partialEvaluationConstant(ENGINE_OPTION_KEYS[i]);
+            if (ENGINE_OPTION_KEYS[i] == key) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if the options set in the {@code first} and {@code second} set are compatible, i.e,
+     * there are no Python per-engine options in these sets that differ.
+     */
+    public static boolean areOptionsCompatible(OptionValues first, OptionValues second) {
+        for (OptionKey<?> key : ENGINE_OPTION_KEYS) {
+            if (!first.get(key).equals(second.get(key))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static int getAttributeAccessInlineCacheMaxDepth() {
-        return getOption(PythonLanguage.getContextRef().get(), AttributeAccessInlineCacheMaxDepth);
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonLanguage.get(null).getEngineOption(AttributeAccessInlineCacheMaxDepth);
     }
 
     public static int getCallSiteInlineCacheMaxDepth() {
-        return getOption(PythonLanguage.getContextRef().get(), CallSiteInlineCacheMaxDepth);
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonLanguage.get(null).getEngineOption(CallSiteInlineCacheMaxDepth);
     }
 
     public static int getVariableArgumentInlineCacheLimit() {
-        return getOption(PythonLanguage.getContextRef().get(), VariableArgumentInlineCacheLimit);
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonLanguage.get(null).getEngineOption(VariableArgumentInlineCacheLimit);
     }
 
-    public static boolean useLazyString() {
-        return getOption(PythonLanguage.getContextRef().get(), LazyStrings);
+    public static int getNodeRecursionLimit() {
+        CompilerAsserts.neverPartOfCompilation();
+        int result = PythonLanguage.get(null).getEngineOption(NodeRecursionLimit);
+        // So that we can use byte counters and also Byte.MAX_VALUE as special placeholder
+        assert result < Byte.MAX_VALUE;
+        return result;
     }
 
-    public static int getMinLazyStringLength() {
-        return getOption(PythonLanguage.getContextRef().get(), MinLazyStringLength);
+    public static boolean isWithJavaStacktrace(PythonLanguage language) {
+        return language.getEngineOption(WithJavaStacktrace) > 0;
     }
 
-    public static boolean isWithThread(Env env) {
-        return getOption(env, WithThread);
-    }
-
-    public static boolean getEnableForcedSplits() {
-        return getOption(PythonLanguage.getContextRef().get(), EnableForcedSplits);
-    }
-
-    public static int getTerminalHeight() {
-        return getOption(PythonLanguage.getContextRef().get(), TerminalHeight);
-    }
-
-    public static int getTerminalWidth() {
-        return getOption(PythonLanguage.getContextRef().get(), TerminalWidth);
+    public static boolean isPExceptionWithJavaStacktrace(PythonLanguage language) {
+        return language.getEngineOption(WithJavaStacktrace) > 1;
     }
 
     @TruffleBoundary
-    public static String[] getExecutableList() {
-        String option = getOption(PythonLanguage.getContextRef().get(), ExecutableList);
+    public static String[] getExecutableList(PythonContext context) {
+        String option = context.getOption(ExecutableList);
         if (option.isEmpty()) {
-            return getOption(PythonLanguage.getContextRef().get(), Executable).split(" ");
+            return splitString(context.getOption(Executable), " ");
         } else {
-            return getOption(PythonLanguage.getContextRef().get(), ExecutableList).split(EXECUTABLE_LIST_SEPARATOR);
+            return splitString(context.getOption(ExecutableList), EXECUTABLE_LIST_SEPARATOR);
+        }
+    }
+
+    @TruffleBoundary
+    private static String[] splitString(String str, String sep) {
+        return str.split(sep);
+    }
+
+    /**
+     * Marks an @Option as being per-engine rather than per-context
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    @interface EngineOption {
+    }
+
+    private static final class EngineOptionValues implements OptionValues {
+
+        private final Map<OptionKey<?>, Object> engineOptions = new HashMap<>();
+
+        EngineOptionValues(OptionValues contextOptions) {
+            for (OptionKey<?> engineKey : ENGINE_OPTION_KEYS) {
+                if (contextOptions.hasBeenSet(engineKey)) {
+                    engineOptions.put(engineKey, contextOptions.get(engineKey));
+                }
+            }
+        }
+
+        @Override
+        public OptionDescriptors getDescriptors() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof EngineOptionValues)) {
+                return false;
+            }
+            EngineOptionValues other = (EngineOptionValues) obj;
+            return engineOptions.equals(other.engineOptions);
+        }
+
+        @Override
+        public int hashCode() {
+            return engineOptions.hashCode();
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T get(OptionKey<T> optionKey) {
+            if (engineOptions.containsKey(optionKey)) {
+                return (T) engineOptions.get(optionKey);
+            } else {
+                return optionKey.getDefaultValue();
+            }
+        }
+
+        @Override
+        public boolean hasBeenSet(OptionKey<?> optionKey) {
+            return engineOptions.containsKey(optionKey);
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public <T> void set(OptionKey<T> optionKey, T value) {
+            throw new UnsupportedOperationException();
         }
     }
 }

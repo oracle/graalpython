@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,36 +27,51 @@ package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public final class SetLiteralNode extends LiteralNode {
+import java.util.List;
+
+public abstract class SetLiteralNode extends LiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children private final ExpressionNode[] values;
-    @Child HashingStorageNodes.SetItemNode setItemNode;
 
-    public SetLiteralNode(ExpressionNode[] values) {
+    protected SetLiteralNode(ExpressionNode[] values) {
         this.values = values;
     }
 
-    @Override
+    public static ExpressionNode create(List<ExpressionNode> values) {
+        ExpressionNode[] convertedValues = values.toArray(new ExpressionNode[values.size()]);
+        return SetLiteralNodeGen.create(convertedValues);
+    }
+
+    @Specialization
     @ExplodeLoop
-    public Object execute(VirtualFrame frame) {
+    public PSet expand(VirtualFrame frame,
+                    @Cached ConditionProfile hasFrame,
+                    @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+        // we will usually have more than 'values.length' elements
         HashingStorage storage = PDict.createNewStorage(true, values.length);
-
-        if (setItemNode == null && values.length > 0) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            setItemNode = insert(HashingStorageNodes.SetItemNode.create());
+        ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
+        for (ExpressionNode n : values) {
+            Object element = n.execute(frame);
+            if (StarredExpressionNode.isStarredExpression(n)) {
+                storage = ((StarredExpressionNode) n.unwrap()).appendToSet(frame, storage, lib, state, element);
+            } else {
+                storage = lib.setItemWithState(storage, element, PNone.NONE, state);
+            }
         }
-        for (ExpressionNode v : this.values) {
-            storage = setItemNode.execute(frame, storage, v.execute(frame), PNone.NO_VALUE);
-        }
-
         return factory.createSet(storage);
     }
 }

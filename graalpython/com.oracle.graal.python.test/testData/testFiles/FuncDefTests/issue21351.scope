@@ -1,0 +1,15 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: outer
+        Kind: Function
+        FrameDescriptor: [toInternal, var, <return_val>]
+        CellVars: [var]
+        FreeVars: Empty
+        Scope: toInternal
+            Kind: Function
+            FrameDescriptor: [obj, var, x, <return_val>]
+            CellVars: Empty
+            FreeVars: [var]

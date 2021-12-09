@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetSequenceStorageNodeFactory.GetSequenceStorageCachedNodeGen;
-import com.oracle.graal.python.builtins.objects.range.PRange;
+import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A_SEQUENCE;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -52,7 +56,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class SequenceNodes {
 
@@ -64,19 +67,15 @@ public abstract class SequenceNodes {
 
         @Specialization
         int doPString(PString str,
-                        @Cached("createClassProfile()") ValueProfile charSequenceProfile) {
-            return charSequenceProfile.profile(str.getCharSequence()).length();
+                        @Cached StringNodes.StringLenNode lenNode) {
+            return lenNode.execute(str);
         }
 
-        @Specialization
-        int doPRange(PRange range) {
-            return range.len();
-        }
-
-        @Specialization(guards = {"!isPString(seq)", "!isPRange(seq)"})
+        @Specialization(guards = "!isPString(seq)")
         int doWithStorage(PSequence seq,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(seq.getSequenceStorage());
+            return lenNode.execute(getStorage.execute(seq));
         }
 
         public static LenNode create() {
@@ -88,49 +87,82 @@ public abstract class SequenceNodes {
         }
     }
 
-    // TODO qualified name is a workaround for a DSL bug
-    public abstract static class GetSequenceStorageNode extends com.oracle.truffle.api.nodes.Node {
+    @GenerateUncached
+    public abstract static class GetSequenceStorageNode extends Node {
 
         public abstract SequenceStorage execute(Object seq);
 
-        abstract static class GetSequenceStorageCachedNode extends GetSequenceStorageNode {
-            @Specialization(guards = {"seq.getClass() == cachedClass"})
-            static SequenceStorage doWithStorage(PSequence seq,
-                            @Cached("seq.getClass()") Class<? extends PSequence> cachedClass) {
-                return CompilerDirectives.castExact(seq, cachedClass).getSequenceStorage();
-            }
-
-            @Specialization(replaces = "doWithStorage")
-            static SequenceStorage doUncached(PSequence seq) {
-                return seq.getSequenceStorage();
-            }
-
-            @Specialization
-            static SequenceStorage doFallback(@SuppressWarnings("unused") Object seq) {
-                CompilerDirectives.transferToInterpreter();
-                throw new IllegalStateException("cannot get sequence storage of non-sequence object");
-            }
+        @Specialization(guards = {"seq.getClass() == cachedClass"})
+        static SequenceStorage doSequenceCached(PSequence seq,
+                        @Cached("seq.getClass()") Class<? extends PSequence> cachedClass) {
+            return CompilerDirectives.castExact(seq, cachedClass).getSequenceStorage();
         }
 
-        private static final class GetSequenceStorageUncachedNode extends GetSequenceStorageNode {
-            private static final GetSequenceStorageUncachedNode INSTANCE = new GetSequenceStorageUncachedNode();
+        @Specialization(replaces = "doSequenceCached")
+        static SequenceStorage doSequence(PSequence seq) {
+            return seq.getSequenceStorage();
+        }
 
-            @Override
-            public SequenceStorage execute(Object seq) {
-                if (seq instanceof PSequence) {
-                    return GetSequenceStorageCachedNode.doUncached((PSequence) seq);
-                }
-                return GetSequenceStorageCachedNode.doFallback(seq);
-            }
+        @Specialization(guards = "!isPSequence(seq)")
+        static SequenceStorage doFallback(@SuppressWarnings("unused") Object seq) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("cannot get sequence storage of non-sequence object");
+        }
+
+        static boolean isPSequence(Object object) {
+            return object instanceof PSequence;
         }
 
         public static GetSequenceStorageNode create() {
-            return GetSequenceStorageCachedNodeGen.create();
+            return SequenceNodesFactory.GetSequenceStorageNodeGen.create();
         }
 
         public static GetSequenceStorageNode getUncached() {
-            return GetSequenceStorageUncachedNode.INSTANCE;
+            return SequenceNodesFactory.GetSequenceStorageNodeGen.getUncached();
         }
     }
 
+    @GenerateUncached
+    public abstract static class GetObjectArrayNode extends Node {
+
+        public abstract Object[] execute(Object seq);
+
+        @Specialization
+        static Object[] doGeneric(Object seq,
+                        @Cached GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
+            return toArrayNode.execute(getSequenceStorageNode.execute(seq));
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class SetSequenceStorageNode extends Node {
+
+        public abstract void execute(PSequence s, SequenceStorage storage);
+
+        @Specialization(guards = "s.getClass() == cachedClass")
+        static void doSpecial(PSequence s, SequenceStorage storage,
+                        @Cached("s.getClass()") Class<? extends PSequence> cachedClass) {
+            cachedClass.cast(s).setSequenceStorage(storage);
+        }
+
+        @Specialization(replaces = "doSpecial")
+        @CompilerDirectives.TruffleBoundary
+        static void doGeneric(PSequence s, SequenceStorage storage) {
+            s.setSequenceStorage(storage);
+        }
+    }
+
+    public abstract static class CheckIsSequenceNode extends PNodeWithRaise {
+
+        public abstract void execute(Object seq);
+
+        @Specialization
+        void check(Object obj,
+                        @Cached PySequenceCheckNode sequenceCheckNode) {
+            if (!sequenceCheckNode.execute(obj)) {
+                throw raise(TypeError, IS_NOT_A_SEQUENCE, obj);
+            }
+        }
+    }
 }

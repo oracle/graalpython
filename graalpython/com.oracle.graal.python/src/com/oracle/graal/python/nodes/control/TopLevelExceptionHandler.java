@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,108 +40,173 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 
-import java.io.IOException;
-
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNodeGen;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins.GetTracebackNextNode;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
-public class TopLevelExceptionHandler extends RootNode {
+public final class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
     private final PException exception;
-    private final ContextReference<PythonContext> context;
     private final SourceSection sourceSection;
+    private final Source source;
 
-    @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-    @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
-    @Child private CallNode callNode = CallNode.create();
-    @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNodeGen.create();
-    @Child private PythonObjectFactory factory;
-    @Child private GetTracebackNode getTracebackNode;
+    @Child private GilNode gilNode = GilNode.create();
 
-    public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
+    public TopLevelExceptionHandler(PythonLanguage language, RootNode child, Source source) {
         super(language);
         this.sourceSection = child.getSourceSection();
-        this.context = language.getContextReference();
-        this.innerCallTarget = Truffle.getRuntime().createCallTarget(child);
+        this.innerCallTarget = PythonUtils.getOrCreateCallTarget(child);
         this.exception = null;
+        this.source = source;
     }
 
     public TopLevelExceptionHandler(PythonLanguage language, PException exception) {
         super(language);
-        this.sourceSection = exception.getSourceLocation();
-        this.context = language.getContextReference();
+        this.sourceSection = exception.getLocation().getEncapsulatingSourceSection();
         this.innerCallTarget = null;
         this.exception = exception;
+        this.source = null;
+    }
+
+    private PythonLanguage getPythonLanguage() {
+        return getLanguage(PythonLanguage.class);
+    }
+
+    private PythonContext getContext() {
+        return PythonContext.get(this);
     }
 
     @Override
+    @SuppressWarnings("try")
     public Object execute(VirtualFrame frame) {
-        if (exception != null) {
-            printExc(frame, exception);
-            return null;
-        } else {
-            assert context.get().getCurrentException() == null;
-            try {
-                return run(frame);
-            } catch (PException e) {
-                assert !PArguments.isPythonFrame(frame);
-                // we cannot reify at this point because we have no Python frame; so create the full
-                // traceback chain
-                PTraceback tbHead = GetTracebackNextNode.createTracebackChain(e, materializeFrameNode, factory());
-                e.getExceptionObject().setTraceback(tbHead);
-                printExc(frame, e);
-                if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
-                    printStackTrace(e);
-                }
-                return null;
-            } catch (Exception | StackOverflowError e) {
-                if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
-                    boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-                    if (!exitException) {
-                        printStackTrace(e);
+        boolean wasAcquired = gilNode.acquire();
+        try {
+            if (exception != null) {
+                throw handlePythonException(exception.getEscapedException());
+            } else {
+                checkInitialized();
+                assert getContext().getCurrentException(getPythonLanguage()) == null;
+                try {
+                    return run(frame);
+                } catch (PException e) {
+                    assert !PArguments.isPythonFrame(frame);
+                    PBaseException ee = e.getEscapedException();
+                    if (getContext().isChildContext() && isSystemExit(ee)) {
+                        return handleChildContextExit(ee);
                     }
+                    throw handlePythonException(ee);
+                } catch (StackOverflowError e) {
+                    PythonContext context = getContext();
+                    context.reacquireGilAfterStackOverflow();
+                    PBaseException newException = context.factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
+                    PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
+                    throw handlePythonException(pe.getEscapedException());
+                } catch (ThreadDeath e) {
+                    // do not handle, result of TruffleContext.closeCancelled()
+                    throw e;
+                } catch (Throwable e) {
+                    handleJavaException(e);
+                    throw e;
                 }
-                throw e;
             }
+        } finally {
+            gilNode.release(wasAcquired);
+        }
+    }
+
+    @TruffleBoundary
+    private void checkInitialized() {
+        Python3Core core = getContext();
+        if (core.isCoreInitialized() && PythonLanguage.MIME_TYPE.equals(source.getMimeType())) {
+            getContext().initializeMainModule(source.getPath());
+        }
+    }
+
+    @TruffleBoundary
+    private PException handlePythonException(PBaseException pythonException) {
+        if (isSystemExit(pythonException)) {
+            handleSystemExit(pythonException);
+        }
+        if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
+            Object type = GetClassNode.getUncached().execute(pythonException);
+            PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
+            Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
+
+            PythonModule sys = getContext().lookupBuiltinModule("sys");
+            sys.setAttribute(BuiltinNames.LAST_TYPE, type);
+            sys.setAttribute(BuiltinNames.LAST_VALUE, pythonException);
+            sys.setAttribute(BuiltinNames.LAST_TRACEBACK, tb);
+
+            ExceptionUtils.printExceptionTraceback(getContext(), pythonException);
+            if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage())) {
+                ExceptionUtils.printJavaStackTrace(pythonException.getException());
+            }
+            if (!getSourceSection().getSource().isInteractive()) {
+                if (getContext().isChildContext()) {
+                    getContext().getChildContextData().setExitCode(1);
+                }
+                throw new PythonExitException(this, 1);
+            }
+        }
+        // Before we leave Python, format the message since outside the context
+        PException exceptionForReraise = pythonException.getExceptionForReraise(pythonException.getTraceback());
+        exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage());
+        throw exceptionForReraise;
+    }
+
+    private static boolean isSystemExit(PBaseException pythonException) {
+        return IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), SystemExit);
+    }
+
+    @TruffleBoundary
+    private void handleJavaException(Throwable e) {
+        try {
+            boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
+            if (!exitException) {
+                ExceptionUtils.printPythonLikeStackTrace(e);
+                if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (UnsupportedMessageException unsupportedMessageException) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
@@ -150,104 +215,61 @@ public class TopLevelExceptionHandler extends RootNode {
         return sourceSection;
     }
 
-    /**
-     * This function is kind-of analogous to PyErr_PrintEx. TODO (timfel): Figure out if we should
-     * move this somewhere else
-     */
-    private void printExc(VirtualFrame frame, PException e) {
-        CompilerDirectives.transferToInterpreter();
-        PythonContext theContext = context.get();
-        PythonCore core = theContext.getCore();
-        if (IsBuiltinClassProfile.profileClassSlowPath(e.getExceptionObject().getLazyPythonClass(), SystemExit)) {
-            handleSystemExit(frame, e);
-        }
-
-        PBaseException value = e.getExceptionObject();
-        PythonAbstractClass type = value.getPythonClass();
-        PTraceback execute = ensureGetTracebackNode().execute(frame, value);
-        Object tb = execute != null ? execute : PNone.NONE;
-
-        PythonModule sys = core.lookupBuiltinModule("sys");
-        sys.setAttribute(BuiltinNames.LAST_TYPE, type);
-        sys.setAttribute(BuiltinNames.LAST_VALUE, value);
-        sys.setAttribute(BuiltinNames.LAST_TRACEBACK, tb);
-
-        Object hook = sys.getAttribute(BuiltinNames.EXCEPTHOOK);
-        if (PythonOptions.getOption(theContext, PythonOptions.AlwaysRunExcepthook)) {
-            if (hook != PNone.NO_VALUE) {
-                try {
-                    callNode.execute(frame, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
-                } catch (PException internalError) {
-                    // More complex handling of errors in exception printing is done in our
-                    // Python code, if we get here, we just fall back to the launcher
-                    throw e;
-                }
-                if (!getSourceSection().getSource().isInteractive()) {
-                    throw new PythonExitException(this, 1);
-                }
-            } else {
-                try {
-                    theContext.getEnv().err().write("sys.excepthook is missing\n".getBytes());
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                }
-            }
-        }
-        throw e;
-    }
-
-    private void handleSystemExit(VirtualFrame frame, PException e) {
-        PythonContext theContext = context.get();
-        if (PythonOptions.getOption(theContext, PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
+    @TruffleBoundary
+    private void handleSystemExit(PBaseException pythonException) {
+        PythonContext theContext = getContext();
+        if (theContext.getOption(PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
             // Don't exit if -i flag was given and we're not yet running interactively
             return;
         }
-        Object attribute = e.getExceptionObject().getAttribute("code");
-        Integer exitcode = null;
-        if (attribute instanceof Number) {
-            exitcode = ((Number) attribute).intValue();
-        } else if (attribute instanceof PInt) {
-            exitcode = ((PInt) attribute).intValue();
-        } else if (attribute instanceof PNone) {
-            exitcode = 0; // "goto done" case in CPython
-        } else if (attribute instanceof Boolean) {
-            exitcode = ((boolean) attribute) ? 1 : 0;
-        }
-        if (exitcode != null) {
+        try {
+            int exitcode = getExitCode(pythonException);
             throw new PythonExitException(this, exitcode);
+        } catch (CannotCastException e) {
+            // fall through
         }
-        if (PythonOptions.getOption(theContext, PythonOptions.AlwaysRunExcepthook)) {
-            // If we failed to dig out the exit code we just print and leave
-            try {
-                theContext.getEnv().err().write(callStrNode.executeObject(frame, e.getExceptionObject()).toString().getBytes());
-                theContext.getEnv().err().write('\n');
-            } catch (IOException e1) {
-            }
+        if (handleAlwaysRunExceptHook(theContext, pythonException)) {
             throw new PythonExitException(this, 1);
         }
-        e.setExit(true);
-        throw e;
+        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
     }
 
     @TruffleBoundary
-    private static void printStackTrace(Throwable e) {
-        e.printStackTrace();
+    private Object handleChildContextExit(PBaseException pythonException) throws PException {
+        // avoid throwing PythonExitException from spawned child context, return only exitCode
+        try {
+            return getExitCode(pythonException);
+        } catch (CannotCastException cce) {
+            // fall through
+        }
+        if (handleAlwaysRunExceptHook(getContext(), pythonException)) {
+            return 1;
+        }
+        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
     }
 
-    private PythonObjectFactory factory() {
-        if (factory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
+    private static int getExitCode(PBaseException pythonException) throws CannotCastException {
+        final Object data = pythonException.getData();
+        int exitcode = 0;
+        if (data instanceof SystemExitBuiltins.SystemExitData) {
+            final Object code = ((SystemExitBuiltins.SystemExitData) data).getCode();
+            if (code != PNone.NONE) {
+                exitcode = (int) CastToJavaLongLossyNode.getUncached().execute(code);
+            }
         }
-        return factory;
+        return exitcode;
     }
 
-    private GetTracebackNode ensureGetTracebackNode() {
-        if (getTracebackNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getTracebackNode = insert(GetTracebackNodeGen.create());
+    @TruffleBoundary
+    private static boolean handleAlwaysRunExceptHook(PythonContext theContext, PBaseException pythonException) {
+        if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
+            // If we failed to dig out the exit code we just print and leave
+            Object stderr = theContext.getStderr();
+            Object message = PyObjectStrAsObjectNode.getUncached().execute(null, pythonException);
+            PyObjectCallMethodObjArgs.getUncached().execute(null, stderr, "write", message);
+            return true;
         }
-        return getTracebackNode;
+        return false;
     }
 
     private Object run(VirtualFrame frame) {
@@ -255,22 +277,22 @@ public class TopLevelExceptionHandler extends RootNode {
         for (int i = 0; i < frame.getArguments().length; i++) {
             PArguments.setArgument(arguments, i, frame.getArguments()[i]);
         }
-        PythonContext pythonContext = context.get();
+        PythonContext pythonContext = getContext();
         if (getSourceSection().getSource().isInternal()) {
             // internal sources are not run in the main module
-            PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
+            PArguments.setGlobals(arguments, pythonContext.factory().createDict());
         } else {
             PythonModule mainModule = pythonContext.getMainModule();
-            PHashingCollection mainDict = PythonObjectLibrary.getUncached().getDict(mainModule);
+            PDict mainDict = GetDictIfExistsNode.getUncached().execute(mainModule);
             PArguments.setGlobals(arguments, mainModule);
             PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
-        PFrame.Reference frameInfo = IndirectCalleeContext.enter(pythonContext, arguments, innerCallTarget);
+        Object state = IndirectCalleeContext.enterIndirect(getPythonLanguage(), pythonContext, arguments);
         try {
             return innerCallTarget.call(arguments);
         } finally {
-            IndirectCalleeContext.exit(pythonContext, frameInfo);
+            IndirectCalleeContext.exit(getPythonLanguage(), pythonContext, state);
         }
     }
 

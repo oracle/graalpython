@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+    
 class Foo():
     def __str__(self):
         assert True
@@ -49,3 +57,32 @@ class Foo():
 
 def test_print_calls_str_not_repr():
     print(Foo())
+
+def test_print_no_stdout_err_in():
+    import sys
+    sout = sys.stdout
+    try:
+        del sys.stdout
+        assert_raises(RuntimeError, print, 'a', {'flush' : False})
+        assert_raises(RuntimeError, print, 'a', {'flush' : True})
+        
+    finally:
+        sys.stdout = sout
+    
+def test_print_no_flush_impl():
+    import sys
+    sout = sys.stdout
+    try:
+        class SOUT:
+            def write(self, line):
+                pass
+        sys.stdout = SOUT()
+        print('a', flush=False)
+        try:
+            print('a', flush=True)
+        except AttributeError:
+            pass
+        else:
+            assert False
+    finally:
+        sys.stdout = sout

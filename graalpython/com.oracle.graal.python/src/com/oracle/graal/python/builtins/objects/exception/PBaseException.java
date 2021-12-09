@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,48 +40,121 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
+@ExportLibrary(InteropLibrary.class)
 public final class PBaseException extends PythonObject {
+    public static class Data {
+
+    }
 
     private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
 
     private PTuple args; // can be null for lazily generated message
 
     // in case of lazily generated messages, these will be used to construct the message:
+    private final boolean hasMessageFormat;
     private final String messageFormat;
     private final Object[] messageArgs;
 
     private PException exception;
-    private PTraceback traceback;
+    private LazyTraceback traceback;
 
-    /** The frame info of the Python frame that first caught the exception. */
-    private PFrame.Reference frameInfo;
+    private PBaseException context;
+    private PBaseException cause;
+    private boolean suppressContext = false;
+    // the data instance is used to store additional information for some of the builtin exceptions
+    // not unlike subclassing
+    private Data data;
 
-    public PBaseException(LazyPythonClass cls, PTuple args) {
-        super(cls);
+    public PBaseException(Object cls, Shape instanceShape, Data data, PTuple args) {
+        super(cls, instanceShape);
+        this.data = data;
         this.args = args;
+        this.hasMessageFormat = false;
         this.messageFormat = null;
         this.messageArgs = null;
     }
 
-    public PBaseException(LazyPythonClass cls, String format, Object[] args) {
-        super(cls);
+    public PBaseException(Object cls, Shape instanceShape, Data data) {
+        super(cls, instanceShape);
+        this.data = data;
         this.args = null;
+        this.hasMessageFormat = false;
+        this.messageFormat = null;
+        this.messageArgs = null;
+    }
+
+    public PBaseException(Object cls, Shape instanceShape, Data data, String format, Object[] args) {
+        super(cls, instanceShape);
+        this.data = data;
+        this.args = null;
+        this.hasMessageFormat = true;
         this.messageFormat = format;
         this.messageArgs = args;
+    }
+
+    public Data getData() {
+        return data;
+    }
+
+    public void setData(Data data) {
+        this.data = data;
+    }
+
+    public PBaseException getContext() {
+        return context;
+    }
+
+    public void setContext(PBaseException context) {
+        this.context = context;
+    }
+
+    public PBaseException getCause() {
+        return cause;
+    }
+
+    public void setCause(PBaseException cause) {
+        this.cause = cause;
+        this.suppressContext = true;
+    }
+
+    public boolean getSuppressContext() {
+        return suppressContext;
+    }
+
+    public void setSuppressContext(boolean suppressContext) {
+        this.suppressContext = suppressContext;
     }
 
     public PException getException() {
@@ -92,35 +165,29 @@ public final class PBaseException extends PythonObject {
         this.exception = exception;
     }
 
-    /**
-     * use {@link GetTracebackNode}
-     */
-    PTraceback getTraceback() {
+    public void ensureReified() {
+        if (exception != null) {
+            // If necessary, this will call back to this object to set the traceback
+            exception.ensureReified();
+        }
+    }
+
+    public LazyTraceback getTraceback() {
+        ensureReified();
         return traceback;
     }
 
-    public void setTraceback(PTraceback traceback) {
+    public void setTraceback(LazyTraceback traceback) {
+        ensureReified();
         this.traceback = traceback;
-        // Explicitly setting the traceback also makes the frame info for creating a lazy traceback
-        // obsolete or even incorrect. So it is cleared.
-        this.frameInfo = null;
+    }
+
+    public void setTraceback(PTraceback traceback) {
+        setTraceback(new LazyTraceback(traceback));
     }
 
     public void clearTraceback() {
         this.traceback = null;
-    }
-
-    /**
-     * It should usually not be necessary to use this method because that would mean that the
-     * exception wasn't correctly reified. But it can make sense to do reification at a later point
-     * for best-effort results.
-     */
-    public boolean hasTraceback() {
-        return this.traceback != null;
-    }
-
-    public PFrame.Reference getFrameInfo() {
-        return frameInfo;
     }
 
     /**
@@ -138,18 +205,27 @@ public final class PBaseException extends PythonObject {
         return messageFormat;
     }
 
-    public Object[] getMessageArgs() {
-        // clone message args to ensure that they stay unmodified
-        return messageArgs.clone();
+    public boolean hasMessageFormat() {
+        return hasMessageFormat;
     }
 
-    public String getFormattedMessage(GetLazyClassNode getClassNode) {
-        String typeName = GetNameNode.doSlowPath(getLazyPythonClass());
+    public Object[] getMessageArgs() {
+        // clone message args to ensure that they stay unmodified
+        return messageArgs != null ? messageArgs.clone() : PythonUtils.EMPTY_OBJECT_ARRAY;
+    }
+
+    @TruffleBoundary
+    public String getFormattedMessage() {
+        final Object clazz = GetClassNode.getUncached().execute(this);
+        String typeName = GetNameNode.doSlowPath(clazz);
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
+                return typeName + ": " + FORMATTER.format(messageFormat, getMessageArgs());
+            } else if (hasMessageFormat) {
+                return typeName + ": " + messageFormat;
+            } else {
+                return typeName;
             }
-            return typeName + ": " + messageFormat;
         } else if (args.getSequenceStorage().length() == 0) {
             return typeName;
         } else if (args.getSequenceStorage().length() == 1) {
@@ -164,50 +240,190 @@ public final class PBaseException extends PythonObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return getFormattedMessage(null);
+        // We *MUST NOT* call anything here that may need a context!
+        StringBuilder sb = new StringBuilder(this.getInitialPythonClass().toString());
+        if (messageArgs != null && messageArgs.length > 0) {
+            sb.append("(fmt=\"").append(messageFormat).append("\", args = (");
+            for (Object arg : messageArgs) {
+                if (arg instanceof PythonObject) {
+                    sb.append(arg);
+                } else {
+                    String fqn = arg.getClass().getName();
+                    if (fqn.startsWith("java.lang.")) {
+                        sb.append(arg);
+                    } else {
+                        // we do not risk printing arbitrary objects
+                        sb.append("a ").append(fqn);
+                    }
+                }
+                sb.append(", ");
+            }
+            sb.append(") )");
+        } else if (hasMessageFormat) {
+            sb.append("(fmt=\"").append(messageFormat).append('"');
+        }
+        return sb.toString();
     }
 
-    /**
-     * Create the traceback for this exception using the provided {@link PFrame} instance (which
-     * usually is the frame of the function that caught the exception).
-     * <p>
-     * This function (of {@link #reifyException(PFrame.Reference)} must be called before handing out
-     * exceptions into the Python value space because otherwise the stack will not be correct if the
-     * exception object escapes the current function.
-     * </p>
-     */
-    public void reifyException(PFrame pyFrame, PythonObjectFactory factory) {
-        traceback = factory.createTraceback(pyFrame, exception);
-        frameInfo = pyFrame.getRef();
-
-        // TODO: frames: provide legacy stack walk method via Python option
-        // TruffleStackTrace.fillIn(exception);
-    }
-
-    /**
-     * Associate this exception with a frame info that represents the {@link PFrame} instance that
-     * caught the exception.<br>
-     * <p>
-     * In contrast to {@link #reifyException(PFrame, PythonObjectFactory)}, this method can be used
-     * if the {@link PFrame} instance isn't already available and if the Truffle frame is also not
-     * available to create the {@link PFrame} instance using the
-     * {@link com.oracle.graal.python.nodes.frame.MaterializeFrameNode}.
-     * </p>
-     * <p>
-     * The most common use case for calling this method is when an exception is thrown in some
-     * Python code but we catch the exception in some interop node (that is certainly adopted by
-     * some foreign language's root node). In this case, we do not want to eagerly create the
-     * {@link PFrame} instance when calling from Python to the foreign language since this could be
-     * expensive. The traceback can then be created lazily from the frame info.
-     * </p>
-     */
-    public void reifyException(PFrame.Reference curFrameInfo) {
+    public LazyTraceback internalReifyException(PFrame.Reference curFrameInfo) {
         assert curFrameInfo != PFrame.Reference.EMPTY;
-        traceback = null;
-        curFrameInfo.markAsEscaped();
-        this.frameInfo = curFrameInfo;
+        traceback = new LazyTraceback(curFrameInfo, exception, traceback);
+        return traceback;
+    }
 
-        // TODO: frames: provide legacy stack walk method via Python option
-        // TruffleStackTrace.fillIn(exception);
+    /**
+     * Prepare a {@link PException} for reraising this exception, as done by <code>raise</code>
+     * without arguments.
+     *
+     * <p>
+     * We must be careful to never rethrow a PException that has already been caught and exposed to
+     * the program, because its Truffle lazy stacktrace may have been already materialized, which
+     * would prevent it from capturing frames after the rethrow. So we need a new PException even
+     * though its just a dumb rethrow. We also need a new PException for the reason below.
+     * </p>
+     *
+     * <p>
+     * CPython reraises the exception with the traceback captured in sys.exc_info, discarding the
+     * traceback in the exception, which may have changed since the time the exception had been
+     * caught. This can happen due to explicit modification by the program or, more commonly, by
+     * accumulating more frames by being reraised in the meantime. That's why this method takes an
+     * explicit traceback argument
+     * </p>
+     *
+     * <p>
+     * Reraises shouldn't be visible in the stacktrace. We mark them as such.
+     * </p>
+     **/
+    public PException getExceptionForReraise(LazyTraceback reraiseTraceback) {
+        setTraceback(reraiseTraceback);
+        PException newException = PException.fromObject(this, exception.getLocation(), false);
+        newException.setHideLocation(true);
+        return newException;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isException() {
+        return true;
+    }
+
+    @ExportMessage
+    RuntimeException throwException(
+                    @Cached PRaiseNode raiseNode,
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            throw raiseNode.raiseExceptionObject(this);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    ExceptionType getExceptionType(
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object clazz = getClassNode.execute(this);
+            if (clazz instanceof PythonBuiltinClass) {
+                clazz = ((PythonBuiltinClass) clazz).getType();
+            }
+            // these are the only ones we'll raise, we don't want to report user subtypes of
+            // SyntaxError as Truffle syntax errors
+            if (clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IndentationError || clazz == PythonBuiltinClassType.TabError) {
+                return ExceptionType.PARSE_ERROR;
+            }
+            if (clazz == PythonBuiltinClassType.SystemExit) {
+                return ExceptionType.EXIT;
+            }
+            return ExceptionType.RUNTIME_ERROR;
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isExceptionIncompleteSource() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasExceptionMessage() {
+        return true;
+    }
+
+    @ExportMessage
+    String getExceptionMessage(@Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getFormattedMessage();
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    int getExceptionExitStatus(
+                    @Cached CastToJavaIntExactNode castToInt,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Cached ReadAttributeFromDynamicObjectNode readNode,
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (getExceptionType(getClassNode, gil) == ExceptionType.EXIT) {
+                try {
+                    // Avoiding getattr because this message shouldn't have side-effects
+                    Object code = readNode.execute(this, "code");
+                    if (code == PNone.NO_VALUE) {
+                        return 1;
+                    }
+                    // Avoid side-effects in integer conversion too
+                    try {
+                        return castToInt.execute(code);
+                    } catch (CannotCastException | PException e) {
+                        return 1;
+                    }
+                } catch (PException e) {
+                    return 1;
+                }
+            }
+            unsupportedProfile.enter();
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    boolean hasExceptionCause(@Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return cause != null || (!suppressContext && context != null);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    Object getExceptionCause(
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (cause != null) {
+                return cause;
+            }
+            if (!suppressContext && context != null) {
+                return context;
+            }
+            unsupportedProfile.enter();
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 }

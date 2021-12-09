@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,21 +46,21 @@ import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 
+@SuppressWarnings("deprecation")    // new Frame API
 public abstract class PClosureFunctionRootNode extends PClosureRootNode {
-    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] cellVarSlots;
+    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final com.oracle.truffle.api.frame.FrameSlot[] cellVarSlots;
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
     private final Signature signature;
 
     protected PClosureFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature) {
-        super(language, frameDescriptor, executionCellSlots.getFreeVarSlots());
+        super(language, frameDescriptor, executionCellSlots.getFreeVarSlots(), true);
         this.cellVarSlots = executionCellSlots.getCellVarSlots();
         this.cellEffectivelyFinalAssumptions = executionCellSlots.getCellVarAssumptions();
         this.signature = signature;
     }
 
-    public String[] getCellVars() {
+    public final String[] getCellVars() {
         String[] cellVars = new String[cellVarSlots.length];
         for (int i = 0; i < cellVars.length; i++) {
             cellVars[i] = (String) cellVarSlots[i].getIdentifier();
@@ -69,7 +69,7 @@ public abstract class PClosureFunctionRootNode extends PClosureRootNode {
     }
 
     @Override
-    public Signature getSignature() {
+    public final Signature getSignature() {
         return signature;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,39 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.object.Shape;
 
 public final class GetSetDescriptor extends PythonBuiltinObject implements BoundBuiltinCallable<GetSetDescriptor> {
     private final Object get;
     private final Object set;
     private final String name;
-    private final LazyPythonClass type;
+    private final boolean allowsDelete;
+    private final Object type;
 
-    public GetSetDescriptor(LazyPythonClass cls, Object get, Object set, String name, LazyPythonClass type) {
-        super(cls);
+    public GetSetDescriptor(PythonLanguage lang, Object get, Object set, String name, Object type) {
+        this(lang, get, set, name, type, false);
+    }
+
+    public GetSetDescriptor(Object clazz, Shape shape, Object get, Object set, String name, Object type, boolean allowsDelete) {
+        super(clazz, shape);
+        // every descriptor has a '__doc__' attribute
+        setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
         this.get = get;
         this.set = set;
         this.name = name;
         this.type = type;
+        this.allowsDelete = allowsDelete;
+    }
+
+    public GetSetDescriptor(PythonLanguage lang, Object get, Object set, String name, Object type, boolean allowsDelete) {
+        this(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang), get, set, name, type, allowsDelete);
     }
 
     public Object getGet() {
@@ -72,15 +87,19 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         return name;
     }
 
-    public LazyPythonClass getType() {
+    public Object getType() {
         return type;
+    }
+
+    public boolean allowsDelete() {
+        return allowsDelete;
     }
 
     public GetSetDescriptor boundToObject(PythonBuiltinClassType klass, PythonObjectFactory factory) {
         if (klass == type) {
             return this;
         } else {
-            return factory.createGetSetDescriptor(get, set, name, klass);
+            return factory.createGetSetDescriptor(get, set, name, klass, allowsDelete);
         }
     }
 }

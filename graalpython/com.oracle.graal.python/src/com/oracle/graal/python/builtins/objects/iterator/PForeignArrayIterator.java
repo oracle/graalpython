@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,29 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.object.Shape;
 
-public class PForeignArrayIterator extends PythonBuiltinObject {
+public final class PForeignArrayIterator extends PythonBuiltinObject {
 
     private final Object foreignArray;
-    private int size;
     private int cursor;
 
-    public PForeignArrayIterator(LazyPythonClass cls, Object foreignArray, int size) {
-        super(cls);
+    public PForeignArrayIterator(Object cls, Shape instanceShape, Object foreignArray) {
+        super(cls, instanceShape);
         this.foreignArray = foreignArray;
-        this.size = size;
     }
 
     public Object getForeignArray() {
         return foreignArray;
     }
 
-    public int getSize() {
-        return size;
+    public int getSize(InteropLibrary lib, PyNumberAsSizeNode asSizeNode) {
+        try {
+            final long size = lib.getArraySize(foreignArray);
+            return asSizeNode.executeExact(null, size);
+        } catch (UnsupportedMessageException ex) {
+            return 0;
+        }
     }
 
     public int getCursor() {
@@ -70,5 +77,4 @@ public class PForeignArrayIterator extends PythonBuiltinObject {
     public int advance() {
         return cursor++;
     }
-
 }

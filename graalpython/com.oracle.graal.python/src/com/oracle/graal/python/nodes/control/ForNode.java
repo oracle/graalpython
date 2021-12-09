@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.iterator.PDoubleIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PLongIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -36,31 +36,26 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@SuppressWarnings("deprecation")    // new Frame API
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
-
-    @CompilationFinal FrameSlot iteratorSlot;
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
+    @CompilationFinal com.oracle.truffle.api.frame.FrameSlot iteratorSlot;
     @Child ForNextElementNode nextElement;
     @Child StatementNode body;
-    @Child PRaiseNode raise;
 
     public ForRepeatingNode(StatementNode target, StatementNode body) {
         this.nextElement = ForNextElementNodeGen.create(target);
@@ -73,14 +68,10 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
                 return false;
             }
         } catch (FrameSlotTypeException e) {
-            if (raise == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raise = insert(PRaiseNode.create());
-            }
-            throw raise.raise(PythonErrorType.RuntimeError, "internal error: unexpected frame slot type");
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException(e);
         }
         body.executeVoid(frame);
-        contextRef.get().triggerAsyncActions(frame, this);
         return true;
     }
 }
@@ -102,58 +93,70 @@ abstract class ForNextElementNode extends PNodeWithContext {
 
     @Specialization(guards = "iterator.getClass() == clazz", limit = "99")
     protected boolean doIntegerIterator(VirtualFrame frame, PIntegerIterator iterator,
-                    @Cached("iterator.getClass()") Class<? extends PIntegerIterator> clazz) {
+                    @Cached("iterator.getClass()") Class<? extends PIntegerIterator> clazz,
+                    @Cached("createCountingProfile()") ConditionProfile profile) {
         PIntegerIterator profiledIterator = clazz.cast(iterator);
-        if (!profiledIterator.hasNext()) {
+        if (!profile.profile(profiledIterator.hasNext())) {
             profiledIterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).doWrite(frame, profiledIterator.next());
+        ((WriteNode) target).executeInt(frame, profiledIterator.next());
         return true;
     }
 
-    @Specialization(guards = "iterator.getClass() == clazz", limit = "99")
-    protected boolean doLongIterator(VirtualFrame frame, PLongIterator iterator,
-                    @Cached("iterator.getClass()") Class<? extends PLongIterator> clazz) {
-        PLongIterator profiledIterator = clazz.cast(iterator);
-        if (!profiledIterator.hasNext()) {
-            profiledIterator.setExhausted();
+    @Specialization
+    protected boolean doObjectIterator(VirtualFrame frame, PObjectSequenceIterator iterator,
+                    @Cached("createCountingProfile()") ConditionProfile profile) {
+        if (!profile.profile(iterator.hasNext())) {
+            iterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).doWrite(frame, profiledIterator.next());
+        ((WriteNode) target).executeObject(frame, iterator.next());
         return true;
     }
 
-    @Specialization(guards = "iterator.getClass() == clazz", limit = "99")
-    protected boolean doDoubleIterator(VirtualFrame frame, PDoubleIterator iterator,
-                    @Cached("iterator.getClass()") Class<? extends PDoubleIterator> clazz) {
-        PDoubleIterator profiledIterator = clazz.cast(iterator);
-        if (!profiledIterator.hasNext()) {
-            profiledIterator.setExhausted();
+    @Specialization
+    protected boolean doLongIterator(VirtualFrame frame, PLongSequenceIterator iterator,
+                    @Cached("createCountingProfile()") ConditionProfile profile) {
+        if (!profile.profile(iterator.hasNext())) {
+            iterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).doWrite(frame, profiledIterator.next());
+        ((WriteNode) target).executeLong(frame, iterator.next());
+        return true;
+    }
+
+    @Specialization
+    protected boolean doDoubleIterator(VirtualFrame frame, PDoubleSequenceIterator iterator,
+                    @Cached("createCountingProfile()") ConditionProfile profile) {
+        if (!profile.profile(iterator.hasNext())) {
+            iterator.setExhausted();
+            return false;
+        }
+        ((WriteNode) target).executeDouble(frame, iterator.next());
         return true;
     }
 
     @Specialization
     protected boolean doIterator(VirtualFrame frame, Object object,
-                    @Cached("create()") GetNextNode next,
-                    @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                    @Cached GetNextNode next,
+                    @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached PRaiseNode raise) {
         try {
-            ((WriteNode) target).doWrite(frame, next.execute(frame, object));
+            ((WriteNode) target).executeObject(frame, next.execute(frame, object));
             return true;
         } catch (PException e) {
-            e.expectStopIteration(errorProfile);
+            e.expectStopIteration(errorProfile, raise, object);
             return false;
         }
     }
 }
 
 @NodeInfo(shortName = "for")
+@SuppressWarnings("deprecation")    // new Frame API
 public final class ForNode extends LoopNode {
 
-    @CompilationFinal private FrameSlot iteratorSlot;
+    @CompilationFinal private com.oracle.truffle.api.frame.FrameSlot iteratorSlot;
 
     @Child private com.oracle.truffle.api.nodes.LoopNode loopNode;
     @Child private ExpressionNode iterator;
@@ -177,15 +180,23 @@ public final class ForNode extends LoopNode {
     }
 
     @Override
+    @SuppressWarnings("deprecation")    // new Frame API
     public void executeVoid(VirtualFrame frame) {
         if (iteratorSlot == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            iteratorSlot = frame.getFrameDescriptor().addFrameSlot(new Object(), FrameSlotKind.Object);
-            ((ForRepeatingNode) loopNode.getRepeatingNode()).iteratorSlot = iteratorSlot;
+            getLock().lock();
+            try {
+                if (iteratorSlot == null) {
+                    iteratorSlot = frame.getFrameDescriptor().addFrameSlot(new Object(), FrameSlotKind.Object);
+                    ((ForRepeatingNode) loopNode.getRepeatingNode()).iteratorSlot = iteratorSlot;
+                }
+            } finally {
+                getLock().unlock();
+            }
         }
         frame.setObject(iteratorSlot, iterator.execute(frame));
         try {
-            loopNode.executeLoop(frame);
+            loopNode.execute(frame);
         } finally {
             frame.setObject(iteratorSlot, null);
         }

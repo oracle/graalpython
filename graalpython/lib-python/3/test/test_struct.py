@@ -30,7 +30,6 @@ def bigendian_to_native(value):
         return string_reverse(value)
 
 class StructTest(unittest.TestCase):
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_isbigendian(self):
         self.assertEqual((struct.pack('=i', 1)[0] == 0), ISBIGENDIAN)
 
@@ -55,7 +54,6 @@ class StructTest(unittest.TestCase):
         self.assertRaises(struct.error, struct.unpack, 'iii', s)
         self.assertRaises(struct.error, struct.unpack, 'i', s)
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_transitiveness(self):
         c = b'a'
         b = 1
@@ -80,7 +78,6 @@ class StructTest(unittest.TestCase):
                 self.assertEqual(int(100 * dp), int(100 * d))
                 self.assertEqual(tp, t)
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_new_features(self):
         # Test some of the new features in detail
         # (format, argument, big-endian result, little-endian result, asymmetric)
@@ -335,7 +332,6 @@ class StructTest(unittest.TestCase):
                 assertStructError(struct.pack, format, 0)
                 assertStructError(struct.unpack, format, b"")
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_p_code(self):
         # Test p ("Pascal string") code.
         for code, input, expected, expectedback in [
@@ -352,7 +348,6 @@ class StructTest(unittest.TestCase):
             (got,) = struct.unpack(code, got)
             self.assertEqual(got, expectedback)
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_705836(self):
         # SF bug 705836.  "<f" and ">f" had a severe rounding bug, where a carry
         # from the low-order discarded bits could propagate into the exponent
@@ -386,7 +381,6 @@ class StructTest(unittest.TestCase):
         big = math.ldexp(big, 127 - 24)
         self.assertRaises(OverflowError, struct.pack, ">f", big)
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_1530559(self):
         for code, byteorder in iter_integer_formats():
             format = byteorder + code
@@ -422,6 +416,7 @@ class StructTest(unittest.TestCase):
         self.assertEqual(s.unpack_from(buffer=test_string, offset=2),
                          (b'cd01',))
 
+    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalvm=False)
     def test_pack_into(self):
         test_string = b'Reykjavik rocks, eow!'
         writable_buf = array.array('b', b' '*100)
@@ -450,6 +445,7 @@ class StructTest(unittest.TestCase):
         self.assertRaises((TypeError, struct.error), struct.pack_into, b'', sb,
                           None)
 
+    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalvm=False)
     def test_pack_into_fn(self):
         test_string = b'Reykjavik rocks, eow!'
         writable_buf = array.array('b', b' '*100)
@@ -473,6 +469,7 @@ class StructTest(unittest.TestCase):
         self.assertRaises((ValueError, struct.error), pack_into, small_buf, 2,
                           test_string)
 
+    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalvm=False)
     def test_unpack_with_buffer(self):
         # SF bug 1563759: struct.unpack doesn't support buffer protocol objects
         data1 = array.array('B', b'\x12\x34\x56\x78')
@@ -481,7 +478,6 @@ class StructTest(unittest.TestCase):
             value, = struct.unpack('>I', data)
             self.assertEqual(value, 0x12345678)
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_bool(self):
         class ExplodingBool(object):
             def __bool__(self):
@@ -525,6 +521,8 @@ class StructTest(unittest.TestCase):
         for c in [b'\x01', b'\x7f', b'\xff', b'\x0f', b'\xf0']:
             self.assertTrue(struct.unpack('>?', c)[0])
 
+    @support.impl_detail(msg="not yet supported: sys.maxsize difference Java -> C, does not overflow defined as "
+                             "Integer.MAX_VALUE < size_t size", graalvm=False)
     def test_count_overflow(self):
         hugecount = '{}b'.format(sys.maxsize+1)
         self.assertRaises(struct.error, struct.calcsize, hugecount)
@@ -586,13 +584,21 @@ class StructTest(unittest.TestCase):
         self.check_sizeof('0c', 0)
 
     def test_boundary_error_message(self):
-        regex = (
+        regex1 = (
             r'pack_into requires a buffer of at least 6 '
             r'bytes for packing 1 bytes at offset 5 '
             r'\(actual buffer size is 1\)'
         )
-        with self.assertRaisesRegex(struct.error, regex):
+        with self.assertRaisesRegex(struct.error, regex1):
             struct.pack_into('b', bytearray(1), 5, 1)
+
+        regex2 = (
+            r'unpack_from requires a buffer of at least 6 '
+            r'bytes for unpacking 1 bytes at offset 5 '
+            r'\(actual buffer size is 1\)'
+        )
+        with self.assertRaisesRegex(struct.error, regex2):
+            struct.unpack_from('b', bytearray(1), 5)
 
     def test_boundary_error_message_with_negative_offset(self):
         byte_list = bytearray(10)
@@ -606,15 +612,33 @@ class StructTest(unittest.TestCase):
                 'offset -11 out of range for 10-byte buffer'):
             struct.pack_into('<B', byte_list, -11, 123)
 
+        with self.assertRaisesRegex(
+                struct.error,
+                r'not enough data to unpack 4 bytes at offset -2'):
+            struct.unpack_from('<I', byte_list, -2)
+
+        with self.assertRaisesRegex(
+                struct.error,
+                "offset -11 out of range for 10-byte buffer"):
+            struct.unpack_from('<B', byte_list, -11)
+
     def test_boundary_error_message_with_large_offset(self):
         # Test overflows cause by large offset and value size (issue 30245)
-        regex = (
+        regex1 = (
             r'pack_into requires a buffer of at least ' + str(sys.maxsize + 4) +
             r' bytes for packing 4 bytes at offset ' + str(sys.maxsize) +
             r' \(actual buffer size is 10\)'
         )
-        with self.assertRaisesRegex(struct.error, regex):
+        with self.assertRaisesRegex(struct.error, regex1):
             struct.pack_into('<I', bytearray(10), sys.maxsize, 1)
+
+        regex2 = (
+            r'unpack_from requires a buffer of at least ' + str(sys.maxsize + 4) +
+            r' bytes for unpacking 4 bytes at offset ' + str(sys.maxsize) +
+            r' \(actual buffer size is 10\)'
+        )
+        with self.assertRaisesRegex(struct.error, regex2):
+            struct.unpack_from('<I', bytearray(10), sys.maxsize)
 
     def test_issue29802(self):
         # When the second argument of struct.unpack() was of wrong type
@@ -632,6 +656,13 @@ class StructTest(unittest.TestCase):
         # use a bytes string
         s2 = struct.Struct(s.format.encode())
         self.assertEqual(s2.format, s.format)
+
+    def test_issue35714(self):
+        # Embedded null characters should not be allowed in format strings.
+        for s in '\0', '2\0i', b'\0':
+            with self.assertRaisesRegex(struct.error,
+                                        'embedded null character'):
+                struct.calcsize(s)
 
 
 class UnpackIteratorTest(unittest.TestCase):

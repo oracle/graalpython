@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,7 @@ package com.oracle.graal.python.nodes.truffle;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.dsl.ImplicitCast;
 import com.oracle.truffle.api.dsl.TypeCast;
 import com.oracle.truffle.api.dsl.TypeCheck;
@@ -46,11 +46,6 @@ import com.oracle.truffle.api.dsl.TypeSystem;
  */
 @TypeSystem
 public abstract class PythonArithmeticTypes {
-
-    @ImplicitCast
-    public static String PStringToString(PString value) {
-        return value.getValue();
-    }
 
     @ImplicitCast
     public static double PFloatToDouble(PFloat value) {
@@ -86,7 +81,7 @@ public abstract class PythonArithmeticTypes {
 
     @TypeCheck(PythonNativeClass.class)
     public static boolean isNativeClass(Object object) {
-        return PythonNativeClass.isInstance(object);
+        return PGuards.isNativeClass(object);
     }
 
     @TypeCast(PythonNativeClass.class)

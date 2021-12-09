@@ -285,6 +285,21 @@ class ReferencesTestCase(TestBase):
         p //= 5
         self.assertEqual(p, 21)
 
+    def test_proxy_matmul(self):
+        class C:
+            def __matmul__(self, other):
+                return 1729
+            def __rmatmul__(self, other):
+                return -163
+            def __imatmul__(self, other):
+                return 561
+        o = C()
+        p = weakref.proxy(o)
+        self.assertEqual(p @ 5, 1729)
+        self.assertEqual(5 @ p, -163)
+        p @= 5
+        self.assertEqual(p, 561)
+
     # The PyWeakref_* C API is documented as allowing either NULL or
     # None as the value for the callback, where either means "no
     # callback".  The "no callback" ref and proxy objects are supposed
@@ -375,6 +390,26 @@ class ReferencesTestCase(TestBase):
         class List(list): pass
         lyst = List()
         self.assertEqual(bool(weakref.proxy(lyst)), bool(lyst))
+
+    def test_proxy_iter(self):
+        # Test fails with a debug build of the interpreter
+        # (see bpo-38395).
+
+        obj = None
+
+        class MyObj:
+            def __iter__(self):
+                nonlocal obj
+                del obj
+                return NotImplemented
+
+        obj = MyObj()
+        p = weakref.proxy(obj)
+        with self.assertRaises(TypeError):
+            # "blech" in p calls MyObj.__iter__ through the proxy,
+            # without keeping a reference to the real object, so it
+            # can be killed in the middle of the call
+            "blech" in p
 
     def test_getweakrefcount(self):
         o = C()
@@ -750,6 +785,7 @@ class ReferencesTestCase(TestBase):
         # No exception should be raised here
         gc.collect()
 
+    @support.impl_detail("weakref nondeterministic", graalvm=False)
     def test_classes(self):
         # Check that classes are weakrefable.
         class A(object):
@@ -1015,6 +1051,7 @@ class WeakMethodTestCase(unittest.TestCase):
         gc.collect()
         self.assertIs(r(), None)
 
+    @support.impl_detail("weakref nondeterministic", graalvm=False)
     def test_callback_when_object_dead(self):
         # Test callback behaviour when object dies first.
         C = self._subclass()
@@ -1096,6 +1133,7 @@ class WeakMethodTestCase(unittest.TestCase):
                 self.assertEqual(q == r, q is r)
                 self.assertEqual(q != r, q is not r)
 
+    @support.impl_detail("weakref nondeterministic", graalvm=False)
     def test_hashing(self):
         # Alive WeakMethods are hashable if the underlying object is
         # hashable.
@@ -1755,6 +1793,7 @@ class MappingTestCase(TestBase):
         # copying should not result in a crash.
         self.check_threaded_weak_dict_copy(weakref.WeakKeyDictionary, False)
 
+    @support.impl_detail("refcounting", graalvm=False)
     def test_threaded_weak_key_dict_deepcopy(self):
         # Issue #35615: Weakref keys or values getting GC'ed during dict
         # copying should not result in a crash.
@@ -1769,6 +1808,11 @@ class MappingTestCase(TestBase):
         # Issue #35615: Weakref keys or values getting GC'ed during dict
         # copying should not result in a crash.
         self.check_threaded_weak_dict_copy(weakref.WeakValueDictionary, True)
+
+    @support.cpython_only
+    def test_remove_closure(self):
+        d = weakref.WeakValueDictionary()
+        self.assertIsNone(d._remove.__closure__)
 
 
 from test import mapping_tests
@@ -1838,6 +1882,35 @@ class FinalizeTestCase(unittest.TestCase):
         self.assertEqual(f.detach(), None)
         self.assertEqual(f.alive, False)
         self.assertEqual(res, [199])
+
+    def test_arg_errors(self):
+        def fin(*args, **kwargs):
+            res.append((args, kwargs))
+
+        a = self.A()
+
+        res = []
+        f = weakref.finalize(a, fin, 1, 2, func=3, obj=4)
+        self.assertEqual(f.peek(), (a, fin, (1, 2), {'func': 3, 'obj': 4}))
+        f()
+        self.assertEqual(res, [((1, 2), {'func': 3, 'obj': 4})])
+
+        res = []
+        with self.assertWarns(DeprecationWarning):
+            f = weakref.finalize(a, func=fin, arg=1)
+        self.assertEqual(f.peek(), (a, fin, (), {'arg': 1}))
+        f()
+        self.assertEqual(res, [((), {'arg': 1})])
+
+        res = []
+        with self.assertWarns(DeprecationWarning):
+            f = weakref.finalize(obj=a, func=fin, arg=1)
+        self.assertEqual(f.peek(), (a, fin, (), {'arg': 1}))
+        f()
+        self.assertEqual(res, [((), {'arg': 1})])
+
+        self.assertRaises(TypeError, weakref.finalize, a)
+        self.assertRaises(TypeError, weakref.finalize)
 
     def test_order(self):
         a = self.A()

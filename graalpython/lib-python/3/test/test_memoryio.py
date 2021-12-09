@@ -389,7 +389,6 @@ class MemoryTestMixin:
             memio = self.ioclass()
             memio.foo = 1
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_pickling(self):
         buf = self.buftype("1234567890")
         memio = self.ioclass(buf)
@@ -439,6 +438,7 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
     ioclass = pyio.BytesIO
     EOF = b""
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_getbuffer(self):
         memio = self.ioclass(b"1234567890")
         buf = memio.getbuffer()
@@ -459,7 +459,7 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         # After the buffer gets released, we can resize and close the BytesIO
         # again
         del buf
-        support.gc_collect()
+        support.gc_collect() # Truffle: after collecting buf, the export count should be 0.
         memio.truncate()
         memio.close()
         self.assertRaises(ValueError, memio.getbuffer)
@@ -469,7 +469,6 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         self.assertEqual(self.ioclass(buf).read1(), buf)
         self.assertEqual(self.ioclass(buf).read1(-1), buf)
 
-    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_readinto(self):
         buf = self.buftype("1234567890")
         memio = self.ioclass(buf)
@@ -697,7 +696,8 @@ class PyStringIOTest(MemoryTestMixin, MemorySeekTestMixin,
     ioclass = pyio.StringIO
     UnsupportedOperation = pyio.UnsupportedOperation
     EOF = ""
-
+    
+    @support.impl_detail(msg="failure causes unittest output to crash", graalvm=False)
     def test_lone_surrogates(self):
         # Issue #20424
         memio = self.ioclass('\ud800')

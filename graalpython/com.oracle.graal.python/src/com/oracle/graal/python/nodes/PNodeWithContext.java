@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,14 +41,42 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.nodes.Node;
 
+@ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class, BuiltinNames.class})
 public abstract class PNodeWithContext extends Node {
-    protected Assumption singleContextAssumption() {
+
+    protected static Assumption singleContextAssumption() {
         CompilerAsserts.neverPartOfCompilation("the singleContextAssumption should only be retrieved in the interpreter");
-        PythonLanguage language = PythonLanguage.getCurrent();
-        return language.singleContextAssumption;
+        return PythonLanguage.get(null).singleContextAssumption;
+    }
+
+    /**
+     * @return {@code true} if this node can be shared statically.
+     */
+    protected boolean isUncached() {
+        return !isAdoptable();
+    }
+
+    @TruffleBoundary
+    public void printStack() {
+        // a convenience methods for debugging
+        ExceptionUtils.printPythonLikeStackTrace();
+    }
+
+    public final PythonLanguage getLanguage() {
+        return PythonLanguage.get(this);
+    }
+
+    public final PythonContext getContext() {
+        return PythonContext.get(this);
     }
 }

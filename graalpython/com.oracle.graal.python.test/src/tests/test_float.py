@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,8 @@
 
 import unittest
 import os, sys
+import random
+import fractions
 
 from math import isnan, copysign, ldexp
 
@@ -83,6 +85,47 @@ class BasicTests(unittest.TestCase):
             pass
         else:
             assert False, "rounding with a float should have raised"
+            
+        class F: 
+            pass
+
+        setattr(F, "__round__", round)
+        try:
+            round(F())
+        except TypeError:
+            pass
+        else:
+            assert False, "rounding with a non-float should have raised"
+            
+        class F(float): 
+            pass
+
+        setattr(F, "__round__", round)
+        try:
+            round(F(4.2))
+        except TypeError:
+            pass
+        else:
+            assert False, "rounding with only 1 arg should have raised"
+        
+        round(F(4.2), 1)
+
+        def r(o):
+            return(42)
+
+        setattr(F, "__round__", r)
+        assert round(F(4.2)) == 42
+
+        l = []
+        def r(arg1, arg2):
+            l.append(arg1)
+            l.append(arg2)
+            return(42)
+
+        setattr(F, "__round__", r)
+        assert round(F(4.2), 2) == 42
+        assert l[0] == 4.2
+        assert l[1] == 2
 
     def test_magic_rounding(self):
         class C():
@@ -97,7 +140,12 @@ class BasicTests(unittest.TestCase):
         class Obj:
             def __float__(self):
                 return 1.123
+        class Indexable:
+            def __index__(self):
+                return 4
         assert [float(x) for x in [Obj(), b"0.123"]] == [1.123, 0.123]
+        if sys.version_info >= (3, 8, 0):
+            assert float(Indexable()) == 4.0
 
         assert float(99) == 99
         assert float(999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999) == 1e+132
@@ -126,6 +174,60 @@ class BasicTests(unittest.TestCase):
         for input, expected in data:
             f = float(input)
             self.assertEqual(toHex(f), expected);
+
+    def test_nan(self):
+        self.assertNotEqual(NAN, NAN)
+        self.assertNotEqual(float('nan'), float('nan'))
+        self.assertTrue(NAN is NAN)
+
+    def test_floatasratio(self):
+        for f, ratio in [
+                (0.875, (7, 8)),
+                (-0.875, (-7, 8)),
+                (0.0, (0, 1)),
+                (11.5, (23, 2)),
+            ]:
+            self.assertEqual(f.as_integer_ratio(), ratio)
+
+        for i in range(10000):
+            f = random.random()
+            f *= 10 ** random.randint(-100, 100)
+            n, d = f.as_integer_ratio()
+            self.assertEqual(float(n).__truediv__(d), f)
+
+        R = fractions.Fraction
+        self.assertEqual(R(0, 1),
+                         R(*float(0.0).as_integer_ratio()))
+        self.assertEqual(R(5, 2),
+                         R(*float(2.5).as_integer_ratio()))
+        self.assertEqual(R(1, 2),
+                         R(*float(0.5).as_integer_ratio()))
+        self.assertEqual(R(4728779608739021, 2251799813685248),
+                         R(*float(2.1).as_integer_ratio()))
+        self.assertEqual(R(-4728779608739021, 2251799813685248),
+                         R(*float(-2.1).as_integer_ratio()))
+        self.assertEqual(R(-2100, 1),
+                         R(*float(-2100.0).as_integer_ratio()))
+
+        self.assertRaises(OverflowError, float('inf').as_integer_ratio)
+        self.assertRaises(OverflowError, float('-inf').as_integer_ratio)
+        self.assertRaises(ValueError, float('nan').as_integer_ratio)
+
+    def test_compare(self):
+        i = 2**53 + 1
+        f = float(i)
+        self.assertFalse(f == i)
+        self.assertTrue(f != i)
+        self.assertTrue(f < i)
+        self.assertTrue(f <= i)
+        self.assertFalse(f > i)
+        self.assertFalse(f >= i)
+        self.assertFalse(i == f)
+        self.assertTrue(i != f)
+        self.assertFalse(i < f)
+        self.assertFalse(i <= f)
+        self.assertTrue(i > f)
+        self.assertTrue(i >= f)
 
 
 fromHex = float.fromhex
@@ -818,3 +920,8 @@ class ReprTests(unittest.TestCase):
             # Since Python 3.2, repr and str are identical
             self.assertEqual(repr(float(s)), str(float(s)))
             self.assertEqual(repr(float(negs)), str(float(negs)))
+
+
+class SubclassTests(unittest.TestCase):
+    def test_subclass_nan(self):
+        self.assertEqual(MyFloat, type(MyFloat('nan')))

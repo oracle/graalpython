@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,16 +41,32 @@
 #ifndef Py_PYTHON_H
 #define Py_PYTHON_H
 
+#include "pyconfig.h"
+
 #define HAVE_UTIME_H
 #define HAVE_UNISTD_H
 #define HAVE_SIGNAL_H
 #define HAVE_FCNTL_H
 #define HAVE_SYS_WAIT_H
 
-#define PYPY_VERSION 0
-#define PYPY_VERSION_NUM 0
+#define GRAALVM_PYTHON 1
 
-#include <truffle.h>
+/* If Cython is involved, avoid accesses to internal structures. While we are
+ * supporting this in many cases, it still involves overhead. */
+#define CYTHON_USE_TYPE_SLOTS 0
+#define CYTHON_USE_PYTYPE_LOOKUP 0
+#define CYTHON_FAST_PYCCALL 0
+#define CYTHON_USE_DICT_VERSIONS 0
+#define CYTHON_AVOID_BORROWED_REFS 1
+#define CYTHON_USE_TP_FINALIZE 0
+#define CYTHON_USE_PYLIST_INTERNALS 0
+#define CYTHON_USE_UNICODE_INTERNALS 0
+#define CYTHON_USE_PYLONG_INTERNALS 0
+#define CYTHON_USE_ASYNC_SLOTS 0
+#define CYTHON_USE_UNICODE_WRITER 0
+#define CYTHON_USE_EXC_INFO_STACK 0
+#define CYTHON_FAST_THREAD_STATE 0
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -68,7 +84,6 @@
 #include "pyport.h"
 #include "pymacro.h"
 #include "object.h"
-#include "abstract.h"
 #include "methodobject.h"
 #include "moduleobject.h"
 #include "unicodeobject.h"
@@ -81,6 +96,7 @@
 #include "modsupport.h"
 #include "tupleobject.h"
 #include "structseq.h"
+#include "namespaceobject.h"
 #include "structmember.h"
 #include "pytime.h"
 #include "pymem.h"
@@ -123,28 +139,12 @@
 #include "weakrefobject.h"
 #include "sysmodule.h"
 #include "fileutils.h"
+#include "pystrtod.h"
+#include "tracemalloc.h"
+#include "genobject.h"
 
-// TODO: we must extend the refcounting behavior to support handles to managed objects
-#undef Py_DECREF
-#define Py_DECREF(o) 0
-#undef Py_INCREF
-#define Py_INCREF(o) 0
+#include "abstract.h"
 
-/* 
- * #define Py_INCREF(op) (                         \
- *     _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
- *     ((PyObject *)(op))->ob_refcnt++)
- * 
- * #define Py_DECREF(op)                                                   \
- *     do {                                                                \
- *         void* handle = op;                                              \
- *         PyObject *_py_decref_tmp = (PyObject *)((truffle_is_handle_to_managed(handle) ? truffle_managed_from_handle(handle) : handle)); \
- *         if (_Py_DEC_REFTOTAL  _Py_REF_DEBUG_COMMA                       \
- *             --(_py_decref_tmp)->ob_refcnt != 0) {                       \
- *             _Py_CHECK_REFCNT(_py_decref_tmp)                            \
- *             else                                                        \
- *                 _Py_Dealloc(_py_decref_tmp);                            \
- *     } while (0)
- */
+#include "eval.h"
 
 #endif

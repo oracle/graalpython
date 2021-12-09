@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,22 +42,31 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -74,44 +83,57 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "register", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonVarargsBuiltinNode {
-        private static class AtExitCallTarget extends RootNode {
+        private static class AtExitRootNode extends RootNode {
             @Child private CallNode callNode = CallNode.create();
+            @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
 
-            private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
-
-            private Object callable;
-            private Object[] arguments;
-            private PKeyword[] keywords;
-
-            protected AtExitCallTarget(TruffleLanguage<?> language, Object callable, Object[] arguments, PKeyword[] keywords) {
+            protected AtExitRootNode(TruffleLanguage<?> language) {
                 super(language);
-                this.callable = callable;
-                this.arguments = arguments;
-                this.keywords = keywords;
             }
 
             @Override
-            @SuppressWarnings("try")
             public Object execute(VirtualFrame frame) {
-                PythonContext context = contextRef.get();
-                context.setTopFrameInfo(PFrame.Reference.EMPTY);
-                context.setCaughtException(PException.NO_EXCEPTION);
+                PythonContext context = PythonContext.get(this);
+                getThreadStateNode.setTopFrameInfo(context, PFrame.Reference.EMPTY);
+                getThreadStateNode.setCaughtException(context, PException.NO_EXCEPTION);
+
+                Object callable = frame.getArguments()[0];
+                Object[] arguments = (Object[]) frame.getArguments()[1];
+                PKeyword[] keywords = (PKeyword[]) frame.getArguments()[2];
 
                 // We deliberately pass 'null' frame here, the execution state will then be taken
                 // from the context.
                 try {
                     return callNode.execute(null, callable, arguments, keywords);
+                } catch (PException e) {
+                    handleException(context, e);
+                    throw e;
                 } finally {
-                    context.popTopFrameInfo();
-                    context.setCaughtException(null);
+                    getThreadStateNode.clearTopFrameInfo(context);
+                    getThreadStateNode.setCaughtException(context, null);
+                }
+            }
+
+            @TruffleBoundary
+            private static void handleException(PythonContext context, PException e) {
+                PBaseException pythonException = e.getEscapedException();
+                if (!IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
+                    PyObjectCallMethodObjArgs callWrite = PyObjectCallMethodObjArgs.getUncached();
+                    callWrite.execute(null, context.getStderr(), "write", "Error in atexit._run_exitfuncs:\n");
+                    try {
+                        ExceptionUtils.printExceptionTraceback(context, pythonException);
+                    } catch (PException pe) {
+                        callWrite.execute(null, context.getStderr(), "write", "Failed to print traceback\n");
+                    }
                 }
             }
         }
 
         @Specialization
         Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
-            AtExitCallTarget atExitCallTarget = new AtExitCallTarget(getContext().getLanguage(), callable, arguments, keywords);
-            getContext().registerShutdownHook(callable, Truffle.getRuntime().createCallTarget(atExitCallTarget));
+            CompilerDirectives.transferToInterpreter();
+            RootCallTarget callTarget = getLanguage().createCachedCallTarget(AtExitRootNode::new, AtExitRootNode.class);
+            getContext().registerAtexitHook(callable, arguments, keywords, callTarget);
             return callable;
         }
     }
@@ -121,7 +143,36 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object register(Object callable) {
-            getContext().deregisterShutdownHook(callable);
+            getContext().unregisterAtexitHook(callable);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_clear")
+    @GenerateNodeFactory
+    abstract static class ClearNode extends PythonBuiltinNode {
+        @Specialization
+        Object clear() {
+            getContext().clearAtexitHooks();
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_ncallbacks")
+    @GenerateNodeFactory
+    abstract static class NCallbacksNode extends PythonBuiltinNode {
+        @Specialization
+        int get() {
+            return getContext().getAtexitHookCount();
+        }
+    }
+
+    @Builtin(name = "_run_exitfuncs")
+    @GenerateNodeFactory
+    abstract static class RunExitfuncsNode extends PythonBuiltinNode {
+        @Specialization
+        Object run() {
+            getContext().runAtexitHooks();
             return PNone.NONE;
         }
     }

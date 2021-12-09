@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,21 +25,12 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
-import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.iterator.PBaseSequenceIterator;
+import com.oracle.truffle.api.object.Shape;
 
-public final class PSequenceReverseIterator extends PBuiltinIterator {
-
-    private final Object sequence;
-    int index;
-
-    public PSequenceReverseIterator(LazyPythonClass clazz, Object sequence, int lengthHint) {
-        super(clazz);
-        this.sequence = sequence;
+public final class PSequenceReverseIterator extends PBaseSequenceIterator {
+    public PSequenceReverseIterator(Object clazz, Shape instanceShape, Object sequence, int lengthHint) {
+        super(clazz, instanceShape, sequence);
         this.index = lengthHint - 1;
-    }
-
-    public Object getObject() {
-        return sequence;
     }
 }

@@ -5,8 +5,9 @@ import subprocess
 import shutil
 from copy import copy
 
-from test.support import (import_module, TESTFN, unlink, check_warnings,
-                          captured_stdout, skip_unless_symlink, change_cwd)
+from test.support import (import_module, TESTFN, unlink, check_warnings, impl_detail,
+                          captured_stdout, skip_unless_symlink, change_cwd,
+                          PythonSymlink)
 
 import sysconfig
 from sysconfig import (get_paths, get_platform, get_config_vars,
@@ -227,44 +228,16 @@ class TestSysConfig(unittest.TestCase):
         self.assertTrue(os.path.isfile(config_h), config_h)
 
     def test_get_scheme_names(self):
-        wanted = ('nt', 'nt_user', 'osx_framework_user',
+        # XXX Graalpython change: add our scheme
+        wanted = ('graalpython', 'nt', 'nt_user', 'osx_framework_user',
                   'posix_home', 'posix_prefix', 'posix_user')
         self.assertEqual(get_scheme_names(), wanted)
 
     @skip_unless_symlink
-    def test_symlink(self):
-        # On Windows, the EXE needs to know where pythonXY.dll is at so we have
-        # to add the directory to the path.
-        env = None
-        if sys.platform == "win32":
-            env = {k.upper(): os.environ[k] for k in os.environ}
-            env["PATH"] = "{};{}".format(
-                os.path.dirname(sys.executable), env.get("PATH", ""))
-            # Requires PYTHONHOME as well since we locate stdlib from the
-            # EXE path and not the DLL path (which should be fixed)
-            env["PYTHONHOME"] = os.path.dirname(sys.executable)
-            if sysconfig.is_python_build(True):
-                env["PYTHONPATH"] = os.path.dirname(os.__file__)
-
-        # Issue 7880
-        def get(python, env=None):
-            cmd = [python, '-c',
-                   'import sysconfig; print(sysconfig.get_platform())']
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, env=env)
-            out, err = p.communicate()
-            if p.returncode:
-                print((out, err))
-                self.fail('Non-zero return code {0} (0x{0:08X})'
-                            .format(p.returncode))
-            return out, err
-        real = os.path.realpath(sys.executable)
-        link = os.path.abspath(TESTFN)
-        os.symlink(real, link)
-        try:
-            self.assertEqual(get(real), get(link, env))
-        finally:
-            unlink(link)
+    def test_symlink(self): # Issue 7880
+        with PythonSymlink() as py:
+            cmd = "-c", "import sysconfig; print(sysconfig.get_platform())"
+            self.assertEqual(py.call_real(*cmd), py.call_link(*cmd))
 
     def test_user_similar(self):
         # Issue #8759: make sure the posix scheme for the users
@@ -344,6 +317,7 @@ class TestSysConfig(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(my_platform, test_platform)
 
+    @impl_detail("no srcdir", graalvm=False)
     def test_srcdir(self):
         # See Issues #15322, #15364.
         srcdir = sysconfig.get_config_var('srcdir')
@@ -391,6 +365,8 @@ class TestSysConfig(unittest.TestCase):
         self.assertIsNotNone(vars['SO'])
         self.assertEqual(vars['SO'], vars['EXT_SUFFIX'])
 
+    # We intentionally have a different suffix to avoid clashes with CPython
+    @impl_detail("different suffix", graalvm=False)
     @unittest.skipUnless(sys.platform == 'linux' and
                          hasattr(sys.implementation, '_multiarch'),
                          'multiarch-specific test')
@@ -409,6 +385,7 @@ class TestSysConfig(unittest.TestCase):
             else: # 8 byte pointer size
                 self.assertTrue(suffix.endswith('x86_64-linux-gnu.so'), suffix)
 
+    @impl_detail("different suffix", graalvm=False)
     @unittest.skipUnless(sys.platform == 'darwin', 'OS X-specific test')
     def test_osx_ext_suffix(self):
         suffix = sysconfig.get_config_var('EXT_SUFFIX')
@@ -416,6 +393,7 @@ class TestSysConfig(unittest.TestCase):
 
 class MakefileTests(unittest.TestCase):
 
+    @impl_detail("no Makefile", graalvm=False)
     @unittest.skipIf(sys.platform.startswith('win'),
                      'Test is not Windows compatible')
     def test_get_makefile_filename(self):

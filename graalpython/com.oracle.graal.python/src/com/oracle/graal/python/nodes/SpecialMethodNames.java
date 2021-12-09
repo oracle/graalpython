@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ public abstract class SpecialMethodNames {
     public static final String __ALLOC__ = "__alloc__";
     public static final String __INIT__ = "__init__";
     public static final String __CEIL__ = "__ceil__";
+    public static final String __COPY__ = "__copy__";
     public static final String __DEL__ = "__del__";
     public static final String __FLOOR__ = "__floor__";
     public static final String __REPR__ = "__repr__";
@@ -115,6 +116,7 @@ public abstract class SpecialMethodNames {
     public static final String __RDIVMOD__ = "__rdivmod__";
     public static final String __RPOW__ = "__rpow__";
     public static final String __RLSHIFT__ = "__rlshift__";
+    public static final String __RRSHIFT__ = "__rrshift__";
     public static final String __RAND__ = "__rand__";
     public static final String __RXOR__ = "__rxor__";
     public static final String __ROR__ = "__ror__";
@@ -125,7 +127,6 @@ public abstract class SpecialMethodNames {
     public static final String __ITRUEDIV__ = "__itruediv__";
     public static final String __IFLOORDIV__ = "__ifloordiv__";
     public static final String __IMOD__ = "__imod__";
-    public static final String __IDIVMOD__ = "__idivmod__";
     public static final String __IPOW__ = "__ipow__";
     public static final String __ILSHIFT__ = "__ilshift__";
     public static final String __IRSHIFT__ = "__irshift__";
@@ -152,10 +153,14 @@ public abstract class SpecialMethodNames {
     public static final String __REDUCE_EX__ = "__reduce_ex__";
     public static final String __GETINITARGS__ = "__getinitargs__";
     public static final String __GETNEWARGS__ = "__getnewargs__";
+    public static final String __GETNEWARGS_EX__ = "__getnewargs_ex__";
     public static final String __GETSTATE__ = "__getstate__";
     public static final String __SETSTATE__ = "__setstate__";
     public static final String __GETFORMAT__ = "__getformat__";
     public static final String __SETFORMAT__ = "__setformat__";
+    public static final String __OBJCLASS__ = "__objclass__";
+    public static final String __ISABSTRACTMETHOD__ = "__isabstractmethod__";
+    public static final String __MRO_ENTRIES__ = "__mro_entries__";
     public static final String KEYS = "keys";
     public static final String ITEMS = "items";
     public static final String VALUES = "values";
@@ -164,15 +169,19 @@ public abstract class SpecialMethodNames {
     public static final String DECODE = "decode";
     public static final String __SIZEOF__ = "__sizeof__";
     public static final String __CLASS_GETITEM__ = "__class_getitem__";
+    public static final String FILENO = "fileno";
+    public static final String ISDISJOINT = "isdisjoint";
+    public static final String MRO = "mro";
+    public static final String SORT = "sort";
 
     public static final String RICHCMP = "__truffle_richcompare__";
     public static final String TRUFFLE_SOURCE = "__truffle_source__";
+    public static final String SHUTDOWN = "_shutdown";
 
     // (tfel): The order of these matches the one in CPython, and thus is assumed to remain the same
     // in various places
     @CompilationFinal(dimensions = 1) private static final String[] COMPARE_OPSTRINGS = new String[]{"<", "<=", "==", "!=", ">", ">="};
     @CompilationFinal(dimensions = 1) private static final String[] COMPARE_OPNAMES = new String[]{__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__};
-    @CompilationFinal(dimensions = 1) private static final String[] COMPARE_REVERSALS = new String[]{__GT__, __GE__, __EQ__, __NE__, __GT__, __GE__};
     public static final int COMPARE_OP_COUNT = COMPARE_OPNAMES.length;
 
     public static String getCompareOpString(int op) {
@@ -181,9 +190,5 @@ public abstract class SpecialMethodNames {
 
     public static String getCompareName(int op) {
         return COMPARE_OPNAMES[op];
-    }
-
-    public static String getCompareReversal(int op) {
-        return COMPARE_REVERSALS[op];
     }
 }

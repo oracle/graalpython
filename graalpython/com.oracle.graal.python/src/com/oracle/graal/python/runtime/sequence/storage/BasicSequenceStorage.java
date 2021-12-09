@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,23 +25,9 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.truffle.api.CompilerDirectives;
+
 public abstract class BasicSequenceStorage extends SequenceStorage {
-
-    // nominated storage length
-    protected int length;
-
-    // physical storage length
-    protected int capacity;
-
-    @Override
-    public final int length() {
-        return length;
-    }
-
-    @Override
-    public void setNewLength(int length) {
-        this.length = length;
-    }
 
     public abstract Object getCopyOfInternalArrayObject();
 
@@ -59,8 +45,8 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
      * designated size (not necessarily the requested one).
      */
     @Override
-    public void ensureCapacity(int newCapacity) throws ArithmeticException {
-        if (newCapacity > capacity) {
+    public final void ensureCapacity(int newCapacity) throws ArithmeticException {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
             increaseCapacityExactWithCopy(capacityFor(newCapacity));
         }
     }
@@ -72,4 +58,5 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
     public void minimizeCapacity() {
         capacity = length;
     }
+
 }

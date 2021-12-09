@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,8 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.util.PythonUtils;
 
 public final class LongSequenceStorage extends TypedSequenceStorage {
 
@@ -70,7 +71,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new LongSequenceStorage(Arrays.copyOf(values, length));
+        return new LongSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override
@@ -122,13 +123,17 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public void insertItem(int idx, Object val) throws SequenceStoreException {
-        Object value = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-        value = (val instanceof BigInteger) ? ((BigInteger) val).longValue() : value;
-        if (value instanceof Long) {
-            insertLongItem(idx, (long) value);
+        long value;
+        if (val instanceof Integer) {
+            value = (int) val;
+        } else if (val instanceof BigInteger) {
+            value = PInt.longValue((BigInteger) val);
+        } else if (val instanceof Long) {
+            value = (long) val;
         } else {
-            throw new SequenceStoreException(value);
+            throw new SequenceStoreException(val);
         }
+        insertLongItem(idx, value);
     }
 
     public void insertLongItem(int idx, long value) {
@@ -140,7 +145,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         }
 
         values[idx] = value;
-        length++;
+        incLength();
     }
 
     @Override
@@ -153,7 +158,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         long[] newArray = new long[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new LongSequenceStorage(newArray);
         }
 
@@ -164,32 +169,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         return new LongSequenceStorage(newArray);
     }
 
-    public void setLongSliceInBound(int start, int stop, int step, LongSequenceStorage sequence, ConditionProfile sameLengthProfile) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (sameLengthProfile.profile(start == 0 && stop == length)) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
-            minimizeCapacity();
-            return;
-        }
-
-        ensureCapacity(stop);
-
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        length = length > stop ? length : stop;
-    }
-
-    public long popLong() {
-        long pop = values[length - 1];
-        length--;
-        return pop;
-    }
-
     public int indexOfLong(long value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -198,24 +177,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         }
 
         return -1;
-    }
-
-    public void appendLong(long value) {
-        ensureCapacity(length + 1);
-        values[length] = value;
-        length++;
-    }
-
-    public void extendWithLongStorage(LongSequenceStorage other) {
-        int extendedLength = length + other.length();
-        ensureCapacity(extendedLength);
-        long[] otherValues = other.values;
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            values[i] = otherValues[j];
-        }
-
-        length = extendedLength;
     }
 
     @Override
@@ -262,6 +223,11 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     @Override
     public Object getCopyOfInternalArrayObject() {
         return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public Object[] getCopyOfInternalArray() {
+        return getInternalArray();
     }
 
     @Override

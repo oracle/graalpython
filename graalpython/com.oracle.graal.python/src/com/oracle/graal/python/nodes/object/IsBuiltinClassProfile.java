@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,29 +42,38 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeCost;
 
-public final class IsBuiltinClassProfile {
+public final class IsBuiltinClassProfile extends Node {
     @CompilationFinal private boolean isBuiltinType;
     @CompilationFinal private boolean isBuiltinClass;
     @CompilationFinal private boolean isOtherClass;
 
     @CompilationFinal private boolean match;
     @CompilationFinal private boolean noMatch;
+    @CompilationFinal private boolean adoptable;
 
-    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile();
+    @Child private GetClassNode getClassNode;
+
+    private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile(false);
 
     /* private constructor */
-    private IsBuiltinClassProfile() {
+    private IsBuiltinClassProfile(boolean isCached) {
+        if (isCached) {
+            this.getClassNode = GetClassNode.create();
+        } else {
+            this.getClassNode = GetClassNode.getUncached();
+        }
+        this.adoptable = isCached;
     }
 
     public static IsBuiltinClassProfile create() {
-        return new IsBuiltinClassProfile();
+        return new IsBuiltinClassProfile(true);
     }
 
     public static IsBuiltinClassProfile getUncached() {
@@ -72,23 +81,23 @@ public final class IsBuiltinClassProfile {
     }
 
     public boolean profileIsAnyBuiltinObject(PythonObject object) {
-        return profileIsAnyBuiltinClass(object.getLazyPythonClass());
+        return profileIsAnyBuiltinClass(getClassNode.execute(object));
     }
 
     public boolean profileIsOtherBuiltinObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileIsOtherBuiltinClass(object.getLazyPythonClass(), type);
+        return profileIsOtherBuiltinClass(getClassNode.execute(object), type);
     }
 
     public boolean profileException(PException object, PythonBuiltinClassType type) {
-        return profileClass(object.getExceptionObject().getLazyPythonClass(), type);
+        return profileClass(getClassNode.execute(object.getUnreifiedException()), type);
     }
 
-    public boolean profileObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileClass(object.getLazyPythonClass(), type);
+    public boolean profileObject(Object object, PythonBuiltinClassType type) {
+        return profileClass(getClassNode.execute(object), type);
 
     }
 
-    public boolean profileIsAnyBuiltinClass(LazyPythonClass clazz) {
+    public boolean profileIsAnyBuiltinClass(Object clazz) {
         if (clazz instanceof PythonBuiltinClassType) {
             if (!isBuiltinType) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -111,7 +120,7 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    public boolean profileIsOtherBuiltinClass(LazyPythonClass clazz, PythonBuiltinClassType type) {
+    public boolean profileIsOtherBuiltinClass(Object clazz, PythonBuiltinClassType type) {
         if (clazz instanceof PythonBuiltinClassType) {
             if (!isBuiltinType) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -158,7 +167,7 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    public boolean profileClass(LazyPythonClass clazz, PythonBuiltinClassType type) {
+    public boolean profileClass(Object clazz, PythonBuiltinClassType type) {
         if (clazz instanceof PythonBuiltinClassType) {
             if (!isBuiltinType) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -205,34 +214,7 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    public boolean profileClass(PythonAbstractClass clazz, PythonBuiltinClassType type) {
-        if (clazz instanceof PythonBuiltinClass) {
-            if (!isBuiltinClass) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isBuiltinClass = true;
-            }
-            if (((PythonBuiltinClass) clazz).getType() == type) {
-                if (!match) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    match = true;
-                }
-                return true;
-            } else {
-                if (!noMatch) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    noMatch = true;
-                }
-                return false;
-            }
-        }
-        if (!isOtherClass) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isOtherClass = true;
-        }
-        return false;
-    }
-
-    public static boolean profileClassSlowPath(LazyPythonClass clazz, PythonBuiltinClassType type) {
+    public static boolean profileClassSlowPath(Object clazz, PythonBuiltinClassType type) {
         if (clazz instanceof PythonBuiltinClassType) {
             return clazz == type;
         } else {
@@ -241,5 +223,15 @@ public final class IsBuiltinClassProfile {
             }
             return false;
         }
+    }
+
+    @Override
+    public NodeCost getCost() {
+        return NodeCost.NONE;
+    }
+
+    @Override
+    public boolean isAdoptable() {
+        return adoptable;
     }
 }

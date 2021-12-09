@@ -1,0 +1,25 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: getNumber
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: mydecorator
+        Kind: Function
+        FrameDescriptor: [delta, wrap, <return_val>]
+        CellVars: [delta]
+        FreeVars: Empty
+        Scope: wrap
+            Kind: Function
+            FrameDescriptor: [wrapped_f, fn, delta, <return_val>]
+            CellVars: [fn]
+            FreeVars: [delta]
+            Scope: wrapped_f
+                Kind: Function
+                FrameDescriptor: [args, fn, delta, <return_val>]
+                CellVars: Empty
+                FreeVars: [delta, fn]

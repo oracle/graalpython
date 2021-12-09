@@ -139,6 +139,11 @@ class UnparseTestCase(ASTTestCase):
         self.check_roundtrip(r"""f'{f"{0}"*3}'""")
         self.check_roundtrip(r"""f'{f"{y}"*3}'""")
 
+    def test_strings(self):
+        self.check_roundtrip("u'foo'")
+        self.check_roundtrip("r'foo'")
+        self.check_roundtrip("b'foo'")
+
     def test_del_statement(self):
         self.check_roundtrip("del x, y, z")
 
@@ -259,6 +264,20 @@ class UnparseTestCase(ASTTestCase):
         # See issue 26489
         self.check_roundtrip(r"""{**{'y': 2}, 'x': 1}""")
         self.check_roundtrip(r"""{**{'y': 2}, **{'x': 1}}""")
+
+    def test_subscript(self):
+        self.check_roundtrip("a[i]")
+        self.check_roundtrip("a[i,]")
+        self.check_roundtrip("a[i, j]")
+        self.check_roundtrip("a[()]")
+        self.check_roundtrip("a[i:j]")
+        self.check_roundtrip("a[:j]")
+        self.check_roundtrip("a[i:]")
+        self.check_roundtrip("a[i:j:k]")
+        self.check_roundtrip("a[:j:k]")
+        self.check_roundtrip("a[i::k]")
+        self.check_roundtrip("a[i:j,]")
+        self.check_roundtrip("a[i:j, k]")
 
 
 class DirectoryTestCase(ASTTestCase):

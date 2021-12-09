@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,10 @@
  */
 package com.oracle.graal.python.builtins;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
+import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
@@ -37,47 +41,56 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
-import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
+import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.CryptModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.JArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.LsprofModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
@@ -86,29 +99,90 @@ import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TraceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
+import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVWriterBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCSimpleTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedRWPairBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedRandomBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BytesIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IOBaseDictBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IncrementalNewlineDecoderBuiltins;
+import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.TextIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.json.JSONEncoderBuiltins;
+import com.oracle.graal.python.builtins.modules.json.JSONModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins;
+import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
+import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugHandleBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
-import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
-import com.oracle.graal.python.builtins.objects.dict.DictKeysIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
-import com.oracle.graal.python.builtins.objects.dict.DictValuesIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
@@ -117,62 +191,110 @@ import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.MemberDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CompressBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CycleBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.DropwhileBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.FilterfalseBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GroupByBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GrouperBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.IsliceBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ProductBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.StarmapBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
+import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.SimpleNamespaceBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.partial.PartialBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
+import com.oracle.graal.python.builtins.objects.queue.SimpleQueueBuiltins;
 import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.reversed.ReversedBuiltins;
+import com.oracle.graal.python.builtins.objects.set.BaseSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
+import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.MemoryBIOBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLSocketBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.SemLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
+import com.oracle.graal.python.runtime.interop.PythonMapScope;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -180,62 +302,53 @@ import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
- * types.
+ * types. The core is embedded, using inheritance, into {@link PythonContext} to avoid indirection
+ * through an extra field in the context.
  */
-public final class Python3Core implements PythonCore {
+public abstract class Python3Core extends ParserErrorCallback {
+    private static final int REC_LIM = 1000;
+    private static final int NATIVE_REC_LIM = 8000;
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
-    private static final String[] initializeCoreFiles() {
+    public static final Pattern MISSING_PARENTHESES_PATTERN = Pattern.compile("^(print|exec) +([^(][^;]*).*");
+
+    private static String[] initializeCoreFiles() {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
-                        "_descriptor",
                         "object",
-                        "sys",
-                        "dict",
-                        "_mappingproxy",
-                        "str",
                         "type",
                         "_imp",
-                        "_thread",
                         "function",
-                        "_functools",
                         "method",
-                        "code",
-                        "_warnings",
-                        "posix",
-                        "_io",
                         "_frozen_importlib",
-                        "classes",
+                        "__graalpython__",
                         "_weakref",
-                        "set",
-                        "itertools",
-                        "base_exception",
+                        "faulthandler",
                         PythonCextBuiltins.PYTHON_CEXT,
-                        "_collections",
-                        "memoryview",
-                        "list",
-                        "_codecs",
-                        "bytes",
                         "bytearray",
-                        "time",
                         "unicodedata",
                         "_locale",
                         "_sre",
                         "function",
                         "_sysconfig",
-                        "_socket",
-                        "ctypes",
-                        "zlib",
                         "termios",
                         "zipimport",
-                        "mmap",
-                        "_queue",
-                        "_ast",
                         "java",
-                        "pyio_patches",
-                        "pwd",
-                        "resource",
-                        "_contextvars"));
+                        "_contextvars",
+                        "pip_hook",
+                        "_struct",
+                        "_posixshmem"));
+        // add service loader defined python file extensions
+        if (!ImageInfo.inImageRuntimeCode()) {
+            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
+            for (PythonBuiltins builtin : providers) {
+                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+                if (!annotation.pythonFile().isEmpty()) {
+                    coreFiles.add(annotation.pythonFile());
+                }
+            }
+        }
         // must be last
         coreFiles.add("final_patches");
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -243,42 +356,64 @@ public final class Python3Core implements PythonCore {
 
     private final PythonBuiltins[] builtins;
 
-    private static final PythonBuiltins[] initializeBuiltins() {
+    private static final boolean hasCoverageTool;
+    private static final boolean hasProfilerTool;
+    static {
+        Class<?> c = null;
+        try {
+            c = Class.forName("com.oracle.truffle.tools.coverage.CoverageTracker");
+        } catch (LinkageError | ClassNotFoundException e) {
+        }
+        hasCoverageTool = c != null;
+        c = null;
+        try {
+            c = Class.forName("com.oracle.truffle.tools.profiler.CPUSampler");
+        } catch (LinkageError | ClassNotFoundException e) {
+        }
+        hasProfilerTool = c != null;
+        c = null;
+    }
+
+    private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
                         new StaticmethodBuiltins(),
+                        new SimpleNamespaceBuiltins(),
                         new PolyglotModuleBuiltins(),
                         new ObjectBuiltins(),
                         new CellBuiltins(),
                         new BoolBuiltins(),
                         new FloatBuiltins(),
                         new BytesBuiltins(),
-                        new ComplexBuiltins(),
                         new ByteArrayBuiltins(),
-                        new AbstractBytesBuiltins(),
+                        new ComplexBuiltins(),
                         new TypeBuiltins(),
                         new IntBuiltins(),
                         new ForeignObjectBuiltins(),
+                        new KeyWrapperBuiltins(),
+                        new PartialBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
+                        new DictReprBuiltin(),
                         new DictViewBuiltins(),
                         new DictValuesBuiltins(),
-                        new DictKeysIteratorBuiltins(),
-                        new DictValuesIteratorBuiltins(),
-                        new DictItemsIteratorBuiltins(),
                         new RangeBuiltins(),
                         new SliceBuiltins(),
                         new TupleBuiltins(),
                         new StringBuiltins(),
+                        new BaseSetBuiltins(),
                         new SetBuiltins(),
                         new FrozenSetBuiltins(),
                         new IteratorBuiltins(),
                         new ReversedBuiltins(),
                         new PZipBuiltins(),
                         new EnumerateBuiltins(),
+                        new MapBuiltins(),
+                        new NotImplementedBuiltins(),
+                        new EllipsisBuiltins(),
                         new SentinelIteratorBuiltins(),
                         new ForeignIteratorBuiltins(),
                         new GeneratorBuiltins(),
@@ -288,12 +423,17 @@ public final class Python3Core implements PythonCore {
                         new AbstractMethodBuiltins(),
                         new MethodBuiltins(),
                         new BuiltinMethodBuiltins(),
+                        new BuiltinClassmethodBuiltins(),
                         new CodeBuiltins(),
                         new FrameBuiltins(),
                         new MappingproxyBuiltins(),
+                        new DescriptorBuiltins(),
                         new GetSetDescriptorTypeBuiltins(),
+                        new MemberDescriptorBuiltins(),
+                        new PropertyBuiltins(),
                         new BaseExceptionBuiltins(),
                         new PosixModuleBuiltins(),
+                        new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
                         new ImpModuleBuiltins(),
@@ -302,24 +442,57 @@ public final class Python3Core implements PythonCore {
                         new TimeModuleBuiltins(),
                         new ModuleBuiltins(),
                         new MathModuleBuiltins(),
+                        new CmathModuleBuiltins(),
                         new MarshalModuleBuiltins(),
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),
                         new PythonCextBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
+                        new WarningsModuleBuiltins(),
+                        // exceptions
+                        new SystemExitBuiltins(),
+
+                        // io
                         new IOModuleBuiltins(),
+                        new IOBaseBuiltins(),
+                        new BufferedIOBaseBuiltins(),
+                        new RawIOBaseBuiltins(),
+                        new TextIOBaseBuiltins(),
+                        new BufferedReaderBuiltins(),
+                        new BufferedWriterBuiltins(),
+                        new BufferedRandomBuiltins(),
+                        new BufferedReaderMixinBuiltins(),
+                        new BufferedWriterMixinBuiltins(),
+                        new BufferedIOMixinBuiltins(),
+                        new FileIOBuiltins(),
+                        new TextIOWrapperBuiltins(),
+                        new IncrementalNewlineDecoderBuiltins(),
+                        new BufferedRWPairBuiltins(),
+                        new BytesIOBuiltins(),
+                        new StringIOBuiltins(),
+                        new IOBaseDictBuiltins(),
+
                         new StringModuleBuiltins(),
                         new ItertoolsModuleBuiltins(),
                         new FunctoolsModuleBuiltins(),
                         new ErrnoModuleBuiltins(),
                         new CodecsModuleBuiltins(),
+                        new CodecsTruffleModuleBuiltins(),
+                        new DequeBuiltins(),
+                        new DequeIterBuiltins(),
                         new CollectionsModuleBuiltins(),
+                        new DefaultDictBuiltins(),
+                        new TupleGetterBuiltins(),
                         new JavaModuleBuiltins(),
+                        new JArrayModuleBuiltins(),
+                        new CSVModuleBuiltins(),
+                        new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
                         new SelectModuleBuiltins(),
                         new SocketModuleBuiltins(),
+                        new SocketBuiltins(),
                         new SignalModuleBuiltins(),
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),
@@ -329,30 +502,124 @@ public final class Python3Core implements PythonCore {
                         new LocaleModuleBuiltins(),
                         new SysModuleBuiltins(),
                         new BufferBuiltins(),
-                        new MemoryviewBuiltins(),
+                        new MemoryViewBuiltins(),
                         new SuperBuiltins(),
+                        new SSLModuleBuiltins(),
+                        new SSLContextBuiltins(),
+                        new SSLErrorBuiltins(),
+                        new SSLSocketBuiltins(),
+                        new MemoryBIOBuiltins(),
                         new BinasciiModuleBuiltins(),
+                        new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
-                        new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
-                        new PyExpatModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
                         new OperatorModuleBuiltins(),
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
+
+                        // itertools
+                        new AccumulateBuiltins(),
+                        new CombinationsBuiltins(),
+                        new CompressBuiltins(),
+                        new DropwhileBuiltins(),
+                        new ChainBuiltins(),
+                        new CountBuiltins(),
+                        new CycleBuiltins(),
+                        new FilterfalseBuiltins(),
+                        new GroupByBuiltins(),
+                        new GrouperBuiltins(),
+                        new IsliceBuiltins(),
+                        new PermutationsBuiltins(),
+                        new ProductBuiltins(),
+                        new RepeatBuiltins(),
+                        new StarmapBuiltins(),
+                        new TakewhileBuiltins(),
+                        new TeeBuiltins(),
+                        new TeeDataObjectBuiltins(),
+                        new ZipLongestBuiltins(),
+
+                        // zlib
                         new ZLibModuleBuiltins(),
+                        new ZlibCompressBuiltins(),
+                        new ZlibDecompressBuiltins(),
+
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
                         new MMapBuiltins(),
+                        new SimpleQueueBuiltins(),
                         new QueueModuleBuiltins(),
                         new ThreadModuleBuiltins(),
                         new ThreadBuiltins(),
+                        new ThreadLocalBuiltins(),
                         new LockBuiltins(),
                         new RLockBuiltins(),
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),
-                        new ContextvarsModuleBuiltins()));
-        if (!TruffleOptions.AOT) {
+                        new ContextvarsModuleBuiltins(),
+
+                        // lzma
+                        new LZMAModuleBuiltins(),
+                        new LZMACompressorBuiltins(),
+                        new LZMADecompressorBuiltins(),
+
+                        new MultiprocessingModuleBuiltins(),
+                        new SemLockBuiltins(),
+                        new WarningsModuleBuiltins(),
+                        new GraalPythonModuleBuiltins(),
+
+                        // json
+                        new JSONScannerBuiltins(),
+                        new JSONEncoderBuiltins(),
+
+                        // csv
+                        new CSVDialectBuiltins(),
+                        new CSVReaderBuiltins(),
+                        new CSVWriterBuiltins(),
+
+                        // _ast
+                        new AstBuiltins(),
+
+                        // ctypes
+                        new CArgObjectBuiltins(),
+                        new CDataTypeBuiltins(),
+                        new CDataTypeSequenceBuiltins(),
+                        new CFieldBuiltins(),
+                        new CtypesModuleBuiltins(),
+                        new PyCArrayTypeBuiltins(),
+                        new PyCFuncPtrBuiltins(),
+                        new PyCFuncPtrTypeBuiltins(),
+                        new PyCPointerTypeBuiltins(),
+                        new PyCSimpleTypeBuiltins(),
+                        new PyCStructTypeBuiltins(),
+                        new StgDictBuiltins(),
+                        new StructUnionTypeBuiltins(),
+                        new StructureBuiltins(),
+                        new UnionTypeBuiltins(),
+                        new SimpleCDataBuiltins(),
+                        new PyCArrayBuiltins(),
+                        new PyCPointerBuiltins(),
+                        new CDataBuiltins(),
+
+                        // _hpy_universal
+                        new GraalHPyUniversalModuleBuiltins(),
+
+                        // _hpy_debug
+                        new GraalHPyDebugModuleBuiltins(),
+                        new GraalHPyDebugHandleBuiltins()));
+        if (hasCoverageTool) {
+            builtins.add(new TraceModuleBuiltins());
+        }
+        if (hasProfilerTool) {
+            builtins.add(new LsprofModuleBuiltins());
+            builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
+        }
+        if (nativeAccessAllowed) {
+            builtins.add(new BZ2CompressorBuiltins());
+            builtins.add(new BZ2DecompressorBuiltins());
+            builtins.add(new BZ2ModuleBuiltins());
+        }
+        if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
                 builtins.add(builtin);
@@ -366,131 +633,239 @@ public final class Python3Core implements PythonCore {
 
     private final Map<String, PythonModule> builtinModules = new HashMap<>();
     @CompilationFinal private PythonModule builtinsModule;
+    @CompilationFinal private PythonModule sysModule;
+    @CompilationFinal private PDict sysModules;
+    @CompilationFinal private PMethod importFunc;
+    @CompilationFinal private PythonModule importlib;
 
     @CompilationFinal private PInt pyTrue;
     @CompilationFinal private PInt pyFalse;
+    @CompilationFinal private PFloat pyNaN;
 
     private final PythonParser parser;
+    private final SysModuleState sysModuleState = new SysModuleState();
 
-    @CompilationFinal private PythonContext singletonContext;
+    @CompilationFinal private Object globalScopeObject;
 
     /*
      * This field cannot be made CompilationFinal since code might get compiled during context
      * initialization.
      */
-    private boolean initialized;
+    private volatile boolean initialized;
 
-    private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
+    private final PythonLanguage language;
+    @CompilationFinal private PythonObjectSlowPathFactory objectFactory;
 
-    public Python3Core(PythonParser parser) {
+    public Python3Core(PythonLanguage language, PythonParser parser, boolean isNativeSupportAllowed) {
+        this.language = language;
         this.parser = parser;
-        this.builtins = initializeBuiltins();
+        this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
     }
 
-    @Override
-    public PythonLanguage getLanguage() {
-        return singletonContext.getLanguage();
+    @CompilerDirectives.ValueType
+    public static class SysModuleState {
+        private int recursionLimit = ImageInfo.inImageCode() ? NATIVE_REC_LIM : REC_LIM;
+        private int checkInterval = 100;
+        private double switchInterval = 0.005;
+
+        public int getRecursionLimit() {
+            return recursionLimit;
+        }
+
+        public void setRecursionLimit(int recursionLimit) {
+            this.recursionLimit = recursionLimit;
+        }
+
+        public int getCheckInterval() {
+            return checkInterval;
+        }
+
+        public void setCheckInterval(int checkInterval) {
+            this.checkInterval = checkInterval;
+        }
+
+        public double getSwitchInterval() {
+            return switchInterval;
+        }
+
+        public void setSwitchInterval(double switchInterval) {
+            this.switchInterval = switchInterval;
+        }
+    }
+
+    public SysModuleState getSysModuleState() {
+        return sysModuleState;
     }
 
     @Override
-    public PythonContext getContext() {
-        return singletonContext;
+    public final PythonContext getContext() {
+        // Small hack: we know that this is the only implementation of Python3Core, this should be
+        // removed once and if Python3Core is fully merged into PythonContext
+        return (PythonContext) this;
     }
 
-    @Override
-    public PythonParser getParser() {
+    public final PythonLanguage getLanguage() {
+        return language;
+    }
+
+    public final PythonParser getParser() {
         return parser;
     }
 
-    @Override
-    public boolean isInitialized() {
+    public final PythonCodeSerializer getSerializer() {
+        return (PythonCodeSerializer) parser;
+    }
+
+    /**
+     * Checks whether the core is initialized.
+     */
+    public final boolean isCoreInitialized() {
         return initialized;
     }
 
-    public void initialize(PythonContext context) {
-        singletonContext = context;
+    /**
+     * Load the core library and prepare all builtin classes and modules.
+     */
+    public final void initialize(PythonContext context) {
+        objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter());
         initializeJavaCore();
-        initializePythonCore(context.getCoreHomeOrFail());
+        initializePython3Core(context.getCoreHomeOrFail());
+        assert SpecialMethodSlot.checkSlotOverrides(this);
         initialized = true;
     }
 
     private void initializeJavaCore() {
         initializeTypes();
         populateBuiltins();
+        SpecialMethodSlot.initializeBuiltinsSpecialMethodSlots(this);
         publishBuiltinModules();
-        builtinsModule = builtinModules.get("builtins");
+        builtinsModule = builtinModules.get(BuiltinNames.BUILTINS);
     }
 
-    private void initializePythonCore(String coreHome) {
-        loadFile("builtins", coreHome);
+    private void initializePython3Core(String coreHome) {
+        loadFile(BuiltinNames.BUILTINS, coreHome);
         for (String s : coreFiles) {
             loadFile(s, coreHome);
         }
         initialized = true;
     }
 
-    @Override
-    public void postInitialize() {
-        if (!TruffleOptions.AOT || ImageInfo.inImageRuntimeCode()) {
+    /**
+     * Run post-initialization code that needs a fully working Python environment. This will be run
+     * eagerly when the context is initialized on the JVM or a new context is created on SVM, but is
+     * omitted when the native image is generated.
+     */
+    public final void postInitialize() {
+        if (!ImageInfo.inImageBuildtimeCode() || ImageInfo.inImageRuntimeCode()) {
             initialized = false;
 
             for (PythonBuiltins builtin : builtins) {
-                builtin.postInitialize(this);
+                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+                if (annotation.isEager()) {
+                    builtin.postInitialize(this);
+                }
             }
 
+            globalScopeObject = PythonMapScope.createTopScope(getContext());
+            getContext().getSharedFinalizer().registerAsyncAction();
             initialized = true;
         }
     }
 
     @TruffleBoundary
-    public PythonModule lookupBuiltinModule(String name) {
+    public final PythonModule lookupBuiltinModule(String name) {
         return builtinModules.get(name);
     }
 
-    public PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
+    public final PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
         assert builtinTypes[type.ordinal()] != null;
         return builtinTypes[type.ordinal()];
     }
 
     @TruffleBoundary
-    public String[] builtinModuleNames() {
-        return builtinModules.keySet().toArray(new String[0]);
+    public final String[] builtinModuleNames() {
+        return builtinModules.keySet().toArray(PythonUtils.EMPTY_STRING_ARRAY);
     }
 
-    @Override
-    public PythonModule getBuiltins() {
+    public final PythonModule getBuiltins() {
         return builtinsModule;
+    }
+
+    public final PythonModule getSysModule() {
+        return sysModule;
+    }
+
+    public final PDict getSysModules() {
+        return sysModules;
+    }
+
+    public final PythonModule getImportlib() {
+        return importlib;
+    }
+
+    public final void registerImportlib(PythonModule mod) {
+        if (importlib != null) {
+            throw new IllegalStateException("importlib cannot be registered more than once");
+        }
+        importlib = mod;
+    }
+
+    public final PMethod getImportFunc() {
+        return importFunc;
+    }
+
+    public final void registerImportFunc(PMethod func) {
+        if (importFunc != null) {
+            throw new IllegalStateException("__import__ func cannot be registered more than once");
+        }
+        importFunc = func;
     }
 
     @Override
     @TruffleBoundary
-    public PException raise(PythonBuiltinClassType type, String format, Object... args) {
-        PBaseException instance;
-        if (format != null) {
-            instance = objectFactory.createBaseException(type, format, args);
-        } else {
-            instance = objectFactory.createBaseException(type);
+    public final void warn(PythonBuiltinClassType type, String format, Object... args) {
+        WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
+    }
+
+    /**
+     * Returns the stderr object or signals error when stderr is "lost".
+     */
+    public final Object getStderr() {
+        try {
+            return PyObjectLookupAttr.getUncached().execute(null, sysModule, "stderr");
+        } catch (PException e) {
+            try {
+                getContext().getEnv().err().write("lost sys.stderr\n".getBytes());
+            } catch (IOException ioe) {
+                // nothing more we can do
+            }
+            throw e;
         }
-        throw PException.fromObject(instance, null);
     }
 
     private void publishBuiltinModules() {
-        PythonModule sysModule = builtinModules.get("sys");
-        PDict sysModules = (PDict) sysModule.getAttribute("modules");
+        assert sysModules != null;
         for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
-            sysModules.setItem(entry.getKey(), entry.getValue());
+            final PythonModule pythonModule = entry.getValue();
+            final PythonBuiltins moduleBuiltins = pythonModule.getBuiltins();
+            if (moduleBuiltins != null) {
+                CoreFunctions annotation = moduleBuiltins.getClass().getAnnotation(CoreFunctions.class);
+                if (annotation.isEager()) {
+                    sysModules.setItem(entry.getKey(), pythonModule);
+                }
+            }
         }
     }
 
     private PythonBuiltinClass initializeBuiltinClass(PythonBuiltinClassType type) {
         int index = type.ordinal();
         if (builtinTypes[index] == null) {
-            if (type.getBase() == type) {
+            if (type.getBase() == null) {
                 // object case
-                builtinTypes[index] = new PythonBuiltinClass(type, null);
+                builtinTypes[index] = new PythonBuiltinClass(getLanguage(), type, null);
             } else {
-                builtinTypes[index] = new PythonBuiltinClass(type, initializeBuiltinClass(type.getBase()));
+                builtinTypes[index] = new PythonBuiltinClass(getLanguage(), type, initializeBuiltinClass(type.getBase()));
             }
         }
         return builtinTypes[index];
@@ -507,12 +882,12 @@ public final class Python3Core implements PythonCore {
         for (PythonBuiltins builtin : builtins) {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                createModule(annotation.defineModule());
+                createModule(annotation.defineModule(), builtin);
             }
         }
         // publish builtin types in the corresponding modules
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
-            String module = builtinClass.getPublicInModule();
+            String module = builtinClass.getPublishInModule();
             if (module != null) {
                 PythonModule pythonModule = lookupBuiltinModule(module);
                 if (pythonModule != null) {
@@ -521,8 +896,9 @@ public final class Python3Core implements PythonCore {
             }
         }
         // now initialize well-known objects
-        pyTrue = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ONE);
-        pyFalse = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ZERO);
+        pyTrue = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
+        pyFalse = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
+        pyNaN = factory().createFloat(Double.NaN);
     }
 
     private void populateBuiltins() {
@@ -538,30 +914,45 @@ public final class Python3Core implements PythonCore {
         }
 
         // core machinery
-        createModule("_descriptor");
-        createModule("_warnings");
+        sysModule = builtinModules.get("sys");
+        sysModules = (PDict) sysModule.getAttribute(MODULES);
+
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
-        builtinModules.put("_frozen_importlib_external", bootstrapExternal);
+        addBuiltinModule("_frozen_importlib_external", bootstrapExternal);
         PythonModule bootstrap = createModule("importlib._bootstrap");
         bootstrap.setAttribute(__PACKAGE__, "importlib");
-        builtinModules.put("_frozen_importlib", bootstrap);
+        addBuiltinModule("_frozen_importlib", bootstrap);
     }
 
     private PythonModule createModule(String name) {
+        return createModule(name, null);
+    }
+
+    private void addBuiltinModule(String name, PythonModule module) {
+        builtinModules.put(name, module);
+        if (sysModules != null) {
+            sysModules.setItem(name, module);
+        }
+    }
+
+    private PythonModule createModule(String name, PythonBuiltins moduleBuiltins) {
         PythonModule mod = builtinModules.get(name);
         if (mod == null) {
             mod = factory().createPythonModule(name);
-            builtinModules.put(name, mod);
+            if (moduleBuiltins != null) {
+                mod.setBuiltins(moduleBuiltins);
+            }
+            addBuiltinModule(name, mod);
         }
         return mod;
     }
 
     private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtinsForObj) {
-        Map<String, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
-        for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
-            String constantName = entry.getKey();
-            obj.setAttribute(constantName, entry.getValue());
+        Map<Object, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
+        for (Map.Entry<Object, Object> entry : builtinConstants.entrySet()) {
+            Object constant = entry.getKey();
+            obj.setAttribute(constant, entry.getValue());
         }
 
         Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtinsForObj.getBuiltinFunctions();
@@ -588,11 +979,11 @@ public final class Python3Core implements PythonCore {
     }
 
     @TruffleBoundary
-    private Source getSource(String basename, String prefix) {
+    private Source getInternalSource(String basename, String prefix) {
         PythonContext ctxt = getContext();
         Env env = ctxt.getEnv();
-        String suffix = env.getFileNameSeparator() + basename + ".py";
-        TruffleFile file = env.getTruffleFile(prefix + suffix);
+        String suffix = env.getFileNameSeparator() + basename + PythonLanguage.EXTENSION;
+        TruffleFile file = env.getInternalTruffleFile(prefix + suffix);
         String errorMessage;
         try {
             return PythonLanguage.newSource(ctxt, file, basename);
@@ -601,16 +992,15 @@ public final class Python3Core implements PythonCore {
         } catch (SecurityException e) {
             errorMessage = "Startup failed, a security exception occurred while reading from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         }
-        PythonLanguage.getLogger().log(Level.SEVERE, errorMessage);
-        PException e = new PException(null, null);
-        e.setMessage(errorMessage);
+        LOGGER.log(Level.SEVERE, errorMessage);
+        RuntimeException e = new RuntimeException(errorMessage);
         throw e;
     }
 
     private void loadFile(String s, String prefix) {
         Supplier<CallTarget> getCode = () -> {
-            Source source = getSource(s, prefix);
-            return Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null));
+            Source source = getInternalSource(s, prefix);
+            return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         PythonModule mod = lookupBuiltinModule(s);
@@ -618,41 +1008,97 @@ public final class Python3Core implements PythonCore {
             // use an anonymous module for the side-effects
             mod = factory().createPythonModule("__anonymous__");
         }
-        callTarget.call(PArguments.withGlobals(mod));
+        GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 
-    public PythonObjectFactory factory() {
+    public final PythonObjectSlowPathFactory factory() {
         return objectFactory;
     }
 
-    public void setContext(PythonContext context) {
-        assert singletonContext == null;
-        singletonContext = context;
-    }
-
-    public PInt getTrue() {
+    public final PInt getTrue() {
         return pyTrue;
     }
 
-    public PInt getFalse() {
+    public final PInt getFalse() {
         return pyFalse;
     }
 
-    public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
+    public final PFloat getNaN() {
+        return pyNaN;
+    }
+
+    @Override
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
+        CompilerDirectives.transferToInterpreter();
         Node location = new Node() {
             @Override
             public SourceSection getSourceSection() {
                 return section;
             }
         };
+        throw raiseInvalidSyntax(type, location, message, arguments);
+    }
+
+    @Override
+    @TruffleBoundary
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
         PBaseException instance;
-        instance = factory().createBaseException(SyntaxError, message, arguments);
+        Object cls;
+        switch (type) {
+            case Indentation:
+                cls = IndentationError;
+                break;
+            case Tab:
+                cls = TabError;
+                break;
+            default:
+                cls = SyntaxError;
+                break;
+        }
+        instance = factory().createBaseException(cls, message, arguments);
+        SourceSection section = location.getSourceSection();
+        Source source = section.getSource();
         String path = source.getPath();
         instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
-        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
+        // Not very nice. This counts on the implementation in traceback.py where if the value of
+        // text attribute
+        // is NONE, then the line is not printed
+        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : PNone.NONE);
         instance.setAttribute("lineno", section.getStartLine());
         instance.setAttribute("offset", section.getStartColumn());
-        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : "invalid syntax");
-        throw PException.fromObject(instance, location);
+        String msg = "invalid syntax";
+        if (type == PythonParser.ErrorType.Print) {
+            CharSequence line = source.getCharacters(section.getStartLine());
+            line = line.subSequence(line.toString().lastIndexOf(PRINT), line.length());
+            Matcher matcher = MISSING_PARENTHESES_PATTERN.matcher(line);
+            if (matcher.matches()) {
+                String arg = matcher.group(2).trim();
+                String maybeEnd = "";
+                if (arg.endsWith(",")) {
+                    maybeEnd = " end=\" \"";
+                }
+                msg = (new ErrorMessageFormatter()).format("Missing parentheses in call to 'print'. Did you mean print(%s%s)?", arg, maybeEnd);
+            }
+        } else if (type == PythonParser.ErrorType.Exec) {
+            msg = "Missing parentheses in call to 'exec'";
+        } else if (section.getCharIndex() == source.getLength()) {
+            msg = "unexpected EOF while parsing";
+        } else if (message != null) {
+            msg = (new ErrorMessageFormatter()).format(message, arguments);
+        }
+        instance.setAttribute("msg", msg);
+        throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
+    }
+
+    public final Object getTopScopeObject() {
+        return globalScopeObject;
+    }
+
+    public static void writeInfo(String message) {
+        PythonLanguage.getLogger(Python3Core.class).fine(message);
+    }
+
+    public static void writeInfo(Supplier<String> messageSupplier) {
+        PythonLanguage.getLogger(Python3Core.class).fine(messageSupplier);
     }
 }

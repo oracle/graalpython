@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,81 +37,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-@__builtin__
+@__graalpython__.builtin
 def hasattr(obj, key):
     default = object()
     return getattr(obj, key, default) is not default
 
 
-@__builtin__
-def any(iterable):
-    for i in iterable:
-        if i:
-            return True
-    return False
-
-
-@__builtin__
-def all(iterable):
-    for i in iterable:
-        if not i:
-            return False
-    return True
-
-
-@__builtin__
-def filter(func, iterable):
-    result = []
-    predicate = func if func is not None else lambda a: a
-    for i in iterable:
-        if predicate(i):
-            result.append(i)
-    return tuple(result)
-
-
-# This is re-defined later during bootstrap in classes.py
-def __build_class__(func, name, *bases, metaclass=None, **kwargs):
-    """
-    Stage 1 helper function used by the class statement
-    """
-    if metaclass is not None or len(kwargs) > 0:
-        import _posix
-        print("Tried to use keyword arguments in class definition too early during bootstrap")
-        _posix.exit(-1)
-    ns = {}
-    func(ns)
-    return type(name, bases, ns)
-
-
-class map(object):
-    def __init__(self, func, iterable, *args):
-        self.__func = func
-        iterators = [iter(iterable)]
-        for i in args:
-            iterators.append(iter(i))
-        self.__iterators = iterators
-
-    def __next__(self):
-        args = []
-        for it in self.__iterators:
-            args.append(next(it))
-        return self.__func(*args)
-
-    def __iter__(self):
-        return self
-
-    def __contains__(self, x):
-        for i in map(self.__func, *self.__iterators):
-            if x == i:
-                return True
-        return False
-
-
-
 from sys import _getframe as __getframe__
 
 
-@__builtin__
+@__graalpython__.builtin
 def vars(*obj):
     """Return a dictionary of all the attributes currently bound in obj.  If
     called with no argument, return the variables bound in local scope."""
@@ -126,23 +61,47 @@ def vars(*obj):
         raise TypeError("vars() argument must have __dict__ attribute")
 
 
-@__builtin__
-def format(value, format_spec=''):
-    """Return value.__format__(format_spec)
+@__graalpython__.builtin
+def input(prompt=None):
+    import sys
+    if(not hasattr(sys, "stdin")):
+        raise RuntimeError('input(): lost sys.stdin')
+    if(not hasattr(sys, "stdout")):
+        raise RuntimeError('input(): lost sys.stdout')
+    if(not hasattr(sys, "stderr")):
+        raise RuntimeError('input(): lost sys.stderr')
 
-    format_spec defaults to the empty string.
-    See the Format Specification Mini-Language section of help('FORMATTING') for
-    details."""
-    return type(value).__format__(value, format_spec)
+    if prompt is not None:
+        print(prompt, end="", flush=hasattr(sys.stdout, "flush"))
+        
+    result = []
+    while True:
+        ch = sys.stdin.read(1)
+        if ch:
+            if ch == "\n":
+                break
+            result.append(ch)
+        else:
+            if(len(result) == 0):
+                raise EOFError('EOF when reading a line')
+            break
+    return "".join(result)
 
 
-@__builtin__
-def sorted(iterable, key=None, reverse=False):
-    """Return a new list containing all items from the iterable in ascending order.
+class filter(object):
+    def __init__(self, predicateOrNone, iterable):
+        self.predicateOrNone = predicateOrNone
+        self.iterable = iter(iterable)
 
-    A custom key function can be supplied to customize the sort order, and the
-    reverse flag can be set to request the result in descending order.
-    """
-    result = list(iterable)
-    result.sort(key=key, reverse=reverse)
-    return result
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            item = next(self.iterable)
+            if self.predicateOrNone is None:
+                if item:
+                    return item
+            else:
+                if self.predicateOrNone(item):
+                    return item

@@ -3,7 +3,6 @@ import gc
 import pickle
 import sys
 import unittest
-import warnings
 import weakref
 import inspect
 
@@ -47,6 +46,7 @@ class SignalAndYieldFromTest(unittest.TestCase):
 
 class FinalizationTest(unittest.TestCase):
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_frame_resurrect(self):
         # A generator frame can be resurrected by a generator's finalization.
         def gen():
@@ -66,6 +66,7 @@ class FinalizationTest(unittest.TestCase):
         del frame
         support.gc_collect()
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_refcycle(self):
         # A generator caught in a refcycle gets finalized anyway.
         old_garbage = gc.garbage[:]
@@ -779,7 +780,11 @@ Subject: Re: PEP 255: Simple Generators
 
 >>> import random
 >>> gen = random.Random(42)
->>> while 1:
+
+
+# XXX Truffle change: our random generator generates different numbers
+@support.impl_detail(graalvm=False)
+>>> while 1: # doctest: +SKIP
 ...     for s in sets:
 ...         print(" %s->%s" % (s, s.find()), end='')
 ...     print()
@@ -1857,7 +1862,9 @@ Traceback (most recent call last):
   ...
 SyntaxError: 'yield' outside function
 
->>> def f(): x = yield = y
+
+# XXX Truffle change: relax the message, CPython error messages are inconsistent and arbitrary here
+>>> def f(): x = yield = y # doctest:+IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
   ...
 SyntaxError: assignment to yield expression not possible
@@ -1865,12 +1872,12 @@ SyntaxError: assignment to yield expression not possible
 >>> def f(): (yield bar) = y
 Traceback (most recent call last):
   ...
-SyntaxError: can't assign to yield expression
+SyntaxError: cannot assign to yield expression
 
 >>> def f(): (yield bar) += y
 Traceback (most recent call last):
   ...
-SyntaxError: can't assign to yield expression
+SyntaxError: cannot assign to yield expression
 
 
 Now check some throw() conditions:
@@ -2015,7 +2022,11 @@ And finalization:
 
 >>> g = f()
 >>> next(g)
->>> del g
+
+
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> del g # doctest: +SKIP
 exiting
 
 
@@ -2030,7 +2041,11 @@ GeneratorExit is not caught by except Exception:
 
 >>> g = f()
 >>> next(g)
->>> del g
+
+
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> del g # doctest: +SKIP
 finally
 
 
@@ -2051,15 +2066,19 @@ RuntimeError: generator ignored GeneratorExit
 
 Our ill-behaved code should be invoked during GC:
 
->>> import sys, io
->>> old, sys.stderr = sys.stderr, io.StringIO()
->>> g = f()
->>> next(g)
->>> del g
->>> "RuntimeError: generator ignored GeneratorExit" in sys.stderr.getvalue()
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
+...     g = f()
+...     next(g)
+...     del g
+...
+...     cm.unraisable.exc_type == RuntimeError
+...     "generator ignored GeneratorExit" in str(cm.unraisable.exc_value)
+...     cm.unraisable.exc_traceback is not None
 True
->>> sys.stderr = old
-
+True
+True
 
 And errors thrown during closing should propagate:
 
@@ -2156,25 +2175,26 @@ explicitly, without generators. We do have to redirect stderr to avoid
 printing warnings and to doublecheck that we actually tested what we wanted
 to test.
 
->>> import sys, io
->>> old = sys.stderr
->>> try:
-...     sys.stderr = io.StringIO()
-...     class Leaker:
-...         def __del__(self):
-...             def invoke(message):
-...                 raise RuntimeError(message)
-...             invoke("test")
+>>> from test import support
+>>> class Leaker:
+...     def __del__(self):
+...         def invoke(message):
+...             raise RuntimeError(message)
+...         invoke("del failed")
 ...
+
+
+
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
 ...     l = Leaker()
 ...     del l
-...     err = sys.stderr.getvalue().strip()
-...     "Exception ignored in" in err
-...     "RuntimeError: test" in err
-...     "Traceback" in err
-...     "in invoke" in err
-... finally:
-...     sys.stderr = old
+...
+...     cm.unraisable.object == Leaker.__del__
+...     cm.unraisable.exc_type == RuntimeError
+...     str(cm.unraisable.exc_value) == "del failed"
+...     cm.unraisable.exc_traceback is not None
 True
 True
 True

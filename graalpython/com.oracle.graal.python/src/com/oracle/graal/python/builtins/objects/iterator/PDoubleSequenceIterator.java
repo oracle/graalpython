@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,31 +25,25 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.truffle.api.object.Shape;
 
-public final class PDoubleSequenceIterator extends PDoubleIterator {
+public final class PDoubleSequenceIterator extends PPrimitiveIterator {
 
     final DoubleSequenceStorage sequence;
-    int index;
 
-    public PDoubleSequenceIterator(LazyPythonClass clazz, DoubleSequenceStorage sequence) {
-        super(clazz);
+    public PDoubleSequenceIterator(Object clazz, Shape instanceShape, DoubleSequenceStorage sequence, Object store) {
+        super(clazz, instanceShape, store);
         this.sequence = sequence;
     }
 
-    public DoubleSequenceStorage getSequenceStorage() {
-        return sequence;
-    }
-
-    @Override
     public double next() {
         assert hasNext();
-        return sequence.getDoubleItemNormalized(index++);
+        return this.sequence.getDoubleItemNormalized(this.index++);
     }
 
     @Override
     public boolean hasNext() {
-        return index < sequence.length();
+        return this.index < this.sequence.length();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -53,7 +54,7 @@ public abstract class SplitArgsNode extends Node {
 
     @Specialization(guards = "varargsWithSelf.length == 1")
     Object[] doEmpty(@SuppressWarnings("unused") Object[] varargsWithSelf) {
-        return new Object[0];
+        return PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
     @Specialization(guards = {"varargsWithSelf.length == cachedLen", "varargsWithSelf.length < 32"})
@@ -70,7 +71,7 @@ public abstract class SplitArgsNode extends Node {
     @Specialization(replaces = "doCached")
     Object[] doGeneric(@SuppressWarnings("unused") Object[] varargsWithSelf) {
         Object[] splitArgs = new Object[varargsWithSelf.length - 1];
-        System.arraycopy(varargsWithSelf, 1, splitArgs, 0, varargsWithSelf.length - 1);
+        PythonUtils.arraycopy(varargsWithSelf, 1, splitArgs, 0, varargsWithSelf.length - 1);
         return splitArgs;
     }
 

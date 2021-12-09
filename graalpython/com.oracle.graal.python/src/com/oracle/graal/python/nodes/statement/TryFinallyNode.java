@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,19 +26,21 @@
 package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
-public class TryFinallyNode extends StatementNode {
+public class TryFinallyNode extends ExceptionHandlingStatementNode {
     @Child private StatementNode body;
     @Child private StatementNode finalbody;
-    @Child private SaveExceptionStateNode getCaughtExceptionNode;
-    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
+    @Child private InteropLibrary excLib;
+
+    private final BranchProfile exceptionProfile = BranchProfile.create();
 
     public TryFinallyNode(StatementNode body, StatementNode finalbody) {
         this.body = body;
@@ -47,43 +49,80 @@ public class TryFinallyNode extends StatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        ExceptionState exceptionState = ensureGetCaughtExceptionNode().execute(frame);
         if (finalbody == null) {
-            try {
-                body.executeVoid(frame);
-            } finally {
-                // restore
-                restoreExceptionState(frame, exceptionState);
-            }
+            body.executeVoid(frame);
         } else {
-            try {
-                body.executeVoid(frame);
-            } catch (PException e) {
-                // any thrown Python exception is visible in the finally block
-                SetCaughtExceptionNode.execute(frame, e);
-                throw e;
-            } finally {
-                try {
-                    finalbody.executeVoid(frame);
-                } catch (ControlFlowException e) {
-                    // restore
-                    restoreExceptionState(frame, exceptionState);
-                    throw e;
-                }
-                // restore
-                restoreExceptionState(frame, exceptionState);
-            }
+            executeImpl(frame, false);
         }
     }
 
-    private void restoreExceptionState(VirtualFrame frame, ExceptionState exceptionState) {
-        if (exceptionState != null) {
-            if (restoreExceptionStateNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
-            }
-            restoreExceptionStateNode.execute(frame, exceptionState);
+    @Override
+    public Object returnExecute(VirtualFrame frame) {
+        if (finalbody == null) {
+            return body.returnExecute(frame);
+        } else {
+            return executeImpl(frame, true);
         }
+    }
+
+    public Object executeImpl(VirtualFrame frame, boolean isReturn) {
+        assert finalbody != null;
+        Object result = null;
+        try {
+            // The assumption is that finally blocks usually do not return, we execute those in
+            // control flow exceptions mode to be able to execute the body with 'returnExecute'
+            result = body.genericExecute(frame, isReturn);
+        } catch (PException handledException) {
+            handleException(frame, handledException);
+        } catch (ControlFlowException e) {
+            finalbody.executeVoid(frame);
+            throw e;
+        } catch (AbstractTruffleException e) {
+            if (excLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                excLib = insert(InteropLibrary.getFactory().createDispatched(2));
+            }
+            if (excLib.isException(e)) {
+                finalbody.executeVoid(frame);
+            }
+            throw e;
+        } catch (ThreadDeath td) {
+            // do not handle, result of TruffleContext.closeCancelled()
+            throw td;
+        } catch (Throwable e) {
+            PException pe = wrapJavaExceptionIfApplicable(e);
+            if (pe == null) {
+                throw e;
+            }
+            handleException(frame, pe);
+        }
+        finalbody.executeVoid(frame);
+        return result;
+    }
+
+    private void handleException(VirtualFrame frame, PException handledException) {
+        exceptionProfile.enter();
+        // any thrown Python exception is visible in the finally block
+        handledException.setCatchingFrameReference(frame, this);
+        tryChainPreexistingException(frame, handledException);
+        ExceptionState exceptionState = saveExceptionState(frame);
+        SetCaughtExceptionNode.execute(frame, handledException);
+        try {
+            finalbody.executeVoid(frame);
+        } catch (PException handlerException) {
+            tryChainExceptionFromHandler(handlerException, handledException);
+            throw handlerException;
+        } catch (Throwable e) {
+            PException handlerException = wrapJavaExceptionIfApplicable(e);
+            if (handlerException == null) {
+                throw e;
+            }
+            tryChainExceptionFromHandler(handlerException, handledException);
+            throw handlerException.getExceptionForReraise();
+        } finally {
+            restoreExceptionState(frame, exceptionState);
+        }
+        throw handledException.getExceptionForReraise();
     }
 
     public StatementNode getBody() {
@@ -93,13 +132,4 @@ public class TryFinallyNode extends StatementNode {
     public StatementNode getFinalbody() {
         return finalbody;
     }
-
-    private SaveExceptionStateNode ensureGetCaughtExceptionNode() {
-        if (getCaughtExceptionNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getCaughtExceptionNode = insert(SaveExceptionStateNode.create());
-        }
-        return getCaughtExceptionNode;
-    }
-
 }

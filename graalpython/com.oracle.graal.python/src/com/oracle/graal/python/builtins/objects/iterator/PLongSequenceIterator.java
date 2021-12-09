@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,32 +25,25 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.truffle.api.object.Shape;
 
-public final class PLongSequenceIterator extends PLongIterator {
+public final class PLongSequenceIterator extends PPrimitiveIterator {
 
     final LongSequenceStorage sequence;
-    int index;
-    protected boolean stopIterationReached = false;
 
-    public PLongSequenceIterator(LazyPythonClass clazz, LongSequenceStorage sequence) {
-        super(clazz);
+    public PLongSequenceIterator(Object clazz, Shape instanceShape, LongSequenceStorage sequence, Object store) {
+        super(clazz, instanceShape, store);
         this.sequence = sequence;
     }
 
-    public LongSequenceStorage getSequenceStorage() {
-        return sequence;
-    }
-
-    @Override
     public long next() {
         assert hasNext();
-        return sequence.getLongItemNormalized(index++);
+        return this.sequence.getLongItemNormalized(this.index++);
     }
 
     @Override
     public boolean hasNext() {
-        return index < sequence.length();
+        return this.index < this.sequence.length();
     }
 }

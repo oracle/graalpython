@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,41 +43,17 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
-def SystemExit__init__(self, *args):
-    if len(args) > 1:
-        self.code = args
-    elif len(args) == 1:
-        self.code = args[0]
-    else:
-        self.code = 0
+def ImportError__init__(self, *args, name=None, path=None, **kwargs):
+    if kwargs:
+        kwarg = next(iter(kwargs))
+        raise TypeError(f"'{kwarg}' is an invalid keyword argument for ImportError")
     BaseException.__init__(self, *args)
-
-SystemExit.__init__ = SystemExit__init__
-del SystemExit__init__
-
-def ImportError__init__(self, msg, name=None, path=None):
-    self.message = msg
+    self.msg = args[0] if args else None
     self.name = name
     self.path = path
 
 ImportError.__init__ = ImportError__init__
 del ImportError__init__
-
-def ModuleNotFoundError__init__(self, msg, name=None):
-    self.msg = msg
-    self.name = name
-
-ModuleNotFoundError.__init__ = ModuleNotFoundError__init__
-del ModuleNotFoundError__init__
-
-def ModuleNotFoundError__str__(self):
-    if self.name is not None:
-        return "ModuleNotFound: '" + self.name + "'. " + self.msg
-    else:
-        return "ModuleNotFound: " + self.msg
-
-ModuleNotFoundError__str__.__init__ = ModuleNotFoundError__str__
-del ModuleNotFoundError__str__
 
 # EnvironmentError is just an alias of OSError (i.e. 'EnvironmentError is OSError == True')
 EnvironmentError = OSError
@@ -96,13 +72,140 @@ def StopIteration__value__set(self, arg):
     self.__value__ = arg
 
 
-def StopIteration__repr__(self):
-    return "StopIteration%s" % repr(self.args)
+StopIteration.value = property(fget=StopIteration__value__get, fset=StopIteration__value__set)
 
 
-StopIteration.value = property(StopIteration__value__get)
-StopIteration.value.setter(StopIteration__value__set)
-StopIteration.__repr__ = StopIteration__repr__
+def SyntaxError__init__(self, *args, **kwargs):
+    BaseException.__init__(self, *args, **kwargs)
+    self.msg = None
+    self.filename = None
+    self.lineno = None
+    self.offset = None
+    self.text = None
+    self.print_file_and_line = None
+    if len(args) > 0:
+        self.msg = args[0]
+    if len(args) == 2:
+        info = tuple(args[1])
+        if len(info) != 4:
+            raise IndexError("tuple index out of range")
+        self.filename = info[0]
+        self.lineno = info[1]
+        self.offset = info[2]
+        self.text = info[3]
+
+def SyntaxError__str__(self):
+
+    def isNumber(x):
+        return hasattr(x, "__index__")
+
+    hasLineno = self.lineno and isNumber(self.lineno)
+    if not self.filename and not hasLineno:
+        return "%s" % (self.msg)
+    if self.filename and hasLineno:
+        return "%s (%s, line %d)" % (self.msg, self.filename, self.lineno)
+    if self.filename:
+        return "%s (%s)" % (self.msg, self.filename)
+    return "%s (line %d)" % (self.msg, self.lineno)
+
+SyntaxError.__init__ = SyntaxError__init__
+SyntaxError.__str__ = SyntaxError__str__
+del SyntaxError__init__
+del SyntaxError__str__
+
+
+def UnicodeEncodeError__init__(self, encoding, object, start, end, reason):
+    BaseException.__init__(self, encoding, object, start, end, reason)
+    self.encoding = encoding
+    self.object = object
+    self.start = start
+    self.end = end
+    self.reason = reason
+
+
+def UnicodeEncodeError__str__(self):    
+    if not hasattr(self, 'object'):
+        return BaseException.__str__(self)
+    if self.start < len(self.object) and self.start + 1 == self.end:
+        badchar = ord(self.object[self.start])
+        if badchar <= 0xff:
+            fmt = "'%s' codec can't encode character '\\x%02x' in position %d: %s"
+        elif badchar <= 0xffff:
+            fmt = "'%s' codec can't encode character '\\u%04x' in position %d: %s"
+        else:
+            fmt = "'%s' codec can't encode character '\\U%08x' in position %d: %s"
+        return fmt % (self.encoding, badchar, self.start, self.reason)
+    return "'%s' codec can't encode characters in position %d-%d: %s" % (self.encoding, self.start, self.end - 1, self.reason)
+
+
+UnicodeEncodeError.__init__ = UnicodeEncodeError__init__
+UnicodeEncodeError.__str__ = UnicodeEncodeError__str__
+del UnicodeEncodeError__init__
+del UnicodeEncodeError__str__
+
+
+def UnicodeDecodeError__init__(self, encoding, object, start, end, reason):
+    BaseException.__init__(self, encoding, object, start, end, reason)
+    self.encoding = encoding
+    if isinstance(object, bytes):
+        self.object = object
+    else:
+        self.object = bytes(object)
+    self.start = start
+    self.end = end
+    self.reason = reason
+
+def UnicodeEncodeError__init__(self, encoding, object, start, end, reason):
+    BaseException.__init__(self, encoding, object, start, end, reason)
+    self.encoding = encoding
+    self.object = object
+    self.start = start
+    self.end = end
+    self.reason = reason
+
+
+def UnicodeDecodeError__str__(self):
+    if not hasattr(self, 'object'):
+        return BaseException.__str__(self)
+    if self.start < len(self.object) and self.start + 1 == self.end:
+        byte = self.object[self.start]
+        return "'%s' codec can't decode byte 0x%02x in position %d: %s" % (self.encoding, byte, self.start, self.reason)
+    return "'%s' codec can't decode bytes in position %d-%d: %s" % (self.encoding, self.start, self.end - 1, self.reason)
+
+
+UnicodeDecodeError.__init__ = UnicodeDecodeError__init__
+UnicodeDecodeError.__str__ = UnicodeDecodeError__str__
+del UnicodeDecodeError__init__
+del UnicodeDecodeError__str__
+
+
+def UnicodeTranslateError__init__(self, object, start, end, reason):
+    self.object = object
+    self.start = start
+    self.end = end
+    self.reason = reason
+
+
+def UnicodeTranslateError__str__(self):
+    if not hasattr(self, 'object'):
+        return BaseException.__str__(self)
+    if self.start < len(self.object) and self.start + 1 == self.end:
+        badchar = ord(self.object[self.start])
+        if badchar <= 0xff:
+            fmt = "can't translate character '\\x%02x' in position %d: %s"
+        elif badchar <= 0xffff:
+            fmt = "can't translate character '\\u%04x' in position %d: %s"
+        else:
+            fmt = "can't translate character '\\U%08x' in position %d: %s"
+        return fmt % (badchar, self.start, self.reason)
+    return "can't translate characters in position %d-%d: %s" % (self.start, self.end - 1, self.reason)
+
+
+UnicodeTranslateError.__init__ = UnicodeTranslateError__init__
+UnicodeTranslateError.__str__ = UnicodeTranslateError__str__
+del UnicodeTranslateError__init__
+del UnicodeTranslateError__str__
+
 
 # These errors are just an alias of OSError (i.e. 'EnvironmentError is OSError == True')
 EnvironmentError = OSError
@@ -137,17 +240,26 @@ def _oserror_use_init(subtype):
 
 def _oserror_init(self, *arg):
     narg = len(arg)
+    self.args = arg
     self.errno = None
     self.strerror = None
     self.filename = None
     self.filename2 = None
     if (2 <= narg and narg <= 5):
+        self.args = arg[0:2]
         self.errno = arg[0]
         self.strerror = arg[1]
         if(narg >= 5):
             self.filename2 = arg[4]
         if(narg >= 3):
-            self.filename = arg[2]
+            if type(self) == BlockingIOError:
+                try:
+                    self.characters_written = arg[2].__index__()
+                    self.args = arg[0:3]
+                except Exception:
+                    self.filename = arg[2]
+            else:
+                self.filename = arg[2]
 
 def OSError__new__(subtype, *args, **kwds):
     newtype = subtype
@@ -155,8 +267,8 @@ def OSError__new__(subtype, *args, **kwds):
         myerrno = args[0]
         if (type(myerrno) is int and subtype is OSError and myerrno in _errnomap):
             newtype = _errnomap[myerrno]
-    
-    self = BaseException.__new__(newtype, *args, **kwds)
+
+    self = BaseException.__new__(newtype)
     self.errno = self.strerror = self.filename = self.filename2 = None
     if (not _oserror_use_init(newtype)):
         _oserror_init(self, *args)
@@ -170,16 +282,20 @@ def OSError__init__(self, *args, **kwds):
 def OSError__str__(self):
     if (self.filename):
         if(self.filename2):
-            return "[Errno %i] %s: %s -> %s" % (self.errno, self.strerror, self.filename, self.filename2)
+            return "[Errno %s] %s: %s -> %s" % (self.errno, self.strerror, repr(self.filename), repr(self.filename2))
         else:
-            return "[Errno %i] %s: %s" % (self.errno, self.strerror, self.filename)
+            return "[Errno %s] %s: %s" % (self.errno, self.strerror, repr(self.filename))
     if(self.errno and self.strerror):
-        return "[Errno %i] %s" % (self.errno, self.strerror)
+        return "[Errno %s] %s" % (self.errno, self.strerror)
     return BaseException.__str__(self)
 
 OSError.__new__ = OSError__new__
 OSError.__init__ = OSError__init__
 OSError.__str__ = OSError__str__
+OSError.errno = -1
+OSError.strerror = None
+OSError.filename = None
+OSError.filename2 = None
 del OSError__init__
 del OSError__new__
 del OSError__str__

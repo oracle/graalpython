@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,12 +49,14 @@ PyObject* PyList_New(Py_ssize_t size) {
 
 UPCALL_ID(PyList_GetItem);
 PyObject* PyList_GetItem(PyObject *op, Py_ssize_t i) {
-    return UPCALL_CEXT_O(_jls_PyList_GetItem, native_to_java(op), i);
+    return UPCALL_CEXT_BORROWED(_jls_PyList_GetItem, native_to_java(op), i);
 }
 
-UPCALL_ID(PyList_SetItem);
-int PyList_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem) {
-    return UPCALL_CEXT_I(_jls_PyList_SetItem, native_to_java(op), i, native_to_java(newitem));
+UPCALL_TYPED_ID(PyList_SetItem, setitem_fun_t);
+int PyList_SetItem(PyObject* op, Py_ssize_t i, PyObject* newitem) {
+    /* We cannot use 'UPCALL_CEXT_I' because that would assume borrowed references.
+       But this function steals the references, so we call without a landing function. */
+    return _jls_PyList_SetItem(native_to_java(op), i, native_to_java_stealing(newitem));
 }
 
 UPCALL_ID(PyList_Append);
@@ -90,7 +92,22 @@ int PyList_SetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
     return UPCALL_CEXT_I(_jls_PyList_SetSlice, native_to_java(a), ilow, ihigh, native_to_java(v));
 }
 
+UPCALL_ID(PyList_Extend);
+PyObject * _PyList_Extend(PyListObject *self, PyObject *iterable) {
+    return UPCALL_CEXT_O(_jls_PyList_Extend, native_to_java((PyObject *)self), native_to_java(iterable));
+}
+
 UPCALL_ID(PyList_Sort);
 int PyList_Sort(PyObject *l) {
 	return UPCALL_CEXT_I(_jls_PyList_Sort, native_to_java(l));
+}
+
+UPCALL_ID(PyList_Insert);
+int PyList_Insert(PyObject *op, Py_ssize_t where, PyObject *newitem) {
+    return UPCALL_CEXT_I(_jls_PyList_Insert, native_to_java(op), where, native_to_java(newitem));
+}
+
+UPCALL_ID(PyList_Reverse);
+PyAPI_FUNC(int) PyList_Reverse(PyObject *self) {
+    return UPCALL_CEXT_I(_jls_PyList_Reverse, native_to_java(self));
 }

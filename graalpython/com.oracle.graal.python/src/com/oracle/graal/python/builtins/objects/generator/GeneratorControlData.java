@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.graal.python.parser.GeneratorInfo;
 
 public final class GeneratorControlData {
 
@@ -35,12 +35,24 @@ public final class GeneratorControlData {
     private final boolean[] activeFlags;
     private final int[] blockNodeIndices;       // See {@link GeneratorBlockNode}
     private final Object[] forNodeIterators; // See {@link GeneratorForNode}
-    private ExceptionState activeException;
+    private final RuntimeException[] activeExceptions; // See {@link GeneratorTryExceptNode}
+    // {@link GeneratorTryFinallyNode}
+    private int lastYieldIndex;
 
-    public GeneratorControlData(int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        this.activeFlags = new boolean[numOfActiveFlags];
-        this.blockNodeIndices = new int[numOfGeneratorBlockNode];
-        this.forNodeIterators = new Object[numOfGeneratorForNode];
+    public GeneratorControlData(GeneratorInfo generatorInfo) {
+        this.activeFlags = new boolean[generatorInfo.getNumOfActiveFlags()];
+        this.blockNodeIndices = new int[generatorInfo.getNumOfBlockNodes()];
+        this.forNodeIterators = new Object[generatorInfo.getNumOfIteratorSlots()];
+        this.activeExceptions = new RuntimeException[generatorInfo.getNumOfExceptionSlots()];
+    }
+
+    public int getLastYieldIndex() {
+        return lastYieldIndex;
+    }
+
+    public void setLastYieldIndex(int lastYieldIndex) {
+        assert lastYieldIndex != 0;
+        this.lastYieldIndex = lastYieldIndex;
     }
 
     public boolean getActive(int slot) {
@@ -67,11 +79,11 @@ public final class GeneratorControlData {
         forNodeIterators[slot] = value;
     }
 
-    public ExceptionState getActiveException() {
-        return activeException;
+    public RuntimeException getActiveException(int slot) {
+        return activeExceptions[slot];
     }
 
-    public void setActiveException(ExceptionState activeException) {
-        this.activeException = activeException;
+    public void setActiveException(int slot, RuntimeException activeException) {
+        this.activeExceptions[slot] = activeException;
     }
 }

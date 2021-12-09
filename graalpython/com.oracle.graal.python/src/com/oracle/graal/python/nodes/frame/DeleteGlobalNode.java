@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,8 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
@@ -53,7 +54,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class DeleteGlobalNode extends StatementNode implements GlobalNode {
     private final String attributeId;
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    protected final Assumption singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
 
     DeleteGlobalNode(String attributeId) {
         this.attributeId = attributeId;
@@ -63,39 +64,45 @@ public abstract class DeleteGlobalNode extends StatementNode implements GlobalNo
         return DeleteGlobalNodeGen.create(attributeId);
     }
 
-    public abstract Object execute(VirtualFrame frame, Object value);
+    @Override
+    public final void executeVoid(VirtualFrame frame) {
+        executeWithGlobals(frame, getGlobals(frame));
+    }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
-    Object deleteDictCached(VirtualFrame frame,
-                    @Cached("getGlobals(frame)") Object cachedGlobals,
+    public abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
+
+    @Specialization(guards = {"globals == cachedGlobals"}, assumptions = "singleContextAssumption", limit = "1")
+    Object deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals,
+                    @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Cached DeleteItemNode deleteNode) {
         deleteNode.executeWith(frame, cachedGlobals, attributeId);
         return PNone.NONE;
     }
 
-    @Specialization(guards = "isDict(getGlobals(frame))", replaces = "deleteDictCached")
-    Object deleteDict(VirtualFrame frame,
+    @Specialization(replaces = "deleteDictCached")
+    Object deleteDict(VirtualFrame frame, PDict globals,
                     @Cached DeleteItemNode deleteNode) {
-        deleteNode.executeWith(frame, PArguments.getGlobals(frame), attributeId);
+        deleteNode.executeWith(frame, globals, attributeId);
         return PNone.NONE;
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isModule(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
-    Object deleteModuleCached(VirtualFrame frame,
-                    @Cached("getGlobals(frame)") Object cachedGlobals,
+    @Specialization(guards = {"globals == cachedGlobals"}, assumptions = "singleContextAssumption", limit = "1")
+    Object deleteModuleCached(VirtualFrame frame, @SuppressWarnings("unused") PythonModule globals,
+                    @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
                     @Cached DeleteAttributeNode storeNode) {
         storeNode.execute(frame, cachedGlobals, attributeId);
         return PNone.NONE;
     }
 
-    @Specialization(guards = "isModule(getGlobals(frame))", replaces = "deleteModuleCached")
-    Object deleteModule(VirtualFrame frame,
+    @Specialization(replaces = "deleteModuleCached")
+    Object deleteModule(VirtualFrame frame, PythonModule globals,
                     @Cached DeleteAttributeNode storeNode) {
-        storeNode.execute(frame, PArguments.getGlobals(frame), attributeId);
+        storeNode.execute(frame, globals, attributeId);
         return PNone.NONE;
     }
 
-    public Object getAttributeId() {
+    @Override
+    public String getAttributeId() {
         return attributeId;
     }
 }

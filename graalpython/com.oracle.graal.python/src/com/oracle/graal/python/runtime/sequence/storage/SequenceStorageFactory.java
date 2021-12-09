@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,11 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-
 public abstract class SequenceStorageFactory {
+
+    private SequenceStorageFactory() {
+        // no instances
+    }
 
     public static SequenceStorage createStorage(Object[] values) {
         assert values != null;
@@ -49,16 +50,33 @@ public abstract class SequenceStorageFactory {
             return new LongSequenceStorage(specializeToLong(values));
         } else if (canSpecializeToBool(values)) {
             return new BoolSequenceStorage(specializeToBool(values));
-        } else if (canSpecializeToList(values)) {
-            return new ListSequenceStorage(specializeToList(values));
-        } else if (canSpecializeToTuple(values)) {
-            return new TupleSequenceStorage(specializeToTuple(values));
+        } else if (canSpecializeToByte(values)) {
+            return new ByteSequenceStorage(specializeToByte(values));
         } else {
             return new ObjectSequenceStorage(values);
         }
     }
 
-    public static boolean canSpecializeToInt(Object[] values) {
+    public static BasicSequenceStorage createStorage(Object baseValue, int len) {
+        assert baseValue != null;
+
+        if (baseValue instanceof Integer) {
+            return new IntSequenceStorage(len);
+        } else if (baseValue instanceof Byte) {
+            return new ByteSequenceStorage(len);
+        } else if (baseValue instanceof Long) {
+            return new LongSequenceStorage(len);
+        } else if (baseValue instanceof Double) {
+            return new DoubleSequenceStorage(len);
+        } else if (baseValue instanceof Boolean) {
+            return new BoolSequenceStorage(len);
+        } else {
+            return new ObjectSequenceStorage(len);
+        }
+
+    }
+
+    private static boolean canSpecializeToInt(Object[] values) {
         for (Object item : values) {
             if (!(item instanceof Integer)) {
                 return false;
@@ -68,7 +86,7 @@ public abstract class SequenceStorageFactory {
         return true;
     }
 
-    public static int[] specializeToInt(Object[] values) {
+    private static int[] specializeToInt(Object[] values) {
         final int[] intVals = new int[values.length];
 
         for (int i = 0; i < values.length; i++) {
@@ -78,7 +96,27 @@ public abstract class SequenceStorageFactory {
         return intVals;
     }
 
-    public static boolean canSpecializeToLong(Object[] values) {
+    private static boolean canSpecializeToByte(Object[] values) {
+        for (Object item : values) {
+            if (!(item instanceof Byte)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static byte[] specializeToByte(Object[] values) {
+        final byte[] byteVals = new byte[values.length];
+
+        for (int i = 0; i < values.length; i++) {
+            byteVals[i] = (byte) values[i];
+        }
+
+        return byteVals;
+    }
+
+    private static boolean canSpecializeToLong(Object[] values) {
         for (Object item : values) {
             if (!(item instanceof Long || item instanceof Integer)) {
                 return false;
@@ -88,7 +126,7 @@ public abstract class SequenceStorageFactory {
         return true;
     }
 
-    public static long[] specializeToLong(Object[] values) {
+    private static long[] specializeToLong(Object[] values) {
         final long[] intVals = new long[values.length];
         for (int i = 0; i < values.length; i++) {
             long value = (values[i] instanceof Integer) ? (long) ((int) values[i]) : (long) values[i];
@@ -98,7 +136,7 @@ public abstract class SequenceStorageFactory {
         return intVals;
     }
 
-    public static boolean canSpecializeToDouble(Object[] values) {
+    private static boolean canSpecializeToDouble(Object[] values) {
         for (Object item : values) {
             if (!(item instanceof Double)) {
                 return false;
@@ -108,7 +146,7 @@ public abstract class SequenceStorageFactory {
         return true;
     }
 
-    public static double[] specializeToDouble(Object[] values) {
+    private static double[] specializeToDouble(Object[] values) {
         final double[] doubles = new double[values.length];
 
         for (int i = 0; i < values.length; i++) {
@@ -118,7 +156,7 @@ public abstract class SequenceStorageFactory {
         return doubles;
     }
 
-    public static boolean canSpecializeToBool(Object[] values) {
+    private static boolean canSpecializeToBool(Object[] values) {
         for (Object item : values) {
             if (!(item instanceof Boolean)) {
                 return false;
@@ -128,7 +166,7 @@ public abstract class SequenceStorageFactory {
         return true;
     }
 
-    public static boolean[] specializeToBool(Object[] values) {
+    private static boolean[] specializeToBool(Object[] values) {
         final boolean[] bools = new boolean[values.length];
 
         for (int i = 0; i < values.length; i++) {
@@ -137,45 +175,4 @@ public abstract class SequenceStorageFactory {
 
         return bools;
     }
-
-    public static boolean canSpecializeToList(Object[] values) {
-        for (Object item : values) {
-            if (!(item instanceof PList)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public static PList[] specializeToList(Object[] values) {
-        final PList[] list = new PList[values.length];
-
-        for (int i = 0; i < values.length; i++) {
-            list[i] = (PList) values[i];
-        }
-
-        return list;
-    }
-
-    public static boolean canSpecializeToTuple(Object[] values) {
-        for (Object item : values) {
-            if (!(item instanceof PTuple)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public static PTuple[] specializeToTuple(Object[] values) {
-        final PTuple[] list = new PTuple[values.length];
-
-        for (int i = 0; i < values.length; i++) {
-            list[i] = (PTuple) values[i];
-        }
-
-        return list;
-    }
-
 }

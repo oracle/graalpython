@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,12 +28,13 @@ package com.oracle.graal.python.nodes.subscript;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import java.util.function.Supplier;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -75,8 +76,8 @@ public abstract class DeleteItemNode extends StatementNode {
             @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
             @Override
-            public Object execute(Object arg, Object arg2) {
-                throw raiseNode.raise(TypeError, "'%p' object doesn't support item deletion", arg);
+            public Object execute(VirtualFrame frame, Object arg, Object arg2) {
+                throw raiseNode.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, arg);
             }
         };
     }
@@ -96,7 +97,7 @@ public abstract class DeleteItemNode extends StatementNode {
     }
 
     protected LookupAndCallBinaryNode createDelItemNode() {
-        return LookupAndCallBinaryNode.create(SpecialMethodNames.__DELITEM__, null, notImplementedHandler);
+        return LookupAndCallBinaryNode.create(SpecialMethodSlot.DelItem, notImplementedHandler);
 
     }
 

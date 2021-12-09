@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,28 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class LazyString implements CharSequence {
-
-    protected static final int MinLazyStringLength;
-    protected static final boolean UseLazyStrings;
-    static {
-        if (ImageInfo.inImageBuildtimeCode()) {
-            MinLazyStringLength = PythonOptions.MinLazyStringLength.getDefaultValue();
-            UseLazyStrings = PythonOptions.LazyStrings.getDefaultValue();
-        } else {
-            MinLazyStringLength = PythonOptions.getMinLazyStringLength();
-            UseLazyStrings = PythonOptions.useLazyString();
-        }
-    }
-
+public final class LazyString implements PCharSequence {
     public static int length(CharSequence cs, ConditionProfile profile1, ConditionProfile profile2) {
         if (profile1.profile(cs instanceof String)) {
             return ((String) cs).length();
@@ -76,53 +62,35 @@ public class LazyString implements CharSequence {
         return cs.length();
     }
 
-    @TruffleBoundary
-    public static CharSequence create(CharSequence left, CharSequence right) {
-        assert PGuards.isString(left) || left instanceof LazyString;
-        assert PGuards.isString(right) || right instanceof LazyString;
-        if (UseLazyStrings) {
-            if (left.length() == 0) {
-                return right;
-            } else if (right.length() == 0) {
-                return left;
-            }
-            int resultLength = left.length() + right.length();
-            if (resultLength < MinLazyStringLength) {
-                return left.toString() + right.toString();
-            }
-            return new LazyString(left, right, resultLength);
-        } else {
-            return left.toString() + right.toString();
-        }
-    }
-
     /**
      * Only use when invariants are checked already, e.g. from specializing nodes.
      */
     @TruffleBoundary
     public static CharSequence createChecked(CharSequence left, CharSequence right, int length) {
-        assert assertChecked(left, right, length);
+        assert assertChecked(PythonContext.get(null), left, right, length);
         return new LazyString(left, right, length);
     }
 
-    private static boolean assertChecked(CharSequence left, CharSequence right, int length) {
-        assert UseLazyStrings;
+    private static boolean assertChecked(PythonContext context, CharSequence left, CharSequence right, int length) {
+        assert context.getOption(PythonOptions.LazyStrings);
         assert (PGuards.isString(left) || left instanceof LazyString) && (PGuards.isString(right) || right instanceof LazyString);
         assert length == left.length() + right.length();
         assert left.length() > 0 && right.length() > 0;
-        assert length >= MinLazyStringLength;
+        assert length >= context.getOption(PythonOptions.MinLazyStringLength);
         return true;
     }
 
     /**
      * Variant of {@link #createChecked} that tries to concatenate a very short string to an already
      * short root leaf up-front, e.g. when appending single characters.
+     *
+     * @param minLazyStringLength
      */
     @TruffleBoundary
-    public static CharSequence createCheckedShort(CharSequence left, CharSequence right, int length) {
-        assertChecked(left, right, length);
+    public static CharSequence createCheckedShort(CharSequence left, CharSequence right, int length, int minLazyStringLength) {
+        assertChecked(PythonContext.get(null), left, right, length);
         final int tinyLimit = 1;
-        final int appendToLeafLimit = MinLazyStringLength / 2;
+        final int appendToLeafLimit = minLazyStringLength / 2;
         if (left instanceof LazyString && right instanceof String && right.length() <= tinyLimit) {
             CharSequence ll = ((LazyString) left).left;
             CharSequence lr = ((LazyString) left).right;
@@ -157,22 +125,26 @@ public class LazyString implements CharSequence {
 
     @Override
     public String toString() {
-        if (!isFlat()) {
-            flatten();
+        if (!isMaterialized()) {
+            return materialize();
         }
         return (String) left;
     }
 
-    private boolean isFlat() {
+    @Override
+    public boolean isMaterialized() {
         return right == null;
     }
 
+    @Override
     @TruffleBoundary
-    private void flatten() {
+    public final String materialize() {
         char[] dst = new char[len];
-        flatten(this, 0, len, dst, 0);
-        left = new String(dst);
+        LazyString.flatten(this, 0, len, dst, 0);
+        String flattened = new String(dst);
+        left = flattened;
         right = null;
+        return flattened;
     }
 
     private static void flatten(CharSequence src, int srcBegin, int srcEnd, char[] dst, int dstBegin) {

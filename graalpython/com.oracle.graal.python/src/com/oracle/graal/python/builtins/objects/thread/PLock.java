@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,45 +43,43 @@ package com.oracle.graal.python.builtins.objects.thread;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PLock extends AbstractPythonLock {
     private final Semaphore semaphore;
 
     @TruffleBoundary
-    public PLock(LazyPythonClass cls) {
-        super(cls);
+    public PLock(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
         semaphore = new Semaphore(1);
     }
 
     @Override
     @TruffleBoundary
-    protected boolean acquireNonBlocking() {
+    public boolean acquireNonBlocking() {
         return semaphore.tryAcquire();
     }
 
     @Override
     @TruffleBoundary
-    protected boolean acquireBlocking() {
-        try {
-            semaphore.acquire();
-            return true;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
+    public boolean acquireBlocking(Node node) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> {
+            s.acquire();
+            b[0] = true;
+        }, semaphore);
+        return b[0];
     }
 
     @Override
     @TruffleBoundary
-    protected boolean acquireTimeout(long timeout) {
-        try {
-            return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
+    public boolean acquireTimeout(Node node, long timeout) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> b[0] = s.tryAcquire(timeout, TimeUnit.MILLISECONDS), semaphore);
+        return b[0];
     }
 
     @Override

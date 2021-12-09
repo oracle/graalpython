@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -59,9 +59,13 @@ def test_import():
 def test_get_setlocale():
     import locale
     current_locale = locale.getlocale(0)
+    new_locale = ('en_GB', 'UTF-8')
     try:
-        new_locale = ('en_GB', 'UTF-8')
-        assert str(locale.setlocale(0, new_locale)) == '.'.join(new_locale)
+        try:
+            assert str(locale.setlocale(0, new_locale)) == '.'.join(new_locale)
+        except locale.Error:
+            # Skip when unavailable in the CI
+            return
         assert locale.getlocale(0) == new_locale
     finally:
-        assert str(locale.setlocale(0, current_locale)) == '.'.join(current_locale)
+        locale.setlocale(0, current_locale)

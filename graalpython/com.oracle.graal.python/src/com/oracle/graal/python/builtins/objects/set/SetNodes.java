@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,69 +45,70 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@GenerateNodeFactory
 public abstract class SetNodes {
 
-    @ImportStatic({PGuards.class, SpecialMethodNames.class})
+    @ImportStatic({PGuards.class, SpecialMethodNames.class, PythonOptions.class})
     public abstract static class ConstructSetNode extends PNodeWithContext {
         @Child private PRaiseNode raise;
         @Child private SetItemNode setItemNode;
+        @Child private PythonObjectFactory factory;
 
-        public abstract PSet execute(VirtualFrame frame, LazyPythonClass cls, Object value);
+        public abstract PSet execute(VirtualFrame frame, Object cls, Object value);
 
         public final PSet executeWith(VirtualFrame frame, Object value) {
             return this.execute(frame, PythonBuiltinClassType.PSet, value);
         }
 
         @Specialization
-        PSet setString(VirtualFrame frame, LazyPythonClass cls, String arg,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            PSet set = factory.createSet(cls);
+        PSet setString(VirtualFrame frame, Object cls, String arg) {
+            PSet set = factory().createSet(cls);
             for (int i = 0; i < PString.length(arg); i++) {
-                getSetItemNode().execute(frame, set, PString.valueOf(PString.charAt(arg, i)), PNone.NO_VALUE);
+                getSetItemNode().execute(frame, set, PString.valueOf(PString.charAt(arg, i)), PNone.NONE);
             }
             return set;
         }
 
         @Specialization(guards = "emptyArguments(none)")
-        @SuppressWarnings("unused")
-        PSet set(LazyPythonClass cls, PNone none,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createSet();
+        PSet set(Object cls, @SuppressWarnings("unused") PNone none) {
+            return factory().createSet(cls);
         }
 
         @Specialization(guards = "!isNoValue(iterable)")
-        PSet setIterable(VirtualFrame frame, LazyPythonClass cls, Object iterable,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+        PSet setIterable(VirtualFrame frame, Object cls, Object iterable,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
 
-            PSet set = factory.createSet(cls);
-            Object iterator = getIterator.executeWith(frame, iterable);
+            PSet set = factory().createSet(cls);
+            Object iterator = getIter.execute(frame, iterable);
             while (true) {
                 try {
-                    getSetItemNode().execute(frame, set, next.execute(frame, iterator), PNone.NO_VALUE);
+                    getSetItemNode().execute(frame, set, nextNode.execute(frame, iterator), PNone.NONE);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return set;
@@ -116,12 +117,12 @@ public abstract class SetNodes {
         }
 
         @Fallback
-        PSet setObject(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
+        PSet setObject(@SuppressWarnings("unused") Object cls, Object value) {
             if (raise == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raise = insert(PRaiseNode.create());
             }
-            throw raise.raise(TypeError, "'%p' object is not iterable", value);
+            throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, value);
         }
 
         private SetItemNode getSetItemNode() {
@@ -132,8 +133,45 @@ public abstract class SetNodes {
             return setItemNode;
         }
 
+        private PythonObjectFactory factory() {
+            if (factory == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                factory = insert(PythonObjectFactory.create());
+            }
+            return factory;
+        }
+
         public static ConstructSetNode create() {
             return SetNodesFactory.ConstructSetNodeGen.create();
+        }
+    }
+
+    public abstract static class DiscardNode extends PythonBinaryBuiltinNode {
+
+        public abstract boolean execute(VirtualFrame frame, PSet self, Object key);
+
+        @Specialization(limit = "3")
+        boolean discard(VirtualFrame frame, PSet self, Object key,
+                        @Cached BranchProfile updatedStorage,
+                        @Cached BaseSetBuiltins.ConvertKeyNode conv,
+                        @Cached ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage storage = self.getDictStorage();
+            HashingStorage newStore = null;
+            // TODO: FIXME: this might call __hash__ twice
+            Object checkedKey = conv.execute(key);
+            boolean hasKey = lib.hasKeyWithFrame(storage, checkedKey, hasFrame, frame);
+            if (hasKey) {
+                newStore = lib.delItemWithFrame(storage, checkedKey, hasFrame, frame);
+            }
+
+            if (hasKey) {
+                if (newStore != storage) {
+                    updatedStorage.enter();
+                    self.setDictStorage(newStore);
+                }
+            }
+            return hasKey;
         }
     }
 }

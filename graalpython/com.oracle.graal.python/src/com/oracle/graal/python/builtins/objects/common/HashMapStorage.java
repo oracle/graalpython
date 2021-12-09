@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,173 +41,293 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
+/**
+ * Hashing storage that can be used for any type of key that does not override {@code __hash__} and
+ * {@code __equals__} and uses the default Java hash code and equality. This may be extended by
+ * using wrapper that would delegate to GraalPython's internal hash code and equality
+ * implementations as long as those have no visible side effects. For now we use this strategy only
+ * for string keys.
+ */
+@ExportLibrary(HashingStorageLibrary.class)
 public class HashMapStorage extends HashingStorage {
+    public static final int SIZE_THRESHOLD = 100;
 
-    private final HashMap<Object, Object> map;
+    private final LinkedHashMap<Object, Object> values;
 
-    @TruffleBoundary
-    public HashMapStorage(Map<? extends Object, ? extends Object> map) {
-        this.map = new HashMap<>(map);
+    public HashMapStorage(int capacity) {
+        this.values = newHashMap(capacity);
     }
 
-    @TruffleBoundary
     public HashMapStorage() {
-        map = new HashMap<>();
+        this.values = newHashMap();
     }
 
-    @Override
+    public HashMapStorage(LinkedHashMap<Object, Object> map) {
+        values = map;
+    }
+
     @TruffleBoundary
-    public void addAll(HashingStorage other, Equivalence eq) {
-        for (DictEntry e : other.entries()) {
-            map.put(wrap(e.getKey(), eq), e.getValue());
+    private static LinkedHashMap<Object, Object> newHashMap() {
+        return new LinkedHashMap<>();
+    }
+
+    @TruffleBoundary
+    private static LinkedHashMap<Object, Object> newHashMap(int capacity) {
+        return new LinkedHashMap<>(capacity);
+    }
+
+    @TruffleBoundary
+    private static LinkedHashMap<Object, Object> newHashMap(Map<?, ?> map) {
+        return new LinkedHashMap<>(map);
+    }
+
+    @TruffleBoundary
+    private static LinkedHashMap<Object, Object> newHashMap(LinkedHashMap<Object, Object> map) {
+        return new LinkedHashMap<>(map);
+    }
+
+    static boolean isSupportedKey(Object obj, IsBuiltinClassProfile isBuiltinClassProfile) {
+        return PGuards.isBuiltinString(obj, isBuiltinClassProfile);
+    }
+
+    private static final class CustomKey {
+        private final Object value;
+        private final int hash;
+
+        private CustomKey(Object value, int hash) {
+            this.value = value;
+            this.hash = hash;
         }
-    }
 
-    @Override
-    @TruffleBoundary
-    public Object getItem(Object key, Equivalence eq) {
-        return map.get(wrap(key, eq));
-    }
-
-    private static Object wrap(Object key, Equivalence eq) {
-        if (key instanceof PythonObject) {
-            return new KeyWrapper(eq, key);
-        }
-        return key;
-    }
-
-    private static Object unwrap(Object key) {
-        if (key instanceof KeyWrapper) {
-            return ((KeyWrapper) key).key;
-        }
-        return key;
-    }
-
-    @Override
-    @TruffleBoundary
-    public void setItem(Object key, Object value, Equivalence eq) {
-        map.put(wrap(key, eq), value);
-    }
-
-    @TruffleBoundary
-    public Iterable<Object> items() {
-        return wrapJavaIterable(map.values());
-    }
-
-    @Override
-    @TruffleBoundary
-    public Iterable<Object> keys() {
-        ArrayList<Object> keys = new ArrayList<>(map.size());
-        for (Object key : map.keySet()) {
-            keys.add(unwrap(key));
-        }
-        return wrapJavaIterable(keys);
-    }
-
-    public Map<Object, Object> getStore() {
-        return map;
-    }
-
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder buf = new StringBuilder("{");
-        int length = map.size();
-        int i = 0;
-
-        for (Entry<?, ?> entry : map.entrySet()) {
-            buf.append(entry.getKey() + ": " + entry.getValue());
-
-            if (i < length - 1) {
-                buf.append(", ");
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
             }
-
-            i++;
-        }
-
-        buf.append("}");
-        return buf.toString();
-    }
-
-    @Override
-    public int length() {
-        return map.size();
-    }
-
-    @Override
-    @TruffleBoundary
-    public boolean remove(Object key, Equivalence eq) {
-        return map.remove(wrap(key, eq)) != null;
-    }
-
-    @Override
-    @TruffleBoundary
-    public Iterable<Object> values() {
-        return wrapJavaIterable(map.values());
-    }
-
-    @Override
-    @TruffleBoundary
-    public Collection<DictEntry> entries() {
-        ArrayList<DictEntry> entries = new ArrayList<>(map.size());
-        for (Map.Entry<Object, Object> entry : map.entrySet()) {
-            entries.add(new DictEntry(entry.getKey(), entry.getValue()));
-        }
-        return entries;
-    }
-
-    private static class KeyWrapper {
-        private final Equivalence eq;
-        private final Object key;
-        private final long hash;
-
-        public KeyWrapper(Equivalence eq, Object key2) {
-            this.eq = eq;
-            this.key = key2;
-            this.hash = eq.hashCode(key2);
+            if (other == null) {
+                return false;
+            }
+            Object otherValue = other;
+            if (other instanceof CustomKey) {
+                otherValue = ((CustomKey) other).value;
+                if (hash != ((CustomKey) other).hash) {
+                    return false;
+                }
+            } else if (hash != other.hashCode()) {
+                return false;
+            }
+            // Hopefully it will be uncommon that the object we search for will have the same hash
+            // as some of the items in the storage (it may even equal to some of those items), so
+            // the uncached equals call does not hurt that much here
+            return PyObjectRichCompareBool.EqNode.getUncached().execute(null, value, otherValue);
         }
 
         @Override
         public int hashCode() {
-            return (int) hash;
+            return hash;
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o instanceof KeyWrapper) {
-                KeyWrapper other = (KeyWrapper) o;
-                return eq.equals(key, other.key);
-            }
-            return false;
-        }
-
     }
 
+    @ExportMessage
     @Override
+    public int length() {
+        return size(values);
+    }
+
     @TruffleBoundary
-    public void clear() {
+    private static int size(LinkedHashMap<Object, Object> map) {
+        return map.size();
+    }
+
+    @ExportMessage
+    static class GetItemWithState {
+        @Specialization
+        static Object getItemString(HashMapStorage self, String key, @SuppressWarnings("unused") ThreadState state) {
+            return get(self.values, key);
+        }
+
+        @Specialization(replaces = "getItemString", guards = "isSupportedKey(key, profile)")
+        static Object getItem(HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
+                        @Cached CastToJavaStringNode castNode,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile) {
+            return get(self.values, castNode.execute(key));
+        }
+
+        @TruffleBoundary
+        private static Object get(LinkedHashMap<Object, Object> values, Object key) {
+            return values.get(key);
+        }
+
+        @Specialization(guards = "!isSupportedKey(key, profile)", limit = "1")
+        static Object getItemNotSupportedKey(@SuppressWarnings("unused") HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
+                        @Shared("classProfile") @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
+            // we must still search the map for items that may have the same hash and that may
+            // return true from key.__eq__, we use artificial object with overridden Java level
+            // equals and hashCode methods to perform this search
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            long hash = hashNode.execute(frame, key);
+            if (PInt.isIntRange(hash)) {
+                CustomKey keyObj = new CustomKey(key, (int) hash);
+                return get(self.values, keyObj);
+            }
+            // else the hashes cannot possibly match
+            return null;
+        }
+    }
+
+    @ExportMessage
+    static class SetItemWithState {
+        @Specialization
+        static HashingStorage setItemString(HashMapStorage self, String key, Object value, @SuppressWarnings("unused") ThreadState state) {
+            put(self.values, key, value);
+            return self;
+        }
+
+        @Specialization(replaces = "setItemString", guards = "isSupportedKey(key, profile)")
+        static HashingStorage setItem(HashMapStorage self, Object key, Object value, @SuppressWarnings("unused") ThreadState state,
+                        @Cached CastToJavaStringNode castNode,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile) {
+            put(self.values, castNode.execute(key), value);
+            return self;
+        }
+
+        @Specialization(guards = "!isSupportedKey(key, profile)", limit = "3")
+        static HashingStorage setItemNotSupportedKey(HashMapStorage self, Object key, Object value, @SuppressWarnings("unused") ThreadState state,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary newLib) {
+            HashingStorage newStore = EconomicMapStorage.create(self.length());
+            thisLib.addAllToOther(self, newStore);
+            newLib.setItem(newStore, key, value);
+            return newStore;
+        }
+    }
+
+    @ExportMessage
+    static class DelItemWithState {
+        @Specialization
+        static HashingStorage delItemString(HashMapStorage self, String key, @SuppressWarnings("unused") ThreadState state) {
+            remove(self.values, key);
+            return self;
+        }
+
+        @Specialization(replaces = "delItemString", guards = "isSupportedKey(key, profile)")
+        static HashingStorage delItem(HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
+                        @Cached CastToJavaStringNode castNode,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile) {
+            remove(self.values, castNode.execute(key));
+            return self;
+        }
+
+        @TruffleBoundary
+        private static void remove(LinkedHashMap<Object, Object> values, Object key) {
+            values.remove(key);
+        }
+
+        @Specialization(guards = "!isSupportedKey(key, profile)", limit = "1")
+        static HashingStorage delItemNonSupportedKey(HashMapStorage self, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") ThreadState state,
+                        @Shared("classProfile") @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
+            // we must still search the map for items that may have the same hash and that may
+            // return true from key.__eq__, we use artificial object with overridden Java level
+            // equals and hashCode methods to perform this search
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            long hash = hashNode.execute(frame, key);
+            if (PInt.isIntRange(hash)) {
+                CustomKey keyObj = new CustomKey(key, (int) hash);
+                remove(self.values, keyObj);
+            }
+            // else the hashes cannot possibly match
+            return self;
+        }
+    }
+
+    @ExportMessage
+    @Override
+    Object forEachUntyped(ForEachNode<Object> node, Object argIn) {
+        Object arg = argIn;
+        for (Object key : keys()) {
+            arg = node.execute(key, arg);
+        }
+        return arg;
+    }
+
+    @ExportMessage
+    @Override
+    public HashingStorage clear() {
+        clearMap(values);
+        return this;
+    }
+
+    @TruffleBoundary
+    private static void clearMap(LinkedHashMap<Object, Object> map) {
         map.clear();
     }
 
+    @ExportMessage
     @Override
-    @TruffleBoundary
-    public HashingStorage copy(Equivalence eq) {
-        return new HashMapStorage(map);
+    public HashingStorage copy() {
+        return new HashMapStorage(newHashMap(values));
     }
 
+    @ExportMessage
     @Override
+    public HashingStorageIterable<Object> keys() {
+        return new HashingStorageIterable<>(getKeysIterator(values));
+    }
+
+    private static Iterator<Object> getKeysIterator(LinkedHashMap<Object, Object> map) {
+        return map.keySet().iterator();
+    }
+
+    @ExportMessage
+    @Override
+    public HashingStorageIterable<Object> reverseKeys() {
+        return new HashingStorageIterable<>(getReverseIterator(values));
+    }
+
     @TruffleBoundary
-    public boolean hasKey(Object key, Equivalence eq) {
-        return map.containsKey(wrap(key, eq));
+    private static Iterator<Object> getReverseIterator(LinkedHashMap<Object, Object> values) {
+        ArrayList<Object> keys = new ArrayList<>(values.keySet());
+        Collections.reverse(keys);
+        return keys.iterator();
+    }
+
+    public void put(String key, Object value) {
+        put(values, key, value);
+    }
+
+    @TruffleBoundary
+    private static void put(LinkedHashMap<Object, Object> values, Object key, Object value) {
+        values.put(key, value);
     }
 
 }

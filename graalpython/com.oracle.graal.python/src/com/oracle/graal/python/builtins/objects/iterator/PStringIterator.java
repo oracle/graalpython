@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,15 +25,13 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PStringIterator extends PBuiltinIterator {
-
     final String value;
-    int index;
 
-    public PStringIterator(LazyPythonClass clazz, String value) {
-        super(clazz);
+    public PStringIterator(Object clazz, Shape instanceShape, String value) {
+        super(clazz, instanceShape);
         this.value = value;
     }
 }

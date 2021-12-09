@@ -57,7 +57,6 @@ class TestCase(unittest.TestCase):
         scheduler.run()
         self.assertEqual(l, [0.01, 0.02, 0.03, 0.04, 0.05])
 
-    @unittest.skipIfGraalPythonWitoutThreads
     def test_enter_concurrent(self):
         q = queue.Queue()
         fun = q.put
@@ -111,7 +110,6 @@ class TestCase(unittest.TestCase):
         scheduler.run()
         self.assertEqual(l, [0.02, 0.03, 0.04])
 
-    @unittest.skipIfGraalPythonWitoutThreads
     def test_cancel_concurrent(self):
         q = queue.Queue()
         fun = q.put

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,24 @@ import sys
 import _io
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
+
+
+class CallableIter:
+    def __init__(self, start):
+        self.idx = start
+    
+    def __call__(self, *args):
+        cur = self.idx
+        self.idx += 1
+        return cur
+
+
+def kw_fun(a, b=0, c=0):
+    return {"a": a, "b": b, "c": c}
+
+
+def kwonly_fun(**kwargs):
+    return kwargs
 
 
 class TestPyObject(CPyExtTestCase):
@@ -102,17 +120,41 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* op", "PyTypeObject* type"],
         resultspec="i",
     )
+
     __PyObject_Call_ARGS = (
             (len, ((1, 2, 3),), {}),
             (sum, ((0, 1, 2),), {}),
             (format, (object(),), {"format_spec": ""}),
+            (sum, ("hello, world",), {}),
+            (kw_fun, (123,), {"c": 456, "b": 789}),
+            (kwonly_fun, tuple(), {"x": 456, "y": 789}),
+            (sum, ("hello, world",), None),
+            (kwonly_fun, tuple(), None),
         )
 
     test_PyObject_Call = CPyExtFunction(
-        lambda args: args[0](*args[1], **args[2]),
+        lambda args: args[0](*args[1], **args[2]) if args[2] else args[0](*args[1], **dict()),
         lambda: TestPyObject.__PyObject_Call_ARGS,
+        code='''#include <stdio.h>
+        PyObject * wrap_PyObject_Call(PyObject *callable, PyObject *args, PyObject *kwargs) {
+            if(kwargs == Py_None) {
+                return PyObject_Call(callable, args, NULL);
+            }
+            return PyObject_Call(callable, args, kwargs);
+        }
+        ''',
         arguments=["PyObject* callable", "PyObject* callargs", "PyObject* kwargs"],
         argspec="OOO",
+        callfunction="wrap_PyObject_Call",
+    )
+    test__PyObject_CallNoArg = CPyExtFunction(
+        lambda args: args[0](),
+        lambda: (
+            (dict, ),
+            (list, ),
+        ),
+        arguments=["PyObject* callable"],
+        argspec="O",
     )
     test_PyObject_CallObject = CPyExtFunction(
         lambda args: args[0](*args[1]),
@@ -127,9 +169,20 @@ class TestPyObject(CPyExtTestCase):
         lambda args: args[0](args[2], args[3]),
         lambda: (
             (sum, "Oi", [], 10),
+            (sum, "Oi", [], 10),
         ),
         arguments=["PyObject* callable", "const char* fmt", "PyObject* list", "int initial"],
         argspec="OsOi",
+    )
+    test_PyObject_CallFunction0 = CPyExtFunction(
+        lambda args: args[0](),
+        lambda: (
+            (list, ""),
+            (bool, ""),
+        ),
+        arguments=["PyObject* callable", "const char* fmt"],
+        argspec="Os",
+        callfunction="PyObject_CallFunction",
     )
 
     class MyObject():
@@ -139,8 +192,6 @@ class TestPyObject(CPyExtTestCase):
 
         def __hash__(self):
             return 42
-
-    __MyObject_SINGLETON = MyObject()
 
     test_PyObject_CallMethod = CPyExtFunction(
         lambda args: getattr(args[0], args[1])(args[3], args[4]),
@@ -215,11 +266,27 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* object", "PyObject* format_spec"],
         argspec="OO",
     )
+
     test_PyObject_GetIter = CPyExtFunction(
         iter,
         lambda: ([], {}, (0,)),
         cmpfunc=(lambda x, y: type(x) == type(y))
     )
+
+    test_PyCallIter_New = CPyExtFunction(
+        lambda args: iter(args[0], args[1]),
+        lambda: (
+            (lambda: 1, 1),
+            (CallableIter(0), 10),
+            (CallableIter(5), 7),
+            (CallableIter(5), 5),
+        ),
+        arguments=["PyObject* callable", "PyObject* sentinel"],
+        argspec="OO",
+        resultspec="O",
+        cmpfunc=(lambda x, y: list(x) == list(y))
+    )
+
     test_PyObject_IsInstance = CPyExtFunction(
         lambda args: 1 if isinstance(*args) else 0,
         lambda: (
@@ -345,17 +412,7 @@ class TestPyObject(CPyExtTestCase):
         lambda: ([], 1, 42, "abc", {}, type),
     )
     test_PyObject_GenericGetAttr = test_PyObject_GetAttr
-    test_PyObject_Hash = CPyExtFunction(
-        lambda arg: hash(arg),
-        lambda: (42, TestPyObject.__MyObject_SINGLETON),
-        resultspec="i"
-    )
-    # test_PyObject_HashNotImplemented = CPyExtFunction(
-    #     SystemError,
-    #     (42, MyObject),
-    #     resultspec="i",
-    #     cmpfunc=lambda x,y: type(x)==type(y) if (isinstance(x,BaseException) and isinstance(y,BaseException)) else x==y
-    # )
+
     test_PyObject_IsTrue = CPyExtFunction(
         lambda arg: 1 if bool(arg) else 0,
         lambda: (1, 0, -1, {}, [], [1]),

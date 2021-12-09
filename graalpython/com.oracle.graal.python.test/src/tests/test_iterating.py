@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -125,7 +125,19 @@ def test_sentinel_iter1():
     res = list(it)
     assert expected == res, "unexpected result, was {}".format(res)
 
+def test_sentinel_bogus_iterable():
+    class BogusIterObj:        
+        __call__ = 1
 
+    it = iter(BogusIterObj(), 42)
+    try:
+        for i in it: 
+            pass
+    except TypeError: 
+        pass
+    else: 
+        assert False
+    
 def test_array_from_iterable():
     class CustomIterator(object):
         elem = 10

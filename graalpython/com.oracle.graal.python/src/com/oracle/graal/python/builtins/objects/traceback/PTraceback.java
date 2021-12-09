@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,85 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class PTraceback extends PythonBuiltinObject {
+    public static final int UNKNOWN_LINE_NUMBER = -2;
 
-    /** A marker object to indicate the end of a traceback chain. */
-    public static final PTraceback NO_TRACEBACK = new PTraceback(PythonBuiltinClassType.PTraceback, null, (PException) null);
+    private PFrame frame;
+    private PFrame.Reference frameInfo;
+    private int lineno = UNKNOWN_LINE_NUMBER;
+    private int lasti;
+    private PTraceback next;
+    private LazyTraceback lazyTraceback;
+
+    public PTraceback(PythonLanguage lang, PFrame frame, int lineno, PTraceback next) {
+        this(lang, frame, lineno, -1, next);
+    }
+
+    public PTraceback(PythonLanguage lang, PFrame frame, int lineno, int lasti, PTraceback next) {
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.getInstanceShape(lang));
+        this.frame = frame;
+        this.lineno = lineno;
+        this.lasti = lasti;
+        this.next = next;
+    }
+
+    public PTraceback(PythonLanguage lang, LazyTraceback lazyTraceback) {
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.getInstanceShape(lang));
+        this.lazyTraceback = lazyTraceback;
+        this.frameInfo = lazyTraceback.getFrameInfo();
+        this.frame = lazyTraceback.getFrame();
+        this.lineno = lazyTraceback.getLineNo();
+    }
+
+    public PFrame getFrame() {
+        return frame;
+    }
+
+    public void setFrame(PFrame frame) {
+        this.frame = frame;
+    }
+
+    public PFrame.Reference getFrameInfo() {
+        return frameInfo;
+    }
+
+    public int getLineno() {
+        return lineno;
+    }
+
+    public int getLasti() {
+        return lasti;
+    }
+
+    public LazyTraceback getLazyTraceback() {
+        return lazyTraceback;
+    }
+
+    public PTraceback getNext() {
+        return next;
+    }
+
+    public void setNext(PTraceback next) {
+        this.next = next;
+    }
+
+    public void setLineno(int lineno) {
+        this.lineno = lineno;
+    }
+
+    public void markMaterialized() {
+        this.lazyTraceback = null;
+    }
+
+    public boolean isMaterialized() {
+        return lazyTraceback == null;
+    }
 
     public static final String TB_FRAME = "tb_frame";
     public static final String TB_NEXT = "tb_next";
@@ -63,61 +130,4 @@ public final class PTraceback extends PythonBuiltinObject {
     static Object[] getTbFieldNames() {
         return TB_DIR_FIELDS.clone();
     }
-
-    // we have to keep the exception around to lazily create the tb_next element
-    // if that isn't available and still stored in the TruffleStackTrace
-    private final PException exception;
-
-    private final PFrame frame;
-    private final int lasti;
-    private PTraceback next;
-
-    public PTraceback(LazyPythonClass clazz, PFrame frame, PException exception) {
-        super(clazz);
-        this.frame = frame;
-        this.exception = exception;
-        this.lasti = 0;
-    }
-
-    public PTraceback(LazyPythonClass clazz, PFrame frame, PTraceback next) {
-        super(clazz);
-        this.frame = frame;
-        this.exception = next.exception;
-        this.next = next;
-        this.lasti = 0;
-    }
-
-    public PFrame getPFrame() {
-        return frame;
-    }
-
-    public int getLasti() {
-        return lasti;
-    }
-
-    public int getLineno() {
-        return frame.getLine();
-    }
-
-    public PTraceback getNext() {
-        return next;
-    }
-
-    public void setNext(PTraceback next) {
-        this.next = next;
-    }
-
-    public PException getException() {
-        return exception;
-    }
-
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        if (this == NO_TRACEBACK) {
-            return "NO_TRACEBACK";
-        }
-        return super.toString();
-    }
-
 }

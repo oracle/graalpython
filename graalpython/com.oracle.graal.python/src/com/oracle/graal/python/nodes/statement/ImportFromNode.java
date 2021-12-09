@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,35 +25,53 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyDictGetItemNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetAttrNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNodeFactory.PyModuleIsInitializingNodeGen;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
 public class ImportFromNode extends AbstractImportNode {
+    @Children private final WriteNode[] aslist;
+    @Child private PyDictGetItem getItem;
+    @Child private PyModuleIsInitializing isInitNode;
+    @Child private CastToJavaStringNode castToJavaStringNode;
+    @Child private PConstructAndRaiseNode constructAndRaiseNode;
+    @Child private PyObjectGetAttr getattr;
+
     private final String importee;
     private final int level;
-    private final String[] fromlist;
-    @Children private final WriteNode[] aslist;
-    @Child private GetAttributeNode getName;
-    @Child private GetItemNode getItem;
-    @Child private ReadAttributeFromObjectNode readModules;
-    @Child private LookupAndCallBinaryNode readNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-    @Child private PRaiseNode raiseNode;
-    private final IsBuiltinClassProfile attrErrorProfile = IsBuiltinClassProfile.create();
+
+    @Child private IsBuiltinClassProfile getAttrErrorProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile getFileErrorProfile = IsBuiltinClassProfile.create();
+    @CompilationFinal(dimensions = 1) private final String[] fromlist;
+
+    private PException raiseImportError(VirtualFrame frame, Object name, Object path, String format, Object... formatArgs) {
+        if (constructAndRaiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
+        }
+        throw constructAndRaiseNode.raiseImportError(frame, name, path, format, formatArgs);
+    }
 
     public static ImportFromNode create(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
         return new ImportFromNode(importee, fromlist, readNodes, level);
@@ -61,6 +79,14 @@ public class ImportFromNode extends AbstractImportNode {
 
     public String getImportee() {
         return importee;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public String[] getFromlist() {
+        return fromlist;
     }
 
     protected ImportFromNode(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
@@ -71,47 +97,84 @@ public class ImportFromNode extends AbstractImportNode {
     }
 
     @Override
-    @ExplodeLoop
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     public void executeVoid(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
         Object importedModule = importModule(frame, importee, globals, fromlist, level);
+        PDict sysModules = getContext().getSysModules();
+
         for (int i = 0; i < fromlist.length; i++) {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];
+            if (getattr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getattr = insert(PyObjectGetAttrNodeGen.create());
+            }
             try {
-                writeNode.doWrite(frame, readNode.executeObject(frame, importedModule, attr));
-            } catch (PException e) {
-                e.expectAttributeError(attrErrorProfile);
-                if (getName == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getName = insert(GetAttributeNode.create(__NAME__, null));
-                }
+                writeNode.executeObject(frame, getattr.execute(frame, importedModule, attr));
+            } catch (PException pe) {
+                pe.expectAttributeError(getAttrErrorProfile);
+                Object moduleName = "<unknown module name>";
+                Object modulePath = "unknown location";
+                String pkgname = null;
+                boolean readFile = true;
                 try {
-                    String pkgname;
-                    Object pkgname_o = getName.executeObject(frame, importedModule);
-                    if (pkgname_o instanceof PString) {
-                        pkgname = ((PString) pkgname_o).getValue();
-                    } else if (pkgname_o instanceof String) {
-                        pkgname = (String) pkgname_o;
-                    } else {
-                        throw e;
+                    moduleName = getattr.execute(frame, importedModule, __NAME__);
+                    try {
+                        pkgname = ensureCastToStringNode().execute(moduleName);
+                    } catch (CannotCastException cce) {
+                        readFile = false;
                     }
-                    String fullname = pkgname + "." + attr;
-                    if (getItem == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getItem = insert(GetItemNode.create());
-                        readModules = insert(ReadAttributeFromObjectNode.create());
+                } catch (PException pe2) {
+                    if (getAttrErrorProfile.profileException(pe2, PythonBuiltinClassType.AttributeError)) {
+                        readFile = false;
                     }
-                    Object sysModules = readModules.execute(getContext().getCore().lookupBuiltinModule("sys"), "modules");
-                    writeNode.doWrite(frame, getItem.execute(frame, sysModules, fullname));
-                } catch (PException e2) {
-                    if (raiseNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        raiseNode = insert(PRaiseNode.create());
+                }
+                if (pkgname != null) {
+                    String fullname = PString.cat(pkgname, ".", attr);
+                    Object resolvedFullname = ensureGetItemNode().execute(frame, sysModules, fullname);
+                    if (resolvedFullname != null) {
+                        writeNode.executeObject(frame, resolvedFullname);
+                        continue;
                     }
-                    throw raiseNode.raise(ImportError, "cannot import name '%s'", attr);
+                }
+                if (readFile) {
+                    try {
+                        modulePath = getattr.execute(frame, importedModule, __FILE__);
+                    } catch (PException pe3) {
+                        pe3.expectAttributeError(getFileErrorProfile);
+                    }
+                }
+                if (isModuleInitialising(frame, importedModule)) {
+                    throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, attr, moduleName);
+                } else {
+                    throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
                 }
             }
         }
+    }
+
+    private boolean isModuleInitialising(VirtualFrame frame, Object importedModule) {
+        if (isInitNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isInitNode = insert(PyModuleIsInitializingNodeGen.create());
+        }
+        return isInitNode.execute(frame, importedModule);
+    }
+
+    private PyDictGetItem ensureGetItemNode() {
+        if (getItem == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getItem = insert(PyDictGetItemNodeGen.create());
+        }
+        return getItem;
+    }
+
+    private CastToJavaStringNode ensureCastToStringNode() {
+        if (castToJavaStringNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castToJavaStringNode = insert(CastToJavaStringNode.create());
+        }
+        return castToJavaStringNode;
     }
 }

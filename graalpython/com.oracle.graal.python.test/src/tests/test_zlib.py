@@ -1,17 +1,20 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
-
+import os
 import unittest
 import zlib
 import binascii
-import re
 import sys
 
 pintNumber = 98765432109876543210
 longNumber = 9876543210
+GZ_FILE_NAME = 'testgzfile.gz'
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+GZ_PATH = os.path.join(DIR_PATH, GZ_FILE_NAME)
+
 
 class MyIntObject:
     def __init__(self, value):
@@ -80,13 +83,16 @@ class ChecksumTests(unittest.TestCase):
         self.assertEqual(zlib.crc32(foo), crc)
         self.assertEqual(binascii.crc32(b'spam'), zlib.crc32(b'spam'))
 
+    @unittest.skipIf(sys.version_info.minor < 8)
+    def test_index(self):
+        self.assertEqual(zlib.crc32(b'ahoj', MyIndexObject(10)), 3299199656)
+        self.assertEqual(zlib.adler32(b'ahoj', MyIndexObject(10)), 69992876)
+
     def test_wrong_inputs(self):
         self.assertRaises(TypeError, zlib.crc32, 10)
         self.assertRaises(TypeError, zlib.crc32, 'ahoj')
-        self.assertRaises(TypeError, zlib.crc32, b'ahoj', MyIndexObject(10))
         self.assertRaises(TypeError, zlib.adler32, 10)
         self.assertRaises(TypeError, zlib.adler32, 'ahoj')
-        self.assertRaises(TypeError, zlib.adler32, b'ahoj', MyIndexObject(10))
 
 class BaseCompressTestCase(object):
     def check_big_compress_buffer(self, size, compress_func):
@@ -118,26 +124,6 @@ class BaseCompressTestCase(object):
         finally:
             data = None
 
-    def assertRaisesRegex(self, expected_exception, expected_regex, function,
-                          *args, **kwargs):
-        """Asserts that the message in a raised exception matches a regex.
-
-        Args:
-            expected_exception: Exception class expected to be raised.
-            expected_regex: Regex (re.Pattern object or string) expected
-                    to be found in error message.
-            args: Function to be called and extra positional args.
-            kwargs: Extra kwargs.
-            msg: Optional message used in case of failure. Can only be used
-                    when assertRaisesRegex is used as a context manager.
-        """
-        try: 
-            function(*args, **kwargs)
-        except expected_exception as e:
-            if not re.compile(expected_regex).search(str(e)):
-                assert False, "exception message '%r' does not match '%r'" % (e, expected_regex)
-        else:
-            assert False, "expected '%r' to raise '%r'" % (self.function, exc_type)    
 
 class CompressTests(BaseCompressTestCase, unittest.TestCase):
     # Test compression in one go (whole message compression)
@@ -241,3 +227,14 @@ LAERTES
 
        Farewell.
 """
+
+
+GZ_DATA = b"01 LINE\n02 LINE\n03 LINE\n04 LINE\n05 LINE\n06 LINE\n07 LINE\n08 LINE\n09 LINE\n10 LINE\n11 LINE\n12 LINE"
+
+
+def test_gzip_decompress():
+    import contextlib
+    import gzip
+    with contextlib.closing(gzip.open(GZ_PATH, 'rb')) as g:
+        data = g.read()
+    assert data == GZ_DATA

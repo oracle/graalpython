@@ -1,0 +1,31 @@
+ModuleRootNode Name: <module 'while05'> SourceSection: [0,64]`while True:↵  if Fal...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,64]`while True:↵  if Fal...`
+    ExpressionWithSideEffect SourceSection: [0,64]`while True:↵  if Fal...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        BreakTargetNode SourceSection: [0,64]`while True:↵  if Fal...`
+          WhileNode SourceSection: None
+            WhileRepeatingNode SourceSection: None
+              YesNodeGen SourceSection: None
+                BooleanLiteralNode SourceSection: [6,10]`True`
+              ContinueTargetNode SourceSection: None
+                BlockNode SourceSection: None
+                  IfNode SourceSection: [14,36]`if False:↵    break↵...`
+                    YesNodeGen SourceSection: None
+                      BooleanLiteralNode SourceSection: [17,22]`False`
+                    BreakNode SourceSection: [28,33]`break`
+                    BlockNode SourceSection: None
+                  IfNode SourceSection: [36,60]`if True:↵    continu...`
+                    YesNodeGen SourceSection: None
+                      BooleanLiteralNode SourceSection: [39,43]`True`
+                    ContinueNode SourceSection: [49,57]`continue`
+                    BlockNode SourceSection: None
+                  ExpressionStatementNode SourceSection: [60,64]`pass`
+                    EmptyNode SourceSection: [60,64]`pass`
+          BlockNode SourceSection: None

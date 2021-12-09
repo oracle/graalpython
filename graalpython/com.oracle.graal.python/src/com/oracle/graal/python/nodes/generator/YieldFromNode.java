@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,61 +42,53 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.builtins.objects.generator.ThrowData;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class YieldFromNode extends AbstractYieldNode implements GeneratorControlNode {
-    @Child private GetIteratorNode iter = GetIteratorNode.create();
+    @Child private PyObjectGetIter getIter = PyObjectGetIter.create();
     @Child private GetNextNode next = GetNextNode.create();
     @Child private GeneratorAccessNode access = GeneratorAccessNode.create();
 
     @Child private GetAttributeNode getValue;
 
-    @Child private LookupInheritedAttributeNode getCloseNode;
+    @Child private GetAttributeNode getCloseNode;
     @Child private CallNode callCloseNode;
 
-    @Child private LookupInheritedAttributeNode getThrowNode;
+    @Child private GetAttributeNode getThrowNode;
     @Child private CallNode callThrowNode;
-    @Child private GetClassNode getExcClassNode;
 
-    @Child private LookupAndCallBinaryNode getSendNode;
+    @Child private GetAttributeNode getSendNode;
     @Child private CallNode callSendNode;
 
-    @Child private GetTracebackNode getTracebackNode;
+    @Child private WriteUnraisableNode writeUnraisableNode;
 
-    private final IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile stopIterProfile2 = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile stopIterProfile3 = IsBuiltinClassProfile.create();
-    private final IsBuiltinClassProfile genExitProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile stopIterProfile2 = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile stopIterProfile3 = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile genExitProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile hasNoCloseProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile hasNoThrowProfile = IsBuiltinClassProfile.create();
 
-    @CompilationFinal private int iteratorSlot;
-
-    private final BranchProfile noThrow = BranchProfile.create();
+    private final int iteratorSlot;
 
     @Child private ExpressionNode right;
 
-    @Child private PythonObjectFactory ofactory;
-
-    public YieldFromNode(ExpressionNode right) {
+    public YieldFromNode(ExpressionNode right, GeneratorInfo.Mutable generatorInfo) {
+        super(generatorInfo);
+        iteratorSlot = generatorInfo.nextIteratorSlotIndex();
         this.right = right;
     }
 
@@ -110,12 +102,12 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
             // ........_y = next(_i)
             // ....except StopIteration as _e:
             // ........_r = _e.value
-            _i = iter.executeWith(frame, right.execute(frame));
+            _i = getIter.execute(frame, right.execute(frame));
             try {
                 _y = next.execute(frame, _i);
             } catch (PException e) {
                 e.expectStopIteration(stopIterProfile1);
-                return getGetValue().executeObject(frame, e.getExceptionObject());
+                return getGetValue().executeObject(frame, e.setCatchingFrameAndGetEscapedException(frame, this));
             }
             access.setIterator(frame, iteratorSlot, _i);
         }
@@ -126,15 +118,16 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         while (true) {
             if (!access.isActive(frame, flagSlot)) {
                 access.setActive(frame, flagSlot, true);
+                access.setLastYieldIndex(frame, yieldIndex);
                 throw new YieldException(_y);
             } else {
                 access.setActive(frame, flagSlot, false);
                 _y = null;
                 // resuming from yield, write _s
                 Object _s = PArguments.getSpecialArgument(frame);
-                if (_s instanceof PException) {
+                if (_s instanceof ThrowData) {
                     gotException.enter();
-                    PException _e = (PException) _s;
+                    ThrowData _e = (ThrowData) _s;
                     // except GeneratorExit as _e:
                     // ....try:
                     // ........_m = _i.close
@@ -143,13 +136,20 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                     // ....else:
                     // ........_m()
                     // ....raise _e
-                    if (genExitProfile.profileException(_e, PythonBuiltinClassType.GeneratorExit)) {
+                    if (genExitProfile.profileObject(_e.pythonException, PythonBuiltinClassType.GeneratorExit)) {
                         access.setIterator(frame, iteratorSlot, null);
-                        Object close = getGetCloseNode().execute(_i);
-                        if (close != PNone.NO_VALUE) {
-                            getCallCloseNode().execute(frame, close, new Object[]{_i}, PKeyword.EMPTY_KEYWORDS);
+                        Object close = null;
+                        try {
+                            close = getGetCloseNode().executeObject(frame, _i);
+                        } catch (PException pe) {
+                            if (!hasNoCloseProfile.profileException(pe, PythonBuiltinClassType.AttributeError)) {
+                                ensureWriteUnraisable().execute(frame, pe.setCatchingFrameAndGetEscapedException(frame, this), null, _i);
+                            }
                         }
-                        throw _e;
+                        if (close != null) {
+                            getCallCloseNode().execute(frame, close);
+                        }
+                        throw PException.fromObject(_e.pythonException, this, _e.withJavaStacktrace);
                     }
                     // except BaseException as _e:
                     // ...._x = sys.exc_info()
@@ -163,23 +163,20 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                     // ........except StopIteration as _e:
                     // ............_r = _e.value
                     // ............break
-                    Object _m = getGetThrowNode().execute(_i);
-                    if (_m == PNone.NO_VALUE) {
-                        noThrow.enter();
+                    Object _m;
+                    try {
+                        _m = getGetThrowNode().executeObject(frame, _i);
+                    } catch (PException pe) {
+                        pe.expectAttributeError(hasNoThrowProfile);
                         access.setIterator(frame, iteratorSlot, null);
-                        throw _e;
-                    } else {
-                        try {
-                            _y = getCallThrowNode().execute(frame, _m,
-                                            new Object[]{_i, getExceptionClassNode().execute(((PException) _s).getExceptionObject()),
-                                                            ((PException) _s).getExceptionObject(),
-                                                            ensureGetTracebackNode().execute(frame, ((PException) _s).getExceptionObject())},
-                                            PKeyword.EMPTY_KEYWORDS);
-                        } catch (PException _e2) {
-                            access.setIterator(frame, iteratorSlot, null);
-                            _e2.expectStopIteration(stopIterProfile2);
-                            return getGetValue().executeObject(frame, _e2.getExceptionObject());
-                        }
+                        throw PException.fromObject(_e.pythonException, this, _e.withJavaStacktrace);
+                    }
+                    try {
+                        _y = getCallThrowNode().execute(frame, _m, _e.pythonException);
+                    } catch (PException _e2) {
+                        access.setIterator(frame, iteratorSlot, null);
+                        _e2.expectStopIteration(stopIterProfile2);
+                        return getGetValue().executeObject(frame, _e2.setCatchingFrameAndGetEscapedException(frame, this));
                     }
                 } else {
                     // else:
@@ -196,18 +193,22 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                             gotNothing.enter();
                             _y = next.execute(frame, _i);
                         } else {
-                            Object send = getGetSendNode().executeObject(frame, _i, "send");
+                            Object send = getGetSendNode().executeObject(frame, _i);
                             // send will be bound at this point
-                            _y = getCallSendNode().execute(frame, send, new Object[]{_s}, PKeyword.EMPTY_KEYWORDS);
+                            _y = getCallSendNode().execute(frame, send, _s);
                         }
                     } catch (PException _e) {
                         access.setIterator(frame, iteratorSlot, null);
                         _e.expectStopIteration(stopIterProfile3);
-                        return getGetValue().executeObject(frame, _e.getExceptionObject());
+                        return getGetValue().executeObject(frame, _e.setCatchingFrameAndGetEscapedException(frame, this));
                     }
                 }
             }
         }
+    }
+
+    public int getIteratorSlot() {
+        return iteratorSlot;
     }
 
     private GetAttributeNode getGetValue() {
@@ -218,18 +219,10 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         return getValue;
     }
 
-    private GetClassNode getExceptionClassNode() {
-        if (getExcClassNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getExcClassNode = insert(GetClassNode.create());
-        }
-        return getExcClassNode;
-    }
-
-    private LookupInheritedAttributeNode getGetCloseNode() {
+    private GetAttributeNode getGetCloseNode() {
         if (getCloseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getCloseNode = insert(LookupInheritedAttributeNode.create("close"));
+            getCloseNode = insert(GetAttributeNode.create("close"));
         }
         return getCloseNode;
     }
@@ -242,10 +235,10 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         return callCloseNode;
     }
 
-    private LookupInheritedAttributeNode getGetThrowNode() {
+    private GetAttributeNode getGetThrowNode() {
         if (getThrowNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getThrowNode = insert(LookupInheritedAttributeNode.create("throw"));
+            getThrowNode = insert(GetAttributeNode.create("throw"));
         }
         return getThrowNode;
     }
@@ -258,10 +251,10 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         return callThrowNode;
     }
 
-    private LookupAndCallBinaryNode getGetSendNode() {
+    private GetAttributeNode getGetSendNode() {
         if (getSendNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getSendNode = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__));
+            getSendNode = insert(GetAttributeNode.create("send"));
         }
         return getSendNode;
     }
@@ -274,15 +267,11 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         return callSendNode;
     }
 
-    private GetTracebackNode ensureGetTracebackNode() {
-        if (getTracebackNode == null) {
+    private WriteUnraisableNode ensureWriteUnraisable() {
+        if (writeUnraisableNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getTracebackNode = insert(GetTracebackNodeGen.create());
+            writeUnraisableNode = insert(WriteUnraisableNode.create());
         }
-        return getTracebackNode;
-    }
-
-    public void setIteratorSlot(int slot) {
-        this.iteratorSlot = slot;
+        return writeUnraisableNode;
     }
 }

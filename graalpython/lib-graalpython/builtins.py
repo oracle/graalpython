@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,32 +48,34 @@ def __import__(filename, module_name):
     import sys, _imp, posix
     module = sys.modules[module_name]
     if filename.startswith("%s"):
-        full_filename = filename % sys.graal_python_core_home
+        full_filename = filename % __graalpython__.core_home
         filename = filename[len("%s"):]
-    elif filename.startswith(sys.graal_python_stdlib_home):
+    elif filename.startswith(__graalpython__.stdlib_home):
         full_filename = filename
-        filename = filename[len(sys.graal_python_stdlib_home):]
+        filename = filename[len(__graalpython__.stdlib_home):]
     else:
         raise RuntimeError("There was an import during bootstrap outside the core or stdlib home.")
 
     # If we can, avoid opening the file and use our cached code
-    if not _imp.graal_python_has_cached_code(filename):
-        fd = posix.open(full_filename, posix.O_RDONLY)
-        content = posix.read(fd, sys.maxsize)
-        posix.close(fd)
+    if not __graalpython__.has_cached_code(filename):
+        content = __graalpython__.read_file(full_filename)
         code = compile(content, filename, "exec")
     else:
         # n.b.: for these builtin modules, there's never a full path and none of
         # them can be packages
-        code = _imp.graal_python_get_cached_code(filename)
+        code = __graalpython__.get_cached_code(filename)
 
     exec(code, module.__dict__)
     return module
 
 
+# TODO(fa): This was formerly located in 'property.py' which has been intrinsified but seemingly other modules rely
+#  on 'descriptor'. We should revisit that.
+def _f(): pass
+FunctionType = type(_f)
+descriptor = type(FunctionType.__code__)
+
 __import__("%s/functions.py", "builtins")
-__import__("%s/property.py", "builtins")
 __import__("%s/exceptions.py", "builtins")
 __import__("%s/super.py", "builtins")
 __import__("%s/ellipsis.py", "builtins")
-__import__("%s/timsort.py", "builtins")

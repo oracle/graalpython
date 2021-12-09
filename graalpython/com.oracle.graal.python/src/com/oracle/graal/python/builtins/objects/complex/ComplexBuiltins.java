@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,50 +40,82 @@
  */
 package com.oracle.graal.python.builtins.objects.complex;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateAndPrepareForFloat;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicProviders.FormatNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
+import com.oracle.graal.python.runtime.formatting.InternalFormat;
+import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PComplex)
 public class ComplexBuiltins extends PythonBuiltins {
@@ -94,7 +126,10 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __ABS__, minNumOfPositionalArgs = 1)
-    abstract static class AbsNode extends PythonBuiltinNode {
+    public abstract static class AbsNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeDouble(Object arg);
+
         @Specialization
         double abs(PComplex c) {
             double x = c.getReal();
@@ -127,7 +162,11 @@ public class ComplexBuiltins extends PythonBuiltins {
                     final double scaledH = Math.sqrt(scaledX * scaledX + scaledY * scaledY);
 
                     // remove scaling
-                    return scalb(scaledH, middleExp);
+                    double r = scalb(scaledH, middleExp);
+                    if (Double.isInfinite(r)) {
+                        throw raise(PythonErrorType.OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
+                    }
+                    return r;
                 }
             }
         }
@@ -223,12 +262,18 @@ public class ComplexBuiltins extends PythonBuiltins {
             // NaN and Infinite will return 1024 anywho so can use raw bits
             return (int) ((Double.doubleToRawLongBits(d) >>> 52) & 0x7ff) - 1023;
         }
+
+        public static AbsNode create() {
+            return ComplexBuiltinsFactory.AbsNodeFactory.create();
+        }
+
     }
 
+    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
     @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class AddNode extends PythonBuiltinNode {
+    abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
         PComplex doComplexLong(PComplex left, long right) {
             return factory().createComplex(left.getReal() + right, left.getImag());
@@ -252,20 +297,23 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @GenerateNodeFactory
-    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
-    abstract static class RAddNode extends AddNode {
-    }
-
-    @GenerateNodeFactory
+    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __TRUEDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class DivNode extends PythonBinaryBuiltinNode {
+    @GenerateNodeFactory
+    public abstract static class DivNode extends PythonBinaryBuiltinNode {
+
+        public abstract PComplex executeComplex(VirtualFrame frame, Object left, Object right);
+
+        public static DivNode create() {
+            return ComplexBuiltinsFactory.DivNodeFactory.create();
+        }
+
         @Specialization
         PComplex doComplexDouble(PComplex left, double right) {
             double opNormSq = right * right;
@@ -275,51 +323,106 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doComplex(PComplex left, PComplex right) {
-            double opNormSq = right.getReal() * right.getReal() + right.getImag() * right.getImag();
-            double realPart = left.getReal() * right.getReal() - left.getImag() * -right.getImag();
-            double imagPart = left.getReal() * -right.getImag() + left.getImag() * right.getReal();
+        PComplex doComplexInt(PComplex left, long right) {
+            double opNormSq = right * right;
+            double realPart = left.getReal() * right;
+            double imagPart = left.getImag() * right;
             return factory().createComplex(realPart / opNormSq, imagPart / opNormSq);
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class RDivNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PComplex doComplexDouble(PComplex right, double left) {
-            double opNormSq = left * left;
+        PComplex doComplexPInt(PComplex left, PInt right) {
+            return doComplexDouble(left, right.doubleValue());
+        }
+
+        @Specialization
+        PComplex doComplex(PComplex left, PComplex right,
+                        @Cached ConditionProfile topConditionProfile,
+                        @Cached ConditionProfile zeroDivisionProfile) {
+            double absRightReal = right.getReal() < 0 ? -right.getReal() : right.getReal();
+            double absRightImag = right.getImag() < 0 ? -right.getImag() : right.getImag();
+            double real;
+            double imag;
+            if (topConditionProfile.profile(absRightReal >= absRightImag)) {
+                /* divide tops and bottom by right.real */
+                if (zeroDivisionProfile.profile(absRightReal == 0.0)) {
+                    throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "complex");
+                } else {
+                    double ratio = right.getImag() / right.getReal();
+                    double denom = right.getReal() + right.getImag() * ratio;
+                    real = (left.getReal() + left.getImag() * ratio) / denom;
+                    imag = (left.getImag() - left.getReal() * ratio) / denom;
+                }
+            } else {
+                /* divide tops and bottom by right.imag */
+                double ratio = right.getReal() / right.getImag();
+                double denom = right.getReal() * ratio + right.getImag();
+                real = (left.getReal() * ratio + left.getImag()) / denom;
+                imag = (left.getImag() * ratio - left.getReal()) / denom;
+            }
+            return factory().createComplex(real, imag);
+        }
+
+        @Specialization
+        PComplex doComplexDouble(double left, PComplex right) {
+            return doubleDivComplex(left, right, factory());
+        }
+
+        @Specialization
+        PComplex doComplexInt(long left, PComplex right) {
+            double oprealSq = right.getReal() * right.getReal();
+            double opimagSq = right.getImag() * right.getImag();
             double realPart = right.getReal() * left;
             double imagPart = right.getImag() * left;
-            return factory().createComplex(opNormSq / realPart, opNormSq / imagPart);
+            double denom = oprealSq + opimagSq;
+            return factory().createComplex(realPart / denom, -imagPart / denom);
+        }
+
+        @Specialization
+        PComplex doComplexPInt(PInt left, PComplex right) {
+            return doComplexDouble(left.doubleValue(), right);
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        static PComplex doubleDivComplex(double left, PComplex right, PythonObjectFactory factory) {
+            double oprealSq = right.getReal() * right.getReal();
+            double opimagSq = right.getImag() * right.getImag();
+            double realPart = right.getReal() * left;
+            double imagPart = right.getImag() * left;
+            double denom = oprealSq + opimagSq;
+            return factory.createComplex(realPart / denom, -imagPart / denom);
+        }
+    }
+
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class RDivNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Fallback
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
+    @Builtin(name = __RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __DIVMOD__, minNumOfPositionalArgs = 2)
     abstract static class DivModNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         @SuppressWarnings("unused")
         PComplex doComplexDouble(Object right, Object left) {
-            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
         }
     }
 
     @GenerateNodeFactory
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -330,9 +433,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doComplex(PComplex left, PComplex right) {
-            double newReal = left.getReal() * right.getReal() - left.getImag() * right.getImag();
-            double newImag = left.getReal() * right.getImag() + left.getImag() * right.getReal();
-            return factory().createComplex(newReal, newImag);
+            return multiply(left, right, factory());
         }
 
         @Specialization
@@ -347,17 +448,19 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        static PComplex multiply(PComplex left, PComplex right, PythonObjectFactory factory) {
+            double newReal = left.getReal() * right.getReal() - left.getImag() * right.getImag();
+            double newImag = left.getReal() * right.getImag() + left.getImag() * right.getReal();
+            return factory.createComplex(newReal, newImag);
         }
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    abstract static class RMulNode extends MulNode {
-    }
-
-    @GenerateNodeFactory
+    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -371,10 +474,116 @@ public class ComplexBuiltins extends PythonBuiltins {
             return factory().createComplex(left.getReal() - right.getReal(), left.getImag() - right.getImag());
         }
 
+        @Specialization
+        PComplex doComplex(PComplex left, long right) {
+            return factory().createComplex(left.getReal() - right, left.getImag());
+        }
+
+        @Specialization
+        PComplex doComplexDouble(double left, PComplex right) {
+            return factory().createComplex(left - right.getReal(), -right.getImag());
+        }
+
+        @Specialization
+        PComplex doComplex(long left, PComplex right) {
+            return factory().createComplex(left - right.getReal(), -right.getImag());
+        }
+
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
+    @Builtin(name = __POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    abstract static class PowerNode extends PythonTernaryBuiltinNode {
+
+        static boolean isSmallPositive(long l) {
+            return l > 0 && l <= 100;
+        }
+
+        static boolean isSmallNegative(long l) {
+            return l <= 0 && l >= -100;
+        }
+
+        @Specialization(guards = "isSmallPositive(right)")
+        PComplex doComplexLongSmallPos(PComplex left, long right, @SuppressWarnings("unused") PNone mod) {
+            return checkOverflow(complexToSmallPositiveIntPower(left, right));
+        }
+
+        @Specialization(guards = "isSmallNegative(right)")
+        PComplex doComplexLongSmallNeg(PComplex left, long right, @SuppressWarnings("unused") PNone mod) {
+            return checkOverflow(DivNode.doubleDivComplex(1.0, complexToSmallPositiveIntPower(left, -right), factory()));
+        }
+
+        @Specialization(guards = "!isSmallPositive(right) || !isSmallNegative(right)")
+        PComplex doComplexLong(PComplex left, long right, @SuppressWarnings("unused") PNone mod) {
+            return checkOverflow(complexToComplexPower(left, factory().createComplex(right, 0.0)));
+        }
+
+        @Specialization
+        PComplex doComplexComplex(PComplex left, PComplex right, @SuppressWarnings("unused") PNone mod) {
+            return checkOverflow(complexToComplexPower(left, right));
+        }
+
+        @Specialization
+        PComplex doGeneric(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") PNone mod,
+                        @Cached CoerceToComplexNode coerceLeft,
+                        @Cached CoerceToComplexNode coerceRight) {
+            return checkOverflow(complexToComplexPower(coerceLeft.execute(frame, left), coerceRight.execute(frame, right)));
+        }
+
+        @Specialization(guards = "!isPNone(mod)")
+        @SuppressWarnings("unused")
+        Object doGeneric(Object left, Object right, Object mod) {
+            throw raise(ValueError, ErrorMessages.COMPLEX_MODULO);
+        }
+
+        private PComplex complexToSmallPositiveIntPower(PComplex x, long n) {
+            long mask = 1;
+            PComplex r = factory().createComplex(1.0, 0.0);
+            PComplex p = x;
+            while (mask > 0 && n >= mask) {
+                if ((n & mask) != 0) {
+                    r = MulNode.multiply(r, p, factory());
+                }
+                mask <<= 1;
+                p = MulNode.multiply(p, p, factory());
+            }
+            return r;
+        }
+
+        @TruffleBoundary
+        private PComplex complexToComplexPower(PComplex a, PComplex b) {
+            if (b.getReal() == 0.0 && b.getImag() == 0.0) {
+                return factory().createComplex(1.0, 0.0);
+            }
+            if (a.getReal() == 0.0 && a.getImag() == 0.0) {
+                if (b.getImag() != 0.0 || b.getReal() < 0.0) {
+                    throw raise(ZeroDivisionError, ErrorMessages.COMPLEX_ZERO_TO_NEGATIVE_POWER);
+                }
+                return factory().createComplex(0.0, 0.0);
+            }
+            double vabs = Math.hypot(a.getReal(), a.getImag());
+            double len = Math.pow(vabs, b.getReal());
+            double at = Math.atan2(a.getImag(), a.getReal());
+            double phase = at * b.getReal();
+            if (b.getImag() != 0.0) {
+                len /= Math.exp(at * b.getImag());
+                phase += b.getImag() * Math.log(vabs);
+            }
+            return factory().createComplex(len * Math.cos(phase), len * Math.sin(phase));
+        }
+
+        private PComplex checkOverflow(PComplex result) {
+            if (Double.isInfinite(result.getReal()) || Double.isInfinite(result.getImag())) {
+                throw raise(OverflowError, ErrorMessages.COMPLEX_EXPONENTIATION);
+            }
+            return result;
         }
     }
 
@@ -383,41 +592,29 @@ public class ComplexBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
+        static boolean doComplex(PComplex left, PComplex right) {
             return left.equals(right);
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, long right) {
-            if (left.getImag() == 0) {
-                return left.getReal() == right;
-            }
-            return false;
+        static boolean doComplexInt(PComplex left, long right,
+                        @Cached ConditionProfile longFitsToDoubleProfile) {
+            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, PInt right) {
-            if (left.getImag() == 0) {
-                try {
-                    return left.getReal() == right.getValue().longValueExact();
-                } catch (ArithmeticException e) {
-                    // do nothing -> return false;
-                }
-            }
-            return false;
+        static boolean doComplexInt(PComplex left, PInt right) {
+            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) == 0;
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, double right) {
-            if (left.getImag() == 0) {
-                return left.getReal() == right;
-            }
-            return false;
+        static boolean doComplexInt(PComplex left, double right) {
+            return left.getImag() == 0 && left.getReal() == right;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -425,14 +622,9 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
-            return left.greaterEqual(right);
-        }
-
         @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        @Specialization
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -440,14 +632,9 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     abstract static class GtNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
-            return left.greaterThan(right);
-        }
-
         @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        @Specialization
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -455,14 +642,9 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     abstract static class LtNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
-            return left.lessThan(right);
-        }
-
         @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        @Specialization
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -470,64 +652,114 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
-            return left.lessEqual(right);
-        }
-
         @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        @Specialization
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
+        static boolean doComplex(PComplex left, PComplex right) {
             return left.notEqual(right);
+        }
+
+        @Specialization
+        static boolean doComplex(PComplex left, long right,
+                        @Cached ConditionProfile longFitsToDoubleProfile) {
+            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) != 0;
+        }
+
+        @Specialization
+        static boolean doComplex(PComplex left, PInt right) {
+            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) != 0;
+        }
+
+        @Specialization
+        static boolean doComplex(PComplex left, double right) {
+            return left.getImag() != 0 || left.getReal() != right;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
-    abstract static class ReprNode extends PythonBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String repr(PComplex self) {
-            return self.toString();
+            return repr(self, getRaiseNode());
+        }
+
+        @TruffleBoundary
+        private static String repr(PComplex self, PRaiseNode raiseNode) {
+            ComplexFormatter formatter = new ComplexFormatter(raiseNode, new Spec(-1, Spec.NONE));
+            formatter.format(self);
+            return formatter.pad().getResult();
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
-    abstract static class StrNode extends PythonBuiltinNode {
-        @Specialization
-        String repr(PComplex self) {
-            return self.toString();
+    abstract static class StrNode extends ReprNode {
+    }
+
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
+    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class FormatNode extends FormatNodeBase {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FormatNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object format(PComplex self, String formatString) {
+            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, __FORMAT__);
+            validateSpec(spec);
+            return doFormat(getRaiseNode(), self, spec);
+        }
+
+        @TruffleBoundary
+        private static Object doFormat(PRaiseNode raiseNode, PComplex self, Spec spec) {
+            ComplexFormatter formatter = new ComplexFormatter(raiseNode, validateAndPrepareForFloat(raiseNode, spec, "complex"));
+            formatter.format(self);
+            return formatter.pad().getResult();
+        }
+
+        private void validateSpec(Spec spec) {
+            if (spec.getFill(' ') == '0') {
+                throw raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
+            }
+
+            char align = spec.getAlign('>');
+            if (align == '=') {
+                throw raise(ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
+            }
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
-    abstract static class BoolNode extends PythonBuiltinNode {
+    abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean bool(PComplex self) {
+        static boolean bool(PComplex self) {
             return self.getReal() != 0.0 || self.getImag() != 0.0;
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __NEG__, minNumOfPositionalArgs = 1)
-    abstract static class NegNode extends PythonBuiltinNode {
+    abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization
         PComplex neg(PComplex self) {
             return factory().createComplex(-self.getReal(), -self.getImag());
@@ -536,7 +768,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __POS__, minNumOfPositionalArgs = 1)
-    abstract static class PosNode extends PythonBuiltinNode {
+    abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
         PComplex pos(PComplex self) {
             return factory().createComplex(self.getReal(), self.getImag());
@@ -545,7 +777,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
-    abstract static class GetNewArgsNode extends PythonBuiltinNode {
+    abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
         PTuple get(PComplex self) {
             return factory().createTuple(new Object[]{self.getReal(), self.getImag()});
@@ -556,7 +788,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = "real", minNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     abstract static class RealNode extends PythonBuiltinNode {
         @Specialization
-        double get(PComplex self) {
+        static double get(PComplex self) {
             return self.getReal();
         }
     }
@@ -565,7 +797,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = "imag", minNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
     abstract static class ImagNode extends PythonBuiltinNode {
         @Specialization
-        double get(PComplex self) {
+        static double get(PComplex self) {
             return self.getImag();
         }
     }
@@ -574,12 +806,42 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        int hash(PComplex self) {
+        static long hash(PComplex self) {
             // just like CPython
-            int realHash = Double.hashCode(self.getReal());
-            int imagHash = Double.hashCode(self.getImag());
-            return realHash + PComplex.IMAG_MULTIPLIER * imagHash;
+            long realHash = PyObjectHashNode.hash(self.getReal());
+            long imagHash = PyObjectHashNode.hash(self.getImag());
+            return realHash + SysModuleBuiltins.HASH_IMAG * imagHash;
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "conjugate", minNumOfPositionalArgs = 1)
+    abstract static class ConjugateNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PComplex hash(PComplex self) {
+            return factory().createComplex(self.getReal(), -self.getImag());
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = __FLOORDIV__, minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class FloorDivNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object floorDiv(Object arg) {
+            throw raise(TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ModNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object mod(Object arg) {
+            throw raise(TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,8 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -52,10 +53,13 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class DeleteNameNode extends StatementNode implements AccessNameNode {
     @Child private DeleteGlobalNode deleteGlobalNode;
-    protected final IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
+    @Child protected IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
     protected final String attributeId;
 
     protected DeleteNameNode(String attributeId) {
@@ -81,16 +85,32 @@ public abstract class DeleteNameNode extends StatementNode implements AccessName
 
     @Specialization(guards = "hasLocalsDict(frame)")
     protected void readFromLocalsDict(VirtualFrame frame,
-                    @Cached("create()") HashingStorageNodes.DelItemNode delItem) {
+                    @Cached BranchProfile updatedStorage,
+                    @Cached ConditionProfile hasFrame,
+                    @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
-        if (!delItem.execute(frame, frameLocals, frameLocals.getDictStorage(), attributeId)) {
+        HashingStorage storage = frameLocals.getDictStorage();
+        Object key = attributeId;
+        HashingStorage newStore = null;
+        // TODO: FIXME: this might call __hash__ twice
+        boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
+        if (hasKey) {
+            newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
+        }
+
+        if (hasKey) {
+            if (newStore != storage) {
+                updatedStorage.enter();
+                frameLocals.setDictStorage(newStore);
+            }
+        } else {
             getDeleteGlobalNode().executeVoid(frame);
         }
     }
 
     @Specialization(guards = "hasLocals(frame)", replaces = "readFromLocalsDict")
     protected void readFromLocals(VirtualFrame frame,
-                    @Cached("create()") DeleteItemNode delItem) {
+                    @Cached DeleteItemNode delItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         try {
             delItem.executeWith(frame, frameLocals, attributeId);

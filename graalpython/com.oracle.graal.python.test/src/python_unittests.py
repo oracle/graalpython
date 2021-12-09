@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,16 @@
 import csv
 import gzip
 import os
+import signal
 import re
+import html
+import time
 import subprocess
 from collections import defaultdict
 from json import dumps
 from multiprocessing import Pool, TimeoutError
 from pprint import pformat
+
 
 import argparse
 import sys
@@ -61,11 +65,14 @@ _BASE_NAME = "unittests"
 TXT_RESULTS_NAME = "{}.txt.gz".format(_BASE_NAME)
 CSV_RESULTS_NAME = "{}.csv".format(_BASE_NAME)
 HTML_RESULTS_NAME = "{}.html".format(_BASE_NAME)
+LATEST_HTML_NAME = "latest.html"
+
+TIMEOUT_LINE = "\nTEST TIMED OUT WITH GRAAL PYTHON RUNNER"
 
 HR = "".join(['-' for _ in range(120)])
 
 PTRN_ERROR = re.compile(r'^(?P<error>[A-Z][a-z][a-zA-Z]+):(?P<message>.*)$')
-PTRN_UNITTEST = re.compile(r'^#### running: graalpython/lib-python/3/test/(?P<unittest>[\w.]+).*$', re.DOTALL)
+PTRN_UNITTEST = re.compile(r'^#### running: (?P<unittest_path>graalpython/lib-python/3/test/(?P<unittest>[\w.]+)).*$', re.DOTALL)
 PTRN_NUM_TESTS = re.compile(r'^Ran (?P<num_tests>\d+) test.*$')
 PTRN_FAILED = re.compile(
     r'^FAILED \((failures=(?P<failures>\d+))?(, )?(errors=(?P<errors>\d+))?(, )?(skipped=(?P<skipped>\d+))?\)$')
@@ -74,11 +81,35 @@ PTRN_OK = re.compile(
 PTRN_JAVA_EXCEPTION = re.compile(r'^(?P<exception>com\.oracle\.[^:]*):(?P<message>.*)')
 PTRN_MODULE_NOT_FOUND = re.compile(r'.*ModuleNotFound: \'(?P<module>.*)\'\..*', re.DOTALL)
 PTRN_IMPORT_ERROR = re.compile(r".*cannot import name \'(?P<module>.*)\'.*", re.DOTALL)
-PTRN_REMOTE_HOST = re.compile(r"(?P<user>\w+)@(?P<host>[\w.]+):(?P<path>.+)")
+PTRN_REMOTE_HOST = re.compile(r"(?P<user>[^@]+)@(?P<host>[^:]+):(?P<path>.+)")
 PTRN_VALID_CSV_NAME = re.compile(r"unittests-\d{4}-\d{2}-\d{2}.csv")
 PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test[\w_]+ \(.+?\)) ... (?P<status>.+)")
 PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test[\w_]+ \(.+?\))")
 
+TEST_TYPES = tuple(sorted(('array','buffer','code','frame','long','memoryview','unicode','exceptions',
+            'baseexception','range','builtin','bytes','thread','property','class','dictviews',
+            'sys','imp','rlcompleter','types','coroutines','dictcomps','int_literal','mmap',
+            'module','numeric_tower','syntax','traceback','typechecks','int','keyword','raise',
+            'descr','generators','list','complex','tuple','enumerate','super','float',
+            'bool','fstring','dict','iter','string','scope','with','set')))
+
+TEST_APP_SCRIPTING = tuple(sorted(('test_json','csv','io','memoryio','bufio','fileio','file','fileinput','tempfile',
+            'pickle','pickletester','pickle','picklebuffer','pickletools','codecs','functools',
+            'itertools','math','operator','zlib','zipimport_support','zipfile','zipimport','re',
+            'zipapp','gzip','bz2','builtin')))
+
+TEST_SERVER_SCRIPTING_DS = tuple(sorted(('sqlite3','asyncio','marshal','select','crypt','ssl','uuid','multiprocessing',
+                            'fork','forkserver','main_handling','spawn','socket','socket','socketserver',
+                            'signal','mmap','resource','thread','dummy_thread','threading','threading_local',
+                            'threadsignals','dummy_threading','threadedtempfile','thread','hashlib',
+                            'pyexpat','locale','_locale','locale','c_locale_coercion','struct') + TEST_APP_SCRIPTING))
+
+
+USE_CASE_GROUPS = {
+        'Python Language and Built-in Types': TEST_TYPES,
+        'Application Scripting': TEST_APP_SCRIPTING,
+        'Server-Side Scripting and Data Science': TEST_SERVER_SCRIPTING_DS
+         }
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -100,29 +131,50 @@ def file_name(name, current_date_time):
         return '{}-{}{}'.format(name[:idx], current_date_time, name[idx:])
     return '{}-{}'.format(name, current_date_time)
 
+def get_tail(output, count=15):
+    lines = output.split("\n")
+    start = max(0, len(lines) - count)
+    return '\n'.join(lines[start:])
+
+TIMEOUT = 60 * 20  # 20 mins per unittest wait time max ...
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # exec utils
 #
 # ----------------------------------------------------------------------------------------------------------------------
-def _run_cmd(cmd, capture_on_failure=True):
+def _run_cmd(cmd, timeout=TIMEOUT, capture_on_failure=True):
     if isinstance(cmd, str):
         cmd = cmd.split(" ")
     assert isinstance(cmd, (list, tuple))
 
-    log("[EXEC] cmd: {} ...".format(' '.join(cmd)))
-    success = True
-    output = None
+    cmd_string = ' '.join(cmd)
+    log("[EXEC] starting '{}' ...".format(cmd_string))
 
+    expired = False
+
+    start_time = time.monotonic()
+    # os.setsid is used to create a process group, to be able to call os.killpg upon timeout
+    proc = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     try:
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        log("[ERR] Could not execute CMD. Reason: {}".format(e))
-        if capture_on_failure:
-            output = e.output
+        output = proc.communicate(timeout=timeout)[0]
+    except subprocess.TimeoutExpired as e:
+        delta = time.monotonic() - start_time
+        os.killpg(proc.pid, signal.SIGKILL)
+        output = proc.communicate()[0]
+        msg = "TimeoutExpired: {:.3f}s".format(delta)
+        tail = get_tail(output.decode('utf-8', 'ignore'))
+        log("[ERR] timeout '{}' after {:.3f}s, killing process group {}, last lines of output:\n{}\n{}", cmd_string, delta, proc.pid, tail, HR)
+        expired = True
+    else:
+        delta = time.monotonic() - start_time
+        log("[EXEC] finished '{}' with exit code {} in {:.3f}s", cmd_string, proc.returncode, delta)
+        msg = "Finished: {:.3f}s".format(delta)
 
-    return success, output.decode("utf-8", "ignore")
+    output = output.decode("utf-8", "ignore")
+    if expired:
+        output += TIMEOUT_LINE
+    return proc.returncode == 0, output, msg
 
 
 def scp(results_file_path, destination_path, destination_name=None):
@@ -132,20 +184,25 @@ def scp(results_file_path, destination_path, destination_name=None):
     return _run_cmd(cmd)[0]
 
 
-def _run_unittest(test_path, with_cpython=False):
+def _run_unittest(test_path, timeout, with_cpython=False):
     if with_cpython:
-        cmd = ["python3", test_path, "-v"]
+        exe = os.environ.get("PYTHON3_HOME", None)
+        if exe:
+            exe = os.path.join(exe, "python")
+        else:
+            exe = "python3"
+        cmd = [exe, test_path, "-v"]
     else:
         cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
-    success, output = _run_cmd(cmd)
+    _, output, msg = _run_cmd(cmd, timeout)
     output = '''
 ##############################################################
-#### running: {} 
-    '''.format(test_path) + output
-    return success, output
+#### running: {}
+{}
+{}
+'''.format(test_path, output, msg)
+    return output
 
-
-TIMEOUT = 60 * 20  # 20 mins per unittest wait time max ...
 
 
 def run_unittests(unittests, timeout, with_cpython=False):
@@ -153,33 +210,23 @@ def run_unittests(unittests, timeout, with_cpython=False):
     num_unittests = len(unittests)
     log("[EXEC] running {} unittests ... ", num_unittests)
     log("[EXEC] timeout per unittest: {} seconds", timeout)
-    results = []
 
-    pool = Pool()
-    for ut in unittests:
-        results.append(pool.apply_async(_run_unittest, args=(ut, with_cpython)))
-    pool.close()
+    start_time = time.monotonic()
+    pool = Pool(processes=(os.cpu_count() // 4) or 1) # to account for hyperthreading and some additional overhead
 
-    log("[INFO] collect results ... ")
     out = []
-    timed_out = []
-    for i, res in enumerate(results):
-        try:
-            _, output = res.get(timeout)
-            out.append(output)
-        except TimeoutError:
-            log("[ERR] timeout while getting results for {}, skipping!", unittests[i])
-            timed_out.append(unittests[i])
-        log("[PROGRESS] {} / {}: \t {}%", i+1, num_unittests, int(((i+1) * 100.0) / num_unittests))
+    def callback(result):
+        out.append(result)
+        log("[PROGRESS] {} / {}: \t {:.1f}%", len(out), num_unittests, len(out) * 100 / num_unittests)
 
-    if timed_out:
-        log(HR)
-        for t in timed_out:
-            log("[TIMEOUT] skipped: {}", t)
-        log(HR)
-    log("[STATS] processed {} out of {} unittests", num_unittests - len(timed_out), num_unittests)
-    pool.terminate()
+    # schedule all unittest runs
+    for ut in unittests:
+        pool.apply_async(_run_unittest, args=(ut, timeout, with_cpython), callback=callback)
+
+    pool.close()
     pool.join()
+    pool.terminate()
+    log("[STATS] processed {} unittests in {:.3f}s", num_unittests, time.monotonic() - start_time)
     return out
 
 
@@ -204,8 +251,8 @@ def get_remote_host(scp_path):
 
 def ssh_ls(scp_path):
     user, host, path = get_remote_host(scp_path)
-    cmd = ['ssh', '{}@{}'.format(user, host), 'ls', '-l', path]
-    return map(lambda l: l.split()[-1], _run_cmd(cmd)[1].splitlines())
+    cmd = ['ssh', '{}@{}'.format(user, host), 'ls', '-1', path]
+    return [f for f in _run_cmd(cmd)[1].splitlines() if f]
 
 
 def read_csv(path):
@@ -302,16 +349,18 @@ def process_output(output_lines):
     if isinstance(output_lines, str):
         output_lines = output_lines.split("\n")
 
+    current_unittest_path = None
     unittests = []
     # stats tracked per unittest
     unittest_tests = defaultdict(list)
-    error_messages = defaultdict(set)
+    error_messages = defaultdict(dict)
     java_exceptions = defaultdict(set)
     stats = defaultdict(StatEntry)
 
     for line in output_lines:
         match = re.match(PTRN_UNITTEST, line)
         if match:
+            current_unittest_path = match.group('unittest_path')
             unittest = match.group('unittest')
             unittests.append(unittest)
             unittest_tests.clear()
@@ -320,7 +369,13 @@ def process_output(output_lines):
         # extract python reported python error messages
         match = re.match(PTRN_ERROR, line)
         if match:
-            error_messages[unittests[-1]].add((match.group('error'), match.group('message')))
+            error_message = (match.group('error'), match.group('message'))
+            if not error_message[0] == 'Directory' and not error_message[0] == 'Components':
+                error_message_dict = error_messages[unittests[-1]]
+                d = error_message_dict.get(error_message)
+                if not d:
+                    d = 0
+                error_message_dict[error_message] = d + 1
             continue
 
         # extract java exceptions
@@ -373,6 +428,55 @@ def process_output(output_lines):
             stats[unittests[-1]].num_fails = int(fails) if fails else 0
             stats[unittests[-1]].num_errors = int(errs) if errs else 0
             stats[unittests[-1]].num_skipped = int(skipped) if skipped else 0
+            continue
+
+        if line.strip() == TIMEOUT_LINE.strip():
+            if current_unittest_path is None or len(unittests) == 0:
+                # we timed out here before even running something
+                continue
+            ran_tests = {}
+            fails = 0
+            errs = 0
+            ok = 0
+            skip = 0
+            for test,status in unittest_tests.items():
+                status = " ".join(status).lower()
+                ran_tests[test.strip()] = status
+                if "skipped" in status:
+                    skip += 1
+                elif "fail" in status:
+                    fails += 1
+                elif "ok" in status:
+                    ok += 1
+                else:
+                    errs += 1
+
+            tagfile = ".".join([os.path.splitext(unittests[-1])[0], "txt"])
+            prefix = os.path.splitext(current_unittest_path)[0].replace("/", ".")
+            import glob
+            candidates = glob.glob("**/" + tagfile, recursive=True)
+            for candidate in candidates:
+                with open(candidate) as f:
+                    for tagline in f.readlines():
+                        tagline = tagline.replace(prefix, "__main__") # account different runner for tagged and this
+                        tagline = tagline.replace("*", "").strip()
+                        tstcls, tst = tagline.rsplit(".", 1)
+                        test = "{} ({})".format(tst, tstcls)
+                        if test not in ran_tests:
+                            ran_tests[test] = "ok"
+                            # count the tagged test we didn't get to as an additional passing test
+                            ok += 1
+                        else:
+                            status = ran_tests[test]
+                            if "error" in status or "fail" in status:
+                                # interesting: it's tagged but failed here
+                                log("{} did not pass here but is tagged as passing", test)
+
+            stats[unittests[-1]].num_tests = ok + fails + errs + skip
+            stats[unittests[-1]].num_fails = fails
+            stats[unittests[-1]].num_errors = errs
+            stats[unittests[-1]].num_skipped = skip
+            unittest_tests.clear()
             continue
 
     return unittests, error_messages, java_exceptions, stats
@@ -491,6 +595,8 @@ def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats, 
             unittest_errmsg = error_messages[unittest]
             if not unittest_errmsg:
                 unittest_errmsg = java_exceptions[unittest]
+            if not unittest_errmsg:
+                unittest_errmsg = {}
 
             rows.append({
                 Col.UNITTEST: unittest,
@@ -507,7 +613,7 @@ def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats, 
                 Col.CPY_NUM_SKIPPED: cpy_unittest_stats.num_skipped if cpy_unittest_stats else None,
                 Col.CPY_NUM_PASSES: cpy_unittest_stats.num_passes if cpy_unittest_stats else None,
                 # errors
-                Col.PYTHON_ERRORS: dumps(list(unittest_errmsg)),
+                Col.PYTHON_ERRORS: dumps(list(unittest_errmsg.items())),
             })
 
             # update totals that ran in some way
@@ -526,8 +632,9 @@ def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats, 
         totals[Stat.UT_TOTAL] = len(unittests)
         totals[Stat.UT_RUNS] = len(unittests) - total_not_run_at_all
         totals[Stat.UT_PASS] = total_pass_all
-        totals[Stat.UT_PERCENT_RUNS] = float(totals[Stat.UT_RUNS]) / float(totals[Stat.UT_TOTAL]) * 100.0
-        totals[Stat.UT_PERCENT_PASS] = float(totals[Stat.UT_PASS]) / float(totals[Stat.UT_TOTAL]) * 100.0
+        ut_total_f = float(totals[Stat.UT_TOTAL])
+        totals[Stat.UT_PERCENT_RUNS] = float(totals[Stat.UT_RUNS]) / ut_total_f * 100.0 if ut_total_f > 0.0 else 0.0
+        totals[Stat.UT_PERCENT_PASS] = float(totals[Stat.UT_PASS]) / ut_total_f * 100.0 if ut_total_f > 0.0 else 0.0
         # test stats
         totals[Stat.TEST_RUNS] = totals[Col.NUM_TESTS]
         totals[Stat.TEST_PASS] = totals[Col.NUM_PASSES]
@@ -645,8 +752,6 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
         '''.format('\n'.join([_fmt(cmp) for cmp in components]))
 
     def progress_bar(value, color='success'):
-        if 0.0 <= value <= 1.0:
-            value = 100 * value
         return '''
         <div class="progress">
           <div class="progress-bar progress-bar-{color}" role="progressbar" aria-valuenow="{value}"
@@ -684,7 +789,7 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
         def format_val(row, k):
             value = row[k]
             if k == Col.PYTHON_ERRORS:
-                return '<code class="h6">{}</code>'.format(value)
+                return "(click to expand)"
             elif k == Col.UNITTEST:
                 _class = "text-info"
             elif k == Col.NUM_PASSES and value > 0:
@@ -700,7 +805,8 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
             return '<span class="{} h6"><b>{}</b></span>'.format(_class, value)
 
         _tbody = '\n'.join([
-                '<tr class="{cls}"><td>{i}</td>{vals}</tr>'.format(
+                '<tr class="{cls}" data-errors="{errors}"><td>{i}</td>{vals}</tr>'.format(
+                    errors = html.escape(row[Col.PYTHON_ERRORS], quote=True), # put the errors data into a data attribute
                     cls='info' if i % 2 == 0 else '', i=i,
                     vals=' '.join(['<td>{}</td>'.format(format_val(row, k)) for k in tcols]))
                 for i, row in enumerate(trows)])
@@ -722,6 +828,30 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
                     "lengthMenu": [[50, 100, 200, -1], [50, 100, 200, "All"]],
                     paging: false, scrollX: true, scrollCollapse: true, "order": []
                 }});
+                // expand and show the errors when a row is clicked upon
+                $(table_id).on('click', 'td', function () {{
+                    var tr = $(this).closest('tr');
+                    var row = table.row( tr );
+
+                    if ( row.child.isShown() ) {{
+                        row.child.hide();
+                        tr.removeClass('shown');
+                    }}
+                    else {{
+                        var data = tr.data('errors');
+                        if (data) {{
+                            function formatEntry(entry) {{
+                                var description = ('' + entry[0][0]).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+                                var text = ('' + entry[0][1]).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/(.{{195}} )/g, '$1<br/>&nbsp;&nbsp;&nbsp;&nbsp;'); // break long lines
+                                var count = (entry[1] > 1 ? ('<font color="red"> (x ' + entry[1] + ')</font>') : '');
+                                return description + ': ' + text + count + '<br/>';
+                            }}
+                            var e = '<font style="font-family: monospace; font-size: 12px">' + data.map(formatEntry).join("") + '</font>';
+                            row.child( e ).show();
+                            tr.addClass('shown');
+                        }}
+                    }}
+                }} );
             }}
             $(document).ready(function() {{ initTable('#{table_id}'); }});
         </script>
@@ -742,6 +872,26 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
         for cnt, name in sorted(((cnt, name) for name, cnt in java_issues.items()), reverse=True)
     ])
 
+    modules_dnf = ul('Unittests that did not finish', [
+        '<b>{}</b>'.format(r[Col.UNITTEST])
+        for r in rows if r[Col.NUM_ERRORS] == -1
+    ])
+
+    usecase_scores = dict()
+    for usecase_name, usecase_modules in USE_CASE_GROUPS.items():
+        score_sum = 0
+        for m in usecase_modules:
+            for r in rows:
+                if ("test_" + m + ".py") == r[Col.UNITTEST]:
+                    if r[Col.NUM_PASSES] > 0 and r[Col.NUM_TESTS] > 0:
+                        score_sum += r[Col.NUM_PASSES] / r[Col.NUM_TESTS]
+        usecase_scores[usecase_name] = score_sum / len(usecase_modules)
+
+
+    use_case_stats_info = ul("<b>Summary per Use Case</b>",
+                                [ grid((progress_bar(avg_score * 100, color="info"), 3), '<b>{}</b>'.format(usecase_name)) +
+                                  grid(", ".join(USE_CASE_GROUPS[usecase_name])) for usecase_name, avg_score in usecase_scores.items()])
+
     total_stats_info = ul("<b>Summary</b>", [
         grid('<b># total</b> unittests: {}'.format(totals[Stat.UT_TOTAL])),
         grid((progress_bar(totals[Stat.UT_PERCENT_RUNS], color="info"), 3),
@@ -755,10 +905,13 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
 
     table_stats = table('stats', CSV_HEADER, rows)
 
-    content = ' <br> '.join([total_stats_info, table_stats,
+    content = ' <br> '.join([use_case_stats_info,
+                             total_stats_info,
+                             table_stats,
                              missing_modules_info,
                              cannot_import_modules_info,
-                             java_issues_info])
+                             java_issues_info,
+                             modules_dnf])
 
     report = HTML_TEMPLATE.format(
         title='GraalPython Unittests Stats',
@@ -777,6 +930,15 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
     with open(report_name, 'w') as HTML:
         HTML.write(report)
 
+def generate_latest(output_name, html_report_path):
+    contents = '''
+<html>
+<head><style type="text/css"> body { margin:0; overflow:hidden; } #fr { height:100%; left:0px; position:absolute; top:0px; width:100%; }</style></head>
+<body><iframe id="fr" src="''' + html_report_path + '''" frameborder="0"></iframe></body>
+</html>
+'''
+    with open(output_name, 'w') as HTML:
+        HTML.write(contents)
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -791,12 +953,13 @@ def main(prog, args):
                         action="store_true")
     parser.add_argument("-l", "--limit", help="Limit the number of unittests to run.", default=None, type=int)
     parser.add_argument("-t", "--tests_path", help="Unittests path.", default=PATH_UNITTESTS)
-    parser.add_argument("-T", "--timeout", help="Timeout per unittest run.", default=TIMEOUT, type=int)
+    parser.add_argument("-T", "--timeout", help="Timeout per unittest run (seconds).", default=TIMEOUT, type=int)
     parser.add_argument("-o", "--only_tests", help="Run only these unittests (comma sep values).", default=None)
     parser.add_argument("-s", "--skip_tests", help="Run all unittests except (comma sep values)."
                                                    "the only_tets option takes precedence", default=None)
     parser.add_argument("-r", "--regression_running_tests", help="Regression threshold for running tests.", type=float,
                         default=None)
+    parser.add_argument("--no_latest", help="Don't generate latest.html file.", action="store_true")
     parser.add_argument("-g", "--gate", help="Run in gate mode (Skip cpython runs; Do not upload results; "
                                              "Detect regressions).", action="store_true")
     parser.add_argument("path", help="Path to store the csv output and logs to.", nargs='?', default=None)
@@ -855,6 +1018,8 @@ def main(prog, args):
     csv_report_path = file_name(CSV_RESULTS_NAME, current_date)
     rows, totals = save_as_csv(csv_report_path, unittests, error_messages, java_exceptions, stats, cpy_stats=cpy_stats)
 
+    log("[INFO] totals: {!r}", totals)
+
     missing_modules = process_errors(unittests, error_messages, 'ModuleNotFoundError',
                                      msg_processor=get_missing_module)
     log("[MISSING MODULES] \n{}", pformat(dict(missing_modules)))
@@ -875,12 +1040,15 @@ def main(prog, args):
         scp(txt_report_path, flags.path)
         scp(csv_report_path, flags.path)
         scp(html_report_path, flags.path)
+        if not flags.no_latest:
+            generate_latest(LATEST_HTML_NAME, html_report_path)
+            scp(LATEST_HTML_NAME, flags.path)
 
     gate_failed = False
     if flags.gate and flags.regression_running_tests:
         log("[REGRESSION] detecting regression, acceptance threshold = {}%".format(
             flags.regression_running_tests * 100))
-        csv_files = list(filter(lambda entry: True if PTRN_VALID_CSV_NAME.match(entry) else False, ssh_ls(flags.path)))
+        csv_files = sorted(f for f in ssh_ls(flags.path) if PTRN_VALID_CSV_NAME.match(f))
         last_csv = csv_files[-1]
         # log('\n'.join(csv_files))
         # read the remote csv and extract stats
@@ -894,7 +1062,7 @@ def main(prog, args):
             Col.NUM_SKIPPED: int(rows[-1][4]),
             Col.NUM_PASSES: int(rows[-1][5]),
         }
-        print(prev_totals)
+        log("[INFO] previous totals (from {}): {!r}", last_csv, prev_totals)
         if float(totals[Col.NUM_TESTS]) < float(prev_totals[Col.NUM_TESTS]) * (1.0 - flags.regression_running_tests):
             log("[REGRESSION] REGRESSION DETECTED, passed {} tests vs {} from {}".format(
                 totals[Col.NUM_TESTS], prev_totals[Col.NUM_TESTS], last_csv))

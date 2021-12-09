@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -95,6 +95,10 @@ def test_int_from_custom():
         def __int__(self):
             return 0xBADF00D
 
+    class Indexable:
+        def __index__(self):
+            return 4
+
     class NoInt():
         pass
 
@@ -108,6 +112,9 @@ def test_int_from_custom():
         assert False, "converting non-integer to integer must not be possible"
     except BaseException as e:
         assert type(e) == TypeError, "expected type error, was: %r" % type(e)
+    if sys.version_info >= (3, 8, 0):
+        assert int(Indexable()) == 4
+
 
 def test_int_bit_length():
     assert (int(0)).bit_length() == 0
@@ -336,7 +343,38 @@ def test_create_int_from_bool():
     assert int(SpecInt0()) == 0
 
 def test_create_int_from_string():
-  assert int("5c7920a80f5261a2e5322163c79b71a25a41f414", 16) == 527928385865769069253929759180846776123316630548
+    assert int("5c7920a80f5261a2e5322163c79b71a25a41f414", 16) == 527928385865769069253929759180846776123316630548
+    class IndexLike:
+        def __index__(self):
+            return 16
+    assert int("123ff", IndexLike()) == 0x123ff
+    try:
+        int("123ff", None)
+    except TypeError:
+        assert True
+    else:
+        assert False, "expected TypeError"
+
+
+def test_create_int_from_float():
+    assert int(123.0) == 123
+    assert int(123.4) == 123
+    try:
+        int(float('nan'))
+    except ValueError:
+        assert True
+    else:
+        assert False, "expected ValueError"
+        
+    class FloatSub(float):
+        pass
+    
+    try:
+        int(FloatSub(float('nan')))
+    except ValueError:
+        assert True
+    else:
+        assert False, "expected ValueError"
 
 
 class FromBytesTests(unittest.TestCase):
@@ -601,7 +639,7 @@ class ToBytesTests(unittest.TestCase):
                     .format(test, byteorder, signed)) from err
 
 
-    def test_SignedBitEndian(self):
+    def test_SignedBigEndian(self):
         # Convert integers to signed big-endian byte arrays.
         tests1 = {
             0: b'\x00',
@@ -661,7 +699,7 @@ class ToBytesTests(unittest.TestCase):
             32767: b'\x7f\xff',
             32768: b'\x80\x00',
             65535: b'\xff\xff',
-            65536: b'\x01\x00\x00'
+            65536: b'\x01\x00\x00',
         }
         self.check(tests3, 'big', signed=False)
         self.checkPIntSpec(tests3, 'big', signed=False)
@@ -698,6 +736,8 @@ class ToBytesTests(unittest.TestCase):
         self.assertRaises(OverflowError, (-1).to_bytes, 2, 'big', signed=False)
         self.assertRaises(OverflowError, (-1).to_bytes, 2, 'little', signed=False)
         self.assertRaises(OverflowError, (1).to_bytes, 0, 'big')
+        self.assertRaises(OverflowError, (4294967296).to_bytes, 4, 'big')
+        self.assertRaises(OverflowError, (4294967296).to_bytes, 4, 'little')
 
     def test_WrongTypes(self):
         class MyTest():

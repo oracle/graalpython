@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -895,14 +895,16 @@ class MathTests(unittest.TestCase):
         self.assertRaises(ValueError, math.atanh, BIG_INT)
 
     def testHypot(self):
-        self.assertRaises(TypeError, math.hypot)
+        if sys.version_info > (3, 8, 0):
+            self.ftest('hypot()', math.hypot(), 0.0)
+            self.ftest('hypot(3,4,6)', math.hypot(3, 4, 6), 7.810249675906654)
+            self.assertEqual(math.hypot(FLOAT_MAX, FLOAT_MAX), INF)
         self.ftest('hypot(0,0)', math.hypot(0,0), 0)
         self.ftest('hypot(3,4)', math.hypot(3,4), 5)
         self.assertEqual(math.hypot(NAN, INF), INF)
         self.assertEqual(math.hypot(INF, NAN), INF)
         self.assertEqual(math.hypot(NAN, NINF), INF)
         self.assertEqual(math.hypot(NINF, NAN), INF)
-        self.assertRaises(OverflowError, math.hypot, FLOAT_MAX, FLOAT_MAX)
         self.assertTrue(math.isnan(math.hypot(1.0, NAN)))
         self.assertTrue(math.isnan(math.hypot(NAN, -2.0)))
 
@@ -954,12 +956,12 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.factorial(13), 6227020800)
         self.assertEqual(math.factorial(30), 265252859812191058636308480000000)
         self.assertRaises(ValueError, math.factorial, -11.1)
-        
-        self.assertEqual(math.factorial(MyInt(4)), 24)
-        self.assertEqual(math.factorial(MyInt(True)), 1)
-        self.assertRaises(TypeError, math.factorial, MyIndexable(4))
-        self.assertRaises(TypeError, math.factorial, MyFloat())
-        self.assertRaises(TypeError, math.factorial, MyInt(0.6))
+
+        if sys.version_info > (3, 8, 0):
+            self.assertEqual(math.factorial(MyIndexable(4)), 24)
+            self.assertEqual(math.factorial(MyIndexable(True)), 1)
+            self.assertRaises(TypeError, math.factorial, MyFloat())
+            self.assertRaises(TypeError, math.factorial, MyIndexable(0.6))
 
     def testGcd(self):
         if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
@@ -1332,7 +1334,7 @@ class MathTests(unittest.TestCase):
             else :
                 if result != expected:
                     if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
-                        self.assertTrue(math.isclose(result, expected, rel_tol=1e-14), "Test3 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))
+                        self.assertTrue(math.isclose(result, expected, rel_tol=1e-13), "Test3 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))
 
     def test_erf(self):
         erfValues = [(0.0,  0.0), (-0.0, -0.0), (INF,  1.0), (NINF,  -1.0), (NAN, NAN),

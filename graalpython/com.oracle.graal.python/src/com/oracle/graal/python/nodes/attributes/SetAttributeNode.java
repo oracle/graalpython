@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,7 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
-
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -57,7 +56,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class SetAttributeNode extends StatementNode implements WriteNode {
 
     public static final class Dynamic extends PNodeWithContext {
-        @Child private LookupAndCallTernaryNode call = LookupAndCallTernaryNode.create(__SETATTR__);
+        @Child private LookupAndCallTernaryNode call = LookupAndCallTernaryNode.create(SpecialMethodSlot.SetAttr);
 
         public void execute(VirtualFrame frame, Object object, Object key, Object value) {
             call.execute(frame, object, key, value);
@@ -87,7 +86,7 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
     }
 
     @Override
-    public final void doWrite(VirtualFrame frame, Object value) {
+    public final void executeObject(VirtualFrame frame, Object value) {
         executeVoid(frame, getObject().execute(frame), value);
     }
 
@@ -103,7 +102,7 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
 
     @Specialization
     protected void doIt(VirtualFrame frame, Object object, Object value,
-                    @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
+                    @Cached("create(SetAttr)") LookupAndCallTernaryNode call) {
         call.execute(frame, object, key, value);
     }
 }

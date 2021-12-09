@@ -43,13 +43,13 @@ PARTICULAR PURPOSE.  THE CODE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS,
 AND THERE IS NO OBLIGATION WHATSOEVER TO PROVIDE MAINTENANCE,
 SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-import sys
 
-__all__ = ['TestResult', 'TestCase', 'TestSuite',
+__all__ = ['TestResult', 'TestCase', 'IsolatedAsyncioTestCase', 'TestSuite',
            'TextTestRunner', 'TestLoader', 'FunctionTestCase', 'main',
            'defaultTestLoader', 'SkipTest', 'skip', 'skipIf', 'skipUnless',
            'expectedFailure', 'TextTestResult', 'installHandler',
-           'registerResult', 'removeResult', 'removeHandler']
+           'registerResult', 'removeResult', 'removeHandler',
+           'addModuleCleanup']
 
 # Expose obsolete functions for backwards compatibility
 __all__.extend(['getTestCaseNames', 'makeSuite', 'findTestCases'])
@@ -57,8 +57,9 @@ __all__.extend(['getTestCaseNames', 'makeSuite', 'findTestCases'])
 __unittest = True
 
 from .result import TestResult
-from .case import (TestCase, FunctionTestCase, SkipTest, skip, skipIf,
-                   skipUnless, expectedFailure)
+from .async_case import IsolatedAsyncioTestCase
+from .case import (addModuleCleanup, TestCase, FunctionTestCase, SkipTest, skip,
+                   skipIf, skipUnless, expectedFailure)
 from .suite import BaseTestSuite, TestSuite
 from .loader import (TestLoader, defaultTestLoader, makeSuite, getTestCaseNames,
                      findTestCases)
@@ -77,15 +78,3 @@ def load_tests(loader, tests, pattern):
     # top level directory cached on loader instance
     this_dir = os.path.dirname(__file__)
     return loader.discover(start_dir=this_dir, pattern=pattern)
-
-
-def skipIfGraalPython(reason="Functionality not yet supported"):
-    return skipIf(sys.implementation.name == 'graalpython', reason)
-
-
-def skipIfGraalPythonWitoutThreads(reason="Threading not yet enabled"):
-    try:
-        import _sysconfig as syscfg
-    except Exception:
-        import sysconfig as syscfg
-    return skipIf(sys.implementation.name == 'graalpython' and not syscfg.get_config_var('WITH_THREAD'), reason)

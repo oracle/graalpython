@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,41 +25,31 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import java.util.Arrays;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
-import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
 
-public final class PBytes extends PImmutableSequence implements PIBytesLike {
+@ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+public final class PBytes extends PBytesLike {
 
-    private SequenceStorage store;
-
-    public PBytes(LazyPythonClass cls, byte[] bytes) {
-        super(cls);
-        store = new ByteSequenceStorage(bytes);
+    public PBytes(Object cls, Shape instanceShape, byte[] bytes) {
+        super(cls, instanceShape, bytes);
     }
 
-    public PBytes(LazyPythonClass cls, SequenceStorage storage) {
-        super(cls);
-        setSequenceStorage(storage);
-    }
-
-    @Override
-    public SequenceStorage getSequenceStorage() {
-        return store;
-    }
-
-    @Override
-    public void setSequenceStorage(SequenceStorage store) {
-        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && ((NativeSequenceStorage) store).getElementType() == ListStorageType.Byte;
-        this.store = store;
+    public PBytes(Object cls, Shape instanceShape, SequenceStorage store) {
+        super(cls, instanceShape, store);
     }
 
     public Object getItemNormalized(int index) {
@@ -77,33 +67,30 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
         }
     }
 
-    @Override
-    public final boolean equals(Object other) {
-        // TODO(fa) really required ?
-        if (!(other instanceof PSequence)) {
-            return false;
-        } else {
-            return equals((PSequence) other);
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementModifiable(PBytes self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementInsertable(PBytes self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementRemovable(PBytes self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    Object acquire(int flags,
+                    @Cached PRaiseNode raiseNode) {
+        if ((flags & BufferFlags.PyBUF_WRITABLE) != 0) {
+            throw raiseNode.raise(BufferError, ErrorMessages.OBJ_IS_NOT_WRITABLE);
         }
-    }
-
-    public final boolean equals(PSequence other) {
-        PSequence otherSeq = other;
-        SequenceStorage otherStore = otherSeq.getSequenceStorage();
-        return store.equals(otherStore);
-    }
-
-    @Override
-    public final int hashCode() {
-        // TODO(fa) really required ?
-        if (store instanceof ByteSequenceStorage) {
-            return Arrays.hashCode(((ByteSequenceStorage) store).getInternalByteArray());
-        }
-        return store.hashCode();
-    }
-
-    @Override
-    public PIBytesLike createFromBytes(PythonObjectFactory factory, byte[] bytes) {
-        return factory.createBytes(bytes);
+        return this;
     }
 }

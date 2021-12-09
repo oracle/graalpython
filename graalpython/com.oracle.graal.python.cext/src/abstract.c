@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,26 +58,24 @@ static PyObject* null_error(void) {
 
 UPCALL_ID(PyNumber_Check);
 int PyNumber_Check(PyObject *o) {
-    PyObject *result = UPCALL_CEXT_O(_jls_PyNumber_Check, native_to_java(o));
-    if(result == Py_True) {
-    	return 1;
-    }
-    return 0;
+    return UPCALL_CEXT_I(_jls_PyNumber_Check, native_to_java(o));
 }
 
-UPCALL_ID(PyNumber_UnaryOp);
+typedef PyObject *(*unaryop_fun_t)(PyObject *, int32_t);
+UPCALL_TYPED_ID(PyNumber_UnaryOp, unaryop_fun_t);
 static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop) {
-    return UPCALL_CEXT_O(_jls_PyNumber_UnaryOp, native_to_java(v), unaryop);
+    return _jls_PyNumber_UnaryOp(native_to_java(v), (int32_t)unaryop);
 }
 
-UPCALL_ID(PyNumber_BinOp);
+typedef PyObject *(*binop_fun_t)(PyObject *, PyObject *, int32_t);
+UPCALL_TYPED_ID(PyNumber_BinOp, binop_fun_t);
 MUST_INLINE static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop) {
-    return UPCALL_CEXT_O(_jls_PyNumber_BinOp, native_to_java(v), native_to_java(w), binop);
+    return _jls_PyNumber_BinOp(native_to_java(v), native_to_java(w), (int32_t)binop);
 }
 
-UPCALL_ID(PyNumber_InPlaceBinOp);
+UPCALL_TYPED_ID(PyNumber_InPlaceBinOp, binop_fun_t);
 MUST_INLINE static PyObject * do_inplace_binop(PyObject *v, PyObject *w, BinOp binop) {
-    return UPCALL_CEXT_O(_jls_PyNumber_InPlaceBinOp, native_to_java(v), native_to_java(w), binop);
+    return _jls_PyNumber_InPlaceBinOp(native_to_java(v), native_to_java(w), (int32_t)binop);
 }
 
 PyObject * PyNumber_Add(PyObject *o1, PyObject *o2) {
@@ -173,11 +171,10 @@ PyObject* PyNumber_InPlaceRemainder(PyObject *o1, PyObject *o2) {
 	return do_inplace_binop(o1, o2, MOD);
 }
 
+typedef PyObject *(*ipow_fun_t)(PyObject *, PyObject *, PyObject *);
+UPCALL_TYPED_ID(PyNumber_InPlacePower, ipow_fun_t);
 PyObject* PyNumber_InPlacePower(PyObject *o1, PyObject *o2, PyObject *o3) {
-	// TODO
-	PyErr_SetNone(PyExc_NotImplementedError);
-    return NULL;
-
+    return _jls_PyNumber_InPlacePower(native_to_java(o1), native_to_java(o2), native_to_java(o3));
 }
 
 PyObject* PyNumber_InPlaceLshift(PyObject *o1, PyObject *o2) {
@@ -270,6 +267,10 @@ PyObject * PyNumber_Divmod(PyObject *a, PyObject *b) {
     return UPCALL_CEXT_O(_jls_PyNumber_Divmod, native_to_java(a), native_to_java(b));
 }
 
+UPCALL_ID(PyNumber_ToBase);
+PyObject * PyNumber_ToBase(PyObject *n, int base) {
+    return UPCALL_CEXT_O(_jls_PyNumber_ToBase, native_to_java(n), base);
+}
 
 UPCALL_ID(PyIter_Next);
 PyObject * PyIter_Next(PyObject *iter) {
@@ -301,14 +302,19 @@ Py_ssize_t PySequence_Length(PyObject *s) {
 }
 #define PySequence_Length PySequence_Size
 
-UPCALL_ID(PySequence_GetItem);
+UPCALL_TYPED_ID(PySequence_GetItem, ssizeargfunc);
 PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i) {
-    return UPCALL_CEXT_O(_jls_PySequence_GetItem, native_to_java(s), i);
+    return _jls_PySequence_GetItem(native_to_java(s), i);
 }
 
 UPCALL_ID(PySequence_SetItem);
 int PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o) {
     return UPCALL_CEXT_I(_jls_PySequence_SetItem, native_to_java(s), i, native_to_java(o));
+}
+
+UPCALL_ID(PySequence_GetSlice);
+PyObject* PySequence_GetSlice(PyObject *s, Py_ssize_t i1, Py_ssize_t i2) {
+	return UPCALL_CEXT_O(_jls_PySequence_GetSlice, native_to_java(s), i1, i2);
 }
 
 UPCALL_ID(PySequence_Tuple);
@@ -322,6 +328,7 @@ PyObject* PySequence_List(PyObject *v) {
 }
 
 PyObject * PySequence_Fast(PyObject *v, const char *m) {
+    PyObject *res;
     if (v == NULL) {
         return null_error();
     }
@@ -331,21 +338,36 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
         return v;
     }
 
-	PyObject* result = UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
-	if (result == NULL) {
-		PyErr_SetString(PyExc_TypeError, m);
-	}
-	return result;
+    return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
 }
 
-UPCALL_ID(PyObject_GetItem);
+typedef PyObject* (*getitem_fun_t)(PyObject*, PyObject*);
+UPCALL_TYPED_ID(PyObject_GetItem, getitem_fun_t);
 PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
-    return UPCALL_CEXT_O(_jls_PyObject_GetItem, native_to_java(o), polyglot_from_string(key, SRC_CS));
+    return _jls_PyObject_GetItem(native_to_java(o), polyglot_from_string(key, SRC_CS));
 }
 
 UPCALL_ID(PyMapping_Keys);
 PyObject * PyMapping_Keys(PyObject *o) {
     return UPCALL_CEXT_O(_jls_PyMapping_Keys, native_to_java(o));
+}
+
+UPCALL_ID(PyMapping_Items);
+PyObject * PyMapping_Items(PyObject *o) {
+    return UPCALL_CEXT_O(_jls_PyMapping_Items, native_to_java(o));
+}
+
+UPCALL_ID(PyMapping_Values);
+PyObject * PyMapping_Values(PyObject *o) {
+    if (o == NULL) {
+        return null_error();
+    }
+    return UPCALL_CEXT_O(_jls_PyMapping_Values, native_to_java(o));
+}
+
+// taken from CPython "Objects/abstract.c"
+int PyMapping_Check(PyObject *o) {
+    return o && o->ob_type->tp_as_mapping && o->ob_type->tp_as_mapping->mp_subscript;
 }
 
 // taken from CPython "Objects/abstract.c"
@@ -410,4 +432,127 @@ int PyBuffer_FillInfo(Py_buffer *view, PyObject *obj, void *buf, Py_ssize_t len,
     view->suboffsets = NULL;
     view->internal = NULL;
     return 0;
+}
+
+UPCALL_ID(PySequence_DelItem);
+int PySequence_DelItem(PyObject *s, Py_ssize_t i) {
+    return UPCALL_CEXT_I(_jls_PySequence_DelItem, native_to_java(s), i);
+}
+// taken from CPython "Objects/abstract.c"
+static int _IsFortranContiguous(const Py_buffer *view) {
+    Py_ssize_t sd, dim;
+    int i;
+
+    /* 1) len = product(shape) * itemsize
+       2) itemsize > 0
+       3) len = 0 <==> exists i: shape[i] = 0 */
+    if (view->len == 0) return 1;
+    if (view->strides == NULL) {  /* C-contiguous by definition */
+        /* Trivially F-contiguous */
+        if (view->ndim <= 1) return 1;
+
+        /* ndim > 1 implies shape != NULL */
+        assert(view->shape != NULL);
+
+        /* Effectively 1-d */
+        sd = 0;
+        for (i=0; i<view->ndim; i++) {
+            if (view->shape[i] > 1) sd += 1;
+        }
+        return sd <= 1;
+    }
+
+    /* strides != NULL implies both of these */
+    assert(view->ndim > 0);
+    assert(view->shape != NULL);
+
+    sd = view->itemsize;
+    for (i=0; i<view->ndim; i++) {
+        dim = view->shape[i];
+        if (dim > 1 && view->strides[i] != sd) {
+            return 0;
+        }
+        sd *= dim;
+    }
+    return 1;
+}
+
+// taken from CPython "Objects/abstract.c"
+static int _IsCContiguous(const Py_buffer *view) {
+    Py_ssize_t sd, dim;
+    int i;
+
+    /* 1) len = product(shape) * itemsize
+       2) itemsize > 0
+       3) len = 0 <==> exists i: shape[i] = 0 */
+    if (view->len == 0) return 1;
+    if (view->strides == NULL) return 1; /* C-contiguous by definition */
+
+    /* strides != NULL implies both of these */
+    assert(view->ndim > 0);
+    assert(view->shape != NULL);
+
+    sd = view->itemsize;
+    for (i=view->ndim-1; i>=0; i--) {
+        dim = view->shape[i];
+        if (dim > 1 && view->strides[i] != sd) {
+            return 0;
+        }
+        sd *= dim;
+    }
+    return 1;
+}
+
+// taken from CPython "Objects/abstract.c"
+int PyBuffer_IsContiguous(const Py_buffer *view, char order) {
+
+    if (view->suboffsets != NULL) return 0;
+
+    if (order == 'C')
+        return _IsCContiguous(view);
+    else if (order == 'F')
+        return _IsFortranContiguous(view);
+    else if (order == 'A')
+        return (_IsCContiguous(view) || _IsFortranContiguous(view));
+    return 0;
+}
+
+// partially taken from CPython "Objects/abstract.c"
+Py_ssize_t PyMapping_Size(PyObject *o) {
+    PyMappingMethods *m;
+
+    if (o == NULL) {
+        null_error();
+        return -1;
+    }
+
+    m = o->ob_type->tp_as_mapping;
+    if (m && m->mp_length) {
+        Py_ssize_t len = m->mp_length(o);
+        assert(len >= 0 || PyErr_Occurred());
+        return len;
+    }
+
+    PyErr_Format(PyExc_TypeError, "object of type '%s' has no len()", Py_TYPE(o)->tp_name);
+    return -1;
+}
+
+UPCALL_ID(PySequence_Repeat);
+PyObject* PySequence_Repeat(PyObject *o, Py_ssize_t count) {
+	return UPCALL_CEXT_O(_jls_PySequence_Repeat, native_to_java(o), count);
+}
+
+UPCALL_ID(PySequence_Concat);
+PyObject* PySequence_Concat(PyObject *s, PyObject *o) {
+	return UPCALL_CEXT_O(_jls_PySequence_Concat, native_to_java(s), native_to_java(o));
+}
+
+UPCALL_ID(PySequence_InPlaceRepeat);
+PyObject* PySequence_InPlaceRepeat(PyObject *o, Py_ssize_t count) {
+	return UPCALL_CEXT_O(_jls_PySequence_Repeat, native_to_java(o), count);
+}
+
+UPCALL_ID(PySequence_InPlaceConcat);
+PyObject* PySequence_InPlaceConcat(PyObject *s, PyObject *o) {
+	return UPCALL_CEXT_O(_jls_PySequence_InPlaceConcat, native_to_java(s), native_to_java(o));
 }

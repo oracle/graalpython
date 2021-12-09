@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,16 +44,15 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.nodes.subscript.SetItemIfNotPresentNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class ClassDefinitionPrologueNode extends StatementNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNameNode = ReadGlobalOrBuiltinNode.create(__NAME__);
-    @Child private ReadIndexedArgumentNode readPrimaryArgNode = ReadIndexedArgumentNode.create(0);
-    @Child private SetItemIfNotPresentNode setItemIfNotPresentNode = SetItemIfNotPresentNode.create();
+    @Child private WriteNameNode writeModuleNode = WriteNameNode.create(__MODULE__, null);
+    @Child private WriteNameNode writeQualnameNode = WriteNameNode.create(__QUALNAME__, null);
 
     private final String qualName;
 
@@ -65,12 +64,14 @@ public class ClassDefinitionPrologueNode extends StatementNode {
         this.qualName = qualName;
     }
 
+    public String getQualName() {
+        return qualName;
+    }
+
     @Override
     public void executeVoid(VirtualFrame frame) {
         Object moduleName = readGlobalNameNode.execute(frame);
-        Object primary = readPrimaryArgNode.execute(frame);
-
-        setItemIfNotPresentNode.execute(frame, primary, __QUALNAME__, qualName);
-        setItemIfNotPresentNode.execute(frame, primary, __MODULE__, moduleName);
+        writeModuleNode.executeObject(frame, moduleName);
+        writeQualnameNode.executeObject(frame, qualName);
     }
 }

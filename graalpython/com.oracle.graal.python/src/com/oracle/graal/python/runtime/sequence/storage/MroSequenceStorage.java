@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,21 +42,25 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class MroSequenceStorage extends TypedSequenceStorage {
 
+    private final String className;
     /**
      * This assumption will be invalidated whenever the mro changes.
      */
@@ -66,22 +70,29 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
      * These assumptions will be invalidated whenever the value of the given slot changes. All
      * assumptions will be invalidated if the mro changes.
      */
-    private final Map<String, List<Assumption>> attributesInMROFinalAssumptions = new HashMap<>();
+    private final Map<String, List<Assumption>> attributesInMROFinalAssumptions;
+    private boolean hasAttributesInMROFinalAssumptions;
 
-    @CompilationFinal(dimensions = 1) private PythonAbstractClass[] values;
+    @CompilationFinal(dimensions = 1) private final PythonAbstractClass[] values;
 
+    @TruffleBoundary
     public MroSequenceStorage(String className, PythonAbstractClass[] elements) {
+        this.className = className;
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
         this.lookupStableAssumption = new CyclicAssumption(className);
+        this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
+    @TruffleBoundary
     public MroSequenceStorage(String className, int capacity) {
+        this.className = className;
         this.values = new PythonAbstractClass[capacity];
         this.capacity = capacity;
         this.length = 0;
         this.lookupStableAssumption = new CyclicAssumption(className);
+        this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
     @Override
@@ -90,40 +101,24 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public void setItemNormalized(int idx, Object value) {
-        if (value instanceof PythonAbstractClass) {
-            setClassItemNormalized(idx, (PythonAbstractClass) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
-    public void setClassItemNormalized(int idx, PythonAbstractClass value) {
-        if (values[idx] != value) {
-            lookupChanged("direct assignment to MRO");
-        }
-        values[idx] = value;
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("should not be reached");
     }
 
     @Override
+    @SuppressWarnings("unused")
     public void insertItem(int idx, Object value) {
-        ensureCapacity(length + 1);
-
-        // shifting tail to the right by one slot
-        for (int i = values.length - 1; i > idx; i--) {
-            values[i] = values[i - 1];
-        }
-
-        setItemNormalized(idx, value);
-        length++;
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("should not be reached");
     }
 
     @Override
+    @SuppressWarnings("unused")
     public void copyItem(int idxTo, int idxFrom) {
-        if (idxTo != idxFrom) {
-            lookupChanged("item move within MRO");
-        }
-        values[idxTo] = values[idxFrom];
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("should not be reached");
     }
 
     @Override
@@ -131,7 +126,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         PythonAbstractClass[] newArray = new PythonAbstractClass[sliceLength];
 
         if (step == 1) {
-            System.arraycopy(values, start, newArray, 0, sliceLength);
+            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
             return new MroSequenceStorage(getClassName(), newArray);
         }
 
@@ -142,34 +137,13 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return new MroSequenceStorage(getClassName(), newArray);
     }
 
-    public void setObjectSliceInBound(int start, int stop, int step, MroSequenceStorage sequence, ConditionProfile sameLengthProfile) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
-            minimizeCapacity();
-            return;
-        }
-
-        ensureCapacity(stop);
-
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        length = length > stop ? length : stop;
-        lookupChanged("slice assignment to MRO");
-    }
-
     public String getClassName() {
-        return lookupStableAssumption.getAssumption().getName();
+        return className;
     }
 
     @Override
     public SequenceStorage copy() {
-        return new MroSequenceStorage(getClassName(), Arrays.copyOf(values, length));
+        return new MroSequenceStorage(getClassName(), PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override
@@ -186,38 +160,25 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return values;
     }
 
+    @SuppressWarnings("unused")
     @Override
     public void increaseCapacityExactWithCopy(int newCapacity) {
-        values = Arrays.copyOf(values, newCapacity);
-        capacity = values.length;
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("should not be reached");
     }
 
+    @SuppressWarnings("unused")
     @Override
     public void increaseCapacityExact(int newCapacity) {
-        values = new PythonAbstractClass[newCapacity];
-        capacity = values.length;
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("should not be reached");
     }
 
-    public Object popObject() {
-        Object pop = values[length - 1];
-        length--;
-        return pop;
-    }
-
+    @SuppressWarnings("unused")
     @Override
     public void reverse() {
-        if (length > 0) {
-            int head = 0;
-            int tail = length - 1;
-            int middle = (length - 1) / 2;
-
-            for (; head <= middle; head++, tail--) {
-                PythonAbstractClass temp = values[head];
-                values[head] = values[tail];
-                values[tail] = temp;
-            }
-            lookupChanged("MRO reversed");
-        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("should not be reached");
     }
 
     @Override
@@ -241,12 +202,11 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return Arrays.copyOf(values, length);
     }
 
+    @SuppressWarnings("unused")
     @Override
     public void setInternalArrayObject(Object arrayObject) {
-        PythonAbstractClass[] classArray = (PythonAbstractClass[]) arrayObject;
-        this.values = classArray;
-        this.length = classArray.length;
-        this.capacity = classArray.length;
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("should not be reached");
     }
 
     @Override
@@ -263,6 +223,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
         if (attrAssumptions == null) {
             attrAssumptions = new ArrayList<>();
+            hasAttributesInMROFinalAssumptions = true;
             attributesInMROFinalAssumptions.put(name, attrAssumptions);
         }
 
@@ -276,41 +237,73 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
         if (attrAssumptions == null) {
             attrAssumptions = new ArrayList<>();
+            hasAttributesInMROFinalAssumptions = true;
             attributesInMROFinalAssumptions.put(name, attrAssumptions);
         }
 
         attrAssumptions.add(assumption);
     }
 
+    /**
+     * Returns {@code true} if some assumption was actually invalidated.
+     */
     @TruffleBoundary
-    public void invalidateAttributeInMROFinalAssumptions(String name) {
-        List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, new ArrayList<>());
+    public boolean invalidateAttributeInMROFinalAssumptions(String name) {
+        List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, Collections.emptyList());
+        // the empty check is just to avoid the StringBuilder allocation
         if (!assumptions.isEmpty()) {
-            String message = getClassName() + "." + name;
-            for (Assumption assumption : assumptions) {
-                assumption.invalidate(message);
+            if (invalidateAttributesInMROFinalAssumptions(assumptions, getClassName() + "." + name)) {
+                // remove list
+                attributesInMROFinalAssumptions.remove(name);
             }
+            return true;
         }
+        return false;
     }
 
     public void lookupChanged() {
         CompilerAsserts.neverPartOfCompilation();
-        for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
-            for (Assumption assumption : list) {
-                assumption.invalidate();
-            }
-        }
+        attributesInMROFinalAssumptions.values().removeIf(REMOVE_IF_LARGE);
         lookupStableAssumption.invalidate();
     }
 
-    public void lookupChanged(String msg) {
-        CompilerAsserts.neverPartOfCompilation();
-        for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
+    private static final Predicate<List<Assumption>> REMOVE_IF_LARGE = new Predicate<List<Assumption>>() {
+
+        @Override
+        public boolean test(List<Assumption> assumptions) {
+            return invalidateAttributesInMROFinalAssumptions(assumptions, "");
+        }
+    };
+
+    @TruffleBoundary
+    private static boolean invalidateAttributesInMROFinalAssumptions(List<Assumption> list, String reason) {
+        int n = list.size();
+        if (n > 0) {
             for (Assumption assumption : list) {
-                assumption.invalidate();
+                assumption.invalidate(reason);
             }
         }
-        lookupStableAssumption.invalidate(msg);
+
+        // clear assumptions to avoid memory leak; they are all invalidated, so we don't need
+        // them any longer
+        if (n < 16) {
+            // keep small lists; they don't hurt too much and we save allocations as well as GC
+            // pressure
+            list.clear();
+
+            // indicate to keep the list instance
+            return false;
+        }
+        // indicate that the list should completely be removed
+        return true;
     }
 
+    @Override
+    public Object[] getCopyOfInternalArray() {
+        return getInternalArray();
+    }
+
+    public final boolean hasAttributeInMROFinalAssumptions() {
+        return hasAttributesInMROFinalAssumptions;
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,65 +40,62 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
-import java.net.InetSocketAddress;
-
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.Shape;
 
 public class PSocket extends PythonBuiltinObject {
-    public static final int AF_UNSPEC = 0;
-    public static final int AF_INET = 2;
-    public static final int AF_INET6 = 23;
+    public static final int INVALID_FD = -1;
 
-    public static final int SOCK_DGRAM = 1;
-    public static final int SOCK_STREAM = 2;
+    private int family;
+    private int type;
+    private int proto;
 
-    private static final InetSocketAddress EPHEMERAL_ADDRESS = new InetSocketAddress(0);
+    private int fd = INVALID_FD;
 
-    private final int family;
-    private final int type;
-    private final int proto;
+    // nanoseconds
+    private long timeoutNs;
 
-    private double timeout;
-
-    private InetSocketAddress address = EPHEMERAL_ADDRESS;
-
-    public PSocket(LazyPythonClass cls, int family, int type, int proto) {
-        super(cls);
-        this.family = family;
-        this.type = type;
-        this.proto = proto;
+    public PSocket(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 
     public int getFamily() {
         return family;
     }
 
+    public void setFamily(int family) {
+        this.family = family;
+    }
+
     public int getType() {
         return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 
     public int getProto() {
         return proto;
     }
 
-    public double getTimeout() {
-        return timeout;
+    public void setProto(int proto) {
+        this.proto = proto;
     }
 
-    public void setTimeout(double timeout) {
-        this.timeout = timeout;
+    public int getFd() {
+        return fd;
     }
 
-    public InetSocketAddress getAddress() {
-        return address;
+    public void setFd(int fd) {
+        this.fd = fd;
     }
 
-    public void setBlocking(boolean blocking) {
-        if (blocking) {
-            this.setTimeout(-1.0);
-        } else {
-            this.setTimeout(0.0);
-        }
+    public long getTimeoutNs() {
+        return timeoutNs;
+    }
+
+    public void setTimeoutNs(long timeoutNs) {
+        this.timeoutNs = timeoutNs;
     }
 }

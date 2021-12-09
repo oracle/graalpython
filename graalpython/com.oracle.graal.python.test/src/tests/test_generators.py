@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -207,18 +207,19 @@ class ExceptionTest(unittest.TestCase):
         next(g)
         next(g)
         self.assertEqual(next(g), "done")
-        
 
-    def test_stopiteration_warning(self):
+    @unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
+    def test_stopiteration_error(self):
         # See also PEP 479.
 
         def gen():
             raise StopIteration
             yield
 
-        with self.assertRaises(StopIteration):
+        with self.assertRaisesRegex(RuntimeError, 'raised StopIteration'):
             next(gen())
 
+    @unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
     def test_tutorial_stopiteration(self):
         # Raise StopIteration" stops the generator too:
 
@@ -230,35 +231,68 @@ class ExceptionTest(unittest.TestCase):
         g = f()
         self.assertEqual(next(g), 1)
 
-        with self.assertRaises(StopIteration):
+        with self.assertRaisesRegex(RuntimeError, 'raised StopIteration'):
             next(g)
 
-        with self.assertRaises(StopIteration):
-            # This time StopIteration isn't raised from the generator's body,
-            # hence no warning.
+
+    def test_return_tuple(self):
+        def g():
+            return (yield 1)
+
+        gen = g()
+        self.assertEqual(next(gen), 1)
+        with self.assertRaises(StopIteration) as cm:
+            gen.send((2,))
+        self.assertEqual(cm.exception.value, (2,))
+
+    def test_return_stopiteration(self):
+        def g():
+            return (yield 1)
+
+        gen = g()
+        self.assertEqual(next(gen), 1)
+        with self.assertRaises(StopIteration) as cm:
+            gen.send(StopIteration(2))
+        self.assertTrue(isinstance(cm.exception.value, StopIteration))
+        self.assertEqual(cm.exception.value.value, 2)
+
+    def test_yield_expr_value_without_send(self):
+        def fn():
+            yield (1,(yield 42))
+        g = fn()
+        self.assertEqual(next(g), 42)
+        self.assertEqual(next(g), (1,None))
+
+    def test_generator_caller_frame(self):
+        def gen():
+            yield sys._getframe(1)
+            yield sys._getframe(1)
+
+        def callnext(g):
             next(g)
+            return next(g)
 
-    # def test_return_tuple(self):
-    #     def g():
-    #         return (yield 1)
+        def callsend(g):
+            next(g)
+            return g.send(1)
 
-    #     gen = g()
-    #     self.assertEqual(next(gen), 1)
-    #     with self.assertRaises(StopIteration) as cm:
-    #         gen.send((2,))
-    #     self.assertEqual(cm.exception.value, (2,))
+        self.assertEqual(callnext(gen()).f_code.co_name, 'callnext')
+        self.assertEqual(callsend(gen()).f_code.co_name, 'callsend')
 
-    # def test_return_stopiteration(self):
-    #     def g():
-    #         return (yield 1)
+        # Force a megamorphic call to the genrator function
+        def genfn(i):
+            l = {}
+            exec(f"def f{i}(): yield {i}", l)
+            return l[f'f{i}']
 
-    #     gen = g()
-    #     self.assertEqual(next(gen), 1)
-    #     with self.assertRaises(StopIteration) as cm:
-    #         gen.send(StopIteration(2))
-    #     self.assertTrue(isinstance(cm.exception.value, StopIteration))
-    #     self.assertEqual(cm.exception.value.value, 2)
-
+        fns = [genfn(i) for i in range(100)]
+        fns.append(gen)
+        for fn in fns:
+            g = fn()
+        self.assertEqual(callnext(g).f_code.co_name, 'callnext')
+        for fn in fns:
+            g = fn()
+        self.assertEqual(callsend(g).f_code.co_name, 'callsend')
 
 if sys.version_info.minor == 4 and sys.version_info.micro < 3:
     del ExceptionTest

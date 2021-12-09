@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
-import java.util.List;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
@@ -183,6 +182,18 @@ public class JavaInteropTest {
         }
 
         @Test
+        public void javaArrayBytes() {
+            String source = "import java\n" +
+                            "array = java.type(\"short[]\")(4)\n" +
+                            "array[0] = 1\n" +
+                            "array[1] = 2\n" +
+                            "array[2] = 3\n" +
+                            "array[3] = 4\n" +
+                            "print(bytes(array))\n\n";
+            assertPrints("b'\\x01\\x02\\x03\\x04'\n", source);
+        }
+
+        @Test
         public void testPassingFloats() throws UnsupportedEncodingException {
             String source = "import polyglot\n" +
                             "@polyglot.export_value\n" +
@@ -288,21 +299,17 @@ public class JavaInteropTest {
                             "}",
                             "suite.py").build();
             Value suite = context.eval(suitePy);
-
-            Value libraries = suite.getMember("libraries");
+            Value libraries = suite.getHashValue("libraries");
             assertNotNull("libraries found", libraries);
-            final List<Object> suiteKeys = Arrays.asList(suite.invokeMember("keys").as(Object[].class));
-            assertTrue("Libraries found among keys: " + suiteKeys, suiteKeys.contains("libraries"));
-
             Value dacapo = null;
-            for (Object k : libraries.invokeMember("keys").as(List.class)) {
+            for (Object k : libraries.getHashKeysIterator().as(Iterable.class)) {
                 System.err.println("k " + k);
                 if ("DACAPO".equals(k)) {
-                    dacapo = libraries.getMember((String) k);
+                    dacapo = libraries.getHashValue(k);
                 }
             }
             assertNotNull("Dacapo found", dacapo);
-            assertEquals("'e39957904b7e79caf4fa54f30e8e4ee74d4e9e37'", dacapo.getMember("sha1").toString());
+            assertEquals("'e39957904b7e79caf4fa54f30e8e4ee74d4e9e37'", dacapo.getHashValue("sha1").toString());
         }
 
         @ExportLibrary(InteropLibrary.class)
@@ -329,7 +336,7 @@ public class JavaInteropTest {
             @ExportMessage
             Object invokeMember(String member, Object... arguments) throws ArityException, UnknownIdentifierException {
                 if (arguments.length != 0) {
-                    throw ArityException.create(0, arguments.length);
+                    throw ArityException.create(0, 0, arguments.length);
                 } else if (!member.equals("getMyName")) {
                     throw UnknownIdentifierException.create(member);
                 } else {
@@ -385,7 +392,7 @@ public class JavaInteropTest {
             @ExportMessage
             Object execute(Object... arguments) throws ArityException {
                 if (arguments.length != 0) {
-                    throw ArityException.create(0, arguments.length);
+                    throw ArityException.create(0, 0, arguments.length);
                 } else {
                     return self.getMyName();
                 }
@@ -508,6 +515,54 @@ public class JavaInteropTest {
             Value javaObj = context.eval("python", "javaObj");
             assertTrue(javaObj.isNumber());
             assertEquals(javaObj.asInt(), 42);
+        }
+
+        @ExportLibrary(InteropLibrary.class)
+        static final class WrapString implements TruffleObject {
+            private final String str;
+
+            WrapString(String str) {
+                this.str = str;
+            }
+
+            @ExportMessage
+            @SuppressWarnings("static-method")
+            boolean isString() {
+                return true;
+            }
+
+            @ExportMessage
+            String asString() {
+                return str;
+            }
+        }
+
+        @ExportLibrary(InteropLibrary.class)
+        static final class WrapBoolean implements TruffleObject {
+            private final boolean flag;
+
+            WrapBoolean(boolean flag) {
+                this.flag = flag;
+            }
+
+            @ExportMessage
+            @SuppressWarnings("static-method")
+            boolean isBoolean() {
+                return true;
+            }
+
+            @ExportMessage
+            boolean asBoolean() {
+                return flag;
+            }
+        }
+
+        @Test
+        public void multiplyStrBool() {
+            context.getBindings("python").putMember("javaBool", new WrapBoolean(true));
+            context.getBindings("python").putMember("javaStr", new WrapString("test"));
+            assertEquals(context.eval("python", "javaStr * javaBool").asString(), "test");
+            assertEquals(context.eval("python", "javaBool * javaStr").asString(), "test");
         }
     }
 

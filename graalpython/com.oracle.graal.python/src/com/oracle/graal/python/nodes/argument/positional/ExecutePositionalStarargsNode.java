@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,54 +44,74 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.NodeContextManager;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
+@ImportStatic(PythonOptions.class)
 public abstract class ExecutePositionalStarargsNode extends Node {
     public abstract Object[] executeWith(VirtualFrame frame, Object starargs);
 
     @Specialization
-    static Object[] starargs(Object[] starargs) {
+    static Object[] doObjectArray(Object[] starargs) {
         return starargs;
     }
 
     @Specialization
-    static Object[] starargs(PTuple starargs) {
-        return starargs.getArray();
-    }
-
-    @Specialization
-    static Object[] starargs(PList starargs,
-                    @Cached SequenceStorageNodes.ToArrayNode toArray) {
+    static Object[] doTuple(PTuple starargs,
+                    @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
         return toArray.execute(starargs.getSequenceStorage());
     }
 
     @Specialization
-    static Object[] starargs(PDict starargs) {
-        int length = starargs.size();
+    static Object[] doList(PList starargs,
+                    @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
+        return toArray.execute(starargs.getSequenceStorage());
+    }
+
+    @Specialization(limit = "1")
+    static Object[] doDict(PDict starargs,
+                    @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib) {
+        HashingStorage dictStorage = starargs.getDictStorage();
+        int length = lib.length(dictStorage);
         Object[] args = new Object[length];
-        Iterator<Object> iterator = starargs.getDictStorage().keys().iterator();
+        Iterator<Object> iterator = lib.keys(dictStorage).iterator();
+        for (int i = 0; i < args.length; i++) {
+            assert iterator.hasNext();
+            args[i] = iterator.next();
+        }
+        return args;
+    }
+
+    @Specialization(limit = "1")
+    static Object[] doSet(PSet starargs,
+                    @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib) {
+        HashingStorage dictStorage = starargs.getDictStorage();
+        int length = lib.length(dictStorage);
+        Object[] args = new Object[length];
+        Iterator<Object> iterator = lib.keys(dictStorage).iterator();
         for (int i = 0; i < args.length; i++) {
             assert iterator.hasNext();
             args[i] = iterator.next();
@@ -100,41 +120,30 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @Specialization
-    static Object[] starargs(PSet starargs) {
-        int length = starargs.size();
-        Object[] args = new Object[length];
-        Iterator<Object> iterator = starargs.getDictStorage().keys().iterator();
-        for (int i = 0; i < args.length; i++) {
-            assert iterator.hasNext();
-            args[i] = iterator.next();
-        }
-        return args;
-    }
-
-    @Specialization
-    static Object[] starargs(@SuppressWarnings("unused") PNone none) {
-        return new Object[0];
+    static Object[] doNone(PNone none,
+                    @Cached PRaiseNode raise) {
+        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, none);
     }
 
     @Specialization
     static Object[] starargs(VirtualFrame frame, Object object,
                     @Cached PRaiseNode raise,
-                    @Cached GetIteratorNode getIterator,
-                    @Cached GetNextNode next,
+                    @Cached PyObjectGetIter getIter,
+                    @Cached GetNextNode nextNode,
                     @Cached IsBuiltinClassProfile errorProfile) {
-        Object iterator = getIterator.executeWith(frame, object);
+        Object iterator = getIter.execute(frame, object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayList<Object> internalStorage = new ArrayList<>();
             while (true) {
                 try {
-                    addToList(internalStorage, next.execute(frame, iterator));
+                    addToList(internalStorage, nextNode.execute(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return toArray(internalStorage);
                 }
             }
         }
-        throw raise.raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
+        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -152,88 +161,64 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @GenerateUncached
-    public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithGlobalState<ExecutePositionalStarargsContextManager> {
-        protected abstract Object[] executeWith(Object starargs);
+    @ImportStatic(PythonOptions.class)
+    public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithContext {
+        public abstract Object[] executeWithGlobalState(Object starargs);
 
         @Specialization
         static Object[] starargs(Object[] starargs) {
-            return ExecutePositionalStarargsNode.starargs(starargs);
+            return ExecutePositionalStarargsNode.doObjectArray(starargs);
         }
 
         @Specialization
-        static Object[] starargs(PTuple starargs) {
-            return ExecutePositionalStarargsNode.starargs(starargs);
+        static Object[] doTuple(PTuple starargs,
+                        @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
+            return ExecutePositionalStarargsNode.doTuple(starargs, toArray);
         }
 
         @Specialization
-        static Object[] starargs(PList starargs) {
-            int length = starargs.getSequenceStorage().length();
-            Object[] internalArray = starargs.getSequenceStorage().getInternalArray();
-            if (internalArray.length != length) {
-                return starargs.getSequenceStorage().getCopyOfInternalArray();
-            }
-            return internalArray;
+        static Object[] doList(PList starargs,
+                        @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
+            return ExecutePositionalStarargsNode.doList(starargs, toArray);
         }
 
         @Specialization
-        static Object[] starargs(PDict starargs) {
-            return ExecutePositionalStarargsNode.starargs(starargs);
+        static Object[] doDict(PDict starargs,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            return ExecutePositionalStarargsNode.doDict(starargs, lib);
         }
 
         @Specialization
-        static Object[] starargs(PSet starargs) {
-            return ExecutePositionalStarargsNode.starargs(starargs);
+        static Object[] doSet(PSet starargs,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            return ExecutePositionalStarargsNode.doSet(starargs, lib);
         }
 
         @Specialization
-        static Object[] starargs(@SuppressWarnings("unused") PNone none) {
-            return ExecutePositionalStarargsNode.starargs(none);
+        static Object[] starargs(PNone none,
+                        @Cached PRaiseNode raise) {
+            return ExecutePositionalStarargsNode.doNone(none, raise);
         }
 
         @Specialization
         static Object[] starargs(Object object,
                         @Cached PRaiseNode raise,
-                        @Cached GetIteratorWithoutFrameNode getIterator,
-                        @Cached GetNextWithoutFrameNode next,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            Object iterator = getIterator.passState().execute(object);
+            Object iterator = getIter.execute(null, object);
             if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
                 ArrayList<Object> internalStorage = new ArrayList<>();
                 while (true) {
                     try {
-                        addToList(internalStorage, next.passState().execute(iterator));
+                        addToList(internalStorage, nextNode.execute(null, iterator));
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile);
                         return toArray(internalStorage);
                     }
                 }
             }
-            throw raise.raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
-        }
-
-        @Override
-        public ExecutePositionalStarargsContextManager withGlobalState(ContextReference<PythonContext> contextRef, VirtualFrame frame) {
-            return new ExecutePositionalStarargsContextManager(this, contextRef.get(), frame);
-        }
-
-        @Override
-        public ExecutePositionalStarargsContextManager passState() {
-            return new ExecutePositionalStarargsContextManager(this, null, null);
-        }
-
-    }
-
-    public static final class ExecutePositionalStarargsContextManager extends NodeContextManager {
-
-        private final ExecutePositionalStarargsInteropNode delegate;
-
-        private ExecutePositionalStarargsContextManager(ExecutePositionalStarargsInteropNode delegate, PythonContext context, VirtualFrame frame) {
-            super(context, frame, delegate);
-            this.delegate = delegate;
-        }
-
-        public Object[] executeWith(Object starargs) {
-            return delegate.executeWith(starargs);
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
         }
     }
 }

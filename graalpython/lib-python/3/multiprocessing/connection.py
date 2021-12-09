@@ -47,9 +47,11 @@ _mmap_counter = itertools.count()
 default_family = 'AF_INET'
 families = ['AF_INET']
 
-if hasattr(socket, 'AF_UNIX'):
-    default_family = 'AF_UNIX'
-    families += ['AF_UNIX']
+# Begin Truffle change
+# if hasattr(socket, 'AF_UNIX'):
+#    default_family = 'AF_UNIX'
+#    families += ['AF_UNIX']
+# End Truffle change
 
 if sys.platform == 'win32':
     default_family = 'AF_PIPE'
@@ -102,7 +104,7 @@ def address_type(address):
         return 'AF_INET'
     elif type(address) is str and address.startswith('\\\\'):
         return 'AF_PIPE'
-    elif type(address) is str:
+    elif type(address) is str or util.is_abstract_socket_namespace(address):
         return 'AF_UNIX'
     else:
         raise ValueError('address type of %r unrecognized' % address)
@@ -116,8 +118,10 @@ class _ConnectionBase:
 
     def __init__(self, handle, readable=True, writable=True):
         handle = handle.__index__()
-        if handle < 0:
-            raise ValueError("invalid handle")
+        # Begin Truffle change        
+        # if handle < 0:
+        #    raise ValueError("invalid handle")
+        # End Truffle change
         if not readable and not writable:
             raise ValueError(
                 "at least one of `readable` and `writable` must be True")
@@ -358,11 +362,22 @@ class Connection(_ConnectionBase):
         _read = _multiprocessing.recv
     else:
         def _close(self, _close=os.close):
-            _close(self._handle)
+            # Begin Truffle change
+            # _close(self._handle)
+            if(self._handle < 0):
+                _multiprocessing._close(self._handle)
+            else:    
+                _close(self._handle)
+            # End Truffle change
         _write = os.write
         _read = os.read
 
     def _send(self, buf, write=_write):
+        # Begin Truffle change
+        if(self._handle < 0):
+            self._send_mp_write(buf.tobytes())
+            return
+        # End Truffle change
         remaining = len(buf)
         while True:
             n = write(self._handle, buf)
@@ -372,6 +387,10 @@ class Connection(_ConnectionBase):
             buf = buf[n:]
 
     def _recv(self, size, read=_read):
+        # Begin Truffle change
+        if(self._handle < 0):
+            return self._recv_mp_read(size)
+        # End Truffle change
         buf = io.BytesIO()
         handle = self._handle
         remaining = size
@@ -388,32 +407,61 @@ class Connection(_ConnectionBase):
         return buf
 
     def _send_bytes(self, buf):
+        # Begin Truffle change
+        if self._handle < 0:
+            self._send_mp_write(buf.tobytes())
+            return
+        # End Truffle change
         n = len(buf)
-        # For wire compatibility with 3.2 and lower
-        header = struct.pack("!i", n)
-        if n > 16384:
-            # The payload is large so Nagle's algorithm won't be triggered
-            # and we'd better avoid the cost of concatenation.
+        if n > 0x7fffffff:
+            pre_header = struct.pack("!i", -1)
+            header = struct.pack("!Q", n)
+            self._send(pre_header)
             self._send(header)
             self._send(buf)
         else:
-            # Issue #20540: concatenate before sending, to avoid delays due
-            # to Nagle's algorithm on a TCP socket.
-            # Also note we want to avoid sending a 0-length buffer separately,
-            # to avoid "broken pipe" errors if the other end closed the pipe.
-            self._send(header + buf)
+            # For wire compatibility with 3.7 and lower
+            header = struct.pack("!i", n)
+            if n > 16384:
+                # The payload is large so Nagle's algorithm won't be triggered
+                # and we'd better avoid the cost of concatenation.
+                self._send(header)
+                self._send(buf)
+            else:
+                # Issue #20540: concatenate before sending, to avoid delays due
+                # to Nagle's algorithm on a TCP socket.
+                # Also note we want to avoid sending a 0-length buffer separately,
+                # to avoid "broken pipe" errors if the other end closed the pipe.
+                self._send(header + buf)
 
     def _recv_bytes(self, maxsize=None):
+        # Begin Truffle change
+        if(self._handle < 0):
+            return self._recv_mp_read(maxsize)
+        # End Truffle change
         buf = self._recv(4)
         size, = struct.unpack("!i", buf.getvalue())
+        if size == -1:
+            buf = self._recv(8)
+            size, = struct.unpack("!Q", buf.getvalue())
         if maxsize is not None and size > maxsize:
             return None
         return self._recv(size)
 
+    # Begin Truffle change
+    def _recv_mp_read(self, size):
+        # size is irelevant, _multiprocessing._read returns 
+        # the whole byte array at once
+        chunk = _multiprocessing._read(self._handle, size)
+        return io.BytesIO(chunk)
+
+    def _send_mp_write(self, bytes):        
+        _multiprocessing._write(self._handle, bytes)
+    # End Truffle change
+
     def _poll(self, timeout):
         r = wait([self], timeout)
         return bool(r)
-
 
 #
 # Public functions
@@ -514,7 +562,10 @@ if sys.platform != 'win32':
             c1 = Connection(s1.detach())
             c2 = Connection(s2.detach())
         else:
-            fd1, fd2 = os.pipe()
+            # Begin Truffle change
+            # fd1, fd2 = os.pipe()
+            fd1, fd2 = _multiprocessing._pipe()
+            # End Truffle change
             c1 = Connection(fd1, writable=False)
             c2 = Connection(fd2, readable=False)
 
@@ -587,7 +638,8 @@ class SocketListener(object):
         self._family = family
         self._last_accepted = None
 
-        if family == 'AF_UNIX':
+        if family == 'AF_UNIX' and not util.is_abstract_socket_namespace(address):
+            # Linux abstract socket namespaces do not need to be explicitly unlinked
             self._unlink = util.Finalize(
                 self, os.unlink, args=(address,), exitpriority=0
                 )
@@ -893,6 +945,40 @@ if sys.platform == 'win32':
 
 else:
 
+# Begin Truffle change
+#    import selectors
+#
+#    # poll/select have the advantage of not requiring any extra file
+#    # descriptor, contrarily to epoll/kqueue (also, they require a single
+#    # syscall).
+#    if hasattr(selectors, 'PollSelector'):
+#        _WaitSelector = selectors.PollSelector
+#    else:
+#        _WaitSelector = selectors.SelectSelector
+#
+#    def wait(object_list, timeout=None):
+#        '''
+#        Wait till an object in object_list is ready/readable.
+#
+#        Returns list of those objects in object_list which are ready/readable.
+#        #'''
+#        with _WaitSelector() as selector:
+#            for obj in object_list:
+#                selector.register(obj, selectors.EVENT_READ)
+#
+#            if timeout is not None:
+#                deadline = time.monotonic() + timeout
+#
+#            while True:
+#                ready = selector.select(timeout)
+#                if ready:
+#                    return [key.fileobj for (key, events) in ready]
+#                else:
+#                    if timeout is not None:
+#                        timeout = deadline - time.monotonic()
+#                        if timeout < 0:
+#                            return ready
+
     import selectors
 
     # poll/select have the advantage of not requiring any extra file
@@ -908,23 +994,60 @@ else:
         Wait till an object in object_list is ready/readable.
 
         Returns list of those objects in object_list which are ready/readable.
-        '''
+        #'''
+
+        mp_select_list = []
+        selectors_list = []
+        for obj in object_list:
+            fileno = obj.fileno() if hasattr(obj, "fileno") else obj
+            if(fileno < 0):
+                mp_select_list.append(fileno)
+            else:
+                selectors_list.append(obj)
+
         with _WaitSelector() as selector:
-            for obj in object_list:
-                selector.register(obj, selectors.EVENT_READ)
+            if selectors_list:
+                for obj in selectors_list:
+                    selector.register(obj, selectors.EVENT_READ)
 
             if timeout is not None:
                 deadline = time.monotonic() + timeout
 
+            def is_timeout():
+                nonlocal timeout
+                if timeout is not None:
+                    timeout = deadline - time.monotonic()
+                    return timeout < 0
+
             while True:
-                ready = selector.select(timeout)
+                selectors_ready = []
+                if selectors_list:
+                    selectors_ready = selector.select(-1)
+                    if selectors_ready:
+                        selectors_ready = [key.fileobj for (key, events) in selectors_ready]
+                        
+                mp_select_ready = []
+                if mp_select_list:
+                    t = time.time()
+                    mp_select_ready = _multiprocessing._select(mp_select_list)
+                
+                ready = fileno_to_obj(mp_select_ready, object_list) + selectors_ready  
                 if ready:
-                    return [key.fileobj for (key, events) in ready]
-                else:
-                    if timeout is not None:
-                        timeout = deadline - time.monotonic()
-                        if timeout < 0:
-                            return ready
+                    return ready
+
+                if is_timeout():
+                    return ready
+
+    def fileno_to_obj(filenumbers, object_list):
+        l = []
+        for r in filenumbers:
+            for obj in object_list:
+                fileno = obj.fileno() if hasattr(obj, "fileno") else obj
+                if fileno == r:
+                    l.append(obj)
+                    break
+        return l
+# End Truffle change
 
 #
 # Make connection and socket objects sharable if possible

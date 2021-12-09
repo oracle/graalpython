@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,11 +38,11 @@
 # SOFTWARE.
 
 import sys
+import os
+from io import StringIO
+
 from importlib import invalidate_caches
 from string import Formatter
-os = sys.modules.get("posix", sys.modules.get("nt", None))
-if os is None:
-    raise ImportError("posix or nt module is required in builtin modules")
 __dir__ = __file__.rpartition("/")[0]
 
 GRAALPYTHON = sys.implementation.name == "graalpython"
@@ -54,10 +54,15 @@ def unhandled_error_compare(x, y):
     else:
         return x == y
 
+def unhandled_error_compare_with_message(x, y):
+    if (isinstance(x, BaseException) and isinstance(y, BaseException)):
+        return type(x) == type(y) and str(x) == str(y)
+    else:
+        return x == y
 
 class CPyExtTestCase():
 
-    def setUp(self):
+    def setUpClass(self):
         for typ in type(self).mro():
             for k, v in typ.__dict__.items():
                 if k.startswith("test_"):
@@ -72,27 +77,61 @@ class CPyExtTestCase():
 
 def ccompile(self, name):
     from distutils.core import setup, Extension
+    from distutils.sysconfig import get_config_var
+    from hashlib import sha256
+    EXT_SUFFIX = get_config_var("EXT_SUFFIX")
+
     source_file = '%s/%s.c' % (__dir__, name)
     file_not_empty(source_file)
-    module = Extension(name, sources=[source_file])
-    args = ['--quiet', 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__]
-    setup(
-        script_name='setup',
-        script_args=args,
-        name=name,
-        version='1.0',
-        description='',
-        ext_modules=[module]
-    )
+
+    # compute checksum of source file
+    m = sha256()
+    with open(source_file,"rb") as f:
+        # read 4K blocks
+        for block in iter(lambda: f.read(4096),b""):
+            m.update(block)
+    cur_checksum = m.hexdigest()
+    
+    # see if there is already a checksum file
+    checksum_file = '%s/%s%s.sha256' % (__dir__, name, EXT_SUFFIX)
+    available_checksum = ""
+    if os.path.exists(checksum_file):
+        # read checksum file
+        with open(checksum_file, "r") as f:
+            available_checksum = f.readline()
+            
+    # note, the suffix is already a string like '.so'
+    binary_file_llvm = '%s/%s%s' % (__dir__, name, EXT_SUFFIX)
+    
+    # Compare checksums and only re-compile if different.
+    # Note: It could be that the C source file's checksum didn't change but someone 
+    # manually deleted the shared library file.
+    if available_checksum != cur_checksum or not os.path.exists(binary_file_llvm):
+        module = Extension(name, sources=[source_file])
+        verbosity = '--verbose' if sys.flags.verbose else '--quiet'
+        args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__, 'clean']
+        setup(
+            script_name='setup',
+            script_args=args,
+            name=name,
+            version='1.0',
+            description='',
+            ext_modules=[module]
+        )
+        
+        # write new checksum
+        with open(checksum_file, "w") as f:
+            f.write(cur_checksum)
+
+        # IMPORTANT:
+        # Invalidate caches after creating the native module.
+        # FileFinder caches directory contents, and the check for directory
+        # changes has whole-second precision, so it can miss quick updates.
+        invalidate_caches()
+
     # ensure file was really written
-    binary_file_llvm = '%s/%s.bc' % (__dir__, name)
     if GRAALPYTHON:
         file_not_empty(binary_file_llvm)
-    # IMPORTANT:
-    # Invalidate caches after creating the native module.
-    # FileFinder caches directory contents, and the check for directory
-    # changes has whole-second precision, so it can miss quick updates.
-    invalidate_caches()
 
 
 def file_not_empty(path):
@@ -119,15 +158,14 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
         return NULL;
     }}
 
-    if (strlen("{argspec}") > 0) {{
-        if (!PyArg_ParseTuple(___arg, "{argspec}", {derefargumentnames})) {{
-            return NULL;
-        }}
-    }}
 #ifdef SINGLEARG
-    else {{
-        {singleargumentname} = ___arg;
+    {singleargumentname} = ___arg;
+#else 
+#ifndef NOARGS
+    if (!PyArg_ParseTuple(___arg, "{argspec}", {derefargumentnames})) {{
+        return NULL;
     }}
+#endif
 #endif
 
     return Py_BuildValue("{resultspec}", {callfunction}({argumentnames}));
@@ -163,6 +201,7 @@ c_template_void = """
 static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
     PyObject* ___arg;
     {argumentdeclarations};
+#ifndef NOARGS
     if (!PyArg_ParseTuple(args, "O", &___arg)) {{
         return NULL;
     }}
@@ -176,6 +215,7 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
     else {{
         {singleargumentname} = ___arg;
     }}
+#endif
 #endif
     {callfunction}({argumentnames});
     return Py_BuildValue("{resultspec}", {resultval});
@@ -258,7 +298,7 @@ PyInit_{capifunction}(void)
 
 class CPyExtFunction():
 
-    def __init__(self, pfunc, parameters, template=c_template, cmpfunc=None, **kwargs):
+    def __init__(self, pfunc, parameters, template=c_template, cmpfunc=None, stderr_validator=None, **kwargs):
         self.template = template
         self.pfunc = pfunc
         self.parameters = parameters
@@ -275,6 +315,7 @@ class CPyExtFunction():
         kwargs["resultspec"] = kwargs["resultspec"] if "resultspec" in kwargs else "O"
         self.formatargs = kwargs
         self.cmpfunc = cmpfunc or self.do_compare
+        self.stderr_validator = stderr_validator
 
     def do_compare(self, x, y):
         if isinstance(x, BaseException):
@@ -294,10 +335,12 @@ class CPyExtFunction():
 
         self._insert(fargs, "argumentdeclarations", ";".join(fargs["parseargs"]))
         self._insert(fargs, "argumentnames", ", ".join(arg.rpartition(" ")[2] for arg in fargs["arguments"]))
-        self._insert(fargs, "singleargumentname", fargs["arguments"][0].rpartition(" ")[2])
+        self._insert(fargs, "singleargumentname", fargs["arguments"][0].rpartition(" ")[2] if fargs["arguments"] else "")
         self._insert(fargs, "derefargumentnames", ", ".join("&" + arg.rpartition(" ")[2].partition("=")[0] for arg in fargs["arguments"]))
         self._insert(fargs, "callfunction", fargs["capifunction"])
-        if len(fargs["argspec"]) == 0:
+        if len(fargs["argspec"]) == 0 and len(fargs["arguments"]) == 0:
+            fargs["defines"] = "#define NOARGS"
+        elif len(fargs["argspec"]) == 0:
             fargs["defines"] = "#define SINGLEARG"
         else:
             fargs["defines"] = ""
@@ -305,10 +348,7 @@ class CPyExtFunction():
         code = self.template.format(**fargs)
 
         with open("%s/%s.c" % (__dir__, self.name), "wb", buffering=0) as f:
-            if GRAALPYTHON:
-                f.write(code)
-            else:
-                f.write(bytes(code, 'utf-8'))
+            f.write(bytes(code, 'utf-8'))
 
     def _insert(self, d, name, default_value):
         d[name] = d.get(name, default_value)
@@ -326,11 +366,20 @@ class CPyExtFunction():
         cargs = self.parameters()
         pargs = self.parameters()
         for i in range(len(cargs)):
-            cresult = presult = None
+            if self.stderr_validator:
+                real_stderr = sys.stderr
+                sys.stderr = StringIO()
             try:
                 cresult = ctest(cargs[i])
             except BaseException as e:
                 cresult = e
+            else:
+                if self.stderr_validator:
+                    s = sys.stderr.getvalue()
+                    assert self.stderr_validator(cargs[i], s), f"captured stderr didn't match expectations. Stderr: {s}"
+            finally:
+                if self.stderr_validator:
+                    sys.stderr = real_stderr
             try:
                 presult = self.pfunc(pargs[i])
             except BaseException as e:
@@ -382,7 +431,7 @@ class CPyExtFunctionOutVars(CPyExtFunction):
                     fargs["resultvarlocations"] = ", ".join("&" + arg.rpartition(" ")[2] for arg in fargs["resultvars"])
         if "resulttype" not in fargs:
                     fargs["resulttype"] = "void*"
-        if len(fargs["resultvarlocations"]):
+        if len(fargs["resultvarlocations"]) and not fargs["resultvarlocations"].startswith(","):
             fargs["resultvarlocations"] = ", " + fargs["resultvarlocations"]
         self._insert(fargs, "customcode", "")
         super(CPyExtFunctionOutVars, self).create_module(name)
@@ -478,7 +527,7 @@ def CPyExtType(name, code, **kwargs):
         sizeof({name}Object),       /* tp_basicsize */
         0,                          /* tp_itemsize */
         0,                          /* tp_dealloc */
-        {tp_print},
+        {tp_vectorcall_offset},
         {tp_getattr},
         {tp_setattr},
         0,                          /* tp_reserved */
@@ -525,16 +574,15 @@ def CPyExtType(name, code, **kwargs):
     PyMODINIT_FUNC
     PyInit_{name}(void)
     {{
-        PyObject* m;
+        PyObject* m = PyModule_Create(&{name}module);
+        if (m == NULL)
+            return NULL;
 
         {ready_code}
         if (PyType_Ready(&{name}Type) < 0)
             return NULL;
         {post_ready_code}
 
-        m = PyModule_Create(&{name}module);
-        if (m == NULL)
-            return NULL;
 
         Py_INCREF(&{name}Type);
         PyModule_AddObject(m, "{name}", (PyObject *)&{name}Type);
@@ -554,10 +602,7 @@ def CPyExtType(name, code, **kwargs):
 
     source_file = "%s/%s.c" % (__dir__, name)
     with open(source_file, "wb", buffering=0) as f:
-        if GRAALPYTHON:
-            f.write(c_source)
-        else:
-            f.write(bytes(c_source, 'utf-8'))
+        f.write(bytes(c_source, 'utf-8'))
 
     # ensure file was really written
     try:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,41 +43,44 @@ package com.oracle.graal.python.nodes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
+@SuppressWarnings("deprecation")    // new Frame API
 public abstract class PClosureRootNode extends PRootNode {
-    private static final PCell[] NO_CLOSURE = new PCell[0];
     private final Assumption singleContextAssumption;
-    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
-    @CompilerDirectives.CompilationFinal(dimensions = 1) protected PCell[] closure;
+    private final boolean annotationsAvailable;
+    @CompilationFinal(dimensions = 1) protected final com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots;
+    @CompilationFinal(dimensions = 1) protected PCell[] closure;
     private final int length;
 
-    protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, FrameSlot[] freeVarSlots) {
+    protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots, boolean hasAnnotations) {
         super(language, frameDescriptor);
         this.singleContextAssumption = language.singleContextAssumption;
         this.freeVarSlots = freeVarSlots;
         this.length = freeVarSlots != null ? freeVarSlots.length : 0;
+        this.annotationsAvailable = hasAnnotations;
     }
 
-    protected void addClosureCellsToLocals(Frame frame) {
+    protected final void addClosureCellsToLocals(Frame frame) {
         PCell[] frameClosure = PArguments.getClosure(frame);
         if (frameClosure != null) {
             if (singleContextAssumption.isValid() && closure == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 closure = frameClosure;
-            } else if (closure != NO_CLOSURE && ((!singleContextAssumption.isValid() && closure != null) || closure != frameClosure)) {
+            } else if (closure != PythonUtils.NO_CLOSURE && ((!singleContextAssumption.isValid() && closure != null) || closure != frameClosure)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                closure = NO_CLOSURE;
+                closure = PythonUtils.NO_CLOSURE;
             }
             assert freeVarSlots != null : "closure root node: the free var slots cannot be null when the closure is not null";
             assert frameClosure.length == freeVarSlots.length : "closure root node: the closure must have the same length as the free var slots array";
-            if (closure != null && closure != NO_CLOSURE) {
+            if (closure != null && closure != PythonUtils.NO_CLOSURE) {
                 if (freeVarSlots.length < 32) {
                     addClosureCellsToLocalsExploded(frame, closure);
                 } else {
@@ -93,33 +96,41 @@ public abstract class PClosureRootNode extends PRootNode {
         }
     }
 
-    protected void addClosureCellsToLocalsLoop(Frame frame, PCell[] frameClosure) {
+    protected final void addClosureCellsToLocalsLoop(Frame frame, PCell[] frameClosure) {
         for (int i = 0; i < length; i++) {
             frame.setObject(freeVarSlots[i], frameClosure[i]);
         }
     }
 
     @ExplodeLoop
-    protected void addClosureCellsToLocalsExploded(Frame frame, PCell[] frameClosure) {
+    protected final void addClosureCellsToLocalsExploded(Frame frame, PCell[] frameClosure) {
         for (int i = 0; i < length; i++) {
             frame.setObject(freeVarSlots[i], frameClosure[i]);
         }
     }
 
-    public boolean hasFreeVars() {
+    public final boolean hasFreeVars() {
         return freeVarSlots != null && freeVarSlots.length > 0;
     }
 
     public abstract void initializeFrame(VirtualFrame frame);
 
-    public String[] getFreeVars() {
+    public final String[] getFreeVars() {
         if (freeVarSlots != null) {
             String[] freeVars = new String[freeVarSlots.length];
+            int count = 0;
             for (int i = 0; i < freeVarSlots.length; i++) {
-                freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+                Object identifier = freeVarSlots[i].getIdentifier();
+                if (identifier instanceof String) {
+                    freeVars[count++] = (String) identifier;
+                }
             }
-            return freeVars;
+            return freeVars.length == count ? freeVars : PythonUtils.arrayCopyOf(freeVars, count);
         }
-        return new String[0];
+        return PythonUtils.EMPTY_STRING_ARRAY;
+    }
+
+    public boolean hasAnnotations() {
+        return annotationsAvailable;
     }
 }

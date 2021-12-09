@@ -1,5 +1,5 @@
 from test.support import (gc_collect, bigmemtest, _2G,
-                          cpython_only, captured_stdout)
+                          cpython_only, captured_stdout, impl_detail)
 import locale
 import re
 import sre_compile
@@ -53,6 +53,7 @@ class ReTests(unittest.TestCase):
             if pos is not None:
                 self.assertEqual(err.pos, pos)
 
+    @impl_detail("buffer locking", graalvm=False)
     def test_keep_buffer(self):
         # See bug 14212
         b = bytearray(b'x')
@@ -694,6 +695,42 @@ class ReTests(unittest.TestCase):
             with self.subTest(c):
                 self.assertRaises(re.error, re.compile, '[\\%c]' % c)
 
+    def test_named_unicode_escapes(self):
+        # test individual Unicode named escapes
+        self.assertTrue(re.match(r'\N{LESS-THAN SIGN}', '<'))
+        self.assertTrue(re.match(r'\N{less-than sign}', '<'))
+        self.assertIsNone(re.match(r'\N{LESS-THAN SIGN}', '>'))
+        self.assertTrue(re.match(r'\N{SNAKE}', '\U0001f40d'))
+        self.assertTrue(re.match(r'\N{ARABIC LIGATURE UIGHUR KIRGHIZ YEH WITH '
+                                 r'HAMZA ABOVE WITH ALEF MAKSURA ISOLATED FORM}',
+                                 '\ufbf9'))
+        self.assertTrue(re.match(r'[\N{LESS-THAN SIGN}-\N{GREATER-THAN SIGN}]',
+                                 '='))
+        self.assertIsNone(re.match(r'[\N{LESS-THAN SIGN}-\N{GREATER-THAN SIGN}]',
+                                   ';'))
+
+        # test errors in \N{name} handling - only valid names should pass
+        self.checkPatternError(r'\N', 'missing {', 2)
+        self.checkPatternError(r'[\N]', 'missing {', 3)
+        self.checkPatternError(r'\N{', 'missing character name', 3)
+        self.checkPatternError(r'[\N{', 'missing character name', 4)
+        self.checkPatternError(r'\N{}', 'missing character name', 3)
+        self.checkPatternError(r'[\N{}]', 'missing character name', 4)
+        self.checkPatternError(r'\NSNAKE}', 'missing {', 2)
+        self.checkPatternError(r'[\NSNAKE}]', 'missing {', 3)
+        self.checkPatternError(r'\N{SNAKE',
+                               'missing }, unterminated name', 3)
+        self.checkPatternError(r'[\N{SNAKE]',
+                               'missing }, unterminated name', 4)
+        self.checkPatternError(r'[\N{SNAKE]}',
+                               "undefined character name 'SNAKE]'", 1)
+        self.checkPatternError(r'\N{SPAM}',
+                               "undefined character name 'SPAM'", 0)
+        self.checkPatternError(r'[\N{SPAM}]',
+                               "undefined character name 'SPAM'", 1)
+        self.checkPatternError(br'\N{LESS-THAN SIGN}', r'bad escape \N', 0)
+        self.checkPatternError(br'[\N{LESS-THAN SIGN}]', r'bad escape \N', 1)
+
     def test_string_boundaries(self):
         # See http://bugs.python.org/issue10713
         self.assertEqual(re.search(r"\b(abc)\b", "abc").group(1),
@@ -910,47 +947,48 @@ class ReTests(unittest.TestCase):
 
     def test_possible_set_operations(self):
         s = bytes(range(128)).decode()
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[0-9--1]')
+        # XXX GraalVM change: don't test for warnings, we don't have a good way to propagate them out of TRegex
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[0-9--1]')
         self.assertEqual(p.findall(s), list('-./0123456789'))
         self.assertEqual(re.findall(r'[--1]', s), list('-./01'))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[%--1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[%--1]')
         self.assertEqual(p.findall(s), list("%&'()*+,-1"))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[%--]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[%--]')
         self.assertEqual(p.findall(s), list("%&'()*+,-"))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[0-9&&1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[0-9&&1]')
         self.assertEqual(p.findall(s), list('&0123456789'))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[\d&&1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[\d&&1]')
         self.assertEqual(p.findall(s), list('&0123456789'))
         self.assertEqual(re.findall(r'[&&1]', s), list('&1'))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[0-9||a]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[0-9||a]')
         self.assertEqual(p.findall(s), list('0123456789a|'))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[\d||a]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[\d||a]')
         self.assertEqual(p.findall(s), list('0123456789a|'))
         self.assertEqual(re.findall(r'[||1]', s), list('1|'))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[0-9~~1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[0-9~~1]')
         self.assertEqual(p.findall(s), list('0123456789~'))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[\d~~1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[\d~~1]')
         self.assertEqual(p.findall(s), list('0123456789~'))
         self.assertEqual(re.findall(r'[~~1]', s), list('1~'))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[[0-9]|]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[[0-9]|]')
         self.assertEqual(p.findall(s), list('0123456789[]'))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[[:digit:]|]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[[:digit:]|]')
         self.assertEqual(p.findall(s), list(':[]dgit'))
 
     def test_search_coverage(self):
@@ -1402,63 +1440,64 @@ class ReTests(unittest.TestCase):
         self.assertTrue(re.match('(?x) (?i) ' + upper_char, lower_char))
         self.assertTrue(re.match(' (?x) (?i) ' + upper_char, lower_char, re.X))
 
-        p = upper_char + '(?i)'
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.match(p, lower_char))
-        self.assertEqual(
-            str(warns.warnings[0].message),
-            'Flags not at the start of the expression %r' % p
-        )
-        self.assertEqual(warns.warnings[0].filename, __file__)
-
-        p = upper_char + '(?i)%s' % ('.?' * 100)
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.match(p, lower_char))
-        self.assertEqual(
-            str(warns.warnings[0].message),
-            'Flags not at the start of the expression %r (truncated)' % p[:20]
-        )
-        self.assertEqual(warns.warnings[0].filename, __file__)
-
-        # bpo-30605: Compiling a bytes instance regex was throwing a BytesWarning
-        with warnings.catch_warnings():
-            warnings.simplefilter('error', BytesWarning)
-            p = b'A(?i)'
-            with self.assertWarns(DeprecationWarning) as warns:
-                self.assertTrue(re.match(p, b'a'))
-            self.assertEqual(
-                str(warns.warnings[0].message),
-                'Flags not at the start of the expression %r' % p
-            )
-            self.assertEqual(warns.warnings[0].filename, __file__)
-
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match('(?s).(?i)' + upper_char, '\n' + lower_char))
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match('(?i) ' + upper_char + ' (?x)', lower_char))
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match(' (?x) (?i) ' + upper_char, lower_char))
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match('^(?i)' + upper_char, lower_char))
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match('$|(?i)' + upper_char, lower_char))
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.match('(?:(?i)' + upper_char + ')', lower_char))
-        self.assertRegex(str(warns.warnings[0].message),
-                         'Flags not at the start')
-        self.assertEqual(warns.warnings[0].filename, __file__)
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.fullmatch('(^)?(?(1)(?i)' + upper_char + ')',
-                                         lower_char))
-        self.assertRegex(str(warns.warnings[0].message),
-                         'Flags not at the start')
-        self.assertEqual(warns.warnings[0].filename, __file__)
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.fullmatch('($)?(?(1)|(?i)' + upper_char + ')',
-                                         lower_char))
-        self.assertRegex(str(warns.warnings[0].message),
-                         'Flags not at the start')
-        self.assertEqual(warns.warnings[0].filename, __file__)
+        # XXX GraalVM change: don't test for warnings, we don't have a good way to propagate them out of TRegex
+        # p = upper_char + '(?i)'
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.match(p, lower_char))
+        # self.assertEqual(
+        #     str(warns.warnings[0].message),
+        #     'Flags not at the start of the expression %r' % p
+        # )
+        # self.assertEqual(warns.warnings[0].filename, __file__)
+        #
+        # p = upper_char + '(?i)%s' % ('.?' * 100)
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.match(p, lower_char))
+        # self.assertEqual(
+        #     str(warns.warnings[0].message),
+        #     'Flags not at the start of the expression %r (truncated)' % p[:20]
+        # )
+        # self.assertEqual(warns.warnings[0].filename, __file__)
+        #
+        # # bpo-30605: Compiling a bytes instance regex was throwing a BytesWarning
+        # with warnings.catch_warnings():
+        #     warnings.simplefilter('error', BytesWarning)
+        #     p = b'A(?i)'
+        #     with self.assertWarns(DeprecationWarning) as warns:
+        #         self.assertTrue(re.match(p, b'a'))
+        #     self.assertEqual(
+        #         str(warns.warnings[0].message),
+        #         'Flags not at the start of the expression %r' % p
+        #     )
+        #     self.assertEqual(warns.warnings[0].filename, __file__)
+        #
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match('(?s).(?i)' + upper_char, '\n' + lower_char))
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match('(?i) ' + upper_char + ' (?x)', lower_char))
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match(' (?x) (?i) ' + upper_char, lower_char))
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match('^(?i)' + upper_char, lower_char))
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match('$|(?i)' + upper_char, lower_char))
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.match('(?:(?i)' + upper_char + ')', lower_char))
+        # self.assertRegex(str(warns.warnings[0].message),
+        #                  'Flags not at the start')
+        # self.assertEqual(warns.warnings[0].filename, __file__)
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.fullmatch('(^)?(?(1)(?i)' + upper_char + ')',
+        #                                  lower_char))
+        # self.assertRegex(str(warns.warnings[0].message),
+        #                  'Flags not at the start')
+        # self.assertEqual(warns.warnings[0].filename, __file__)
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.fullmatch('($)?(?(1)|(?i)' + upper_char + ')',
+        #                                  lower_char))
+        # self.assertRegex(str(warns.warnings[0].message),
+        #                  'Flags not at the start')
+        # self.assertEqual(warns.warnings[0].filename, __file__)
 
 
     def test_dollar_matches_twice(self):
@@ -1516,18 +1555,7 @@ class ReTests(unittest.TestCase):
         self.assertRaises(re.error, re.compile, r'(?au)\w')
 
     def test_locale_flag(self):
-        # On Windows, Python 3.7 doesn't call setlocale(LC_CTYPE, "") at
-        # startup and so the LC_CTYPE locale uses Latin1 encoding by default,
-        # whereas getpreferredencoding() returns the ANSI code page. Set
-        # temporarily the LC_CTYPE locale to the user preferred encoding to
-        # ensure that it uses the ANSI code page.
-        oldloc = locale.setlocale(locale.LC_CTYPE, None)
-        locale.setlocale(locale.LC_CTYPE, "")
-        self.addCleanup(locale.setlocale, locale.LC_CTYPE, oldloc)
-
-        # Get the current locale encoding
-        enc = locale.getpreferredencoding(False)
-
+        enc = locale.getpreferredencoding()
         # Search non-ASCII letter
         for i in range(128, 256):
             try:
@@ -1693,10 +1721,11 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.match(r".{,65536}", string).span(), (0, 65536))
         self.assertEqual(re.match(r".{65536,}?", string).span(), (0, 65536))
         # 2**128 should be big enough to overflow both SRE_CODE and Py_ssize_t.
-        self.assertRaises(OverflowError, re.compile, r".{%d}" % 2**128)
-        self.assertRaises(OverflowError, re.compile, r".{,%d}" % 2**128)
-        self.assertRaises(OverflowError, re.compile, r".{%d,}?" % 2**128)
-        self.assertRaises(OverflowError, re.compile, r".{%d,%d}" % (2**129, 2**128))
+        # XXX GraalPython change: TRegex can process such large groups fine, no need to artificially limit it
+        #self.assertRaises(OverflowError, re.compile, r".{%d}" % 2**128)
+        #self.assertRaises(OverflowError, re.compile, r".{,%d}" % 2**128)
+        #self.assertRaises(OverflowError, re.compile, r".{%d,}?" % 2**128)
+        #self.assertRaises(OverflowError, re.compile, r".{%d,%d}" % (2**129, 2**128))
 
     @cpython_only
     def test_repeat_minmax_overflow_maxrepeat(self):
@@ -1736,24 +1765,28 @@ class ReTests(unittest.TestCase):
     def test_match_repr(self):
         for string in '[abracadabra]', S('[abracadabra]'):
             m = re.search(r'(.+)(.*?)\1', string)
-            self.assertEqual(repr(m), "<%s.%s object; "
-                             "span=(1, 12), match='abracadabra'>" %
-                             (type(m).__module__, type(m).__qualname__))
+            pattern = r"<(%s\.)?%s object; span=\(1, 12\), match='abracadabra'>" % (
+                type(m).__module__, type(m).__qualname__
+            )
+            self.assertRegex(repr(m), pattern)
         for string in (b'[abracadabra]', B(b'[abracadabra]'),
                        bytearray(b'[abracadabra]'),
                        memoryview(b'[abracadabra]')):
             m = re.search(br'(.+)(.*?)\1', string)
-            self.assertEqual(repr(m), "<%s.%s object; "
-                             "span=(1, 12), match=b'abracadabra'>" %
-                             (type(m).__module__, type(m).__qualname__))
+            pattern = r"<(%s\.)?%s object; span=\(1, 12\), match=b'abracadabra'>" % (
+                type(m).__module__, type(m).__qualname__
+            )
+            self.assertRegex(repr(m), pattern)
 
         first, second = list(re.finditer("(aa)|(bb)", "aa bb"))
-        self.assertEqual(repr(first), "<%s.%s object; "
-                         "span=(0, 2), match='aa'>" %
-                         (type(second).__module__, type(first).__qualname__))
-        self.assertEqual(repr(second), "<%s.%s object; "
-                         "span=(3, 5), match='bb'>" %
-                         (type(second).__module__, type(second).__qualname__))
+        pattern = r"<(%s\.)?%s object; span=\(0, 2\), match='aa'>" % (
+            type(second).__module__, type(second).__qualname__
+        )
+        self.assertRegex(repr(first), pattern)
+        pattern = r"<(%s\.)?%s object; span=\(3, 5\), match='bb'>" % (
+            type(second).__module__, type(second).__qualname__
+        )
+        self.assertRegex(repr(second), pattern)
 
     def test_zerowidth(self):
         # Issues 852532, 1647489, 3262, 25054.
@@ -2140,6 +2173,18 @@ class PatternReprTests(unittest.TestCase):
         self.assertLess(len(r), 300)
         self.assertEqual(r[:30], "re.compile('Very long long lon")
         self.assertEqual(r[-16:], ", re.IGNORECASE)")
+
+    def test_flags_repr(self):
+        self.assertEqual(repr(re.I), "re.IGNORECASE")
+        self.assertEqual(repr(re.I|re.S|re.X),
+                         "re.IGNORECASE|re.DOTALL|re.VERBOSE")
+        self.assertEqual(repr(re.I|re.S|re.X|(1<<20)),
+                         "re.IGNORECASE|re.DOTALL|re.VERBOSE|0x100000")
+        self.assertEqual(repr(~re.I), "~re.IGNORECASE")
+        self.assertEqual(repr(~(re.I|re.S|re.X)),
+                         "~(re.IGNORECASE|re.DOTALL|re.VERBOSE)")
+        self.assertEqual(repr(~(re.I|re.S|re.X|(1<<20))),
+                         "~(re.IGNORECASE|re.DOTALL|re.VERBOSE|0x100000)")
 
 
 class ImplementationTest(unittest.TestCase):

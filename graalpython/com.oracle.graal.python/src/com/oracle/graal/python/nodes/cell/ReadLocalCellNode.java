@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundL
 
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNodeGen.ReadFromCellNodeGen;
@@ -41,31 +42,41 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeInfo(shortName = "read_cell")
+@SuppressWarnings("deprecation")    // new Frame API
 public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLocalNode {
     @Child private ExpressionNode readLocal;
     @Child private ReadFromCellNode readCell;
-    private final FrameSlot frameSlot;
+    private final com.oracle.truffle.api.frame.FrameSlot frameSlot;
 
-    ReadLocalCellNode(FrameSlot frameSlot, boolean isFreeVar) {
+    ReadLocalCellNode(com.oracle.truffle.api.frame.FrameSlot frameSlot, boolean isFreeVar) {
         this.frameSlot = frameSlot;
         this.readLocal = ReadLocalVariableNode.create(frameSlot);
         this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
     }
 
-    public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar) {
+    ReadLocalCellNode(com.oracle.truffle.api.frame.FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
+        this.frameSlot = frameSlot;
+        this.readLocal = readLocal;
+        this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
+    }
+
+    public static ReadLocalCellNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, boolean isFreeVar) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar);
+    }
+
+    public static ReadLocalCellNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, boolean isFreeVar, ExpressionNode readLocal) {
+        return ReadLocalCellNodeGen.create(frameSlot, isFreeVar, readLocal);
     }
 
     @Override
     public StatementNode makeWriteNode(ExpressionNode rhs) {
-        return WriteLocalCellNode.create(frameSlot, rhs);
+        return WriteLocalCellNode.create(frameSlot, readLocal, rhs);
     }
 
     abstract static class ReadFromCellNode extends PNodeWithContext {
@@ -82,22 +93,22 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
         @Specialization
         Object read(PCell cell,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") CellBuiltins.GetRefNode getRef,
+                        @Cached CellBuiltins.GetRefNode getRef,
                         @Cached("createClassProfile()") ValueProfile refTypeProfile) {
             Object ref = refTypeProfile.profile(getRef.execute(cell));
             if (ref != null) {
                 return ref;
             } else {
                 if (isFreeVar) {
-                    throw raise.raise(NameError, "free variable '%s' referenced before assignment in enclosing scope", identifier);
+                    throw raise.raise(NameError, ErrorMessages.FREE_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
                 }
-                throw raise.raise(UnboundLocalError, "local variable '%s' referenced before assignment", identifier);
+                throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
             }
         }
 
         @Fallback
         Object read(Object cell) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Expected a cell, got: " + cell.toString() + " instead.");
         }
     }

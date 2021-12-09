@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -66,3 +66,23 @@ def test_user_class():
     t = TestClass()
     t.__module__ = "baz"
     assert t.__module__ == "baz"
+    
+def test_wrong_property():
+    import time
+    try:
+        time.no_existing_property
+    except AttributeError as ae:
+        assert str(ae) == "module 'time' has no attribute 'no_existing_property'"
+    else:
+        assert False
+        
+def test_wrong_property_in_moudule_without_name():
+    import time
+    del time.__name__
+    try:
+        time.no_existing_property
+    except AttributeError as ae:
+        assert str(ae) == "module has no attribute 'no_existing_property'"
+    else:
+        assert False
+        

@@ -41,8 +41,8 @@ __author__ = ("Guido van Rossum <guido@python.org>, "
               "Amaury Forgeot d'Arc <amauryfa@gmail.com>, "
               "Benjamin Peterson <benjamin@python.org>")
 
-__all__ = ["BlockingIOError", "open", "IOBase", "RawIOBase", "FileIO",
-           "BytesIO", "StringIO", "BufferedIOBase",
+__all__ = ["BlockingIOError", "open", "open_code", "IOBase", "RawIOBase",
+           "FileIO", "BytesIO", "StringIO", "BufferedIOBase",
            "BufferedReader", "BufferedWriter", "BufferedRWPair",
            "BufferedRandom", "TextIOBase", "TextIOWrapper",
            "UnsupportedOperation", "SEEK_SET", "SEEK_CUR", "SEEK_END"]
@@ -52,14 +52,15 @@ import _io
 import abc
 
 from _io import (DEFAULT_BUFFER_SIZE, BlockingIOError, UnsupportedOperation,
-                 open, FileIO, BytesIO, StringIO, BufferedReader,
+                 open, open_code, FileIO, BytesIO, StringIO, BufferedReader,
                  BufferedWriter, BufferedRWPair, BufferedRandom,
                  IncrementalNewlineDecoder, TextIOWrapper)
 
 OpenWrapper = _io.open # for compatibility with _pyio
 
 # Pretend this exception was created here.
-UnsupportedOperation.__module__ = "io"
+# Truffle change: we do this directly on the builtin type
+# UnsupportedOperation.__module__ = "io"
 
 # for seek()
 SEEK_SET = 0

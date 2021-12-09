@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,11 +33,16 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
@@ -45,7 +50,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -54,8 +58,6 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeInfo(shortName = __GETITEM__)
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     private static final String P_OBJECT_IS_NOT_SUBSCRIPTABLE = "'%p' object is not subscriptable";
-
-    @Child private LookupAndCallBinaryNode callGetitemNode;
 
     public ExpressionNode getPrimary() {
         return getLeftNode();
@@ -67,59 +69,12 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     public abstract Object execute(VirtualFrame frame, Object primary, Object slice);
 
-    @Specialization(guards = "isBuiltinList.profileIsAnyBuiltinObject(primary)")
-    Object doBuiltinList(@SuppressWarnings("unused") VirtualFrame frame, PList primary, Object index,
-                    @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinList) {
-        return getItemNode.execute(primary.getSequenceStorage(), index);
-    }
-
-    protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
+    protected static SequenceStorageNodes.GetItemNode createGetItemNodeForList() {
         return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
     }
 
-    @Specialization(replaces = "doBuiltinList")
-    Object doAnyObject(VirtualFrame frame, Object primary, Object index) {
-        if (callGetitemNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callGetitemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__, null, () -> new LookupAndCallBinaryNode.NotImplementedHandler() {
-                @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile;
-                @Child private PRaiseNode raiseNode;
-                @Child private CallNode callClassGetItemNode;
-                @Child private GetAttributeNode getClassGetItemNode;
-
-                @Override
-                public Object execute(Object arg, Object arg2) {
-                    if (arg instanceof PythonAbstractClass) {
-                        if (getClassGetItemNode == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            getClassGetItemNode = insert(GetAttributeNode.create(__CLASS_GETITEM__));
-                            isBuiltinClassProfile = IsBuiltinClassProfile.create();
-                        }
-                        Object classGetItem = null;
-                        try {
-                            classGetItem = getClassGetItemNode.executeObject(frame, arg);
-                        } catch (PException e) {
-                            e.expect(AttributeError, isBuiltinClassProfile);
-                            // fall through to normal error handling
-                        }
-                        if (classGetItem != null) {
-                            if (callClassGetItemNode == null) {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                callClassGetItemNode = insert(CallNode.create());
-                            }
-                            return callClassGetItemNode.execute(frame, classGetItem, arg2);
-                        }
-                    }
-                    if (raiseNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        raiseNode = insert(PRaiseNode.create());
-                    }
-                    throw raiseNode.raise(TypeError, P_OBJECT_IS_NOT_SUBSCRIPTABLE, arg);
-                }
-            }));
-        }
-        return callGetitemNode.executeObject(frame, primary, index);
+    protected static SequenceStorageNodes.GetItemNode createGetItemNodeForTuple() {
+        return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, f) -> f.createTuple(s));
     }
 
     public static GetItemNode create() {
@@ -135,4 +90,82 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         return SetItemNode.create(getPrimary(), getSlice(), rhs);
     }
 
+    @Specialization(guards = {"indexCheckNode.execute(index) || isPSlice(index)", "isBuiltinList.profileIsAnyBuiltinObject(primary)"}, limit = "1")
+    Object doBuiltinList(VirtualFrame frame, PList primary, Object index,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached("createGetItemNodeForList()") SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinList) {
+        return getItemNode.execute(frame, primary.getSequenceStorage(), index);
+    }
+
+    @SuppressWarnings("unused")
+    @Specialization(guards = {"!indexCheckNode.execute(index)", "!isPSlice(index)"}, limit = "1")
+    public Object doListError(VirtualFrame frame, PList primary, Object index,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", index);
+    }
+
+    @Specialization(guards = {"indexCheckNode.execute(index) || isPSlice(index)", "isBuiltinTuple.profileIsAnyBuiltinObject(primary)"}, limit = "1")
+    Object doBuiltinTuple(VirtualFrame frame, PTuple primary, Object index,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached("createGetItemNodeForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinTuple) {
+        return getItemNode.execute(frame, primary.getSequenceStorage(), index);
+    }
+
+    @SuppressWarnings("unused")
+    @Specialization(guards = {"!indexCheckNode.execute(index)", "!isPSlice(index)"}, limit = "1")
+    public Object doTupleError(VirtualFrame frame, PTuple primary, Object index,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "tuple", index);
+    }
+
+    @Specialization(replaces = {"doBuiltinList", "doBuiltinTuple"})
+    Object doAnyObject(VirtualFrame frame, Object primary, Object index,
+                    @Cached("createGetItemLookupAndCall()") LookupAndCallBinaryNode callGetitemNode) {
+        return callGetitemNode.executeObject(frame, primary, index);
+    }
+
+    public static LookupAndCallBinaryNode createGetItemLookupAndCall() {
+        return LookupAndCallBinaryNode.create(SpecialMethodSlot.GetItem, GetItemNodeNotImplementedHandler::new);
+    }
+
+    private static final class GetItemNodeNotImplementedHandler extends NotImplementedHandler {
+        @Child private IsBuiltinClassProfile isBuiltinClassProfile;
+        @Child private PRaiseNode raiseNode;
+        @Child private CallNode callClassGetItemNode;
+        @Child private GetAttributeNode getClassGetItemNode;
+
+        @Override
+        public Object execute(VirtualFrame frame, Object arg, Object arg2) {
+            if (PGuards.isPythonClass(arg)) {
+                if (getClassGetItemNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getClassGetItemNode = insert(GetAttributeNode.create(__CLASS_GETITEM__));
+                    isBuiltinClassProfile = insert(IsBuiltinClassProfile.create());
+                }
+                Object classGetItem = null;
+                try {
+                    classGetItem = getClassGetItemNode.executeObject(frame, arg);
+                } catch (PException e) {
+                    e.expect(AttributeError, isBuiltinClassProfile);
+                    // fall through to normal error handling
+                }
+                if (classGetItem != null) {
+                    if (callClassGetItemNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        callClassGetItemNode = insert(CallNode.create());
+                    }
+                    return callClassGetItemNode.execute(frame, classGetItem, arg2);
+                }
+            }
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            throw raiseNode.raise(TypeError, P_OBJECT_IS_NOT_SUBSCRIPTABLE, arg);
+        }
+    }
 }

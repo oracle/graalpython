@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
 # ankitv 10/10/13
 # Iterating by Sequence Index
 
+from collections.abc import MutableSet
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -64,24 +65,98 @@ def test_set_or_union():
     s2 = {4, 5, 6}
     s3 = {1, 2, 4}
     s4 = {1, 2, 3}
-
+    
+    sstr1 = {'a', 'b', 'c'}
+    sstr2 = {'d', 'e', 'f'}
+    sstr3 = {'a', 'b', 'd'}
+    sstr4 = {'a', 'b', 'c'}
+    
     or_result = s1 | s2
     union_result = s1.union(s2)
     assert or_result == {1, 2, 3, 4, 5, 6}
     assert union_result == {1, 2, 3, 4, 5, 6}
+    
+    or_result = s2 | s1
+    union_result = s2.union(s1)
+    assert or_result == {1, 2, 3, 4, 5, 6}
+    assert union_result == {1, 2, 3, 4, 5, 6}
 
+    or_result = sstr1 | sstr2
+    union_result = sstr1.union(sstr2)
+    assert or_result == {'a', 'b', 'c', 'd', 'e', 'f'}
+    assert union_result == {'a', 'b', 'c', 'd', 'e', 'f'}
+
+    or_result = s1 | sstr2
+    union_result = s1.union(sstr2)
+    assert or_result == {1, 2, 3, 'd', 'e', 'f'}
+    assert union_result == {1, 2, 3, 'd', 'e', 'f'}
+    
+    or_result = sstr1 | s1
+    union_result = sstr1.union(s1)
+    assert or_result == {1, 2, 3, 'a', 'b', 'c'}
+    assert union_result == {1, 2, 3, 'a', 'b', 'c'}
+    
     or_result = s1 | s3
     union_result = s1.union(s3)
     assert or_result == {1, 2, 3, 4}
     assert union_result == {1, 2, 3, 4}
+    
+    or_result = s3 | s1
+    union_result = s3.union(s1)
+    assert or_result == {1, 2, 3, 4}
+    assert union_result == {1, 2, 3, 4}
+    
+    or_result = sstr1 | sstr3
+    union_result = sstr1.union(sstr3)
+    assert or_result == {'a', 'b', 'c', 'd'}
+    assert union_result == {'a', 'b', 'c', 'd'}
+    
+    or_result = sstr3 | sstr1
+    union_result = sstr3.union(sstr1)
+    assert or_result == {'a', 'b', 'c', 'd'}
+    assert union_result == {'a', 'b', 'c', 'd'}
 
+    or_result = s1 | sstr3
+    union_result = s1.union(sstr3)
+    assert or_result == {1, 2, 3, 'a', 'b', 'd'}
+    assert union_result == {1, 2, 3, 'a', 'b', 'd'}
+
+    or_result = sstr1 | s3
+    union_result = sstr1.union(s3)
+    assert or_result == {1, 2, 4, 'a', 'b', 'c'}
+    assert union_result == {1, 2, 4, 'a', 'b', 'c'}
+    
     or_result = s1 | s4
     union_result = s1.union(s4)
     assert or_result == {1, 2, 3}
     assert union_result == {1, 2, 3}
+    
+    or_result = s4 | s1
+    union_result = s4.union(s1)
+    assert or_result == {1, 2, 3}
+    assert union_result == {1, 2, 3}
+    
+    or_result = sstr1 | sstr4
+    union_result = sstr1.union(sstr4)
+    assert or_result == {'a','b','c'}
+    assert union_result == {'a','b','c'}
+    
+    or_result = sstr4 | sstr1
+    union_result = sstr4.union(sstr1)
+    assert or_result == {'a','b','c'}
+    assert union_result == {'a','b','c'}
 
     assert frozenset((1,2)) | {1:2}.items() == {1, 2, (1, 2)}
     assert frozenset((1,2)) | {1:2}.keys() == {1, 2}
+    
+    assert frozenset(('a','b')) | {1:2}.keys() == {'a', 'b', 1}
+    assert frozenset(('a','b')) | {1:2, 3:4}.keys() == {'a', 'b', 1, 3}
+    assert frozenset((1,2)) | {'a':2, 'b':4}.keys() == {'a', 'b', 1, 2}
+    
+    assert {1,2} | {3:4, 5:6}.keys() == {1, 2, 3, 5}
+    assert {3:4, 5:6}.keys() | {1,2} == {1, 2, 3, 5}
+    assert {1,2} | {'a':1, 'b':2}.keys() == {1, 2, 'a', 'b'}
+    assert {'a','b'} | {1:'c', 2:'d'}.keys() == {1, 2, 'a', 'b'}
 
 def test_set_and():
     assert frozenset((1,2)) & {1:2}.items() == set()
@@ -187,13 +262,23 @@ def test_sub_and_super():
         assert not set('cbs').issuperset('a')
 
 
-def test_superset_list():
-    set = {1, 2, 3, 4}
-    list = [1, 2, 3, 4]
-    visited= False
-    if set.issuperset(list):
-        visited = True
-    assert visited
+def test_superset_subset():
+    l = [1, 2, 3, 4]
+    s = set(l)
+    t = tuple(l)
+    assert s.issuperset(s)
+    assert s.issuperset(l)
+    assert s.issuperset(t)
+    assert s >= s
+    assert_raises(TypeError, lambda: s >= l)
+    assert_raises(TypeError, lambda: s >= t)
+
+    assert s.issubset(s)
+    assert s.issubset(l)
+    assert s.issubset(t)
+    assert s <= s
+    assert_raises(TypeError, lambda: s <= l)
+    assert_raises(TypeError, lambda: s <= t)
 
 
 def test_intersection():
@@ -231,6 +316,12 @@ def test_same_id():
     empty_ids = set([id(frozenset()) for i in range(100)])
     assert len(empty_ids) == 1
 
+def test_init():
+    s = {1, 2, 3}
+    s.__init__({4})
+    assert s == {4}
+    s.__init__()
+    assert s == set()
 
 def test_rich_compare():
     class TestRichSetCompare:
@@ -293,3 +384,138 @@ def test_set_delete():
     assert s == {'a', 'b', 'c'}
     s.discard('c')
     assert s == {'a', 'b'}
+
+
+def test_literal():
+    d = {"a": 1, "b": 2, "c": 3}
+    e = {"uff": "foo"}
+    assert {*d, *e} == {"a", "b", "c", "uff"}
+
+    d = {}
+    assert {*d} == set()
+
+
+def test_hashable_frozenset():
+    seq = list(range(10)) + list('abcdefg') + ['apple']
+    key1 = frozenset(seq)
+    key2 = frozenset(reversed(seq))
+    assert key1 == key2
+    assert not (id(key1) == id(key2))
+    d = {key1: 42}
+    assert hash(key1) == hash(key2)
+    assert d[key2] == 42
+
+
+def test_equality():
+    s1 = {1, 2, 3}
+    s2 = {1, 3}
+    assert not s1 == s2
+    assert not s2 == s1
+
+
+def test_isdisjoint():
+    x = {1, 2, 3}
+    y = set()
+    assert not x.isdisjoint(x)
+    assert y.isdisjoint(y)
+    assert {1, 2, 3}.isdisjoint({4, 5})
+    assert {4, 5}.isdisjoint({1, 2, 3})
+    assert not {1, 2, 3}.isdisjoint({4, 5, 1, 8})
+    assert not {1, 2, 3, 4, 5, 6}.isdisjoint({4, 5})
+    assert set().isdisjoint({4, 5})
+    assert {4, 5}.isdisjoint(set())
+
+
+def test_isdisjoint_customobjs():
+    class MyIter:
+        def __init__(self, length):
+            self.index = length
+
+        def __next__(self):
+            if self.index == 0:
+                raise StopIteration
+            self.index -= 1
+            return self.index
+
+    class MySetWithIter(frozenset):
+        def __init__(self, forward):
+            frozenset.__init__(forward)
+
+        def __iter__(self):
+            return MyIter(4)
+
+        def __len__(self):
+            return 4
+
+    # iterates over the custom set
+    assert {10, 11}.isdisjoint(MySetWithIter({}))
+    assert not {1, 2}.isdisjoint(MySetWithIter({}))
+
+    # for 'self' we check the actual set elements, not what iterator gives
+    assert MySetWithIter({}).isdisjoint({1,2})
+    assert not MySetWithIter({1}).isdisjoint({1,2})
+    assert MySetWithIter({10, 11, 12, 13}).isdisjoint({1,2})
+
+    # with non-set object
+    class NonSetWithIter:
+        def __iter__(self):
+            return MyIter(4)
+
+        def __len__(self):
+            return 4
+
+    assert {10, 11}.isdisjoint(NonSetWithIter())
+    assert {10, 11, 12, 13, 14}.isdisjoint(NonSetWithIter())
+    assert not {1, 2}.isdisjoint(NonSetWithIter())
+    assert not {1, 2, 3, 4, 5}.isdisjoint(NonSetWithIter())
+
+def test_iter_changed_size():
+    def just_iterate(it):
+        for i in it:
+            pass
+
+    def iterate_and_update(it):
+        for i in it:
+            s.add(3)
+
+    s = {1, 2}
+    it = iter(s)
+    s.pop()
+    assert_raises(RuntimeError, just_iterate, it)
+
+    s = {1, 2}
+    assert_raises(RuntimeError, iterate_and_update, s)
+
+# copied and modified test_collections.py#test_issue_4920
+# the original will always fail on graalpython due to different set order
+def test_MutableSet_pop():
+    class MySet(MutableSet):
+        __slots__=['__s']
+        def __init__(self,items=None):
+            if items is None:
+                items=[]
+            self.__s=set(items)
+        def __contains__(self,v):
+            return v in self.__s
+        def __iter__(self):
+            return iter(self.__s)
+        def __len__(self):
+            return len(self.__s)
+        def add(self,v):
+            result=v not in self.__s
+            self.__s.add(v)
+            return result
+        def discard(self,v):
+            result=v in self.__s
+            self.__s.discard(v)
+            return result
+        def __repr__(self):
+            return "MySet(%s)" % repr(list(self))
+    l = [5,43]
+    s = MySet(l)
+    v1 = s.pop()
+    assert v1 in l
+    v2 = s.pop()
+    assert v2 in l
+    assert v1 != v2
+    assert len(s) == 0

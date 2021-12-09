@@ -1,2 +1,15 @@
-testEmptyPipeline1
-testSimplePipe2
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testBadAppendOptions
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testBadOpenMode
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testBadPrependOptions
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testClone
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testEmptyPipeline1
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testEmptyPipeline2
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testEmptyPipeline3
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testReadOpenSink
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testRepr
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testSetDebug
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testSimplePipe1
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testSimplePipe2
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testSimplePipe3
+*graalpython.lib-python.3.test.test_pipes.SimplePipeTests.testWriteOpenSource
+*graalpython.lib-python.3.test.test_pipes.TestMain.test_main

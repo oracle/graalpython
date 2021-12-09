@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,206 +40,270 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.graalvm.polyglot.io.ByteSequence;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState;
-import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.util.BadOPCodeNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
 public abstract class CodeNodes {
 
-    public static class CreateCodeNode extends PNodeWithContext {
+    public static class CreateCodeNode extends PNodeWithContext implements IndirectCallNode {
+        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
+        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
 
-        @Child private HashingStorageNodes.GetItemNode getItemNode;
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return dontNeedCallerFrame;
+        }
 
-        @SuppressWarnings("try")
-        public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return dontNeedExceptionState;
+        }
+
+        public PCode execute(VirtualFrame frame, int argcount,
+                        int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
-                        byte[] codestring, Object[] constants, Object[] names,
+                        byte[] codedata, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(getContextRef(), frame, this)) {
-                return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext context = PythonContext.get(this);
+            Object state = IndirectCallContext.enter(frame, language, context, this);
+            try {
+                return createCode(language, context, argcount,
+                                posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
+                                constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+            } finally {
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
 
         @TruffleBoundary
-        private PCode createCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
+        private static PCode createCode(PythonLanguage language, PythonContext context, @SuppressWarnings("unused") int argcount,
+                        @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
-                        byte[] codestring, Object[] constants, Object[] names,
+                        byte[] codedata, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            RootCallTarget callTarget = null;
-
-            // Derive a new call target from the code string, if we can
-            RootNode rootNode = null;
-            if (codestring.length > 0) {
-                PythonCore core = PythonLanguage.getCore();
-                if ((flags & PCode.FLAG_MODULE) == 0) {
-                    // we're looking for the function, not the module
-                    String funcdef;
-                    funcdef = createFuncdef(codestring, freevars, name);
-                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, funcdef, name).build(), null);
-                    Object[] args = PArguments.create();
-                    PDict globals = factory.createDict();
-                    PArguments.setGlobals(args, globals);
-                    InvokeNode.invokeUncached(Truffle.getRuntime().createCallTarget(rootNode), args);
-                    Object function = ensureGetItemNode().execute(null, globals.getDictStorage(), name);
-                    if (function instanceof PFunction) {
-                        rootNode = ((PFunction) function).getFunctionRootNode();
-                    } else {
-                        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
-                    }
-                } else {
-                    MaterializedFrame frame = null;
-                    if (freevars.length > 0) {
-                        FrameDescriptor frameDescriptor = new FrameDescriptor();
-                        frame = Truffle.getRuntime().createMaterializedFrame(new Object[0], frameDescriptor);
-                        for (int i = 0; i < freevars.length; i++) {
-                            Object ident = freevars[i];
-                            FrameSlot slot = frameDescriptor.addFrameSlot(ident);
-                            frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
-                            frame.setObject(slot, new PCell(Truffle.getRuntime().createAssumption("cell is effectively final")));
-                        }
-                    }
-                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build(), frame);
-                    assert rootNode instanceof ModuleRootNode;
-                }
-                callTarget = Truffle.getRuntime().createCallTarget(rootNode);
+            RootCallTarget ct;
+            if (codedata.length == 0) {
+                ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, filename, name);
             } else {
-                callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(PythonLanguage.getCurrent()) {
-                    @Override
-                    public Object execute(VirtualFrame frame) {
-                        return PNone.NONE;
-                    }
-
-                    @Override
-                    public Signature getSignature() {
-                        return Signature.EMPTY;
-                    }
-
-                    @Override
-                    public boolean isPythonInternal() {
-                        return false;
-                    }
-                });
+                RootNode rootNode = context.getSerializer().deserialize(context, codedata, toStringArray(cellvars), toStringArray(freevars));
+                ct = PythonUtils.getOrCreateCallTarget(rootNode);
             }
-
-            Signature signature = createSignature(flags, argcount, kwonlyargcount, varnames);
-
-            return factory.createCode(cls, callTarget, signature, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+            if (filename != null) {
+                context.setCodeFilename(ct, filename);
+            }
+            PythonObjectFactory factory = context.factory();
+            return factory.createCode(ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
+                            firstlineno, lnotab);
         }
 
-        private static String createFuncdef(byte[] codestring, Object[] freevars, String name) {
-            CompilerAsserts.neverPartOfCompilation();
-            if (freevars.length > 0) {
-                // we build an outer function to provide the initial scoping
-                String outernme = "_____" + System.nanoTime();
-                StringBuilder sb = new StringBuilder();
-                sb.append("def ").append(outernme).append("():\n");
-                for (Object freevar : freevars) {
-                    String v;
-                    if (freevar instanceof PString) {
-                        v = ((PString) freevar).getValue();
-                    } else if (freevar instanceof String) {
-                        v = (String) freevar;
-                    } else {
-                        continue;
-                    }
-                    sb.append(" ").append(v).append(" = None\n");
-                }
-                sb.append(" global ").append(name).append("\n");
-                sb.append(" ").append(new String(codestring));
-                sb.append("\n\n").append(outernme).append("()");
-                return sb.toString();
+        @TruffleBoundary
+        public static PCode createCode(PythonContext context, int flags, byte[] codedata, String filename, int firstlineno, byte[] lnotab) {
+            boolean isNotAModule = (flags & PCode.FLAG_MODULE) == 0;
+
+            PythonLanguage language = context.getLanguage();
+            Supplier<CallTarget> createCode = () -> {
+                ByteSequence bytes = ByteSequence.create(codedata);
+                Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).cached(!language.singleContextAssumption.isValid()).build();
+                return context.getEnv().parsePublic(source);
+            };
+
+            PythonObjectFactory factory = context.factory();
+            if (context.isCoreInitialized() || isNotAModule) {
+                return factory.createCode(createCode, flags, firstlineno, lnotab, filename);
             } else {
-                return new String(codestring);
+                RootCallTarget ct = (RootCallTarget) language.cacheCode(filename, createCode);
+                return factory.createCode(ct, flags, firstlineno, lnotab, filename);
             }
         }
 
-        private static Signature createSignature(int flags, int argcount, int kwonlyargcount, Object[] varnames) {
-            CompilerAsserts.neverPartOfCompilation();
-            char paramNom = 'A';
-            String[] paramNames = new String[argcount];
-            for (int i = 0; i < paramNames.length; i++) {
-                if (varnames.length > i) {
-                    Object varname = varnames[i];
-                    if (varname instanceof String) {
-                        paramNames[i] = (String) varname;
-                        continue;
-                    }
+        @TruffleBoundary
+        private static String[] toStringArray(Object[] array) {
+            List<String> list = new ArrayList<>(array.length);
+            for (Object item : array) {
+                if (item instanceof String) {
+                    list.add((String) item);
                 }
-                paramNames[i] = Character.toString(paramNom++);
             }
-            String[] kwNames = new String[kwonlyargcount];
-            for (int i = 0; i < kwNames.length; i++) {
-                if (varnames.length > i + argcount) {
-                    Object varname = varnames[i + argcount];
-                    if (varname instanceof String) {
-                        kwNames[i] = (String) varname;
-                        continue;
-                    }
-                }
-                kwNames[i] = Character.toString(paramNom++);
-            }
-            return new Signature(PCode.takesVarKeywordArgs(flags), PCode.takesVarArgs(flags) ? argcount : -1, !PCode.takesVarArgs(flags) && kwonlyargcount > 0, paramNames, kwNames);
-        }
-
-        private HashingStorageNodes.GetItemNode ensureGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
-            }
-            return getItemNode;
-        }
-
-        private ContextReference<PythonContext> getContextRef() {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            return contextRef;
+            return list.toArray(new String[list.size()]);
         }
 
         public static CreateCodeNode create() {
             return new CreateCodeNode();
+        }
+    }
+
+    public static final class GetCodeCallTargetNode extends Node {
+        private static final GetCodeCallTargetNode UNCACHED = new GetCodeCallTargetNode(false);
+
+        private final boolean isAdoptable;
+        @CompilationFinal private Assumption singleContextAssumption;
+        @CompilationFinal private ConditionProfile hasCtProfile;
+        @CompilationFinal private PCode cachedCode1;
+        @CompilationFinal private PCode cachedCode2;
+        @CompilationFinal private RootCallTarget cachedCt1;
+        @CompilationFinal private RootCallTarget cachedCt2;
+
+        private GetCodeCallTargetNode(boolean isAdoptable) {
+            this.isAdoptable = isAdoptable;
+        }
+
+        public final RootCallTarget execute(PCode code) {
+            if (isAdoptable) {
+                if (singleContextAssumption == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
+                }
+                if (hasCtProfile == null) {
+                    if (singleContextAssumption.isValid()) {
+                        if (cachedCode1 == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            cachedCode1 = code;
+                            cachedCt1 = code.initializeCallTarget();
+                            return cachedCt1;
+                        }
+                        if (cachedCode1 == code) {
+                            return cachedCt1;
+                        }
+                        if (cachedCode2 == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            cachedCode2 = code;
+                            cachedCt2 = code.initializeCallTarget();
+                            return cachedCt2;
+                        }
+                        if (cachedCode2 == code) {
+                            return cachedCt2;
+                        }
+                    }
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cachedCode1 = cachedCode2 = null;
+                    cachedCt1 = cachedCt2 = null;
+                    hasCtProfile = ConditionProfile.createBinaryProfile();
+                }
+                RootCallTarget ct = code.callTarget;
+                if (hasCtProfile.profile(ct == null)) {
+                    ct = code.initializeCallTarget();
+                }
+                return ct;
+            } else {
+                RootCallTarget ct = code.callTarget;
+                if (ct == null) {
+                    ct = code.initializeCallTarget();
+                }
+                return ct;
+            }
+        }
+
+        public static GetCodeCallTargetNode create() {
+            return new GetCodeCallTargetNode(true);
+        }
+
+        public static GetCodeCallTargetNode getUncached() {
+            return UNCACHED;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class GetCodeSignatureNode extends Node {
+        public abstract Signature execute(PCode code);
+
+        protected static final Assumption getSingleContextAssumption() {
+            return PythonLanguage.get(null).singleContextAssumption;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "cachedCode == code", limit = "2", assumptions = "singleContextAssumption")
+        protected static Signature doCached(PCode code,
+                        @Cached("getSingleContextAssumption()") Assumption singleContextAssumption,
+                        @Cached("code") PCode cachedCode,
+                        @Cached("code.initializeCallTarget()") RootCallTarget ct,
+                        @Cached("code.initializeSignature(ct)") Signature signature) {
+            return signature;
+        }
+
+        @Specialization(replaces = "doCached")
+        protected static Signature doCode(PCode code,
+                        @Cached ConditionProfile signatureProfile,
+                        @Cached ConditionProfile ctProfile) {
+            Signature signature = code.signature;
+            if (signatureProfile.profile(signature == null)) {
+                RootCallTarget ct = code.callTarget;
+                if (ctProfile.profile(ct == null)) {
+                    ct = code.initializeCallTarget();
+                }
+                signature = code.initializeSignature(ct);
+            }
+            return signature;
+        }
+    }
+
+    public static final class GetCodeRootNode extends Node {
+        private static final GetCodeRootNode UNCACHED = new GetCodeRootNode(false);
+
+        private final boolean isAdoptable;
+        @Child private GetCodeCallTargetNode getCodeCallTargetNode;
+
+        private GetCodeRootNode(boolean isAdoptable) {
+            this.isAdoptable = isAdoptable;
+            if (!isAdoptable) {
+                getCodeCallTargetNode = GetCodeCallTargetNode.getUncached();
+            }
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return isAdoptable;
+        }
+
+        public final RootNode execute(PCode code) {
+            if (getCodeCallTargetNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getCodeCallTargetNode = insert(GetCodeCallTargetNode.create());
+            }
+            return getCodeCallTargetNode.execute(code).getRootNode();
+        }
+
+        public static GetCodeRootNode create() {
+            return new GetCodeRootNode(true);
+        }
+
+        public static GetCodeRootNode getUncached() {
+            return UNCACHED;
         }
     }
 }

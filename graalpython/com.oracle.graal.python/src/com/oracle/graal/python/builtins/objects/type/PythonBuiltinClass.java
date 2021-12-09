@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,27 +29,50 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.utilities.TriState;
 
 /**
  * A Python built-in class that is immutable.
  */
+@ExportLibrary(InteropLibrary.class)
 public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
-    public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
-        super(PythonBuiltinClassType.PythonClass, builtinClass.getName(), base);
+    @TruffleBoundary
+    public PythonBuiltinClass(PythonLanguage lang, PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
+        super(lang, builtinClass.getType(), builtinClass.getType().getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base);
         this.type = builtinClass;
     }
 
     @Override
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {
+        if (name instanceof HiddenKey || !PythonContext.get(null).isCoreInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
-            throw PythonLanguage.getCore().raise(TypeError, "can't set attributes of built-in/extension type '%s'", this);
+            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
         }
     }
 
@@ -60,7 +83,84 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         super.setAttribute(name, value);
     }
 
-    public PythonBuiltinClassType getType() {
+    public final PythonBuiltinClassType getType() {
         return type;
+    }
+
+    @TruffleBoundary
+    @Override
+    public void onAttributeUpdate(String key, Object newValue) {
+        assert !PythonContext.get(null).isCoreInitialized();
+        // Ideally, startup code should not create ASTs that rely on assumptions of props of
+        // builtins. So there should be no assumptions to invalidate yet
+        assert !getMethodResolutionOrder().invalidateAttributeInMROFinalAssumptions(key);
+        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+        if (slot != null) {
+            SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, newValue);
+        }
+        // NO_VALUE changes MRO lookup results without actually changing any Shapes in the MRO, this
+        // can prevent some optimizations, so it is best to avoid any code that triggers such code
+        // paths during initialization
+        assert newValue != PNone.NO_VALUE;
+        PythonClass.updateMroShapeSubTypes(this);
+    }
+
+    @ExportMessage(library = InteropLibrary.class)
+    @SuppressWarnings("static-method")
+    boolean isMetaObject() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isMetaInstance(Object instance,
+                    @Cached GetClassNode getClassNode,
+                    @Shared("convert") @Cached PForeignToPTypeNode convert,
+                    @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isSubtype.execute(getClassNode.execute(convert.executeConvert(instance)), this);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    String getMetaSimpleName(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return type.getName();
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    String getMetaQualifiedName(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return type.getPrintName();
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    @ImportStatic(PGuards.class)
+    static class IsIdenticalOrUndefined {
+        @Specialization
+        static TriState doPBCT(PythonBuiltinClass self, PythonBuiltinClassType other) {
+            return self.getType() == other ? TriState.TRUE : TriState.FALSE;
+        }
+
+        @Specialization(guards = "!isPythonBuiltinClassType(other)")
+        static TriState doOther(PythonBuiltinClass self, Object other,
+                        @Shared("convert") @Cached PForeignToPTypeNode convert,
+                        @CachedLibrary(limit = "3") InteropLibrary otherLib,
+                        @Cached IsNode isNode,
+                        @Exclusive @Cached GilNode gil) {
+            return self.isIdenticalOrUndefined(other, convert, otherLib, isNode, gil);
+        }
     }
 }

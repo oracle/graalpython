@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,18 +42,22 @@ package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import java.util.function.Supplier;
-
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode.NotImplementedHandler;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public enum TernaryArithmetic {
-    Pow(SpecialMethodNames.__POW__, "**", "pow()");
+    Pow(SpecialMethodNames.__POW__, "**", "pow");
 
     private final String methodName;
     private final String operator;
@@ -68,9 +72,9 @@ public enum TernaryArithmetic {
             @Override
             public Object execute(Object arg, Object arg2, Object arg3) {
                 if (arg3 instanceof PNone) {
-                    throw raiseNode.raise(TypeError, "unsupported operand type(s) for %s or %s(): '%p' and '%p'", operator, operatorFunction, arg, arg2);
+                    throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_PR_S_P_AND_P, operator, operatorFunction, arg, arg2);
                 } else {
-                    throw raiseNode.raise(TypeError, "unsupported operand type(s) for %s(): '%p', '%p', '%p'", operatorFunction, arg, arg2, arg3);
+                    throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P, operatorFunction, arg, arg2, arg3);
                 }
             }
         };
@@ -84,33 +88,48 @@ public enum TernaryArithmetic {
         return operator;
     }
 
-    public static final class TernaryArithmeticExpression extends ExpressionNode {
-        @Child private LookupAndCallTernaryNode callNode;
-        @Child private ExpressionNode left;
-        @Child private ExpressionNode right;
+    /**
+     * A helper root node that dispatches to {@link LookupAndCallTernaryNode} to execute the
+     * provided ternary operator. This node is mostly useful to use such operators from a location
+     * without a frame (e.g. from interop). Note: this is just a root node and won't do any
+     * signature checking.
+     */
+    static final class CallTernaryArithmeticRootNode extends CallArithmeticRootNode {
+        static final Signature SIGNATURE_TERNARY = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, null);
 
-        private TernaryArithmeticExpression(LookupAndCallTernaryNode callNode, ExpressionNode left, ExpressionNode right) {
-            this.callNode = callNode;
-            this.left = left;
-            this.right = right;
+        @Child private LookupAndCallTernaryNode callTernaryNode;
+
+        private final TernaryArithmetic ternaryOperator;
+
+        private CallTernaryArithmeticRootNode(PythonLanguage language, TernaryArithmetic ternaryOperator) {
+            super(language);
+            this.ternaryOperator = ternaryOperator;
         }
 
         @Override
-        public Object execute(VirtualFrame frame) {
-            return callNode.execute(frame, left.execute(frame), right.execute(frame), PNone.NONE);
+        public Signature getSignature() {
+            return SIGNATURE_TERNARY;
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
+        protected Object doCall(VirtualFrame frame) {
+            if (callTernaryNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callTernaryNode = insert(ternaryOperator.create());
+            }
+            return callTernaryNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), PArguments.getArgument(frame, 2));
         }
-    }
-
-    public ExpressionNode create(ExpressionNode x, ExpressionNode y) {
-        return new TernaryArithmeticExpression(LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler), x, y);
     }
 
     public LookupAndCallTernaryNode create() {
         return LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler);
+    }
+
+    /**
+     * Creates a root node for this ternary operator such that the operator can be executed via a
+     * full call.
+     */
+    public RootNode createRootNode(PythonLanguage language) {
+        return new CallTernaryArithmeticRootNode(language, this);
     }
 }

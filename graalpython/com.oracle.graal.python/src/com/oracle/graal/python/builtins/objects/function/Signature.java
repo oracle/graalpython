@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,50 +27,71 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.SELF;
 
-import java.util.List;
-
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class Signature {
-    public static final Signature EMPTY = new Signature(false, -1, false, new String[0], new String[0]);
+    public static final Signature EMPTY = new Signature(-1, false, -1, false, PythonUtils.EMPTY_STRING_ARRAY, PythonUtils.EMPTY_STRING_ARRAY);
 
     private final int varArgIndex;
+    private final int positionalOnlyArgIndex;
     private final boolean isVarArgsMarker;
     private final boolean takesVarKeywordArgs;
+    private final boolean checkEnclosingType;
 
     @CompilationFinal(dimensions = 1) private final String[] positionalParameterNames;
     @CompilationFinal(dimensions = 1) private final String[] keywordOnlyNames;
 
-    public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
-                    List<String> parameterIds, List<String> keywordNames) {
-        this(takesVarKeywordArgs, takesVarArgs, varArgsMarker,
-                        parameterIds != null ? parameterIds.toArray(new String[0]) : null,
-                        keywordNames != null ? keywordNames.toArray(new String[0]) : null);
+    private final String raiseErrorName;
+
+    public Signature(Builtin builtin,
+                    String[] parameterIds) {
+        this(builtin.numOfPositionalOnlyArgs(), builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterIds.length : -1,
+                        builtin.varArgsMarker(), parameterIds, builtin.keywordOnlyNames(), false, builtin.raiseErrorName());
     }
 
     public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     String[] parameterIds, String[] keywordNames) {
+        this(-1, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames);
+    }
+
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+                    String[] parameterIds, String[] keywordNames) {
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, false);
+    }
+
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+                    String[] parameterIds, String[] keywordNames, boolean checkEnclosingType) {
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, checkEnclosingType, "");
+    }
+
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+                    String[] parameterIds, String[] keywordNames, boolean checkEnclosingType, String raiseErrorName) {
+        this.positionalOnlyArgIndex = positionOnlyArgIndex;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
         this.isVarArgsMarker = varArgsMarker;
-        this.positionalParameterNames = (parameterIds != null) ? parameterIds : new String[0];
-        this.keywordOnlyNames = (keywordNames != null) ? keywordNames : new String[0];
+        this.positionalParameterNames = (parameterIds != null) ? parameterIds : PythonUtils.EMPTY_STRING_ARRAY;
+        this.keywordOnlyNames = (keywordNames != null) ? keywordNames : PythonUtils.EMPTY_STRING_ARRAY;
+        this.checkEnclosingType = checkEnclosingType;
+        this.raiseErrorName = raiseErrorName;
     }
 
     public static Signature createOneArgumentWithVarKwArgs() {
-        return new Signature(true, -1, false, new String[]{"a"}, null);
+        return new Signature(-1, true, -1, false, new String[]{"a"}, null);
     }
 
     public static Signature createVarArgsAndKwArgsOnly() {
-        return new Signature(true, 0, false, (String[]) null, (String[]) null);
+        return new Signature(-1, true, 0, false, (String[]) null, (String[]) null);
     }
 
     public Signature createWithSelf() {
         String[] parameterIdsWithSelf = new String[getParameterIds().length + 1];
         parameterIdsWithSelf[0] = SELF;
-        System.arraycopy(getParameterIds(), 0, parameterIdsWithSelf, 1, parameterIdsWithSelf.length - 1);
+        PythonUtils.arraycopy(getParameterIds(), 0, parameterIdsWithSelf, 1, parameterIdsWithSelf.length - 1);
 
-        return new Signature(takesVarKeywordArgs, varArgIndex, isVarArgsMarker,
+        return new Signature(-1, takesVarKeywordArgs, varArgIndex, isVarArgsMarker,
                         parameterIdsWithSelf, keywordOnlyNames);
     }
 
@@ -80,6 +101,15 @@ public final class Signature {
 
     public final int getMaxNumOfPositionalArgs() {
         return positionalParameterNames.length;
+    }
+
+    /**
+     *
+     * @return The index to the positional only argument marker ('/'). Which means that all
+     *         positional only argument have index smaller then this.
+     */
+    public final int getPositionalOnlyArgIndex() {
+        return positionalOnlyArgIndex;
     }
 
     public final int getVarargsIdx() {
@@ -124,5 +154,13 @@ public final class Signature {
 
     public final boolean takesOneArgument() {
         return positionalParameterNames.length == 1 && takesPositionalOnly();
+    }
+
+    public final boolean checkEnclosingType() {
+        return checkEnclosingType;
+    }
+
+    public final String getRaiseErrorName() {
+        return raiseErrorName;
     }
 }

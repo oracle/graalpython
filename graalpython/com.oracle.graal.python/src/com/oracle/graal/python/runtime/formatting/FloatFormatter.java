@@ -1,33 +1,33 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.runtime.formatting;
 
+import static com.oracle.graal.python.runtime.formatting.InternalFormat.Spec.specified;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
  * A class that provides the implementation of floating-point formatting. In a limited way, it acts
- * like a StringBuilder to which text and one or more numbers may be appended, formatted according
- * to the format specifier supplied at construction. These are ephemeral objects that are not, on
- * their own, thread safe.
+ * like a StringFormattingBuffer to which text and one or more numbers may be appended, formatted
+ * according to the format specifier supplied at construction. These are ephemeral objects that are
+ * not, on their own, thread safe.
  */
 public class FloatFormatter extends InternalFormat.Formatter {
 
     /** The rounding mode dominant in the formatter. */
     static final RoundingMode ROUND_PY = RoundingMode.HALF_EVEN;
-
-    /** Limit the size of results. */
-    // No-one needs more than log(Double.MAX_VALUE) - log2(Double.MIN_VALUE) = 1383 digits.
-    static final int MAX_PRECISION = 1400;
 
     /** If it contains no decimal point, this length is zero, and 1 otherwise. */
     private int lenPoint;
@@ -46,11 +46,16 @@ public class FloatFormatter extends InternalFormat.Formatter {
      *
      * @param result destination buffer
      * @param spec parsed conversion specification
+     * @param addDot0 reflects flag {@code Py_DTSF_ADD_DOT_0} in CPython, applicable only for 'r'
+     *            specifier
      */
-    public FloatFormatter(PythonCore core, StringBuilder result, Spec spec) {
-        super(core, result, spec);
-        if (spec.alternate) {
+    public FloatFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec, boolean addDot0) {
+        super(raiseNode, result, spec);
+        if (!addDot0 && spec.type == 'r') {
+            minFracDigits = 0;
+        } else if (spec.alternate) {
             // Alternate form means do not trim the zero fractional digits.
+            // This should be equivalent to Py_DTSF_ALT flag in CPython
             minFracDigits = -1;
         } else if (spec.type == 'r' || spec.type == Spec.NONE) {
             // These formats by default show at least one fractional digit.
@@ -64,13 +69,12 @@ public class FloatFormatter extends InternalFormat.Formatter {
         }
     }
 
-    /**
-     * Construct the formatter from a specification, allocating a buffer internally for the result.
-     *
-     * @param spec parsed conversion specification
-     */
-    public FloatFormatter(PythonCore core, Spec spec) {
-        this(core, new StringBuilder(size(spec)), spec);
+    public FloatFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
+        this(raiseNode, result, spec, true);
+    }
+
+    public FloatFormatter(PRaiseNode raiseNode, Spec spec) {
+        this(raiseNode, new FormattingBuffer.StringFormattingBuffer(size(spec)), spec);
     }
 
     /**
@@ -163,25 +167,28 @@ public class FloatFormatter extends InternalFormat.Formatter {
         setStart();
 
         // Precision defaults to 6 (or 12 for none-format)
-        int precision = spec.getPrecision(Spec.specified(spec.type) ? 6 : 12);
-
-        // Guard against excessive result precision
-        // XXX Possibly better raised before result is allocated/sized.
-        if (precision > MAX_PRECISION) {
-            throw precisionTooLarge("float");
-        }
+        int precision = spec.getPrecision(6);
 
         /*
          * By default, the prefix of a positive number is "", but the format specifier may override
          * it, and the built-in type complex needs to override the format.
          */
         char sign = spec.sign;
-        if (positivePrefix == null && Spec.specified(sign) && sign != '-') {
+        if (positivePrefix == null && specified(sign) && sign != '-') {
             positivePrefix = Character.toString(sign);
         }
 
+        char type = spec.type;
+        int expThresholdAdj = 0;
+        if (!specified(spec.type) && specified(spec.precision)) {
+            // No specifier normally means do what __str__ would do, but if precision is specified,
+            // we switch to g, moreover, CPython also adjusts the exponential notation threshold
+            type = 'g';
+            expThresholdAdj = -1;
+        }
+
         // Different process for each format type, ignoring case for now.
-        switch (Character.toLowerCase(spec.type)) {
+        switch (Character.toLowerCase(type)) {
             case 'e':
                 // Exponential case: 1.23e-45
                 format_e(value, positivePrefix, precision);
@@ -192,19 +199,25 @@ public class FloatFormatter extends InternalFormat.Formatter {
                 format_f(value, positivePrefix, precision);
                 break;
 
-            case 'n':
-                // Locale-sensitive version of g-format should be here. (Désolé de vous decevoir.)
-                // XXX Set a variable here to signal localisation in/after groupDigits?
             case 'g':
                 // General format: fixed or exponential according to value.
-                format_g(value, positivePrefix, precision, 0);
+                format_g(value, positivePrefix, precision, expThresholdAdj);
+                break;
+
+            case 'n':
+                // Locale aware version of 'g'
+                format_g(value, positivePrefix, precision, expThresholdAdj);
+                DecimalFormat format = getCurrentDecimalFormat();
+                if (format != null) {
+                    setGroupingAndGroupSize(format);
+                    DecimalFormatSymbols symbols = format.getDecimalFormatSymbols();
+                    if (lenPoint > 0) {
+                        result.setCharAt(lenWhole, symbols.getDecimalSeparator());
+                    }
+                }
                 break;
 
             case Spec.NONE:
-                // None format like g-format but goes exponential at precision-1
-                format_g(value, positivePrefix, precision, -1);
-                break;
-
             case 'r':
                 // For float.__repr__, very special case, breaks all the rules.
                 format_r(value, positivePrefix);
@@ -218,7 +231,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
             default:
                 // Should never get here, since this was checked in PyFloat.
-                throw unknownFormat(errors, spec.type, "float");
+                throw unknownFormat(raiseNode, spec.type, "float");
         }
 
         // If the format type is an upper-case letter, convert the result to upper case.
@@ -227,9 +240,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
         }
 
         // If required to, group the whole-part digits.
-        if (spec.grouping) {
-            groupDigits(3, ',');
-        }
+        groupWholePartIfRequired();
 
         return this;
     }
@@ -546,7 +557,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
         } else {
 
             // Generate digit sequence (with no decimal point) with custom rounding.
-            StringBuilder pointlessBuffer = new StringBuilder(20);
+            FormattingBuffer.StringFormattingBuffer pointlessBuffer = new FormattingBuffer.StringFormattingBuffer(20);
             int exp = reprDigits(Math.abs(value), precision, pointlessBuffer);
 
             if (-4 <= exp && exp < expThreshold) {
@@ -639,11 +650,10 @@ public class FloatFormatter extends InternalFormat.Formatter {
                 }
                 lenWhole = digitCount;
             }
-
-            if (noTruncate) {
-                // Extend the fraction as BigDecimal will have economised on zeros.
-                appendPointAndTrailingZeros(precision - digitCount);
-            }
+        }
+        if (noTruncate) {
+            // Extend the fraction as BigDecimal will have economised on zeros.
+            appendPointAndTrailingZeros(lenFraction + precision - digitCount);
         }
 
         // Finally, ensure we have all and only the fractional digits we should.
@@ -705,7 +715,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
      * @param buf for digits of result (recommend size be 20)
      * @return the exponent
      */
-    private static int reprDigits(double value, int maxDigits, StringBuilder buf) {
+    private static int reprDigits(double value, int maxDigits, FormattingBuffer.StringFormattingBuffer buf) {
 
         // Most of the work is done by Double.
         String s = Double.toString(value);
@@ -716,6 +726,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
         boolean allZero = true;
 
         // Scan whole part and fractional part digits
+        buf.ensureAdditionalCapacity(s.length()); // this may over-allocate a bit
         while (p < end) {
             c = s.charAt(p++);
             if (Character.isDigit(c)) {

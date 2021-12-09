@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,11 +43,13 @@ package com.oracle.graal.python.builtins.objects.thread;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PRLock extends AbstractPythonLock {
-    private class InternalReentrantLock extends ReentrantLock {
+    private static class InternalReentrantLock extends ReentrantLock {
         private static final long serialVersionUID = 2531000884985514112L;
 
         @TruffleBoundary
@@ -62,15 +64,22 @@ public final class PRLock extends AbstractPythonLock {
 
     private final InternalReentrantLock lock;
 
-    public PRLock(LazyPythonClass cls) {
-        super(cls);
-        this.lock = new InternalReentrantLock();
+    public PRLock(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
+        this.lock = allocateLock();
     }
 
+    @TruffleBoundary
+    private static InternalReentrantLock allocateLock() {
+        return new InternalReentrantLock();
+    }
+
+    @TruffleBoundary
     public boolean isOwned() {
         return lock.isHeldByCurrentThread();
     }
 
+    @TruffleBoundary
     public int getCount() {
         return lock.getHoldCount();
     }
@@ -79,6 +88,7 @@ public final class PRLock extends AbstractPythonLock {
         return lock.getOwnerId();
     }
 
+    @TruffleBoundary
     public void releaseAll() {
         while (lock.getHoldCount() > 0) {
             lock.unlock();
@@ -93,20 +103,21 @@ public final class PRLock extends AbstractPythonLock {
 
     @Override
     @TruffleBoundary
-    protected boolean acquireBlocking() {
-        lock.lock();
-        return true;
+    protected boolean acquireBlocking(Node node) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (l) -> {
+            l.lockInterruptibly();
+            b[0] = true;
+        }, lock);
+        return b[0];
     }
 
     @Override
     @TruffleBoundary
-    protected boolean acquireTimeout(long timeout) {
-        try {
-            return lock.tryLock(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
+    protected boolean acquireTimeout(Node node, long timeout) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (l) -> b[0] = l.tryLock(timeout, TimeUnit.MILLISECONDS), lock);
+        return b[0];
     }
 
     @Override
@@ -116,6 +127,7 @@ public final class PRLock extends AbstractPythonLock {
     }
 
     @Override
+    @TruffleBoundary
     public boolean locked() {
         return lock.isLocked();
     }

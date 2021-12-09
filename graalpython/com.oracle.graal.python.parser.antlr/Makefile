@@ -40,11 +40,7 @@ QUIETLY$(MX_VERBOSE) = @
 # during clean, this isn't set
 PARSER_PATH ?= ../com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr
 
-TARGETS=${PARSER_PATH}/Python3BaseVisitor.java \
-	${PARSER_PATH}/Python3Listener.java \
-	${PARSER_PATH}/Python3BaseListener.java \
-	${PARSER_PATH}/Python3Visitor.java \
-	${PARSER_PATH}/Python3Parser.java \
+TARGETS=${PARSER_PATH}/Python3Parser.java \
 	${PARSER_PATH}/Python3Lexer.java
 
 SOURCE=${PARSER_PATH}/Python3.g4
@@ -52,14 +48,15 @@ STAMP=${SOURCE}.stamp
 
 .PHONY: default clean
 default: ${TARGETS}
+	
 
 ${STAMP}: ${SOURCE} ${POSTPROCESSOR}
 	$(QUIETLY) touch $@
-	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
 
 # postprocessing to make source compile without warnings
 ${PARSER_PATH}/%.java: ${STAMP}
-	$(QUIETLY) python ${POSTPROCESSOR} $@
+	python ${POSTPROCESSOR} $@
 
 clean:
 ifeq ($(wildcard ${SOURCE}),)
@@ -67,3 +64,7 @@ ifeq ($(wildcard ${SOURCE}),)
 endif
 	$(QUIETLY) rm -f ${TARGETS}
 	$(QUIETLY) rm -f ${STAMP}
+	$(QUIETLY) rm -f ${PARSER_PATH}/Python3.tokens \
+			${PARSER_PATH}/Python3Lexer.tokens \
+			${PARSER_PATH}/Python3.interp \
+			${PARSER_PATH}/Python3Lexer.interp

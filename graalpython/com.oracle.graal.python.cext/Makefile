@@ -36,68 +36,26 @@
 # SOFTWARE.
 
 QUIETLY$(MX_VERBOSE) = @
-LIBDIR=../lib-graalpython
-TARGET_LIB=${LIBDIR}/capi.bc
+.PHONY: default clean
 
-
-SOURCE_FILES=$(wildcard src/*.c)
-OBJ_FILES=${SOURCE_FILES:%.c=%.o}
 INCLUDE_FILES=$(wildcard include/*.h)
-
-MODULE_SOURCES=$(wildcard modules/*.c)
-MODULE_OBJ_FILES=$(MODULE_SOURCES:%.c=%.o)
-MODULE_TARGETS=$(MODULE_SOURCES:modules/%.c=${LIBDIR}/modules/%.bc)
+LEGACY_INCLUDES=$(wildcard $(TRUFFLE_H_INC)/*.h)
 
 # These are just needed to allow compilation from source, because include needs
 # to be next to lib-graalpython
-HEADER_TARGETS=$(INCLUDE_FILES:include/%.h=../include/%.h)
+HEADER_TARGETS=$(INCLUDE_FILES:include/%.h=../include/%.h) 
+LEGACY_TARGETS=$(LEGACY_INCLUDES:$(TRUFFLE_H_INC)/%.h=../include/%.h)
 
-.PHONY: default clean
-default: ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS} compile_flags.txt
+default: ${HEADER_TARGETS} ${LEGACY_TARGETS}
 
-
-CFLAGS=${LLVM_TARGET_FLAGS} -O1 -ggdb -emit-llvm
-OPT_FLAGS=-mem2reg -globalopt -simplifycfg -constprop -always-inline -instcombine -dse -loop-simplify -reassociate -licm -gvn
-WARNINGS=-Wno-int-to-pointer-cast -Wno-int-conversion -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
-INCLUDES=-I${POLYGLOT_INC} -Iinclude
-
-
-rebuild:
-	$(MAKE) clean
-	$(MAKE) default
-
-${LIBDIR}/modules/%.bc: modules/%.o
-	$(QUIETLY) mkdir -p ${LIBDIR}/modules
-	$(QUIETLY) llvm-link -o $@ $+
-
-${TARGET_LIB}: ${OBJ_FILES}
-	$(QUIETLY) llvm-link -o $@ $+
-
-src/%.o: src/%.c Makefile src/capi.h ${INCLUDE_FILES}
-	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
-
-modules/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES}
-	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
-
-../include/%.h: ${INCLUDE_FILES}
+$(HEADER_TARGETS): ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p ../include/
 	$(QUIETLY) cp $(@:../include/%.h=include/%.h) $@
 
-clean:
-	$(QUIETLY) rm -f ${TARGET_LIB}
-	$(QUIETLY) rm -f ${OBJ_FILES}
-	$(QUIETLY) rm -f ${MODULE_TARGETS}
-	$(QUIETLY) rm -f ${MODULE_OBJ_FILES}
-	$(QUIETLY) rm -f ${HEADER_TARGETS}
-	$(QUIETLY) rm -f compile_flags.txt
-ifeq ($(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc),)
-	rm -f $(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc)
-endif
+$(LEGACY_TARGETS): ${LEGACY_INCLUDES}
+	$(QUIETLY) mkdir -p ../include/
+	$(QUIETLY) cp $(@:../include/%.h=$(TRUFFLE_H_INC)/%.h) $@
 
-# compile_flags.txt is useful with clangd as language server
-compile_flags.txt: Makefile
-	$(QUIETLY) $(file > $@,-O1)
-	$(QUIETLY) $(foreach var,$(WARNINGS),$(file >> $@,$(var)))
-	$(QUIETLY) $(foreach var,$(INCLUDES),$(file >> $@,$(var)))
+clean:
+	$(QUIETLY) rm -f ${HEADER_TARGETS}
+	$(QUIETLY) rm -f $(LEGACY_TARGETS)

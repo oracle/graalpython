@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,23 +25,25 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class IfNode extends StatementNode {
 
-    @Child private CastToBooleanNode condition;
+    @Child private CoerceToBooleanNode condition;
     @Child private StatementNode then;
     @Child private StatementNode orelse;
+    private final ConditionProfile conditionProfile = ConditionProfile.createCountingProfile();
 
-    public IfNode(CastToBooleanNode condition, StatementNode then, StatementNode orelse) {
+    public IfNode(CoerceToBooleanNode condition, StatementNode then, StatementNode orelse) {
         this.condition = condition;
         this.then = then;
         this.orelse = orelse;
     }
 
-    public CastToBooleanNode getCondition() {
+    public CoerceToBooleanNode getCondition() {
         return condition;
     }
 
@@ -55,7 +57,7 @@ public final class IfNode extends StatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        if (condition.executeBoolean(frame)) {
+        if (conditionProfile.profile(condition.executeBoolean(frame))) {
             then.executeVoid(frame);
         } else if (orelse != null) {
             orelse.executeVoid(frame);

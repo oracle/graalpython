@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -81,6 +81,47 @@ def test_json_bytes_re_compile():
         pass
     else:
         assert False, "searching a bytes-pattern in a str did not raise"
+
+
+def test_none_value():
+    regex_find = re.compile(
+        r"(//?| ==?)|([[]]+)").findall
+    stream = iter([ (special,text)
+                    for (special,text) in regex_find('[]')
+                    if special or text ])
+    n = next(stream)
+    assert not n[0]
+    assert str(n[0]) == ''
+
+
+def test_find_all_none():
+    import re
+    pattern = re.compile(
+        r"("
+        r"'[^']*'|\"[^\"]*\"|"
+        r"//?|"
+        r"\(\)|"
+        r"==?|"
+        r"[/.*\[\]()@])|"
+        r"([^/\[\]()@=\s]+)|"
+        r"\s+"
+    ).findall
+
+    text = '//NameNode[not(@name)]'
+    result = [
+        ('//', ''),
+        ('', 'NameNode'),
+        ('[', ''),
+        ('', 'not'),
+        ('(', ''),
+        ('@', ''),
+        ('', 'name'),
+        (')', ''),
+        (']', ''),
+    ]
+
+    for i, r in enumerate(pattern(text)):
+        assert result[i] == r
 
 
 class S(str):
@@ -242,8 +283,7 @@ class ReTests(unittest.TestCase):
         self.checkPatternError(r'(?(a.))', "bad character in group name 'a.'", 3)
         # New valid/invalid identifiers in Python 3
         re.compile('(?P<µ>x)(?P=µ)(?(µ)y)')
-        # TODO enable once unicode is supported
-#         re.compile('(?P<𝔘𝔫𝔦𝔠𝔬𝔡𝔢>x)(?P=𝔘𝔫𝔦𝔠𝔬𝔡𝔢)(?(𝔘𝔫𝔦𝔠𝔬𝔡𝔢)y)')
+        re.compile('(?P<𝔘𝔫𝔦𝔠𝔬𝔡𝔢>x)(?P=𝔘𝔫𝔦𝔠𝔬𝔡𝔢)(?(𝔘𝔫𝔦𝔠𝔬𝔡𝔢)y)')
         self.checkPatternError('(?P<©>x)', "bad character in group name '©'", 4)
         # Support > 100 groups.
         pat = '|'.join('x(?P<a%d>%x)y' % (i, i) for i in range(1, 200 + 1))
@@ -370,7 +410,7 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.compile("(?i)(a)(b)").pattern, "(?i)(a)(b)")
         # TODO at the moment, we use slightly different default flags
         #self.assertEqual(re.compile("(?i)(a)(b)").flags, re.I | re.U)
-        
+
         # TODO re-enable this test once TRegex provides this property
         #self.assertEqual(re.compile("(?i)(a)(b)").groups, 2)
         self.assertEqual(re.compile("(?i)(a)(b)").groupindex, {})
@@ -390,7 +430,7 @@ class ReTests(unittest.TestCase):
         p = re.compile(r'(?i)(?P<first>a)(?P<other>b)')
         self.assertEqual(sorted(p.groupindex), ['first', 'other'])
         self.assertEqual(p.groupindex['other'], 2)
-        
+
         if sys.version_info.minor >= 6:
             with self.assertRaises(TypeError):
                 p.groupindex['other'] = 0
@@ -438,3 +478,13 @@ class ReTests(unittest.TestCase):
         self.assertTrue(match)
         assert "frac" in match.groupdict()
         assert match.groupdict()["frac"] == "1"
+
+
+    def test_escape(self):
+        self.assertEqual(re.escape(" ()"), "\\ \\(\\)")
+
+    def test_finditer_empty_string(self):
+        regex = re.compile(
+            r"(//?| ==?)|([[]]+)")
+        for m in regex.finditer(''):
+            self.fail()

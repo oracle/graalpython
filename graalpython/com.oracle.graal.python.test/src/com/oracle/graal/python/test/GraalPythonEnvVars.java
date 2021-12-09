@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,7 @@ import java.nio.file.Paths;
 import java.security.CodeSource;
 
 public class GraalPythonEnvVars {
+    private static final String PROP_HOME = "test.graalpython.home";
     private static final String LIB_GRAALPYTHON = "lib-graalpython";
     private static final String NO_CORE = "Fatal: You need to pass --python.CoreHome because its location could not be discovered.";
 
@@ -50,38 +51,22 @@ public class GraalPythonEnvVars {
     }
 
     private static String discoverHomeFromSource() throws IOException {
-        final CodeSource codeSource = GraalPythonEnvVars.class.getProtectionDomain().getCodeSource();
+        /*
+         * If the tests are executed via MX then there should be a Java property telling us the
+         * Graal Python home.
+         */
+        String homeProperty = System.getProperty(PROP_HOME);
+        if (homeProperty != null) {
+            final Path candidate = Paths.get(homeProperty);
+            if (isGraalPythonHome(candidate)) {
+                return candidate.toRealPath().toString();
+            }
+        }
 
+        final CodeSource codeSource = GraalPythonEnvVars.class.getProtectionDomain().getCodeSource();
         if (codeSource != null && codeSource.getLocation().getProtocol().equals("file")) {
             final Path codeLocation = Paths.get(codeSource.getLocation().getFile());
             final Path codeDir = codeLocation.getParent();
-
-            // executing from jar file in source tree
-            for (Path cur = codeDir; cur.getNameCount() >= 2; cur = cur.getParent()) {
-                if (cur.endsWith(Paths.get("mxbuild", "dists"))) {
-                    final Path candidate = cur.getParent().getParent().resolve("graalpython");
-                    if (isGraalPythonHome(candidate)) {
-                        // Jar source build
-                        return candidate.toFile().getCanonicalPath().toString();
-                    }
-                }
-            }
-
-            // executing from jar file in source main
-            Path mainDirCandidate = codeDir.resolve("graalpython");
-            if (isGraalPythonHome(mainDirCandidate)) {
-                // Jar source build
-                return mainDirCandidate.toFile().getCanonicalPath().toString();
-            }
-
-            // executing from class files in source tree
-            if (codeDir.getParent().endsWith(Paths.get("mxbuild", "graalpython"))) {
-                final Path candidate = codeDir.getParent().getParent().getParent().resolve("graalpython");
-                if (isGraalPythonHome(candidate)) {
-                    // Jar source build
-                    return candidate.toFile().getCanonicalPath().toString();
-                }
-            }
 
             // executing from jar file in GraalVM build or distribution
             if (codeDir.getFileName().toString().equals("python")) {

@@ -1,0 +1,10 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: Empty
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: merge
+        Kind: Generator
+        FrameDescriptor: [h, <>temp4, it, <>temp5, value, <return_val>, order]
+        CellVars: Empty
+        FreeVars: Empty

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,24 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PDictView extends PythonBuiltinObject {
     private final PHashingCollection dict;
     private final String name;
 
-    public PDictView(LazyPythonClass clazz, String name, PHashingCollection dict) {
-        super(clazz);
+    public PDictView(Object clazz, Shape instanceShape, String name, PHashingCollection dict) {
+        super(clazz, instanceShape);
         this.name = name;
+        assert dict != null;
         this.dict = dict;
     }
 
@@ -59,8 +65,30 @@ public abstract class PDictView extends PythonBuiltinObject {
         return dict;
     }
 
-    public int size() {
-        return dict.size();
+    public String getName() {
+        return name;
+    }
+
+    public abstract static class PBaseDictIterator<T> extends PHashingStorageIterator<T> {
+
+        protected final HashingStorage hashingStorage;
+
+        public PBaseDictIterator(Object clazz, Shape instanceShape, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, instanceShape, iterator, initialSize);
+            this.hashingStorage = hashingStorage;
+        }
+
+        public HashingStorage getHashingStorage() {
+            return hashingStorage;
+        }
+
+        public Object next(@SuppressWarnings("unused") PythonObjectFactory factory) {
+            return this.next();
+        }
+
+        public final boolean checkSizeChanged(HashingStorageLibrary lib) {
+            return lib.length(hashingStorage) != size;
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -68,16 +96,16 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the keys
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictKeysIterator extends PJavaIteratorIterator<Object> {
-        public PDictKeysIterator(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, dict.keys().iterator());
+    public static final class PDictKeyIterator extends PBaseDictIterator<Object> {
+        public PDictKeyIterator(Object clazz, Shape instanceShape, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, instanceShape, iterator, hashingStorage, initialSize);
         }
     }
 
     public static final class PDictKeysView extends PDictView {
 
-        public PDictKeysView(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, "dict_keys", dict);
+        public PDictKeysView(Object clazz, Shape instanceShape, PHashingCollection dict) {
+            super(clazz, instanceShape, "dict_keys", dict);
         }
     }
 
@@ -86,16 +114,16 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the values
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictValuesIterator extends PJavaIteratorIterator<Object> {
-        public PDictValuesIterator(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, dict.items().iterator());
+    public static final class PDictValueIterator extends PBaseDictIterator<Object> {
+        public PDictValueIterator(Object clazz, Shape instanceShape, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, instanceShape, iterator, hashingStorage, initialSize);
         }
     }
 
     public static final class PDictValuesView extends PDictView {
 
-        public PDictValuesView(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, "dict_values", dict);
+        public PDictValuesView(Object clazz, Shape instanceShape, PHashingCollection dict) {
+            super(clazz, instanceShape, "dict_values", dict);
         }
     }
 
@@ -104,21 +132,27 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the items
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictItemsIterator extends PJavaIteratorIterator<DictEntry> {
-        public PDictItemsIterator(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, dict.entries().iterator());
+    public static final class PDictItemIterator extends PBaseDictIterator<DictEntry> {
+        public PDictItemIterator(Object clazz, Shape instanceShape, HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, instanceShape, iterator, hashingStorage, initialSize);
+        }
+
+        @TruffleBoundary
+        private DictEntry nextVal() {
+            return (DictEntry) super.next();
+        }
+
+        @Override
+        public Object next(PythonObjectFactory factory) {
+            DictEntry value = nextVal();
+            return factory.createTuple(new Object[]{value.getKey(), value.getValue()});
         }
     }
 
     public static final class PDictItemsView extends PDictView {
 
-        public PDictItemsView(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, "dict_items", dict);
+        public PDictItemsView(Object clazz, Shape instanceShape, PHashingCollection dict) {
+            super(clazz, instanceShape, "dict_items", dict);
         }
     }
-
-    public String getName() {
-        return name;
-    }
-
 }

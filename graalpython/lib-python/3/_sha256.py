@@ -46,25 +46,8 @@ Sigma1 = lambda x: (S(x, 6) ^ S(x, 11) ^ S(x, 25))
 Gamma0 = lambda x: (S(x, 7) ^ S(x, 18) ^ R(x, 3))
 Gamma1 = lambda x: (S(x, 17) ^ S(x, 19) ^ R(x, 10))
 
-def sha_transform(sha_info):
-    W = []
-    
-    d = sha_info['data']
-    for i in range(0,16):
-        W.append( (d[4*i]<<24) + (d[4*i+1]<<16) + (d[4*i+2]<<8) + d[4*i+3])
-    
-    for i in range(16,64):
-        W.append( (Gamma1(W[i - 2]) + W[i - 7] + Gamma0(W[i - 15]) + W[i - 16]) & 0xffffffff )
-    
-    ss = sha_info['digest'][:]
-    
-    def RND(a,b,c,d,e,f,g,h,i,ki):
-        t0 = h + Sigma1(e) + Ch(e, f, g) + ki + W[i];
-        t1 = Sigma0(a) + Maj(a, b, c);
-        d += t0;
-        h  = t0 + t1;
-        return d & 0xffffffff, h & 0xffffffff
-    
+# TODO: TRUFFLE CHANGE BEGIN
+def do_part1(ss, RND):
     ss[3], ss[7] = RND(ss[0],ss[1],ss[2],ss[3],ss[4],ss[5],ss[6],ss[7],0,0x428a2f98);
     ss[2], ss[6] = RND(ss[7],ss[0],ss[1],ss[2],ss[3],ss[4],ss[5],ss[6],1,0x71374491);
     ss[1], ss[5] = RND(ss[6],ss[7],ss[0],ss[1],ss[2],ss[3],ss[4],ss[5],2,0xb5c0fbcf);
@@ -95,6 +78,9 @@ def sha_transform(sha_info):
     ss[0], ss[4] = RND(ss[5],ss[6],ss[7],ss[0],ss[1],ss[2],ss[3],ss[4],27,0xbf597fc7);
     ss[7], ss[3] = RND(ss[4],ss[5],ss[6],ss[7],ss[0],ss[1],ss[2],ss[3],28,0xc6e00bf3);
     ss[6], ss[2] = RND(ss[3],ss[4],ss[5],ss[6],ss[7],ss[0],ss[1],ss[2],29,0xd5a79147);
+
+
+def do_part2(ss, RND):
     ss[5], ss[1] = RND(ss[2],ss[3],ss[4],ss[5],ss[6],ss[7],ss[0],ss[1],30,0x06ca6351);
     ss[4], ss[0] = RND(ss[1],ss[2],ss[3],ss[4],ss[5],ss[6],ss[7],ss[0],31,0x14292967);
     ss[3], ss[7] = RND(ss[0],ss[1],ss[2],ss[3],ss[4],ss[5],ss[6],ss[7],32,0x27b70a85);
@@ -129,11 +115,40 @@ def sha_transform(sha_info):
     ss[6], ss[2] = RND(ss[3],ss[4],ss[5],ss[6],ss[7],ss[0],ss[1],ss[2],61,0xa4506ceb);
     ss[5], ss[1] = RND(ss[2],ss[3],ss[4],ss[5],ss[6],ss[7],ss[0],ss[1],62,0xbef9a3f7);
     ss[4], ss[0] = RND(ss[1],ss[2],ss[3],ss[4],ss[5],ss[6],ss[7],ss[0],63,0xc67178f2);
+# TODO: TRUFFLE CHANGE END
+
+
+def sha_transform256(sha_info):
+    W = []
+
+    d = sha_info['data']
+    for i in range(0,16):
+        W.append( (d[4*i]<<24) + (d[4*i+1]<<16) + (d[4*i+2]<<8) + d[4*i+3])
+    
+    for i in range(16,64):
+        W.append( (Gamma1(W[i - 2]) + W[i - 7] + Gamma0(W[i - 15]) + W[i - 16]) & 0xffffffff )
+    
+    ss = sha_info['digest'][:]
+    def RND(a,b,c,d,e,f,g,h,i,ki):
+        t0 = h + Sigma1(e) + Ch(e, f, g) + ki + W[i];
+        t1 = Sigma0(a) + Maj(a, b, c);
+        d += t0;
+        h  = t0 + t1;
+        return d & 0xffffffff, h & 0xffffffff
+
+    # TODO: TRUFFLE CHANGE BEGIN
+    do_part1(ss, RND)
+    do_part2(ss, RND)
+    # TODO: TRUFFLE CHANGE END
     
     dig = []
     for i, x in enumerate(sha_info['digest']):
         dig.append( (x + ss[i]) & 0xffffffff )
     sha_info['digest'] = dig
+
+
+def sha_transform(sha_info):
+    sha_transform256(sha_info)
 
 def sha_init():
     sha_info = new_shaobject()

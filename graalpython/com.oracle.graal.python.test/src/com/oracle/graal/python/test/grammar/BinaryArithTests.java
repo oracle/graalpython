@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -110,7 +110,7 @@ public class BinaryArithTests {
                         "d = 2 ** 4\n" + //
                         "e = 2.5 ** 3.0\n" + //
                         "print(a,b,c,d,e)\n";
-        assertPrints("1.0734391914109869e+17 1.0734391914109868e+18 -821361754992.0 16 15.625\n", source);
+        assertPrints("1.0734391914109867e+17 1.0734391914109868e+18 -821361754992.0 16 15.625\n", source);
     }
 
     @Test
@@ -131,7 +131,7 @@ public class BinaryArithTests {
     public void NonePlusInt() {
         String source = "a = None\n" + //
                         "a += 1\n";
-        assertLastLineError("TypeError: unsupported operand type(s) for +=: 'NoneType' and 'int'\n", source);
+        assertLastLineErrorContains("TypeError: unsupported operand type(s)", source);
     }
 
 }

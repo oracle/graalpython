@@ -1,0 +1,15 @@
+ModuleRootNode Name: <module 'spaceEnd'> SourceSection: [0,4]`x=5 `
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,4]`x=5 `
+    ExpressionWithSideEffect SourceSection: [0,3]`x=5`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,3]`x=5`
+          Identifier: x
+          IntegerLiteralNode SourceSection: [2,3]`5`
+            Value: 5

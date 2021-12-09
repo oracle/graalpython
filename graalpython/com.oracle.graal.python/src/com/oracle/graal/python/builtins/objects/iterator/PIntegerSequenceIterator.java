@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,21 +25,22 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PIntegerSequenceIterator extends PIntegerIterator {
 
     final IntSequenceStorage sequence;
-    int index;
+    final Object store;
 
-    public PIntegerSequenceIterator(LazyPythonClass clazz, IntSequenceStorage sequence) {
-        super(clazz);
+    public PIntegerSequenceIterator(Object clazz, Shape instanceShape, IntSequenceStorage sequence, Object store) {
+        super(clazz, instanceShape);
         this.sequence = sequence;
+        this.store = store;
     }
 
-    public IntSequenceStorage getSequenceStorage() {
-        return sequence;
+    public Object getObject() {
+        return store;
     }
 
     @Override

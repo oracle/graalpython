@@ -210,6 +210,7 @@ class BaseLockTests(BaseTestCase):
         ref = weakref.ref(lock)
         self.assertIsNotNone(ref())
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_weakref_deleted(self):
         lock = self.locktype()
         ref = weakref.ref(lock)
@@ -467,7 +468,7 @@ class ConditionTests(BaseTestCase):
         # of the workers.
         # Secondly, this test assumes that condition variables are not subject
         # to spurious wakeups.  The absence of spurious wakeups is an implementation
-        # detail of Condition Cariables in current CPython, but in general, not
+        # detail of Condition Variables in current CPython, but in general, not
         # a guaranteed property of condition variables as a programming
         # construct.  In particular, it is possible that this can no longer
         # be conveniently guaranteed should their implementation ever change.

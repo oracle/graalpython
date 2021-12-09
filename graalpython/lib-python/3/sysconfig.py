@@ -19,6 +19,18 @@ __all__ = [
 ]
 
 _INSTALL_SCHEMES = {
+    # Graalpython change: custom scheme
+    # Keep in sync with distutils.sysconfig_graalpython, distutils.install and site module
+    'graalpython': {
+        'stdlib': '{installed_base}/lib-python/3',
+        'platstdlib': '{base}/lib-python/3',
+        'purelib': '{base}/lib/python{py_version_short}/site-packages',
+        'platlib': '{base}/lib/python{py_version_short}/site-packages',
+        'include': '{installed_base}/include',
+        'platinclude': '{installed_base}/include',
+        'scripts': '{base}/bin',
+        'data': '{base}',
+    },
     'posix_prefix': {
         'stdlib': '{installed_base}/lib/python{py_version_short}',
         'platstdlib': '{platbase}/lib/python{py_version_short}',
@@ -119,7 +131,7 @@ if "_PYTHON_PROJECT_BASE" in os.environ:
     _PROJECT_BASE = _safe_realpath(os.environ["_PYTHON_PROJECT_BASE"])
 
 def _is_python_source_dir(d):
-    for fn in ("Setup.dist", "Setup.local"):
+    for fn in ("Setup", "Setup.local"):
         if os.path.isfile(os.path.join(d, "Modules", fn)):
             return True
     return False
@@ -179,10 +191,12 @@ def _expand_vars(scheme, vars):
 
 
 def _get_default_scheme():
-    if os.name == 'posix':
-        # the default scheme for posix is posix_prefix
-        return 'posix_prefix'
-    return os.name
+    # XXX Graalpython change
+    return 'graalpython'
+    # if os.name == 'posix':
+    #     # the default scheme for posix is posix_prefix
+    #     return 'posix_prefix'
+    # return os.name
 
 
 # NOTE: site.py has copy of this function.
@@ -412,17 +426,24 @@ def _generate_posix_vars():
         pprint.pprint(vars, stream=f)
 
     # Create file used for sys.path fixup -- see Modules/getpath.c
-    with open('pybuilddir.txt', 'w', encoding='ascii') as f:
+    with open('pybuilddir.txt', 'w', encoding='utf8') as f:
         f.write(pybuilddir)
 
 def _init_posix(vars):
     """Initialize the module as appropriate for POSIX systems."""
     # _sysconfigdata is generated at build time, see _generate_posix_vars()
-    # TODO: Truffle reneable me once we know what goes on in here (GR-9137)
+    #
+    # GraalPython patch: following commented out code would import module named,
+    # e.g., _sysconfigdata__linux_x86_64-linux-gnu, which should contain the
+    # configuration data. We would need to distribute such module for all supported
+    # systems, instead, we reuse the logic from our patch of distutils.
+    #
     # name = _get_sysconfigdata_name()
     # _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
     # build_time_vars = _temp.build_time_vars
-    # vars.update(build_time_vars)
+    #
+    import _sysconfig
+    vars.update(_sysconfig._get_posix_vars())
 
 def _init_non_posix(vars):
     """Initialize the module as appropriate for NT"""
@@ -627,6 +648,10 @@ def get_platform():
     if os.name == 'nt':
         if 'amd64' in sys.version.lower():
             return 'win-amd64'
+        if '(arm)' in sys.version.lower():
+            return 'win-arm32'
+        if '(arm64)' in sys.version.lower():
+            return 'win-arm64'
         return sys.platform
 
     if os.name != "posix" or not hasattr(os, 'uname'):

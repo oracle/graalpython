@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -51,8 +51,26 @@ def _safe_check(v, type_check):
 
 def _reference_checknumber(args):
     v = args[0]
+    if isinstance(v, str):
+        return False
     return _safe_check(v, lambda x: isinstance(int(x), int)) or _safe_check(v, lambda x: isinstance(float(x), float))
 
+def _reference_tobase(args):
+    n = args[0]
+    base = args[1]
+    if base not in (2, 8, 10, 16):
+        raise SystemError("PyNumber_ToBase: base must be 2, 8, 10 or 16")
+    if not hasattr(n, "__index__"):
+        raise TypeError
+    b_index = n.__index__()
+    if base == 2:
+        return bin(b_index)
+    elif base == 8:
+        return oct(b_index)
+    elif base == 10:
+        return str(b_index)
+    elif base == 16:
+        return hex(b_index)
 
 def _reference_index(args):
     v = args[0]
@@ -132,6 +150,12 @@ class DummyIntable():
         return 0xCAFE
 
 
+class DummyIndexable():
+
+    def __index__(self):
+        return 0xCAFE
+
+
 class DummyIntSubclass(int):
 
     def __int__(self):
@@ -165,6 +189,8 @@ def _default_bin_arith_args():
         (0, 0),
         (0, -1),
         (3, 2),
+        (3, 64),
+        (1<<32, 128),
         (10, 5),
         (29.3, 4.7),
         (0.3, -1.5),
@@ -178,6 +204,7 @@ def _default_bin_arith_args():
         ((1, 2, 3), 2),
         (0x7fffffff, 0x7fffffff),
         (0xffffffffffffffffffffffffffffffff, -1),
+        (0xffffffffffffffffffffffffffffffff, 1024),
         (DummyIntable(), 0xBABE),
         (0xBABE, DummyIntable()),
         (DummyIntSubclass(), 0xCAFE),
@@ -196,11 +223,13 @@ def _default_unarop_args():
         (False,),
         (True,),
         ("hello",),
+        ("1",),
         ((1, 2, 3),),
         (0x7fffffff,),
         (0xffffffffffffffffffffffffffffffff,),
         (DummyIntable(),),
         (DummyIntSubclass(),),
+        (DummyIndexable(), ),
         (NoNumber(),),
         (DummyFloatable(),),
         (DummyFloatSubclass(),),
@@ -246,6 +275,55 @@ class TestAbstract(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyNumber_ToBase = CPyExtFunction(
+        _reference_tobase,
+        lambda: (
+            (2, 0),
+            ("hello", 0),
+            (1.1, 0),
+            (NoNumber(), 0),
+            (2, 0),
+            (2, 0),
+            (2, 2),
+            (2, 8),
+            (2, 10),
+            (2, 16),
+            ("1", 2),
+            ("1", 8),
+            ("1", 10),
+            ("1", 16),
+            (1.1, 2),
+            (1.1, 8),
+            (1.1, 10),
+            (1.1, 16),
+            (False, 2),
+            (False, 8),
+            (False, 10),
+            (False, 16),
+            (True, 16),
+            ("hello, ", 2),
+            ("hello, ", 8),
+            ("hello, ", 10),
+            ("hello, ", 16),
+            (DummyIntable(), 2),
+            (DummyIntable(), 8),
+            (DummyIntable(), 10),
+            (DummyIntable(), 16),
+            (DummyIntSubclass(), 2),
+            (DummyIntSubclass(), 8),
+            (DummyIntSubclass(), 10),
+            (DummyIntSubclass(), 16),
+            (NoNumber(), 2),
+            (NoNumber(), 8),
+            (NoNumber(), 10),
+            (NoNumber(), 16),
+        ),
+        resultspec="O",
+        argspec='Oi',
+        arguments=["PyObject* n", "int base"],
         cmpfunc=unhandled_error_compare
     )
 
@@ -366,7 +444,29 @@ class TestAbstract(CPyExtTestCase):
 
     test_PyNumber_Lshift = CPyExtFunction(
         lambda args: args[0] << args[1],
-        _default_bin_arith_args,
+        lambda: (
+            (0, 0),
+            (0, -1),
+            (3, 2),
+            (10, 5),
+            (29.3, 4.7),
+            (0.3, -1.5),
+            (False, 1),
+            (False, 1.3),
+            (True, 1),
+            (True, 1.3),
+            ("hello, ", "world"),
+            ("hello, ", 3),
+            ((1, 2, 3), (4, 5, 6)),
+            ((1, 2, 3), 2),
+            (0xffffffffffffffffffffffffffffffff, -1),
+            (DummyIntable(), 0xBABE),
+            (0xBABE, DummyIntable()),
+            (DummyIntSubclass(), 0xCAFE),
+            (0xCAFE, DummyIntSubclass()),
+            (NoNumber(), 1),
+            (4, NoNumber()),
+            ),
         resultspec="O",
         argspec='OO',
         arguments=["PyObject* v", "PyObject* w"],
@@ -450,6 +550,7 @@ class TestAbstract(CPyExtTestCase):
             (1,),
             (-1,),
             (1.0,),
+            ("1",),
             (0x7FFFFFFF,),
             (0x7FFFFFFFFFFFFFFF,),
             (DummyIntable(),),
@@ -490,6 +591,7 @@ class TestAbstract(CPyExtTestCase):
             (1,),
             (-1,),
             (1.0,),
+            ("1",),
             (0x7FFFFFFF,),
             (0x7FFFFFFFFFFFFFFF,),
             (DummyIntable(),),
@@ -787,5 +889,89 @@ class TestAbstract(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_Repeat = CPyExtFunction(
+        lambda args: args[0] * args[1],
+        lambda: (
+            ((1,), 0),
+            ((1,), 1),
+            ((1,), 3),
+            ([1], 0),
+            ([1], 1),
+            ([1], 3),
+            ("hello", 0),
+            ("hello", 1),
+            ("hello", 3),
+            ({}, 0),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* obj", "Py_ssize_t n"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_InPlaceRepeat = CPyExtFunction(
+        lambda args: args[0] * args[1],
+        lambda: (
+            ((1,), 0),
+            ((1,), 1),
+            ((1,), 3),
+            ([1], 0),
+            ([1], 1),
+            ([1], 3),
+            ("hello", 0),
+            ("hello", 1),
+            ("hello", 3),
+            ({}, 0),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* obj", "Py_ssize_t n"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_Concat = CPyExtFunction(
+        lambda args: args[0] + args[1],
+        lambda: (
+            ((1,), tuple()),
+            ((1,), list()),
+            ((1,), (2,)),
+            ((1,), [2,]),
+            ([1], tuple()),
+            ([1], list()),
+            ([1], (2,)),
+            ([1], [2,]),
+            ("hello", "world"),
+            ("hello", ""),
+            ({}, []),
+            ([], {}),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* s", "PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_InPlaceConcat = CPyExtFunction(
+        lambda args: args[0] + list(args[1]) if isinstance(args[0], list) else args[0] + args[1],
+        lambda: (
+            ((1,), tuple()),
+            ((1,), list()),
+            ((1,), (2,)),
+            ((1,), [2,]),
+            ([1], tuple()),
+            ([1], list()),
+            ([1], (2,)),
+            ([1], [2,]),
+            ("hello", "world"),
+            ("hello", ""),
+            ({}, []),
+            ([], {}),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* s", "PyObject* o"],
         cmpfunc=unhandled_error_compare
     )

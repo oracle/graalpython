@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
@@ -37,7 +36,6 @@ public final class ReturnTargetNode extends ExpressionNode {
     @Child private ExpressionNode returnValue;
 
     private final BranchProfile returnProfile = BranchProfile.create();
-    private final BranchProfile fallthroughProfile = BranchProfile.create();
 
     public ReturnTargetNode(StatementNode body, ExpressionNode returnValue) {
         this.body = body;
@@ -55,9 +53,7 @@ public final class ReturnTargetNode extends ExpressionNode {
     @Override
     public Object execute(VirtualFrame frame) {
         try {
-            body.executeVoid(frame);
-            fallthroughProfile.enter();
-            return PNone.NONE;
+            return body.returnExecute(frame);
         } catch (ReturnException ire) {
             returnProfile.enter();
             return returnValue.execute(frame);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,16 +25,28 @@
  */
 package com.oracle.graal.python.runtime.sequence;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
 
+@ExportLibrary(InteropLibrary.class)
 public abstract class PSequence extends PythonBuiltinObject {
 
-    public PSequence(LazyPythonClass cls) {
-        super(cls);
+    public PSequence(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 
     public abstract SequenceStorage getSequenceStorage();
@@ -46,18 +58,129 @@ public abstract class PSequence extends PythonBuiltinObject {
      */
     public abstract void setSequenceStorage(SequenceStorage newStorage);
 
-    public static PSequence require(Object value) {
-        if (value instanceof PSequence) {
-            return (PSequence) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new AssertionError("PSequence required.");
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isNumber() {
+        return false;
     }
 
-    public static PSequence expect(Object value) throws UnexpectedResultException {
-        if (value instanceof PSequence) {
-            return (PSequence) value;
-        }
-        throw new UnexpectedResultException(value);
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public byte asByte() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
     }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInByte() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public short asShort() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInShort() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int asInt() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInInt() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long asLong() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInLong() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public float asFloat() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInFloat() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public double asDouble() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInDouble() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isString() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public String asString() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    public boolean hasArrayElements() {
+        return true;
+    }
+
+    @ExportMessage
+    public long getArraySize(@Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return lenNode.execute(getSequenceStorageNode.execute(this));
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public Object readArrayElement(long index,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            try {
+                return getItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index));
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
 }

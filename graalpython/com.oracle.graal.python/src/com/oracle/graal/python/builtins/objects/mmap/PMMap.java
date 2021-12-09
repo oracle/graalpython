@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,33 +40,121 @@
  */
 package com.oracle.graal.python.builtins.objects.mmap;
 
-import java.nio.channels.SeekableByteChannel;
-
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PMMap extends PythonObject {
+    public static final int ACCESS_DEFAULT = 0;
+    public static final int ACCESS_READ = 1;
+    public static final int ACCESS_WRITE = 2;
+    public static final int ACCESS_COPY = 3;
 
-    private final SeekableByteChannel mappedByteBuffer;
+    private Object handle;
+    private long pos;
+    private final int fd; // -1 for anonymous mapping
     private final long length;
-    private final long offset;
+    private final int access;
 
-    public PMMap(LazyPythonClass pythonClass, SeekableByteChannel mappedByteBuffer, long length, long offset) {
-        super(pythonClass);
-        this.mappedByteBuffer = mappedByteBuffer;
+    public PMMap(Object pythonClass, Shape instanceShape, Object handle, int fd, long length, int access) {
+        super(pythonClass, instanceShape);
+        assert handle != null;
+        this.handle = handle;
         this.length = length;
-        this.offset = offset;
+        this.access = access;
+        this.fd = fd;
     }
 
-    public SeekableByteChannel getChannel() {
-        return mappedByteBuffer;
+    public Object getPosixSupportHandle() {
+        return handle;
+    }
+
+    void close(PosixSupportLibrary lib, Object posix) throws PosixException {
+        if (handle != null) {
+            if (fd != -1) {
+                lib.close(posix, fd);
+            }
+            lib.mmapUnmap(posix, handle, length);
+            handle = null;
+        }
+    }
+
+    boolean isClosed() {
+        return handle == null;
+    }
+
+    public boolean isWriteable() {
+        return access != ACCESS_READ;
+    }
+
+    public int getAccess() {
+        return access;
     }
 
     public long getLength() {
         return length;
     }
 
-    public long getOffset() {
-        return offset;
+    public long getPos() {
+        return pos;
+    }
+
+    public void setPos(long pos) {
+        this.pos = pos;
+    }
+
+    public long getRemaining() {
+        return pos < length ? length - pos : 0;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    int getBufferLength(
+                    @Exclusive @Cached CastToJavaIntExactNode castToIntNode) {
+        return castToIntNode.execute(length);
+    }
+
+    @ExportMessage
+    byte readByte(int byteOffset,
+                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                    @Cached BranchProfile gotException,
+                    @Cached PConstructAndRaiseNode raiseNode) {
+        try {
+            return posixLib.mmapReadByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset);
+        } catch (PosixException e) {
+            // TODO(fa) how to handle?
+            gotException.enter();
+            throw raiseNode.raiseOSError(null, e.getErrorCode(), e.getMessage(), null, null);
+        }
+    }
+
+    @ExportMessage
+    Object acquire(@SuppressWarnings("unused") int flags) {
+        return this;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        return true;
     }
 }

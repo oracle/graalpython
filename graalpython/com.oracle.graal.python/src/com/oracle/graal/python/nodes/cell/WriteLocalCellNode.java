@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,54 +28,51 @@ package com.oracle.graal.python.nodes.cell;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "write_cell")
 @NodeChild(value = "rhs", type = ExpressionNode.class)
+@SuppressWarnings("deprecation")    // new Frame API
 public abstract class WriteLocalCellNode extends StatementNode implements WriteIdentifierNode {
     @Child private ExpressionNode readLocal;
 
-    private final FrameSlot frameSlot;
+    private final com.oracle.truffle.api.frame.FrameSlot frameSlot;
 
-    WriteLocalCellNode(FrameSlot frameSlot) {
+    WriteLocalCellNode(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode readLocalNode) {
         this.frameSlot = frameSlot;
-        this.readLocal = ReadLocalVariableNode.create(this.frameSlot);
+        this.readLocal = readLocalNode;
     }
 
-    public static WriteLocalCellNode create(FrameSlot frameSlot, ExpressionNode right) {
-        return WriteLocalCellNodeGen.create(frameSlot, right);
+    public static WriteLocalCellNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode readLocal, ExpressionNode right) {
+        return WriteLocalCellNodeGen.create(frameSlot, readLocal, right);
     }
 
-    @Override
-    public void doWrite(VirtualFrame frame, Object value) {
-        executeWithValue(frame, value);
-    }
-
-    public abstract void executeWithValue(VirtualFrame frame, Object value);
+    public abstract void executeObject(VirtualFrame frame, Object value);
 
     @Specialization
     void writeObject(VirtualFrame frame, Object value,
                     @Cached WriteToCellNode writeToCellNode,
-                    @Cached("createBinaryProfile()") ConditionProfile profile) {
+                    @Cached ConditionProfile profile) {
         Object localValue = readLocal.execute(frame);
         if (profile.profile(localValue instanceof PCell)) {
             writeToCellNode.execute((PCell) localValue, value);
             return;
         }
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException("Expected a cell, got: " + localValue.toString() + " instead.");
     }
 
@@ -84,26 +81,33 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
         return frameSlot.getIdentifier();
     }
 
-    abstract static class WriteToCellNode extends Node {
+    @ImportStatic(PythonOptions.class)
+    abstract static class WriteToCellNode extends PNodeWithContext {
 
         public abstract void execute(PCell cell, Object value);
 
-        @Specialization(guards = "cell == cachedCell", limit = "1")
+        @Specialization(guards = "cell == cachedCell", limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption")
         void doWriteCached(@SuppressWarnings("unused") PCell cell, Object value,
+                        @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                         @Cached("cell") PCell cachedCell) {
-            doWriteGeneric(cachedCell, value);
+            if (value == NO_VALUE) {
+                cachedCell.clearRef(cachedCell.isEffectivelyFinalAssumption());
+            } else {
+                cachedCell.setRef(value, cachedCell.isEffectivelyFinalAssumption());
+            }
         }
 
-        @Specialization(guards = "cell.isEffectivelyFinalAssumption() == effectivelyFinalAssumption", limit = "1", assumptions = "effectivelyFinalAssumption")
+        @Specialization(guards = "cell.isEffectivelyFinalAssumption() == effectivelyFinalAssumption", limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "effectivelyFinalAssumption")
         void doWriteCachedAssumption(PCell cell, Object value,
                         @SuppressWarnings("unused") @Cached("cell.isEffectivelyFinalAssumption()") Assumption effectivelyFinalAssumption) {
             if (value == NO_VALUE) {
-                cell.clearRef();
+                cell.clearRef(effectivelyFinalAssumption);
             } else {
                 cell.setRef(value, effectivelyFinalAssumption);
             }
         }
 
+        @Megamorphic
         @Specialization(replaces = {"doWriteCached", "doWriteCachedAssumption"})
         void doWriteGeneric(PCell cell, Object value) {
             if (value == NO_VALUE) {

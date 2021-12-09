@@ -1,0 +1,29 @@
+ModuleRootNode Name: <module 'unicode01'> SourceSection: [0,73]`f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 res...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,73]`f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 res...`
+    FormatStringLiteralNode SourceSection: [0,73]`f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 res...`
+      Parts: 3
+      StringLiteralNode SourceSection: [2,27]`𝔘𝔫𝔦𝔠𝔬𝔡𝔢 resul...`
+      FormatStringExpressionNode SourceSection: [28,54]`result:{width}.{prec...`
+        ReadNameNodeGen SourceSection: [1,7]`result`
+          Identifier: result
+          IsBuiltinClassProfile SourceSection: None
+            GetClassNodeGen SourceSection: None
+        FormatStringLiteralNode SourceSection: [35,54]`{width}.{precision}`
+          Parts: 3
+          FormatStringExpressionNode SourceSection: [36,41]`width`
+            ReadNameNodeGen SourceSection: [1,6]`width`
+              Identifier: width
+              IsBuiltinClassProfile SourceSection: None
+                GetClassNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [42,43]`.`
+          FormatStringExpressionNode SourceSection: [44,53]`precision`
+            ReadNameNodeGen SourceSection: [1,10]`precision`
+              Identifier: precision
+              IsBuiltinClassProfile SourceSection: None
+                GetClassNodeGen SourceSection: None
+      StringLiteralNode SourceSection: [55,72]` and this is true`

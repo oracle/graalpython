@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,94 +40,161 @@
  */
 package com.oracle.graal.python.nodes.call;
 
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.utilities.NeverValidAssumption;
 
-public abstract class GenericInvokeNode extends AbstractInvokeNode {
-    private static final GenericInvokeUncachedNode UNCACHED = new GenericInvokeUncachedNode();
-
-    @Child private IndirectCallNode callNode;
-    @Child private CallContext callContext;
-
-    private final ConditionProfile isNullFrameProfile;
+@GenerateUncached
+public abstract class GenericInvokeNode extends InvokeNode {
 
     public static GenericInvokeNode create() {
-        return new GenericInvokeCachedNode();
+        return GenericInvokeNodeGen.create();
     }
 
     public static GenericInvokeNode getUncached() {
-        return UNCACHED;
+        return GenericInvokeNodeGen.getUncached();
     }
 
-    public GenericInvokeNode(IndirectCallNode callNode, CallContext callContext, ConditionProfile isNullFrameProfile) {
-        this.callNode = callNode;
-        this.callContext = callContext;
-        this.isNullFrameProfile = isNullFrameProfile;
+    protected GenericInvokeNode() {
     }
 
-    private Object doCall(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
-        optionallySetClassBodySpecial(arguments, callTarget);
+    @Override
+    public Assumption needNotPassExceptionAssumption() {
+        return NeverValidAssumption.INSTANCE;
+    }
+
+    @Override
+    public Assumption needNotPassFrameAssumption() {
+        return NeverValidAssumption.INSTANCE;
+    }
+
+    /**
+     * To be used when this node is called adopted.
+     *
+     * @param frame - the current frame
+     * @param callee - either a {@link PFunction}, {@link PBuiltinFunction}, or
+     *            {@link RootCallTarget}.
+     * @param arguments - the complete (runtime + user) frame arguments for the call
+     */
+    public final Object execute(VirtualFrame frame, Object callee, Object[] arguments) {
+        return executeInternal(frame, callee, arguments);
+    }
+
+    protected abstract Object executeInternal(Frame frame, Object callee, Object[] arguments);
+
+    /**
+     * Can be used when this node is called unadopted or from a place where no frame is available.
+     * However, it will be slower than passing a frame, because the threadstate is read from the
+     * Python context.
+     *
+     * @param callee - either a {@link PFunction}, {@link PBuiltinFunction}, or
+     *            {@link RootCallTarget}.
+     * @param arguments - the complete (runtime + user) frame arguments for the call
+     */
+    public final Object execute(Object callee, Object[] arguments) {
+        return executeInternal(null, callee, arguments);
+    }
+
+    private Object doCall(Frame frame, PFunction callee, RootCallTarget callTarget, Object[] arguments,
+                    PythonLanguage language, PythonContext context,
+                    IndirectCallNode callNode, CallContext callContext,
+                    ConditionProfile isNullFrameProfile, ConditionProfile isGeneratorFunctionProfile) {
+        optionallySetGeneratorFunction(arguments, callTarget, isGeneratorFunctionProfile, callee);
         if (isNullFrameProfile.profile(frame == null)) {
-            PythonContext context = getContextRef().get();
-            PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, callTarget);
+            PythonThreadState threadState = context.getThreadState(language);
+            Object state = IndirectCalleeContext.enterIndirect(threadState, arguments);
             try {
                 return callNode.call(callTarget, arguments);
             } finally {
-                IndirectCalleeContext.exit(context, frameInfo);
+                IndirectCalleeContext.exit(threadState, state);
             }
         } else {
-            callContext.prepareCall(frame, arguments, callTarget, this);
+            assert frame instanceof VirtualFrame : "GenericInvokeNode should not be executed with non-virtual frames";
+            callContext.prepareIndirectCall((VirtualFrame) frame, arguments, this);
             return callNode.call(callTarget, arguments);
         }
     }
 
-    public Object execute(VirtualFrame frame, PFunction callee, Object[] arguments) {
+    private Object doCallWithFrame(Frame frame, PFunction callee, RootCallTarget callTarget, Object[] arguments,
+                    IndirectCallNode callNode, CallContext callContext, ConditionProfile isGeneratorFunctionProfile) {
+        optionallySetGeneratorFunction(arguments, callTarget, isGeneratorFunctionProfile, callee);
+        assert frame instanceof VirtualFrame : "GenericInvokeNode should not be executed with non-virtual frames";
+        callContext.prepareIndirectCall((VirtualFrame) frame, arguments, this);
+        return callNode.call(callTarget, arguments);
+    }
+
+    @Specialization(guards = "frame != null")
+    Object invokeFunctionWithFrame(Frame frame, PFunction callee, Object[] arguments,
+                    @Shared("callNode") @Cached IndirectCallNode callNode,
+                    @Shared("callContext") @Cached CallContext callContext,
+                    @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, callee.getGlobals());
         PArguments.setClosure(arguments, callee.getClosure());
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, callTarget, arguments);
+        return doCallWithFrame(frame, callee, callTarget, arguments, callNode, callContext, isGeneratorFunctionProfile);
     }
 
-    public Object execute(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments) {
+    @Specialization(guards = "frame != null")
+    Object invokeBuiltinWithFrame(Frame frame, PBuiltinFunction callee, Object[] arguments,
+                    @Shared("callNode") @Cached IndirectCallNode callNode,
+                    @Shared("callContext") @Cached CallContext callContext,
+                    @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, callTarget, arguments);
+        return doCallWithFrame(frame, null, callTarget, arguments, callNode, callContext, isGeneratorFunctionProfile);
     }
 
-    public Object execute(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
-        return doCall(frame, callTarget, arguments);
+    @Specialization(guards = "frame != null")
+    Object invokeCallTargetWithFrame(Frame frame, RootCallTarget callTarget, Object[] arguments,
+                    @Shared("callNode") @Cached IndirectCallNode callNode,
+                    @Shared("callContext") @Cached CallContext callContext,
+                    @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
+        return doCallWithFrame(frame, null, callTarget, arguments, callNode, callContext, isGeneratorFunctionProfile);
     }
 
-    private static final class GenericInvokeCachedNode extends GenericInvokeNode {
-
-        public GenericInvokeCachedNode() {
-            super(IndirectCallNode.create(), CallContext.create(), ConditionProfile.createBinaryProfile());
-        }
-
+    @Specialization(replaces = "invokeFunctionWithFrame")
+    Object invokeFunction(Frame frame, PFunction callee, Object[] arguments,
+                    @Shared("callNode") @Cached IndirectCallNode callNode,
+                    @Shared("callContext") @Cached CallContext callContext,
+                    @Shared("isNullFrameProfile") @Cached ConditionProfile isNullFrameProfile,
+                    @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
+        PArguments.setGlobals(arguments, callee.getGlobals());
+        PArguments.setClosure(arguments, callee.getClosure());
+        RootCallTarget callTarget = getCallTarget(callee);
+        return doCall(frame, callee, callTarget, arguments, PythonLanguage.get(this), PythonContext.get(this), callNode, callContext, isNullFrameProfile, isGeneratorFunctionProfile);
     }
 
-    private static final class GenericInvokeUncachedNode extends GenericInvokeNode {
-        public GenericInvokeUncachedNode() {
-            super(IndirectCallNode.getUncached(), CallContext.getUncached(), ConditionProfile.getUncached());
-        }
+    @Specialization(replaces = "invokeBuiltinWithFrame")
+    Object invokeBuiltin(Frame frame, PBuiltinFunction callee, Object[] arguments,
+                    @Shared("callNode") @Cached IndirectCallNode callNode,
+                    @Shared("callContext") @Cached CallContext callContext,
+                    @Shared("isNullFrameProfile") @Cached ConditionProfile isNullFrameProfile,
+                    @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
+        RootCallTarget callTarget = getCallTarget(callee);
+        return doCall(frame, null, callTarget, arguments, PythonLanguage.get(this), PythonContext.get(this), callNode, callContext, isNullFrameProfile, isGeneratorFunctionProfile);
+    }
 
-        @Override
-        public boolean isAdoptable() {
-            return false;
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MEGAMORPHIC;
-        }
+    @Specialization(replaces = "invokeCallTargetWithFrame")
+    Object invokeCallTarget(Frame frame, RootCallTarget callTarget, Object[] arguments,
+                    @Shared("callNode") @Cached IndirectCallNode callNode,
+                    @Shared("callContext") @Cached CallContext callContext,
+                    @Shared("isNullFrameProfile") @Cached ConditionProfile isNullFrameProfile,
+                    @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
+        return doCall(frame, null, callTarget, arguments, PythonLanguage.get(this), PythonContext.get(this), callNode, callContext, isNullFrameProfile, isGeneratorFunctionProfile);
     }
 }

@@ -1,0 +1,10 @@
+--- a/setup.py
++++ b/setup.py
+@@ -147,7 +147,8 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+
+
+ use_openmp = not sys.platform.startswith('darwin') and not sys.platform.startswith('win')
++use_openmp = False
+
+ setup(
+     name='lightfm',
