@@ -2707,12 +2707,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PySequenceTupleNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isTuple(obj, getClassNode)")
         public PTuple values(PTuple obj,
-                @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return obj;
         }
 
         @Specialization(guards = "!isTuple(obj, getClassNode)")
-        public Object values(VirtualFrame frame, Object obj, 
+        public Object values(VirtualFrame frame, Object obj,
                         @Cached TupleNode tupleNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -2724,7 +2724,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return getNativeNullNode.execute();
             }
         }
-        
+
         protected boolean isTuple(Object obj, GetClassNode getClassNode) {
             return getClassNode.execute(obj) == PythonBuiltinClassType.PTuple;
         }
@@ -3010,12 +3010,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return s;
         }
 
-        @Specialization
-        public PString fromObject(PString s) {
+        @Specialization(guards = "isPStringType(s, getClassNode)")
+        public PString fromObject(PString s,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return s;
         }
 
-        @Specialization(guards = {"!isString(obj)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPStringType(obj, getClassNode)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
         public Object fromObject(VirtualFrame frame, Object obj,
                         @Cached StrNode strNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -3030,7 +3031,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
         public Object fromObject(VirtualFrame frame, Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -3041,6 +3042,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+
+        protected boolean isPStringType(Object obj, GetClassNode getClassNode) {
+            return getClassNode.execute(obj) == PythonBuiltinClassType.PString;
         }
     }
 
