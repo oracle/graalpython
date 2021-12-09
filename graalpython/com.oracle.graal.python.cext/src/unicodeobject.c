@@ -670,3 +670,8 @@ UPCALL_ID(PyUnicode_Contains)
 int PyUnicode_Contains(PyObject *str, PyObject *substr) {
     return UPCALL_CEXT_I(_jls_PyUnicode_Contains, native_to_java(str), native_to_java(substr));
 }
+
+UPCALL_ID(PyUnicode_Split)
+PyObject* PyUnicode_Split(PyObject *s, PyObject *sep, Py_ssize_t maxsplit) {
+    return UPCALL_CEXT_O(_jls_PyUnicode_Split, native_to_java(s), native_to_java(sep), maxsplit);
+}

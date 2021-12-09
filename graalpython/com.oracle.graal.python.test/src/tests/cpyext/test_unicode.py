@@ -744,4 +744,17 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyUnicode_Split = CPyExtFunction(
+        lambda args: args[0].split(args[1], args[2]),
+        lambda: (
+            ("foo.bar.baz", ".", 0),
+            ("foo.bar.baz", ".", 1),
+            ("foo.bar.baz", 7, 0),
+        ),
+        resultspec="O",
+        argspec='OOi',
+        arguments=["PyObject* string", "PyObject* sep", "Py_ssize_t maxsplit"],
+        cmpfunc=unhandled_error_compare
+    )
+
 
