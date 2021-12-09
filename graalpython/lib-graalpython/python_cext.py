@@ -408,21 +408,6 @@ def PyException_SetContext(exc, context):
     exc.__context__ = context
 
 
-## FILE
-
-@may_raise(-1)
-def PyFile_WriteObject(obj, file, flags):
-    if file is None:
-        raise TypeError("writeobject with NULL file")
-
-    if flags & 0x1:
-        write_value = str(obj)
-    else:
-        write_value = repr(obj)
-    file.write(write_value)
-    return 0
-
-
 ##  CODE
 
 codetype = type(may_raise.__code__)

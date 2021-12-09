@@ -703,6 +703,7 @@ public abstract class ErrorMessages {
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL_P = "Was not possible to marshal %p";
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
     public static final String WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS = "writable contiguous buffer requested for a non-contiguous object";
+    public static final String WRITEOBJ_WITH_NULL_FILE = "writeobject with NULL file";
     public static final String X_NOT_IN_LIST = "x not in list";
     public static final String X_NOT_IN_TUPLE = "tuple.index(x): x not in tuple";
     public static final String S_IS_AN_INVALID_ARG_FOR_S = "'%s' is an invalid keyword argument for %s";
