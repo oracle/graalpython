@@ -2734,11 +2734,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySequenceListNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public PList values(PList obj) {
-            return obj;
-        }
-
-        @Specialization
         public Object values(VirtualFrame frame, Object obj,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
