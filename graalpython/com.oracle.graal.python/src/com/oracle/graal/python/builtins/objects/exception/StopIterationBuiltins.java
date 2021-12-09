@@ -60,10 +60,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class StopIterationBuiltins extends PythonBuiltins {
 
     public static final BaseExceptionAttrNode.StorageFactory STOP_ITERATION_ATTR_FACTORY = (args, factory) -> {
-        if (args != null && args.length >= 1) {
-            return new Object[]{args[0]};
-        }
-        return new Object[1];
+        return new Object[]{(args != null && args.length >= 1) ? args[0] : PNone.NONE};
     };
 
     @Override
@@ -78,7 +75,7 @@ public final class StopIterationBuiltins extends PythonBuiltins {
         Object init(PBaseException self, Object[] args,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            self.setExceptionAttributes(new Object[]{(args.length == 1) ? args[0] : PNone.NONE});
+            self.setExceptionAttributes(STOP_ITERATION_ATTR_FACTORY.create(args, factory()));
             return PNone.NONE;
         }
     }

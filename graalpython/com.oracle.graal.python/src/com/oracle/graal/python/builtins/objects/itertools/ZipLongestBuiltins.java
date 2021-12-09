@@ -92,7 +92,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "zeroSize(self)")
         Object nextNoFillValue(VirtualFrame frame, PZipLongest self) {
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = {"!zeroSize(self)", "isNullFillValue(self)"})
@@ -131,7 +131,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         if (isStopIterationProfile.profileException(e, StopIteration)) {
                             self.setNumActive(self.getNumActive() - 1);
                             if (noActiveProfile.profile(self.getNumActive() == 0)) {
-                                throw raise(StopIteration);
+                                throw raiseStopIteration();
                             } else {
                                 item = fillValue;
                                 self.getItTuple()[i] = PNone.NONE;

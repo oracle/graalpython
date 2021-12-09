@@ -128,7 +128,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "start", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, parameterNames = {"$self", "value"}, doc = "exception start")
+    @Builtin(name = "start", minNumOfPositionalArgs = 1, isGetter = true, isSetter = true, parameterNames = {"$self", "value"}, doc = "exception start")
     @GenerateNodeFactory
     @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
     public abstract static class UnicodeErrorStartNode extends PythonClinicBuiltinNode {
@@ -144,7 +144,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "end", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, parameterNames = {"$self", "value"}, doc = "exception end")
+    @Builtin(name = "end", minNumOfPositionalArgs = 1, isGetter = true, isSetter = true, parameterNames = {"$self", "value"}, doc = "exception end")
     @GenerateNodeFactory
     @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
     public abstract static class UnicodeErrorEndNode extends PythonClinicBuiltinNode {

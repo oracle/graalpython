@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
@@ -48,9 +47,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -96,7 +95,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isStopped()")
         Object next(PPermutations self) {
             self.setRaisedStopIteration(true);
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = "!self.isStopped()")
@@ -142,7 +141,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
             self.setStopped(true);
             if (isStartedProfile.profile(self.isStarted())) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             } else {
                 self.setStarted(true);
             }

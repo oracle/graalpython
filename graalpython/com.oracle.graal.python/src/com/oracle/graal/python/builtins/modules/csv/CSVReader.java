@@ -143,7 +143,7 @@ public final class CSVReader extends PythonBuiltinObject {
                         break;
                     }
                 }
-                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.StopIteration);
+                throw PRaiseNode.getUncached().raiseStopIteration();
             }
 
             String line;

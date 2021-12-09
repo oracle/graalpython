@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
@@ -64,7 +63,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             if (iterator.sentinelReached()) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             Object nextValue;
             try {
@@ -77,7 +76,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
             boolean iteratorDone = eqNode.execute(frame, nextValue, iterator.getSentinel());
             if (iteratorDone) {
                 iterator.markSentinelReached();
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return nextValue;
         }

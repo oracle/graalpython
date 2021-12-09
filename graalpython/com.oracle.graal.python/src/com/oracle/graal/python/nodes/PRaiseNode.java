@@ -134,7 +134,7 @@ public abstract class PRaiseNode extends Node {
     }
 
     public final PException raiseStopIteration() {
-        return raiseStopIteration(null);
+        return raiseStopIteration(PNone.NONE);
     }
 
     public final PException raiseStopIteration(Object value) {

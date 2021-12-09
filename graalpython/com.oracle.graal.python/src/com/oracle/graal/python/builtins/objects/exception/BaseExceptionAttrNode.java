@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -77,7 +78,12 @@ public abstract class BaseExceptionAttrNode extends Node {
                     @Cached PythonObjectFactory objectFactory) {
         Object[] attributes = self.getExceptionAttributes();
         if (attributes == null) {
-            attributes = factory.create(getArrayNode.execute(self.getArgs().getSequenceStorage()), objectFactory);
+            // TODO: cbasca should we raise in cast getArgs() is null (lazy init)?
+            Object[] args = PythonUtils.EMPTY_OBJECT_ARRAY;
+            if (self.getArgs() != null) {
+                args = getArrayNode.execute(self.getArgs().getSequenceStorage());
+            }
+            attributes = factory.create(args, objectFactory);
             self.setExceptionAttributes(attributes);
         }
         assert attributes != null : "PBaseException attributes field is null";
@@ -98,7 +104,12 @@ public abstract class BaseExceptionAttrNode extends Node {
                     @Cached PythonObjectFactory objectFactory) {
         Object[] attributes = self.getExceptionAttributes();
         if (attributes == null) {
-            attributes = factory.create(getArrayNode.execute(self.getArgs().getSequenceStorage()), objectFactory);
+            // TODO: cbasca should we raise in cast getArgs() is null (lazy init)?
+            Object[] args = PythonUtils.EMPTY_OBJECT_ARRAY;
+            if (self.getArgs() != null) {
+                args = getArrayNode.execute(self.getArgs().getSequenceStorage());
+            }
+            attributes = factory.create(args, objectFactory);
             self.setExceptionAttributes(attributes);
         }
         return setAttrWithStorage(self, value, index, factory);

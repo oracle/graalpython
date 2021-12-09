@@ -40,13 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+
+import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -75,7 +76,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
-import java.util.List;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCombinations, PythonBuiltinClassType.PCombinationsWithReplacement})
 public class CombinationsBuiltins extends PythonBuiltins {
@@ -100,7 +100,7 @@ public class CombinationsBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
         Object nextStopped(PAbstractCombinations self) {
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
@@ -152,7 +152,7 @@ public class CombinationsBuiltins extends PythonBuiltins {
             // If i is negative, then the indices are all at their maximum value and we're done
             if (i < 0) {
                 self.setStopped(true);
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
 
             // Increment the current index which we know is not at its maximum.
