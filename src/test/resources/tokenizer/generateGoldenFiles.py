@@ -36,7 +36,15 @@ for file in files:
                         end = list(end)
                         end[1] = start[1] + len(text)
                         end = tuple(end)
-                    else:
+                    else: 
+                        if token.type == Token.NEWLINE:
+                            # I'm not sure that this is the right fix. But at least for now it reflects changes in tokenizer. 
+                            # On the other hadn this script is now limited only for one line tests
+                            start = (2, -1)
+                            end = (2, 0)
+                        elif token.type == Token.ENDMARKER:
+                            start = (3, 0)
+                            end = (3, 0)
                         outputFile.write("Token type:%d (%s)" % (token.type, Token.tok_name[token.type]))
                         if token.type == Token.OP:
                             outputFile.write(" exact_type:%d (%s)" % (token.exact_type, Token.tok_name[token.exact_type]))

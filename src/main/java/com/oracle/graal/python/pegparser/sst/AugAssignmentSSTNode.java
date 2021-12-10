@@ -44,15 +44,28 @@ package com.oracle.graal.python.pegparser.sst;
 public class AugAssignmentSSTNode extends SSTNode {
     protected final SSTNode lhs;
     protected final SSTNode rhs;
-    protected final String operation;
+    protected final BinaryArithmeticSSTNode.Type operation;
 
-    public AugAssignmentSSTNode(SSTNode lhs, String operation, SSTNode rhs, int startOffset, int endOffset) {
+    public AugAssignmentSSTNode(SSTNode lhs, BinaryArithmeticSSTNode.Type operation, SSTNode rhs, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.lhs = lhs;
         this.rhs = rhs;
         this.operation = operation;
     }
 
+    public SSTNode getLhs() {
+        return lhs;
+    }
+
+    public SSTNode getRhs() {
+        return rhs;
+    }
+
+    public BinaryArithmeticSSTNode.Type getOperation() {
+        return operation;
+    }
+
+    
     @Override
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);

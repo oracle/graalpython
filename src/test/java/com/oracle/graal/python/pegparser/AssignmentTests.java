@@ -60,10 +60,10 @@ public class AssignmentTests extends ParserTestBase {
         checkTreeResult("a = b = 1");
     }
 
-//    @Test
-//    public void assignment03() throws Exception {
-//        checkTreeResult("a = 0\n" + "b = a\n" + "c = a + a + b");
-//    }
+    @Test
+    public void assignment03() throws Exception {
+        checkTreeResult("a = 0\n" + "b = a\n" + "c = a + a + b");
+    }
 
     @Test
     public void assignment04() throws Exception {
@@ -85,85 +85,90 @@ public class AssignmentTests extends ParserTestBase {
 //        checkScopeAndTree("def fn():\n  a, b, c = 1, 2, 3");
 //    }
 //
-//    @Test
-//    public void assignment08() throws Exception {
-//        checkTreeResult("a.b = 1");
-//    }
-//
+    @Test
+    public void assignment08() throws Exception {
+        checkTreeResult("a.b = 1");
+    }
+
 //    @Test
 //    public void assignment09() throws Exception {
 //        checkTreeResult("f().b = 1");
 //    }
-//
+
     @Test
     public void assignment10() throws Exception {
         checkTreeResult("i, j, k = x = a");
     }
+    
+    @Test
+    public void assignment11() throws Exception {
+        checkScopeAndTree("def fn():\n  a.b.c.d = 1222");
+    }
 
-//    @Test
-//    public void augassign01() throws Exception {
-//        checkTreeResult("a += b");
-//    }
-//
-//    @Test
-//    public void augassign02() throws Exception {
-//        checkTreeResult("a -= b");
-//    }
-//
-//    @Test
-//    public void augassign03() throws Exception {
-//        checkTreeResult("a *= b");
-//    }
-//
-//    @Test
-//    public void augassign04() throws Exception {
-//        checkTreeResult("a /= b");
-//    }
-//
-//    @Test
-//    public void augassign05() throws Exception {
-//        checkTreeResult("a //= b");
-//    }
-//
-//    @Test
-//    public void augassign06() throws Exception {
-//        checkTreeResult("a %= b");
-//    }
-//
-//    @Test
-//    public void augassign07() throws Exception {
-//        checkTreeResult("a &= b");
-//    }
-//
-//    @Test
-//    public void augassign08() throws Exception {
-//        checkTreeResult("a |= b");
-//    }
-//
-//    @Test
-//    public void augassign09() throws Exception {
-//        checkTreeResult("a ^= b");
-//    }
-//
-//    @Test
-//    public void augassign10() throws Exception {
-//        checkTreeResult("a <<= b");
-//    }
-//
-//    @Test
-//    public void augassign11() throws Exception {
-//        checkTreeResult("a >>= b");
-//    }
-//
-//    @Test
-//    public void augassign12() throws Exception {
-//        checkTreeResult("a **= b");
-//    }
-//
-//    @Test
-//    public void augassign13() throws Exception {
-//        checkScopeAndTree("def fn (): x += 3");
-//    }
+    @Test
+    public void augassign01() throws Exception {
+        checkTreeResult("a += b");
+    }
+
+    @Test
+    public void augassign02() throws Exception {
+        checkTreeResult("a -= b");
+    }
+
+    @Test
+    public void augassign03() throws Exception {
+        checkTreeResult("a *= b");
+    }
+
+    @Test
+    public void augassign04() throws Exception {
+        checkTreeResult("a /= b");
+    }
+
+    @Test
+    public void augassign05() throws Exception {
+        checkTreeResult("a //= b");
+    }
+
+    @Test
+    public void augassign06() throws Exception {
+        checkTreeResult("a %= b");
+    }
+
+    @Test
+    public void augassign07() throws Exception {
+        checkTreeResult("a &= b");
+    }
+
+    @Test
+    public void augassign08() throws Exception {
+        checkTreeResult("a |= b");
+    }
+
+    @Test
+    public void augassign09() throws Exception {
+        checkTreeResult("a ^= b");
+    }
+
+    @Test
+    public void augassign10() throws Exception {
+        checkTreeResult("a <<= b");
+    }
+
+    @Test
+    public void augassign11() throws Exception {
+        checkTreeResult("a >>= b");
+    }
+
+    @Test
+    public void augassign12() throws Exception {
+        checkTreeResult("a **= b");
+    }
+
+    @Test
+    public void augassign13() throws Exception {
+        checkScopeAndTree("def fn (): x += 3");
+    }
 //
 //    @Test
 //    public void augassign14() throws Exception {
@@ -194,8 +199,8 @@ public class AssignmentTests extends ParserTestBase {
 //        checkScopeAndTree("def fn():\n" + "  index : int = 0\n");
 //    }
 //
-//    @Test
-//    public void annotationType03() throws Exception {
-//        checkTreeResult("j = 1\n" + "ahoj.__annotations__['j'] = float");
-//    }
+    @Test
+    public void annotationType03() throws Exception {
+        checkTreeResult("j = 1\n" + "ahoj.__annotations__['j'] = float");
+    }
 }

@@ -1,0 +1,3 @@
+BlockSSTNode[0, 9]
+    RawStringLiteralSSTNode[0, 6]
+    IntegerLiteralSSTNode[8, 9] Value: "2"

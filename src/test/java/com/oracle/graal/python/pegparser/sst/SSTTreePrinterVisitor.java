@@ -74,9 +74,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
             }
             level--;
         }
-        sb.append(indent()).append("RHS: ").append(node.rhs.accept(this)).append("\n");;
+        sb.append(indent()).append("RHS: ").append(node.rhs.accept(this));
         if (node.typeComment != null) {
-            sb.append(indent()).append("TypeComment: ").append(node.typeComment.accept(this)).append("\n");
+            sb.append('\n');
+            sb.append(indent()).append("TypeComment: ").append(node.typeComment.accept(this));
         }
         level--;
         return sb.toString();
@@ -84,7 +85,14 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(AugAssignmentSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Op: ").append(binOp(node.operation)).append("\n");
+        sb.append(indent()).append("LHS: ").append(node.lhs.accept(this)).append("\n");
+        sb.append(indent()).append("RHS: ").append(node.rhs.accept(this));
+        level--;
+        return sb.toString();
     }
 
     private String binOp(BinaryArithmeticSSTNode.Type type) {
@@ -100,7 +108,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
             case IS_NOT: return "is not";
             case IS: return "is";
             case BIT_OR: return "|";
-            case BIT_COR: return "^";
+            case BIT_XOR: return "^";
             case BIT_AND: return "&";
             case LSHIFT: return "<<";
             case RSHIFT: return ">>";
@@ -262,6 +270,9 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         for(SSTNode stm : node.body) {
             sb.append('\n').append(indent()).append(stm.accept(this));
         }
+        if (sb.lastIndexOf("\n") != sb.length() - 1) {
+            sb.append('\n');
+        }
         sb.append(indent()).append("---- End of ").append(node.name).append(" function ----");
         level--;
         
@@ -270,7 +281,13 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(GetAttributeSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append(' ').append('\n');
+        level++;
+        sb.append(indent()).append("Receiver: ").append(node.receiver.accept(this)).append('\n');
+        sb.append(indent()).append("Attr: ").append(node.name);
+        level--;
+        return sb.toString();
     }
 
     @Override

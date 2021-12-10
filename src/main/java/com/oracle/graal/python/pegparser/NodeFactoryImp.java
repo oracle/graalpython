@@ -46,6 +46,7 @@ import com.oracle.graal.python.pegparser.sst.AnnAssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.AnnotationSSTNode;
 import com.oracle.graal.python.pegparser.sst.ArgDefListBuilder;
 import com.oracle.graal.python.pegparser.sst.AssignmentSSTNode;
+import com.oracle.graal.python.pegparser.sst.AugAssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
@@ -53,11 +54,13 @@ import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
 import com.oracle.graal.python.pegparser.sst.ComprehensionSSTNode;
 import com.oracle.graal.python.pegparser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.pegparser.sst.FunctionDefSSTNode;
+import com.oracle.graal.python.pegparser.sst.GetAttributeSSTNode;
 import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SimpleSSTNode;
 import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
+import com.oracle.graal.python.pegparser.sst.SubscriptSSTNode;
 import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
@@ -79,6 +82,11 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, SSTNode typeComment, int startOffset, int endOffset) {
         return new AssignmentSSTNode(lhs, rhs, typeComment, startOffset, endOffset);
+    }
+    
+    @Override
+    public AugAssignmentSSTNode createAugAssignment(SSTNode lhs, BinaryArithmeticSSTNode.Type operation, SSTNode rhs, int startOffset, int endOffset) {
+        return new AugAssignmentSSTNode(lhs, operation, rhs, startOffset, endOffset);
     }
     
     @Override
@@ -104,6 +112,11 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public SSTNode createEllipsis(int startOffset, int endOffset) {
         return new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS, startOffset, endOffset);
+    }
+    
+    @Override
+    public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset) {
+        return new GetAttributeSSTNode(receiver, name, startOffset, endOffset);
     }
 
     @Override
@@ -151,7 +164,12 @@ public class NodeFactoryImp implements NodeFactory{
     public UntypedSSTNode createUntyped(int tokenPosition) {
         return new UntypedSSTNode(tokenPosition);
     }
-
+    
+    @Override
+    public SubscriptSSTNode createSubscript(SSTNode receiver, SSTNode subscript, int startOffset, int endOffset) {
+        return new SubscriptSSTNode(receiver, subscript, startOffset, endOffset);
+    }
+    
     @Override
     public SSTNode createTuple(SSTNode[] values, int startOffset, int endOffset) {
         return CollectionSSTNode.createTuple(values, startOffset, endOffset);
