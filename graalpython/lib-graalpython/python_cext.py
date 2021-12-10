@@ -510,10 +510,3 @@ def _PyNamespace_New(kwds):
         from types import SimpleNamespace as namespace_type
     return namespace_type(**kwds)
 
-
-@may_raise
-def PySys_GetObject(name):
-    try:
-        return getattr(sys, name)
-    except AttributeError:
-        raise KeyError(name)
