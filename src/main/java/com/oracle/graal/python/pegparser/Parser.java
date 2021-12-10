@@ -10442,13 +10442,13 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Token _literal_1;
             SSTNode a;
-            Object b;
+            SSTNode[] b;
             if (
                 (a = primary_rule()) != null  // primary
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((b = _tmp_145_rule()) != null || true)  // arguments?
+                ((b = (SSTNode[])_tmp_145_rule()) != null || true)  // arguments?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -10459,7 +10459,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createCall(a,b==null?null:this.extractArgs((SSTNode[])b),b==null?null:this.extractKeywordArgs((SSTNode[])b),startToken.startOffset,endToken.endOffset);
+                _res = factory.createCall(a,this.extractArgs(b),this.extractKeywordArgs(b),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '(' arguments? ')'");
                 level--;
                 return (SSTNode)_res;
@@ -13339,13 +13339,13 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Token _literal_1;
             SSTNode a;
-            Object b;
+            SSTNode[] b;
             if (
                 (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((b = _tmp_197_rule()) != null || true)  // arguments?
+                ((b = (SSTNode[])_tmp_197_rule()) != null || true)  // arguments?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
                 &&
@@ -13358,7 +13358,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createCall(a,b==null?null:this.extractArgs((SSTNode[])b),b==null?null:this.extractKeywordArgs((SSTNode[])b),startToken.startOffset,endToken.endOffset);
+                _res = factory.createCall(a,this.extractArgs(b),this.extractKeywordArgs(b),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '(' arguments? ')' &t_lookahead");
                 level--;
                 return (SSTNode)_res;
