@@ -66,6 +66,8 @@ public interface NodeFactory {
     public SSTNode createPass(int startOffset, int endOffset);
 
     public SSTNode createBreak(int startOffset, int endOffset);
+    
+    public CallSSTNode createCall(SSTNode target, SSTNode[] args, SSTNode[] kwargs, int startOffset, int endOffset);
 
     public SSTNode createContinue(int startOffset, int endOffset);
 
@@ -90,6 +92,8 @@ public interface NodeFactory {
     public SSTNode createDict(SSTNode[] keyValuePairs, int startOffset, int endOffset);
 
     public SSTNode createSet(SSTNode[] values, int startOffset, int endOffset);
+    
+    public StarSSTNode createStarred(SSTNode value, int startOffset, int endOffset);
 
     public UntypedSSTNode createUntyped(int tokenPosition);
 

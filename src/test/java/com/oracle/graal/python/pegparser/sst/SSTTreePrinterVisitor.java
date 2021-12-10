@@ -26,6 +26,16 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         return sb.toString();
     }
     
+    private void putOnSameLineIfShort(StringBuilder sb, SSTNode node) {
+        String nodeText = node.accept(this);
+        if (nodeText.contains("\n")) {
+            sb.append("\n").append(indent()).append(INDENTATION);
+            sb.append(nodeText.replace("\n", "\n" + INDENTATION));
+        } else {
+            sb.append(nodeText);
+        }
+    }
+    
     @Override
     public String visit(AndSSTNode node) {
         return addHeader(node);
@@ -65,7 +75,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         level++;
         sb.append(indent()).append("LHS: ");
         if (node.lhs.length == 1) {
-            sb.append(node.lhs[0].accept(this)).append("\n");
+            putOnSameLineIfShort(sb, node.lhs[0]);
+            sb.append("\n");
         } else {
             sb.append("\n");
             level++;
@@ -74,7 +85,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
             }
             level--;
         }
-        sb.append(indent()).append("RHS: ").append(node.rhs.accept(this));
+        sb.append(indent()).append("RHS: ");
+        putOnSameLineIfShort(sb, node.rhs);
         if (node.typeComment != null) {
             sb.append('\n');
             sb.append(indent()).append("TypeComment: ").append(node.typeComment.accept(this));
@@ -155,7 +167,34 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(CallSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Target: ");
+        putOnSameLineIfShort(sb, node.target);
+        if ((node.args != null && node.args.length > 0)
+                || (node.kwargs != null && node.kwargs.length > 0)) {
+            sb.append("\n");
+        }
+        if (node.args != null && node.args.length > 0) {
+            sb.append(indent()).append("Args: ");
+            level++;
+            for(SSTNode arg: node.args) {
+                sb.append('\n').append(indent()).append(arg.accept(this));
+            }
+            sb.append('\n');
+            level--;
+        }
+        if (node.kwargs != null && node.kwargs.length > 0) {
+            sb.append(indent()).append("KWArgs: ");
+            level++;
+            for(SSTNode arg: node.kwargs) {
+                sb.append('\n').append(indent()).append(arg.accept(this));
+            }
+            level--;
+        }
+        level--;
+        return sb.toString();
     }
 
     @Override
@@ -284,7 +323,9 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append(' ').append('\n');
         level++;
-        sb.append(indent()).append("Receiver: ").append(node.receiver.accept(this)).append('\n');
+        sb.append(indent()).append("Receiver: ");
+        putOnSameLineIfShort(sb, node.receiver);
+        sb.append("\n");
         sb.append(indent()).append("Attr: ").append(node.name);
         level--;
         return sb.toString();
@@ -356,7 +397,9 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(StarSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append(" Expr: ").append(node.value.accept(this));
+        return sb.toString();
     }
 
     @Override
@@ -451,7 +494,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append('\n');
         level++;
-        sb.append(indent()).append("Key: ").append(node.key.accept(this)).append('\n');
+        sb.append(indent()).append("Key: ").append(node.key != null ? node.key.accept(this) : "null").append('\n');
         sb.append(indent()).append("Val: ").append(node.value.accept(this));
         level--;
         return sb.toString();

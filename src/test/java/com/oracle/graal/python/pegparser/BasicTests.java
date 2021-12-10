@@ -256,21 +256,21 @@ public class BasicTests extends ParserTestBase {
 //                        "var = 100\n" + "if var == 200:\n" + "  print (2)\n" + "elif var == 150:\n" + "  print (1.5)\n" + "elif var == 100:\n" + "  print (1)");
 //    }
 //
-//    @Test
-//    public void call01() throws Exception {
-//        checkTreeResult("foo()");
-//    }
-//
-//    @Test
-//    public void call02() throws Exception {
-//        checkTreeResult("foo(1)");
-//    }
-//
-//    @Test
-//    public void call03() throws Exception {
-//        checkScopeAndTree("foo(arg = 1)");
-//    }
-//
+    @Test
+    public void call01() throws Exception {
+        checkTreeResult("foo()");
+    }
+
+    @Test
+    public void call02() throws Exception {
+        checkTreeResult("foo(1)");
+    }
+
+    @Test
+    public void call03() throws Exception {
+        checkScopeAndTree("foo(arg = 1)");
+    }
+
 //    @Test
 //    public void call04() throws Exception {
 //        checkSyntaxError("foo(1+arg = 1)");
@@ -281,41 +281,36 @@ public class BasicTests extends ParserTestBase {
 //        checkSyntaxError("foo(arg + 1 = 1)");
 //    }
 //
-//    @Test
-//    public void call06() throws Exception {
-//        checkTreeResult("foo(arg1 = 1, arg2 = 2)");
-//    }
-//
-//    @Test
-//    public void call07() throws Exception {
-//        checkTreeResult("foo('ahoj', arg1 = 1, arg2 = 2)");
-//    }
-//
-//    @Test
-//    public void call08() throws Exception {
-//        checkTreeResult("foo('ahoj', arg1 = 1, arg2 = 2)");
-//    }
-//
-//    @Test
-//    public void call09() throws Exception {
-//        checkTreeResult("foo(*mylist)");
-//    }
-//
-//    @Test
-//    public void call10() throws Exception {
-//        checkTreeResult("foo(*mylist1, *mylist2)");
-//    }
-//
-//    @Test
-//    public void call11() throws Exception {
-//        checkTreeResult("foo(**mydict)");
-//    }
-//
-//    @Test
-//    public void call12() throws Exception {
-//        checkTreeResult("foo(**mydict1, **mydict2)");
-//    }
-//
+    @Test
+    public void call06() throws Exception {
+        checkTreeResult("foo(arg1 = 1, arg2 = 2)");
+    }
+
+    @Test
+    public void call07() throws Exception {
+        checkTreeResult("foo('ahoj', arg1 = 1, arg2 = 2)");
+    }
+
+    @Test
+    public void call09() throws Exception {
+        checkTreeResult("foo(*mylist)");
+    }
+
+    @Test
+    public void call10() throws Exception {
+        checkTreeResult("foo(*mylist1, *mylist2)");
+    }
+
+    @Test
+    public void call11() throws Exception {
+        checkTreeResult("foo(**mydict)");
+    }
+
+    @Test
+    public void call12() throws Exception {
+        checkTreeResult("foo(**mydict1, **mydict2)");
+    }
+
 //    @Test
 //    public void call13() throws Exception {
 //        checkSyntaxError("foo(**mydict1, *mylist)");
@@ -331,26 +326,26 @@ public class BasicTests extends ParserTestBase {
 //        checkSyntaxError("foo(arg1=1, 1)");
 //    }
 //
-//    @Test
-//    public void call16() throws Exception {
-//        checkTreeResult("a.b.c.foo()");
-//    }
-//
-//    @Test
-//    public void call17() throws Exception {
-//        checkScopeAndTree("def fn(): foo(arg = 1)");
-//    }
+    @Test
+    public void call16() throws Exception {
+        checkTreeResult("a.b.c.foo()");
+    }
+
+    @Test
+    public void call17() throws Exception {
+        checkScopeAndTree("def fn(): foo(arg = 1)");
+    }
 //
 //    @Test
 //    public void call18() throws Exception {
 //        checkScopeAndTree("def fn(arg = [1,2]): foo(arg = [1])");
 //    }
 //
-//    @Test
-//    public void call19() throws Exception {
-//        checkScopeAndTree("def fn(): \"in\".format(name=\"Baf\")");
-//    }
-//
+    @Test
+    public void call19() throws Exception {
+        checkScopeAndTree("def fn(): \"in\".format(name=\"Baf\")");
+    }
+
 //    @Test
 //    public void call20() throws Exception {
 //        checkScopeAndTree("def fn(name): \"in\".format(name=name)");

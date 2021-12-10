@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
@@ -377,6 +378,70 @@ abstract class AbstractParser {
         return token != null ? factory.createTypeComment(getText(token), token.startOffset, token.endOffset) : null;
     }
 
+    
+    protected int getKewordArgsCount (SSTNode[] argsOrKeywprdArgs) {
+        int count = 0;
+        if (argsOrKeywprdArgs != null && argsOrKeywprdArgs.length > 0) {
+            for (SSTNode argsOrKeywprdArg : argsOrKeywprdArgs) {
+                if (argsOrKeywprdArg instanceof KeyValueSSTNode) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+    
+    protected SSTNode[] extractArgs(SSTNode[] argsOrKeywordArgs) {
+        int keywords = getKewordArgsCount(argsOrKeywordArgs);
+        if (keywords == 0) {
+            return argsOrKeywordArgs;
+        }
+        SSTNode[] result = (SSTNode[])Array.newInstance(SSTNode.class, argsOrKeywordArgs.length - keywords);
+        int i = 0;
+        for (SSTNode node : argsOrKeywordArgs) {
+            if (!(node instanceof KeyValueSSTNode)) {
+                result[i++] = node;
+            }
+        }
+        return result;
+    }
+    
+    protected SSTNode[] extractKeywordArgs(SSTNode[] argsOrKeywordArgs) {
+        int keywords = getKewordArgsCount(argsOrKeywordArgs);
+        if (keywords == 0) {
+            return null;
+        }
+        SSTNode[] result = (SSTNode[])Array.newInstance(SSTNode.class, keywords);
+        int i = 0;
+        for (SSTNode node : argsOrKeywordArgs) {
+            if (node instanceof KeyValueSSTNode) {
+                result[i++] = node;
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * _PyPegen_join_sequences
+     * 
+     */
+    protected <T> T[] join(T[] a , T[]b) {
+        if (a == null && b != null) {
+            return b;
+        }
+        if (a != null && b == null) {
+            return a;
+        }
+        
+        if (a != null && b != null) {
+            T[] result = Arrays.copyOf(a, a.length + b.length);
+            System.arraycopy(b, 0, result, a.length, b.length);
+            return result;
+        }
+        return null;
+    }
+    
+    
     // debug methods
     private void indent(StringBuffer sb) {
         for (int i = 0; i < level; i++) {
