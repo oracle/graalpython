@@ -1592,7 +1592,8 @@ class RunFuncTestCase(BaseTestCase):
             stacks = traceback.format_exc()  # assertRaises doesn't give this.
         else:
             self.fail("TimeoutExpired not raised.")
-        self.assertLess(after_secs - before_secs, 1.5,
+        # GraalVM change: increase the timing tolerance
+        self.assertLess(after_secs - before_secs, 3.0,
                         msg="TimeoutExpired was delayed! Bad traceback:\n```\n"
                         f"{stacks}```")
 
