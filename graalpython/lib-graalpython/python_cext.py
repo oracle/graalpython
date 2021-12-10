@@ -487,10 +487,6 @@ def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
 
 @may_raise
-def PySlice_New(start, stop, step):
-    return slice(start, stop, step)
-
-@may_raise
 def PyEval_GetBuiltins():
     global __builtins_module_dict
     if not __builtins_module_dict:
