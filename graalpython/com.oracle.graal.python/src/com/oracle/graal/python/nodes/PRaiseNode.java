@@ -134,11 +134,13 @@ public abstract class PRaiseNode extends Node {
     }
 
     public final PException raiseStopIteration() {
-        return raiseStopIteration(PNone.NONE);
+        return raise(PythonBuiltinClassType.StopIteration);
     }
 
     public final PException raiseStopIteration(Object value) {
-        return raiseWithData(PythonBuiltinClassType.StopIteration, new Object[]{value});
+        final Object retVal = value != null ? value : PNone.NONE;
+        final Object[] args = {retVal};
+        return raiseWithData(PythonBuiltinClassType.StopIteration, args, retVal);
     }
 
     public final PException raiseHasNoLength(Object result) {

@@ -99,8 +99,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     public static final int IDX_ERRNO = 0;
     public static final int IDX_STRERROR = 1;
     public static final int IDX_FILENAME = 2;
-    public static final int IDX_FILENAME2 = 3;
-    public static final int IDX_WINERROR = 4;
+    public static final int IDX_WINERROR = 3;
+    public static final int IDX_FILENAME2 = 4;
     public static final int IDX_WRITTEN = 5;
     public static final int OS_ERR_NUM_ATTRS = IDX_WRITTEN + 1;
 
