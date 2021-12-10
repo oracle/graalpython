@@ -131,7 +131,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
                 }
                 return PythonUtils.format(fmt, encoding, badChar, start, reason);
             } else {
-                return PythonUtils.format("'%s' codec can't decode bytes in position %d-%d: %s", encoding, start, end - 1, reason);
+                return PythonUtils.format("'%s' codec can't encode characters in position %d-%d: %s", encoding, start, end - 1, reason);
             }
         }
     }

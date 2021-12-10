@@ -124,11 +124,11 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
                 final int badChar = object.codePointAt(start);
                 String fmt;
                 if (badChar <= 0xFF) {
-                    fmt = "can't translate character '\\\\x%02x' in position %d: %s";
+                    fmt = "can't translate character '\\x%02x' in position %d: %s";
                 } else if (badChar <= 0xFFFF) {
-                    fmt = "can't translate character '\\\\u%04x' in position %d: %s";
+                    fmt = "can't translate character '\\u%04x' in position %d: %s";
                 } else {
-                    fmt = "can't translate character '\\\\U%08x' in position %d: %s";
+                    fmt = "can't translate character '\\U%08x' in position %d: %s";
                 }
                 return PythonUtils.format(fmt, badChar, start, reason);
             } else {

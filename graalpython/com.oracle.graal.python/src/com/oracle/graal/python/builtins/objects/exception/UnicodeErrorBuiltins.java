@@ -134,7 +134,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeErrorStartNode extends PythonClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return null;
+            return UnicodeErrorBuiltinsClinicProviders.UnicodeErrorStartNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
@@ -150,7 +150,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeErrorEndNode extends PythonClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return null;
+            return UnicodeErrorBuiltinsClinicProviders.UnicodeErrorEndNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
