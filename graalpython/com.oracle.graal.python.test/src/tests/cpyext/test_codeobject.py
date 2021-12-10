@@ -97,3 +97,28 @@ class TestCodeobject(CPyExtTestCase):
         ],
         cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
     )
+    
+    test_PyCode_NewWithPosOnlyArgs = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            (
+                1, 0, 2,
+                3, 4, 0,
+                b"", tuple(), tuple(),
+                ("a", "b", "c"), tuple(), tuple(),
+                "filename", "name", 1,
+                b"",
+            ),
+        ),
+        resultspec="O",
+        argspec="iiiiiiOOOOOOOOiO",
+        arguments=[
+            "int argcount", "int posonlyargcount", "int kwonlyargcount",
+            "int nlocals", "int stacksize", "int flags",
+            "PyObject* code", "PyObject* consts", "PyObject* names",
+            "PyObject* varnames", "PyObject* freevars", "PyObject* cellvars",
+            "PyObject* filename", "PyObject* name", "int firstlineno",
+            "PyObject* lnotab",
+        ],
+        cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
+    )

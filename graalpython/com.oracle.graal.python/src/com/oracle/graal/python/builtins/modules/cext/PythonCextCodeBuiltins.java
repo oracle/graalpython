@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,39 +40,35 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.WRITEOBJ_WITH_NULL_FILE;
-
 import com.oracle.graal.python.builtins.Builtin;
+
 import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ReprNode;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
+@CoreFunctions(defineModule = PythonCextCodeBuiltins.PYTHON_CEXT_CODE)
 @GenerateNodeFactory
-public class PythonCextFileBuiltins extends PythonBuiltins {
+public class PythonCextCodeBuiltins extends PythonBuiltins {
+
+    public static final String PYTHON_CEXT_CODE = "python_cext_code";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextFileBuiltinsFactory.getFactories();
+        return PythonCextCodeBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -80,52 +76,42 @@ public class PythonCextFileBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "PyFile_WriteObject", minNumOfPositionalArgs = 3)
+    @Builtin(name = "PyCode_New", takesVarArgs = true)
     @GenerateNodeFactory
-    public abstract static class PyFileWriteObjectNode extends PythonTernaryBuiltinNode {
-
+    public abstract static class PyCodeNewNode extends PythonBuiltinNode {
         @Specialization
-        public Object writeNone(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") PNone f, @SuppressWarnings("unused") int flags,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, TypeError, WRITEOBJ_WITH_NULL_FILE);
-        }
-
-        @Specialization(guards = {"!isPNone(f)", "isWriteStr(flags)"})
-        public Object writeStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
-                        @Cached StrNode strNode,
-                        @Shared("getAttr") @Cached PyObjectGetAttr getAttr,
-                        @Shared("call") @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        public Object codeNew(VirtualFrame frame, Object[] arguments,
+                        @Cached CallNode callNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
             try {
-                Object value = strNode.executeWith(frame, obj);
-                Object writeCallable = getAttr.execute(frame, f, WRITE);
-                callNode.execute(frame, writeCallable, value);
-                return 0;
+                Object[] args = new Object[arguments.length + 1];
+                // Add posonlyargcount (2nd arg)
+                args[0] = arguments[0];
+                args[1] = 0;
+                PythonUtils.arraycopy(arguments, 1, args, 2, arguments.length - 1);
+                return callNode.execute(frame, PythonBuiltinClassType.PCode, args);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return -1;
+                return getNativeNullNode.execute();
             }
         }
+    }
 
-        @Specialization(guards = {"!isPNone(f)", "!isWriteStr(flags)"})
-        public Object getStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
-                        @Cached ReprNode reprNode,
-                        @Shared("getAttr") @Cached PyObjectGetAttr getAttr,
-                        @Shared("call") @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+    @Builtin(name = "PyCode_NewWithPosOnlyArgs", takesVarArgs = true)
+    @GenerateNodeFactory
+    public abstract static class PyCodeNewWithPosOnlyArgsNode extends PythonBuiltinNode {
+        @Specialization
+        public Object codeNew(VirtualFrame frame, Object[] arguments,
+                        @Cached CallNode callNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
             try {
-                Object value = reprNode.execute(frame, obj);
-                Object writeCallable = getAttr.execute(frame, f, WRITE);
-                callNode.execute(frame, writeCallable, value);
-                return 0;
+                return callNode.execute(frame, PythonBuiltinClassType.PCode, arguments);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return -1;
+                return getNativeNullNode.execute();
             }
-        }
-
-        protected boolean isWriteStr(int flags) {
-            return (flags & 0x1) > 0;
         }
     }
 }

@@ -68,7 +68,7 @@ PyCodeObject* PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int k
                          PyObject *varnames, PyObject *freevars, PyObject *cellvars,
                          PyObject *filename, PyObject *name, int firstlineno,
                          PyObject *lnotab) {
-    return (PyCodeObject*)(UPCALL_CEXT_O(_jls_PyCode_NewWithPosOnlyArgs, argcount, kwonlyargcount,
+    return (PyCodeObject*)(UPCALL_CEXT_O(_jls_PyCode_NewWithPosOnlyArgs, argcount, posonlyargcount, kwonlyargcount,
                                          nlocals, stacksize, flags,
                                          native_to_java(code), native_to_java(consts), native_to_java(names),
                                          native_to_java(varnames), native_to_java(filename), native_to_java(name), firstlineno,
