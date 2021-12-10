@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins;
@@ -481,6 +482,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextBuiltins(),
                         new PythonCextAbstractBuiltins(),
                         new PythonCextBytesBuiltins(),
+                        new PythonCextCEvalBuiltins(),
                         new PythonCextCodeBuiltins(),
                         new PythonCextComplexBuiltins(),
                         new PythonCextDictBuiltins(),

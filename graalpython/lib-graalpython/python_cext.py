@@ -38,7 +38,6 @@
 # SOFTWARE.
 
 import sys
-import _thread
 
 __builtins_module_dict = None
 
@@ -486,22 +485,6 @@ def PyImport_GetModuleDict():
 @may_raise
 def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
-
-
-@may_raise
-def PyThread_allocate_lock():
-    return _thread.allocate_lock()
-
-
-@may_raise
-def PyThread_acquire_lock(lock, waitflag):
-    return 1 if lock.acquire(waitflag) else 0
-
-
-@may_raise
-def PyThread_release_lock(lock):
-    return lock.release()
-
 
 @may_raise
 def PySlice_New(start, stop, step):

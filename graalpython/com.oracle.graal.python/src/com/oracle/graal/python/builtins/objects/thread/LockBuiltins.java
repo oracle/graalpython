@@ -89,7 +89,7 @@ public class LockBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "timeout", conversion = ArgumentClinic.ClinicConversion.Double, defaultValue = "LockBuiltins.UNSET_TIMEOUT", useDefaultForNone = true)
     @ImportStatic({LockBuiltins.class, AbstractPythonLock.class})
     @GenerateNodeFactory
-    abstract static class AcquireLockNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class AcquireLockNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -191,7 +191,7 @@ public class LockBuiltins extends PythonBuiltins {
 
     @Builtin(name = "acquire_lock", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
-    abstract static class AcquireLockLockNode extends PythonTernaryBuiltinNode {
+    public abstract static class AcquireLockLockNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object acquire(VirtualFrame frame, PLock self, Object blocking, Object timeout,
                         @Cached AcquireLockNode acquireLockNode) {
@@ -211,7 +211,7 @@ public class LockBuiltins extends PythonBuiltins {
 
     @Builtin(name = "release", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doRelease(PLock self) {
             self.release();
