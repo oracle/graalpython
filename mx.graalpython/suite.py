@@ -236,6 +236,18 @@ suite = {
             "jacoco": "exclude",
             "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
+        },
+
+        # FROZEN MODULES
+        "com.oracle.graal.python.frozen": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "com.oracle.graal.python.annotations"
+            ],
+            "jacoco": "exclude",
+            "javaCompliance": "8+",
+            "checkstyle": "com.oracle.graal.python",
             "workingSets": "Truffle,Python",
         },
 
@@ -246,6 +258,7 @@ suite = {
             "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
+                "com.oracle.graal.python.frozen",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
@@ -484,6 +497,14 @@ suite = {
             "dependencies": ["python-lib", "python-test-support-lib"],
             "description": "Python 3 lib files",
             "maven": False,
+        },
+
+        "GRAALPYTHON_FROZEN_MODULES": {
+                    "dependencies": [
+                        "com.oracle.graal.python.frozen",
+                    ],
+                    "description": "Frozen modules",
+                    "maven": False,
         },
 
         "GRAALPYTHON_UNIT_TESTS": {

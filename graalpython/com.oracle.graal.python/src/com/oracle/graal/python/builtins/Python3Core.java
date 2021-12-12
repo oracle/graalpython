@@ -309,6 +309,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
+import com.oracle.graal.python.frozen.FrozenModules;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -336,6 +337,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+
+import com.oracle.graal.python.frozen.PythonFrozenModule;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
@@ -713,6 +716,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     @CompilationFinal(dimensions = 1) private final PythonBuiltinClass[] builtinTypes = new PythonBuiltinClass[PythonBuiltinClassType.VALUES.length];
 
     private final Map<String, PythonModule> builtinModules = new HashMap<>();
+    private final Map<String, PythonFrozenModule> frozenModules = FrozenModules.frozenModules;
     @CompilationFinal private PythonModule builtinsModule;
     @CompilationFinal private PythonModule sysModule;
     @CompilationFinal private PDict sysModules;
@@ -857,6 +861,11 @@ public abstract class Python3Core extends ParserErrorCallback {
     @TruffleBoundary
     public final PythonModule lookupBuiltinModule(String name) {
         return builtinModules.get(name);
+    }
+
+    @TruffleBoundary
+    public final PythonFrozenModule lookupFrozenModule(String name) {
+        return frozenModules.get(name);
     }
 
     public final PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
