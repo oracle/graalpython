@@ -46,6 +46,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory;
+import com.oracle.graal.python.frozen.PythonFrozenModule;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.dsl.Bind;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -378,6 +383,46 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static void doPostInit(Python3Core core, PythonBuiltins builtins) {
             builtins.postInitialize(core);
+        }
+    }
+
+    @Builtin(name = "is_frozen", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class IsFrozen extends PythonBuiltinNode {
+
+        @Specialization
+        public boolean run(String name) {
+            return getCore().lookupFrozenModule(name) != null;
+        }
+    }
+
+    @Builtin(name = "get_frozen_object", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class GetFrozenObject extends PythonBuiltinNode {
+        @Specialization
+        public Object run(VirtualFrame frame, String name) {
+            //TODO: dataobj based path
+            PythonFrozenModule frozenModule = lookupFrozenModule(name);
+            // TODO: if (frozenModule == null) {// set frozen error}
+            if (frozenModule.getName() == null) {
+                frozenModule.setName(name);
+            }
+//            if (frozenModule.getSize() == 0) {
+//                // TODO: set frozen error
+//            }
+
+            // byte[] byteCode = SequenceStorageNodesFactory.ToByteArrayNodeGen.getUncached().execute(frozenModule.getCode());
+            Object code = MarshalModuleBuiltins.Marshal.load(frozenModule.getCode(), frozenModule.getSize());
+            // Todo: error if if (code == null)
+
+            // TODO: Code object check
+
+            return code;
+        }
+
+        @TruffleBoundary
+        private PythonFrozenModule lookupFrozenModule(String name) {
+            return getCore().lookupFrozenModule(name);
         }
     }
 

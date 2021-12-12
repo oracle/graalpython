@@ -41,15 +41,15 @@
 def init_frozen(name):
     return None
 
-
-@__graalpython__.builtin
-def is_frozen(name):
-    return False
-
-
-@__graalpython__.builtin
-def get_frozen_object(name):
-    raise ImportError("No such frozen object named %s" % name)
+#
+# @__graalpython__.builtin
+# def is_frozen(name):
+#     return False
+#
+#
+# @__graalpython__.builtin
+# def get_frozen_object(name):
+#     raise ImportError("No such frozen object named %s" % name)
 
 
 is_frozen_package = get_frozen_object
