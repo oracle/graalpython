@@ -40,20 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_REQUIRED;
+
 import java.util.List;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -128,35 +129,73 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "start", minNumOfPositionalArgs = 1, isGetter = true, isSetter = true, parameterNames = {"$self", "value"}, doc = "exception start")
+    @Builtin(name = "start", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception start")
     @GenerateNodeFactory
-    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
-    public abstract static class UnicodeErrorStartNode extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return UnicodeErrorBuiltinsClinicProviders.UnicodeErrorStartNodeClinicProviderGen.INSTANCE;
+    public abstract static class UnicodeErrorStartNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        Object get(PBaseException self, PNone none,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, none, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
-        Object generic(PBaseException self, int value,
+        Object setBool(PBaseException self, boolean value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value ? 1 : 0, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
+        }
+
+        @Specialization
+        Object setInt(PBaseException self, int value,
                         @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
+
+        @Specialization
+        Object setPInt(PBaseException self, PInt value,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, castToJavaIntExactNode.execute(value), IDX_START, UNICODE_ERROR_ATTR_FACTORY);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
+        @SuppressWarnings("unused")
+        Object generic(PBaseException self, Object value) {
+            throw raise(PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
+        }
     }
 
-    @Builtin(name = "end", minNumOfPositionalArgs = 1, isGetter = true, isSetter = true, parameterNames = {"$self", "value"}, doc = "exception end")
+    @Builtin(name = "end", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception end")
     @GenerateNodeFactory
-    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
-    public abstract static class UnicodeErrorEndNode extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return UnicodeErrorBuiltinsClinicProviders.UnicodeErrorEndNodeClinicProviderGen.INSTANCE;
+    public abstract static class UnicodeErrorEndNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        Object get(PBaseException self, PNone none,
+                   @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, none, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
-        Object generic(PBaseException self, int value,
-                        @Cached BaseExceptionAttrNode attrNode) {
+        Object setBool(PBaseException self, boolean value,
+                       @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value ? 1 : 0, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
+        }
+
+        @Specialization
+        Object setInt(PBaseException self, int value,
+                      @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
+        }
+
+        @Specialization
+        Object setPInt(PBaseException self, PInt value,
+                       @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                       @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, castToJavaIntExactNode.execute(value), IDX_END, UNICODE_ERROR_ATTR_FACTORY);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
+        @SuppressWarnings("unused")
+        Object generic(PBaseException self, Object value) {
+            throw raise(PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
         }
     }
 
