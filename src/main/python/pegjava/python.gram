@@ -445,11 +445,11 @@ func_type_comment[Token]:
     | invalid_double_type_comments
     | TYPE_COMMENT
 
-params[arguments_ty]:
+params[ArgDefListBuilder]:
     | invalid_parameters
     | parameters
 
-parameters[arguments_ty]:
+parameters[ArgDefListBuilder]:
     | a=slash_no_default b[asdl_arg_seq*]=param_no_default* c=param_with_default* d=[star_etc] {
         _PyPegen_make_arguments(p, a, NULL, b, c, d) }
     | a=slash_with_default b=param_with_default* c=[star_etc] {

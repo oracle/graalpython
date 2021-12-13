@@ -6059,15 +6059,15 @@ public final class Parser extends AbstractParser {
     }
 
     // params: invalid_parameters | parameters
-    public SSTNode params_rule()
+    public ArgDefListBuilder params_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAMS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, PARAMS_ID);
+            _res = (ArgDefListBuilder)cache.getResult(_mark, PARAMS_ID);
             level--;
-            return (SSTNode)_res;
+            return (ArgDefListBuilder)_res;
         }
         if (callInvalidRules) { // invalid_parameters
             debugMessageln("%d> params[%d-%d]: %s", level, _mark, mark(), "invalid_parameters");
@@ -6081,7 +6081,7 @@ public final class Parser extends AbstractParser {
                 _res = invalid_parameters_var;
                 cache.putResult(_mark, PARAMS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s params[%d-%d]: %s failed!", level,
@@ -6089,7 +6089,7 @@ public final class Parser extends AbstractParser {
         }
         { // parameters
             debugMessageln("%d> params[%d-%d]: %s", level, _mark, mark(), "parameters");
-            SSTNode parameters_var;
+            ArgDefListBuilder parameters_var;
             if (
                 (parameters_var = parameters_rule()) != null  // parameters
             )
@@ -6099,7 +6099,7 @@ public final class Parser extends AbstractParser {
                 _res = parameters_var;
                 cache.putResult(_mark, PARAMS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s params[%d-%d]: %s failed!", level,
@@ -6109,7 +6109,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, PARAMS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (ArgDefListBuilder)_res;
     }
 
     // parameters:
@@ -6118,15 +6118,15 @@ public final class Parser extends AbstractParser {
     //     | param_no_default+ param_with_default* star_etc?
     //     | param_with_default+ star_etc?
     //     | star_etc
-    public SSTNode parameters_rule()
+    public ArgDefListBuilder parameters_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAMETERS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, PARAMETERS_ID);
+            _res = (ArgDefListBuilder)cache.getResult(_mark, PARAMETERS_ID);
             level--;
-            return (SSTNode)_res;
+            return (ArgDefListBuilder)_res;
         }
         { // slash_no_default param_no_default* param_with_default* star_etc?
             debugMessageln("%d> parameters[%d-%d]: %s", level, _mark, mark(), "slash_no_default param_no_default* param_with_default* star_etc?");
@@ -6151,7 +6151,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_no_default param_no_default* param_with_default* star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6177,7 +6177,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default param_with_default* star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6203,7 +6203,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default+ param_with_default* star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6226,7 +6226,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_with_default+ star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6246,7 +6246,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_etc");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6256,7 +6256,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, PARAMETERS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (ArgDefListBuilder)_res;
     }
 
     // slash_no_default: param_no_default+ '/' ',' | param_no_default+ '/' &')'
@@ -19203,7 +19203,7 @@ public final class Parser extends AbstractParser {
         }
         { // params
             debugMessageln("%d> _tmp_84[%d-%d]: %s", level, _mark, mark(), "params");
-            SSTNode params_var;
+            ArgDefListBuilder params_var;
             if (
                 (params_var = params_rule()) != null  // params
             )
@@ -19314,7 +19314,7 @@ public final class Parser extends AbstractParser {
         }
         { // params
             debugMessageln("%d> _tmp_87[%d-%d]: %s", level, _mark, mark(), "params");
-            SSTNode params_var;
+            ArgDefListBuilder params_var;
             if (
                 (params_var = params_rule()) != null  // params
             )
@@ -26668,11 +26668,11 @@ public final class Parser extends AbstractParser {
     // TODO replacing KeyValuePair* --> SSTNode[]
     // TODO replacing asdl_keyword_seq* --> SSTNode[]
     // TODO replacing keyword_ty --> SSTNode[]
-    // TODO replacing arguments_ty --> SSTNode[]
     // TODO replacing asdl_arg_seq* --> SSTNode[]
     // TODO replacing SlashWithDefault* --> SSTNode[]
     // TODO replacing StarEtc* --> SSTNode[]
     // TODO replacing arg_ty --> SSTNode[]
     // TODO replacing NameDefaultPair* --> SSTNode[]
+    // TODO replacing arguments_ty --> SSTNode[]
     // TODO replacing CmpopExprPair* --> SSTNode[]
 }
