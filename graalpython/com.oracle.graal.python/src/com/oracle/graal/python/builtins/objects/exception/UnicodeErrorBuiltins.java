@@ -102,7 +102,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         if (args.length < index + 1) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         } else {
-            if (!PGuards.isBytes(args[index])) {
+            if (!PGuards.isPBytes(args[index])) {
                 return factory.createBytes(bytesInitNode.execute(frame, args[index]));
             }
             return args[index];
