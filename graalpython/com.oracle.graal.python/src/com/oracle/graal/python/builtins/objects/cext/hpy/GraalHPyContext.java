@@ -1140,30 +1140,35 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 if (initJNI(this, castLong(nativePointer)) != 0) {
                     throw new RuntimeException("Could not initialize HPy JNI backend.");
                 }
-            }
-            if (useNativeFastPaths) {
-                PythonContext context = getContext();
-                InteropLibrary interop = InteropLibrary.getUncached();
-                SignatureLibrary signatures = SignatureLibrary.getUncached();
-                try {
-                    Object rlib = evalNFI(context, "load \"" + getJNILibrary() + "\"", "load " + PythonContext.PYTHON_JNI_LIBRARY_NAME);
+                /*
+                 * Currently, the native fast path functions are only available if the JNI backend
+                 * is used because they rely on 'initJNI' being called. In future, we might also
+                 * want to use the native fast path functions for the NFI backend.
+                 */
+                if (useNativeFastPaths) {
+                    PythonContext context = getContext();
+                    InteropLibrary interop = InteropLibrary.getUncached();
+                    SignatureLibrary signatures = SignatureLibrary.getUncached();
+                    try {
+                        Object rlib = evalNFI(context, "load \"" + getJNILibrary() + "\"", "load " + PythonContext.PYTHON_JNI_LIBRARY_NAME);
 
-                    Object augmentSignature = evalNFI(context, "(POINTER):VOID", "hpy-nfi-signature");
-                    Object augmentFunction = interop.readMember(rlib, "initDirectFastPaths");
-                    signatures.call(augmentSignature, augmentFunction, nativePointer);
+                        Object augmentSignature = evalNFI(context, "(POINTER):VOID", "hpy-nfi-signature");
+                        Object augmentFunction = interop.readMember(rlib, "initDirectFastPaths");
+                        signatures.call(augmentSignature, augmentFunction, nativePointer);
 
-                    Object setNativeSpaceSignature = evalNFI(context, "(POINTER, SINT64):VOID", "hpy-nfi-signature");
-                    setNativeSpaceFunction = signatures.bind(setNativeSpaceSignature, interop.readMember(rlib, "setHPyContextNativeSpace"));
+                        Object setNativeSpaceSignature = evalNFI(context, "(POINTER, SINT64):VOID", "hpy-nfi-signature");
+                        setNativeSpaceFunction = signatures.bind(setNativeSpaceSignature, interop.readMember(rlib, "setHPyContextNativeSpace"));
 
-                    /*
-                     * Allocate a native array for the native space pointers of HPy objects and
-                     * initialize it.
-                     */
-                    allocateNativeSpacePointersMirror();
+                        /*
+                         * Allocate a native array for the native space pointers of HPy objects and
+                         * initialize it.
+                         */
+                        allocateNativeSpacePointersMirror();
 
-                    interop.execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
-                } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                        interop.execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
+                    } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
                 }
             }
         }
@@ -1489,7 +1494,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     /**
      * HPy signature: {@code HPy_SetItem(HPyContext ctx, HPy obj, HPy key, HPy value)}
-     * 
+     *
      * @param hSequence
      * @param hKey
      * @param hValue
