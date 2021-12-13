@@ -485,11 +485,3 @@ def PyEval_GetBuiltins():
 def sequence_clear():
     return 0
 
-namespace_type = None
-@may_raise
-def _PyNamespace_New(kwds):
-    global namespace_type
-    if not namespace_type:
-        from types import SimpleNamespace as namespace_type
-    return namespace_type(**kwds)
-
