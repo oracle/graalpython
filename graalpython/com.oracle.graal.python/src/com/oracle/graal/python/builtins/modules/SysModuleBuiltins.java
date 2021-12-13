@@ -132,6 +132,7 @@ import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -640,6 +641,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
             PyObjectCallMethodObjArgs.getUncached().execute(null, obj, "close");
         } catch (PException e) {
         }
+    }
+
+    public PDict getModules() {
+        return (PDict) getBuiltinConstants().get(MODULES);
     }
 
     @Builtin(name = "exc_info", needsFrame = true)

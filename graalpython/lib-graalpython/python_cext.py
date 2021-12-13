@@ -474,15 +474,6 @@ def initialize_datetime_capi(capi_library):
 
 
 @may_raise
-def PyImport_ImportModule(name):
-    return __import__(name, fromlist=["*"])
-
-
-@may_raise
-def PyImport_GetModuleDict():
-    return sys.modules
-
-@may_raise
 def PyEval_GetBuiltins():
     global __builtins_module_dict
     if not __builtins_module_dict:
