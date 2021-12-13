@@ -87,7 +87,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     public static final BaseExceptionAttrNode.StorageFactory IMPORT_ERROR_ATTR_FACTORY = (args, factory) -> {
         Object[] attrs = new Object[IMPORT_ERR_NUM_ATTRS];
         if (args.length == 1) {
-            attrs[0] = args[0];
+            attrs[IDX_MSG] = args[0];
         }
         return attrs;
     };

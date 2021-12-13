@@ -169,26 +169,26 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeErrorEndNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         Object get(PBaseException self, PNone none,
-                   @Cached BaseExceptionAttrNode attrNode) {
+                        @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, none, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setBool(PBaseException self, boolean value,
-                       @Cached BaseExceptionAttrNode attrNode) {
+                        @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value ? 1 : 0, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setInt(PBaseException self, int value,
-                      @Cached BaseExceptionAttrNode attrNode) {
+                        @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setPInt(PBaseException self, PInt value,
-                       @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                       @Cached BaseExceptionAttrNode attrNode) {
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, castToJavaIntExactNode.execute(value), IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
