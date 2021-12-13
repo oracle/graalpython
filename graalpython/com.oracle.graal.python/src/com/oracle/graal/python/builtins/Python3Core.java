@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
@@ -1095,10 +1096,13 @@ public abstract class Python3Core extends ParserErrorCallback {
                 break;
         }
         instance = factory().createBaseException(cls, message, arguments);
+        final Object[] excAttrs = SYNTAX_ERROR_ATTR_FACTORY.create();
         SourceSection section = location.getSourceSection();
         Source source = section.getSource();
         String path = source.getPath();
-        final String filename = path != null ? path : source.getName() != null ? source.getName() : "<string>";
+        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? source.getName() : "<string>";
+        excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
+        excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
         String msg = "invalid syntax";
         if (type == PythonParser.ErrorType.Print) {
             CharSequence line = source.getCharacters(section.getStartLine());
@@ -1122,7 +1126,9 @@ public abstract class Python3Core extends ParserErrorCallback {
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
         final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
-        instance.setExceptionAttributes(new Object[]{msg, filename, section.getStartLine(), section.getStartColumn(), text});
+        excAttrs[SyntaxErrorBuiltins.IDX_MSG] = msg;
+        excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
+        instance.setExceptionAttributes(excAttrs);
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 

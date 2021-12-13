@@ -77,17 +77,15 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.SyntaxError, PythonBuiltinClassType.IndentationError, PythonBuiltinClassType.TabError})
 public final class SyntaxErrorBuiltins extends PythonBuiltins {
 
-    static final int IDX_MSG = 0;
-    static final int IDX_FILENAME = 1;
-    static final int IDX_LINENO = 2;
-    static final int IDX_OFFSET = 3;
-    static final int IDX_TEXT = 4;
-    static final int IDX_PRINT_FILE_AND_LINE = 5;
+    public static final int IDX_MSG = 0;
+    public static final int IDX_FILENAME = 1;
+    public static final int IDX_LINENO = 2;
+    public static final int IDX_OFFSET = 3;
+    public static final int IDX_TEXT = 4;
+    public static final int IDX_PRINT_FILE_AND_LINE = 5;
     public static final int SYNTAX_ERR_NUM_ATTRS = IDX_PRINT_FILE_AND_LINE + 1;
 
-    public static final BaseExceptionAttrNode.StorageFactory SYNTAX_ERROR_ATTR_FACTORY = (args, factory) -> {
-        return new Object[SYNTAX_ERR_NUM_ATTRS];
-    };
+    public static final BaseExceptionAttrNode.StorageFactory SYNTAX_ERROR_ATTR_FACTORY = (args, factory) -> new Object[SYNTAX_ERR_NUM_ATTRS];
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

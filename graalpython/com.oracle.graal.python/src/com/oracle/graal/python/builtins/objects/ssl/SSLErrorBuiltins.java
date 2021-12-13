@@ -79,9 +79,7 @@ public class SSLErrorBuiltins extends PythonBuiltins {
     static final int IDX_VERIFY_MESSAGE = IDX_WRITTEN + 4;
     static final int SSL_ERR_NUM_ATTRS = IDX_VERIFY_MESSAGE + 1;
 
-    public static final BaseExceptionAttrNode.StorageFactory SSL_ERROR_ATTR_FACTORY = (args, factory) -> {
-        return new Object[SSL_ERR_NUM_ATTRS];
-    };
+    public static final BaseExceptionAttrNode.StorageFactory SSL_ERROR_ATTR_FACTORY = (args, factory) -> new Object[SSL_ERR_NUM_ATTRS];
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

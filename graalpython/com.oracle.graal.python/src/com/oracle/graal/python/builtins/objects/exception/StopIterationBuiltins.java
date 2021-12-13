@@ -59,9 +59,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.StopIteration)
 public final class StopIterationBuiltins extends PythonBuiltins {
 
-    public static final BaseExceptionAttrNode.StorageFactory STOP_ITERATION_ATTR_FACTORY = (args, factory) -> {
-        return new Object[]{(args != null && args.length > 0) ? args[0] : PNone.NONE};
-    };
+    public static final BaseExceptionAttrNode.StorageFactory STOP_ITERATION_ATTR_FACTORY = (args, factory) -> new Object[]{(args != null && args.length > 0) ? args[0] : PNone.NONE};
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

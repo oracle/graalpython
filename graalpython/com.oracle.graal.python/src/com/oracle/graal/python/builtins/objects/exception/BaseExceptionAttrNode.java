@@ -56,6 +56,14 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class BaseExceptionAttrNode extends Node {
     public interface StorageFactory {
         Object[] create(Object[] args, PythonObjectFactory factory);
+
+        default Object[] create(Object[] args) {
+            return create(args, null);
+        }
+
+        default Object[] create() {
+            return create(null);
+        }
     }
 
     public abstract Object execute(PBaseException self, Object value, int index, StorageFactory factory);

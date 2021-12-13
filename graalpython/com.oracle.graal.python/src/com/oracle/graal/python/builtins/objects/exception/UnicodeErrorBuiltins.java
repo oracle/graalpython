@@ -73,9 +73,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     static final int IDX_REASON = 4;
     public static final int UNICODE_ERR_NUM_ATTRS = IDX_REASON + 1;
 
-    public static final BaseExceptionAttrNode.StorageFactory UNICODE_ERROR_ATTR_FACTORY = (args, factory) -> {
-        return new Object[UNICODE_ERR_NUM_ATTRS];
-    };
+    public static final BaseExceptionAttrNode.StorageFactory UNICODE_ERROR_ATTR_FACTORY = (args, factory) -> new Object[UNICODE_ERR_NUM_ATTRS];
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
