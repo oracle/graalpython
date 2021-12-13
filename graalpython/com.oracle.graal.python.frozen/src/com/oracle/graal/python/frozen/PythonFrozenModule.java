@@ -1,7 +1,5 @@
 package com.oracle.graal.python.frozen;
 
-import java.util.Arrays;
-
 public final class PythonFrozenModule {
     String name;
     byte[] code;
@@ -14,7 +12,7 @@ public final class PythonFrozenModule {
     }
 
     // Some modules are too big to be stored within the 2^16 bytes size limit of code artifacts
-    // and need to be passed in in multiple portions
+    // and need to be passed in via multiple portions
     public PythonFrozenModule(String name, byte[][] code, int size) {
         this.name = name;
         this.code = flattenByteArray(code);
@@ -45,14 +43,15 @@ public final class PythonFrozenModule {
         this.size = size;
     }
 
-    //@TruffleBoundary How to include TruffleBoundary here? / Necessary?
+    // @TruffleBoundary How to include TruffleBoundary here? / Necessary?
     private static byte[] flattenByteArray(byte[][] byteArrays) {
         int totalLength = 0;
         for (byte[] array : byteArrays) {
             totalLength += array.length;
         }
 
-        if (totalLength == 0) return new byte[0];
+        if (totalLength == 0)
+            return new byte[0];
         byte[] first = byteArrays[0];
 
         byte[] result = new byte[totalLength];
