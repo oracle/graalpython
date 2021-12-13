@@ -53,6 +53,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuilt
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins.PYTHON_CEXT_LIST;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PYTHON_CEXT_LONG;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextMemoryViewBuiltins.PYTHON_CEXT_MEMORYVIEW;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltins.PYTHON_CEXT_PYTHON_RUN;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins.PYTHON_CEXT_SET;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltins.PYTHON_CEXT_SLICE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextSysBuiltins.PYTHON_CEXT_SYS;
@@ -384,6 +385,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         addModuleDict(cext, PYTHON_CEXT_LONG, core);
         addModuleDict(cext, PYTHON_CEXT_LIST, core);
         addModuleDict(cext, PYTHON_CEXT_MEMORYVIEW, core);
+        addModuleDict(cext, PYTHON_CEXT_PYTHON_RUN, core);
         addModuleDict(cext, PYTHON_CEXT_SET, core);
         addModuleDict(cext, PYTHON_CEXT_SLICE, core);
         addModuleDict(cext, PYTHON_CEXT_SYS, core);
