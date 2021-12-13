@@ -68,7 +68,7 @@ public class EllipsisBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        core.registerTypeInBuiltins("Ellipsis", PythonBuiltinClassType.PEllipsis);
+        core.getBuiltins().setAttribute("Ellipsis", PEllipsis.INSTANCE);
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
