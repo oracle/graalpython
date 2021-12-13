@@ -485,11 +485,9 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "cipherlist", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
     abstract static class SetCiphersNode extends PythonClinicBuiltinNode {
-
         @Specialization
-        Object setCiphers(VirtualFrame frame, PSSLContext self, String cipherlist,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
-            self.setCiphers(SSLCipherSelector.selectCiphers(frame, constructAndRaiseNode, this, cipherlist));
+        Object setCiphers(PSSLContext self, String cipherlist) {
+            self.setCiphers(SSLCipherSelector.selectCiphers(this, cipherlist));
             return PNone.NONE;
         }
 
@@ -727,7 +725,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private void fromString(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, String dataString, PSSLContext context)
+        private void fromString(VirtualFrame frame, PConstructAndRaiseNode constructAndRaiseNode, String dataString, PSSLContext context)
                         throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException, CRLException {
             if (dataString.isEmpty()) {
                 throw raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
@@ -967,7 +965,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 List<PDict> result = PythonUtils.newList();
                 for (X509Certificate cert : self.getCACerts()) {
                     if (CertUtils.isCA(cert, CertUtils.getKeyUsage(cert))) {
-                        PythonUtils.add(result, CertUtils.decodeCertificate(frame, constructAndRaiseNode, getContext().factory(), cert));
+                        PythonUtils.add(result, CertUtils.decodeCertificate(getContext().factory(), cert));
                     }
                 }
                 return factory().createList(PythonUtils.toArray(result));

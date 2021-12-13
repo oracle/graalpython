@@ -310,15 +310,14 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!der")
-        PDict getPeerCertDict(VirtualFrame frame, PSSLSocket self, @SuppressWarnings("unused") boolean der,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+        PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der) {
             if (!self.isHandshakeComplete()) {
                 throw raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
             }
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
                 try {
-                    return CertUtils.decodeCertificate(frame, constructAndRaiseNode, getContext().factory(), (X509Certificate) certificate);
+                    return CertUtils.decodeCertificate(getContext().factory(), (X509Certificate) certificate);
                 } catch (CertificateParsingException e) {
                     return factory().createDict();
                 }

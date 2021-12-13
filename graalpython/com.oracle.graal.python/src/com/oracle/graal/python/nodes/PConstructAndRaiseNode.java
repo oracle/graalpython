@@ -254,6 +254,22 @@ public abstract class PConstructAndRaiseNode extends Node {
         }
     }
 
+    public static PException raiseUncachedSSLError(String message) {
+        return getUncached().raiseSSLError(null, message);
+    }
+
+    public static PException raiseUncachedSSLError(String message, Object... formatArgs) {
+        return getUncached().raiseSSLError(null, message, formatArgs);
+    }
+
+    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, Exception ex) {
+        return getUncached().raiseSSLError(null, errorCode, ex);
+    }
+
+    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, String format, Object... formatArgs) {
+        return getUncached().raiseSSLError(null, errorCode, format, formatArgs);
+    }
+
     public final PException raiseOSErrorSubType(Frame frame, PythonBuiltinClassType osErrorSubtype, String format, Object... fmtArgs) {
         String message = getFormattedMessage(format, fmtArgs);
         final OSErrorEnum osErrorEnum = errorType2errno(osErrorSubtype);

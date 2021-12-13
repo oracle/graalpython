@@ -46,11 +46,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
-import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins;
-import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins;
-import com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins;
-import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -185,10 +180,15 @@ import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
@@ -384,16 +384,14 @@ public abstract class Python3Core extends ParserErrorCallback {
         c = null;
     }
 
-    private static List<PythonBuiltins> filterBuiltins(List<PythonBuiltins> builtins) {
+    private static void filterBuiltins(List<PythonBuiltins> builtins) {
         PythonOS currentOs = PythonOS.getPythonOS();
-        List<PythonBuiltins> filtered = new ArrayList<>();
         for (PythonBuiltins builtin : builtins) {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-            if (annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs) {
-                filtered.add(builtin);
+            if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
+                builtins.remove(builtin);
             }
         }
-        return filtered;
     }
 
     private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
@@ -655,7 +653,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                 builtins.add(builtin);
             }
         }
-        builtins = filterBuiltins(builtins);
+        filterBuiltins(builtins);
         return builtins.toArray(new PythonBuiltins[builtins.size()]);
     }
 
@@ -905,10 +903,6 @@ public abstract class Python3Core extends ParserErrorCallback {
             }
         }
         return builtinTypes[index];
-    }
-
-    private static boolean canPublishBuiltin(PythonOS currentOs, Builtin builtin) {
-        return builtin.os() == PythonOS.PLATFORM_ANY || builtin.os() == currentOs;
     }
 
     private void initializeTypes() {

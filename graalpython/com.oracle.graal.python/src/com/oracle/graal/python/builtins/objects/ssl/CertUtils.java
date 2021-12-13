@@ -162,7 +162,7 @@ public final class CertUtils {
      * _ssl.c#_decode_certificate
      */
     @TruffleBoundary
-    public static PDict decodeCertificate(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PythonObjectSlowPathFactory factory, X509Certificate cert) throws CertificateParsingException {
+    public static PDict decodeCertificate(PythonObjectSlowPathFactory factory, X509Certificate cert) throws CertificateParsingException {
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
         HashingStorageLibrary hlib = HashingStorageLibrary.getUncached();
@@ -178,7 +178,7 @@ public final class CertUtils {
             storage = setItem(hlib, storage, JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
             storage = setItem(hlib, storage, JAVA_X509_VERSION, getVersion(cert));
         } catch (RuntimeException re) {
-            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, re);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, re);
         }
         dict.setDictStorage(storage);
         return dict;
