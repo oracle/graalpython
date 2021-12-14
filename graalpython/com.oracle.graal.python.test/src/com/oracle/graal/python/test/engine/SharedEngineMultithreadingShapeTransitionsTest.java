@@ -51,7 +51,6 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngineMultithreadingTestBase {
@@ -59,7 +58,6 @@ public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngine
     private static final int PROPERTIES_COUNT = 20;
     private static final int SHARED_PREFIX_COUNT = PROPERTIES_COUNT - 10;
 
-    @Ignore
     @Test
     public void testShapeTransitionsInParallel() throws InterruptedException, ExecutionException {
         ExecutorService executorService = createExecutorService();
