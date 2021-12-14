@@ -46,8 +46,8 @@ import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBui
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_REASON;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_START;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.UNICODE_ERROR_ATTR_FACTORY;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsBytes;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsInt;
-import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsObject;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
@@ -59,8 +59,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.lib.PyObjectGetItem;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -88,7 +88,8 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args);
 
         @Specialization
-        Object initNoArgs(PBaseException self, Object[] args,
+        Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args,
+                        @Cached UnicodeErrorBuiltins.GetArgAsBytesNode getArgAsBytesNode,
                         @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
@@ -96,7 +97,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
             // PyArg_ParseTuple(args, "UOnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
                             getArgAsString(args, 0, this, toJavaStringNode),
-                            getArgAsObject(args, 1, this),
+                            getArgAsBytes(frame, args, 1, this, getArgAsBytesNode),
                             getArgAsInt(args, 2, this, toJavaIntExactNode),
                             getArgAsInt(args, 3, this, toJavaIntExactNode),
                             getArgAsString(args, 4, this, toJavaStringNode)
@@ -111,8 +112,8 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached PyObjectGetItem getItem,
-                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached SequenceStorageNodes.GetItemNode getitemNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached PyObjectStrAsJavaStringNode strNode) {
             if (self.getExceptionAttributes() == null) {
                 // Not properly initialized.
@@ -121,13 +122,13 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
 
             // Get reason and encoding as strings, which they might not be if they've been
             // modified after we were constructed.
-            Object object = attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
+            PBytesLike object = (PBytesLike) attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
             final int start = attrNode.getInt(self, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
             final int end = attrNode.getInt(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
             final String encoding = strNode.execute(frame, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
             final String reason = strNode.execute(frame, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
-            if (start < sizeNode.execute(frame, object) && end == start + 1) {
-                final int b = (int) getItem.execute(frame, object, 0);
+            if (start < lenNode.execute(object.getSequenceStorage()) && end == start + 1) {
+                final int b = (int) getitemNode.execute(frame, object.getSequenceStorage(), 0);
                 return PythonUtils.format("'%s' codec can't decode byte 0x%02x in position %d: %s", encoding, b, start, reason);
             } else {
                 return PythonUtils.format("'%s' codec can't decode bytes in position %d-%d: %s", encoding, start, end - 1, reason);

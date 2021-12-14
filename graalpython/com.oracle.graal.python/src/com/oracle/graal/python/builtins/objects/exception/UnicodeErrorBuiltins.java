@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -61,6 +60,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -109,22 +109,25 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     }
 
     public abstract static class GetArgAsBytesNode extends PNodeWithRaiseAndIndirectCall {
-        abstract PBytes execute(VirtualFrame frame, Object val, String encoding);
+        abstract PBytes execute(VirtualFrame frame, Object val);
 
         @Specialization
-        PBytes doString(String value, String encoding,
-                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encode,
+        @CompilerDirectives.TruffleBoundary
+        PBytes doString(String value,
                         @Cached PythonObjectFactory factory) {
-            return factory.createBytes(encode.execute(value, encoding, "ignore"));
+            // TODO: cbasca cPython works directly with bytes while we have Java strings which are
+            // encoded, here we decode using the system encoding but this might not be the correct /
+            // ideal case
+            return factory.createBytes(value.getBytes());
         }
 
         @Specialization
-        PBytes doBytes(PBytes value, @SuppressWarnings("unused") String encoding) {
+        PBytes doBytes(PBytes value) {
             return value;
         }
 
         @Specialization(guards = {"!isPBytes(value)", "!isString(value)"})
-        PBytes doOther(VirtualFrame frame, Object value, @SuppressWarnings("unused") String encoding,
+        PBytes doOther(VirtualFrame frame, Object value,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
                         @Cached PythonObjectFactory factory) {
             try {
@@ -141,9 +144,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         if (args.length < index + 1) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         } else {
-            // the encoding must have been already set during init
-            assert args[IDX_ENCODING] instanceof String;
-            return getArgAsBytesNode.execute(frame, args[index], (String) args[IDX_ENCODING]);
+            return getArgAsBytesNode.execute(frame, args[index]);
         }
     }
 

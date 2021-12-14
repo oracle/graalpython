@@ -213,7 +213,7 @@ public class StringUtils {
     }
 
     private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";
-    private static final String MALFORMED_ERROR = " malformed \\N character escape";
+    private static final String MALFORMED_ERROR = "malformed \\N character escape";
     private static final String TRUNCATED_XXX_ERROR = "truncated \\xXX escape";
     private static final String TRUNCATED_UXXXX_ERROR = "truncated \\uXXXX escape";
     private static final String TRUNCATED_UXXXXXXXX_ERROR = "truncated \\UXXXXXXXX escape";
@@ -266,15 +266,15 @@ public class StringUtils {
     @CompilerDirectives.TruffleBoundary
     private static int doCharacterName(String text, StringBuilder sb, int offset) {
         if (offset >= text.length()) {
-            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset - 1, MALFORMED_ERROR);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset, MALFORMED_ERROR);
         }
         char ch = text.charAt(offset);
         if (ch != '{') {
-            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset - 1, MALFORMED_ERROR);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset, MALFORMED_ERROR);
         }
         int closeIndex = text.indexOf("}", offset + 1);
         if (closeIndex == -1) {
-            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, text.length() - 1, MALFORMED_ERROR);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, text.length(), MALFORMED_ERROR);
         }
         String charName = text.substring(offset + 1, closeIndex).toUpperCase();
         // When JDK 1.8 will not be supported, we can replace with Character.codePointOf(String
