@@ -447,12 +447,12 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             PTuple args = self.getArgs();
             final Object filename = attrNode.get(self, IDX_FILENAME, OS_ERROR_ATTR_FACTORY);
             final Object filename2 = attrNode.get(self, IDX_FILENAME2, OS_ERROR_ATTR_FACTORY);
-            if (lenNode.execute(args.getSequenceStorage()) == 2 && filename != null) {
-                Object[] argData = new Object[filename2 != null ? 5 : 3];
+            if (lenNode.execute(args.getSequenceStorage()) == 2 && filename != PNone.NONE) {
+                Object[] argData = new Object[filename2 != PNone.NONE ? 5 : 3];
                 argData[0] = getItemNode.execute(frame, args.getSequenceStorage(), 0);
                 argData[1] = getItemNode.execute(frame, args.getSequenceStorage(), 1);
                 argData[2] = filename;
-                if (filename2 != null) {
+                if (filename2 != PNone.NONE) {
                     // This tuple is essentially used as OSError(*args). So, to recreate filename2,
                     // we need to pass in winerror as well
                     argData[3] = PNone.NONE;

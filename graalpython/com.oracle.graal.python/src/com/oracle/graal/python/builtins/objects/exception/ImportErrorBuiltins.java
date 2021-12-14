@@ -195,9 +195,8 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached BaseExceptionBuiltins.StrNode exStrNode,
                         @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {
-            assert self.getExceptionAttributes() != null;
             final Object msg = attrNode.get(self, IDX_MSG, IMPORT_ERROR_ATTR_FACTORY);
-            if (msg != null && unicodeCheckExactNode.execute(msg)) {
+            if (msg != PNone.NONE && unicodeCheckExactNode.execute(msg)) {
                 return msg;
             } else {
                 return exStrNode.execute(frame, self);
