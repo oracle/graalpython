@@ -48,10 +48,12 @@ import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.i
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.LIST_INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
+import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -60,8 +62,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -101,14 +107,18 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.DivModNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TupleNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ChrNode;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.InternNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.AddNode;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.JoinNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.DecodeNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -250,13 +260,21 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetBuiltins.ClearNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.ConstructSetNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EqNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.FindNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.LtNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -310,8 +328,10 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.MulNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -1643,7 +1663,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyBytesConcatNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object concat(VirtualFrame frame, PBytes original, Object newPart,
-                        @Cached AddNode addNode,
+                        @Cached BytesBuiltins.AddNode addNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
@@ -1683,7 +1703,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyBytesJoinNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object join(VirtualFrame frame, PBytes original, Object newPart,
-                        @Cached JoinNode joinNode,
+                        @Cached BytesBuiltins.JoinNode joinNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
@@ -2677,6 +2697,875 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected boolean checkBase(int base) {
             return base == 2 || base == 8 || base == 10 || base == 16;
+        }
+    }
+
+    ///////////// sequence /////////////
+
+    @Builtin(name = "PySequence_Tuple", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PySequenceTupleNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "isTuple(obj, getClassNode)")
+        public PTuple values(PTuple obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+            return obj;
+        }
+
+        @Specialization(guards = "!isTuple(obj, getClassNode)")
+        public Object values(VirtualFrame frame, Object obj,
+                        @Cached TupleNode tupleNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return tupleNode.execute(frame, PythonBuiltinClassType.PTuple, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        protected boolean isTuple(Object obj, GetClassNode getClassNode) {
+            return getClassNode.execute(obj) == PythonBuiltinClassType.PTuple;
+        }
+    }
+
+    @Builtin(name = "PySequence_List", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PySequenceListNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object values(VirtualFrame frame, Object obj,
+                        @Cached ConstructListNode listNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return listNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PySequence_SetItem", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class PySequenceSetItemNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "checkNode.execute(obj)")
+        public Object setItem(VirtualFrame frame, Object obj, Object key, Object value,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached ConditionProfile hasSetItem,
+                        @Cached CallNode callNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object setItemCallable = lookupAttrNode.execute(frame, obj, __SETITEM__);
+                if (hasSetItem.profile(setItemCallable == PNone.NO_VALUE)) {
+                    throw raise(TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, obj);
+                } else {
+                    callNode.execute(setItemCallable, key, value);
+                    return 0;
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(obj)")
+        Object setItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
+        }
+    }
+
+    @Builtin(name = "PySequence_GetSlice", minNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    abstract static class PySequenceGetSliceNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = "checkNode.execute(obj)")
+        Object getSlice(VirtualFrame frame, Object obj, long iLow, long iHigh,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached CallNode callNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object getItemCallable = lookupAttrNode.execute(frame, obj, __GETITEM__);
+                return callNode.execute(getItemCallable, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(obj)")
+        Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
+        }
+    }
+
+    @Builtin(name = "PySequence_Contains", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceContainsNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object contains(VirtualFrame frame, Object haystack, Object needle,
+                        @Cached ContainsNode containsNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return containsNode.executeObject(frame, needle, haystack);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+    }
+
+    @Builtin(name = "PySequence_Repeat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceRepeatNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "checkNode.execute(obj)")
+        Object repeat(VirtualFrame frame, Object obj, long n,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached("createMul()") MulNode mulNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return mulNode.executeObject(frame, obj, n);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(obj)")
+        protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
+        }
+
+        protected MulNode createMul() {
+            return (MulNode) BinaryArithmetic.Mul.create();
+        }
+    }
+
+    @Builtin(name = "PySequence_InPlaceRepeat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceInPlaceRepeatNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"checkNode.execute(obj)"})
+        Object repeat(VirtualFrame frame, Object obj, long n,
+                        @Cached PyObjectLookupAttr lookupNode,
+                        @Cached CallNode callNode,
+                        @Cached("createMul()") MulNode mulNode,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object imulCallable = lookupNode.execute(frame, obj, __IMUL__);
+                if (imulCallable != PNone.NO_VALUE) {
+                    Object ret = callNode.execute(frame, imulCallable, n);
+                    return ret;
+                }
+                return mulNode.executeObject(frame, obj, n);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(obj)")
+        protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
+        }
+
+        protected MulNode createMul() {
+            return (MulNode) BinaryArithmetic.Mul.create();
+        }
+    }
+
+    @Builtin(name = "PySequence_Concat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceConcatNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"})
+        Object concat(VirtualFrame frame, Object s1, Object s2,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return addNode.executeObject(frame, s1, s2);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"})
+        protected Object cantConcat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
+        }
+
+        protected BinaryArithmetic.AddNode createAdd() {
+            return (BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
+        }
+    }
+
+    @Builtin(name = "PySequence_InPlaceConcat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PySequenceInPlaceConcatNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = {"checkNode.execute(s1)"})
+        Object concat(VirtualFrame frame, Object s1, Object s2,
+                        @Cached PyObjectLookupAttr lookupNode,
+                        @Cached CallNode callNode,
+                        @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object iaddCallable = lookupNode.execute(frame, s1, __IADD__);
+                if (iaddCallable != PNone.NO_VALUE) {
+                    return callNode.execute(frame, iaddCallable, s2);
+                }
+                return addNode.executeObject(frame, s1, s2);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!checkNode.execute(s1)")
+        protected Object concat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
+        }
+
+        protected BinaryArithmetic.AddNode createAdd() {
+            return (BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
+        }
+    }
+
+    @Builtin(name = "PySet_Clear", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PySetClearNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
+        public Object clear(VirtualFrame frame, PSet s,
+                        @Cached ClearNode clearNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                clearNode.execute(frame, s);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isPSet(set)", "isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
+        public Object clearNative(VirtualFrame frame, @SuppressWarnings("unused") Object set,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
+        }
+
+        @Specialization(guards = {"!isPSet(set)", "!isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
+        public Object clear(VirtualFrame frame, Object set,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, set), set);
+        }
+
+        protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet);
+        }
+    }
+
+    ///////////// unicode /////////////
+
+    @Builtin(name = "PyUnicode_FromObject", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeFromObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public String fromObject(String s) {
+            return s;
+        }
+
+        @Specialization(guards = "isPStringType(s, getClassNode)")
+        public PString fromObject(PString s,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+            return s;
+        }
+
+        @Specialization(guards = {"!isPStringType(obj, getClassNode)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object fromObject(VirtualFrame frame, Object obj,
+                        @Cached StrNode strNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return strNode.executeWith(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object fromObject(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.CANT_CONVERT_TO_STR_IMPLICITLY, obj);
+        }
+
+        protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+
+        protected boolean isPStringType(Object obj, GetClassNode getClassNode) {
+            return getClassNode.execute(obj) == PythonBuiltinClassType.PString;
+        }
+    }
+
+    @Builtin(name = "PyUnicode_GetLength", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeGetLengthNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public int fromObject(String s) {
+            return s.length();
+        }
+
+        @Specialization(guards = {"!isJavaString(obj)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getLength(VirtualFrame frame, Object obj,
+                        @Cached com.oracle.graal.python.builtins.objects.str.StringBuiltins.LenNode lenNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return lenNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isJavaString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object getLength(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        }
+
+        protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Concat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeConcatNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = {"isString(left) || isStringSubtype(frame, left, getClassNode, isSubtypeNode)", "isString(right) || isStringSubtype(frame, right, getClassNode, isSubtypeNode)"})
+        public Object concat(VirtualFrame frame, Object left, Object right,
+                        @Cached StringBuiltins.AddNode addNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return addNode.execute(frame, left, right);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isString(left)", "!isStringSubtype(frame, left, getClassNode, isSubtypeNode)"})
+        public Object leftNotString(VirtualFrame frame, Object left, @SuppressWarnings("unused") Object right,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, left);
+        }
+
+        @Specialization(guards = {"!isString(right)", "!isStringSubtype(frame, right, getClassNode, isSubtypeNode)"})
+        public Object rightNotString(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, right);
+        }
+
+        protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_FromEncodedObject", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeFromEncodedObjectNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        public Object fromBytes(VirtualFrame frame, PBytesLike obj, String encoding, String errors,
+                        @Cached DecodeNode decodeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return decode(frame, obj, encoding, errors, decodeNode, transformExceptionToNativeNode, getNativeNullNode);
+        }
+
+        @Specialization(guards = {"!isBytes(obj)", "!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object fromEncoded(VirtualFrame frame, Object obj, String encoding, String errors,
+                        @Cached DecodeNode decodeNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return decode(frame, obj, encoding, errors, decodeNode, transformExceptionToNativeNode, getNativeNullNode);
+        }
+
+        private static Object decode(VirtualFrame frame, Object obj, String encoding, String errors, DecodeNode decodeNode, TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        GetNativeNullNode getNativeNullNode) {
+            try {
+                return decodeNode.execute(frame, obj, encoding, errors);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "isString(obj) || isStringSubtype(frame, obj, getClassNode, isSubtypeNode)")
+        public Object concat(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") String encoding, @SuppressWarnings("unused") String errors,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.DECODING_STR_NOT_SUPPORTED);
+        }
+
+        protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_InternInPlace", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeInternInPlaceNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = {"!isJavaString(obj)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object intern(VirtualFrame frame, Object obj,
+                        @Cached InternNode internNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return internNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isJavaString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object intern(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            assert false;
+            return PNone.NONE;
+        }
+
+        protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Format", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeFormatNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"isString(format) || isStringSubtype(frame, format, getClassNode, isSubtypeNode)"})
+        public Object find(VirtualFrame frame, Object format, Object args,
+                        @Cached ModNode modNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return modNode.execute(frame, format, args);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isJavaString(format)", "isStringSubtype(frame, format, getClassNode, isSubtypeNode)"})
+        public Object find(VirtualFrame frame, Object format, @SuppressWarnings("unused") Object args,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, format);
+        }
+
+        protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_FindChar", minNumOfPositionalArgs = 5)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeFindCharNode extends PythonBuiltinNode {
+        @Specialization(guards = {"isString(string) || isStringSubtype(frame, string, getClassNode, isSubtypeNode)", "direction > 0"})
+        public Object find(VirtualFrame frame, Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
+                        @Cached ChrNode chrNode,
+                        @Cached FindNode findNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return findNode.execute(frame, string, chrNode.execute(frame, c), start, end);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"isString(string) || isStringSubtype(frame, string, getClassNode, isSubtypeNode)", "direction <= 0"})
+        public Object find(VirtualFrame frame, Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
+                        @Cached ChrNode chrNode,
+                        @Cached RFindNode rFindNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return rFindNode.execute(frame, string, chrNode.execute(frame, c), start, end);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"!isJavaString(string)", "isStringSubtype(frame, string, getClassNode, isSubtypeNode)"})
+        public Object find(VirtualFrame frame, Object string, @SuppressWarnings("unused") Object c, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
+                        @SuppressWarnings("unused") Object direction,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, string);
+        }
+
+        protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Substring", minNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeSubstringNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = {"isString(s) || isStringSubtype(frame, s, getClassNode, isSubtypeNode)"})
+        public Object find(VirtualFrame frame, Object s, long start, long end,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached CallNode callNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object getItemCallable = lookupAttrNode.execute(frame, s, __GETITEM__);
+                return callNode.execute(getItemCallable, sliceNode.execute(frame, start, end, PNone.NONE));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isJavaString(s)", "isStringSubtype(frame, s, getClassNode, isSubtypeNode)"})
+        public Object find(VirtualFrame frame, Object s, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, s);
+        }
+
+        protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Join", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeJoinNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"isString(separator) || isStringSubtype(frame, separator, getClassNode, isSubtypeNode)"})
+        public Object find(VirtualFrame frame, Object separator, Object seq,
+                        @Cached StringBuiltins.JoinNode joinNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return joinNode.execute(frame, separator, seq);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isJavaString(separator)", "isStringSubtype(frame, separator, getClassNode, isSubtypeNode)"})
+        public Object find(VirtualFrame frame, Object separator, @SuppressWarnings("unused") Object seq,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, separator);
+        }
+
+        protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Compare", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeCompareNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = {"isAnyString(frame, left, getClassNode, isSubtypeNode)", "isAnyString(frame, right, getClassNode, isSubtypeNode)"})
+        public Object compare(VirtualFrame frame, Object left, Object right,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached EqNode eqNode,
+                        @Cached LtNode ltNode,
+                        @Cached ConditionProfile eqProfile) {
+            if (eqProfile.profile((boolean) eqNode.execute(frame, left, right))) {
+                return 0;
+            } else {
+                return (boolean) ltNode.execute(frame, left, right) ? -1 : 1;
+            }
+        }
+
+        @Specialization(guards = {"!isAnyString(frame, left, getClassNode, isSubtypeNode) || !isAnyString(frame, right, getClassNode, isSubtypeNode)"})
+        public Object compare(VirtualFrame frame, Object left, Object right,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.CANT_COMPARE, left, right);
+        }
+
+        protected boolean isAnyString(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return PGuards.isString(obj) || isStringSubtype(frame, obj, getClassNode, isSubtypeNode);
+        }
+
+        private static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Tailmatch", minNumOfPositionalArgs = 5)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeTailmatchNode extends PythonBuiltinNode {
+        @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction > 0"})
+        public int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached CallNode callNode,
+                        @Cached EndsWithNode endsWith,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object getItemCallable = lookupAttrNode.execute(frame, string, __GETITEM__);
+                Object slice = callNode.execute(getItemCallable, sliceNode.execute(frame, start, end, PNone.NONE));
+                return (boolean) endsWith.execute(frame, slice, substring, start, end) ? 1 : 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
+        public int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached CallNode callNode,
+                        @Cached StartsWithNode endsWith,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object getItemCallable = lookupAttrNode.execute(frame, string, __GETITEM__);
+                Object slice = callNode.execute(getItemCallable, sliceNode.execute(frame, start, end, PNone.NONE));
+                return (boolean) endsWith.execute(frame, slice, substring, start, end) ? 1 : 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isAnyString(frame, string, getClassNode, isSubtypeNode) || !isAnyString(frame, substring, getClassNode, isSubtypeNode)"})
+        public Object find(VirtualFrame frame, Object string, Object substring, Object start, Object end, Object direction,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, string);
+        }
+
+        protected boolean isAnyString(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return PGuards.isString(obj) || isStringSubtype(frame, obj, getClassNode, isSubtypeNode);
+        }
+
+        private static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_AsEncodedString", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeAsEncodedStringNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "isString(obj) || isStringSubtype(frame, obj, getClassNode, isSubtypeNode)")
+        public Object encode(VirtualFrame frame, Object obj, String encoding, String errors,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached EncodeNode encodeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return encodeNode.execute(frame, obj, encoding, errors);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object encode(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") String encoding, @SuppressWarnings("unused") String errors,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        }
+
+        protected static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Replace", minNumOfPositionalArgs = 4)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeReplaceNode extends PythonQuaternaryBuiltinNode {
+        @Specialization(guards = {"isString(s)", "isString(substr)", "isString(replstr)"})
+        public Object replace(VirtualFrame frame, Object s, Object substr, Object replstr, long count,
+                        @Cached ReplaceNode replaceNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return replaceNode.execute(frame, s, substr, replstr, count);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isString(s)", "!isString(substr)", "!isString(replstr)",
+                        "isStringSubtype(frame, s, getClassNode, isSubtypeNode)",
+                        "isStringSubtype(frame, substr, getClassNode, isSubtypeNode)",
+                        "isStringSubtype(frame, replstr, getClassNode, isSubtypeNode)"})
+        public Object replace(VirtualFrame frame, Object s, Object substr, Object replstr, long count,
+                        @Cached ReplaceNode replaceNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return replace(frame, s, substr, replstr, count, replaceNode, transformExceptionToNativeNode, getNativeNullNode);
+        }
+
+        @Specialization(guards = {"!isString(s)", "!isString(substr)", "!isString(replstr)",
+                        "!isStringSubtype(frame, s, getClassNode, isSubtypeNode)",
+                        "!isStringSubtype(frame, substr, getClassNode, isSubtypeNode)",
+                        "!isStringSubtype(frame, replstr, getClassNode, isSubtypeNode)"})
+        public Object replace(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") String s, @SuppressWarnings("unused") String substr,
+                        @SuppressWarnings("unused") String replstr, @SuppressWarnings("unused") long count,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return getNativeNullNode.execute();
+        }
+
+        protected static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
+    @Builtin(name = "PyUnicode_AsUnicodeEscapeString", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory
+    public abstract static class PyUnicodeAsUnicodeEscapeStringNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "isString(s)")
+        public Object escape(VirtualFrame frame, Object s,
+                        @Cached CodecsEncodeNode encodeNode,
+                        @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return getItemNode.execute(frame, encodeNode.execute(frame, s, "unicode_escape", PNone.NO_VALUE), 0);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isString(s)", "isStringSubtype(frame, s, getClassNode, isSubtypeNode)"})
+        public Object escape(VirtualFrame frame, Object s,
+                        @Cached CodecsEncodeNode encodeNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return escape(frame, s, encodeNode, getItemNode, transformExceptionToNativeNode, getNativeNullNode);
+        }
+
+        @Specialization(guards = {"!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object escape(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        }
+
+        protected static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
         }
     }
 

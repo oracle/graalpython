@@ -95,6 +95,10 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.EndsWithNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.EqNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.LtNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StartsWithNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
@@ -421,6 +425,10 @@ public final class StringBuiltins extends PythonBuiltins {
         boolean operator(String self, String other) {
             return self.equals(other);
         }
+
+        public static EqNode create() {
+            return EqNodeFactory.create();
+        }
     }
 
     @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
@@ -438,6 +446,10 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         boolean operator(String self, String other) {
             return StringUtils.compareToUnicodeAware(self, other) < 0;
+        }
+
+        public static LtNode create() {
+            return LtNodeFactory.create();
         }
     }
 
@@ -801,6 +813,11 @@ public final class StringBuiltins extends PythonBuiltins {
         protected String getErrorMessage() {
             return INVALID_ELEMENT_TYPE;
         }
+
+        public static StartsWithNode create() {
+            return StartsWithNodeFactory.create();
+        }
+
     }
 
     // str.endswith(suffix[, start[, end]])
@@ -826,6 +843,10 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         protected String getErrorMessage() {
             return INVALID_ELEMENT_TYPE;
+        }
+
+        public static EndsWithNode create() {
+            return EndsWithNodeFactory.create();
         }
     }
 
@@ -1565,7 +1586,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.replace
     @Builtin(name = "replace", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    public abstract static class ReplaceNode extends PythonBuiltinNode {
+    public abstract static class ReplaceNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary

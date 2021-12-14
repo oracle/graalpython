@@ -174,7 +174,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
     public static final String CANT_CONCAT_P_TO_S = "can't concat %p to %s";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
-    public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
+    public static final String CANT_CONVERT_TO_STR_IMPLICITLY = "Can't convert '%p' object to str implicitly";
     public static final String CANT_COMPARE = "Can't compare %p and %p";
     public static final String CANT_DELETE = "can't delete '%s'";
     public static final String CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE = "can't delete numeric/char attribute";
@@ -504,8 +504,11 @@ public abstract class ErrorMessages {
     public static final String OBJ_DOES_NOT_SUPPORT_INDEXING = "'%p' object does not support indexing";
     public static final String OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%s' object does not support item assignment";
     public static final String P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%p' object does not support item assignment";
+    public static final String OBJ_CANT_BE_REPEATED = "'%p' object can't be repeated";
+    public static final String OBJ_CANT_BE_CONCATENATED = "'%p' object can't be concatenated";
     public static final String OBJ_DOESNT_SUPPORT_DELETION = "'%p' object doesn't support item deletion";
     public static final String OBJ_HAS_NO_LEN = "object of type '%p' has no len()";
+    public static final String OBJ_IS_UNSLICEABLE = "'%p' object is unsliceable";
     public static final String OBJ_ISNT_CALLABLE = "'%p' object is not callable";
     public static final String OBJ_ISNT_ITERATOR = "'%p' object is not an iterator";
     public static final String OBJ_ISNT_MAPPING = "'%p' object is not a mapping";

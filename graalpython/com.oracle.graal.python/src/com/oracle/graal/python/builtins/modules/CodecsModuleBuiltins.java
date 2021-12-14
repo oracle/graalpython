@@ -537,7 +537,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_EXPLICITELY, str);
+            throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_IMPLICITLY, str);
         }
     }
 
@@ -1335,7 +1335,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "unicode_escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors"})
     @GenerateNodeFactory
-    abstract static class UnicodeEscapeEncodeNode extends PythonBinaryBuiltinNode {
+    public abstract static class UnicodeEscapeEncodeNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
