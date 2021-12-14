@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
-import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
@@ -96,11 +95,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AbsNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.DivModNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TupleNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ChrNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
@@ -110,6 +104,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.InternNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins.PYTHON_CEXT_COMPLEX;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins.PYTHON_CEXT_FLOAT;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextNumberBuiltins.PYTHON_CEXT_NUMBER;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -431,6 +426,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         addModuleDict(cext, PYTHON_CEXT_FLOAT, core);
         addModuleDict(cext, PYTHON_CEXT_LONG, core);
         addModuleDict(cext, PYTHON_CEXT_LIST, core);
+        addModuleDict(cext, PYTHON_CEXT_NUMBER, core);
         addModuleDict(cext, PYTHON_CEXT_SET, core);
     }
 
@@ -780,181 +776,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         public Object values(Object obj) {
             // pass
             return PNone.NONE;
-        }
-    }
-
-    ///////////// number /////////////
-
-    @Builtin(name = "PyNumber_Check", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
-    abstract static class PyNumberCheckNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object check(VirtualFrame frame, Object obj,
-                        @Cached com.oracle.graal.python.lib.PyNumberCheckNode checkNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return checkNode.execute(frame, obj);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
-    @Builtin(name = "PyNumber_Index", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyNumberIndexNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object index(VirtualFrame frame, Object obj,
-                        @Cached com.oracle.graal.python.lib.PyNumberIndexNode indexNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return indexNode.execute(frame, obj);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
-    @Builtin(name = "PyNumber_Long", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyNumberLongNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        int nlong(int i) {
-            return i;
-        }
-
-        @Specialization
-        long nlong(long i) {
-            return i;
-        }
-
-        @Fallback
-        Object nlong(VirtualFrame frame, Object obj,
-                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return intNode.executeWith(frame, obj, PNone.NO_VALUE);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
-    @Builtin(name = "PyNumber_Absolute", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyNumberAbsoluteNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object abs(VirtualFrame frame, Object obj,
-                        @Cached AbsNode absNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return absNode.execute(frame, obj);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
-    @Builtin(name = "PyNumber_Divmod", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyNumberDivmodeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object div(VirtualFrame frame, Object a, Object b,
-                        @Cached DivModNode divNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return divNode.execute(frame, a, b);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
-    @Builtin(name = "PyNumber_ToBase", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyNumberToBaseNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "base == 2")
-        Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
-                        @Cached com.oracle.graal.python.lib.PyNumberIndexNode indexNode,
-                        @Cached BinNode binNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                Object i = indexNode.execute(frame, n);
-                return binNode.execute(frame, i);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @Specialization(guards = "base == 8")
-        Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
-                        @Cached OctNode octNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return octNode.execute(frame, n);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @Specialization(guards = "base == 10")
-        Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
-                        @Cached com.oracle.graal.python.lib.PyNumberIndexNode indexNode,
-                        @Cached StrNode strNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                Object i = indexNode.execute(frame, n);
-                if (i instanceof Boolean) {
-                    i = ((boolean) i) ? 1 : 0;
-                }
-                return strNode.executeWith(frame, i);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @Specialization(guards = "base == 16")
-        Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Cached HexNode hexNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                Object i = indexNode.execute(frame, n);
-                return hexNode.execute(frame, i);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @Specialization(guards = "!checkBase(base)")
-        Object toBase(VirtualFrame frame, @SuppressWarnings("unused") Object n, @SuppressWarnings("unused") int base,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BASE_MUST_BE);
-        }
-
-        protected boolean checkBase(int base) {
-            return base == 2 || base == 8 || base == 10 || base == 16;
         }
     }
 
