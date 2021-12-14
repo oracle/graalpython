@@ -46,13 +46,11 @@ import java.util.concurrent.ExecutorService;
 
 import org.graalvm.polyglot.Engine;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingImportsTest extends SharedEngineMultithreadingTestBase {
     private static final int RUNS_COUNT = RUNS_COUNT_FACTOR;
 
-    @Ignore
     @Test
     public void testImportsInParallel() throws InterruptedException, ExecutionException {
         ExecutorService executorService = createExecutorService();
