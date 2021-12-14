@@ -80,7 +80,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @GenerateNodeFactory
 public class PythonCextBytesBuiltins extends PythonBuiltins {
 
-    public static final String PYTHON_CEXT_BYTES = "python_cext_BYTES";
+    public static final String PYTHON_CEXT_BYTES = "python_cext_bytes";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

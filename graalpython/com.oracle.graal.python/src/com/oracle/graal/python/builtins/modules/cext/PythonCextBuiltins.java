@@ -40,7 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins.PYTHON_CEXT_BYTES;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PYTHON_CEXT_DICT;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins.PYTHON_CEXT_LIST;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PYTHON_CEXT_LONG;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins.PYTHON_CEXT_SET;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
@@ -108,8 +111,6 @@ import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncod
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.InternNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins.PYTHON_CEXT_BYTES;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins.PYTHON_CEXT_LIST;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -225,7 +226,6 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins.IntNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -234,7 +234,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.NegNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -246,6 +245,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -429,19 +429,23 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PythonModule cext = core.lookupBuiltinModule(PYTHON_CEXT);
         addModuleDict(cext, PYTHON_CEXT_BYTES, core);
         addModuleDict(cext, PYTHON_CEXT_DICT, core);
+        addModuleDict(cext, PYTHON_CEXT_LONG, core);
         addModuleDict(cext, PYTHON_CEXT_LIST, core);
         addModuleDict(cext, PYTHON_CEXT_SET, core);
     }
 
     private void addModuleDict(PythonModule cext, String module, Python3Core core) {
-        PythonModule cext_dict = core.lookupBuiltinModule(module);
-        PDict dict = GetDictIfExistsNodeGen.getUncached().execute(cext_dict);
+        PythonModule cext_module = core.lookupBuiltinModule(module);
+        PDict dict = GetDictIfExistsNodeGen.getUncached().execute(cext_module);
         HashingStorageIterable<Object> keys = dict.keys();
         HashingStorageIterator<Object> it = keys.iterator();
         while (it.hasNext()) {
             Object key = it.next();
             Object value = dict.getItem(key);
-            cext.setAttribute(key, value);
+            if(value instanceof PythonBuiltinObject) {
+                assert cext.getAttribute(key) == PNone.NO_VALUE || cext.getAttribute(key) == null : "python_cext dict already contains value " + cext.getAttribute(key) + " for key " + key;
+                cext.setAttribute(key, value);
+            }
         }
     }
 
@@ -507,6 +511,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyErrorHandlerNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(PythonModule cextPython) {
+            System.err.println("+++ Py_ErrorHandler " + cextPython);
             return ((PythonCextBuiltins) cextPython.getBuiltins()).errorHandler;
         }
     }
@@ -777,149 +782,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
-
-    ///////////// long /////////////
-
-    @Builtin(name = "_PyLong_Sign", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyLongSignNode extends PythonUnaryBuiltinNode {
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n == 0")
-        int sign(int n) {
-            return 0;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n < 0")
-        int signNeg(int n) {
-            return -1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n > 0")
-        int signPos(int n) {
-            return 1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n == 0")
-        int sign(long n) {
-            return 0;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n < 0")
-        int signNeg(long n) {
-            return -1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n > 0")
-        int signPos(long n) {
-            return 1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "b")
-        int signTrue(boolean b) {
-            return 1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!b")
-        int signFalse(boolean b) {
-            return 0;
-        }
-
-        @Specialization
-        int sign(PInt n,
-                        @Cached BranchProfile zeroProfile,
-                        @Cached BranchProfile negProfile) {
-            if (n.isNegative()) {
-                negProfile.enter();
-                return -1;
-            } else if (n.isZero()) {
-                zeroProfile.enter();
-                return 0;
-            } else {
-                return 1;
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object signNative(VirtualFrame frame, Object obj,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            // function returns int, but -1 is expected result for 'n < 0'
-            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
-        }
-
-        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(frame, obj,getClassNode,isSubtypeNode)"})
-        public Object sign(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            // assert(PyLong_Check(v));
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        protected boolean isPIntSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PInt);
-        }
-    }
-
-    @Builtin(name = "PyLong_FromDouble", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyLongFromDoubleNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        Object fromDouble(VirtualFrame frame, double d,
-                        @Cached IntNode intNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return intNode.execute(frame, d);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
-    @Builtin(name = "PyLong_FromString", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
-    abstract static class PyLongFromStringNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(guards = "negative == 0")
-        Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
-                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
-                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return intNode.executeWith(frame, s, base);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @Specialization(guards = "negative != 0")
-        Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
-                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
-                        @Cached NegNode negNode,
-                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return negNode.execute(frame, intNode.executeWith(frame, s, base));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
+    
     ///////////// float /////////////
 
     @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
