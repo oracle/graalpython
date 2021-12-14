@@ -401,6 +401,35 @@ class TestObject(object):
         actual_basicsize = TestCustomBasicsizeSubclass.__basicsize__
         assert expected_basicsize == actual_basicsize, "expected = %s, actual = %s" % (expected_basicsize, actual_basicsize)
 
+    def test_descrget(self):
+        TestDescrGet = CPyExtType(
+            "TestDescrGet",
+            '''
+            PyObject* testdescr_get(PyObject* self, PyObject* obj, PyObject* type) {
+                if (obj == NULL) {
+                    obj = Py_Ellipsis;
+                }
+                if (type == NULL) {
+                    type = Py_Ellipsis;
+                }
+                return Py_BuildValue("OOO", self, obj, type);
+            }
+            ''',
+            tp_descr_get="(descrgetfunc) testdescr_get",
+        )
+
+        descr = TestDescrGet()
+
+        class Test:
+            getter = descr
+
+        obj = Test()
+        # Using Ellipsis as a placeholder for C NULL
+        assert obj.getter == (descr, obj, Test)
+        assert Test.getter == (descr, ..., Test)
+        assert descr.__get__(1, int) == (descr, 1, int)
+        assert descr.__get__(1, None) == (descr, 1, ...)
+        assert descr.__get__(None, int) == (descr, ..., int)
 
     def test_descrset(self):
         TestDescrSet = CPyExtType("TestDescrSet",
