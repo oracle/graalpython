@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
@@ -111,6 +110,7 @@ import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncod
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.InternNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins.PYTHON_CEXT_FLOAT;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -429,6 +429,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PythonModule cext = core.lookupBuiltinModule(PYTHON_CEXT);
         addModuleDict(cext, PYTHON_CEXT_BYTES, core);
         addModuleDict(cext, PYTHON_CEXT_DICT, core);
+        addModuleDict(cext, PYTHON_CEXT_FLOAT, core);
         addModuleDict(cext, PYTHON_CEXT_LONG, core);
         addModuleDict(cext, PYTHON_CEXT_LIST, core);
         addModuleDict(cext, PYTHON_CEXT_SET, core);
@@ -780,26 +781,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         public Object values(Object obj) {
             // pass
             return PNone.NONE;
-        }
-    }
-    
-    ///////////// float /////////////
-
-    @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyFloatFromDoubleNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        double fromDouble(double d) {
-            return d;
-        }
-
-        @Specialization(guards = {"!isDouble(obj)"})
-        public Object fromDouble(VirtualFrame frame, Object obj,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            // cpython PyFloat_FromDouble takes only 'double'
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
         }
     }
 

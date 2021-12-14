@@ -474,6 +474,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextBuiltins(),
                         new PythonCextBytesBuiltins(),
                         new PythonCextDictBuiltins(),
+                        new PythonCextFloatBuiltins(),
                         new PythonCextListBuiltins(),
                         new PythonCextLongBuiltins(),
                         new PythonCextSetBuiltins(),
