@@ -63,7 +63,6 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.io.PrintWriter;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -75,7 +74,6 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -98,7 +96,6 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBui
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -111,7 +108,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectStealingNode;
@@ -128,7 +124,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObjectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
@@ -136,7 +131,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VoidPtrToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
@@ -144,8 +138,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Resol
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -174,11 +166,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStri
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.UnicodeFromWcharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
@@ -217,7 +207,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
@@ -243,10 +232,8 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -275,13 +262,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -299,7 +280,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -312,7 +292,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -322,7 +301,6 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
@@ -347,13 +325,10 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
@@ -412,7 +387,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         while (it.hasNext()) {
             Object key = it.next();
             Object value = dict.getItem(key);
-            if(value instanceof PythonBuiltinObject) {
+            if (value instanceof PythonBuiltinObject) {
                 assert cext.getAttribute(key) == PNone.NO_VALUE || cext.getAttribute(key) == null : "python_cext dict already contains value " + cext.getAttribute(key) + " for key " + key;
                 cext.setAttribute(key, value);
             }
@@ -481,7 +456,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyErrorHandlerNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(PythonModule cextPython) {
-            System.err.println("+++ Py_ErrorHandler " + cextPython);
             return ((PythonCextBuiltins) cextPython.getBuiltins()).errorHandler;
         }
     }
@@ -1317,160 +1291,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected static int remaining(ByteBuffer cb) {
             return cb.remaining();
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyLong_AsPrimitive", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
-    abstract static class PyLongAsPrimitive extends PythonTernaryBuiltinNode {
-        @Child private ResolveHandleNode resolveHandleNode;
-        @Child private ToJavaNode toJavaNode;
-        @CompilationFinal private ValueProfile pointerClassProfile;
-        @Child private ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode;
-        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
-        @Child private CastToNativeLongNode castToNativeLongNode;
-        @Child private GetClassNode getClassNode;
-        @Child private IsSubtypeNode isSubtypeNode;
-
-        public abstract Object executeWith(VirtualFrame frame, Object object, int mode, long targetTypeSize);
-
-        public abstract long executeLong(VirtualFrame frame, Object object, int mode, long targetTypeSize);
-
-        public abstract int executeInt(VirtualFrame frame, Object object, int mode, long targetTypeSize);
-
-        @Specialization(rewriteOn = {UnexpectedWrapperException.class, UnexpectedResultException.class})
-        long doPrimitiveNativeWrapperToLong(VirtualFrame frame, Object object, int mode, long targetTypeSize) throws UnexpectedWrapperException, UnexpectedResultException {
-            Object resolvedPointer = ensureResolveHandleNode().execute(object);
-            try {
-                if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    PrimitiveNativeWrapper wrapper = (PrimitiveNativeWrapper) resolvedPointer;
-                    if (requiredPInt(mode) && !wrapper.isSubtypeOfInt()) {
-                        throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
-                    }
-                    return ensureConvertPIntToPrimitiveNode().executeLong(wrapper, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
-                }
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw UnexpectedWrapperException.INSTANCE;
-            } catch (OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            } catch (PException e) {
-                ensureTransformExceptionToNativeNode().execute(frame, e);
-                return -1;
-            }
-        }
-
-        @Specialization(replaces = "doPrimitiveNativeWrapperToLong")
-        Object doGeneric(VirtualFrame frame, Object objectPtr, int mode, long targetTypeSize) {
-            Object resolvedPointer = ensurePointerClassProfile().profile(ensureResolveHandleNode().execute(objectPtr));
-            try {
-                if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    PrimitiveNativeWrapper wrapper = (PrimitiveNativeWrapper) resolvedPointer;
-                    if (requiredPInt(mode) && !wrapper.isSubtypeOfInt()) {
-                        throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
-                    }
-                    return ensureConvertPIntToPrimitiveNode().execute(wrapper, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
-                }
-                /*
-                 * The 'mode' parameter is usually a constant since this function is primarily used
-                 * in 'PyLong_As*' API functions that pass a fixed mode. So, there is not need to
-                 * profile the value and even if it is not constant, it is profiled implicitly.
-                 */
-                Object object = ensureToJavaNode().execute(resolvedPointer);
-                if (requiredPInt(mode) && !ensureIsSubtypeNode().execute(getPythonClass(object), PythonBuiltinClassType.PInt)) {
-                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
-                }
-                // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
-                Object coerced = ensureConvertPIntToPrimitiveNode().execute(object, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
-                return ensureCastToNativeLongNode().execute(coerced);
-            } catch (OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            } catch (PException e) {
-                ensureTransformExceptionToNativeNode().execute(frame, e);
-                return -1;
-            }
-        }
-
-        private static int signed(int mode) {
-            return mode & 0x1;
-        }
-
-        private static boolean requiredPInt(int mode) {
-            return (mode & 0x2) != 0;
-        }
-
-        private static boolean exact(int mode) {
-            return (mode & 0x4) == 0;
-        }
-
-        private ResolveHandleNode ensureResolveHandleNode() {
-            if (resolveHandleNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                resolveHandleNode = insert(ResolveHandleNodeGen.create());
-            }
-            return resolveHandleNode;
-        }
-
-        private ToJavaNode ensureToJavaNode() {
-            if (toJavaNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(ToJavaNodeGen.create());
-            }
-            return toJavaNode;
-        }
-
-        private ValueProfile ensurePointerClassProfile() {
-            if (pointerClassProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pointerClassProfile = ValueProfile.createClassProfile();
-            }
-            return pointerClassProfile;
-        }
-
-        private ConvertPIntToPrimitiveNode ensureConvertPIntToPrimitiveNode() {
-            if (convertPIntToPrimitiveNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                convertPIntToPrimitiveNode = insert(ConvertPIntToPrimitiveNodeGen.create());
-            }
-            return convertPIntToPrimitiveNode;
-        }
-
-        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
-            if (transformExceptionToNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
-            }
-            return transformExceptionToNativeNode;
-        }
-
-        private CastToNativeLongNode ensureCastToNativeLongNode() {
-            if (castToNativeLongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToNativeLongNode = insert(CastToNativeLongNodeGen.create());
-            }
-            return castToNativeLongNode;
-        }
-
-        private Object getPythonClass(Object object) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(object);
-        }
-
-        private IsSubtypeNode ensureIsSubtypeNode() {
-            if (isSubtypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSubtypeNode = insert(IsSubtypeNode.create());
-            }
-            return isSubtypeNode;
-        }
-
-        static final class UnexpectedWrapperException extends ControlFlowException {
-            private static final long serialVersionUID = 1L;
-            static final UnexpectedWrapperException INSTANCE = new UnexpectedWrapperException();
         }
     }
 
@@ -2313,134 +2133,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyLong_FromLongLong", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyLongFromLongLong extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "signed != 0")
-        static Object doSignedInt(int n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.executeInt(n);
-        }
-
-        @Specialization(guards = "signed == 0")
-        static Object doUnsignedInt(int n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            if (n < 0) {
-                return toNewRefNode.executeLong(n & 0xFFFFFFFFL);
-            }
-            return toNewRefNode.executeInt(n);
-        }
-
-        @Specialization(guards = "signed != 0")
-        static Object doSignedLong(long n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.executeLong(n);
-        }
-
-        @Specialization(guards = {"signed == 0", "n >= 0"})
-        static Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.executeLong(n);
-        }
-
-        @Specialization(guards = {"signed == 0", "n < 0"})
-        Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.execute(factory().createInt(convertToBigInteger(n)));
-        }
-
-        @TruffleBoundary
-        private static BigInteger convertToBigInteger(long n) {
-            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
-        }
-    }
-
-    @Builtin(name = "PyLong_FromVoidPtr", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyLongFromVoidPtr extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "2")
-        Object doPointer(Object pointer,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            // We capture the native pointer at the time when we create the wrapper if it exists.
-            if (lib.isPointer(pointer)) {
-                try {
-                    return toSulongNode.execute(factory().createNativeVoidPtr(pointer, lib.asPointer(pointer)));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            return toSulongNode.execute(factory().createNativeVoidPtr(pointer));
-        }
-    }
-
-    @Builtin(name = "PyLong_AsVoidPtr", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyLongAsVoidPtr extends PythonUnaryBuiltinNode {
-        @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
-        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
-
-        public abstract Object execute(Object o);
-
-        @Specialization
-        static long doPointer(int n) {
-            return n;
-        }
-
-        @Specialization
-        static long doPointer(long n) {
-            return n;
-        }
-
-        @Specialization
-        long doPointer(PInt n,
-                        @Cached BranchProfile overflowProfile) {
-            try {
-                return n.longValueExact();
-            } catch (OverflowException e) {
-                overflowProfile.enter();
-                try {
-                    throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
-                } catch (PException pe) {
-                    ensureTransformExcNode().execute(pe);
-                    return 0;
-                }
-            }
-        }
-
-        @Specialization
-        static Object doPointer(PythonNativeVoidPtr n) {
-            return n.getPointerObject();
-        }
-
-        @Fallback
-        long doGeneric(Object n) {
-            if (asPrimitiveNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPrimitiveNode = insert(ConvertPIntToPrimitiveNodeGen.create());
-            }
-            try {
-                try {
-                    return asPrimitiveNode.executeLong(n, 0, Long.BYTES);
-                } catch (UnexpectedResultException e) {
-                    throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
-                }
-            } catch (PException e) {
-                ensureTransformExcNode().execute(e);
-                return 0;
-            }
-        }
-
-        private TransformExceptionToNativeNode ensureTransformExcNode() {
-            if (transformExceptionToNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
-            }
-            return transformExceptionToNativeNode;
-        }
-    }
-
     @Builtin(name = "PyType_IsSubtype", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PythonOptions.class)
@@ -2506,137 +2198,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // TODO(fa) To be absolutely correct, we need to do a 'isinstance' check on the object.
             throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, tuple, tuple);
         }
-    }
-
-    @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    @ImportStatic(CApiGuards.class)
-    abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
-        // n.b.: the specializations for PIBytesLike are quite common on
-        // managed, when the PySequenceArrayWrapper that we used never went
-        // native, and during the upcall to here it was simply unwrapped again
-        // with the ToJava (rather than mapped from a native pointer back into a
-        // PythonNativeObject)
-
-        @Specialization
-        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, PythonNativeWrapper object, long size,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            byte[] ary = getByteArrayNode.execute(frame, asPythonObjectNode.execute(object));
-            PBytes result;
-            if (size >= 0 && size < ary.length) {
-                // cast to int is guaranteed because of 'size < ary.length'
-                result = factory().createBytes(Arrays.copyOf(ary, (int) size));
-            } else {
-                result = factory().createBytes(ary);
-            }
-            return toSulongNode.execute(result);
-        }
-
-        @Specialization(guards = "!isNativeWrapper(nativePointer)")
-        Object doNativePointer(VirtualFrame frame, Object module, Object nativePointer, long size,
-                        @Exclusive @Cached GetNativeNullNode getNativeNullNode,
-                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            try {
-                return toSulongNode.execute(factory().createBytes(getByteArrayNode.execute(nativePointer, size)));
-            } catch (InteropException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
-            } catch (OverflowException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.SystemError, "negative size passed");
-            }
-        }
-    }
-
-    @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyFloatAsDouble extends PythonUnaryBuiltinNode {
-
-        @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getLong();
-        }
-
-        @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getDouble();
-        }
-
-        @Specialization
-        static double doGenericErr(VirtualFrame frame, Object object,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1.0;
-            }
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyNumber_Float", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    abstract static class PyNumberFloat extends NativeBuiltin {
-
-        @Specialization(guards = "object.isDouble()")
-        static Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object,
-                        @Cached AddRefCntNode refCntNode) {
-            return refCntNode.inc(object);
-        }
-
-        @Specialization(guards = "!object.isDouble()")
-        static Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object,
-                        @Cached ToNewRefNode primitiveToSulongNode) {
-            return primitiveToSulongNode.execute((double) object.getLong());
-        }
-
-        @Specialization
-        Object doGeneric(VirtualFrame frame, Object module, Object object,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached ToNewRefNode toNewRefNode,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached PyNumberFloatNode pyNumberFloat) {
-            try {
-                return toNewRefNode.execute(pyNumberFloat.execute(frame, asPythonObjectNode.execute(object)));
-            } catch (PException e) {
-                transformToNative(frame, e);
-                return toNewRefNode.execute(getNativeNullNode.execute(module));
-            }
-        }
-    }
-
-    @Builtin(name = "_PyBytes_Resize", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        int resize(VirtualFrame frame, PBytes self, long newSizeL,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached CastToByteNode castToByteNode) {
-
-            SequenceStorage storage = self.getSequenceStorage();
-            int newSize = asSizeNode.executeExact(frame, newSizeL);
-            int len = lenNode.execute(storage);
-            byte[] smaller = new byte[newSize];
-            for (int i = 0; i < newSize && i < len; i++) {
-                smaller[i] = castToByteNode.execute(frame, getItemNode.execute(frame, storage, i));
-            }
-            self.setSequenceStorage(new ByteSequenceStorage(smaller));
-            return 0;
-        }
-
-        @Specialization(guards = "!isBytes(self)")
-        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a set object", self);
-        }
-
     }
 
     @Builtin(name = "PyTruffle_Compute_Mro", minNumOfPositionalArgs = 2)
@@ -3490,53 +3051,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyList_SetItem", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    @ImportStatic(CApiGuards.class)
-    abstract static class PyListSetItem extends PythonTernaryBuiltinNode {
-        @Specialization
-        int doManaged(VirtualFrame frame, PythonNativeWrapper listWrapper, Object position, Object elementWrapper,
-                        @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
-                        @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
-                if (!PGuards.isList(delegate)) {
-                    throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, delegate, delegate);
-                }
-                PList list = (PList) delegate;
-                Object element = elementAsPythonObjectNode.execute(elementWrapper);
-                setItemNode.execute(frame, list.getSequenceStorage(), position, element);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
-            }
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), "invalid item for assignment");
-        }
-    }
-
-    @Builtin(name = "PyList_Reverse", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyListReverse extends PythonUnaryBuiltinNode {
-        @Specialization
-        int reverse(VirtualFrame frame, PList self,
-                        @Cached ListBuiltins.ListReverseNode reverseNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                reverseNode.execute(frame, self);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
-            }
-        }
-    }
-
     @Builtin(name = "PyObject_GetItem", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyObjectGetItem extends PythonTernaryBuiltinNode {
@@ -3841,339 +3355,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere("bytes object contains non-int value");
             }
             return 0;
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyNumber_UnaryOp", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyNumberUnaryOp extends PythonBinaryBuiltinNode {
-        static int MAX_CACHE_SIZE = UnaryArithmetic.values().length;
-
-        @Specialization(guards = {"cachedOp == op", "left.isIntLike()"}, limit = "MAX_CACHE_SIZE")
-        static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, @SuppressWarnings("unused") int op,
-                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") UnaryOpNode callNode,
-                        @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return toSulongNode.execute(callNode.execute(frame, left.getLong()));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return toSulongNode.execute(getNativeNullNode.execute());
-            }
-        }
-
-        @Specialization(guards = "cachedOp == op", limit = "MAX_CACHE_SIZE", replaces = "doIntLikePrimitiveWrapper")
-        static Object doObject(VirtualFrame frame, Object left, @SuppressWarnings("unused") int op,
-                        @Cached AsPythonObjectNode leftToJava,
-                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") UnaryOpNode callNode,
-                        @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            // still try to avoid expensive materialization of primitives
-            Object result;
-            try {
-                Object leftValue;
-                if (left instanceof PrimitiveNativeWrapper) {
-                    leftValue = PyNumberBinOp.extract((PrimitiveNativeWrapper) left);
-                } else {
-                    leftValue = leftToJava.execute(left);
-                }
-                result = callNode.execute(frame, leftValue);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                result = getNativeNullNode.execute();
-            }
-            return toSulongNode.execute(result);
-        }
-
-        /**
-         * This needs to stay in sync with {@code abstract.c: enum e_unaryop}.
-         */
-        static UnaryOpNode createCallNode(int op) {
-            UnaryArithmetic unaryArithmetic;
-            switch (op) {
-                case 0:
-                    unaryArithmetic = UnaryArithmetic.Pos;
-                    break;
-                case 1:
-                    unaryArithmetic = UnaryArithmetic.Neg;
-                    break;
-                case 2:
-                    unaryArithmetic = UnaryArithmetic.Invert;
-                    break;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere("invalid unary operator");
-            }
-            return unaryArithmetic.create();
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyNumber_BinOp", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyNumberBinOp extends PythonTernaryBuiltinNode {
-        static int MAX_CACHE_SIZE = BinaryArithmetic.values().length;
-
-        @Specialization(guards = {"cachedOp == op", "left.isIntLike()", "right.isIntLike()"}, limit = "MAX_CACHE_SIZE")
-        static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, PrimitiveNativeWrapper right, @SuppressWarnings("unused") int op,
-                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") BinaryOpNode callNode,
-                        @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return toSulongNode.execute(callNode.executeObject(frame, left.getLong(), right.getLong()));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return toSulongNode.execute(getNativeNullNode.execute());
-            }
-        }
-
-        @Specialization(guards = "cachedOp == op", limit = "MAX_CACHE_SIZE", replaces = "doIntLikePrimitiveWrapper")
-        static Object doObject(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int op,
-                        @Cached AsPythonObjectNode leftToJava,
-                        @Cached AsPythonObjectNode rightToJava,
-                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") BinaryOpNode callNode,
-                        @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            // still try to avoid expensive materialization of primitives
-            Object result;
-            try {
-                if (left instanceof PrimitiveNativeWrapper || right instanceof PrimitiveNativeWrapper) {
-                    Object leftValue;
-                    Object rightValue;
-                    if (left instanceof PrimitiveNativeWrapper) {
-                        leftValue = extract((PrimitiveNativeWrapper) left);
-                    } else {
-                        leftValue = leftToJava.execute(left);
-                    }
-                    if (right instanceof PrimitiveNativeWrapper) {
-                        rightValue = extract((PrimitiveNativeWrapper) right);
-                    } else {
-                        rightValue = rightToJava.execute(right);
-                    }
-                    result = callNode.executeObject(frame, leftValue, rightValue);
-                } else {
-                    result = callNode.executeObject(frame, leftToJava.execute(left), rightToJava.execute(right));
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                result = getNativeNullNode.execute();
-            }
-            return toSulongNode.execute(result);
-        }
-
-        static Object extract(PrimitiveNativeWrapper wrapper) {
-            if (wrapper.isIntLike()) {
-                return wrapper.getLong();
-            }
-            if (wrapper.isDouble()) {
-                return wrapper.getDouble();
-            }
-            if (wrapper.isBool()) {
-                return wrapper.getBool();
-            }
-            throw CompilerDirectives.shouldNotReachHere("unexpected wrapper state");
-        }
-
-        /**
-         * This needs to stay in sync with {@code abstract.c: enum e_binop}.
-         */
-        static BinaryOpNode createCallNode(int op) {
-            return getBinaryArithmetic(op).create();
-        }
-
-        private static BinaryArithmetic getBinaryArithmetic(int op) {
-            switch (op) {
-                case 0:
-                    return BinaryArithmetic.Add;
-                case 1:
-                    return BinaryArithmetic.Sub;
-                case 2:
-                    return BinaryArithmetic.Mul;
-                case 3:
-                    return BinaryArithmetic.TrueDiv;
-                case 4:
-                    return BinaryArithmetic.LShift;
-                case 5:
-                    return BinaryArithmetic.RShift;
-                case 6:
-                    return BinaryArithmetic.Or;
-                case 7:
-                    return BinaryArithmetic.And;
-                case 8:
-                    return BinaryArithmetic.Xor;
-                case 9:
-                    return BinaryArithmetic.FloorDiv;
-                case 10:
-                    return BinaryArithmetic.Mod;
-                case 12:
-                    return BinaryArithmetic.MatMul;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere("invalid binary operator");
-            }
-        }
-
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyNumber_InPlaceBinOp", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyNumberInPlaceBinOp extends PythonTernaryBuiltinNode {
-        static int MAX_CACHE_SIZE = InplaceArithmetic.values().length;
-
-        @Specialization(guards = {"cachedOp == op", "left.isIntLike()", "right.isIntLike()"}, limit = "MAX_CACHE_SIZE")
-        static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, PrimitiveNativeWrapper right, @SuppressWarnings("unused") int op,
-                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") LookupAndCallInplaceNode callNode,
-                        @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return toSulongNode.execute(callNode.execute(frame, left.getLong(), right.getLong()));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return toSulongNode.execute(getNativeNullNode.execute());
-            }
-        }
-
-        @Specialization(guards = "cachedOp == op", limit = "MAX_CACHE_SIZE", replaces = "doIntLikePrimitiveWrapper")
-        static Object doObject(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int op,
-                        @Cached AsPythonObjectNode leftToJava,
-                        @Cached AsPythonObjectNode rightToJava,
-                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") LookupAndCallInplaceNode callNode,
-                        @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            // still try to avoid expensive materialization of primitives
-            Object result;
-            try {
-                if (left instanceof PrimitiveNativeWrapper || right instanceof PrimitiveNativeWrapper) {
-                    Object leftValue;
-                    Object rightValue;
-                    if (left instanceof PrimitiveNativeWrapper) {
-                        leftValue = PyNumberBinOp.extract((PrimitiveNativeWrapper) left);
-                    } else {
-                        leftValue = leftToJava.execute(left);
-                    }
-                    if (right instanceof PrimitiveNativeWrapper) {
-                        rightValue = PyNumberBinOp.extract((PrimitiveNativeWrapper) right);
-                    } else {
-                        rightValue = rightToJava.execute(right);
-                    }
-                    result = callNode.execute(frame, leftValue, rightValue);
-                } else {
-                    result = callNode.execute(frame, leftToJava.execute(left), rightToJava.execute(right));
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                result = getNativeNullNode.execute();
-            }
-            return toSulongNode.execute(result);
-        }
-
-        /**
-         * This needs to stay in sync with {@code abstract.c: enum e_binop}.
-         */
-        static LookupAndCallInplaceNode createCallNode(int op) {
-            return getInplaceArithmetic(op).create();
-        }
-
-        private static InplaceArithmetic getInplaceArithmetic(int op) {
-            switch (op) {
-                case 0:
-                    return InplaceArithmetic.IAdd;
-                case 1:
-                    return InplaceArithmetic.ISub;
-                case 2:
-                    return InplaceArithmetic.IMul;
-                case 3:
-                    return InplaceArithmetic.ITrueDiv;
-                case 4:
-                    return InplaceArithmetic.ILShift;
-                case 5:
-                    return InplaceArithmetic.IRShift;
-                case 6:
-                    return InplaceArithmetic.IOr;
-                case 7:
-                    return InplaceArithmetic.IAnd;
-                case 8:
-                    return InplaceArithmetic.IXor;
-                case 9:
-                    return InplaceArithmetic.IFloorDiv;
-                case 10:
-                    return InplaceArithmetic.IMod;
-                case 12:
-                    return InplaceArithmetic.IMatMul;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere("invalid binary operator");
-            }
-        }
-
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyNumber_InPlacePower", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyNumberInPlacePower extends PythonTernaryBuiltinNode {
-        @Child private LookupAndCallInplaceNode callNode;
-
-        @Specialization(guards = {"o1.isIntLike()", "o2.isIntLike()", "o3.isIntLike()"})
-        Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper o1, PrimitiveNativeWrapper o2, PrimitiveNativeWrapper o3,
-                        @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return toSulongNode.execute(ensureCallNode().executeTernary(frame, o1.getLong(), o2.getLong(), o3.getLong()));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return toSulongNode.execute(getNativeNullNode.execute());
-            }
-        }
-
-        @Specialization(replaces = "doIntLikePrimitiveWrapper")
-        Object doGeneric(VirtualFrame frame, Object o1, Object o2, Object o3,
-                        @Cached AsPythonObjectNode o1ToJava,
-                        @Cached AsPythonObjectNode o2ToJava,
-                        @Cached AsPythonObjectNode o3ToJava,
-                        @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            // still try to avoid expensive materialization of primitives
-            Object result;
-            try {
-                Object o1Value = unwrap(o1, o1ToJava);
-                Object o2Value = unwrap(o2, o2ToJava);
-                Object o3Value = unwrap(o3, o3ToJava);
-                result = ensureCallNode().executeTernary(frame, o1Value, o2Value, o3Value);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                result = getNativeNullNode.execute();
-            }
-            return toSulongNode.execute(result);
-        }
-
-        private static Object unwrap(Object left, AsPythonObjectNode toJavaNode) {
-            if (left instanceof PrimitiveNativeWrapper) {
-                return PyNumberBinOp.extract((PrimitiveNativeWrapper) left);
-            } else {
-                return toJavaNode.execute(left);
-            }
-        }
-
-        private LookupAndCallInplaceNode ensureCallNode() {
-            if (callNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(InplaceArithmetic.IPow.create());
-            }
-            return callNode;
         }
     }
 

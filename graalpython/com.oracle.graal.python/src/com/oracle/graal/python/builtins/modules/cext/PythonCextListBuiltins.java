@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,15 +54,23 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListExtendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListInsertNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -78,6 +86,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -97,7 +106,7 @@ public class PythonCextListBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        super.initialize(core);        
+        super.initialize(core);
     }
 
     ///////////// list /////////////
@@ -538,6 +547,53 @@ public class PythonCextListBuiltins extends PythonBuiltins {
 
         protected boolean isListSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
+        }
+    }
+
+    @Builtin(name = "PyList_SetItem", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @ImportStatic(CApiGuards.class)
+    abstract static class PyListSetItem extends PythonTernaryBuiltinNode {
+        @Specialization
+        int doManaged(VirtualFrame frame, PythonNativeWrapper listWrapper, Object position, Object elementWrapper,
+                        @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
+                        @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
+                if (!PGuards.isList(delegate)) {
+                    throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, delegate, delegate);
+                }
+                PList list = (PList) delegate;
+                Object element = elementAsPythonObjectNode.execute(elementWrapper);
+                setItemNode.execute(frame, list.getSequenceStorage(), position, element);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        protected static SequenceStorageNodes.SetItemNode createSetItem() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), "invalid item for assignment");
+        }
+    }
+
+    @Builtin(name = "PyList_Reverse", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyListReverse extends PythonUnaryBuiltinNode {
+        @Specialization
+        int reverse(VirtualFrame frame, PList self,
+                        @Cached ListBuiltins.ListReverseNode reverseNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                reverseNode.execute(frame, self);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,27 +54,47 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropException;
+import java.util.Arrays;
 
 @CoreFunctions(defineModule = PythonCextBytesBuiltins.PYTHON_CEXT_BYTES)
 @GenerateNodeFactory
@@ -91,7 +111,7 @@ public class PythonCextBytesBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
     }
-    
+
     @Builtin(name = "PyBytes_Size", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PyBytesSizeNode extends PythonUnaryBuiltinNode {
@@ -286,5 +306,76 @@ public class PythonCextBytesBuiltins extends PythonBuiltins {
                             isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PMemoryView) ||
                             (!isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PString) && lookupAttrNode.execute(frame, obj, __ITER__) != PNone.NO_VALUE);
         }
+    }
+
+    @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    @ImportStatic(CApiGuards.class)
+    abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
+        // n.b.: the specializations for PIBytesLike are quite common on
+        // managed, when the PySequenceArrayWrapper that we used never went
+        // native, and during the upcall to here it was simply unwrapped again
+        // with the ToJava (rather than mapped from a native pointer back into a
+        // PythonNativeObject)
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, PythonNativeWrapper object, long size,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            byte[] ary = getByteArrayNode.execute(frame, asPythonObjectNode.execute(object));
+            PBytes result;
+            if (size >= 0 && size < ary.length) {
+                // cast to int is guaranteed because of 'size < ary.length'
+                result = factory().createBytes(Arrays.copyOf(ary, (int) size));
+            } else {
+                result = factory().createBytes(ary);
+            }
+            return toSulongNode.execute(result);
+        }
+
+        @Specialization(guards = "!isNativeWrapper(nativePointer)")
+        Object doNativePointer(VirtualFrame frame, Object module, Object nativePointer, long size,
+                        @Exclusive @Cached GetNativeNullNode getNativeNullNode,
+                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            try {
+                return toSulongNode.execute(factory().createBytes(getByteArrayNode.execute(nativePointer, size)));
+            } catch (InteropException e) {
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
+            } catch (OverflowException e) {
+                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.SystemError, "negative size passed");
+            }
+        }
+    }
+
+    @Builtin(name = "_PyBytes_Resize", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        int resize(VirtualFrame frame, PBytes self, long newSizeL,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached CastToByteNode castToByteNode) {
+
+            SequenceStorage storage = self.getSequenceStorage();
+            int newSize = asSizeNode.executeExact(frame, newSizeL);
+            int len = lenNode.execute(storage);
+            byte[] smaller = new byte[newSize];
+            for (int i = 0; i < newSize && i < len; i++) {
+                smaller[i] = castToByteNode.execute(frame, getItemNode.execute(frame, storage, i));
+            }
+            self.setSequenceStorage(new ByteSequenceStorage(smaller));
+            return 0;
+        }
+
+        @Specialization(guards = "!isBytes(self)")
+        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a set object", self);
+        }
+
     }
 }

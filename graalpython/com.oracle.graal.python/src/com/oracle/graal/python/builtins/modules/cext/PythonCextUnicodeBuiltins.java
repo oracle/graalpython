@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -701,7 +701,7 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PString);
         }
     }
-    
+
     @Builtin(name = "PyUnicode_ReadChar", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyUnicodeReadChar extends PythonBinaryBuiltinNode {
@@ -729,7 +729,7 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
             }
         }
     }
-    
+
     // directly called without landing function
     @Builtin(name = "PyUnicode_New", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
@@ -770,7 +770,7 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
             }
         }
     }
-    
+
     @Builtin(name = "_PyUnicode_AsUTF8String", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class _PyUnicode_AsUTF8String extends NativeEncoderNode {
@@ -779,7 +779,7 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
             super(StandardCharsets.UTF_8);
         }
     }
-    
+
     @Builtin(name = "PyUnicode_DecodeUTF8Stateful", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyUnicode_DecodeUTF8Stateful extends NativeUnicodeBuiltin {
@@ -810,7 +810,7 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
             decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
         }
     }
-    
+
     @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyUnicode_Decode extends NativeBuiltin {

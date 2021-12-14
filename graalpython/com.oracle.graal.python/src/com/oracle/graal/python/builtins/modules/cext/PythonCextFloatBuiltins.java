@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,9 +48,14 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -72,7 +77,7 @@ public class PythonCextFloatBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
     }
-       
+
     ///////////// float /////////////
 
     @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
@@ -92,4 +97,33 @@ public class PythonCextFloatBuiltins extends PythonBuiltins {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
         }
     }
+
+    @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyFloatAsDouble extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "!object.isDouble()")
+        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+            return object.getLong();
+        }
+
+        @Specialization(guards = "object.isDouble()")
+        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+            return object.getDouble();
+        }
+
+        @Specialization
+        static double doGenericErr(VirtualFrame frame, Object object,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1.0;
+            }
+        }
+    }
+
 }
