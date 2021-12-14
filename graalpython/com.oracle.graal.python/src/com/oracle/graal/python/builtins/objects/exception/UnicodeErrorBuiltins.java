@@ -48,11 +48,14 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -63,6 +66,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeError)
 public final class UnicodeErrorBuiltins extends PythonBuiltins {
@@ -78,6 +82,14 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return UnicodeErrorBuiltinsFactory.getFactories();
+    }
+
+    public static Object getArgAsObject(Object[] args, int index, PNodeWithRaise raiseNode) {
+        if (args.length < index + 1 || !PGuards.isString(args[index])) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError);
+        } else {
+            return args[index];
+        }
     }
 
     public static String getArgAsString(Object[] args, int index, PNodeWithRaise raiseNode, CastToJavaStringNode castNode) {
@@ -96,14 +108,42 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    public static Object getArgAsBytes(VirtualFrame frame, Object[] args, int index, PythonObjectFactory factory, PNodeWithRaise raiseNode, BytesNodes.BytesInitNode bytesInitNode) {
+    public abstract static class GetArgAsBytesNode extends PNodeWithRaiseAndIndirectCall {
+        abstract PBytes execute(VirtualFrame frame, Object val, String encoding);
+
+        @Specialization
+        PBytes doString(String value, String encoding,
+                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encode,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createBytes(encode.execute(value, encoding, "ignore"));
+        }
+
+        @Specialization
+        PBytes doBytes(PBytes value, @SuppressWarnings("unused") String encoding) {
+            return value;
+        }
+
+        @Specialization(guards = {"!isPBytes(value)", "!isString(value)"})
+        PBytes doOther(VirtualFrame frame, Object value, @SuppressWarnings("unused") String encoding,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
+            try {
+                final byte[] buffer = bufferLib.getInternalOrCopiedByteArray(value);
+                final int bufferLength = bufferLib.getBufferLength(value);
+                return factory.createBytes(buffer, 0, bufferLength);
+            } finally {
+                bufferLib.release(value, frame, this);
+            }
+        }
+    }
+
+    public static Object getArgAsBytes(VirtualFrame frame, Object[] args, int index, PNodeWithRaiseAndIndirectCall raiseNode, GetArgAsBytesNode getArgAsBytesNode) {
         if (args.length < index + 1) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         } else {
-            if (!PGuards.isPBytes(args[index])) {
-                return factory.createBytes(bytesInitNode.execute(frame, args[index]));
-            }
-            return args[index];
+            // the encoding must have been already set during init
+            assert args[IDX_ENCODING] instanceof String;
+            return getArgAsBytesNode.execute(frame, args[index], (String) args[IDX_ENCODING]);
         }
     }
 
@@ -117,7 +157,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "object", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception object")
+    @Builtin(name = "object", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception object")
     @GenerateNodeFactory
     public abstract static class UnicodeErrorNode extends PythonBuiltinNode {
         @Specialization
@@ -127,7 +167,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "start", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception start")
+    @Builtin(name = "start", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception start")
     @GenerateNodeFactory
     public abstract static class UnicodeErrorStartNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
@@ -162,7 +202,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "end", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception end")
+    @Builtin(name = "end", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception end")
     @GenerateNodeFactory
     public abstract static class UnicodeErrorEndNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
@@ -197,7 +237,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "reason", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception reason")
+    @Builtin(name = "reason", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception reason")
     @GenerateNodeFactory
     public abstract static class UnicodeErrorReasonNode extends PythonBuiltinNode {
         @Specialization

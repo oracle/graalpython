@@ -126,12 +126,6 @@ public final class PBaseException extends PythonObject {
         return exceptionAttributes[idx];
     }
 
-    public int getExceptionIntAttribute(int idx) {
-        final Object val = getExceptionAttribute(idx);
-        assert val instanceof Integer : "expected PBaseException attribute to be an integer";
-        return (int) val;
-    }
-
     public Object[] getExceptionAttributes() {
         return exceptionAttributes;
     }

@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBui
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_OBJECT;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_REASON;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_START;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.UNICODE_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsInt;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -105,6 +106,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeEncodeErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
+                        @Cached BaseExceptionAttrNode attrNode,
                         @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached PyObjectStrAsJavaStringNode strNode) {
             if (self.getExceptionAttributes() == null) {
@@ -114,11 +116,11 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
 
             // Get reason and encoding as strings, which they might not be if they've been
             // modified after we were constructed.
-            final String object = toJavaStringNode.execute(self.getExceptionAttribute(IDX_OBJECT));
-            final int start = self.getExceptionIntAttribute(IDX_START);
-            final int end = self.getExceptionIntAttribute(IDX_END);
-            final String encoding = strNode.execute(frame, self.getExceptionAttribute(IDX_ENCODING));
-            final String reason = strNode.execute(frame, self.getExceptionAttribute(IDX_REASON));
+            final String object = toJavaStringNode.execute(attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY));
+            final int start = attrNode.getInt(self, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
+            final int end = attrNode.getInt(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
+            final String encoding = strNode.execute(frame, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
+            final String reason = strNode.execute(frame, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
             if (start < object.length() && end == start + 1) {
                 String fmt;
                 final int badChar = object.codePointAt(start);

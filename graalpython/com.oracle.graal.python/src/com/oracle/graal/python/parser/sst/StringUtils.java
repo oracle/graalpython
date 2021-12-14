@@ -47,6 +47,7 @@ import java.util.Map;
 
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.source.Source;
 
@@ -201,9 +203,8 @@ public class StringUtils {
             return unescapeJavaString(errors, text);
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
-            String message = e.getUnreifiedException().getFormattedMessage();
-            message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
-            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), message);
+            String message = PyObjectStrAsJavaStringNode.getUncached().execute(e.getUnreifiedException());
+            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), PythonUtils.format("(unicode error) %s", message));
         }
     }
 

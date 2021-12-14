@@ -324,7 +324,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "errno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "POSIX exception code")
+    @Builtin(name = "errno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "POSIX exception code")
     @GenerateNodeFactory
     public abstract static class OSErrorErrnoNode extends PythonBuiltinNode {
         @Specialization
@@ -334,7 +334,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "strerror", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @Builtin(name = "strerror", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception strerror")
     @GenerateNodeFactory
     public abstract static class OSErrorStrerrorNode extends PythonBuiltinNode {
         @Specialization
@@ -344,7 +344,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "filename", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception filename")
+    @Builtin(name = "filename", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception filename")
     @GenerateNodeFactory
     public abstract static class OSErrorFilenameNode extends PythonBuiltinNode {
         @Specialization
@@ -354,7 +354,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "filename2", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception filename2")
+    @Builtin(name = "filename2", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception filename2")
     @GenerateNodeFactory
     public abstract static class OSErrorFilename2Node extends PythonBuiltinNode {
         @Specialization
@@ -364,7 +364,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "winerror", os = PythonOS.PLATFORM_WIN32, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "Win32 exception code")
+    @Builtin(name = "winerror", os = PythonOS.PLATFORM_WIN32, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "Win32 exception code")
     @GenerateNodeFactory
     public abstract static class OSErrorWinerrorNode extends PythonBuiltinNode {
         @Specialization
@@ -374,7 +374,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "characters_written", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception characters written")
+    @Builtin(name = "characters_written", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception characters written")
     @GenerateNodeFactory
     public abstract static class OSErrorCharsWrittenNode extends PythonBuiltinNode {
         protected boolean isInvalid(PBaseException self) {
@@ -383,6 +383,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isInvalid(self)")
+        @SuppressWarnings("unused")
         Object generic(PBaseException self, Object value) {
             throw raise(PythonBuiltinClassType.AttributeError, "characters_written");
         }
@@ -390,7 +391,12 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isInvalid(self)")
         Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_WRITTEN, OS_ERROR_ATTR_FACTORY);
+            final Object retVal = attrNode.execute(self, value, IDX_WRITTEN, OS_ERROR_ATTR_FACTORY);
+            if (PGuards.isDeleteMarker(value)) {
+                // reset the internal state
+                self.getExceptionAttributes()[IDX_WRITTEN] = -1;
+            }
+            return retVal;
         }
     }
 
@@ -399,15 +405,16 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     public abstract static class OSErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
+                        @Cached BaseExceptionAttrNode attrNode,
                         @Cached BaseExceptionBuiltins.StrNode baseStrNode,
                         @Cached PyObjectReprAsJavaStringNode reprNode) {
             // TODO: missing windows code
-            final Object filename = self.getExceptionAttribute(IDX_FILENAME);
-            final Object filename2 = self.getExceptionAttribute(IDX_FILENAME2);
-            final Object errno = self.getExceptionAttribute(IDX_ERRNO);
-            final Object strerror = self.getExceptionAttribute(IDX_STRERROR);
-            if (filename != null && filename != PNone.NONE) {
-                if (filename2 != null && filename2 != PNone.NONE) {
+            final Object filename = attrNode.get(self, IDX_FILENAME, OS_ERROR_ATTR_FACTORY);
+            final Object filename2 = attrNode.get(self, IDX_FILENAME2, OS_ERROR_ATTR_FACTORY);
+            final Object errno = attrNode.get(self, IDX_ERRNO, OS_ERROR_ATTR_FACTORY);
+            final Object strerror = attrNode.get(self, IDX_STRERROR, OS_ERROR_ATTR_FACTORY);
+            if (filename != PNone.NONE) {
+                if (filename2 != PNone.NONE) {
                     return PythonUtils.format("[Errno %s] %s: %s -> %s",
                                     errno != null ? errno : PNone.NONE,
                                     strerror != null ? strerror : PNone.NONE,
@@ -420,7 +427,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                                     reprNode.execute(frame, filename));
                 }
             }
-            if (errno != null && strerror != null) {
+            if (errno != PNone.NONE && strerror != PNone.NONE) {
                 return PythonUtils.format("[Errno %s] %s", errno, strerror);
             }
             return baseStrNode.execute(frame, self);
@@ -432,13 +439,14 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     public abstract static class OSErrorReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(VirtualFrame frame, PBaseException self,
+                        @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             PTuple args = self.getArgs();
-            final Object filename = self.getExceptionAttribute(IDX_FILENAME);
-            final Object filename2 = self.getExceptionAttribute(IDX_FILENAME2);
+            final Object filename = attrNode.get(self, IDX_FILENAME, OS_ERROR_ATTR_FACTORY);
+            final Object filename2 = attrNode.get(self, IDX_FILENAME2, OS_ERROR_ATTR_FACTORY);
             if (lenNode.execute(args.getSequenceStorage()) == 2 && filename != null) {
                 Object[] argData = new Object[filename2 != null ? 5 : 3];
                 argData[0] = getItemNode.execute(frame, args.getSequenceStorage(), 0);

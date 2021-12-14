@@ -143,6 +143,7 @@ public class CharsetMapping {
         // Add our custom charsets
         addMapping("raw_unicode_escape", "x-python-raw-unicode-escape");
         addMapping("unicode-escape", "x-python-unicode-escape");
+        addMapping("unicodeescape", "x-python-unicode-escape");
         JAVA_CHARSETS.put("x-python-raw-unicode-escape", new PythonRawUnicodeEscapeCharset());
         JAVA_CHARSETS.put("x-python-unicode-escape", new PythonUnicodeEscapeCharset());
 

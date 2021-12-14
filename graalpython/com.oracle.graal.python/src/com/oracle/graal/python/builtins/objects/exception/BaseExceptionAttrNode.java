@@ -66,12 +66,41 @@ public abstract class BaseExceptionAttrNode extends Node {
         }
     }
 
+    public final Object get(PBaseException self, int index, StorageFactory factory) {
+        return execute(self, PNone.NO_VALUE, index, factory);
+    }
+
+    public final int getInt(PBaseException self, int index, StorageFactory factory) {
+        final Object val = execute(self, PNone.NO_VALUE, index, factory);
+        assert val instanceof Integer : "expected PBaseException attribute to be an integer";
+        return (int) val;
+    }
+
+    public final Object set(PBaseException self, Object value, int index, StorageFactory factory) {
+        return execute(self, value, index, factory);
+    }
+
     public abstract Object execute(PBaseException self, Object value, int index, StorageFactory factory);
 
     protected static boolean withAttributes(PBaseException self) {
         return self.getExceptionAttributes() != null;
     }
 
+    private Object[] ensureAttrStorage(PBaseException self, StorageFactory factory, SequenceStorageNodes.GetInternalObjectArrayNode getArrayNode, PythonObjectFactory objectFactory) {
+        Object[] attributes = self.getExceptionAttributes();
+        if (attributes == null) {
+            // TODO: cbasca should we raise in case getArgs() is null (due to lazy init of args)?
+            Object[] args = PythonUtils.EMPTY_OBJECT_ARRAY;
+            if (self.getArgs() != null) {
+                args = getArrayNode.execute(self.getArgs().getSequenceStorage());
+            }
+            attributes = factory.create(args, objectFactory);
+            self.setExceptionAttributes(attributes);
+        }
+        return attributes;
+    }
+
+    // GET
     @Specialization(guards = {"isNoValue(none)", "withAttributes(self)"})
     public Object getAttrWithStorage(PBaseException self, @SuppressWarnings("unused") PNone none, int index, @SuppressWarnings("unused") StorageFactory factory) {
         Object[] attributes = self.getExceptionAttributes();
@@ -84,21 +113,13 @@ public abstract class BaseExceptionAttrNode extends Node {
     public Object getAttrNoStorage(PBaseException self, @SuppressWarnings("unused") PNone none, int index, StorageFactory factory,
                     @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArrayNode,
                     @Cached PythonObjectFactory objectFactory) {
-        Object[] attributes = self.getExceptionAttributes();
-        if (attributes == null) {
-            // TODO: cbasca should we raise in cast getArgs() is null (lazy init)?
-            Object[] args = PythonUtils.EMPTY_OBJECT_ARRAY;
-            if (self.getArgs() != null) {
-                args = getArrayNode.execute(self.getArgs().getSequenceStorage());
-            }
-            attributes = factory.create(args, objectFactory);
-            self.setExceptionAttributes(attributes);
-        }
+        Object[] attributes = ensureAttrStorage(self, factory, getArrayNode, objectFactory);
         assert attributes != null : "PBaseException attributes field is null";
         return getAttrWithStorage(self, none, index, factory);
     }
 
-    @Specialization(guards = {"!isNoValue(value)", "withAttributes(self)"})
+    // SET
+    @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "withAttributes(self)"})
     public Object setAttrWithStorage(PBaseException self, Object value, int index, @SuppressWarnings("unused") StorageFactory factory) {
         Object[] attributes = self.getExceptionAttributes();
         assert index >= 0 && index < attributes.length : "PBaseException attribute index is out of range";
@@ -106,20 +127,30 @@ public abstract class BaseExceptionAttrNode extends Node {
         return PNone.NONE;
     }
 
-    @Specialization(guards = {"!isNoValue(value)", "!withAttributes(self)"})
+    @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "!withAttributes(self)"})
     public Object setAttrNoStorage(PBaseException self, Object value, int index, StorageFactory factory,
                     @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArrayNode,
                     @Cached PythonObjectFactory objectFactory) {
-        Object[] attributes = self.getExceptionAttributes();
-        if (attributes == null) {
-            // TODO: cbasca should we raise in cast getArgs() is null (lazy init)?
-            Object[] args = PythonUtils.EMPTY_OBJECT_ARRAY;
-            if (self.getArgs() != null) {
-                args = getArrayNode.execute(self.getArgs().getSequenceStorage());
-            }
-            attributes = factory.create(args, objectFactory);
-            self.setExceptionAttributes(attributes);
-        }
+        Object[] attributes = ensureAttrStorage(self, factory, getArrayNode, objectFactory);
+        assert attributes != null : "PBaseException attributes field is null";
         return setAttrWithStorage(self, value, index, factory);
+    }
+
+    // DEL
+    @Specialization(guards = {"!isNoValue(value)", "isDeleteMarker(value)", "withAttributes(self)"})
+    public Object delAttrWithStorage(PBaseException self, @SuppressWarnings("unused") Object value, int index, @SuppressWarnings("unused") StorageFactory factory) {
+        Object[] attributes = self.getExceptionAttributes();
+        assert index >= 0 && index < attributes.length : "PBaseException attribute index is out of range";
+        attributes[index] = null;
+        return PNone.NONE;
+    }
+
+    @Specialization(guards = {"!isNoValue(value)", "isDeleteMarker(value)", "!withAttributes(self)"})
+    public Object delAttrNoStorage(PBaseException self, Object value, int index, StorageFactory factory,
+                    @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArrayNode,
+                    @Cached PythonObjectFactory objectFactory) {
+        Object[] attributes = ensureAttrStorage(self, factory, getArrayNode, objectFactory);
+        assert attributes != null : "PBaseException attributes field is null";
+        return delAttrWithStorage(self, value, index, factory);
     }
 }

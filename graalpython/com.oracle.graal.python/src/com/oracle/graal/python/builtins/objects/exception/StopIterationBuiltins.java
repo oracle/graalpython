@@ -78,7 +78,7 @@ public final class StopIterationBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "value", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "generator return value")
+    @Builtin(name = "value", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "generator return value")
     @GenerateNodeFactory
     public abstract static class StopIterationValueNode extends PythonBuiltinNode {
         @Specialization

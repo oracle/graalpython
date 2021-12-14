@@ -117,7 +117,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception message")
+    @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception message")
     @GenerateNodeFactory
     public abstract static class ImportErrorMsgNode extends PythonBuiltinNode {
         @Specialization
@@ -127,7 +127,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "name", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "module name")
+    @Builtin(name = "name", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "module name")
     @GenerateNodeFactory
     public abstract static class ImportErrorNameNode extends PythonBuiltinNode {
         @Specialization
@@ -137,7 +137,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "path", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "module path")
+    @Builtin(name = "path", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "module path")
     @GenerateNodeFactory
     public abstract static class ImportErrorPathNode extends PythonBuiltinNode {
         @Specialization
@@ -150,11 +150,10 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ImportErrorReduceNode extends PythonUnaryBuiltinNode {
-        private Object getState(PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageLibrary hashlib) {
-            assert self.getExceptionAttributes() != null;
+        private Object getState(PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageLibrary hashlib, BaseExceptionAttrNode attrNode) {
             PDict dict = getDictIfExistsNode.execute(self);
-            final Object name = self.getExceptionAttribute(IDX_NAME);
-            final Object path = self.getExceptionAttribute(IDX_PATH);
+            final Object name = attrNode.get(self, IDX_NAME, IMPORT_ERROR_ATTR_FACTORY);
+            final Object path = attrNode.get(self, IDX_PATH, IMPORT_ERROR_ATTR_FACTORY);
             if (name != null || path != null) {
                 HashingStorage storage = (dict != null) ? hashlib.copy(dict.getDictStorage()) : EmptyStorage.INSTANCE;
                 if (name != null) {
@@ -173,13 +172,14 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object reduce(VirtualFrame frame, PBaseException self,
+                        @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
                         @Cached BaseExceptionBuiltins.ArgsNode argsNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") HashingStorageLibrary hashlib) {
             Object clazz = getClassNode.execute(self);
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
-            Object state = getState(self, getDictIfExistsNode, hashlib);
+            Object state = getState(self, getDictIfExistsNode, hashlib, attrNode);
             if (state == PNone.NONE) {
                 return factory().createTuple(new Object[]{clazz, args});
             }
@@ -192,10 +192,11 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     public abstract static class ImportErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
+                        @Cached BaseExceptionAttrNode attrNode,
                         @Cached BaseExceptionBuiltins.StrNode exStrNode,
                         @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {
             assert self.getExceptionAttributes() != null;
-            final Object msg = self.getExceptionAttribute(IDX_MSG);
+            final Object msg = attrNode.get(self, IDX_MSG, IMPORT_ERROR_ATTR_FACTORY);
             if (msg != null && unicodeCheckExactNode.execute(msg)) {
                 return msg;
             } else {

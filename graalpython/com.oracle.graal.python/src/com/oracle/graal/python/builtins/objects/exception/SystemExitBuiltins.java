@@ -91,7 +91,7 @@ public final class SystemExitBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception code")
+    @Builtin(name = "code", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception code")
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization

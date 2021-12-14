@@ -205,7 +205,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception msg")
+    @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception msg")
     @GenerateNodeFactory
     public abstract static class SyntaxErrorMsgNode extends PythonBuiltinNode {
         @Specialization
@@ -215,7 +215,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "filename", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception filename")
+    @Builtin(name = "filename", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception filename")
     @GenerateNodeFactory
     public abstract static class SyntaxErrorFilenameNode extends PythonBuiltinNode {
         @Specialization
@@ -225,7 +225,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception lineno")
+    @Builtin(name = "lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception lineno")
     @GenerateNodeFactory
     public abstract static class SyntaxErrorLinenoNode extends PythonBuiltinNode {
         @Specialization
@@ -235,7 +235,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "offset", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception offset")
+    @Builtin(name = "offset", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception offset")
     @GenerateNodeFactory
     public abstract static class SyntaxErrorOffsetNode extends PythonBuiltinNode {
         @Specialization
@@ -245,7 +245,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "text", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception text")
+    @Builtin(name = "text", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception text")
     @GenerateNodeFactory
     public abstract static class SyntaxErrorTextNode extends PythonBuiltinNode {
         @Specialization
@@ -255,7 +255,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "print_file_and_line", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception print_file_and_line")
+    @Builtin(name = "print_file_and_line", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception print_file_and_line")
     @GenerateNodeFactory
     public abstract static class SyntaxErrorPrintFileAndLineNode extends PythonBuiltinNode {
         @Specialization
@@ -270,6 +270,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
     public abstract static class SyntaxErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
+                        @Cached BaseExceptionAttrNode attrNode,
                         @Cached PyObjectStrAsJavaStringNode strNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode,
@@ -278,7 +279,8 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             // Still, we cannot allow an OverflowError to be raised, so
             // we need to call PyLong_AsLongAndOverflow.
             String filename;
-            if (self.getExceptionAttribute(IDX_FILENAME) != null && PGuards.isString(self.getExceptionAttribute(IDX_FILENAME))) {
+            final Object filenameAttrValue = attrNode.get(self, IDX_FILENAME, SYNTAX_ERROR_ATTR_FACTORY);
+            if (filenameAttrValue != PNone.NONE && PGuards.isString(filenameAttrValue)) {
                 filename = castToJavaStringNode.execute(self.getExceptionAttribute(IDX_FILENAME));
                 final int sepIdx = PythonUtils.lastIndexOf(filename, getContext().getEnv().getFileNameSeparator());
                 filename = (sepIdx != -1) ? PythonUtils.substring(filename, sepIdx + 1) : filename;
@@ -286,12 +288,12 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                 filename = null;
             }
 
-            final Object lineno = self.getExceptionAttribute(IDX_LINENO);
-            final Object msg = self.getExceptionAttribute(IDX_MSG);
-            boolean heaveLineNo = lineno != null && pyLongCheckExactNode.execute(lineno);
+            final Object lineno = attrNode.get(self, IDX_LINENO, SYNTAX_ERROR_ATTR_FACTORY);
+            final Object msg = attrNode.get(self, IDX_MSG, SYNTAX_ERROR_ATTR_FACTORY);
+            boolean heaveLineNo = lineno != PNone.NONE && pyLongCheckExactNode.execute(lineno);
 
             if (filename == null && !heaveLineNo) {
-                return strNode.execute(frame, msg != null ? msg : PNone.NONE);
+                return strNode.execute(frame, msg);
             }
 
             String result;
@@ -302,9 +304,9 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                 } catch (OverflowException e) {
                     ln = -1;
                 }
-                result = PythonUtils.format("%s (%s, line %d)", msg != null ? msg : PNone.NONE, filename, ln);
+                result = PythonUtils.format("%s (%s, line %d)", msg, filename, ln);
             } else if (filename != null) {
-                result = PythonUtils.format("%s (%s)", msg != null ? msg : PNone.NONE, filename);
+                result = PythonUtils.format("%s (%s)", msg, filename);
             } else {
                 // only have_lineno
                 long ln;
@@ -313,7 +315,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                 } catch (OverflowException e) {
                     ln = -1;
                 }
-                result = PythonUtils.format("%s (line %d)", msg != null ? msg : PNone.NONE, ln);
+                result = PythonUtils.format("%s (line %d)", msg, ln);
             }
             return result;
         }
