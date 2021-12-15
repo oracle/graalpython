@@ -217,7 +217,7 @@ public class StringUtils {
     private static final String TRUNCATED_XXX_ERROR = "truncated \\xXX escape";
     private static final String TRUNCATED_UXXXX_ERROR = "truncated \\uXXXX escape";
     private static final String TRUNCATED_UXXXXXXXX_ERROR = "truncated \\UXXXXXXXX escape";
-    private static final String UNKNOWN_UNICODE_ERROR = " unknown Unicode character name";
+    private static final String UNKNOWN_UNICODE_ERROR = "unknown Unicode character name";
     private static final String ILLEGAl_CHARACTER = "illegal Unicode character";
 
     private static int getHexValue(String text, int start, int len) {
@@ -283,7 +283,7 @@ public class StringUtils {
         if (cp >= 0) {
             sb.append(Character.toChars(cp));
         } else {
-            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, closeIndex, UNKNOWN_UNICODE_ERROR);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, text.length(), UNKNOWN_UNICODE_ERROR);
         }
         return closeIndex;
     }
