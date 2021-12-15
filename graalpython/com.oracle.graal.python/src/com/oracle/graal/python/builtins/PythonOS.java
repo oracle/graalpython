@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,56 +38,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.ellipsis;
+package com.oracle.graal.python.builtins;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import com.oracle.truffle.api.CompilerDirectives;
 
-import java.util.List;
+public enum PythonOS {
+    PLATFORM_JAVA("java"),
+    PLATFORM_CYGWIN("cygwin"),
+    PLATFORM_LINUX("linux"),
+    PLATFORM_DARWIN("darwin"),
+    PLATFORM_WIN32("win32"),
+    PLATFORM_SUNOS("sunos"),
+    PLATFORM_FREEBSD("freebsd"),
+    PLATFORM_ANY(null);
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
+    private final String name;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PEllipsis)
-@SuppressWarnings("unused")
-public class EllipsisBuiltins extends PythonBuiltins {
-
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return EllipsisBuiltinsFactory.getFactories();
+    PythonOS(String name) {
+        this.name = name;
     }
 
-    @Override
-    public void postInitialize(Python3Core core) {
-        super.postInitialize(core);
-        core.getBuiltins().setAttribute("Ellipsis", PEllipsis.INSTANCE);
+    public String getName() {
+        return name;
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object doit(PEllipsis self) {
-            return "Ellipsis";
+    @CompilerDirectives.TruffleBoundary
+    public static PythonOS getPythonOS() {
+        String property = System.getProperty("os.name");
+        PythonOS os = PLATFORM_JAVA;
+        if (property != null) {
+            if (property.toLowerCase().contains("cygwin")) {
+                os = PLATFORM_CYGWIN;
+            } else if (property.toLowerCase().contains("linux")) {
+                os = PLATFORM_LINUX;
+            } else if (property.toLowerCase().contains("mac")) {
+                os = PLATFORM_DARWIN;
+            } else if (property.toLowerCase().contains("windows")) {
+                os = PLATFORM_WIN32;
+            } else if (property.toLowerCase().contains("sunos")) {
+                os = PLATFORM_SUNOS;
+            } else if (property.toLowerCase().contains("freebsd")) {
+                os = PLATFORM_FREEBSD;
+            }
         }
-    }
-
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        Object doit(PEllipsis self, Object ignored) {
-            return "Ellipsis";
-        }
+        return os;
     }
 }

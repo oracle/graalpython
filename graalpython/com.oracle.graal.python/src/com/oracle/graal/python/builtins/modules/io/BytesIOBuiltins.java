@@ -79,7 +79,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.BufferError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -875,7 +874,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                         @Cached GetInternalByteArrayNode getBytes) {
             int n = scanEOL(self, -1, getBytes);
             if (n == 0) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return readBytes(self, n, getBytes, factory());
         }

@@ -60,7 +60,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_SHOULD_RETURN_BYT
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEG_OR_NEG_1;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -779,7 +778,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             checkIsClosedNode.execute(frame, self);
             byte[] line = readlineNode.execute(frame, self, -1);
             if (line.length == 0) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return factory().createBytes(line);
         }

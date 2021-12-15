@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -1011,15 +1012,16 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object setName(PythonClass cls, Object value,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+        Object setName(VirtualFrame frame, PythonClass cls, Object value,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             try {
                 String string = castToJavaStringNode.execute(value);
                 if (containsNullCharacter(string)) {
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
                 }
                 if (!canEncodeUTF8(string)) {
-                    throw raise(PythonBuiltinClassType.UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_CLASSNAME, string);
+                    throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", string, 0, string.length(), "can't encode classname");
                 }
                 cls.setName(string);
                 return PNone.NONE;

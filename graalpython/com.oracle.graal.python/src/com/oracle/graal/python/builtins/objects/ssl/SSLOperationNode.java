@@ -67,9 +67,9 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 
 /**
  * This class implements equivalents of OpenSSL transport functions ({@code SSL_read} etc) on top of
@@ -111,12 +111,12 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
      * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
      * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
      */
-    public void handshake(VirtualFrame frame, PSSLSocket socket) {
+    public void handshake(VirtualFrame frame, PConstructAndRaiseNode constructAndRaiseNode, PSSLSocket socket) {
         if (!socket.isHandshakeComplete()) {
             try {
                 beginHandshake(socket);
             } catch (SSLException e) {
-                throw handleSSLException(this, e);
+                throw handleSSLException(frame, constructAndRaiseNode, e);
             }
             execute(frame, socket, SSLOperationNode.EMPTY_BUFFER, SSLOperationNode.EMPTY_BUFFER, SSLOperation.HANDSHAKE);
         }
@@ -166,7 +166,6 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     void doSocket(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached GilNode gil,
-                    @Cached PRaiseSSLErrorNode raiseSSLErrorNode,
                     @Cached PConstructAndRaiseNode constructAndRaiseNode) {
         assert socket.getSocket() != null;
         TimeoutHelper timeoutHelper = null;
@@ -177,7 +176,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
         PythonContext context = PythonContext.get(this);
         while (true) {
             try {
-                status = loop(this, socket, appInput, targetBuffer, operation);
+                status = loop(frame, constructAndRaiseNode, this, socket, appInput, targetBuffer, operation);
                 switch (status) {
                     case COMPLETE:
                         return;
@@ -207,7 +206,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                              * The engine requested more data, but we think we already got enough
                              * data
                              */
-                            throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_SSL, "Packet size mismatch");
+                            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, "Packet size mismatch");
                         }
                         int len1 = packetLen - networkInboundBIO.getPending();
                         networkInboundBIO.ensureWriteCapacity(len1);
@@ -215,7 +214,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         int offset1 = networkInboundBIO.getWritePosition();
                         try {
                             Object posixSupport = context.getPosixSupport();
-                            int recvlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
+                            int recvlen = SocketUtils.callSocketFunctionWithRetry(frame, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
                                             () -> posixLib.recv(posixSupport, socket.getSocket().getFd(), bytes1, offset1, len1, 0),
                                             true, false, timeoutHelper);
                             if (recvlen == 0) {
@@ -223,12 +222,12 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                                 if (socket.hasSavedException()) {
                                     throw socket.getAndClearSavedException();
                                 }
-                                throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+                                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
                             }
                             networkInboundBIO.advanceWritePosition(recvlen);
                         } catch (PosixException e) {
                             if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
-                                throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
+                                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
                             }
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
@@ -243,13 +242,13 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         int len2 = networkOutboundBIO.getPending();
                         try {
                             Object posixSupport = context.getPosixSupport();
-                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
+                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(frame, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
                                             () -> posixLib.send(posixSupport, socket.getSocket().getFd(), bytes2, offset2, len2, 0),
                                             true, false, timeoutHelper);
                             networkOutboundBIO.advanceReadPosition(writtenBytes);
                         } catch (PosixException e) {
                             if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
-                                throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
+                                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
                             }
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
@@ -259,7 +258,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         break;
                 }
             } catch (SSLException e) {
-                throw handleSSLException(this, e);
+                throw handleSSLException(frame, constructAndRaiseNode, e);
             } catch (OverflowException | OutOfMemoryError node) {
                 throw raise(MemoryError);
             }
@@ -268,11 +267,11 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     }
 
     @Specialization(guards = "socket.getSocket() == null")
-    void doMemory(PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
-                    @Cached PRaiseSSLErrorNode raiseSSLErrorNode) {
+    void doMemory(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
+                    @Cached PConstructAndRaiseNode constructAndRaiseNode) {
         SSLOperationStatus status;
         try {
-            status = loop(this, socket, appInput, targetBuffer, operation);
+            status = loop(frame, constructAndRaiseNode, this, socket, appInput, targetBuffer, operation);
             switch (status) {
                 case COMPLETE:
                     return;
@@ -287,19 +286,19 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         if (socket.hasSavedException()) {
                             throw socket.getAndClearSavedException();
                         }
-                        throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
                     } else {
                         /*
                          * MemoryBIO input - we already read as much as we could. Signal to the
                          * caller that we need more.
                          */
-                        throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
+                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
                     }
                 case WANTS_WRITE:
                     throw CompilerDirectives.shouldNotReachHere("MemoryBIO-based socket operation returned WANTS_WRITE");
             }
         } catch (SSLException e) {
-            throw handleSSLException(this, e);
+            throw handleSSLException(frame, constructAndRaiseNode, e);
         } catch (OverflowException | OutOfMemoryError node) {
             throw raise(MemoryError);
         }
@@ -316,7 +315,8 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     }
 
     @TruffleBoundary
-    private static SSLOperationStatus loop(PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation op) throws SSLException, OverflowException {
+    private static SSLOperationStatus loop(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer,
+                    SSLOperation op) throws SSLException, OverflowException {
         PMemoryBIO applicationInboundBIO = socket.getApplicationInboundBIO();
         PMemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
         PMemoryBIO networkOutboundBIO = socket.getNetworkOutboundBIO();
@@ -422,7 +422,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                     case WRITE:
                     case HANDSHAKE:
                         // Write and handshake operations need to fail loudly
-                        throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_ZERO_RETURN, ErrorMessages.SSL_SESSION_CLOSED);
+                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_ZERO_RETURN, ErrorMessages.SSL_SESSION_CLOSED);
                 }
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -527,10 +527,10 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     }
 
     @TruffleBoundary
-    private static PException handleSSLException(Node node, SSLException e) {
+    private static PException handleSSLException(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, SSLException e) {
         if (e.getCause() instanceof CertificateException) {
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
+            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
         }
-        throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
+        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e.toString());
     }
 }

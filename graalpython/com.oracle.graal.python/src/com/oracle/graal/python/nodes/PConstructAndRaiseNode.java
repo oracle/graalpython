@@ -40,18 +40,22 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.errorType2errno;
+import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins.setSSLErrorAttributes;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -139,7 +143,7 @@ public abstract class PConstructAndRaiseNode extends Node {
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
         Python3Core core = PythonContext.get(this);
         Object[] args = new Object[arguments.length + 1];
-        args[0] = formatArgs != null ? getFormattedMessage(format, formatArgs) : format;
+        args[0] = (formatArgs != null) ? getFormattedMessage(format, formatArgs) : format;
         System.arraycopy(arguments, 0, args, 1, arguments.length);
         return raiseInternal(frame, type, cause, args, keywords, callNode, core);
     }
@@ -171,26 +175,21 @@ public abstract class PConstructAndRaiseNode extends Node {
         return exception.getMessage();
     }
 
+    public final PException raise(Frame frame, PythonBuiltinClassType err, String message, Object... formatArgs) {
+        return executeWithFmtMessageAndArgs(frame, err, message, formatArgs, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
     private static Object[] createOsErrorArgs(int errno, String message, Object filename1, Object filename2) {
-        return new Object[]{errno, message,
-                        (filename1 != null) ? filename1 : PNone.NONE,
-                        PNone.NONE,
-                        (filename2 != null) ? filename2 : PNone.NONE};
+        return new Object[]{errno, message, filename1, null, filename2};
     }
 
     private static Object[] createOsErrorArgs(OSErrorEnum osErrorEnum, String filename1, String filename2) {
-        return new Object[]{osErrorEnum.getNumber(), osErrorEnum.getMessage(),
-                        (filename1 != null) ? filename1 : PNone.NONE,
-                        PNone.NONE,
-                        (filename2 != null) ? filename2 : PNone.NONE};
+        return new Object[]{osErrorEnum.getNumber(), osErrorEnum.getMessage(), filename1, null, filename2};
     }
 
     private static Object[] createOsErrorArgs(Exception exception, String filename1, String filename2) {
         OSErrorEnum.ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(exception);
-        return new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message,
-                        (filename1 != null) ? filename1 : PNone.NONE,
-                        PNone.NONE,
-                        (filename2 != null) ? filename2 : PNone.NONE};
+        return new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message, filename1, null, filename2};
     }
 
     private PException raiseOSErrorInternal(Frame frame, Object[] arguments) {
@@ -231,6 +230,75 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public final PException raiseOSError(Frame frame, int errno, String message, Object filename, Object filename2) {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, filename2));
+    }
+
+    public final PException raiseSSLError(Frame frame, String message) {
+        return raiseSSLError(frame, message, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public final PException raiseSSLError(Frame frame, String message, Object... formatArgs) {
+        return raise(frame, PythonBuiltinClassType.SSLError, message, formatArgs);
+    }
+
+    public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, Exception ex) {
+        return raiseSSLError(frame, errorCode, getMessage(ex));
+    }
+
+    public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, String format, Object... formatArgs) {
+        String message = getFormattedMessage(format, formatArgs);
+        try {
+            return executeWithFmtMessageAndArgs(frame, errorCode.getType(), null, null, new Object[]{errorCode.getErrno(), message});
+        } catch (PException pException) {
+            setSSLErrorAttributes(pException, errorCode, message);
+            return pException;
+        }
+    }
+
+    public static PException raiseUncachedSSLError(String message) {
+        return getUncached().raiseSSLError(null, message);
+    }
+
+    public static PException raiseUncachedSSLError(String message, Object... formatArgs) {
+        return getUncached().raiseSSLError(null, message, formatArgs);
+    }
+
+    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, Exception ex) {
+        return getUncached().raiseSSLError(null, errorCode, ex);
+    }
+
+    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, String format, Object... formatArgs) {
+        return getUncached().raiseSSLError(null, errorCode, format, formatArgs);
+    }
+
+    public final PException raiseOSErrorSubType(Frame frame, PythonBuiltinClassType osErrorSubtype, String format, Object... fmtArgs) {
+        String message = getFormattedMessage(format, fmtArgs);
+        final OSErrorEnum osErrorEnum = errorType2errno(osErrorSubtype);
+        assert osErrorEnum != null : "could not determine an errno for this error, either not an OSError subtype or multiple errno codes are available";
+        return executeWithArgsOnly(frame, osErrorSubtype, new Object[]{osErrorEnum.getNumber(), message});
+    }
+
+    public final PException raiseFileNotFoundError(Frame frame, String format, Object... fmtArgs) {
+        return raiseOSErrorSubType(frame, PythonBuiltinClassType.FileNotFoundError, format, fmtArgs);
+    }
+
+    public final PException raiseSocketTimeoutError(Frame frame, String format, Object... fmtArgs) {
+        return raiseOSErrorSubType(frame, PythonBuiltinClassType.SocketTimeout, format, fmtArgs);
+    }
+
+    public final PException raiseUnicodeEncodeError(Frame frame, String encoding, String object, int start, int end, String reason) {
+        return executeWithArgsOnly(frame, PythonBuiltinClassType.UnicodeEncodeError, new Object[]{encoding, object, start, end, reason});
+    }
+
+    public final PException raiseUnicodeDecodeError(Frame frame, String encoding, Object object, int start, int end, String reason) {
+        return executeWithArgsOnly(frame, PythonBuiltinClassType.UnicodeDecodeError, new Object[]{encoding, object, start, end, reason});
+    }
+
+    public final PException raiseUnicodeTranslateError(Frame frame, String object, int start, int end, String reason) {
+        return executeWithArgsOnly(frame, PythonBuiltinClassType.UnicodeTranslateError, new Object[]{object, start, end, reason});
+    }
+
+    public static PException raiseUncachedUnicodeDecodeError(String encoding, Object object, int start, int end, String reason) {
+        return getUncached().raiseUnicodeDecodeError(null, encoding, object, start, end, reason);
     }
 
     public static PConstructAndRaiseNode create() {

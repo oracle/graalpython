@@ -74,10 +74,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PBaseException extends PythonObject {
-    public static class Data {
-
-    }
-
     private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
 
     private PTuple args; // can be null for lazily generated message
@@ -95,41 +91,47 @@ public final class PBaseException extends PythonObject {
     private boolean suppressContext = false;
     // the data instance is used to store additional information for some of the builtin exceptions
     // not unlike subclassing
-    private Data data;
+    private Object[] exceptionAttributes;
 
-    public PBaseException(Object cls, Shape instanceShape, Data data, PTuple args) {
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, PTuple args) {
         super(cls, instanceShape);
-        this.data = data;
+        this.exceptionAttributes = exceptionAttributes;
         this.args = args;
         this.hasMessageFormat = false;
         this.messageFormat = null;
         this.messageArgs = null;
     }
 
-    public PBaseException(Object cls, Shape instanceShape, Data data) {
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes) {
         super(cls, instanceShape);
-        this.data = data;
+        this.exceptionAttributes = exceptionAttributes;
         this.args = null;
         this.hasMessageFormat = false;
         this.messageFormat = null;
         this.messageArgs = null;
     }
 
-    public PBaseException(Object cls, Shape instanceShape, Data data, String format, Object[] args) {
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, String format, Object[] formatArgs) {
         super(cls, instanceShape);
-        this.data = data;
+        this.exceptionAttributes = exceptionAttributes;
         this.args = null;
         this.hasMessageFormat = true;
         this.messageFormat = format;
-        this.messageArgs = args;
+        this.messageArgs = formatArgs;
     }
 
-    public Data getData() {
-        return data;
+    public Object getExceptionAttribute(int idx) {
+        assert exceptionAttributes != null : "PBaseException internal attributes are null";
+        assert idx >= 0 && idx < exceptionAttributes.length : "index to access PBaseException internal attributes is out of range";
+        return exceptionAttributes[idx];
     }
 
-    public void setData(Data data) {
-        this.data = data;
+    public Object[] getExceptionAttributes() {
+        return exceptionAttributes;
+    }
+
+    public void setExceptionAttributes(Object[] exceptionAttributes) {
+        this.exceptionAttributes = exceptionAttributes;
     }
 
     public PBaseException getContext() {

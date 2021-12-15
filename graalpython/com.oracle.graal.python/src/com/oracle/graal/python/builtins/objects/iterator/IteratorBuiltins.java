@@ -32,7 +32,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -113,7 +112,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         private Object stopIteration(PBuiltinIterator self) {
             self.setExhausted();
             if (throwStopIteration) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             } else {
                 return STOP_MARKER;
             }
@@ -122,7 +121,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isExhausted()")
         Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
             if (throwStopIteration) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             } else {
                 return STOP_MARKER;
             }

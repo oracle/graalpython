@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.ErrorMessages.STATE_IS_NOT_A_DICT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
@@ -42,6 +43,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -50,12 +53,14 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
@@ -72,6 +77,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -80,6 +86,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBaseException)
@@ -419,6 +426,67 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         protected int argsLen(VirtualFrame frame, PBaseException self, SequenceStorageNodes.LenNode lenNode, ArgsNode argsNode) {
             return lenNode.execute(((PTuple) argsNode.executeObject(frame, self, PNone.NO_VALUE)).getSequenceStorage());
+        }
+    }
+
+    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class BaseExceptionSetStateNode extends PythonBinaryBuiltinNode {
+        @CompilerDirectives.ValueType
+        static final class ExcState {
+            private final HashingStorage dictStorage;
+            private final PBaseException exception;
+
+            ExcState(HashingStorage dictStorage, PBaseException exception) {
+                this.dictStorage = dictStorage;
+                this.exception = exception;
+            }
+        }
+
+        @ImportStatic(PGuards.class)
+        abstract static class ForEachKW extends HashingStorageLibrary.ForEachNode<ExcState> {
+            private final int limit;
+
+            protected ForEachKW(int limit) {
+                this.limit = limit;
+            }
+
+            protected final int getLimit() {
+                return limit;
+            }
+
+            @Override
+            public final ExcState execute(Object key, ExcState state) {
+                return execute(null, key, state);
+            }
+
+            public abstract ExcState execute(VirtualFrame frame, Object key, ExcState state);
+
+            @Specialization
+            public static ExcState doIt(VirtualFrame frame, String key, ExcState state,
+                            @Cached PyObjectSetAttr setAttr,
+                            @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
+                final Object value = lib.getItem(state.dictStorage, key);
+                setAttr.execute(frame, state.exception, key, value);
+                return state;
+            }
+        }
+
+        @Specialization
+        Object setDict(PBaseException self, PDict state,
+                        @Cached("create(3)") ForEachKW forEachKW,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            final HashingStorage dictStorage = state.getDictStorage();
+            lib.forEach(dictStorage, forEachKW, new ExcState(dictStorage, self));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isDict(state)")
+        Object generic(@SuppressWarnings("unused") PBaseException self, Object state) {
+            if (state != PNone.NONE) {
+                throw raise(TypeError, STATE_IS_NOT_A_DICT);
+            }
+            return PNone.NONE;
         }
     }
 }

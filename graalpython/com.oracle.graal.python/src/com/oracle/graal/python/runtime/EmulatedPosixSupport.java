@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
@@ -1139,7 +1140,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object[] uname() {
-        return new Object[]{PythonUtils.getPythonOSName(), getHostName(),
+        return new Object[]{getPythonOS().getName(), getHostName(),
                         getOsVersion(), "", PythonUtils.getPythonArch()};
     }
 

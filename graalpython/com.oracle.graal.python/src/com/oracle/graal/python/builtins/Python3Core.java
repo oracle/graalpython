@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
@@ -45,7 +46,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -160,7 +160,6 @@ import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
@@ -180,7 +179,16 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
@@ -342,9 +350,11 @@ public abstract class Python3Core extends ParserErrorCallback {
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
+            PythonOS currentOs = PythonOS.getPythonOS();
             for (PythonBuiltins builtin : providers) {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (!annotation.pythonFile().isEmpty()) {
+                if (!annotation.pythonFile().isEmpty() &&
+                                (annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs)) {
                     coreFiles.add(annotation.pythonFile());
                 }
             }
@@ -372,6 +382,16 @@ public abstract class Python3Core extends ParserErrorCallback {
         }
         hasProfilerTool = c != null;
         c = null;
+    }
+
+    private static void filterBuiltins(List<PythonBuiltins> builtins) {
+        PythonOS currentOs = PythonOS.getPythonOS();
+        for (PythonBuiltins builtin : builtins) {
+            CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+            if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
+                builtins.remove(builtin);
+            }
+        }
     }
 
     private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
@@ -452,6 +472,14 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new WarningsModuleBuiltins(),
                         // exceptions
                         new SystemExitBuiltins(),
+                        new ImportErrorBuiltins(),
+                        new StopIterationBuiltins(),
+                        new SyntaxErrorBuiltins(),
+                        new OsErrorBuiltins(),
+                        new UnicodeErrorBuiltins(),
+                        new UnicodeEncodeErrorBuiltins(),
+                        new UnicodeDecodeErrorBuiltins(),
+                        new UnicodeTranslateErrorBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),
@@ -625,6 +653,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                 builtins.add(builtin);
             }
         }
+        filterBuiltins(builtins);
         return builtins.toArray(new PythonBuiltins[builtins.size()]);
     }
 
@@ -762,7 +791,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
             for (PythonBuiltins builtin : builtins) {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (annotation.isEager()) {
+                if (annotation.isEager() || annotation.extendClasses().length != 0) {
                     builtin.postInitialize(this);
                 }
             }
@@ -790,6 +819,11 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     public final PythonModule getBuiltins() {
         return builtinsModule;
+    }
+
+    public final void registerTypeInBuiltins(String name, PythonBuiltinClassType type) {
+        assert builtinsModule != null : "builtins module was not yet initialized: cannot register type";
+        builtinsModule.setAttribute(name, lookupType(type));
     }
 
     public final PythonModule getSysModule() {
@@ -1056,16 +1090,13 @@ public abstract class Python3Core extends ParserErrorCallback {
                 break;
         }
         instance = factory().createBaseException(cls, message, arguments);
+        final Object[] excAttrs = SYNTAX_ERROR_ATTR_FACTORY.create();
         SourceSection section = location.getSourceSection();
         Source source = section.getSource();
         String path = source.getPath();
-        instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
-        // Not very nice. This counts on the implementation in traceback.py where if the value of
-        // text attribute
-        // is NONE, then the line is not printed
-        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : PNone.NONE);
-        instance.setAttribute("lineno", section.getStartLine());
-        instance.setAttribute("offset", section.getStartColumn());
+        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? source.getName() : "<string>";
+        excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
+        excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
         String msg = "invalid syntax";
         if (type == PythonParser.ErrorType.Print) {
             CharSequence line = source.getCharacters(section.getStartLine());
@@ -1086,7 +1117,12 @@ public abstract class Python3Core extends ParserErrorCallback {
         } else if (message != null) {
             msg = (new ErrorMessageFormatter()).format(message, arguments);
         }
-        instance.setAttribute("msg", msg);
+        // Not very nice. This counts on the implementation in traceback.py where if the value of
+        // text attribute is NONE, then the line is not printed
+        final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
+        excAttrs[SyntaxErrorBuiltins.IDX_MSG] = msg;
+        excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
+        instance.setExceptionAttributes(excAttrs);
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 

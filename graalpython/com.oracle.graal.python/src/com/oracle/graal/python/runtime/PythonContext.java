@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
@@ -152,7 +154,7 @@ public final class PythonContext extends Python3Core {
     private volatile boolean finalizing;
 
     private static String getJniSoExt() {
-        if ("darwin".equals(PythonUtils.getPythonOSName())) {
+        if (getPythonOS() == PLATFORM_DARWIN) {
             return ".dylib";
         }
         return ".so";
@@ -2160,7 +2162,7 @@ public final class PythonContext extends Python3Core {
 
             // only use '.dylib' if we are on 'Darwin-native'
             String soExt;
-            if ("darwin".equals(PythonUtils.getPythonOSName()) && "native".equals(toolchainId)) {
+            if (getPythonOS() == PLATFORM_DARWIN && "native".equals(toolchainId)) {
                 soExt = ".dylib";
             } else {
                 soExt = ".so";

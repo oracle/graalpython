@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.PLATFORM_DARWIN;
-import static com.oracle.graal.python.util.PythonUtils.getPythonOSName;
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -132,8 +132,8 @@ public enum OSErrorEnum {
     ENOCSI(50, "No CSI structure available"),
     EL2HLT(51, "Level 2 halted"),
     EBADE(52, "Invalid exchange"),
-    EBADR(53, "Invalid request descriptor"),
-    EXFULL(54, "Exchange full"),
+    EBADR(platformSpecific(53, -1), "Invalid request descriptor"),
+    EXFULL(platformSpecific(54, -1), "Exchange full"),
     ENOANO(55, "No anode"),
     EBADRQC(56, "Invalid request code"),
     EBADSLT(57, "Invalid slot"),
@@ -362,7 +362,7 @@ public enum OSErrorEnum {
     }
 
     private static int platformSpecific(int linuxValue, int darwinValue) {
-        return getPythonOSName().equals(PLATFORM_DARWIN) ? darwinValue : linuxValue;
+        return getPythonOS() == PLATFORM_DARWIN ? darwinValue : linuxValue;
     }
 
     public static class OperationWouldBlockException extends IllegalStateException {

@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -763,7 +762,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 try {
                     return lib.getIteratorNextElement(iterator);
                 } catch (StopIterationException e) {
-                    throw raiseNode.raise(StopIteration);
+                    throw raiseNode.raiseStopIteration();
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
                 } finally {

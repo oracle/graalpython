@@ -56,48 +56,35 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.SystemExit)
-public final class SystemExitBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.StopIteration)
+public final class StopIterationBuiltins extends PythonBuiltins {
+
+    public static final BaseExceptionAttrNode.StorageFactory STOP_ITERATION_ATTR_FACTORY = (args, factory) -> new Object[]{(args != null && args.length > 0) ? args[0] : PNone.NONE};
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return SystemExitBuiltinsFactory.getFactories();
+        return StopIterationBuiltinsFactory.getFactories();
     }
-
-    public static final BaseExceptionAttrNode.StorageFactory SYSTEM_EXIT_ATTR_FACTORY = (args, factory) -> {
-        Object code;
-        switch (args.length) {
-            case 0:
-                code = PNone.NONE;
-                break;
-            case 1:
-                code = args[0];
-                break;
-            default:
-                code = factory.createTuple(args);
-        }
-        return new Object[]{code};
-    };
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
+    public abstract static class StopIterationInitNode extends PythonBuiltinNode {
         @Specialization
-        Object initNoArgs(PBaseException self, Object[] args,
+        Object init(PBaseException self, Object[] args,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            self.setExceptionAttributes(SYSTEM_EXIT_ATTR_FACTORY.create(args, factory()));
+            self.setExceptionAttributes(STOP_ITERATION_ATTR_FACTORY.create(args, factory()));
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "code", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception code")
+    @Builtin(name = "value", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "generator return value")
     @GenerateNodeFactory
-    public abstract static class CodeNode extends PythonBuiltinNode {
+    public abstract static class StopIterationValueNode extends PythonBuiltinNode {
         @Specialization
         Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, 0, SYSTEM_EXIT_ATTR_FACTORY);
+            return attrNode.execute(self, value, 0, STOP_ITERATION_ATTR_FACTORY);
         }
     }
 }

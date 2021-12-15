@@ -43,6 +43,8 @@ package com.oracle.graal.python.nodes;
 public abstract class ErrorMessages {
 
     public static final String ABSOLUTE_VALUE_TOO_LARGE = "absolute value too large";
+    public static final String S_EXPECTED_SD_ARGS_GOT_D = "%s expected %s%d argument%s, got %d";
+    public static final String UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS = "unpacked tuple should have %s%d element%s, but has %d";
     public static final String ARG_AFTER_MUST_BE_ITERABLE = "argument after * must be an iterable, not %p";
     public static final String ARG_AFTER_MUST_BE_MAPPING = "%s() argument after ** must be a mapping, not %p";
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
@@ -607,6 +609,7 @@ public abstract class ErrorMessages {
     public static final String TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING = "Too many decimal digits in format string";
     public static final String SLOTS_MUST_BE_IDENTIFIERS = "__slots__ must be identifiers";
     public static final String STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE = "starred assignment target must be in a list or tuple";
+    public static final String STATE_IS_NOT_A_DICT = "state is not a dictionary";
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
     public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
@@ -633,7 +636,8 @@ public abstract class ErrorMessages {
     public static final String TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S = "%s() takes from %d to %d positional argument%s but %d %s given%s";
     public static final String TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN = "%s() takes exactly %d arguments (%d given)";
     public static final String TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN = "%s() takes exactly %s arguments (%d given)";
-    public static final String TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
+    public static final String S_TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
+    public static final String P_TAKES_NO_KEYWORD_ARGS = "%p takes no keyword arguments";
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = "_tee_dataobject should not have more than %s links";
     public static final String TDATAOBJECT_SHOULDNT_HAVE_NEXT = "_tee_dataobject shouldn't have a next if not full";
@@ -700,6 +704,7 @@ public abstract class ErrorMessages {
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
     public static final String X_NOT_IN_LIST = "x not in list";
     public static final String X_NOT_IN_TUPLE = "tuple.index(x): x not in tuple";
+    public static final String S_IS_AN_INVALID_ARG_FOR_S = "'%s' is an invalid keyword argument for %s";
     public static final String YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH = "%s: you may specify either '%s' or '%s' but not both";
     public static final String ZIPIMPORT_CANNOT_REWAD_ARCH_MEMBERS = "zipimport: cannot read archive members large than 2GB";
     public static final String ZIPIMPORT_CANT_READ_DATA = "zipimport: can't read data";
@@ -1007,6 +1012,17 @@ public abstract class ErrorMessages {
     public static final String OTHER_ARG_MUST_BE_KEY = "other argument must be K instance";
     public static final String INVALID_PARTIAL_STATE = "invalid partial state";
     public static final String LOST_S = "lost %s";
+
+    // ssl error messages
+    public static final String SSL_ERR_DECODING_PEM_FILE_S = "Error decoding PEM-encoded file: %s";
+    public static final String SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S = "Error decoding PEM-encoded file: unexpected type %s";
+    public static final String SSL_ERR_DECODING_PEM_FILE = "Error decoding PEM-encoded file";
+    public static final String SSL_CANT_OPEN_FILE_S = "Can't open file: %s";
+    public static final String SSL_CANNOT_WRITE_AFTER_EOF = "cannot write() after write_eof()";
+
+    // syntax errors
+    public static final String MISSING_PARENTHESES_IN_CALL_TO_EXEC = "Missing parentheses in call to 'exec'";
+    public static final String MISSING_PARENTHESES_IN_CALL_TO_PRINT = "Missing parentheses in call to 'print'. Did you mean print(%s%s)?";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";

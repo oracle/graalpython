@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,6 +51,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
@@ -71,7 +71,7 @@ public class SSLCipherSelector {
         // The call fails when no <= TLSv1.2 ciphersuites get selected, regardless of TLSv1.3
         // ciphersuites
         if (selected.size() == 0) {
-            throw PRaiseNode.raiseUncached(node, SSLError, ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
         }
         // The API that CPython uses is meant only for setting <= TLSv1.2 ciphersuites, but it
         // also unconditionally adds a hardcoded list of TLSv1.3 ciphersuites to the beginning
@@ -112,7 +112,7 @@ public class SSLCipherSelector {
             } else if (cipherString.startsWith("@SECLEVEL=")) {
                 throw PRaiseNode.raiseUncached(node, NotImplementedError, "@SECLEVEL not implemented");
             } else {
-                throw PRaiseNode.raiseUncached(node, SSLError, ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
             }
         } else if (cipherString.equals("DEFAULT")) {
             selectCiphersFromList(node, "ALL:!COMPLEMENTOFDEFAULT:!eNULL", selected, deleted);

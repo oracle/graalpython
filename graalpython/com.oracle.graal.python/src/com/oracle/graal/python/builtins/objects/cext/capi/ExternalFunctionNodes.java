@@ -1948,7 +1948,7 @@ public abstract class ExternalFunctionNodes {
                 PException currentException = getThreadStateNode.getCurrentException(context);
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
                 if (currentException == null) {
-                    throw raiseNode.raise(PythonBuiltinClassType.StopIteration);
+                    throw raiseNode.raiseStopIteration();
                 } else {
                     // consume exception
                     getThreadStateNode.setCurrentException(context, null);

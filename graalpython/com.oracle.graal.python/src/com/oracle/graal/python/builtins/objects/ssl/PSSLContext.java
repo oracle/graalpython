@@ -144,7 +144,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public List<X509Certificate> getCACerts() throws KeyStoreException, NoSuchAlgorithmException {
+    public X509Certificate[] getCACerts() throws KeyStoreException, NoSuchAlgorithmException {
         List<X509Certificate> result = new ArrayList<>();
         if (caKeystore != null) {
             Enumeration<String> aliases = caKeystore.aliases();
@@ -159,7 +159,7 @@ public final class PSSLContext extends PythonBuiltinObject {
                 result.add(cert);
             }
         }
-        return result;
+        return result.toArray(new X509Certificate[0]);
     }
 
     public SSLMethod getMethod() {

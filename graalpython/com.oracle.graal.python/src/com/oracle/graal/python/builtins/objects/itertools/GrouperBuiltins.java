@@ -40,11 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.nodes.BuiltinNames.ITER;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+
+import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -67,7 +68,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.util.List;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PGrouper})
 public final class GrouperBuiltins extends PythonBuiltins {
@@ -101,7 +101,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
             PGroupBy gbo = self.getParent();
             if (gbo.getCurrGrouper() != self) {
                 currGrouperProfile.enter();
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             if (gbo.getCurrValue() == null) {
                 currValueMarkerProfile.enter();
@@ -109,7 +109,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
             }
             if (!eqNode.execute(frame, self.getTgtKey(), gbo.getCurrKey())) {
                 currValueTgtProfile.enter();
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             Object r = gbo.getCurrValue();
             gbo.setCurrValue(null);

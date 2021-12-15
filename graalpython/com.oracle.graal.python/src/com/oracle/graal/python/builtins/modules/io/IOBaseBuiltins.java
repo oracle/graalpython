@@ -72,7 +72,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.ByteArrayOutputStream;
@@ -364,7 +363,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode) {
             Object line = callMethod.execute(frame, self, READLINE);
             if (sizeNode.execute(frame, line) <= 0) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return line;
         }

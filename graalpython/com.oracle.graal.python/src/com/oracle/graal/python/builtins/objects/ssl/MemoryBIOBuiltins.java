@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
+import static com.oracle.graal.python.nodes.ErrorMessages.SSL_CANNOT_WRITE_AFTER_EOF;
 
 import java.util.List;
 
@@ -53,11 +53,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -120,10 +122,11 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
         int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 if (self.didWriteEOF()) {
-                    throw raise(SSLError, "cannot write() after write_eof()");
+                    throw constructAndRaiseNode.raiseSSLError(frame, SSL_CANNOT_WRITE_AFTER_EOF);
                 }
                 try {
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
