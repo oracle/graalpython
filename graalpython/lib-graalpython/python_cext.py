@@ -473,12 +473,4 @@ def initialize_datetime_capi(capi_library):
     datetime.timedelta.__basicsize__ = import_c_func("get_PyDateTime_Delta_basicsize", capi_library)()
 
 
-@may_raise
-def PyEval_GetBuiltins():
-    global __builtins_module_dict
-    if not __builtins_module_dict:
-        import builtins
-        __builtins_module_dict = builtins.__dict__
-    return __builtins_module_dict
-
 

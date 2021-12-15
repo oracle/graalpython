@@ -50,11 +50,14 @@ import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins.AllocateLoc
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockNode;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.ReleaseLockNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -125,6 +128,23 @@ public class PythonCextCEvalBuiltins extends PythonBuiltins {
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return releaseNode.execute(frame, lock);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+    
+    @Builtin(name = "PyEval_GetBuiltins")
+    @GenerateNodeFactory
+    public abstract static class PyEvalGetBuiltinsNode extends PythonBuiltinNode {
+        @Specialization
+        public Object release(@Cached GetDictIfExistsNode getDictNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                PythonModule cext = getContext().getCore().lookupBuiltinModule(BUILTINS);
+                return getDictNode.execute(cext);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getNativeNullNode.execute();
