@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.graal.python.builtins.Builtin;
+import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 
+import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -54,9 +55,10 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockNode;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.ReleaseLockNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -65,11 +67,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(defineModule = PythonCextCEvalBuiltins.PYTHON_CEXT_CEVAL)
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public class PythonCextCEvalBuiltins extends PythonBuiltins {
-
-    public static final String PYTHON_CEXT_CEVAL = "python_cext_ceval";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -81,7 +81,7 @@ public class PythonCextCEvalBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "PyThread_allocate_lock", takesVarArgs = true)
+    @Builtin(name = "PyThread_allocate_lock")
     @GenerateNodeFactory
     public abstract static class PyThreadAllocateLockNode extends PythonBuiltinNode {
         @Specialization
@@ -98,19 +98,15 @@ public class PythonCextCEvalBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyThread_acquire_lock", takesVarArgs = true)
+    @Builtin(name = "PyThread_acquire_lock", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class PyThreadAcquireLockNode extends PythonBuiltinNode {
+    public abstract static class PyThreadAcquireLockNode extends PythonBinaryBuiltinNode {
         @Specialization
         public int acquire(VirtualFrame frame, PLock lock, int waitflag,
                         @Cached AcquireLockNode acquireNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                if ((boolean) acquireNode.execute(frame, lock, waitflag, PNone.NONE)) {
-                    return 1;
-                } else {
-                    return 0;
-                }
+                return ((boolean) acquireNode.execute(frame, lock, waitflag, PNone.NONE)) ? 1 : 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
@@ -118,9 +114,9 @@ public class PythonCextCEvalBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyThread_release_lock", takesVarArgs = true)
+    @Builtin(name = "PyThread_release_lock", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PyThreadReleaseLockNode extends PythonBuiltinNode {
+    public abstract static class PyThreadReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object release(VirtualFrame frame, PLock lock,
                         @Cached ReleaseLockNode releaseNode,
@@ -134,7 +130,7 @@ public class PythonCextCEvalBuiltins extends PythonBuiltins {
             }
         }
     }
-    
+
     @Builtin(name = "PyEval_GetBuiltins")
     @GenerateNodeFactory
     public abstract static class PyEvalGetBuiltinsNode extends PythonBuiltinNode {

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.NextNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyErrRestoreNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
@@ -102,6 +103,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -984,9 +986,9 @@ public class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
     }
-    
+
     /////// PyObject ///////
-    
+
     @Builtin(name = "PyObject_GetItem", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyObjectGetItem extends PythonBinaryBuiltinNode {
@@ -1010,7 +1012,7 @@ public class PythonCextAbstractBuiltins extends PythonBuiltins {
     }
 
     /////// PyMapping ///////
-    
+
     @Builtin(name = "PyMapping_Keys", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PyMappingKeysNode extends PythonUnaryBuiltinNode {
@@ -1117,31 +1119,30 @@ public class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
     }
-    
+
     /////// PyIter ///////
-    
-//@may_raise
-//def PyIter_Next(itObj):
-//    try:
-//        return next(itObj)
-//    except StopIteration:
-//        PyErr_Restore(None, None, None)
-//        return native_null
-    
+
     @Builtin(name = "PyIter_Next", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyIterNextCheck extends PythonUnaryBuiltinNode {
         @Specialization
         static Object check(VirtualFrame frame, Object object,
                         @Cached NextNode nextNode,
+                        @Cached PyErrRestoreNode restoreNode,
+                        @Cached IsBuiltinClassProfile isClassProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return nextNode.execute(frame, object, PNone.NO_VALUE);
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                if (isClassProfile.profileException(e, PythonBuiltinClassType.StopIteration)) {
+                    restoreNode.execute(frame, PNone.NONE, PNone.NONE, PNone.NONE);
+                    return getNativeNullNode.execute();
+                } else {
+                    transformExceptionToNativeNode.execute(e);
+                    return getNativeNullNode.execute();
+                }
             }
         }
-    }    
+    }
 }

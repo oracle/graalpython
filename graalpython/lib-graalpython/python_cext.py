@@ -51,15 +51,6 @@ def may_raise(error_result=native_null):
         return decorator
 
 @may_raise
-def PyIter_Next(itObj):
-    try:
-        return next(itObj)
-    except StopIteration:
-        PyErr_Restore(None, None, None)
-        return native_null
-
-
-@may_raise
 def PyCallIter_New(it, sentinel):
     return iter(it, sentinel)
 
