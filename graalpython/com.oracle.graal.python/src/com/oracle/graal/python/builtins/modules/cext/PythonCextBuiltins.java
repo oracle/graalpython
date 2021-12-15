@@ -40,27 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-<<<<<<< HEAD
-=======
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins.PYTHON_CEXT_ABSTRACT;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins.PYTHON_CEXT_BYTES;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltins.PYTHON_CEXT_CEVAL;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins.PYTHON_CEXT_CODE;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins.PYTHON_CEXT_COMPLEX;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PYTHON_CEXT_DICT;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins.PYTHON_CEXT_FILE;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins.PYTHON_CEXT_FLOAT;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextImportBuiltins.PYTHON_CEXT_IMPORT;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins.PYTHON_CEXT_LIST;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PYTHON_CEXT_LONG;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextMemoryViewBuiltins.PYTHON_CEXT_MEMORYVIEW;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextNamespaceBuiltins.PYTHON_CEXT_NAMESPACE;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltins.PYTHON_CEXT_PYTHON_RUN;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins.PYTHON_CEXT_SET;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltins.PYTHON_CEXT_SLICE;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextSysBuiltins.PYTHON_CEXT_SYS;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins.PYTHON_CEXT_UNICODE;
->>>>>>> intrinsified PySys_XXX
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -101,6 +80,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins.PYTHON_CEXT_TUPLE;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -118,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CextUpcallNode;
@@ -189,7 +168,12 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+<<<<<<< HEAD
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+=======
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+>>>>>>> moved PythonCextBuiltins.PyTupleXXX to PythonCextTupleBuiltins
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -233,7 +217,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -362,47 +345,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         builtinConstants.put("PyGILState_Release", new PyGILStateRelease());
     }
 
-<<<<<<< HEAD
-=======
-    @Override
-    public void postInitialize(Python3Core core) {
-        PythonModule cext = core.lookupBuiltinModule(PYTHON_CEXT);
-        addModuleDict(cext, PYTHON_CEXT_ABSTRACT, core);
-        addModuleDict(cext, PYTHON_CEXT_BYTES, core);
-        addModuleDict(cext, PYTHON_CEXT_CEVAL, core);
-        addModuleDict(cext, PYTHON_CEXT_CODE, core);
-        addModuleDict(cext, PYTHON_CEXT_COMPLEX, core);
-        addModuleDict(cext, PYTHON_CEXT_DICT, core);
-        addModuleDict(cext, PYTHON_CEXT_FILE, core);
-        addModuleDict(cext, PYTHON_CEXT_FLOAT, core);
-        addModuleDict(cext, PYTHON_CEXT_IMPORT, core);
-        addModuleDict(cext, PYTHON_CEXT_LONG, core);
-        addModuleDict(cext, PYTHON_CEXT_LIST, core);
-        addModuleDict(cext, PYTHON_CEXT_MEMORYVIEW, core);
-        addModuleDict(cext, PYTHON_CEXT_NAMESPACE, core);
-        addModuleDict(cext, PYTHON_CEXT_PYTHON_RUN, core);
-        addModuleDict(cext, PYTHON_CEXT_SET, core);
-        addModuleDict(cext, PYTHON_CEXT_SLICE, core);
-        addModuleDict(cext, PYTHON_CEXT_SYS, core);
-        addModuleDict(cext, PYTHON_CEXT_UNICODE, core);
-    }
-
-    private static void addModuleDict(PythonModule cext, String module, Python3Core core) {
-        PythonModule cext_module = core.lookupBuiltinModule(module);
-        PDict dict = GetDictIfExistsNodeGen.getUncached().execute(cext_module);
-        HashingStorageIterable<Object> keys = dict.keys();
-        HashingStorageIterator<Object> it = keys.iterator();
-        while (it.hasNext()) {
-            Object key = it.next();
-            Object value = dict.getItem(key);
-            if (value instanceof PythonBuiltinObject) {
-                assert cext.getAttribute(key) == PNone.NO_VALUE || cext.getAttribute(key) == null : "python_cext dict already contains value " + cext.getAttribute(key) + " for key " + key;
-                cext.setAttribute(key, value);
-            }
-        }
-    }
-
->>>>>>> intrinsified PySys_XXX
     @FunctionalInterface
     public interface TernaryFunction<T1, T2, T3, R> {
         R apply(T1 arg0, T2 arg1, T3 arg2);
@@ -656,56 +598,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
             }
             throw raise(PythonErrorType.KeyError, "'%s'", typeName);
-        }
-    }
-
-    @Builtin(name = "PyTuple_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTuple_New extends PythonUnaryBuiltinNode {
-        @Specialization
-        PTuple doGeneric(VirtualFrame frame, Object size,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            return factory().createTuple(new Object[asSizeNode.executeExact(frame, size)]);
-        }
-    }
-
-    @Builtin(name = "PyTuple_SetItem", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    @ImportStatic(CApiGuards.class)
-    abstract static class PyTuple_SetItem extends PythonTernaryBuiltinNode {
-        @Specialization
-        static int doManaged(VirtualFrame frame, PythonNativeWrapper selfWrapper, Object position, Object elementWrapper,
-                        @Cached AsPythonObjectNode selfAsPythonObjectNode,
-                        @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object self = selfAsPythonObjectNode.execute(selfWrapper);
-                if (!PGuards.isPTuple(self) || selfWrapper.getRefCount() != 1) {
-                    throw raiseNode.raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_P, "PTuple_SetItem");
-                }
-                PTuple tuple = (PTuple) self;
-                Object element = elementAsPythonObjectNode.execute(elementWrapper);
-                setItemNode.execute(frame, tuple.getSequenceStorage(), position, element);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
-            }
-        }
-
-        @Specialization(guards = "!isNativeWrapper(tuple)")
-        static int doNative(Object tuple, long position, Object element,
-                        @Cached PCallCapiFunction callSetItem) {
-            // TODO(fa): This path should be avoided since this is called from native code to do a
-            // native operation.
-            callSetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, tuple, position, element);
-            return 0;
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign(), "invalid item for assignment");
         }
     }
 
@@ -2056,29 +1948,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         int doSlow(VirtualFrame frame, Object derived, Object cls) {
             return doGeneric(frame, derived, cls, ToJavaNodeGen.getUncached(), ToJavaNodeGen.getUncached(), IsSubtypeNodeGen.getUncached());
-        }
-    }
-
-    @Builtin(name = "PyTuple_GetItem", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTuple_GetItem extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        Object doPTuple(VirtualFrame frame, PTuple tuple, long key,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
-            SequenceStorage sequenceStorage = tuple.getSequenceStorage();
-            // we must do a bounds-check but we must not normalize the index
-            if (key < 0 || key >= lenNode.execute(sequenceStorage)) {
-                throw raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
-            }
-            return getItemNode.execute(frame, sequenceStorage, key);
-        }
-
-        @Fallback
-        Object doPTuple(Object tuple, @SuppressWarnings("unused") Object key) {
-            // TODO(fa) To be absolutely correct, we need to do a 'isinstance' check on the object.
-            throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, tuple, tuple);
         }
     }
 
