@@ -175,6 +175,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
@@ -2140,7 +2141,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached BranchProfile updatedStorage,
-                        @Cached("create(New)") LookupInheritedSlotNode getNewFuncNode,
+                        @Cached("create(New)") LookupCallableSlotInMRONode getNewFuncNode,
+                        @Cached TypeBuiltins.BindNew bindNew,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
                         @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
                         @Cached("create(__MRO_ENTRIES__)") LookupInheritedAttributeNode lookupMroEntriesNode,
@@ -2167,7 +2169,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // the new metaclass has the same __new__ function as we are in, continue
                 } else {
                     // Pass it to the winner
-                    return callNewFuncNode.execute(frame, newFunc, new Object[]{winner, name, bases, namespaceOrig}, kwds);
+                    return callNewFuncNode.execute(frame, bindNew.execute(frame, newFunc, winner), new Object[]{winner, name, bases, namespaceOrig}, kwds);
                 }
             }
 
