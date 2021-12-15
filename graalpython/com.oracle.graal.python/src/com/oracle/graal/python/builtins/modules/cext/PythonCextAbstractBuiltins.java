@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AbsNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.DivModNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.NextNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -71,12 +72,21 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNative
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -97,6 +107,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -973,5 +984,164 @@ public class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
     }
+    
+    /////// PyObject ///////
+    
+    @Builtin(name = "PyObject_GetItem", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyObjectGetItem extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doManaged(VirtualFrame frame, Object listWrapper, Object key,
+                        @Cached com.oracle.graal.python.lib.PyObjectGetItem getItem,
+                        @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
+                        @Cached AsPythonObjectNode keyAsPythonObjectNode,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
+                Object item = getItem.execute(frame, delegate, keyAsPythonObjectNode.execute(key));
+                return toNewRefNode.execute(item);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return toNewRefNode.execute(getNativeNullNode.execute());
+            }
+        }
+    }
 
+    /////// PyMapping ///////
+    
+    @Builtin(name = "PyMapping_Keys", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyMappingKeysNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object keys(VirtualFrame frame, PDict obj,
+                        @Cached KeysNode keysNode,
+                        @Cached ConstructListNode listNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return listNode.execute(frame, keysNode.execute(frame, obj));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!isDict(obj)")
+        public Object keys(VirtualFrame frame, Object obj,
+                        @Cached PyObjectGetAttr getAttrNode,
+                        @Cached CallNode callNode,
+                        @Cached ConstructListNode listNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return getKeys(frame, obj, getAttrNode, callNode, listNode);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+    }
+
+    private static PList getKeys(VirtualFrame frame, Object obj, PyObjectGetAttr getAttrNode, CallNode callNode, ConstructListNode listNode) {
+        Object attr = getAttrNode.execute(frame, obj, KEYS);
+        return listNode.execute(frame, callNode.execute(frame, attr));
+    }
+
+    @Builtin(name = "PyMapping_Items", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyMappingItemsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object items(VirtualFrame frame, PDict obj,
+                        @Cached ItemsNode itemsNode,
+                        @Cached ConstructListNode listNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return listNode.execute(frame, itemsNode.execute(frame, obj));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!isDict(obj)")
+        public Object items(VirtualFrame frame, Object obj,
+                        @Cached PyObjectGetAttr getAttrNode,
+                        @Cached CallNode callNode,
+                        @Cached ConstructListNode listNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object attr = getAttrNode.execute(frame, obj, ITEMS);
+                return listNode.execute(frame, callNode.execute(frame, attr));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyMapping_Values", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyMappingValuesNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object values(VirtualFrame frame, PDict obj,
+                        @Cached ConstructListNode listNode,
+                        @Cached ValuesNode valuesNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return listNode.execute(frame, valuesNode.execute(frame, obj));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "!isDict(obj)")
+        public Object values(VirtualFrame frame, Object obj,
+                        @Cached PyObjectGetAttr getAttrNode,
+                        @Cached CallNode callNode,
+                        @Cached ConstructListNode listNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object attr = getAttrNode.execute(frame, obj, VALUES);
+                return listNode.execute(frame, callNode.execute(frame, attr));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+    
+    /////// PyIter ///////
+    
+//@may_raise
+//def PyIter_Next(itObj):
+//    try:
+//        return next(itObj)
+//    except StopIteration:
+//        PyErr_Restore(None, None, None)
+//        return native_null
+    
+    @Builtin(name = "PyIter_Next", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyIterNextCheck extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object check(VirtualFrame frame, Object object,
+                        @Cached NextNode nextNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return nextNode.execute(frame, object, PNone.NO_VALUE);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }    
 }
