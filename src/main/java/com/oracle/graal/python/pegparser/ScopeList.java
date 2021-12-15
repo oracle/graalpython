@@ -40,66 +40,37 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.sst.SSTNode;
 import java.util.Arrays;
 
-final class SymbolList {
-    private SSTNode[] nodes;
-    private ExprContext[] contexts;
+final class ScopeList {
+    private ScopeInfo[] infos;
     private short size;
 
-    SymbolList() {
-        nodes = new SSTNode[16];
-        contexts = new ExprContext[nodes.length];
+    ScopeList() {
+        infos = new ScopeInfo[16];
         size = 0;
-    }
-
-    private SymbolList(SSTNode[] nodes, ExprContext[] contexts, int size) {
-        this.nodes = nodes;
-        this.contexts = contexts;
-        this.size = (short)size;
     }
 
     short size() {
         return size;
     }
 
-    SSTNode getNode(int i) {
-        return nodes[i];
-    }
-
-    ExprContext getContext(int i) {
-        return contexts[i];
-    }
-
-    void push(SSTNode node, ExprContext context) {
-        if (size == nodes.length) {
-            nodes = Arrays.copyOf(nodes, nodes.length << 1);
-            contexts = Arrays.copyOf(contexts, nodes.length);
+    void add(ScopeInfo info) {
+        if (size == infos.length) {
+            infos = Arrays.copyOf(infos, infos.length << 1);
         }
-        nodes[size++] = node;
-        contexts[size] = context;
-    }
-
-    void pop(int cnt) {
-        assert cnt < size;
-        reset((short)(size - cnt));
+        infos[size++] = info;
     }
 
     void reset(short toSize) {
-        // we can ignore the contexs, there's no leak there.
-        // it's ok to also never shrink.
-        // TODO: (tfel) is it worth null-ing? it should be very few sst nodes that leak, and
-        // only until end of parsing
-        // Arrays.fill(nodes, toSize, size, null);
+        // TODO: (tfel) is it worth null-ing?
+        // Arrays.fill(infos, toSize, size, null);
         size = toSize;
     }
 
-    SymbolList consume(short toSize) {
-        SSTNode[] consumedNodes = Arrays.copyOfRange(nodes, toSize, size);
-        ExprContext[] consumedContexts = Arrays.copyOfRange(contexts, toSize, size);
-        SymbolList result = new SymbolList(consumedNodes, consumedContexts, size - toSize);
-        reset(toSize);
-        return result;
+    ScopeInfo[] consume(short from) {
+        ScopeInfo[] scopes = Arrays.copyOfRange(infos, from, size);
+        reset(from);
+        return scopes;
     }
 }

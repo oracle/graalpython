@@ -41,11 +41,13 @@
 package com.oracle.graal.python.pegparser;
 
 
+import com.oracle.graal.python.pegparser.ScopeInfo.ScopeKind;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -62,5 +64,62 @@ public final class ScopeInfo {
         AsyncFunction,
         Lambda,
         Comprehension;
+    }
+
+    private final SymbolList symbols;
+    private final ScopeKind kind;
+    private final ScopeInfo[] childScopes;
+
+    ScopeInfo(SymbolList symbols, ScopeKind kind, ScopeInfo[] childScopes) {
+        this.symbols = symbols;
+        this.kind = kind;
+        this.childScopes = childScopes;
+    }
+
+    public void analyze() {
+        HashSet<String> free = new HashSet<>();
+        HashSet<String> global = new HashSet<>();
+        analyzeBlock(null, free, global);
+    }
+
+    private void analyzeBlock(HashSet<String> bound, HashSet<String> free, HashSet<String> global) {
+        HashSet<String> local = new HashSet<>();
+        HashMap<String, ScopeInfo> scopes = new HashMap<>();
+
+        HashSet<String> newglobal = new HashSet<>();
+        HashSet<String> newfree = new HashSet<>();
+        HashSet<String> newbound = new HashSet<>();
+
+        if (kind == ScopeKind.Class) {
+            newglobal.addAll(global);
+            if (bound != null) {
+                newbound.addAll(bound);
+            }
+        }
+
+        for (int i = 0; i < symbols.size(); i++) {
+            analzyeName(scopes,
+                            symbols.getNode(i), // name
+                            symbols.getContext(i), // flags
+                            bound,
+                            local,
+                            free,
+                            global);
+        }
+
+        // Populate global and bound sets to be passed to children.
+        if (kind != ScopeKind.Class) {
+            if (kind == ScopeKind.Function) {
+                newbound.addAll(local);
+            }
+            if (bound != null) {
+                newbound.addAll(bound);
+            }
+            newglobal.addAll(global);
+        } else {
+            //
+        }
+
+
     }
 }

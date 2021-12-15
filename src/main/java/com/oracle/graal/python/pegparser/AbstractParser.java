@@ -67,6 +67,7 @@ abstract class AbstractParser {
     private VarLookupSSTNode cachedDummyName;
 
     private final SymbolList variableContexts = new SymbolList();
+    private final ScopeList finishedScopes = new ScopeList();
 
     protected final RuleResultCache<Object> cache = new RuleResultCache(this);
     protected final Map<Integer, String> comments = new LinkedHashMap<>();
@@ -88,21 +89,24 @@ abstract class AbstractParser {
 
     /**
      * Get position in the tokenizer and the variable context stream. The lower 32-bits are the
-     * tokenizer position; the upper 32-bits are the variable context stream position.
+     * tokenizer position; the upper 32-bits split 16/16 into the variable context stream position
+     * and the position in the finished scopes array, which is used to keep track of child scopes.
      *
      * @return the combined positions
      */
     public long mark() {
-        return ((long)variableContexts.size() << 32) | tokenizer.mark();
+        return ((long)finishedScopes.size() << 48) | ((long)variableContexts.size() << 32) | tokenizer.mark();
     }
 
     /**
-     * Reset position in the tokenizer
+     * Reset position in the tokenizer and the dependent variable context and scope streams.
+     *
      * @param position where the tokenizer should set the current position
      */
     public void reset(long position) {
         tokenizer.reset((int)position);
-        variableContexts.reset((int)(position >> 32));
+        variableContexts.reset((short)(position >> 32));
+        finishedScopes.reset((short)(position >> 48));
     }
 
     /**
@@ -110,8 +114,11 @@ abstract class AbstractParser {
      * {@link mark} as returned by {@link #mark()}.
      */
     protected ScopeInfo createScope(long mark, ScopeInfo.ScopeKind kind) {
-        SymbolList list = variableContexts.consume((int)(mark >> 32));
-        return new ScopeInfo();
+        SymbolList list = variableContexts.consume((short)(mark >> 32));
+        ScopeInfo[] childScopes = finishedScopes.consume((short)(mark >> 48));
+        ScopeInfo newScope = new ScopeInfo();
+        finishedScopes.add(newScope);
+        return newScope;
     }
 
     /**
