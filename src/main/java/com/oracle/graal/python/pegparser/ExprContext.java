@@ -40,55 +40,11 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import java.util.HashMap;
-
 /**
- * Cache that is used in the generated parser. Really just a convenient
- * interface around nested HashMaps mapping
- * <code>
- * (int tokenPos) -> (int ruleId) -> (T cachedItem)
- * </code>
+ *
  */
-class RuleResultCache <T> {
-
-    private final AbstractParser parser;
-
-    private static class CachedItem<T> {
-
-        final T node;
-        final int endPos;
-
-        CachedItem(T node, int endPos) {
-            this.node = node;
-            this.endPos = endPos;
-        }
-    }
-
-    // HashMap<start pos, HashMap<rule id, (result, end pos)>>
-    private final HashMap<Integer, HashMap<Integer, CachedItem>> mainCache;
-
-    public RuleResultCache(AbstractParser parser) {
-        this.parser = parser;
-        this.mainCache = new HashMap<>();
-    }
-
-    public boolean hasResult(long pos, int ruleId) {
-        return mainCache.containsKey((int)pos) && mainCache.get((int)pos).containsKey(ruleId);
-    }
-
-    public T getResult(long pos, int ruleId) {
-        CachedItem item = mainCache.get((int)pos).get(ruleId);
-        parser.reset(item.endPos);
-        return (T)item.node;
-    }
-
-    public T putResult(long pos, int ruleId, T node) {
-        HashMap posCache = mainCache.get((int)pos);
-        if (posCache == null) {
-            posCache = new HashMap();
-            mainCache.put((int)pos, posCache);
-        }
-        posCache.put(ruleId, new CachedItem(node, (int)parser.mark()));
-        return node;
-    }
+enum ExprContext {
+    Load,
+    Store,
+    Delete
 }

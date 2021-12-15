@@ -504,7 +504,12 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print("protected String[] getSoftKeywords() { return softKeywords; }")
 
     def _set_up_token_start_metadata_extraction(self) -> None:
-        self.print("Token startToken = getAndInitializeToken();");
+        self.print("Token startToken = getAndInitializeToken();")
+
+    def _optionally_mark_scope(self, rhs: Rhs) -> None:
+        "Java change for scope extraction"
+        if any(alt.action and "scopeStart" in alt.action for alt in rhs.alts):
+            self.print("long scopeStart = mark();");
 
     def _set_up_token_end_metadata_extraction(self) -> None:
         self.print("Token endToken = getLastNonWhitespaceToken();")
@@ -521,14 +526,14 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print("{")
         with self.indent():
             self.add_level()
-            self.print("int _mark = mark();")
+            self.print("long _mark = mark();")
             self.print(f"Object _res = null;")
             self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
             with self.indent():
                 self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
                 self.add_return(f"({result_type})_res")
             self.print("}")
-            self.print("int _resmark = mark();")
+            self.print("long _resmark = mark();")
             self.print("while (true) {")
             with self.indent():
                 self.call_with_errorcheck_return(
@@ -556,7 +561,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             self.add_level()
             self._check_for_errors()
-            self.print("int _mark = mark();")
+            self.print("long _mark = mark();")
             self.print(f"Object _res = null;")
             if memoize:
                 self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
@@ -571,6 +576,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.add_return(f"({result_type})_res")
             self.goto_targets.append(_goto_target)
             # End goto target setup
+            # Java change: allow scope extraction during parsing
+            self._optionally_mark_scope(rhs)
+            # End Java change for scope extraction
             if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
                 self._set_up_token_start_metadata_extraction()
             self.visit(
@@ -591,18 +599,21 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.add_level()
             self._check_for_errors()
             self.print("Object _res = null;")
-            self.print("int _mark = mark();")
+            self.print("long _mark = mark();")
             if memoize:
                 self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
                 with self.indent():
                     self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
                     self.add_return(f"({self._collected_type[-1]}[])_res")
                 self.print("}")
-            self.print("int _start_mark = mark();")
+            self.print("long _start_mark = mark();")
             self.print(f"List<{self._collected_type[-1]}> _children = new ArrayList<>();")
             self.out_of_memory_return(f"!_children")
             self.print("int _children_capacity = 1;")
             self.print("int _n = 0;")
+            # Java change: allow scope extraction during parsing
+            self._optionally_mark_scope(rhs)
+            # End Java change for scope extraction
             if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
                 self._set_up_token_start_metadata_extraction()
             self.visit(
@@ -860,7 +871,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print(f"private boolean {name}(boolean match) {{")
 
             with self.indent():
-                self.print("int tmpPos = mark();")
+                self.print("long tmpPos = mark();")
                 return_type = "Object"
                 if call.return_type:
                     return_type = call.return_type;

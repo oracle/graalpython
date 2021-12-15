@@ -40,55 +40,62 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import java.util.HashMap;
+import com.oracle.graal.python.pegparser.sst.SSTNode;
+import java.util.Arrays;
 
-/**
- * Cache that is used in the generated parser. Really just a convenient
- * interface around nested HashMaps mapping
- * <code>
- * (int tokenPos) -> (int ruleId) -> (T cachedItem)
- * </code>
- */
-class RuleResultCache <T> {
+final class SymbolList {
+    private SSTNode[] nodes;
+    private ExprContext[] contexts;
+    private int size;
 
-    private final AbstractParser parser;
+    SymbolList() {
+        nodes = new SSTNode[16];
+        contexts = new ExprContext[nodes.length];
+        size = 0;
+    }
 
-    private static class CachedItem<T> {
+    private SymbolList(SSTNode[] nodes, ExprContext[] contexts, int size) {
+        this.nodes = nodes;
+        this.contexts = contexts;
+        this.size = size;
+    }
 
-        final T node;
-        final int endPos;
+    int size() {
+        return size;
+    }
 
-        CachedItem(T node, int endPos) {
-            this.node = node;
-            this.endPos = endPos;
+    SSTNode getNode(int i) {
+        return nodes[i];
+    }
+
+    ExprContext getContext(int i) {
+        return contexts[i];
+    }
+
+    void push(SSTNode node, ExprContext context) {
+        if (size == nodes.length) {
+            nodes = Arrays.copyOf(nodes, nodes.length << 1);
+            contexts = Arrays.copyOf(contexts, nodes.length);
         }
+        nodes[size++] = node;
+        contexts[size] = context;
     }
 
-    // HashMap<start pos, HashMap<rule id, (result, end pos)>>
-    private final HashMap<Integer, HashMap<Integer, CachedItem>> mainCache;
-
-    public RuleResultCache(AbstractParser parser) {
-        this.parser = parser;
-        this.mainCache = new HashMap<>();
+    void pop(int cnt) {
+        reset(size - cnt);
     }
 
-    public boolean hasResult(long pos, int ruleId) {
-        return mainCache.containsKey((int)pos) && mainCache.get((int)pos).containsKey(ruleId);
+    void reset(int toSize) {
+        // we ignore the contexs, there's no leak there. we also never shrink
+        Arrays.fill(nodes, toSize, size, null);
+        size = toSize;
     }
 
-    public T getResult(long pos, int ruleId) {
-        CachedItem item = mainCache.get((int)pos).get(ruleId);
-        parser.reset(item.endPos);
-        return (T)item.node;
-    }
-
-    public T putResult(long pos, int ruleId, T node) {
-        HashMap posCache = mainCache.get((int)pos);
-        if (posCache == null) {
-            posCache = new HashMap();
-            mainCache.put((int)pos, posCache);
-        }
-        posCache.put(ruleId, new CachedItem(node, (int)parser.mark()));
-        return node;
+    SymbolList consume(int toSize) {
+        SSTNode[] consumedNodes = Arrays.copyOfRange(nodes, toSize, size);
+        ExprContext[] consumedContexts = Arrays.copyOfRange(contexts, toSize, size);
+        SymbolList result = new SymbolList(consumedNodes, consumedContexts, size - toSize);
+        reset(toSize);
+        return result;
     }
 }
