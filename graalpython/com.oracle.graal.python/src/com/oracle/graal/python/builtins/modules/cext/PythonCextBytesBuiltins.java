@@ -349,7 +349,7 @@ public class PythonCextBytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_PyBytes_Resize", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
+    public abstract static class PyBytesResize extends PythonBinaryBuiltinNode {
 
         @Specialization
         int resize(VirtualFrame frame, PBytes self, long newSizeL,

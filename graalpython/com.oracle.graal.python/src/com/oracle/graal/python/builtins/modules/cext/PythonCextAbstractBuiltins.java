@@ -935,7 +935,7 @@ public class PythonCextAbstractBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PySequence_DelItem", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class PySequence_DelItemNode extends PythonBinaryBuiltinNode {
+    public abstract static class PySequenceDelItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object run(VirtualFrame frame, Object o, Object i,
                         @Cached PyObjectDelItem delItemNode,
@@ -952,7 +952,7 @@ public class PythonCextAbstractBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PySequence_Check", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PySequence_Check extends PythonUnaryBuiltinNode {
+    abstract static class PySequenceCheck extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean check(Object object,
                         @Cached PySequenceCheckNode check) {

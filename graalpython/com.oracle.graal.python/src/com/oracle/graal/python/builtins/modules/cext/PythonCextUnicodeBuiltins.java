@@ -787,9 +787,9 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_PyUnicode_AsUTF8String", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class _PyUnicode_AsUTF8String extends NativeEncoderNode {
+    abstract static class PyUnicodeAsUTF8String extends NativeEncoderNode {
 
-        protected _PyUnicode_AsUTF8String() {
+        protected PyUnicodeAsUTF8String() {
             super(StandardCharsets.UTF_8);
         }
     }

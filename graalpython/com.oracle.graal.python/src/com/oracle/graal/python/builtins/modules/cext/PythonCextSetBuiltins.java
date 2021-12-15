@@ -403,7 +403,7 @@ public class PythonCextSetBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PySet_Add", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class PySet_Add extends PythonBinaryBuiltinNode {
+    public abstract static class PySetAdd extends PythonBinaryBuiltinNode {
 
         @Specialization
         int add(VirtualFrame frame, PBaseSet self, Object o,

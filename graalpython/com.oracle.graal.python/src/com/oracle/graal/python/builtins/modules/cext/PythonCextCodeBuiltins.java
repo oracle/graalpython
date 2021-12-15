@@ -60,11 +60,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(defineModule = PythonCextCodeBuiltins.PYTHON_CEXT_CODE)
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public class PythonCextCodeBuiltins extends PythonBuiltins {
-
-    public static final String PYTHON_CEXT_CODE = "python_cext_code";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
