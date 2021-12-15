@@ -116,21 +116,6 @@ def PyObject_Str(o):
 def PyObject_Repr(o):
     return repr(o)
 
-
-@may_raise(-1)
-def PyTuple_Size(t):
-    if not isinstance(t, tuple):
-        __bad_internal_call(None, None, t)
-    return len(t)
-
-
-@may_raise
-def PyTuple_GetSlice(t, start, end):
-    if not isinstance(t, tuple):
-        __bad_internal_call(None, None, t)
-    return t[start:end]
-
-
 @may_raise
 def dict_from_list(lst):
     if len(lst) % 2 != 0:
