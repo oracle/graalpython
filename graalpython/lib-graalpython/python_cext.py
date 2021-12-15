@@ -482,6 +482,3 @@ def PyEval_GetBuiltins():
     return __builtins_module_dict
 
 
-def sequence_clear():
-    return 0
-
