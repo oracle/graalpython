@@ -132,7 +132,7 @@ public enum OSErrorEnum {
     ENOCSI(50, "No CSI structure available"),
     EL2HLT(51, "Level 2 halted"),
     EBADE(52, "Invalid exchange"),
-    EBADR(53, "Invalid request descriptor"),
+    EBADR(platformSpecific(53, -1), "Invalid request descriptor"),
     EXFULL(54, "Exchange full"),
     ENOANO(55, "No anode"),
     EBADRQC(56, "Invalid request code"),
