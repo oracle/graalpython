@@ -133,7 +133,7 @@ public enum OSErrorEnum {
     EL2HLT(51, "Level 2 halted"),
     EBADE(52, "Invalid exchange"),
     EBADR(platformSpecific(53, -1), "Invalid request descriptor"),
-    EXFULL(54, "Exchange full"),
+    EXFULL(platformSpecific(54, -1), "Exchange full"),
     ENOANO(55, "No anode"),
     EBADRQC(56, "Invalid request code"),
     EBADSLT(57, "Invalid slot"),
