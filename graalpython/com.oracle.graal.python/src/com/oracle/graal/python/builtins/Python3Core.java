@@ -115,8 +115,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextNumberBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextSequenceBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
@@ -405,8 +404,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
-        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
-                        new BuiltinConstructors(),
+        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
@@ -477,15 +475,14 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),
                         new PythonCextBuiltins(),
+                        new PythonCextAbstractBuiltins(),
                         new PythonCextBytesBuiltins(),
                         new PythonCextComplexBuiltins(),
                         new PythonCextDictBuiltins(),
                         new PythonCextFloatBuiltins(),
                         new PythonCextListBuiltins(),
                         new PythonCextLongBuiltins(),
-                        new PythonCextNumberBuiltins(),
                         new PythonCextSetBuiltins(),
-                        new PythonCextSequenceBuiltins(),
                         new PythonCextUnicodeBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),

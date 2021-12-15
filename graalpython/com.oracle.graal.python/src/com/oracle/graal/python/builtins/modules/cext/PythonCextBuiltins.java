@@ -40,11 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins.PYTHON_CEXT_ABSTRACT;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins.PYTHON_CEXT_BYTES;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins.PYTHON_CEXT_COMPLEX;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PYTHON_CEXT_DICT;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins.PYTHON_CEXT_FLOAT;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins.PYTHON_CEXT_LIST;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PYTHON_CEXT_LONG;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins.PYTHON_CEXT_SET;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins.PYTHON_CEXT_UNICODE;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -88,11 +92,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins.PYTHON_CEXT_COMPLEX;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins.PYTHON_CEXT_FLOAT;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextNumberBuiltins.PYTHON_CEXT_NUMBER;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextSequenceBuiltins.PYTHON_CEXT_SEQUENCE;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins.PYTHON_CEXT_UNICODE;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -367,15 +366,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         PythonModule cext = core.lookupBuiltinModule(PYTHON_CEXT);
+        addModuleDict(cext, PYTHON_CEXT_ABSTRACT, core);
         addModuleDict(cext, PYTHON_CEXT_BYTES, core);
         addModuleDict(cext, PYTHON_CEXT_COMPLEX, core);
         addModuleDict(cext, PYTHON_CEXT_DICT, core);
         addModuleDict(cext, PYTHON_CEXT_FLOAT, core);
         addModuleDict(cext, PYTHON_CEXT_LONG, core);
         addModuleDict(cext, PYTHON_CEXT_LIST, core);
-        addModuleDict(cext, PYTHON_CEXT_NUMBER, core);
         addModuleDict(cext, PYTHON_CEXT_SET, core);
-        addModuleDict(cext, PYTHON_CEXT_SEQUENCE, core);
         addModuleDict(cext, PYTHON_CEXT_UNICODE, core);
     }
 
