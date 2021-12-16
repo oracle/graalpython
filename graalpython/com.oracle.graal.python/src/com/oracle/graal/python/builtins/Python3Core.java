@@ -189,6 +189,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.KeyErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
@@ -491,6 +492,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new SystemExitBuiltins(),
                         new ImportErrorBuiltins(),
                         new StopIterationBuiltins(),
+                        new KeyErrorBuiltins(),
                         new SyntaxErrorBuiltins(),
                         new OsErrorBuiltins(),
                         new UnicodeErrorBuiltins(),

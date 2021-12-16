@@ -30,10 +30,14 @@ import static com.oracle.graal.python.nodes.ErrorMessages.STATE_IS_NOT_A_DICT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SUPPRESS_CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TRACEBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import java.util.IllegalFormatException;
 import java.util.List;
@@ -58,10 +62,6 @@ import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -170,6 +170,10 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         public abstract Object executeObject(VirtualFrame frame, Object excObj, Object value);
+
+        public final Object executeGet(VirtualFrame frame, Object excObj) {
+            return executeObject(frame, excObj, PNone.NO_VALUE);
+        }
 
         public static ArgsNode create() {
             return BaseExceptionBuiltinsFactory.ArgsNodeFactory.create(new ReadArgumentNode[]{});
