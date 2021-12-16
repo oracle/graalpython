@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -123,30 +124,27 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         protected Source doGeneric(VirtualFrame frame, Object pattern, String flags,
-                        @CachedLibrary("pattern") InteropLibrary interopLib,
+                        @Cached CastToJavaStringNode cast,
                         @CachedLibrary("pattern") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            if (interopLib.isString(pattern)) {
+            try {
+                return doString(cast.execute(pattern), flags);
+            } catch (CannotCastException ce) {
+                Object buffer;
                 try {
-                    return doString(interopLib.asString(pattern), flags);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    buffer = bufferAcquireLib.acquireReadonly(pattern, frame, this);
+                } catch (PException e) {
+                    throw raise(TypeError, "expected string or bytes-like object");
                 }
-            }
-            Object buffer;
-            try {
-                buffer = bufferAcquireLib.acquireReadonly(pattern, frame, this);
-            } catch (PException e) {
-                throw raise(TypeError, "expected string or bytes-like object");
-            }
-            try {
-                String options = "Flavor=PythonBytes,Encoding=BYTES";
-                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                int bytesLen = bufferLib.getBufferLength(buffer);
-                String patternStr = decodeLatin1(bytes, bytesLen);
-                return constructRegexSource(options, patternStr, flags);
-            } finally {
-                bufferLib.release(buffer, frame, this);
+                try {
+                    String options = "Flavor=PythonBytes,Encoding=BYTES";
+                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                    int bytesLen = bufferLib.getBufferLength(buffer);
+                    String patternStr = decodeLatin1(bytes, bytesLen);
+                    return constructRegexSource(options, patternStr, flags);
+                } finally {
+                    bufferLib.release(buffer, frame, this);
+                }
             }
         }
     }
@@ -212,13 +210,21 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object call(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
+                        @Cached CastToJavaStringNode cast,
                         @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
+            Object input = inputStringOrBytes;
+            try {
+                // This would materialize the string if it was native
+                input = cast.execute(inputStringOrBytes);
+            } catch (CannotCastException e) {
+                // It's bytes or other buffer object
+            }
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return interop.execute(callable, inputStringOrBytes, fromIndex);
+                return interop.execute(callable, input, fromIndex);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%m", e);
