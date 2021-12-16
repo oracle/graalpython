@@ -40,15 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins.PYTHON_CEXT_ABSTRACT;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins.PYTHON_CEXT_BYTES;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins.PYTHON_CEXT_COMPLEX;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PYTHON_CEXT_DICT;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins.PYTHON_CEXT_FLOAT;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins.PYTHON_CEXT_LIST;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PYTHON_CEXT_LONG;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins.PYTHON_CEXT_SET;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins.PYTHON_CEXT_UNICODE;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -181,8 +172,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -214,7 +203,6 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
@@ -276,7 +264,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -361,35 +348,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         builtinConstants.put("PyEval_RestoreThread", new PyEvalRestoreThread());
         builtinConstants.put("PyGILState_Ensure", new PyGILStateEnsure());
         builtinConstants.put("PyGILState_Release", new PyGILStateRelease());
-    }
-
-    @Override
-    public void postInitialize(Python3Core core) {
-        PythonModule cext = core.lookupBuiltinModule(PYTHON_CEXT);
-        addModuleDict(cext, PYTHON_CEXT_ABSTRACT, core);
-        addModuleDict(cext, PYTHON_CEXT_BYTES, core);
-        addModuleDict(cext, PYTHON_CEXT_COMPLEX, core);
-        addModuleDict(cext, PYTHON_CEXT_DICT, core);
-        addModuleDict(cext, PYTHON_CEXT_FLOAT, core);
-        addModuleDict(cext, PYTHON_CEXT_LONG, core);
-        addModuleDict(cext, PYTHON_CEXT_LIST, core);
-        addModuleDict(cext, PYTHON_CEXT_SET, core);
-        addModuleDict(cext, PYTHON_CEXT_UNICODE, core);
-    }
-
-    private void addModuleDict(PythonModule cext, String module, Python3Core core) {
-        PythonModule cext_module = core.lookupBuiltinModule(module);
-        PDict dict = GetDictIfExistsNodeGen.getUncached().execute(cext_module);
-        HashingStorageIterable<Object> keys = dict.keys();
-        HashingStorageIterator<Object> it = keys.iterator();
-        while (it.hasNext()) {
-            Object key = it.next();
-            Object value = dict.getItem(key);
-            if (value instanceof PythonBuiltinObject) {
-                assert cext.getAttribute(key) == PNone.NO_VALUE || cext.getAttribute(key) == null : "python_cext dict already contains value " + cext.getAttribute(key) + " for key " + key;
-                cext.setAttribute(key, value);
-            }
-        }
     }
 
     @FunctionalInterface

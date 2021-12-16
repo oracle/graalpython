@@ -62,11 +62,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(defineModule = PythonCextFloatBuiltins.PYTHON_CEXT_FLOAT)
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public class PythonCextFloatBuiltins extends PythonBuiltins {
-
-    public static final String PYTHON_CEXT_FLOAT = "python_cext_float";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

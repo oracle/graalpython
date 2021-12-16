@@ -90,11 +90,9 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
-@CoreFunctions(defineModule = PythonCextSetBuiltins.PYTHON_CEXT_SET)
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public class PythonCextSetBuiltins extends PythonBuiltins {
-
-    public static final String PYTHON_CEXT_SET = "python_cext_set";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

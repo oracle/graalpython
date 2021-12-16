@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -103,11 +102,9 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
-@CoreFunctions(defineModule = PythonCextDictBuiltins.PYTHON_CEXT_DICT)
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public class PythonCextDictBuiltins extends PythonBuiltins {
-
-    public static final String PYTHON_CEXT_DICT = "python_cext_dict";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -271,11 +268,11 @@ public class PythonCextDictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyDict_Copy", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "PyDict_Copy", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public abstract static class PyDictCopyNode extends PythonUnaryBuiltinNode {
+    public abstract static class PyDictCopyNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        public Object copy(PDict dict,
+        public Object copy(Object module, PDict dict,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
@@ -283,27 +280,27 @@ public class PythonCextDictBuiltins extends PythonBuiltins {
                 return factory().createDict(lib.copy(dict.getDictStorage()));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute(PNone.NONE);
+                return getNativeNullNode.execute(module);
             }
         }
 
         @Specialization(guards = {"!isDict(dict)", "isDictSubtype(frame, dict, getClassNode, isSubtypeNode)"})
-        public Object copyNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict,
+        public Object copyNative(VirtualFrame frame, Object module, @SuppressWarnings("unused") Object dict,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(module), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object copy(VirtualFrame frame, Object obj,
+        public Object copy(VirtualFrame frame, Object module, Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(module), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
         }
 
         protected boolean isDictSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {

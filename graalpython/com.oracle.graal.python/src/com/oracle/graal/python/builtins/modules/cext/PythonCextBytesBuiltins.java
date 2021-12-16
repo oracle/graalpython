@@ -96,11 +96,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropException;
 import java.util.Arrays;
 
-@CoreFunctions(defineModule = PythonCextBytesBuiltins.PYTHON_CEXT_BYTES)
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public class PythonCextBytesBuiltins extends PythonBuiltins {
-
-    public static final String PYTHON_CEXT_BYTES = "python_cext_bytes";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

@@ -959,6 +959,9 @@ public abstract class Python3Core extends ParserErrorCallback {
             if (annotation.defineModule().length() > 0) {
                 addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin);
             }
+            if (annotation.extendsModule().length() > 0) {
+                addBuiltinsTo(builtinModules.get(annotation.extendsModule()), builtin);
+            }
             for (PythonBuiltinClassType klass : annotation.extendClasses()) {
                 addBuiltinsTo(lookupType(klass), builtin);
             }

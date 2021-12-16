@@ -103,14 +103,11 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(defineModule = PythonCextAbstractBuiltins.PYTHON_CEXT_ABSTRACT)
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public class PythonCextAbstractBuiltins extends PythonBuiltins {
-
-    public static final String PYTHON_CEXT_ABSTRACT = "python_cext_abstract";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -123,7 +120,7 @@ public class PythonCextAbstractBuiltins extends PythonBuiltins {
     }
 
     /////// PyNumber ///////
-    
+
     @Builtin(name = "PyNumber_Check", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
@@ -661,9 +658,9 @@ public class PythonCextAbstractBuiltins extends PythonBuiltins {
             return callNode;
         }
     }
-    
-    /////// PySequence ///////    
-    
+
+    /////// PySequence ///////
+
     @Builtin(name = "PySequence_Tuple", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PySequenceTupleNode extends PythonUnaryBuiltinNode {
@@ -976,5 +973,5 @@ public class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
     }
-    
+
 }

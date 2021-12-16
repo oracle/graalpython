@@ -44,9 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeBuiltin.wrap;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeUnicodeBuiltin.allocateCharBuffer;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeUnicodeBuiltin.remaining;
 
 import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
@@ -119,11 +116,9 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 
-@CoreFunctions(defineModule = PythonCextUnicodeBuiltins.PYTHON_CEXT_UNICODE)
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public class PythonCextUnicodeBuiltins extends PythonBuiltins {
-
-    public static final String PYTHON_CEXT_UNICODE = "python_cext_unicode";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
