@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins.PYTHON_CEXT_TUPLE;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -168,12 +167,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-<<<<<<< HEAD
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
-=======
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
->>>>>>> moved PythonCextBuiltins.PyTupleXXX to PythonCextTupleBuiltins
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -192,7 +185,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager;
@@ -1528,15 +1520,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         PThreadState get() {
             return PThreadState.getThreadState(getLanguage(), getContext());
-        }
-    }
-
-    @Builtin(name = "PyTruffle_SeqIter_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class SeqIterNewNode extends PythonBuiltinNode {
-        @Specialization
-        PSequenceIterator call(Object seq) {
-            return factory().createSequenceIterator(seq);
         }
     }
 

@@ -50,10 +50,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-@may_raise
-def PyCallIter_New(it, sentinel):
-    return iter(it, sentinel)
-
 @may_raise(-1)
 def PyModule_AddObject(m, k, v):
     m.__dict__[k] = v
