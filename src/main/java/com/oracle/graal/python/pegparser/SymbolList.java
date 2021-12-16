@@ -46,7 +46,7 @@ import java.util.Arrays;
 final class SymbolList {
     private SSTNode[] nodes;
     private ExprContext[] contexts;
-    private short size;
+    private int size;
 
     SymbolList() {
         nodes = new SSTNode[16];
@@ -57,10 +57,10 @@ final class SymbolList {
     private SymbolList(SSTNode[] nodes, ExprContext[] contexts, int size) {
         this.nodes = nodes;
         this.contexts = contexts;
-        this.size = (short)size;
+        this.size = size;
     }
 
-    short size() {
+    int size() {
         return size;
     }
 
@@ -82,20 +82,16 @@ final class SymbolList {
     }
 
     void pop(int cnt) {
-        assert cnt < size;
-        reset((short)(size - cnt));
+        reset(size - cnt);
     }
 
-    void reset(short toSize) {
-        // we can ignore the contexs, there's no leak there.
-        // it's ok to also never shrink.
-        // TODO: (tfel) is it worth null-ing? it should be very few sst nodes that leak, and
-        // only until end of parsing
-        // Arrays.fill(nodes, toSize, size, null);
+    void reset(int toSize) {
+        // we ignore the contexs, there's no leak there. we also never shrink
+        Arrays.fill(nodes, toSize, size, null);
         size = toSize;
     }
 
-    SymbolList consume(short toSize) {
+    SymbolList consume(int toSize) {
         SSTNode[] consumedNodes = Arrays.copyOfRange(nodes, toSize, size);
         ExprContext[] consumedContexts = Arrays.copyOfRange(contexts, toSize, size);
         SymbolList result = new SymbolList(consumedNodes, consumedContexts, size - toSize);
