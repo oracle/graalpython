@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,30 +38,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.pegparser;
 
-package com.oracle.graal.python.pegparser.sst;
-
-public class SubscriptSSTNode extends SSTNode {
-
-    protected final SSTNode receiver;
-    protected final SSTNode subscript;
-
-    public SubscriptSSTNode(SSTNode receiver, SSTNode subscript, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
-        this.receiver = receiver;
-        this.subscript = subscript;
-    }
-
-    @Override
-    public <T> T accept(SSTreeVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
-
-    public SSTNode getReceiver() {
-        return receiver;
-    }
-
-    public SSTNode getSubscript() {
-        return subscript;
-    }
+/**
+ *
+ */
+public enum ExprContext {
+    Load,
+    Store,
+    Delete
 }

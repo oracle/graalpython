@@ -52,10 +52,10 @@ class NodeTypes(Enum):
 
 
 BASE_NODETYPES = {
-    "NAME": NodeTypes.NAME_TOKEN,
-    "NUMBER": NodeTypes.NUMBER_TOKEN,
-    "STRING": NodeTypes.STRING_TOKEN,
-    "SOFT_KEYWORD": NodeTypes.SOFT_KEYWORD,
+    "NAME": (NodeTypes.NAME_TOKEN, "VarLookupSSTNode"),
+    "NUMBER": (NodeTypes.NUMBER_TOKEN, "NumberLiteralSSTNode"),
+    "STRING": (NodeTypes.STRING_TOKEN, "SSTNode"),
+    "SOFT_KEYWORD": (NodeTypes.SOFT_KEYWORD, "VarLookupSSTNode"),
 }
 
 
@@ -152,7 +152,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable="_keyword",
             function="expect_SOFT_KEYWORD",
             arguments=[value],
-            return_type="SSTNode",
+            return_type="VarLookupSSTNode",
             nodetype=NodeTypes.SOFT_KEYWORD,
             comment=f"soft_keyword='{value}'",
         )
@@ -165,8 +165,8 @@ class JavaCallMakerVisitor(GrammarVisitor):
                     assigned_variable=f"{name.lower()}_var",
                     function = f"{name.lower()}_token",
                     arguments=[],
-                    nodetype=BASE_NODETYPES[name],
-                    return_type="SSTNode",
+                    nodetype=BASE_NODETYPES[name][0],
+                    return_type=BASE_NODETYPES[name][1],
                     comment=name,
                 )
             return FunctionCall(

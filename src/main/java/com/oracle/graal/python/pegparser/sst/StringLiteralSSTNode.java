@@ -177,7 +177,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         }
     }
 
-    public static SSTNode create(String[] values, int startOffset, int endOffset, NodeFactory nodeFactory, FExprParser exprParser, ParserErrorCallback errorCallback) {
+    public static StringLiteralSSTNode create(String[] values, int startOffset, int endOffset, NodeFactory nodeFactory, FExprParser exprParser, ParserErrorCallback errorCallback) {
         StringBuilder sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
@@ -1228,7 +1228,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR ONE", 0x001F);
     }
 
-    public static int getCodePoint(String charName) {        
+    public static int getCodePoint(String charName) {
         int possibleChar = CONTROL_CHAR_NAMES.getOrDefault(charName.toUpperCase(Locale.ROOT), -1);
         if (possibleChar > -1) {
             return possibleChar;

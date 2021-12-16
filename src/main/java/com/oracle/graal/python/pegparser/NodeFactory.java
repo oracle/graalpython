@@ -48,7 +48,7 @@ public interface NodeFactory {
     public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int startOffset, int endOffset);
 
     public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, SSTNode typeComment, int startOffset, int endOffset);
-    
+
     public AugAssignmentSSTNode createAugAssignment(SSTNode lhs, BinaryArithmeticSSTNode.Type operation, SSTNode rhs, int startOffset, int endOffset);
 
     public BinaryArithmeticSSTNode createBinaryOp(BinaryArithmeticSSTNode.Type op, SSTNode left, SSTNode right, int startOffset, int endOffset);
@@ -60,7 +60,7 @@ public interface NodeFactory {
     public SSTNode createNone(int startOffset, int endOffset);
 
     public SSTNode createEllipsis(int startOffset, int endOffset);
-    
+
     public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset);
 
     public SSTNode createPass(int startOffset, int endOffset);
@@ -73,15 +73,19 @@ public interface NodeFactory {
 
     public SSTNode createYield(SSTNode value, boolean isFrom, int startOffset, int endOffset);
 
-    public SSTNode createNumber(String number, int startOffset, int endOffset);
+    public NumberLiteralSSTNode createNumber(String number, int startOffset, int endOffset);
 
-    public SSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
-    
+    public StringLiteralSSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
+
     public SubscriptSSTNode createSubscript(SSTNode receiver, SSTNode subscript, int startOffset, int endOffset);
 
     public UnarySSTNode createUnaryOp(UnarySSTNode.Type op, SSTNode value, int startOffset, int endOffset);
 
-    public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset);
+    default VarLookupSSTNode createVariable(String name, int startOffset, int endOffset) {
+        return createVariable(name, startOffset, endOffset, ExprContext.Load);
+    }
+
+    public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset, ExprContext context);
 
     public SSTNode createTuple(SSTNode[] values, int startOffset, int endOffset);
 
@@ -108,6 +112,6 @@ public interface NodeFactory {
     public SSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
 
     public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, SSTNode typeComment, int startOffset, int endOffset);
-    
+
     public SSTNode createTypeComment(String typeComment, int startOffset, int ednOffset);
 }
