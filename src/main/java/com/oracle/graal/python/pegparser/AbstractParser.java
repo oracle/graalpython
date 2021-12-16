@@ -66,8 +66,6 @@ abstract class AbstractParser {
     protected boolean callInvalidRules = false;
     private VarLookupSSTNode cachedDummyName;
 
-    private final SymbolList variableContexts = new SymbolList();
-
     protected final RuleResultCache<Object> cache = new RuleResultCache(this);
     protected final Map<Integer, String> comments = new LinkedHashMap<>();
 
@@ -87,31 +85,19 @@ abstract class AbstractParser {
     }
 
     /**
-     * Get position in the tokenizer and the variable context stream. The lower 32-bits are the
-     * tokenizer position; the upper 32-bits are the variable context stream position.
-     *
-     * @return the combined positions
+     * Get position in the tokenizer.
+     * @return the position in tokenizer.
      */
-    public long mark() {
-        return ((long)variableContexts.size() << 32) | tokenizer.mark();
+    public int mark() {
+        return tokenizer.mark();
     }
 
     /**
      * Reset position in the tokenizer
      * @param position where the tokenizer should set the current position
      */
-    public void reset(long position) {
-        tokenizer.reset((int)position);
-        variableContexts.reset((int)(position >> 32));
-    }
-
-    /**
-     * Create a {@link ScopeInfo} with the symbols from the {@link #variableContexts} back to
-     * {@link mark} as returned by {@link #mark()}.
-     */
-    protected ScopeInfo createScope(long mark, ScopeInfo.ScopeKind kind) {
-        SymbolList list = variableContexts.consume((int)(mark >> 32));
-        return new ScopeInfo();
+    public void reset(int position) {
+        tokenizer.reset(position);
     }
 
     /**
@@ -149,7 +135,7 @@ abstract class AbstractParser {
      * does not advance the tokenizer, in contrast to {@link expect(int)}.
      */
     protected boolean lookahead(boolean match, int kind) {
-        long pos = mark();
+        int pos = mark();
         Token token = expect(kind);
         reset(pos);
         return (token != null) == match;
@@ -160,7 +146,7 @@ abstract class AbstractParser {
      * does not advance the tokenizer, in contrast to {@link expect(String)}.
      */
     protected boolean lookahead(boolean match, String text) {
-        long pos = mark();
+        int pos = mark();
         Token token = expect(text);
         reset(pos);
         return (token != null) == match;
@@ -179,7 +165,7 @@ abstract class AbstractParser {
      * equivalent to _PyPegen_fill_token in that it modifies the token, and does not advance
      */
     public Token getAndInitializeToken() {
-        long pos = mark();
+        int pos = mark();
         Token token = tokenizer.getToken();
         while (token.type == Token.Kind.TYPE_IGNORE) {
             String tag = getText(token);
@@ -198,7 +184,7 @@ abstract class AbstractParser {
      */
     public Token getLastNonWhitespaceToken() {
         Token t = null;
-        for (int i = (int)mark() - 1; i >= 0; i--) {
+        for (int i = mark() - 1; i >= 0; i--) {
             t = tokenizer.peekToken(i);
             if (t.type != Token.Kind.ENDMARKER && (t.type < Token.Kind.NEWLINE || t.type > Token.Kind.DEDENT)) {
                 break;
@@ -213,7 +199,7 @@ abstract class AbstractParser {
     public SSTNode name_token() {
         Token t = expect(Token.Kind.NAME);
         if (t != null) {
-            return setExprContext(factory.createVariable(getText(t), t.startOffset, t.endOffset), ExprContext.Load);
+            return factory.createVariable(getText(t), t.startOffset, t.endOffset);
         } else {
             return null;
         }
@@ -226,7 +212,7 @@ abstract class AbstractParser {
         Token t = tokenizer.peekToken();
         if (t.type == Token.Kind.NAME && getText(t).equals(keyword)) {
             tokenizer.getToken();
-            return setExprContext(factory.createVariable(getText(t), t.startOffset, t.endOffset), ExprContext.Load);
+            return factory.createVariable(getText(t), t.startOffset, t.endOffset);
         }
         return null;
     }
@@ -236,7 +222,7 @@ abstract class AbstractParser {
      * trying to be type safe, so we create a container.
      */
     public SSTNode string_token() {
-        int pos = (int)mark();
+        int pos = mark();
         Token t = expect(Token.Kind.STRING);
         if (t == null) {
             return null;
@@ -275,7 +261,7 @@ abstract class AbstractParser {
             return null;
         }
         String id = getText(t);
-        return setExprContext(factory.createVariable(id, t.startOffset, t.endOffset), ExprContext.Load);
+        return factory.createVariable(id, t.startOffset, t.endOffset);
     }
 
     /**
@@ -304,19 +290,6 @@ abstract class AbstractParser {
         }
         cachedDummyName = factory.createVariable("", 0, 0);
         return cachedDummyName;
-    }
-
-    /**
-     * _PyPegen_join_names_with_dot
-     */
-    public SSTNode joinNamesWithDot(SSTNode a, SSTNode b) {
-        String strA = ((VarLookupSSTNode)a).getName();
-        String strB = ((VarLookupSSTNode)b).getName();
-        String id = strA + "." + strB;
-        assert variableContexts.getNode(variableContexts.size() - 2) == a;
-        assert variableContexts.getNode(variableContexts.size() - 1) == b;
-        variableContexts.pop(2);
-        return setExprContext(factory.createVariable(id, a.getStartOffset(), b.getEndOffset()), ExprContext.Load);
     }
 
     /**
@@ -406,7 +379,6 @@ abstract class AbstractParser {
         return token != null ? factory.createTypeComment(getText(token), token.startOffset, token.endOffset) : null;
     }
 
-
     protected int getKewordArgsCount (SSTNode[] argsOrKeywprdArgs) {
         int count = 0;
         if (argsOrKeywprdArgs != null && argsOrKeywprdArgs.length > 0) {
@@ -467,30 +439,6 @@ abstract class AbstractParser {
             return result;
         }
         return null;
-    }
-
-
-    /**
-     * _PyPegen_set_expr_context
-     *
-     * We try to avoid having to walk the parse tree too often. The way we do this is by storing
-     * "active" expression context associations into the {@link #variableContexts}. These form a
-     * stream of expression context associations constructed in parallel to the consumption of the
-     * token stream. When the token stream is {@link #reset}, the {@link #variableContexts} are
-     * reset aas well, meaning anything pushed to the context stream is dropped to be consistent
-     * with the token stream position again.
-     *
-     * The variable context stream may refer to the same names multiple times. This is expected,
-     * and building the actual scopes still requires a tree walk of the nested scopes. The ordering
-     * of contexts is unambiguous, though - any {@link ExprContext Store} along the stream
-     * implicates stronger binding than a {@link ExprContext Load}.
-     *
-     * This class provides a helper method, {@link #createScope}, to consume expression contexts
-     * when a scoping construct is successfully matched and the scope is closed.
-     */
-    protected SSTNode setExprContext(SSTNode node, ExprContext context) {
-        variableContexts.push(node, context);
-        return node;
     }
 
     // debug methods

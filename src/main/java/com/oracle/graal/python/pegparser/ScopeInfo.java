@@ -51,16 +51,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-/**
- *
- */
+//import com.oracle.graal.python.nodes.expression.ExpressionNode;
+//import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
+//import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
+//import com.oracle.truffle.api.CompilerAsserts;
+//import com.oracle.truffle.api.frame.FrameDescriptor;
+//import com.oracle.truffle.api.frame.FrameSlot;
+//import com.oracle.truffle.api.frame.FrameSlotKind;
+//import com.oracle.truffle.api.memory.MemoryFence;
+
 public final class ScopeInfo {
-    public enum ScopeKind {
-        Module,
-        Class,
-        Function,
-        AsyncFunction,
-        Lambda,
-        Comprehension;
-    }
+
+
 }

@@ -233,8 +233,8 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, SSTNode typeComment, int startOffset, int endOffset, ScopeInfo scope) {
-        return new FunctionDefSSTNode(name, args, body, decorators, returns, typeComment, startOffset, endOffset, scope);
+    public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, SSTNode typeComment, int startOffset, int endOffset) {
+        return new FunctionDefSSTNode(name, args, body, decorators, returns, typeComment, startOffset, endOffset);
     }
     
     @Override

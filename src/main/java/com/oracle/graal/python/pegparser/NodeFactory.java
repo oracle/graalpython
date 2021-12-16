@@ -107,7 +107,7 @@ public interface NodeFactory {
 
     public SSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
 
-    public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, SSTNode typeComment, int startOffset, int endOffset, ScopeInfo scope);
-
+    public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, SSTNode typeComment, int startOffset, int endOffset);
+    
     public SSTNode createTypeComment(String typeComment, int startOffset, int ednOffset);
 }

@@ -595,7 +595,7 @@ public final class Parser extends AbstractParser {
     public SSTNode file_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FILE_ID)) {
             _res = (SSTNode)cache.getResult(_mark, FILE_ID);
@@ -640,7 +640,7 @@ public final class Parser extends AbstractParser {
     public SSTNode interactive_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INTERACTIVE_ID)) {
             _res = (SSTNode)cache.getResult(_mark, INTERACTIVE_ID);
@@ -678,7 +678,7 @@ public final class Parser extends AbstractParser {
     public SSTNode eval_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EVAL_ID)) {
             _res = (SSTNode)cache.getResult(_mark, EVAL_ID);
@@ -720,7 +720,7 @@ public final class Parser extends AbstractParser {
     public SSTNode func_type_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FUNC_TYPE_ID)) {
             _res = (SSTNode)cache.getResult(_mark, FUNC_TYPE_ID);
@@ -776,7 +776,7 @@ public final class Parser extends AbstractParser {
     public SSTNode fstring_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FSTRING_ID)) {
             _res = (SSTNode)cache.getResult(_mark, FSTRING_ID);
@@ -819,7 +819,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] type_expressions_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TYPE_EXPRESSIONS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, TYPE_EXPRESSIONS_ID);
@@ -1017,7 +1017,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] statements_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STATEMENTS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, STATEMENTS_ID);
@@ -1053,7 +1053,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] statement_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STATEMENT_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, STATEMENT_ID);
@@ -1107,7 +1107,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] statement_newline_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STATEMENT_NEWLINE_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, STATEMENT_NEWLINE_ID);
@@ -1208,7 +1208,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] simple_stmts_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SIMPLE_STMTS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, SIMPLE_STMTS_ID);
@@ -1286,7 +1286,7 @@ public final class Parser extends AbstractParser {
     public SSTNode simple_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SIMPLE_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SIMPLE_STMT_ID);
@@ -1578,7 +1578,7 @@ public final class Parser extends AbstractParser {
     public SSTNode compound_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, COMPOUND_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, COMPOUND_STMT_ID);
@@ -1759,7 +1759,7 @@ public final class Parser extends AbstractParser {
     public SSTNode assignment_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ASSIGNMENT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, ASSIGNMENT_ID);
@@ -1789,7 +1789,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createAnnAssignment(factory.createAnnotation(setExprContext(a,ExprContext.Store),b,a.getStartOffset(),b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
+                _res = factory.createAnnAssignment(factory.createAnnotation(a,b,a.getStartOffset(),b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 level--;
@@ -1937,7 +1937,7 @@ public final class Parser extends AbstractParser {
     public BinaryArithmeticSSTNode.Type augassign_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AUGASSIGN_ID)) {
             _res = (BinaryArithmeticSSTNode.Type)cache.getResult(_mark, AUGASSIGN_ID);
@@ -2191,7 +2191,7 @@ public final class Parser extends AbstractParser {
     public SSTNode global_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GLOBAL_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, GLOBAL_STMT_ID);
@@ -2232,7 +2232,7 @@ public final class Parser extends AbstractParser {
     public SSTNode nonlocal_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, NONLOCAL_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, NONLOCAL_STMT_ID);
@@ -2273,7 +2273,7 @@ public final class Parser extends AbstractParser {
     public SSTNode yield_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, YIELD_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, YIELD_STMT_ID);
@@ -2309,7 +2309,7 @@ public final class Parser extends AbstractParser {
     public SSTNode assert_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ASSERT_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, ASSERT_STMT_ID);
@@ -2353,7 +2353,7 @@ public final class Parser extends AbstractParser {
     public SSTNode del_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEL_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, DEL_STMT_ID);
@@ -2414,7 +2414,7 @@ public final class Parser extends AbstractParser {
     public SSTNode import_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, IMPORT_STMT_ID);
@@ -2468,7 +2468,7 @@ public final class Parser extends AbstractParser {
     public SSTNode import_name_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_NAME_ID)) {
             _res = (SSTNode)cache.getResult(_mark, IMPORT_NAME_ID);
@@ -2511,7 +2511,7 @@ public final class Parser extends AbstractParser {
     public SSTNode import_from_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_FROM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, IMPORT_FROM_ID);
@@ -2594,7 +2594,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] import_from_targets_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_FROM_TARGETS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, IMPORT_FROM_TARGETS_ID);
@@ -2697,7 +2697,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] import_from_as_names_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_FROM_AS_NAMES_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, IMPORT_FROM_AS_NAMES_ID);
@@ -2733,7 +2733,7 @@ public final class Parser extends AbstractParser {
     public SSTNode import_from_as_name_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_FROM_AS_NAME_ID)) {
             _res = (SSTNode)cache.getResult(_mark, IMPORT_FROM_AS_NAME_ID);
@@ -2774,7 +2774,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] dotted_as_names_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOTTED_AS_NAMES_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, DOTTED_AS_NAMES_ID);
@@ -2810,7 +2810,7 @@ public final class Parser extends AbstractParser {
     public SSTNode dotted_as_name_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOTTED_AS_NAME_ID)) {
             _res = (SSTNode)cache.getResult(_mark, DOTTED_AS_NAME_ID);
@@ -2852,14 +2852,14 @@ public final class Parser extends AbstractParser {
     public SSTNode dotted_name_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOTTED_NAME_ID)) {
             _res = cache.getResult(_mark, DOTTED_NAME_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, DOTTED_NAME_ID, _res);
             reset(_mark);
@@ -2876,7 +2876,7 @@ public final class Parser extends AbstractParser {
     private SSTNode dotted_name_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         { // dotted_name '.' NAME
             debugMessageln("%d> dotted_name[%d-%d]: %s", level, _mark, mark(), "dotted_name '.' NAME");
@@ -2892,7 +2892,9 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dotted_name[%d-%d]: %s succeeded!", level, _mark, mark(), "dotted_name '.' NAME");
-                _res = this.joinNamesWithDot(a,b);
+                // TODO: node.action: _PyPegen_join_names_with_dot ( p , a , b )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_join_names_with_dot ( p , a , b ) to Java !!![0m");
+                _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "dotted_name '.' NAME");
                 level--;
                 return (SSTNode)_res;
@@ -2931,7 +2933,7 @@ public final class Parser extends AbstractParser {
     public SSTNode if_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IF_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, IF_STMT_ID);
@@ -3034,7 +3036,7 @@ public final class Parser extends AbstractParser {
     public SSTNode elif_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ELIF_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, ELIF_STMT_ID);
@@ -3134,7 +3136,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] else_block_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ELSE_BLOCK_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, ELSE_BLOCK_ID);
@@ -3176,7 +3178,7 @@ public final class Parser extends AbstractParser {
     public SSTNode while_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WHILE_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, WHILE_STMT_ID);
@@ -3247,7 +3249,7 @@ public final class Parser extends AbstractParser {
     public SSTNode for_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FOR_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, FOR_STMT_ID);
@@ -3387,7 +3389,7 @@ public final class Parser extends AbstractParser {
     public SSTNode with_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WITH_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, WITH_STMT_ID);
@@ -3572,7 +3574,7 @@ public final class Parser extends AbstractParser {
     public SSTNode with_item_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WITH_ITEM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, WITH_ITEM_ID);
@@ -3658,7 +3660,7 @@ public final class Parser extends AbstractParser {
     public SSTNode try_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TRY_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, TRY_STMT_ID);
@@ -3743,7 +3745,7 @@ public final class Parser extends AbstractParser {
     public SSTNode except_block_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EXCEPT_BLOCK_ID)) {
             _res = (SSTNode)cache.getResult(_mark, EXCEPT_BLOCK_ID);
@@ -3837,7 +3839,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] finally_block_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FINALLY_BLOCK_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, FINALLY_BLOCK_ID);
@@ -3881,7 +3883,7 @@ public final class Parser extends AbstractParser {
     public SSTNode match_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MATCH_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, MATCH_STMT_ID);
@@ -3955,7 +3957,7 @@ public final class Parser extends AbstractParser {
     public SSTNode subject_expr_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SUBJECT_EXPR_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SUBJECT_EXPR_ID);
@@ -4017,7 +4019,7 @@ public final class Parser extends AbstractParser {
     public SSTNode case_block_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CASE_BLOCK_ID)) {
             _res = (SSTNode)cache.getResult(_mark, CASE_BLOCK_ID);
@@ -4085,7 +4087,7 @@ public final class Parser extends AbstractParser {
     public SSTNode guard_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GUARD_ID)) {
             _res = (SSTNode)cache.getResult(_mark, GUARD_ID);
@@ -4126,7 +4128,7 @@ public final class Parser extends AbstractParser {
     public SSTNode patterns_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PATTERNS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, PATTERNS_ID);
@@ -4182,7 +4184,7 @@ public final class Parser extends AbstractParser {
     public SSTNode pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, PATTERN_ID);
@@ -4236,7 +4238,7 @@ public final class Parser extends AbstractParser {
     public SSTNode as_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AS_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, AS_PATTERN_ID);
@@ -4280,7 +4282,7 @@ public final class Parser extends AbstractParser {
     public SSTNode or_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, OR_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, OR_PATTERN_ID);
@@ -4326,7 +4328,7 @@ public final class Parser extends AbstractParser {
     public SSTNode closed_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLOSED_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, CLOSED_PATTERN_ID);
@@ -4495,7 +4497,7 @@ public final class Parser extends AbstractParser {
     public SSTNode literal_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LITERAL_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, LITERAL_PATTERN_ID);
@@ -4664,7 +4666,7 @@ public final class Parser extends AbstractParser {
     public SSTNode signed_number_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SIGNED_NUMBER_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SIGNED_NUMBER_ID);
@@ -4723,7 +4725,7 @@ public final class Parser extends AbstractParser {
     public SSTNode capture_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CAPTURE_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, CAPTURE_PATTERN_ID);
@@ -4765,7 +4767,7 @@ public final class Parser extends AbstractParser {
     public SSTNode wildcard_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WILDCARD_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, WILDCARD_PATTERN_ID);
@@ -4803,7 +4805,7 @@ public final class Parser extends AbstractParser {
     public SSTNode value_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, VALUE_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, VALUE_PATTERN_ID);
@@ -4844,14 +4846,14 @@ public final class Parser extends AbstractParser {
     public SSTNode attr_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ATTR_ID)) {
             _res = cache.getResult(_mark, ATTR_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, ATTR_ID, _res);
             reset(_mark);
@@ -4868,7 +4870,7 @@ public final class Parser extends AbstractParser {
     private SSTNode attr_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // name_or_attr '.' NAME
@@ -4905,7 +4907,7 @@ public final class Parser extends AbstractParser {
     public SSTNode name_or_attr_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         { // attr
             debugMessageln("%d> name_or_attr[%d-%d]: %s", level, _mark, mark(), "attr");
@@ -4951,7 +4953,7 @@ public final class Parser extends AbstractParser {
     public SSTNode group_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GROUP_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, GROUP_PATTERN_ID);
@@ -4995,7 +4997,7 @@ public final class Parser extends AbstractParser {
     public SSTNode sequence_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SEQUENCE_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SEQUENCE_PATTERN_ID);
@@ -5065,7 +5067,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] open_sequence_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, OPEN_SEQUENCE_PATTERN_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, OPEN_SEQUENCE_PATTERN_ID);
@@ -5107,7 +5109,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] maybe_sequence_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MAYBE_SEQUENCE_PATTERN_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, MAYBE_SEQUENCE_PATTERN_ID);
@@ -5148,7 +5150,7 @@ public final class Parser extends AbstractParser {
     public SSTNode maybe_star_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MAYBE_STAR_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, MAYBE_STAR_PATTERN_ID);
@@ -5202,7 +5204,7 @@ public final class Parser extends AbstractParser {
     public SSTNode star_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, STAR_PATTERN_ID);
@@ -5243,7 +5245,7 @@ public final class Parser extends AbstractParser {
     public SSTNode mapping_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MAPPING_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, MAPPING_PATTERN_ID);
@@ -5287,7 +5289,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] items_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ITEMS_PATTERN_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, ITEMS_PATTERN_ID);
@@ -5328,7 +5330,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] key_value_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KEY_VALUE_PATTERN_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, KEY_VALUE_PATTERN_ID);
@@ -5390,7 +5392,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] double_star_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STAR_PATTERN_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, DOUBLE_STAR_PATTERN_ID);
@@ -5435,7 +5437,7 @@ public final class Parser extends AbstractParser {
     public SSTNode class_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLASS_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, CLASS_PATTERN_ID);
@@ -5581,7 +5583,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] positional_patterns_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, POSITIONAL_PATTERNS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, POSITIONAL_PATTERNS_ID);
@@ -5619,7 +5621,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] keyword_patterns_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KEYWORD_PATTERNS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, KEYWORD_PATTERNS_ID);
@@ -5657,7 +5659,7 @@ public final class Parser extends AbstractParser {
     public SSTNode keyword_pattern_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KEYWORD_PATTERN_ID)) {
             _res = (SSTNode)cache.getResult(_mark, KEYWORD_PATTERN_ID);
@@ -5701,7 +5703,7 @@ public final class Parser extends AbstractParser {
     public SSTNode return_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, RETURN_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, RETURN_STMT_ID);
@@ -5742,7 +5744,7 @@ public final class Parser extends AbstractParser {
     public SSTNode raise_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, RAISE_STMT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, RAISE_STMT_ID);
@@ -5806,7 +5808,7 @@ public final class Parser extends AbstractParser {
     public SSTNode function_def_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FUNCTION_DEF_ID)) {
             _res = (SSTNode)cache.getResult(_mark, FUNCTION_DEF_ID);
@@ -5867,14 +5869,13 @@ public final class Parser extends AbstractParser {
     public SSTNode function_def_raw_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FUNCTION_DEF_RAW_ID)) {
             _res = (SSTNode)cache.getResult(_mark, FUNCTION_DEF_RAW_ID);
             level--;
             return (SSTNode)_res;
         }
-        long scopeStart = mark();
         Token startToken = getAndInitializeToken();
         { // 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block
             debugMessageln("%d> function_def_raw[%d-%d]: %s", level, _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
@@ -5913,7 +5914,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createFunctionDef(((VarLookupSSTNode)n).getName(),(ArgDefListBuilder)params,b,null,(SSTNode)a,this.newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset,createScope(scopeStart,ScopeInfo.ScopeKind.Function));
+                _res = factory.createFunctionDef(((VarLookupSSTNode)n).getName(),(ArgDefListBuilder)params,b,null,(SSTNode)a,this.newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
                 cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
                 level--;
@@ -5984,7 +5985,7 @@ public final class Parser extends AbstractParser {
     public Token func_type_comment_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FUNC_TYPE_COMMENT_ID)) {
             _res = (Token)cache.getResult(_mark, FUNC_TYPE_COMMENT_ID);
@@ -6061,7 +6062,7 @@ public final class Parser extends AbstractParser {
     public ArgDefListBuilder params_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAMS_ID)) {
             _res = (ArgDefListBuilder)cache.getResult(_mark, PARAMS_ID);
@@ -6120,7 +6121,7 @@ public final class Parser extends AbstractParser {
     public ArgDefListBuilder parameters_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAMETERS_ID)) {
             _res = (ArgDefListBuilder)cache.getResult(_mark, PARAMETERS_ID);
@@ -6262,7 +6263,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] slash_no_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SLASH_NO_DEFAULT_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, SLASH_NO_DEFAULT_ID);
@@ -6329,7 +6330,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] slash_with_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SLASH_WITH_DEFAULT_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, SLASH_WITH_DEFAULT_ID);
@@ -6408,7 +6409,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] star_etc_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_ETC_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, STAR_ETC_ID);
@@ -6522,7 +6523,7 @@ public final class Parser extends AbstractParser {
     public SSTNode kwds_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWDS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, KWDS_ID);
@@ -6561,7 +6562,7 @@ public final class Parser extends AbstractParser {
     public SSTNode param_no_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_NO_DEFAULT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, PARAM_NO_DEFAULT_ID);
@@ -6632,7 +6633,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] param_with_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_WITH_DEFAULT_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, PARAM_WITH_DEFAULT_ID);
@@ -6709,7 +6710,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] param_maybe_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_MAYBE_DEFAULT_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, PARAM_MAYBE_DEFAULT_ID);
@@ -6784,7 +6785,7 @@ public final class Parser extends AbstractParser {
     public SSTNode param_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, PARAM_ID);
@@ -6825,7 +6826,7 @@ public final class Parser extends AbstractParser {
     public SSTNode annotation_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ANNOTATION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, ANNOTATION_ID);
@@ -6864,7 +6865,7 @@ public final class Parser extends AbstractParser {
     public SSTNode default_param_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEFAULT_PARAM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, DEFAULT_PARAM_ID);
@@ -6903,7 +6904,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] decorators_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DECORATORS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, DECORATORS_ID);
@@ -6939,7 +6940,7 @@ public final class Parser extends AbstractParser {
     public SSTNode class_def_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLASS_DEF_ID)) {
             _res = (SSTNode)cache.getResult(_mark, CLASS_DEF_ID);
@@ -6998,7 +6999,7 @@ public final class Parser extends AbstractParser {
     public SSTNode class_def_raw_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLASS_DEF_RAW_ID)) {
             _res = (SSTNode)cache.getResult(_mark, CLASS_DEF_RAW_ID);
@@ -7048,7 +7049,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] block_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, BLOCK_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, BLOCK_ID);
@@ -7132,7 +7133,7 @@ public final class Parser extends AbstractParser {
     public SSTNode star_expressions_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_EXPRESSIONS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, STAR_EXPRESSIONS_ID);
@@ -7217,7 +7218,7 @@ public final class Parser extends AbstractParser {
     public SSTNode star_expression_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_EXPRESSION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, STAR_EXPRESSION_ID);
@@ -7276,7 +7277,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] star_named_expressions_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_NAMED_EXPRESSIONS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, STAR_NAMED_EXPRESSIONS_ID);
@@ -7315,7 +7316,7 @@ public final class Parser extends AbstractParser {
     public SSTNode star_named_expression_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_NAMED_EXPRESSION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, STAR_NAMED_EXPRESSION_ID);
@@ -7374,7 +7375,7 @@ public final class Parser extends AbstractParser {
     public SSTNode named_expression_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, NAMED_EXPRESSION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, NAMED_EXPRESSION_ID);
@@ -7463,7 +7464,7 @@ public final class Parser extends AbstractParser {
     public SSTNode direct_named_expression_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DIRECT_NAMED_EXPRESSION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, DIRECT_NAMED_EXPRESSION_ID);
@@ -7534,7 +7535,7 @@ public final class Parser extends AbstractParser {
     public SSTNode annotated_rhs_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ANNOTATED_RHS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, ANNOTATED_RHS_ID);
@@ -7588,7 +7589,7 @@ public final class Parser extends AbstractParser {
     public SSTNode expressions_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EXPRESSIONS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, EXPRESSIONS_ID);
@@ -7677,7 +7678,7 @@ public final class Parser extends AbstractParser {
     public SSTNode expression_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EXPRESSION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, EXPRESSION_ID);
@@ -7781,7 +7782,7 @@ public final class Parser extends AbstractParser {
     public SSTNode lambdef_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDEF_ID)) {
             _res = (SSTNode)cache.getResult(_mark, LAMBDEF_ID);
@@ -7828,7 +7829,7 @@ public final class Parser extends AbstractParser {
     public SSTNode lambda_params_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAMS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, LAMBDA_PARAMS_ID);
@@ -7887,7 +7888,7 @@ public final class Parser extends AbstractParser {
     public SSTNode lambda_parameters_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAMETERS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, LAMBDA_PARAMETERS_ID);
@@ -8031,7 +8032,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] lambda_slash_no_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_SLASH_NO_DEFAULT_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, LAMBDA_SLASH_NO_DEFAULT_ID);
@@ -8098,7 +8099,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] lambda_slash_with_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID);
@@ -8177,7 +8178,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] lambda_star_etc_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_STAR_ETC_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, LAMBDA_STAR_ETC_ID);
@@ -8291,7 +8292,7 @@ public final class Parser extends AbstractParser {
     public SSTNode lambda_kwds_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_KWDS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, LAMBDA_KWDS_ID);
@@ -8330,7 +8331,7 @@ public final class Parser extends AbstractParser {
     public SSTNode lambda_param_no_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAM_NO_DEFAULT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, LAMBDA_PARAM_NO_DEFAULT_ID);
@@ -8391,7 +8392,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] lambda_param_with_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID);
@@ -8462,7 +8463,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] lambda_param_maybe_default_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID);
@@ -8531,7 +8532,7 @@ public final class Parser extends AbstractParser {
     public SSTNode lambda_param_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, LAMBDA_PARAM_ID);
@@ -8569,7 +8570,7 @@ public final class Parser extends AbstractParser {
     public SSTNode disjunction_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DISJUNCTION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, DISJUNCTION_ID);
@@ -8628,7 +8629,7 @@ public final class Parser extends AbstractParser {
     public SSTNode conjunction_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CONJUNCTION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, CONJUNCTION_ID);
@@ -8687,7 +8688,7 @@ public final class Parser extends AbstractParser {
     public SSTNode inversion_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVERSION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, INVERSION_ID);
@@ -8746,7 +8747,7 @@ public final class Parser extends AbstractParser {
     public SSTNode comparison_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, COMPARISON_ID)) {
             _res = (SSTNode)cache.getResult(_mark, COMPARISON_ID);
@@ -8813,7 +8814,7 @@ public final class Parser extends AbstractParser {
     public BinaryArithmeticSSTNode compare_op_bitwise_or_pair_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID)) {
             _res = (BinaryArithmeticSSTNode)cache.getResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID);
@@ -9011,7 +9012,7 @@ public final class Parser extends AbstractParser {
     public BinaryArithmeticSSTNode eq_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EQ_BITWISE_OR_ID)) {
             _res = (BinaryArithmeticSSTNode)cache.getResult(_mark, EQ_BITWISE_OR_ID);
@@ -9056,7 +9057,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] noteq_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, NOTEQ_BITWISE_OR_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, NOTEQ_BITWISE_OR_ID);
@@ -9097,7 +9098,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] lte_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LTE_BITWISE_OR_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, LTE_BITWISE_OR_ID);
@@ -9138,7 +9139,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] lt_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LT_BITWISE_OR_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, LT_BITWISE_OR_ID);
@@ -9179,7 +9180,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] gte_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GTE_BITWISE_OR_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, GTE_BITWISE_OR_ID);
@@ -9220,7 +9221,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] gt_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GT_BITWISE_OR_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, GT_BITWISE_OR_ID);
@@ -9261,7 +9262,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] notin_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, NOTIN_BITWISE_OR_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, NOTIN_BITWISE_OR_ID);
@@ -9305,7 +9306,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] in_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IN_BITWISE_OR_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, IN_BITWISE_OR_ID);
@@ -9346,7 +9347,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] isnot_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ISNOT_BITWISE_OR_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, ISNOT_BITWISE_OR_ID);
@@ -9390,7 +9391,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] is_bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IS_BITWISE_OR_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, IS_BITWISE_OR_ID);
@@ -9432,14 +9433,14 @@ public final class Parser extends AbstractParser {
     public SSTNode bitwise_or_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, BITWISE_OR_ID)) {
             _res = cache.getResult(_mark, BITWISE_OR_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, BITWISE_OR_ID, _res);
             reset(_mark);
@@ -9456,7 +9457,7 @@ public final class Parser extends AbstractParser {
     private SSTNode bitwise_or_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // bitwise_or '|' bitwise_xor
@@ -9515,14 +9516,14 @@ public final class Parser extends AbstractParser {
     public SSTNode bitwise_xor_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, BITWISE_XOR_ID)) {
             _res = cache.getResult(_mark, BITWISE_XOR_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, BITWISE_XOR_ID, _res);
             reset(_mark);
@@ -9539,7 +9540,7 @@ public final class Parser extends AbstractParser {
     private SSTNode bitwise_xor_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // bitwise_xor '^' bitwise_and
@@ -9598,14 +9599,14 @@ public final class Parser extends AbstractParser {
     public SSTNode bitwise_and_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, BITWISE_AND_ID)) {
             _res = cache.getResult(_mark, BITWISE_AND_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, BITWISE_AND_ID, _res);
             reset(_mark);
@@ -9622,7 +9623,7 @@ public final class Parser extends AbstractParser {
     private SSTNode bitwise_and_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // bitwise_and '&' shift_expr
@@ -9681,14 +9682,14 @@ public final class Parser extends AbstractParser {
     public SSTNode shift_expr_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SHIFT_EXPR_ID)) {
             _res = cache.getResult(_mark, SHIFT_EXPR_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, SHIFT_EXPR_ID, _res);
             reset(_mark);
@@ -9705,7 +9706,7 @@ public final class Parser extends AbstractParser {
     private SSTNode shift_expr_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // shift_expr '<<' sum
@@ -9792,14 +9793,14 @@ public final class Parser extends AbstractParser {
     public SSTNode sum_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SUM_ID)) {
             _res = cache.getResult(_mark, SUM_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, SUM_ID, _res);
             reset(_mark);
@@ -9816,7 +9817,7 @@ public final class Parser extends AbstractParser {
     private SSTNode sum_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // sum '+' term
@@ -9909,14 +9910,14 @@ public final class Parser extends AbstractParser {
     public SSTNode term_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TERM_ID)) {
             _res = cache.getResult(_mark, TERM_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, TERM_ID, _res);
             reset(_mark);
@@ -9933,7 +9934,7 @@ public final class Parser extends AbstractParser {
     private SSTNode term_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // term '*' factor
@@ -10100,7 +10101,7 @@ public final class Parser extends AbstractParser {
     public SSTNode factor_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FACTOR_ID)) {
             _res = (SSTNode)cache.getResult(_mark, FACTOR_ID);
@@ -10215,7 +10216,7 @@ public final class Parser extends AbstractParser {
     public SSTNode power_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, POWER_ID)) {
             _res = (SSTNode)cache.getResult(_mark, POWER_ID);
@@ -10281,7 +10282,7 @@ public final class Parser extends AbstractParser {
     public SSTNode await_primary_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AWAIT_PRIMARY_ID)) {
             _res = (SSTNode)cache.getResult(_mark, AWAIT_PRIMARY_ID);
@@ -10347,14 +10348,14 @@ public final class Parser extends AbstractParser {
     public SSTNode primary_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PRIMARY_ID)) {
             _res = cache.getResult(_mark, PRIMARY_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, PRIMARY_ID, _res);
             reset(_mark);
@@ -10371,7 +10372,7 @@ public final class Parser extends AbstractParser {
     private SSTNode primary_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_primary
@@ -10520,7 +10521,7 @@ public final class Parser extends AbstractParser {
     public SSTNode slices_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SLICES_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SLICES_ID);
@@ -10581,7 +10582,7 @@ public final class Parser extends AbstractParser {
     public SSTNode slice_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SLICE_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SLICE_ID);
@@ -10656,7 +10657,7 @@ public final class Parser extends AbstractParser {
     public SSTNode atom_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ATOM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, ATOM_ID);
@@ -10873,7 +10874,7 @@ public final class Parser extends AbstractParser {
     public SSTNode strings_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STRINGS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, STRINGS_ID);
@@ -10909,7 +10910,7 @@ public final class Parser extends AbstractParser {
     public SSTNode list_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LIST_ID)) {
             _res = (SSTNode)cache.getResult(_mark, LIST_ID);
@@ -10957,7 +10958,7 @@ public final class Parser extends AbstractParser {
     public SSTNode listcomp_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LISTCOMP_ID)) {
             _res = (SSTNode)cache.getResult(_mark, LISTCOMP_ID);
@@ -11026,7 +11027,7 @@ public final class Parser extends AbstractParser {
     public SSTNode tuple_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TUPLE_ID)) {
             _res = (SSTNode)cache.getResult(_mark, TUPLE_ID);
@@ -11074,7 +11075,7 @@ public final class Parser extends AbstractParser {
     public SSTNode group_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GROUP_ID)) {
             _res = (SSTNode)cache.getResult(_mark, GROUP_ID);
@@ -11134,7 +11135,7 @@ public final class Parser extends AbstractParser {
     public SSTNode genexp_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GENEXP_ID)) {
             _res = (SSTNode)cache.getResult(_mark, GENEXP_ID);
@@ -11203,7 +11204,7 @@ public final class Parser extends AbstractParser {
     public SSTNode set_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SET_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SET_ID);
@@ -11251,7 +11252,7 @@ public final class Parser extends AbstractParser {
     public SSTNode setcomp_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SETCOMP_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SETCOMP_ID);
@@ -11320,7 +11321,7 @@ public final class Parser extends AbstractParser {
     public SSTNode dict_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DICT_ID)) {
             _res = (SSTNode)cache.getResult(_mark, DICT_ID);
@@ -11392,7 +11393,7 @@ public final class Parser extends AbstractParser {
     public SSTNode dictcomp_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DICTCOMP_ID)) {
             _res = (SSTNode)cache.getResult(_mark, DICTCOMP_ID);
@@ -11461,7 +11462,7 @@ public final class Parser extends AbstractParser {
     public KeyValueSSTNode[] double_starred_kvpairs_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STARRED_KVPAIRS_ID)) {
             _res = (KeyValueSSTNode[])cache.getResult(_mark, DOUBLE_STARRED_KVPAIRS_ID);
@@ -11500,7 +11501,7 @@ public final class Parser extends AbstractParser {
     public KeyValueSSTNode double_starred_kvpair_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STARRED_KVPAIR_ID)) {
             _res = (KeyValueSSTNode)cache.getResult(_mark, DOUBLE_STARRED_KVPAIR_ID);
@@ -11557,7 +11558,7 @@ public final class Parser extends AbstractParser {
     public KeyValueSSTNode kvpair_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KVPAIR_ID)) {
             _res = (KeyValueSSTNode)cache.getResult(_mark, KVPAIR_ID);
@@ -11599,7 +11600,7 @@ public final class Parser extends AbstractParser {
     public ForComprehensionSSTNode[] for_if_clauses_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FOR_IF_CLAUSES_ID)) {
             _res = (ForComprehensionSSTNode[])cache.getResult(_mark, FOR_IF_CLAUSES_ID);
@@ -11638,7 +11639,7 @@ public final class Parser extends AbstractParser {
     public ForComprehensionSSTNode for_if_clause_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FOR_IF_CLAUSE_ID)) {
             _res = (ForComprehensionSSTNode)cache.getResult(_mark, FOR_IF_CLAUSE_ID);
@@ -11759,7 +11760,7 @@ public final class Parser extends AbstractParser {
     public SSTNode yield_expr_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, YIELD_EXPR_ID)) {
             _res = (SSTNode)cache.getResult(_mark, YIELD_EXPR_ID);
@@ -11833,7 +11834,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] arguments_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ARGUMENTS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, ARGUMENTS_ID);
@@ -11892,7 +11893,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] args_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ARGS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, ARGS_ID);
@@ -11952,7 +11953,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] kwargs_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWARGS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, KWARGS_ID);
@@ -12030,7 +12031,7 @@ public final class Parser extends AbstractParser {
     public SSTNode starred_expression_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STARRED_EXPRESSION_ID)) {
             _res = (SSTNode)cache.getResult(_mark, STARRED_EXPRESSION_ID);
@@ -12075,7 +12076,7 @@ public final class Parser extends AbstractParser {
     public SSTNode kwarg_or_starred_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWARG_OR_STARRED_ID)) {
             _res = (SSTNode)cache.getResult(_mark, KWARG_OR_STARRED_ID);
@@ -12153,7 +12154,7 @@ public final class Parser extends AbstractParser {
     public SSTNode kwarg_or_double_starred_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWARG_OR_DOUBLE_STARRED_ID)) {
             _res = (SSTNode)cache.getResult(_mark, KWARG_OR_DOUBLE_STARRED_ID);
@@ -12234,7 +12235,7 @@ public final class Parser extends AbstractParser {
     public SSTNode star_targets_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_TARGETS_ID)) {
             _res = (SSTNode)cache.getResult(_mark, STAR_TARGETS_ID);
@@ -12302,7 +12303,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] star_targets_list_seq_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_TARGETS_LIST_SEQ_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, STAR_TARGETS_LIST_SEQ_ID);
@@ -12341,7 +12342,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] star_targets_tuple_seq_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID);
@@ -12408,7 +12409,7 @@ public final class Parser extends AbstractParser {
     public SSTNode star_target_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_TARGET_ID)) {
             _res = (SSTNode)cache.getResult(_mark, STAR_TARGET_ID);
@@ -12470,7 +12471,7 @@ public final class Parser extends AbstractParser {
     public SSTNode target_with_star_atom_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TARGET_WITH_STAR_ATOM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, TARGET_WITH_STAR_ATOM_ID);
@@ -12566,7 +12567,7 @@ public final class Parser extends AbstractParser {
     public SSTNode star_atom_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_ATOM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, STAR_ATOM_ID);
@@ -12582,7 +12583,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
-                _res = this.setExprContext(a,ExprContext.Store);
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 level--;
@@ -12606,7 +12607,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' target_with_star_atom ')'");
-                _res = this.setExprContext(a,ExprContext.Store);
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' target_with_star_atom ')'");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 level--;
@@ -12685,7 +12686,7 @@ public final class Parser extends AbstractParser {
     public SSTNode single_target_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SINGLE_TARGET_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SINGLE_TARGET_ID);
@@ -12718,7 +12719,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d single_target[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
-                _res = this.setExprContext(a,ExprContext.Store);
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, SINGLE_TARGET_ID, _res);
                 level--;
@@ -12765,7 +12766,7 @@ public final class Parser extends AbstractParser {
     public SSTNode single_subscript_attribute_target_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID)) {
             _res = (SSTNode)cache.getResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID);
@@ -12839,7 +12840,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] del_targets_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEL_TARGETS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, DEL_TARGETS_ID);
@@ -12881,7 +12882,7 @@ public final class Parser extends AbstractParser {
     public SSTNode del_target_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEL_TARGET_ID)) {
             _res = (SSTNode)cache.getResult(_mark, DEL_TARGET_ID);
@@ -12973,7 +12974,7 @@ public final class Parser extends AbstractParser {
     public SSTNode del_t_atom_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEL_T_ATOM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, DEL_T_ATOM_ID);
@@ -13089,7 +13090,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] targets_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TARGETS_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, TARGETS_ID);
@@ -13131,7 +13132,7 @@ public final class Parser extends AbstractParser {
     public SSTNode target_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TARGET_ID)) {
             _res = (SSTNode)cache.getResult(_mark, TARGET_ID);
@@ -13229,14 +13230,14 @@ public final class Parser extends AbstractParser {
     public SSTNode t_primary_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, T_PRIMARY_ID)) {
             _res = cache.getResult(_mark, T_PRIMARY_ID);
             level--;
             return (SSTNode)_res;
         }
-        long _resmark = mark();
+        int _resmark = mark();
         while (true) {
             cache.putResult(_mark, T_PRIMARY_ID, _res);
             reset(_mark);
@@ -13253,7 +13254,7 @@ public final class Parser extends AbstractParser {
     private SSTNode t_primary_raw()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME &t_lookahead
@@ -13395,7 +13396,7 @@ public final class Parser extends AbstractParser {
     public Object t_lookahead_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, T_LOOKAHEAD_ID)) {
             _res = (Object)cache.getResult(_mark, T_LOOKAHEAD_ID);
@@ -13467,7 +13468,7 @@ public final class Parser extends AbstractParser {
     public SSTNode t_atom_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, T_ATOM_ID)) {
             _res = (SSTNode)cache.getResult(_mark, T_ATOM_ID);
@@ -13588,7 +13589,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_arguments_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ARGUMENTS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_ARGUMENTS_ID);
@@ -13739,7 +13740,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_kwarg_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_KWARG_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_KWARG_ID);
@@ -13780,7 +13781,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_expression_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_EXPRESSION_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_EXPRESSION_ID);
@@ -13826,7 +13827,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_named_expression_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_NAMED_EXPRESSION_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_NAMED_EXPRESSION_ID);
@@ -13934,7 +13935,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_assignment_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ASSIGNMENT_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_ASSIGNMENT_ID);
@@ -14114,7 +14115,7 @@ public final class Parser extends AbstractParser {
     public SSTNode invalid_ann_assign_target_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID)) {
             _res = (SSTNode)cache.getResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID);
@@ -14192,7 +14193,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_del_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DEL_STMT_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_DEL_STMT_ID);
@@ -14233,7 +14234,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_block_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_BLOCK_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_BLOCK_ID);
@@ -14274,7 +14275,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_primary_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         { // primary '{'
             debugMessageln("%d> invalid_primary[%d-%d]: %s", level, _mark, mark(), "primary '{'");
@@ -14310,7 +14311,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_comprehension_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_COMPREHENSION_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_COMPREHENSION_ID);
@@ -14386,7 +14387,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_dict_comprehension_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DICT_COMPREHENSION_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_DICT_COMPREHENSION_ID);
@@ -14436,7 +14437,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_parameters_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_PARAMETERS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_PARAMETERS_ID);
@@ -14480,7 +14481,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_parameters_helper_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_PARAMETERS_HELPER_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_PARAMETERS_HELPER_ID);
@@ -14535,7 +14536,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_lambda_parameters_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_LAMBDA_PARAMETERS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_LAMBDA_PARAMETERS_ID);
@@ -14581,7 +14582,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_lambda_parameters_helper_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID);
@@ -14635,7 +14636,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_star_etc_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_STAR_ETC_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_STAR_ETC_ID);
@@ -14702,7 +14703,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_lambda_star_etc_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_LAMBDA_STAR_ETC_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_LAMBDA_STAR_ETC_ID);
@@ -14743,7 +14744,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_double_type_comments_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID);
@@ -14793,7 +14794,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_with_item_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_WITH_ITEM_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_WITH_ITEM_ID);
@@ -14839,7 +14840,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_for_target_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_FOR_TARGET_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_FOR_TARGET_ID);
@@ -14883,7 +14884,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_group_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_GROUP_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_GROUP_ID);
@@ -14956,7 +14957,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_import_from_targets_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID);
@@ -14999,7 +15000,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_with_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_WITH_STMT_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_WITH_STMT_ID);
@@ -15083,7 +15084,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_except_block_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_EXCEPT_BLOCK_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_EXCEPT_BLOCK_ID);
@@ -15184,7 +15185,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_match_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_MATCH_STMT_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_MATCH_STMT_ID);
@@ -15227,7 +15228,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_case_block_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_CASE_BLOCK_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_CASE_BLOCK_ID);
@@ -15273,7 +15274,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_if_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_IF_STMT_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_IF_STMT_ID);
@@ -15317,7 +15318,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_elif_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ELIF_STMT_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_ELIF_STMT_ID);
@@ -15361,7 +15362,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_while_stmt_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_WHILE_STMT_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_WHILE_STMT_ID);
@@ -15408,7 +15409,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_double_starred_kvpairs_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID);
@@ -15504,7 +15505,7 @@ public final class Parser extends AbstractParser {
     public Object invalid_kvpair_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_KVPAIR_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_KVPAIR_ID);
@@ -15596,7 +15597,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_1_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_1_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_1_ID);
@@ -15633,13 +15634,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_2_ID)) {
             _res = cache.getResult(_mark, _LOOP0_2_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -15673,7 +15674,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_3_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_3_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_3_ID);
@@ -15710,13 +15711,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_4_ID)) {
             _res = cache.getResult(_mark, _LOOP0_4_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -15751,13 +15752,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_6_ID)) {
             _res = cache.getResult(_mark, _LOOP0_6_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -15794,7 +15795,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_5_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_5_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_5_ID);
@@ -15833,13 +15834,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_8_ID)) {
             _res = cache.getResult(_mark, _LOOP0_8_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -15876,7 +15877,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_7_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_7_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_7_ID);
@@ -15915,13 +15916,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_10_ID)) {
             _res = cache.getResult(_mark, _LOOP0_10_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -15958,7 +15959,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_9_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_9_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_9_ID);
@@ -15997,13 +15998,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_12_ID)) {
             _res = cache.getResult(_mark, _LOOP0_12_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -16040,7 +16041,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_11_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_11_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_11_ID);
@@ -16079,13 +16080,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_13_ID)) {
             _res = cache.getResult(_mark, _LOOP1_13_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -16124,13 +16125,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_15_ID)) {
             _res = cache.getResult(_mark, _LOOP0_15_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -16167,7 +16168,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_14_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_14_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_14_ID);
@@ -16205,7 +16206,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_16_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_16_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_16_ID);
@@ -16241,7 +16242,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_17_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_17_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_17_ID);
@@ -16295,7 +16296,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_18_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_18_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_18_ID);
@@ -16367,7 +16368,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_19_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_19_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_19_ID);
@@ -16421,7 +16422,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_20_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_20_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_20_ID);
@@ -16475,7 +16476,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_21_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_21_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_21_ID);
@@ -16529,7 +16530,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_22_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_22_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_22_ID);
@@ -16568,7 +16569,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_23_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_23_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_23_ID);
@@ -16628,7 +16629,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_24_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_24_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_24_ID);
@@ -16668,13 +16669,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_25_ID)) {
             _res = cache.getResult(_mark, _LOOP1_25_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -16712,7 +16713,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_26_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_26_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_26_ID);
@@ -16766,7 +16767,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_27_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_27_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_27_ID);
@@ -16802,7 +16803,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_28_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_28_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_28_ID);
@@ -16857,13 +16858,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_30_ID)) {
             _res = cache.getResult(_mark, _LOOP0_30_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -16900,7 +16901,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_29_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_29_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_29_ID);
@@ -16939,13 +16940,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_32_ID)) {
             _res = cache.getResult(_mark, _LOOP0_32_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -16982,7 +16983,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_31_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_31_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_31_ID);
@@ -17020,7 +17021,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_33_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_33_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_33_ID);
@@ -17059,7 +17060,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_34_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_34_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_34_ID);
@@ -17114,13 +17115,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_35_ID)) {
             _res = cache.getResult(_mark, _LOOP0_35_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -17155,13 +17156,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_36_ID)) {
             _res = cache.getResult(_mark, _LOOP1_36_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -17199,7 +17200,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_37_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_37_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_37_ID);
@@ -17236,13 +17237,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_39_ID)) {
             _res = cache.getResult(_mark, _LOOP0_39_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -17279,7 +17280,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_38_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_38_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_38_ID);
@@ -17317,7 +17318,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_40_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_40_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_40_ID);
@@ -17357,13 +17358,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_42_ID)) {
             _res = cache.getResult(_mark, _LOOP0_42_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -17400,7 +17401,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_41_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_41_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_41_ID);
@@ -17438,7 +17439,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_43_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_43_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_43_ID);
@@ -17477,7 +17478,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_44_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_44_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_44_ID);
@@ -17513,7 +17514,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_45_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_45_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_45_ID);
@@ -17549,7 +17550,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_46_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_46_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_46_ID);
@@ -17585,7 +17586,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_47_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_47_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_47_ID);
@@ -17621,7 +17622,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_48_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_48_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_48_ID);
@@ -17657,7 +17658,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_49_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_49_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_49_ID);
@@ -17693,7 +17694,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_50_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_50_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_50_ID);
@@ -17730,13 +17731,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_52_ID)) {
             _res = cache.getResult(_mark, _LOOP0_52_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -17773,7 +17774,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_51_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_51_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_51_ID);
@@ -17812,13 +17813,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_54_ID)) {
             _res = cache.getResult(_mark, _LOOP0_54_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -17855,7 +17856,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_53_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_53_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_53_ID);
@@ -17893,7 +17894,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_55_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_55_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_55_ID);
@@ -17930,13 +17931,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_57_ID)) {
             _res = cache.getResult(_mark, _LOOP0_57_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -17973,7 +17974,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_56_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_56_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_56_ID);
@@ -18012,13 +18013,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_59_ID)) {
             _res = cache.getResult(_mark, _LOOP0_59_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -18055,7 +18056,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_58_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_58_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_58_ID);
@@ -18093,7 +18094,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_60_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_60_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_60_ID);
@@ -18129,7 +18130,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_61_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_61_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_61_ID);
@@ -18202,13 +18203,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_62_ID)) {
             _res = cache.getResult(_mark, _LOOP1_62_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -18246,7 +18247,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_63_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_63_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_63_ID);
@@ -18282,7 +18283,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_64_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_64_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_64_ID);
@@ -18318,7 +18319,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_65_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_65_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_65_ID);
@@ -18358,13 +18359,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_66_ID)) {
             _res = cache.getResult(_mark, _LOOP1_66_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -18403,13 +18404,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_68_ID)) {
             _res = cache.getResult(_mark, _LOOP0_68_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -18446,7 +18447,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_67_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_67_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_67_ID);
@@ -18484,7 +18485,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_69_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_69_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_69_ID);
@@ -18538,7 +18539,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_70_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_70_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_70_ID);
@@ -18610,7 +18611,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_71_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_71_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_71_ID);
@@ -18683,13 +18684,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_73_ID)) {
             _res = cache.getResult(_mark, _LOOP0_73_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -18726,7 +18727,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_72_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_72_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_72_ID);
@@ -18764,7 +18765,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_74_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_74_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_74_ID);
@@ -18819,13 +18820,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_76_ID)) {
             _res = cache.getResult(_mark, _LOOP0_76_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -18862,7 +18863,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_75_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_75_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_75_ID);
@@ -18900,7 +18901,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_77_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_77_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_77_ID);
@@ -18955,13 +18956,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_79_ID)) {
             _res = cache.getResult(_mark, _LOOP0_79_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -18998,7 +18999,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_78_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_78_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_78_ID);
@@ -19037,13 +19038,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_81_ID)) {
             _res = cache.getResult(_mark, _LOOP0_81_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19080,7 +19081,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_80_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_80_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_80_ID);
@@ -19118,7 +19119,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_82_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_82_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_82_ID);
@@ -19154,7 +19155,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_83_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_83_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_83_ID);
@@ -19193,7 +19194,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_84_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_84_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_84_ID);
@@ -19229,7 +19230,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_85_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_85_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_85_ID);
@@ -19268,7 +19269,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_86_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_86_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_86_ID);
@@ -19304,7 +19305,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_87_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_87_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_87_ID);
@@ -19340,7 +19341,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_88_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_88_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_88_ID);
@@ -19379,7 +19380,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_89_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_89_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_89_ID);
@@ -19415,7 +19416,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_90_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_90_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_90_ID);
@@ -19455,13 +19456,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_91_ID)) {
             _res = cache.getResult(_mark, _LOOP0_91_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19496,13 +19497,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_92_ID)) {
             _res = cache.getResult(_mark, _LOOP0_92_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19536,7 +19537,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_93_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_93_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_93_ID);
@@ -19573,13 +19574,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_94_ID)) {
             _res = cache.getResult(_mark, _LOOP0_94_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19613,7 +19614,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_95_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_95_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_95_ID);
@@ -19650,13 +19651,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_96_ID)) {
             _res = cache.getResult(_mark, _LOOP1_96_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19695,13 +19696,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_97_ID)) {
             _res = cache.getResult(_mark, _LOOP0_97_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19735,7 +19736,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_98_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_98_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_98_ID);
@@ -19772,13 +19773,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_99_ID)) {
             _res = cache.getResult(_mark, _LOOP1_99_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19816,7 +19817,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_100_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_100_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_100_ID);
@@ -19853,13 +19854,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_101_ID)) {
             _res = cache.getResult(_mark, _LOOP1_101_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19898,13 +19899,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_102_ID)) {
             _res = cache.getResult(_mark, _LOOP1_102_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19943,13 +19944,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_103_ID)) {
             _res = cache.getResult(_mark, _LOOP0_103_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -19984,13 +19985,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_104_ID)) {
             _res = cache.getResult(_mark, _LOOP1_104_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20029,13 +20030,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_105_ID)) {
             _res = cache.getResult(_mark, _LOOP0_105_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20070,13 +20071,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_106_ID)) {
             _res = cache.getResult(_mark, _LOOP1_106_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20115,13 +20116,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_107_ID)) {
             _res = cache.getResult(_mark, _LOOP0_107_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20155,7 +20156,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_108_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_108_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_108_ID);
@@ -20192,13 +20193,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_109_ID)) {
             _res = cache.getResult(_mark, _LOOP1_109_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20236,7 +20237,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_110_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_110_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_110_ID);
@@ -20273,13 +20274,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_111_ID)) {
             _res = cache.getResult(_mark, _LOOP1_111_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20317,7 +20318,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_112_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_112_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_112_ID);
@@ -20360,13 +20361,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_113_ID)) {
             _res = cache.getResult(_mark, _LOOP1_113_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20404,7 +20405,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_114_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_114_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_114_ID);
@@ -20441,13 +20442,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_116_ID)) {
             _res = cache.getResult(_mark, _LOOP0_116_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20484,7 +20485,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_115_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_115_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_115_ID);
@@ -20522,7 +20523,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_117_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_117_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_117_ID);
@@ -20559,13 +20560,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_118_ID)) {
             _res = cache.getResult(_mark, _LOOP1_118_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20603,7 +20604,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_119_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_119_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_119_ID);
@@ -20639,7 +20640,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_120_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_120_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_120_ID);
@@ -20676,13 +20677,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_121_ID)) {
             _res = cache.getResult(_mark, _LOOP0_121_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20717,13 +20718,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_122_ID)) {
             _res = cache.getResult(_mark, _LOOP0_122_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20757,7 +20758,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_123_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_123_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_123_ID);
@@ -20794,13 +20795,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_124_ID)) {
             _res = cache.getResult(_mark, _LOOP0_124_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20834,7 +20835,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_125_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_125_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_125_ID);
@@ -20871,13 +20872,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_126_ID)) {
             _res = cache.getResult(_mark, _LOOP1_126_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20916,13 +20917,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_127_ID)) {
             _res = cache.getResult(_mark, _LOOP0_127_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -20956,7 +20957,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_128_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_128_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_128_ID);
@@ -20993,13 +20994,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_129_ID)) {
             _res = cache.getResult(_mark, _LOOP1_129_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21037,7 +21038,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_130_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_130_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_130_ID);
@@ -21074,13 +21075,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_131_ID)) {
             _res = cache.getResult(_mark, _LOOP1_131_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21119,13 +21120,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_132_ID)) {
             _res = cache.getResult(_mark, _LOOP1_132_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21164,13 +21165,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_133_ID)) {
             _res = cache.getResult(_mark, _LOOP0_133_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21205,13 +21206,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_134_ID)) {
             _res = cache.getResult(_mark, _LOOP1_134_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21250,13 +21251,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_135_ID)) {
             _res = cache.getResult(_mark, _LOOP0_135_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21291,13 +21292,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_136_ID)) {
             _res = cache.getResult(_mark, _LOOP1_136_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21336,13 +21337,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_137_ID)) {
             _res = cache.getResult(_mark, _LOOP0_137_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21376,7 +21377,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_138_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_138_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_138_ID);
@@ -21413,13 +21414,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_139_ID)) {
             _res = cache.getResult(_mark, _LOOP1_139_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21457,7 +21458,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_140_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_140_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_140_ID);
@@ -21494,13 +21495,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_141_ID)) {
             _res = cache.getResult(_mark, _LOOP1_141_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21539,13 +21540,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_142_ID)) {
             _res = cache.getResult(_mark, _LOOP1_142_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21584,13 +21585,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_143_ID)) {
             _res = cache.getResult(_mark, _LOOP1_143_ID);
             level--;
             return (BinaryArithmeticSSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<BinaryArithmeticSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21628,7 +21629,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_144_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_144_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_144_ID);
@@ -21666,7 +21667,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_145_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_145_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_145_ID);
@@ -21703,13 +21704,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_147_ID)) {
             _res = cache.getResult(_mark, _LOOP0_147_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -21746,7 +21747,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_146_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_146_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_146_ID);
@@ -21784,7 +21785,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_148_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_148_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_148_ID);
@@ -21820,7 +21821,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_149_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_149_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_149_ID);
@@ -21856,7 +21857,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_150_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_150_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_150_ID);
@@ -21892,7 +21893,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_151_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_151_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_151_ID);
@@ -21931,7 +21932,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_152_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_152_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_152_ID);
@@ -22003,7 +22004,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_153_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_153_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_153_ID);
@@ -22057,7 +22058,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_154_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_154_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_154_ID);
@@ -22148,13 +22149,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_155_ID)) {
             _res = cache.getResult(_mark, _LOOP1_155_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -22192,7 +22193,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_156_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_156_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_156_ID);
@@ -22228,7 +22229,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_157_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_157_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_157_ID);
@@ -22270,7 +22271,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_158_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_158_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_158_ID);
@@ -22324,7 +22325,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_159_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_159_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_159_ID);
@@ -22361,13 +22362,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_161_ID)) {
             _res = cache.getResult(_mark, _LOOP0_161_ID);
             level--;
             return (KeyValueSSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<KeyValueSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -22404,7 +22405,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_160_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_160_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_160_ID);
@@ -22442,7 +22443,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_162_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_162_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_162_ID);
@@ -22479,13 +22480,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_163_ID)) {
             _res = cache.getResult(_mark, _LOOP1_163_ID);
             level--;
             return (ForComprehensionSSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<ForComprehensionSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -22524,13 +22525,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_164_ID)) {
             _res = cache.getResult(_mark, _LOOP0_164_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -22565,13 +22566,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_165_ID)) {
             _res = cache.getResult(_mark, _LOOP0_165_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -22605,7 +22606,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_166_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_166_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_166_ID);
@@ -22641,7 +22642,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_167_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_167_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_167_ID);
@@ -22678,13 +22679,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_169_ID)) {
             _res = cache.getResult(_mark, _LOOP0_169_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -22721,7 +22722,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_168_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_168_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_168_ID);
@@ -22759,7 +22760,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_170_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_170_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_170_ID);
@@ -22799,13 +22800,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_172_ID)) {
             _res = cache.getResult(_mark, _LOOP0_172_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -22842,7 +22843,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_171_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_171_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_171_ID);
@@ -22881,13 +22882,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_174_ID)) {
             _res = cache.getResult(_mark, _LOOP0_174_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -22924,7 +22925,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_173_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_173_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_173_ID);
@@ -22963,13 +22964,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_176_ID)) {
             _res = cache.getResult(_mark, _LOOP0_176_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -23006,7 +23007,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_175_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_175_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_175_ID);
@@ -23045,13 +23046,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_178_ID)) {
             _res = cache.getResult(_mark, _LOOP0_178_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -23088,7 +23089,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_177_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_177_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_177_ID);
@@ -23127,13 +23128,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_179_ID)) {
             _res = cache.getResult(_mark, _LOOP0_179_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -23167,7 +23168,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_180_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_180_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_180_ID);
@@ -23204,13 +23205,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_182_ID)) {
             _res = cache.getResult(_mark, _LOOP0_182_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -23247,7 +23248,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_181_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_181_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_181_ID);
@@ -23285,7 +23286,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_183_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_183_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_183_ID);
@@ -23322,13 +23323,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_184_ID)) {
             _res = cache.getResult(_mark, _LOOP1_184_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -23366,7 +23367,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_185_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_185_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_185_ID);
@@ -23402,7 +23403,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_186_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_186_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_186_ID);
@@ -23440,7 +23441,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_187_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_187_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_187_ID);
@@ -23476,7 +23477,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_188_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_188_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_188_ID);
@@ -23513,13 +23514,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_190_ID)) {
             _res = cache.getResult(_mark, _LOOP0_190_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -23556,7 +23557,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_189_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_189_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_189_ID);
@@ -23594,7 +23595,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_191_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_191_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_191_ID);
@@ -23630,7 +23631,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_192_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_192_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_192_ID);
@@ -23666,7 +23667,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_193_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_193_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_193_ID);
@@ -23703,13 +23704,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_195_ID)) {
             _res = cache.getResult(_mark, _LOOP0_195_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -23746,7 +23747,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_194_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_194_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_194_ID);
@@ -23784,7 +23785,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_196_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_196_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_196_ID);
@@ -23820,7 +23821,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_197_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_197_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_197_ID);
@@ -23856,7 +23857,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_198_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_198_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_198_ID);
@@ -23892,7 +23893,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_199_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_199_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_199_ID);
@@ -23928,7 +23929,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_200_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_200_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_200_ID);
@@ -23985,7 +23986,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_201_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_201_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_201_ID);
@@ -24042,7 +24043,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_202_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_202_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_202_ID);
@@ -24114,7 +24115,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_203_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_203_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_203_ID);
@@ -24240,7 +24241,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_204_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_204_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_204_ID);
@@ -24313,13 +24314,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_205_ID)) {
             _res = cache.getResult(_mark, _LOOP0_205_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -24354,13 +24355,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_206_ID)) {
             _res = cache.getResult(_mark, _LOOP0_206_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -24395,13 +24396,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_207_ID)) {
             _res = cache.getResult(_mark, _LOOP0_207_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -24435,7 +24436,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_208_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_208_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_208_ID);
@@ -24489,7 +24490,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_209_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_209_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_209_ID);
@@ -24561,7 +24562,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_210_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_210_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_210_ID);
@@ -24615,7 +24616,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_211_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_211_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_211_ID);
@@ -24652,13 +24653,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_212_ID)) {
             _res = cache.getResult(_mark, _LOOP0_212_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -24693,13 +24694,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_213_ID)) {
             _res = cache.getResult(_mark, _LOOP1_213_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -24738,13 +24739,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_214_ID)) {
             _res = cache.getResult(_mark, _LOOP0_214_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -24779,13 +24780,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_215_ID)) {
             _res = cache.getResult(_mark, _LOOP1_215_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -24823,7 +24824,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_216_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_216_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_216_ID);
@@ -24880,7 +24881,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_217_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_217_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_217_ID);
@@ -24937,7 +24938,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_218_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_218_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_218_ID);
@@ -25009,7 +25010,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_219_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_219_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_219_ID);
@@ -25046,13 +25047,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_221_ID)) {
             _res = cache.getResult(_mark, _LOOP0_221_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -25089,7 +25090,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_220_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_220_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_220_ID);
@@ -25127,7 +25128,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_222_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_222_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_222_ID);
@@ -25164,13 +25165,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_224_ID)) {
             _res = cache.getResult(_mark, _LOOP0_224_ID);
             level--;
             return (SSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<SSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -25207,7 +25208,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_223_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_223_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_223_ID);
@@ -25245,7 +25246,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_225_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_225_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_225_ID);
@@ -25284,7 +25285,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_226_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_226_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_226_ID);
@@ -25324,13 +25325,13 @@ public final class Parser extends AbstractParser {
     {
         level++;
         Object _res = null;
-        long _mark = mark();
+        int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_228_ID)) {
             _res = cache.getResult(_mark, _LOOP0_228_ID);
             level--;
             return (KeyValueSSTNode[])_res;
         }
-        long _start_mark = mark();
+        int _start_mark = mark();
         List<KeyValueSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
@@ -25367,7 +25368,7 @@ public final class Parser extends AbstractParser {
     public SSTNode[] _gather_227_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_227_ID)) {
             _res = (SSTNode[])cache.getResult(_mark, _GATHER_227_ID);
@@ -25405,7 +25406,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_229_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_229_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_229_ID);
@@ -25459,7 +25460,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_230_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_230_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_230_ID);
@@ -25495,7 +25496,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_231_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_231_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_231_ID);
@@ -25534,7 +25535,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_232_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_232_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_232_ID);
@@ -25588,7 +25589,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_233_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_233_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_233_ID);
@@ -25642,7 +25643,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_234_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_234_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_234_ID);
@@ -25684,7 +25685,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_235_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_235_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_235_ID);
@@ -25720,7 +25721,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_236_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_236_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_236_ID);
@@ -25759,7 +25760,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_237_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_237_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_237_ID);
@@ -25798,7 +25799,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_238_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_238_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_238_ID);
@@ -25837,7 +25838,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_239_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_239_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_239_ID);
@@ -25876,7 +25877,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_240_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_240_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_240_ID);
@@ -25912,7 +25913,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_241_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_241_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_241_ID);
@@ -25948,7 +25949,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_242_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_242_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_242_ID);
@@ -25987,7 +25988,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_243_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_243_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_243_ID);
@@ -26026,7 +26027,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_244_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_244_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_244_ID);
@@ -26082,7 +26083,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_245_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_245_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_245_ID);
@@ -26121,7 +26122,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_246_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_246_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_246_ID);
@@ -26160,7 +26161,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_247_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_247_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_247_ID);
@@ -26199,7 +26200,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_248_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_248_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_248_ID);
@@ -26238,7 +26239,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_249_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_249_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_249_ID);
@@ -26292,7 +26293,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_250_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_250_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_250_ID);
@@ -26346,7 +26347,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_251_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_251_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_251_ID);
@@ -26385,7 +26386,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_252_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_252_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_252_ID);
@@ -26424,7 +26425,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_253_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_253_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_253_ID);
@@ -26463,7 +26464,7 @@ public final class Parser extends AbstractParser {
     public Object _tmp_254_rule()
     {
         level++;
-        long _mark = mark();
+        int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_254_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_254_ID);
@@ -26500,154 +26501,154 @@ public final class Parser extends AbstractParser {
 
     // lookahead methods generated
     private boolean genLookahead_expect(boolean match, int arg0) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Token result = expect(arg0);
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_17_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_17_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_18_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_18_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_19_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_19_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_20_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_20_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_21_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_21_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_34_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_34_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_61_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_61_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_69_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_69_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead_expect_SOFT_KEYWORD(boolean match, String arg0) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         SSTNode result = expect_SOFT_KEYWORD(arg0);
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_70_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_70_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_71_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_71_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_90_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_90_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead_string_token(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         SSTNode result = string_token();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead_t_lookahead_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = t_lookahead_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_201_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_201_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_202_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_202_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_203_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_203_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_204_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_204_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_218_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_218_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_229_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_229_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_230_rule(boolean match) {
-        long tmpPos = mark();
+        int tmpPos = mark();
         Object result = _tmp_230_rule();
         reset(tmpPos);
         return (result != null) == match;

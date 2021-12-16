@@ -72,23 +72,23 @@ class RuleResultCache <T> {
         this.mainCache = new HashMap<>();
     }
 
-    public boolean hasResult(long pos, int ruleId) {
-        return mainCache.containsKey((int)pos) && mainCache.get((int)pos).containsKey(ruleId);
+    public boolean hasResult(int pos, int ruleId) {
+        return mainCache.containsKey(pos) && mainCache.get(pos).containsKey(ruleId);
     }
 
-    public T getResult(long pos, int ruleId) {
-        CachedItem item = mainCache.get((int)pos).get(ruleId);
+    public T getResult(int pos, int ruleId) {
+        CachedItem item = mainCache.get(pos).get(ruleId);
         parser.reset(item.endPos);
         return (T)item.node;
     }
 
-    public T putResult(long pos, int ruleId, T node) {
-        HashMap posCache = mainCache.get((int)pos);
+    public T putResult(int pos, int ruleId, T node) {
+        HashMap posCache = mainCache.get(pos);
         if (posCache == null) {
             posCache = new HashMap();
-            mainCache.put((int)pos, posCache);
+            mainCache.put(pos, posCache);
         }
-        posCache.put(ruleId, new CachedItem(node, (int)parser.mark()));
+        posCache.put(ruleId, new CachedItem(node, parser.mark()));
         return node;
     }
 }
