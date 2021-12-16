@@ -105,14 +105,6 @@ def METH_UNSUPPORTED():
     raise NotImplementedError("unsupported message type")
 
 
-def PyMethod_New(func, self):
-    # TODO we should use the method constructor
-    # e.g. methodtype(func, self)
-    def bound_function(*args, **kwargs):
-        return func(self, *args, **kwargs)
-    return bound_function
-
-
 def PyMethodDescr_Check(func):
     return 1 if isinstance(func, type(list.append)) else 0
 

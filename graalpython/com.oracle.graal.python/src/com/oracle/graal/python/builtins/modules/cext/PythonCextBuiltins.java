@@ -3883,4 +3883,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
+
+    @Builtin(name = "PyMethod_New", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyMethodNew extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object methodNew(Object func, Object self) {
+            // Note: CPython also constructs the object directly, without running the constructor or
+            // checking the inputs
+            return factory().createMethod(self, func);
+        }
+    }
 }
