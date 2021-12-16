@@ -32,6 +32,8 @@ import java.lang.annotation.RetentionPolicy;
 public @interface CoreFunctions {
     String defineModule() default "";
 
+    String extendsModule() default "";
+
     /**
      * Most builtins are not OS specific. If specified, the builtin is included only if the os
      * matches

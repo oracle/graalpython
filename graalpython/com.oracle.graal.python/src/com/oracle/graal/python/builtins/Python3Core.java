@@ -84,7 +84,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
@@ -109,6 +109,15 @@ import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
@@ -395,8 +404,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
-        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
-                        new BuiltinConstructors(),
+        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
@@ -467,6 +475,15 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),
                         new PythonCextBuiltins(),
+                        new PythonCextAbstractBuiltins(),
+                        new PythonCextBytesBuiltins(),
+                        new PythonCextComplexBuiltins(),
+                        new PythonCextDictBuiltins(),
+                        new PythonCextFloatBuiltins(),
+                        new PythonCextListBuiltins(),
+                        new PythonCextLongBuiltins(),
+                        new PythonCextSetBuiltins(),
+                        new PythonCextUnicodeBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
@@ -941,6 +958,9 @@ public abstract class Python3Core extends ParserErrorCallback {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
                 addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin);
+            }
+            if (annotation.extendsModule().length() > 0) {
+                addBuiltinsTo(builtinModules.get(annotation.extendsModule()), builtin);
             }
             for (PythonBuiltinClassType klass : annotation.extendClasses()) {
                 addBuiltinsTo(lookupType(klass), builtin);
