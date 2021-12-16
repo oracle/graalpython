@@ -62,4 +62,8 @@ public class VarLookupSSTNode extends SSTNode {
         return name;
     }
 
+    public ExprContext getContext() {
+        return context;
+    }
+
 }

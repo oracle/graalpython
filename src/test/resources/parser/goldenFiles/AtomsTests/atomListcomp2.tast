@@ -4,13 +4,13 @@ BlockSSTNode[0, 35]
             Values:
                 VarLookupSSTNode[2, 3] Value: "i"
         ForComprehensionSSTNode[5, 15]
-            Target: VarLookupSSTNode[9, 10] Value: "i"
+            Target: VarLookupSSTNode[9, 10] Value: "i" Store
             Iterator: VarLookupSSTNode[14, 15] Value: "a"
             Ifs:
         ForComprehensionSSTNode[16, 34]
             Target: CollectionSSTNode[20, 23] List
                 Values:
-                    VarLookupSSTNode[21, 22] Value: "j"
+                    VarLookupSSTNode[21, 22] Value: "j" Store
             Iterator: VarLookupSSTNode[27, 28] Value: "b"
             Ifs:
                 IntegerLiteralSSTNode[32, 34] Value: "12"

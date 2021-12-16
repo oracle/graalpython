@@ -1,5 +1,5 @@
 BlockSSTNode[0, 6]
     AugAssignmentSSTNode[0, 6]
         Op: *
-        LHS: VarLookupSSTNode[0, 1] Value: "a"
+        LHS: VarLookupSSTNode[0, 1] Value: "a" Store
         RHS: VarLookupSSTNode[5, 6] Value: "b"
