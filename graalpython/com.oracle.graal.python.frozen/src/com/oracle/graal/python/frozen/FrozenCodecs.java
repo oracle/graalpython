@@ -41,14 +41,14 @@
 
 package com.oracle.graal.python.frozen;
 
-import java.io.IOException;public final class FrozenAbc {
-    public static final byte[] abcByteCode = getByteCode();
-    public static final int abcByteCodeSize = abcByteCode.length;
+import java.io.IOException;public final class FrozenCodecs {
+    public static final byte[] codecsByteCode = getByteCode();
+    public static final int codecsByteCodeSize = codecsByteCode.length;
 
     private static byte[] getByteCode() {
        byte[] byteCode;
        try {
-           byteCode = FrozenAbc.class.getResourceAsStream("FrozenAbc.bin").readAllBytes();
+           byteCode = FrozenCodecs.class.getResourceAsStream("FrozenCodecs.bin").readAllBytes();
        } catch (NullPointerException | IOException e) {
            byteCode = new byte[0];
        }
