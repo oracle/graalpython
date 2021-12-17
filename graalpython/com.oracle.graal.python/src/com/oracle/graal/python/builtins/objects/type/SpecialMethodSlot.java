@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
@@ -178,7 +177,6 @@ public enum SpecialMethodSlot {
     SetAttr(__SETATTR__),
     DelAttr(__DELATTR__),
 
-    Class(__CLASS__),
     Dict(__DICT__),
 
     Get(__GET__),
@@ -697,8 +695,6 @@ public enum SpecialMethodSlot {
                 return SetAttr;
             case __DELATTR__:
                 return DelAttr;
-            case __CLASS__:
-                return Class;
             case __DICT__:
                 return Dict;
             case __GET__:
