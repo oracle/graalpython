@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -80,6 +81,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public final class PythonUtils {
 
@@ -655,6 +657,11 @@ public final class PythonUtils {
         // codePoint >= MIN_VALUE && codePoint <= MAX_VALUE
         // We consistently use logical shift (>>>) to facilitate
         // additional runtime optimizations.
+    }
+
+    public static ValueProfile createValueIdentityProfile() {
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonLanguage.get(null).isSingleContext() ? ValueProfile.createIdentityProfile() : ValueProfile.createClassProfile();
     }
 
     @TruffleBoundary

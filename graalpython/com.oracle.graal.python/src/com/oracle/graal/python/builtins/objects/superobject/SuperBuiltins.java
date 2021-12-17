@@ -40,9 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.superobject;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF_CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__THISCLASS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -69,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
@@ -89,7 +97,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -98,16 +105,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF_CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__THISCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
 public final class SuperBuiltins extends PythonBuiltins {
@@ -116,14 +114,11 @@ public final class SuperBuiltins extends PythonBuiltins {
         return SuperBuiltinsFactory.getFactories();
     }
 
-    abstract static class GetTypeNode extends Node {
-        final Assumption singleContextAssumption() {
-            return PythonLanguage.get(this).singleContextAssumption;
-        }
+    abstract static class GetTypeNode extends PNodeWithContext {
 
         abstract Object execute(SuperObject self);
 
-        @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.getNeverReinitializedAssumption()", "singleContextAssumption()"}, limit = "1")
+        @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
         static Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
                         @Cached("self.getType()") Object type) {
@@ -136,14 +131,11 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class GetObjectTypeNode extends Node {
-        final Assumption singleContextAssumption() {
-            return PythonLanguage.get(this).singleContextAssumption;
-        }
+    abstract static class GetObjectTypeNode extends PNodeWithContext {
 
         abstract Object execute(SuperObject self);
 
-        @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.getNeverReinitializedAssumption()", "singleContextAssumption()"}, limit = "1")
+        @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
         static Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
                         @Cached("self.getObjectType()") Object type) {
@@ -156,14 +148,11 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class GetObjectNode extends Node {
-        final Assumption singleContextAssumption() {
-            return PythonLanguage.get(this).singleContextAssumption;
-        }
+    abstract static class GetObjectNode extends PNodeWithContext {
 
         abstract Object execute(SuperObject self);
 
-        @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.getNeverReinitializedAssumption()", "singleContextAssumption()"}, limit = "1")
+        @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
         static Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
                         @Cached("self.getObject()") Object object) {
