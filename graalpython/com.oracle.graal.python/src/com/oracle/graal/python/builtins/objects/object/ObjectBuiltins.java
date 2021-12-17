@@ -242,7 +242,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         protected static ValueProfile createLookupProfile(Node node) {
-            if (PythonLanguage.get(node).singleContextAssumption.isValid()) {
+            if (PythonLanguage.get(node).isSingleContext()) {
                 return ValueProfile.createIdentityProfile();
             } else {
                 return ValueProfile.createClassProfile();
