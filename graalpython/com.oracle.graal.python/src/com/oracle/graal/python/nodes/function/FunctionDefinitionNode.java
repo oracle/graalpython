@@ -129,7 +129,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         PythonLanguage lang = PythonLanguage.get(this);
         CompilerAsserts.partialEvaluationConstant(lang);
         PCode code;
-        if (lang.singleContextAssumption.isValid()) {
+        if (lang.isSingleContext()) {
             if (cachedCode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 cachedCode = factory().createCode(callTarget);

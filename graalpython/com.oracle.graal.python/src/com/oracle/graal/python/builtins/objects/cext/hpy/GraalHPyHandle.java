@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -174,11 +173,10 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     static class GetNativeType {
 
-        @Specialization(assumptions = "singleContextAssumption")
+        @Specialization(guards = "isSingleContext(lib)")
         @SuppressWarnings("unused")
         static Object doSingleContext(GraalHPyHandle handle,
                         @CachedLibrary("handle") InteropLibrary lib,
-                        @Cached("singleContextAssumption(lib)") Assumption singleContextAssumption,
                         @Cached("getHPyNativeType(lib)") Object hpyNativeType) {
             return hpyNativeType;
         }
@@ -193,8 +191,8 @@ public final class GraalHPyHandle implements TruffleObject {
             return PythonContext.get(node).getHPyContext().getHPyNativeType();
         }
 
-        static Assumption singleContextAssumption(Node node) {
-            return PythonLanguage.get(node).singleContextAssumption;
+        static boolean isSingleContext(Node node) {
+            return PythonLanguage.get(node).isSingleContext();
         }
     }
 

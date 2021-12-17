@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -52,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeFactory.GetFixedAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -62,13 +62,11 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GetAttributeNode extends ExpressionNode implements ReadNode {
@@ -111,7 +109,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
         return objectExpression;
     }
 
-    abstract static class GetAttributeBaseNode extends Node {
+    abstract static class GetAttributeBaseNode extends PNodeWithContext {
 
         @Child protected LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(SpecialMethodSlot.GetAttribute);
         @Child private IsBuiltinClassProfile isBuiltinClassProfile;
@@ -175,10 +173,6 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             return getClassNode.execute(object);
         }
 
-        Assumption singleContextAssumption() {
-            return PythonLanguage.get(this).singleContextAssumption;
-        }
-
         protected IsBuiltinClassProfile getErrorProfile() {
             if (isBuiltinClassProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -235,7 +229,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
          * it in single context mode.
          */
 
-        @Specialization(assumptions = "singleContextAssumption()")
+        @Specialization(guards = "isSingleContext()")
         final Object doSingleContext(VirtualFrame frame, Object object) {
             try {
                 return dispatchNode.executeObject(frame, object, key);
@@ -245,7 +239,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             }
         }
 
-        @Specialization(replaces = "doSingleContext", guards = "isObjectGetAttribute(getPythonClass(object))")
+        @Specialization(guards = {"!isSingleContext()", "isObjectGetAttribute(getPythonClass(object))"})
         final Object doBuiltinObject(VirtualFrame frame, Object object,
                         @Cached ObjectBuiltins.GetAttributeNode getAttributeNode) {
             try {
@@ -256,7 +250,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             }
         }
 
-        @Specialization(replaces = "doSingleContext", guards = "isTypeGetAttribute(getPythonClass(object))")
+        @Specialization(guards = {"!isSingleContext()", "isTypeGetAttribute(getPythonClass(object))"})
         final Object doBuiltinType(VirtualFrame frame, Object object,
                         @Cached TypeBuiltins.GetattributeNode getAttributeNode) {
             try {
@@ -267,7 +261,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             }
         }
 
-        @Specialization(replaces = "doSingleContext", guards = "isModuleGetAttribute(getPythonClass(object))")
+        @Specialization(guards = {"!isSingleContext()", "isModuleGetAttribute(getPythonClass(object))"})
         final Object doBuiltinModule(VirtualFrame frame, Object object,
                         @Cached ModuleBuiltins.ModuleGetattritbuteNode getAttributeNode) {
             try {
@@ -278,7 +272,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             }
         }
 
-        @Specialization(replaces = {"doBuiltinObject", "doBuiltinType", "doBuiltinModule"})
+        @Specialization(guards = "!isSingleContext()", replaces = {"doBuiltinObject", "doBuiltinType", "doBuiltinModule"})
         final Object doGeneric(VirtualFrame frame, Object object) {
             try {
                 return dispatchNode.executeObject(frame, object, key);
