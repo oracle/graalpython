@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -255,7 +254,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
             return PCallCapiFunction.getUncached().call(FUN_GET_UINT32_ARRAY_TYPE_ID, 0);
         }
 
-        @Specialization(assumptions = "singleContextAssumption()")
+        @Specialization(guards = "isSingleContext()")
         static Object doByteArray(@SuppressWarnings("unused") PyLongDigitsWrapper object,
                         @Exclusive @Cached("callGetUInt32ArrayTypeIDUncached(object)") Object nativeType) {
             return nativeType;
@@ -267,8 +266,9 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
             return callGetTypeIDNode.call(FUN_GET_UINT32_ARRAY_TYPE_ID, 0);
         }
 
-        protected static Assumption singleContextAssumption() {
-            return PythonLanguage.get(null).singleContextAssumption;
+        protected static boolean isSingleContext() {
+            CompilerAsserts.neverPartOfCompilation();
+            return PythonLanguage.get(null).isSingleContext();
         }
     }
 }
