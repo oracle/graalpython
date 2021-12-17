@@ -72,10 +72,9 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         return CallVarargsMethodNodeGen.getUncached();
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, //
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()",  //
-                    rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class, //
-                    assumptions = "singleContextAssumption()")
+                    rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
     Object callVarargsDirect(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                     @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
                     @Cached("getVarargs(frame, func)") PythonVarargsBuiltinNode builtinNode,
@@ -92,8 +91,8 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         return builtinNode.varArgExecute(frame, PNone.NO_VALUE, arguments, keywords);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
@@ -102,7 +101,8 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         return builtinNode.varArgExecute(frame, func.getSelf(), arguments, keywords);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg", "frame != null || unusedFrame"}, //
+                    limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
