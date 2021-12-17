@@ -48,7 +48,6 @@ import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.i
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
@@ -210,7 +209,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -246,7 +244,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -436,88 +433,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object run() {
             return PEllipsis.INSTANCE;
-        }
-    }
-
-    @Builtin(name = "PyModule_SetDocString", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class SetDocStringNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object run(VirtualFrame frame, PythonModule module, Object doc,
-                        @Cached ObjectBuiltins.SetattrNode setattrNode) {
-            setattrNode.execute(frame, module, __DOC__, doc);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "PyModule_NewObject", minNumOfPositionalArgs = 1, parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
-    @GenerateNodeFactory
-    public abstract static class PyModuleNewObjectNode extends PythonUnaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyModuleNewObjectNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object run(VirtualFrame frame, String name,
-                        @Cached CallNode callNode) {
-            return callNode.execute(frame, PythonBuiltinClassType.PythonModule, new Object[]{name});
-        }
-    }
-
-    @Builtin(name = "_PyModule_CreateInitialized_PyModule_New", parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
-    @GenerateNodeFactory
-    public abstract static class PyModuleCreateInitializedNewNode extends PythonUnaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyModuleCreateInitializedNewNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object run(VirtualFrame frame, String name,
-                        @Cached CallNode callNode,
-                        @Cached ObjectBuiltins.SetattrNode setattrNode) {
-            // see CPython's Objects/moduleobject.c - _PyModule_CreateInitialized for
-            // comparison how they handle _Py_PackageContext
-            String newModuleName = name;
-            PythonContext ctx = getContext();
-            String pyPackageContext = ctx.getPyPackageContext();
-            if (pyPackageContext != null && pyPackageContext.endsWith(newModuleName)) {
-                newModuleName = pyPackageContext;
-                ctx.setPyPackageContext(null);
-            }
-            Object newModule = callNode.execute(frame, PythonBuiltinClassType.PythonModule, new Object[]{newModuleName});
-            // TODO: (tfel) I don't think this is the right place to set it, but somehow
-            // at least in the import of sklearn.neighbors.dist_metrics through
-            // sklearn.neighbors.ball_tree the __package__ attribute seems to be already
-            // set in CPython. To not produce a warning, I'm setting it here, although I
-            // could not find what CPython really does
-            int idx = newModuleName.lastIndexOf(".");
-            if (idx > -1) {
-                setattrNode.execute(frame, newModule, __PACKAGE__, newModuleName.substring(0, idx));
-            }
-            return newModule;
-        }
-    }
-
-    @Builtin(name = "PyModule_GetNameObject", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyModule_GetNameObjectNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object run(VirtualFrame frame, Object o,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return lookupAttrNode.execute(frame, o, __NAME__);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
         }
     }
 
@@ -2791,17 +2706,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGeneric(Object object) {
             return new PyDateTimeCAPIWrapper(object);
-        }
-    }
-
-    @Builtin(name = "_PyModule_GetAndIncMaxModuleNumber")
-    @GenerateNodeFactory
-    abstract static class PyModuleGetAndIncMaxModuleNumber extends PythonBuiltinNode {
-
-        @Specialization
-        long doIt() {
-            CApiContext nativeContext = getContext().getCApiContext();
-            return nativeContext.getAndIncMaxModuleNumber();
         }
     }
 
