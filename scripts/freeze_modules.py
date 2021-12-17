@@ -10,11 +10,11 @@ import ntpath
 import os
 import posixpath
 import sys
+import textwrap
 
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 ROOT_DIR = os.path.abspath(ROOT_DIR)
-print(ROOT_DIR)
-#FROZEN_ONLY = os.path.join(ROOT_DIR, 'Tools', 'freeze', 'flag.py')
+#FROZEN_ONLY = os.path.join(ROOT_DIR, 'Tools', 'freeze', 'flag.py') TODO: Enable tests.
 
 STDLIB_DIR = os.path.join(ROOT_DIR, 'graalpython', 'lib-python', '3')
 
@@ -25,48 +25,48 @@ FROZEN_MODULES_FILE = os.path.join(FROZEN_MODULES_DIR, 'FrozenModules.java')
 
 OS_PATH = 'ntpath' if os.name == 'nt' else 'posixpath'
 
+# These are modules that get frozen.
+TESTS_SECTION = 'Test module'
 FROZEN = [
     # See parse_frozen_spec() for the format.
     # In cases where the frozenid is duplicated, the first one is re-used.
+    ('import system', [
+        # These frozen modules are necessary for bootstrapping
+        # the import system.
+        'importlib._bootstrap : _frozen_importlib',
+        'importlib._bootstrap_external : _frozen_importlib_external',
+        # This module is important because some Python builds rely
+        # on a builtin zip file instead of a filesystem.
+        'zipimport',
+        ]),
     ('stdlib - startup, without site (python -S)', [
         'abc',
-        #'codecs',
+        'codecs',
         # For now we do not freeze the encodings, due # to the noise all
         # those extra modules add to the text printed during the build.
         # (See https://github.com/python/cpython/pull/28398#pullrequestreview-756856469.)
         #'<encodings.*>',
         'io',
-        ])
+        ]),
+    ('stdlib - startup, with site', [
+        '_collections_abc',
+        '_sitebuiltins',
+        'genericpath',
+        'ntpath',
+        'posixpath',
+        # We must explicitly mark os.path as a frozen module
+        # even though it will never be imported.
+        #f'{OS_PATH} : os.path',
+        'os',
+        'site',
+        'stat',
+        ]),
 ]
 BOOTSTRAP = {
     'importlib._bootstrap',
     'importlib._bootstrap_external',
     'zipimport',
 }
-
-MAX_BYTES_PER_FILE = 6000 # TODO: Improve estimate here.
-
-#######################################
-# platform-specific helpers
-
-if os.path is posixpath:
-    relpath_for_posix_display = os.path.relpath
-
-    def relpath_for_windows_display(path, base):
-        return ntpath.relpath(
-            ntpath.join(*path.split(os.path.sep)),
-            ntpath.join(*base.split(os.path.sep)),
-        )
-
-else:
-    relpath_for_windows_display = ntpath.relpath
-
-    def relpath_for_posix_display(path, base):
-        return posixpath.relpath(
-            posixpath.join(*path.split(os.path.sep)),
-            posixpath.join(*base.split(os.path.sep)),
-        )
-
 
 #######################################
 # specs
@@ -186,16 +186,19 @@ def _parse_spec(spec, knownids=None, section=None):
 #######################################
 # frozen source files
 
-class FrozenSource(namedtuple('FrozenSource', 'id pyfile frozenfile')):
+class FrozenSource(namedtuple('FrozenSource', 'id pyfile frozenfile binaryfile')):
 
     @classmethod
     def from_id(cls, frozenid, pyfile=None):
         if not pyfile:
             pyfile = os.path.join(STDLIB_DIR, *frozenid.split('.')) + '.py'
-            #assert os.path.exists(pyfile), (frozenid, pyfile)
-        frozenfile = resolve_frozen_file(frozenid, FROZEN_MODULES_DIR)
-        #deepfreezefile = resolve_frozen_file(frozenid, DEEPFROZEN_MODULES_DIR)
-        return cls(frozenid, pyfile, frozenfile)
+            assert os.path.exists(pyfile), (frozenid, pyfile)
+        frozenfile, binaryfile = resolve_frozen_files(frozenid, FROZEN_MODULES_DIR)
+        return cls(frozenid, pyfile, frozenfile, binaryfile)
+
+    @classmethod
+    def resolve_symbol(cls, frozen_id):
+        return frozen_id.replace('.', ' ').replace('_', ' ').title().replace(' ', '')
 
     @property
     def frozenid(self):
@@ -209,9 +212,8 @@ class FrozenSource(namedtuple('FrozenSource', 'id pyfile frozenfile')):
 
     @property
     def symbol(self):
-        # This matches what we do in Programs/_freeze_module.c:
-        name = self.frozenid.replace('.', '_')
-        return '_Py_M__' + name
+        #This matches the name we assign for our Java files
+        return self.resolve_symbol(self.frozenid)
 
     @property
     def ispkg(self):
@@ -223,8 +225,8 @@ class FrozenSource(namedtuple('FrozenSource', 'id pyfile frozenfile')):
             return os.path.basename(self.pyfile) == '__init__.py'
 
 
-def resolve_frozen_file(frozenid, destdir):
-    """Return the filename corresponding to the given frozen ID.
+def resolve_frozen_files(frozenid, destdir):
+    """Return the filenames corresponding to the given frozen ID.
 
     For stdlib modules the ID will always be the full name
     of the source module.
@@ -235,10 +237,15 @@ def resolve_frozen_file(frozenid, destdir):
         except AttributeError:
             raise ValueError(f'unsupported frozenid {frozenid!r}')
     # We use a consistent naming convention for all frozen modules.
-    frozenfile = f'Frozen{frozenid.title()}.java'
+    frozen_symbol = FrozenSource.resolve_symbol(frozenid)
+    frozenfile = f'Frozen{frozen_symbol}.java'
+    binaryfile = f'Frozen{frozen_symbol}.bin'
+
     if not destdir:
-        return frozenfile
-    return os.path.join(destdir, frozenfile)
+        return frozenfile, binaryfile
+    return os.path.join(destdir, frozenfile), os.path.join(destdir, binaryfile)
+
+
 
 
 #######################################
@@ -395,119 +402,162 @@ def _resolve_module(modname, pathentry=STDLIB_DIR, ispkg=False):
         return os.path.join(pathentry, *modname.split('.'), '__init__.py')
     return os.path.join(pathentry, *modname.split('.')) + '.py'
 
-def _write_bytes(file, bytes):
-    byte_line_count = 0
-    byte_total_count = 0
-    file.write("    ")
-    for byte in bytes:
-        if byte > 127:
-            byte -= 256
-        file.write(f"{byte}, ")
-        byte_line_count += 1
-        if byte_line_count == 16:
-            file.write("\n")
-            file.write("    ")
-            byte_line_count = 0
+def lower_camel_case(str):
+    return str[0].lower() + str[1:] if str[1:] else ''
 
-def write_byte_code_file(src_file, package_name, module_name, chunk_index, byte_it):
-    with open(src_file, 'w') as frozen_file:
-        frozen_file.write("/* Auto-generated by scipts/freeze_modules.py */\n\n")
+# Adapted from PEP 257: strips a uniform amount of indentation from the lines of the multiline string.
+# This allows us to use multiline strings with pythonic identation which produce the same identation in the written file
+def trim(str):
+    if not str:
+        return ''
+    # Convert tabs to spaces (following the normal Python rules)
+    # and split into a list of lines:
+    lines = str.expandtabs().splitlines()
+    # Determine minimum indentation (first line doesn't count):
+    indent = sys.maxsize
+    for line in lines:
 
-        frozen_file.write(f"package com.oracle.graal.python.{package_name};\n\n")
+        stripped = line.lstrip()
+        if stripped:
+            indent = min(indent, len(line) - len(stripped))
+    # Remove indentation (first line is special):
+    trimmed = []
+    if indent < sys.maxsize:
+        for line in lines:
+            trimmed.append(line[indent:].rstrip())
+    # Strip off trailing and leading blank lines:
+    while trimmed and not trimmed[-1]:
+        trimmed.pop()
+    while trimmed and not trimmed[0]:
+        trimmed.pop(0)
+    # Return a single string:
+    return '\n'.join(trimmed)
 
-        frozen_file.write(f"public final class Frozen{module_name.title()}{chunk_index}{{\n")
-        frozen_file.write(f"public static final byte[] {module_name}ByteCode = {{\n")
-        _write_bytes(frozen_file, byte_it)
-        frozen_file.write("};\n")
-        frozen_file.write(f"public static final int {module_name}ByteCodeSize = {module_name}ByteCode.length;\n")
-        frozen_file.write("}")
+#############################################
+# write frozen files
 
-#TODO: Improve to take and yield iterators directly?
-def chunks(lst, n):
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+COPYRIGHT_HEADER = """
+    /* Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+    * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+    *
+    * The Universal Permissive License (UPL), Version 1.0
+    *
+    * Subject to the condition set forth below, permission is hereby granted to any
+    * person obtaining a copy of this software, associated documentation and/or
+    * data (collectively the "Software"), free of charge and under any and all
+    * copyright rights in the Software, and any and all patent rights owned or
+    * freely licensable by each licensor hereunder covering either (i) the
+    * unmodified Software as contributed to or provided by such licensor, or (ii)
+    * the Larger Works (as defined below), to deal in both
+    *
+    * (a) the Software, and
+    *
+    * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+    * one is included with the Software each a "Larger Work" to which the Software
+    * is contributed by such licensors),
+    *
+    * without restriction, including without limitation the rights to copy, create
+    * derivative works of, display, perform, and distribute the Software and make,
+    * use, sell, offer for sale, import, export, have made, and have sold the
+    * Software and the Larger Work(s), and to sublicense the foregoing rights on
+    * either these or other terms.
+    *
+    * This license is subject to the following condition:
+    *
+    * The above copyright notice and either this complete permission notice or at a
+    * minimum a reference to the UPL must be included in all copies or substantial
+    * portions of the Software.
+    *
+    * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    * SOFTWARE.
+    */
+    """
 
-def write_module_import_file(src_file, module_name, num_chunks):
-    with open(src_file, 'w') as module_file:
-        class_name = f"Frozen{module_name.title()}"
-        module_package_name = f"com.oracle.graal.python.frozen.{module_name}"
+FROZEN_MODULE_FILE_HEADER = """
+    /* Auto-generated by scripts/freeze_modules.py */
 
-        module_file.write("/* Auto-generated by scripts/freeze_modules.py */\n\n")
-        module_file.write(f"package com.oracle.graal.python.frozen;\n\n")
+    package com.oracle.graal.python.frozen;
 
-        # import all chunks containing bytecode for the module
-        for i in range(1, num_chunks):
-            module_file.write(f"import {module_package_name}.{class_name}{i};\n")
+    import java.io.IOException;
 
-        module_file.write(
-        f"""public final class {class_name} {{
-    public static final byte[][] {module_name}ByteCode = {{\n"""
-        )
+    """
 
-        for i in range(1, num_chunks):
-            module_file.write(f"{class_name}{i}.{module_name}ByteCode,\n")
+FROZEN_MODULES_HEADER = """
+    package com.oracle.graal.python.frozen;
 
-        module_file.write("};\n")
+    import java.util.HashMap;
+    import java.util.Map;
 
-        module_file.write(f"public static final int {module_name}ByteCodeSize = {class_name}1.{module_name}ByteCodeSize")
-        for i in range(2, num_chunks):
-            module_file.write(f"\n+ {class_name}{i}.{module_name}ByteCodeSize")
 
-        module_file.write("; \n }")
+    public final class FrozenModules {
+        public static Map<String, PythonFrozenModule> frozenModules = createFrozenModulesMap();
+
+        private static Map<String, PythonFrozenModule> createFrozenModulesMap() {
+            Map<String, PythonFrozenModule> frozenModules = new HashMap<String, PythonFrozenModule>();\n
+    """
+
+FROZEN_MODULES_FOOTER = """
+        return frozenModules;
+        }
+    }
+    """
 
 def freeze_module(src):
-    with open(src.pyfile, 'r') as src_file:
+    with open(src.pyfile, 'r') as src_file, open(src.frozenfile, 'w') as frozen_file, open(src.binaryfile, 'wb') as binary_file:
         code_obj = compile(src_file.read(), src.id, "exec")
-        bytecode = marshal.dumps(code_obj)
+        marshal.dump(code_obj, binary_file)
+        write_frozen_file(src, frozen_file)
 
-        if len(bytecode) < MAX_BYTES_PER_FILE:
-            write_byte_code_file(src.frozenfile, "frozen", src.id, "", bytecode)
-        else:
-            # module byte code must be split into multiple files
-            frozen_package = os.path.join(os.path.dirname(src.frozenfile), src.id)
-            if not os.path.isdir(frozen_package):
-                os.mkdir(frozen_package)
+def write_frozen_file(src, frozen_file):
+    class_name = f"Frozen{src.symbol}"
+    class_definition = f"""
+    public final class {class_name} {{
+        public static final byte[] {lower_camel_case(src.symbol)}ByteCode = getByteCode();
+        public static final int {lower_camel_case(src.symbol)}ByteCodeSize = {lower_camel_case(src.symbol)}ByteCode.length;
 
-            num_chunks = 1
-            for index, chunk in enumerate(chunks(list(bytecode), MAX_BYTES_PER_FILE), 1):
-                chunk_srcfile = os.path.join(frozen_package, f"Frozen{src.id.title()}{index}.java")
-                write_byte_code_file(chunk_srcfile, f"frozen.{src.id}", src.id, index, chunk)
-                num_chunks += 1
+        private static byte[] getByteCode() {{
+           byte[] byteCode;
+           try {{
+               byteCode = {class_name}.class.getResourceAsStream("{class_name}.bin").readAllBytes();
+           }} catch (NullPointerException | IOException e) {{
+               byteCode = new byte[0];
+           }}
+           return byteCode;
+        }}
+    }}
+    """
 
-            write_module_import_file(src.frozenfile, src.id, num_chunks)
+    frozen_file.write(trim(COPYRIGHT_HEADER))
+    frozen_file.write('\n')
+    frozen_file.write(trim(FROZEN_MODULE_FILE_HEADER))
+    frozen_file.write(trim(class_definition))
 
 def write_frozen_module_file(file, modules):
-    header = """package com.oracle.graal.python.frozen;
-
-                import java.util.HashMap;
-                import java.util.Map;
-
-
-                public final class FrozenModules {
-                    public static Map<String, PythonFrozenModule> frozenModules = createFrozenModulesMap();
-
-                    private static Map<String, PythonFrozenModule> createFrozenModulesMap() {
-                        Map<String, PythonFrozenModule> frozenModules = new HashMap<String, PythonFrozenModule>();\n"""
-
-    footer = """        return frozenModules;
-                    }
-                }"""
-
     with open (file, 'w') as out_file:
-        out_file.write(header)
+        print("Writing Modules File!")
+        out_file.write(trim(COPYRIGHT_HEADER))
+        out_file.write('\n')
+        out_file.write(trim(FROZEN_MODULES_HEADER))
+        out_file.write('\n')
         for module in modules:
-            out_file.write(f'frozenModules.put("{module.name}", new PythonFrozenModule("{module.name}", Frozen{module.name.title()}.{module.name}ByteCode, Frozen{module.name.title()}.{module.name}ByteCodeSize));\n')
-        out_file.write(footer)
-
-
+            out_file.write(f'\t\tfrozenModules.put("{module.frozenid}", new PythonFrozenModule("{module.symbol}", Frozen{module.symbol}.{lower_camel_case(module.symbol)}ByteCode, Frozen{module.symbol}.{lower_camel_case(module.symbol)}ByteCodeSize));\n')
+        out_file.write(trim(FROZEN_MODULES_FOOTER))
 
 def main():
     # create module specs
     modules = list(parse_frozen_specs())
-    print(modules)
+
+    # write frozen module binary files containing the byte code and class files used for importing the binary files
     for src in _iter_sources(modules):
         freeze_module(src)
 
+    # write frozen modules class used for storing frozen modules byte code arrays
+    print("About to write frozen module file!")
     write_frozen_module_file(FROZEN_MODULES_FILE, modules)
 
 

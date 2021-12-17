@@ -52,7 +52,6 @@ public final class PythonFrozenModule {
 
         if (totalLength == 0)
             return new byte[0];
-        byte[] first = byteArrays[0];
 
         byte[] result = new byte[totalLength];
         int offset = 0;
