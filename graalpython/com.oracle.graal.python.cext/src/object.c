@@ -337,29 +337,66 @@ int PyObject_AsFileDescriptor(PyObject* obj) {
     return UPCALL_CEXT_I(_jls_PyObject_AsFileDescriptor, native_to_java(obj));
 }
 
-UPCALL_ID(PyTruffle_GetBuiltin);
-int PyObject_Print(PyObject* object, FILE* fd, int flags) {
-    void *openFunc, *args, *kwargs;
-    void *printfunc, *printargs, *printkwargs;
-    void *file;
-
-    openFunc = UPCALL_CEXT_O(_jls_PyTruffle_GetBuiltin, polyglot_from_string("open", SRC_CS));
-    args = PyTuple_New(1);
-    int f = fileno(fd);
-    PyTuple_SetItem(args, 0, PyLong_FromLong(f));
-    kwargs = PyDict_New();
-    int buffering = 1;
-    PyDict_SetItemString(kwargs, "buffering", PyLong_FromLong(buffering));
-    PyDict_SetItemString(kwargs, "mode", polyglot_from_string("w", SRC_CS));
-    file = PyObject_Call(openFunc, args, kwargs);
-
-    printfunc = UPCALL_CEXT_O(_jls_PyTruffle_GetBuiltin, polyglot_from_string("print", SRC_CS));
-    printargs = PyTuple_New(1);
-    PyTuple_SetItem(printargs, 0, object);
-    printkwargs = PyDict_New();
-    PyDict_SetItemString(printkwargs, "file", file);
-    PyObject_Call(printfunc, printargs, printkwargs);
-    return 0;
+// Taken from CPython
+int PyObject_Print(PyObject *op, FILE *fp, int flags)
+{
+    int ret = 0;
+    clearerr(fp); /* Clear any previous error condition */
+    if (op == NULL) {
+        Py_BEGIN_ALLOW_THREADS
+        fprintf(fp, "<nil>");
+        Py_END_ALLOW_THREADS
+    }
+    else {
+        if (op->ob_refcnt <= 0) {
+            /* XXX(twouters) cast refcount to long until %zd is
+               universally available */
+            Py_BEGIN_ALLOW_THREADS
+            fprintf(fp, "<refcnt %ld at %p>",
+                (long)op->ob_refcnt, (void *)op);
+            Py_END_ALLOW_THREADS
+        }
+        else {
+            PyObject *s;
+            if (flags & Py_PRINT_RAW)
+                s = PyObject_Str(op);
+            else
+                s = PyObject_Repr(op);
+            if (s == NULL)
+                ret = -1;
+            else if (PyBytes_Check(s)) {
+                fwrite(PyBytes_AS_STRING(s), 1,
+                       PyBytes_GET_SIZE(s), fp);
+            }
+            else if (PyUnicode_Check(s)) {
+                PyObject *t;
+                t = PyUnicode_AsEncodedString(s, "utf-8", "backslashreplace");
+                if (t == NULL) {
+                    ret = -1;
+                }
+                else {
+                    fwrite(PyBytes_AS_STRING(t), 1,
+                           PyBytes_GET_SIZE(t), fp);
+                    Py_DECREF(t);
+                }
+            }
+            else {
+                PyErr_Format(PyExc_TypeError,
+                             "str() or repr() returned '%.100s'",
+                             s->ob_type->tp_name);
+                ret = -1;
+            }
+            Py_XDECREF(s);
+        }
+    }
+    if (ret == 0) {
+        if (ferror(fp)) {
+            PyErr_SetFromErrno(PyExc_OSError);
+            clearerr(fp);
+            ret = -1;
+        }
+    }
+    return ret;
 }
 
 // taken from CPython "Objects/object.c"
