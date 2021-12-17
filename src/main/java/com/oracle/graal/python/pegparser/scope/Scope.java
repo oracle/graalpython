@@ -38,29 +38,77 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.pegparser;
+package com.oracle.graal.python.pegparser.scope;
 
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+import com.oracle.graal.python.pegparser.sst.SSTNode;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.EnumSet;
+import java.util.HashMap;
 
-//import com.oracle.graal.python.nodes.expression.ExpressionNode;
-//import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
-//import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
-//import com.oracle.truffle.api.CompilerAsserts;
-//import com.oracle.truffle.api.frame.FrameDescriptor;
-//import com.oracle.truffle.api.frame.FrameSlot;
-//import com.oracle.truffle.api.frame.FrameSlotKind;
-//import com.oracle.truffle.api.memory.MemoryFence;
+/**
+ * Roughly equivalent to CPython's {@code symtable_entry}.
+ */
+public class Scope {
 
-public final class ScopeInfo {
+    Scope(ScopeType type, SSTNode ast) {
+        this.type = type;
+        this.startOffset = ast.getStartOffset();
+        this.endOffset = ast.getEndOffset();
+    }
 
+    enum ScopeType {
+        Function,
+        Class,
+        Module,
+        Annotation;
+    }
 
+    enum DefUse {
+        Global,
+        Local,
+        Param,
+        NonLocal,
+        Use,
+        Free,
+        FreeClass,
+        Import,
+        Annot,
+        CompIter,
+        // shifted VariableScope flags
+        VLocal,
+        VGlobalExplicit,
+        VGlobalImplicit,
+        VFree,
+        VCell;
+
+        static EnumSet<DefUse> DefBound = EnumSet.of(Local, Param, Import);
+    };
+
+    HashMap<String, EnumSet<DefUse>> symbols;
+
+    String name;
+    ArrayList<String> varnames;
+    ArrayList<Scope> children;
+    ArrayList<String> directives;
+    ScopeType type;
+
+    enum ScopeFlags {
+        IsNested,
+        HasFreeVars,
+        HasChildWithFreeVars,
+        IsGenerator,
+        IsCoroutine,
+        IsComprehension,
+        HasVarArgs,
+        HasVarKeywords,
+        ReturnsAValue,
+        NeedsClassClosure,
+        IsVisitingIterTarget;
+    }
+
+    EnumSet<ScopeFlags> flags;
+    int comprehensionIterExpression;
+
+    int startOffset;
+    int endOffset;
 }

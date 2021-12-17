@@ -64,4 +64,19 @@ public class FunctionDefSSTNode extends SSTNodeWithScope {
         return visitor.visit(this);
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public ArgDefListBuilder getArgBuilder() {
+        return argBuilder;
+    }
+
+    public SSTNode[] getBody() {
+        return body;
+    }
+
+    public SSTNode[] getDecorators() {
+        return decorators;
+    }
 }

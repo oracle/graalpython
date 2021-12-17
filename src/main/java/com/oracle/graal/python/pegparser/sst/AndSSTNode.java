@@ -52,4 +52,8 @@ public class AndSSTNode extends SSTNode {
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    public SSTNode[] getValues() {
+        return values;
+    }
 }
