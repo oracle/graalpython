@@ -25,15 +25,14 @@
  */
 package com.oracle.graal.python.nodes.call;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTargetNode;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -43,11 +42,10 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
-public abstract class CallDispatchNode extends Node {
+public abstract class CallDispatchNode extends PNodeWithContext {
 
     protected static FunctionInvokeNode createInvokeNode(PFunction callee) {
         return FunctionInvokeNode.create(callee);
@@ -73,10 +71,6 @@ public abstract class CallDispatchNode extends Node {
         return CallDispatchNodeGen.getUncached();
     }
 
-    protected Assumption singleContextAssumption() {
-        return PythonLanguage.get(this).singleContextAssumption;
-    }
-
     public final Object executeCall(VirtualFrame frame, PFunction callee, Object[] arguments) {
         return executeInternal(frame, callee, arguments);
     }
@@ -90,7 +84,7 @@ public abstract class CallDispatchNode extends Node {
     protected abstract Object executeInternal(Frame frame, PBuiltinFunction callee, Object[] arguments);
 
     // We only have a single context and this function never changed its code
-    @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()", "cachedCallee.getCodeStableAssumption()"})
+    @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
     protected Object callFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
@@ -103,7 +97,7 @@ public abstract class CallDispatchNode extends Node {
         return getFunctionCodeNode.execute(function);
     }
 
-    @Specialization(guards = {"callee == cachedCallee", "getCode(getFunctionCodeNode, callee) == cachedCode"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()"})
+    @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "getCode(getFunctionCodeNode, callee) == cachedCode"}, limit = "getCallSiteInlineCacheMaxDepth()")
     protected Object callFunctionCachedCode(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                     @SuppressWarnings("unused") @Cached GetFunctionCodeNode getFunctionCodeNode,
@@ -126,7 +120,7 @@ public abstract class CallDispatchNode extends Node {
         return invoke.execute(frame, callee, callee.getGlobals(), callee.getClosure(), arguments);
     }
 
-    @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()")
     protected Object callBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PBuiltinFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
