@@ -4,6 +4,7 @@ This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 22.1.0
+* String conversion (`__str__`) now calls `toString` for Java objects and `toDisplayString` interop message for foreign objects.
 * Improved compatibility with PyPI package `lxml`
 
 ## Version 22.0.0
@@ -11,7 +12,6 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Added partial support for `PYTHONHASHSEED` environment variable (also available via `HashSeed` context option), currently only affecting hashing in `pyexpat` module.
 * Implement `_csv` module.
 * Improved compatibility with PyPI packages `wheel` and `click`
-* String conversion (`__str__`) now calls `toString` for Java objects and `toDisplayString` interop message for foreign objects.
 
 ## Version 21.3.0
 
