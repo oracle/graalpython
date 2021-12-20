@@ -3160,15 +3160,14 @@ public abstract class CExtNodes {
     }
 
     @GenerateUncached
-    public abstract static class ResolveHandleNode extends Node {
+    public abstract static class ResolveHandleNode extends PNodeWithContext {
 
         public abstract Object execute(Object pointerObject);
 
         public abstract Object executeLong(long pointer);
 
         @Specialization(limit = "3", //
-                        guards = {"cachedPointer == pointer", "cachedValue != null"}, //
-                        assumptions = "singleContextAssumption()", //
+                        guards = {"isSingleContext()", "cachedPointer == pointer", "cachedValue != null"}, //
                         rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper resolveLongCached(@SuppressWarnings("unused") long pointer,
                         @Cached("pointer") @SuppressWarnings("unused") long cachedPointer,
@@ -3179,8 +3178,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(limit = "3", //
-                        guards = {"isSame(lib, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
-                        assumptions = "singleContextAssumption()", //
+                        guards = {"isSingleContext()", "isSame(lib, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
                         rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper resolveObjectCached(@SuppressWarnings("unused") Object pointerObject,
                         @Cached("pointerObject") @SuppressWarnings("unused") Object cachedPointerObject,
@@ -3218,10 +3216,6 @@ public abstract class CExtNodes {
 
         static boolean isSame(InteropLibrary lib, Object left, Object right) {
             return lib.isIdentical(left, right, lib);
-        }
-
-        Assumption singleContextAssumption() {
-            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {
