@@ -2506,12 +2506,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached StrGetItemNodeWithSlice getItemNodeWithSlice) {
-            String str;
-            try {
-                str = castToJavaString.execute(self);
-            } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __GETITEM__, "str", self);
-            }
+            String str = castToString(self, castToJavaString);
             SliceInfo info = compute.execute(frame, sliceCast.execute(slice), str.length());
             return getItemNodeWithSlice.execute(str, info);
         }
@@ -2520,12 +2515,7 @@ public final class StringBuiltins extends PythonBuiltins {
         public String doString(VirtualFrame frame, Object self, Object idx,
                         @Cached CastToJavaStringNode castToJavaString,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            String str;
-            try {
-                str = castToJavaString.execute(self);
-            } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __GETITEM__, "str", self);
-            }
+            String str = castToString(self, castToJavaString);
             int index = asSizeNode.executeExact(frame, idx);
             if (index < 0) {
                 index += str.length();
@@ -2540,6 +2530,14 @@ public final class StringBuiltins extends PythonBuiltins {
         private static String charAtToString(String primary, int index) {
             char character = primary.charAt(index);
             return String.valueOf(character);
+        }
+
+        private String castToString(Object self, CastToJavaStringNode castToJavaString) {
+            try {
+                return castToJavaString.execute(self);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __GETITEM__, "str", self);
+            }
         }
     }
 

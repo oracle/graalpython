@@ -774,11 +774,10 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization
         Object split(VirtualFrame frame, Object module, Object string, Object sep, Object maxsplit,
                         @Cached StringBuiltins.SplitNode splitNode,
-                        @Cached ToNewRefNode toSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
-                return toSulongNode.execute(splitNode.execute(frame, string, sep, maxsplit));
+                return splitNode.execute(frame, string, sep, maxsplit);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return getNativeNullNode.execute(module);
