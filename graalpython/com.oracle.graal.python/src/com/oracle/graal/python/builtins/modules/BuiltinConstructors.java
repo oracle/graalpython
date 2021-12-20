@@ -1656,19 +1656,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 if (profileNew == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    if (getLanguage().singleContextAssumption.isValid()) {
-                        profileNew = ValueProfile.createIdentityProfile();
-                    } else {
-                        profileNew = ValueProfile.createClassProfile();
-                    }
+                    profileNew = createValueIdentityProfile();
                 }
                 if (profileInit == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    if (getLanguage().singleContextAssumption.isValid()) {
-                        profileInit = ValueProfile.createIdentityProfile();
-                    } else {
-                        profileInit = ValueProfile.createClassProfile();
-                    }
+                    profileInit = createValueIdentityProfile();
                 }
                 if (profileNewFactory == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
