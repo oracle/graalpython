@@ -50,12 +50,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-@may_raise(-1)
-def PyModule_AddObject(m, k, v):
-    m.__dict__[k] = v
-    return 0
-
-
 def METH_UNSUPPORTED():
     raise NotImplementedError("unsupported message type")
 

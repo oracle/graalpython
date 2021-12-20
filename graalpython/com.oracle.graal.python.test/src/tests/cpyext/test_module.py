@@ -47,6 +47,14 @@ ModuleType = type(sys)
 class SubModuleType(ModuleType):
     pass
 
+def _reference_add_object(args):
+    if not isinstance(args[0], ModuleType):
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            return -1
+    args[0].__dict__[args[1]] = args[2]
+    return 0
 
 class TestPyModule(CPyExtTestCase):
 
@@ -138,3 +146,18 @@ class TestPyModule(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* object"],
     )
+        
+    test_PyModule_AddObject = CPyExtFunction(
+        _reference_add_object,
+        lambda: (
+            (1, "testAddObject", None),
+            (ModuleType("hello"), "testAddObject", None),
+            (ModuleType("hello"), "testAddObject", "a"),
+            (SubModuleType("subhello"), "testAddObject", "a"),
+        ),
+        resultspec="i",
+        argspec='OsO',
+        arguments=["PyObject* m", "const char* k", "PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+    

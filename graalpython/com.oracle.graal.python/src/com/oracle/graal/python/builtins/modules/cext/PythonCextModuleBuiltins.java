@@ -41,14 +41,12 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.MODULE_S_HAS_NO;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_NON_NULL_VALUE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -194,6 +192,60 @@ public class PythonCextModuleBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 return getNativeNullNode.execute();
             }
+        }
+    }
+
+    @Builtin(name = "PyModule_AddObject", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class PyModuleAddObjectNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
+        Object addObject(VirtualFrame frame, Object m, String k, Object o,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached GetDictIfExistsNode getDictNode,
+                        @Cached BranchProfile noDictProfile,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                PDict dict = getDictNode.execute(m);
+                if (dict == null) {
+                    noDictProfile.enter();
+                    return raiseNativeNode.raiseInt(frame, -1, SystemError, MODULE_S_HAS_NO, lookupAttrNode.execute(frame, m, __NAME__), __DICT__);
+                }
+                lib.setItem(dict.getDictStorage(), k, o);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
+        Object addObject(VirtualFrame frame, Object m, PString k, Object o,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached GetDictIfExistsNode getDictNode,
+                        @Cached BranchProfile noDictProfile,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            return addObject(frame, m, k.getValue(), o, getClassNode, isSubtypeNode, lookupAttrNode, getDictNode, noDictProfile, lib, raiseNativeNode, transformExceptionToNativeNode);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
+        public Object pop(VirtualFrame frame, Object m, Object key, Object defaultValue,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObject", "module");
+        }
+
+        protected boolean isModuleSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PythonModule);
         }
     }
 
