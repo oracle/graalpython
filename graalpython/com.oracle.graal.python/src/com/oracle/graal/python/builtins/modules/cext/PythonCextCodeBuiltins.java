@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -80,8 +79,7 @@ public final class PythonCextCodeBuiltins extends PythonBuiltins {
         @Specialization
         public Object codeNew(VirtualFrame frame, Object[] arguments,
                         @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object[] args = new Object[arguments.length + 1];
                 // Add posonlyargcount (2nd arg)
@@ -91,7 +89,7 @@ public final class PythonCextCodeBuiltins extends PythonBuiltins {
                 return callNode.execute(frame, PythonBuiltinClassType.PCode, args);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -102,13 +100,12 @@ public final class PythonCextCodeBuiltins extends PythonBuiltins {
         @Specialization
         public Object codeNew(VirtualFrame frame, Object[] arguments,
                         @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return callNode.execute(frame, PythonBuiltinClassType.PCode, arguments);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }

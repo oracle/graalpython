@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -61,6 +60,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -158,8 +158,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
         static Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode) {
             Object name = getAttrNode.execute(object, SpecialAttributeNames.__NAME__);
             if (!PGuards.isPNone(name)) {
                 try {
@@ -168,15 +167,14 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
                     // fall through
                 }
             }
-            return toSulongNode.execute(getNativeNullNode.execute());
+            return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
         }
 
         @Specialization(guards = {"eq(ML_DOC, key)"})
         static Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode) {
             Object doc = getAttrNode.execute(object, __C_DOC__);
             if (doc != PNone.NO_VALUE) {
                 return doc;
@@ -189,7 +187,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
                     // fall through
                 }
             }
-            return toSulongNode.execute(getNativeNullNode.execute());
+            return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
         }
 
         @Specialization(guards = {"eq(ML_METH, key)"})

@@ -47,7 +47,6 @@ import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -79,21 +78,19 @@ public final class PythonCextImportBuiltins extends PythonBuiltins {
     public abstract static class PyImportImportModuleNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object imp(String name,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNull) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return AbstractImportNode.importModule(name, IMPORT_ALL);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNull.execute();
+                return getContext().getNativeNull();
             }
         }
 
         @Specialization
         public Object imp(PString name,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNull) {
-            return imp(name.getValue(), transformExceptionToNativeNode, getNativeNull);
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            return imp(name.getValue(), transformExceptionToNativeNode);
         }
     }
 
@@ -101,13 +98,12 @@ public final class PythonCextImportBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyImportGetModuleDictNode extends PythonBuiltinNode {
         @Specialization
-        public Object getModuleDict(@Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNull) {
+        public Object getModuleDict(@Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return getContext().getSysModules();
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNull.execute();
+                return getContext().getNativeNull();
             }
         }
     }

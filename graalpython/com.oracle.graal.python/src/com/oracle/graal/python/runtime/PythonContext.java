@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
@@ -518,6 +519,8 @@ public final class PythonContext extends Python3Core {
     // the full module name for package imports
     private String pyPackageContext;
 
+    private final PythonNativeNull nativeNull = new PythonNativeNull();
+
     public String getPyPackageContext() {
         return pyPackageContext;
     }
@@ -848,6 +851,10 @@ public final class PythonContext extends Python3Core {
 
     public static PythonContext get(Node node) {
         return REFERENCE.get(node);
+    }
+
+    public PythonNativeNull getNativeNull() {
+        return nativeNull;
     }
 
     public AllocationReporter getAllocationReporter() {

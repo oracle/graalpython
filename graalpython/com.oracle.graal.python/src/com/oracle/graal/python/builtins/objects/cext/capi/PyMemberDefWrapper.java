@@ -43,12 +43,12 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -127,11 +127,10 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
         static Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode) {
             Object name = getAttrNode.execute(object, NAME);
             if (PGuards.isPNone(name)) {
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
             } else {
                 return asCharPointerNode.execute(name);
             }
@@ -141,13 +140,12 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
         static Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode) {
             Object doc = getAttrNode.execute(object, DOC);
             if (PGuards.isPNone(doc)) {
                 // CPython just returns the pointer of the original member def (i.e.
                 // ((PyMemberDef*)obj)->doc )
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
             } else {
                 return asCharPointerNode.execute(doc);
             }

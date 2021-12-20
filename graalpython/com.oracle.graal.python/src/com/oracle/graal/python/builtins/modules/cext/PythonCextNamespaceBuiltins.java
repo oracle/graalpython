@@ -45,7 +45,6 @@ import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
@@ -88,8 +87,7 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
         public Object imp(VirtualFrame frame, PDict dict,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNull) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 PSimpleNamespace ns = factory().createSimpleNamespace();
                 HashingStorageIterable<DictEntry> entries = lib.entries(dict.getDictStorage());
@@ -101,7 +99,7 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
                 return ns;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNull.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -110,8 +108,7 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
                         @Cached InitNode initNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNull) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 PSimpleNamespace ns = factory().createSimpleNamespace();
                 HashingStorage hs = initNode.execute(frame, dict, PKeyword.EMPTY_KEYWORDS);
@@ -124,7 +121,7 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
                 return ns;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNull.execute();
+                return getContext().getNativeNull();
             }
         }
     }

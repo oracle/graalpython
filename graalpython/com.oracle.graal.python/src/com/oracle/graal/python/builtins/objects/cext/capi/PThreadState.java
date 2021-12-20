@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
@@ -247,8 +246,8 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, PREV)")
         @SuppressWarnings("unused")
         static Object doPrev(PThreadState receiver, String key,
-                        @Shared("getNull") @Cached GetNativeNullNode getNativeNullNode) {
-            return getNativeNullNode.execute();
+                        @CachedLibrary("receiver") InteropLibrary receiverLib) {
+            return PythonContext.get(receiverLib).getNativeNull();
         }
 
         @Specialization(guards = "eq(key, EXC_INFO)")
@@ -292,8 +291,8 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, INTERP)")
         @SuppressWarnings("unused")
         static Object doInterpreterState(PThreadState receiver, String key,
-                        @Shared("getNull") @Cached GetNativeNullNode getNativeNullNode) {
-            return getNativeNullNode.execute();
+                        @CachedLibrary("receiver") InteropLibrary receiverLib) {
+            return PythonContext.get(receiverLib).getNativeNull();
         }
 
         @Specialization(guards = "eq(key, USE_TRACING)")

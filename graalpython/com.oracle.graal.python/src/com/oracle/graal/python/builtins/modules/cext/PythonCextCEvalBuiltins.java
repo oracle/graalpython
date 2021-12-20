@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins.AllocateLockNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockNode;
@@ -85,13 +84,12 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
         @Specialization
         public Object allocate(VirtualFrame frame,
                         @Cached AllocateLockNode allocateNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return allocateNode.execute(frame, PNone.NO_VALUE, PNone.NO_VALUE);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -118,13 +116,12 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
         @Specialization
         public Object release(VirtualFrame frame, PLock lock,
                         @Cached ReleaseLockNode releaseNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return releaseNode.execute(frame, lock);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -134,14 +131,13 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
     public abstract static class PyEvalGetBuiltinsNode extends PythonBuiltinNode {
         @Specialization
         public Object release(@Cached GetDictIfExistsNode getDictNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 PythonModule cext = getCore().getBuiltins();
                 return getDictNode.execute(cext);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }

@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
@@ -49,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -96,7 +96,6 @@ public final class PyErrStackItem extends PythonNativeWrapper {
     Object readMember(String key,
                     @Cached GetClassNode getClassNode,
                     @Cached GetTracebackNode getTracebackNode,
-                    @Cached GetNativeNullNode getNativeNullNode,
                     @Cached ToSulongNode toSulongNode) {
         Object result = null;
         if (exception != null) {
@@ -115,7 +114,7 @@ public final class PyErrStackItem extends PythonNativeWrapper {
             }
         }
         if (result == null) {
-            result = getNativeNullNode.execute();
+            result = PythonContext.get(toSulongNode).getNativeNull();
         }
         return toSulongNode.execute(result);
     }
