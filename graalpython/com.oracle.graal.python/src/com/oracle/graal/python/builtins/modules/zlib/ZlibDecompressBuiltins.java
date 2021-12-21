@@ -151,7 +151,7 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         public abstract Object execute(ZLibCompObject self, PythonContext ctxt, PythonObjectFactory factory);
 
         @Specialization(guards = "self.isInitialized()")
-        Object doNative(ZLibCompObject.NativeZlibCompObject self, PythonContext ctxt, PythonObjectFactory factory,
+        static Object doNative(ZLibCompObject.NativeZlibCompObject self, PythonContext ctxt, PythonObjectFactory factory,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction decompressObjCopy,
                         @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
@@ -173,19 +173,19 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isInitialized()", "self.canCopy()"})
         Object doJava(ZLibCompObject.JavaZlibCompObject self, @SuppressWarnings("unused") PythonContext ctxt, PythonObjectFactory factory) {
-            return self.copyDecompressObj(factory);
+            return self.copyDecompressObj(factory, this);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isInitialized()", "!self.canCopy()"})
-        PNone error(ZLibCompObject.JavaZlibCompObject self, PythonContext ctxt, PythonObjectFactory factory,
+        static PNone error(ZLibCompObject.JavaZlibCompObject self, PythonContext ctxt, PythonObjectFactory factory,
                         @Cached.Shared("r") @Cached PRaiseNode raise) {
             throw raise.raise(NotImplementedError, "JDK based zlib doesn't support copying");
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
-        PNone error(ZLibCompObject self, PythonContext ctxt, PythonObjectFactory factory,
+        static PNone error(ZLibCompObject self, PythonContext ctxt, PythonObjectFactory factory,
                         @Cached.Shared("r") @Cached PRaiseNode raise) {
             throw raise.raise(ValueError, INCONSISTENT_STREAM_STATE);
         }
@@ -291,12 +291,12 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isInitialized()")
-        PBytes doeof(ZLibCompObject.NativeZlibCompObject self) {
+        static PBytes doeof(ZLibCompObject.NativeZlibCompObject self) {
             return self.getUnusedData();
         }
 
         @Specialization
-        PBytes doit(ZLibCompObject.JavaZlibCompObject self) {
+        static PBytes doit(ZLibCompObject.JavaZlibCompObject self) {
             return self.getUnusedData();
         }
     }
@@ -314,12 +314,12 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isInitialized()")
-        PBytes doeof(ZLibCompObject.NativeZlibCompObject self) {
+        static PBytes doeof(ZLibCompObject.NativeZlibCompObject self) {
             return self.getUnconsumedTail();
         }
 
         @Specialization
-        PBytes doit(ZLibCompObject.JavaZlibCompObject self) {
+        static PBytes doit(ZLibCompObject.JavaZlibCompObject self) {
             return self.getUnconsumedTail();
         }
     }
@@ -328,7 +328,7 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EOFNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isEof() || !self.isInitialized()")
-        boolean doit(ZLibCompObject.NativeZlibCompObject self) {
+        static boolean doit(ZLibCompObject.NativeZlibCompObject self) {
             return self.isEof();
         }
 
@@ -344,7 +344,7 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doit(ZLibCompObject.JavaZlibCompObject self) {
+        static boolean doit(ZLibCompObject.JavaZlibCompObject self) {
             return self.isEof();
         }
     }

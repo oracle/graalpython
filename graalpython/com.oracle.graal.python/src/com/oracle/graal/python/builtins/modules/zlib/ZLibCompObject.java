@@ -43,16 +43,22 @@ package com.oracle.graal.python.builtins.modules.zlib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZlibCompress;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZlibDecompress;
 import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.MAX_WBITS;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.mask;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
+import java.util.zip.CRC32;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class ZLibCompObject extends PythonBuiltinObject {
@@ -109,6 +115,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
 
         private byte[] inputData; // helper for copy operation
         private boolean canCopy; // to assist if copying is allowed
+        private boolean readHeader;
 
         public JavaZlibCompObject(Object cls, Shape instanceShape, Object stream, int level, int wbits, int strategy, byte[] zdict) {
             super(cls, instanceShape);
@@ -119,6 +126,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             this.strategy = strategy;
             this.inputData = null;
             this.canCopy = true;
+            this.readHeader = wbits >= 25 && wbits <= 31;
         }
 
         public JavaZlibCompObject(Object cls, Shape instanceShape, Object stream, int wbits, byte[] zdict) {
@@ -146,11 +154,17 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         }
 
         @TruffleBoundary
-        public void setInflaterInput(byte[] data) {
+        public void setInflaterInput(byte[] data, Node node) {
             assert stream instanceof Inflater;
+            byte[] bytes = data;
+            if (readHeader) {
+                readHeader = false;
+                int h = gzipHeader(data, node);
+                bytes = PythonUtils.arrayCopyOfRange(bytes, h, data.length - h);
+            }
             canCopy = inputData == null;
-            inputData = data;
-            ((Inflater) stream).setInput(data);
+            inputData = bytes;
+            ((Inflater) stream).setInput(bytes);
         }
 
         @TruffleBoundary
@@ -172,7 +186,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         }
 
         @TruffleBoundary
-        public ZLibCompObject copyDecompressObj(PythonObjectFactory factory) {
+        public ZLibCompObject copyDecompressObj(PythonObjectFactory factory, Node node) {
             assert canCopy;
             boolean isRAW = wbits < 0;
             Inflater inflater = new Inflater(isRAW || wbits > (MAX_WBITS + 9));
@@ -182,7 +196,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             ZLibCompObject obj = factory.createJavaZLibCompObject(ZlibDecompress, inflater, wbits, zdict);
             if (inputData != null) {
                 try {
-                    ((JavaZlibCompObject) obj).setInflaterInput(inputData);
+                    ((JavaZlibCompObject) obj).setInflaterInput(inputData, node);
                     inflater.setInput(inputData);
                     int n = inflater.inflate(new byte[ZLibModuleBuiltins.DEF_BUF_SIZE]);
                     if (!isRAW && n == 0 && inflater.needsDictionary() && zdict.length > 0) {
@@ -197,6 +211,74 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             obj.setUnusedData(getUnusedData());
             return obj;
         }
+
+        public static final int GZIP_MAGIC = 0x8b1f;
+        private static final int FHCRC = 2;    // Header CRC
+        private static final int FEXTRA = 4;    // Extra field
+        private static final int FNAME = 8;    // File name
+        private static final int FCOMMENT = 16;   // File comment
+
+        private static int getValue(byte b, CRC32 crc) {
+            int v = mask(b);
+            crc.update(v);
+            return v;
+        }
+
+        private static int readShort(byte[] bytes, int off, CRC32 crc) {
+            return getValue(bytes[off + 1], crc) << 8 | getValue(bytes[off], crc);
+        }
+
+        // logic is from GZIPInputStream.readHeader()
+        @TruffleBoundary
+        private static int gzipHeader(byte[] bytes, Node node) {
+            CRC32 crc = new CRC32();
+            int idx = 0;
+            // Check header magic
+            if (readShort(bytes, idx, crc) != GZIP_MAGIC) {
+                throw PRaiseNode.raiseUncached(node, ZLibError, "Not in GZIP format");
+            }
+            idx += 2;
+            // Check compression method
+            if (getValue(bytes[idx++], crc) != 8) {
+                throw PRaiseNode.raiseUncached(node, ZLibError, "Unsupported compression method");
+            }
+            // Read flags
+            int flg = getValue(bytes[idx++], crc);
+            // Skip MTIME, XFL, and OS fields
+            idx += 6;
+            int n = 2 + 2 + 6;
+            // Skip optional extra field
+            if ((flg & FEXTRA) == FEXTRA) {
+                int m = getValue(bytes[idx++], crc);
+                idx += m;
+                n += m + 2;
+            }
+            // Skip optional file name
+            if ((flg & FNAME) == FNAME) {
+                do {
+                    n++;
+                } while (getValue(bytes[idx++], crc) != 0);
+            }
+            // Skip optional file comment
+            if ((flg & FCOMMENT) == FCOMMENT) {
+                do {
+                    n++;
+                } while (getValue(bytes[idx++], crc) != 0);
+            }
+            // Check optional header CRC
+            crc.reset();
+            if ((flg & FHCRC) == FHCRC) {
+                int v = (int) crc.getValue() & 0xffff;
+                if (readShort(bytes, idx, crc) != v) {
+                    throw PRaiseNode.raiseUncached(node, ZLibError, "Corrupt GZIP header");
+                }
+                idx += 2;
+                n += 2;
+            }
+            crc.reset();
+            return idx;
+        }
+
     }
 
     public boolean isInitialized() {
