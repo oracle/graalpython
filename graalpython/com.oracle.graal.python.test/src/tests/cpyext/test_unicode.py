@@ -214,6 +214,19 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyUnicode_FromFormat_c = CPyExtFunction(
+        _reference_fromformat,
+        lambda: (
+            ("char %c\n", ord('x')),
+            ("char %c\n", ord('あ')),
+        ),
+        resultspec="O",
+        argspec='si',
+        arguments=["char* fmt", "int c"],
+        callfunction="PyUnicode_FromFormat",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyUnicode_FromFormat4 = CPyExtFunction(
         _reference_fromformat,
         lambda: (
