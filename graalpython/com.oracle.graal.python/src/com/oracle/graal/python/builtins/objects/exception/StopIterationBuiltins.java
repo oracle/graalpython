@@ -49,12 +49,16 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.StopIteration)
 public final class StopIterationBuiltins extends PythonBuiltins {
@@ -66,14 +70,25 @@ public final class StopIterationBuiltins extends PythonBuiltins {
         return StopIterationBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class StopIterationInitNode extends PythonBuiltinNode {
+    public abstract static class StopIterationInitNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            if (arguments.length == 0 || keywords.length != 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new VarargsBuiltinDirectInvocationNotSupported();
+            }
+            Object[] argsWithoutSelf = PythonVarargsBuiltinNode.getArgsWithoutSelf(arguments);
+            return execute(frame, arguments[0], argsWithoutSelf, keywords);
+        }
+
         @Specialization
-        Object init(PBaseException self, Object[] args,
+        static Object init(PBaseException self, Object[] args,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            self.setExceptionAttributes(STOP_ITERATION_ATTR_FACTORY.create(args, factory()));
+            self.setExceptionAttributes(STOP_ITERATION_ATTR_FACTORY.create(args, null));
             return PNone.NONE;
         }
     }
@@ -82,7 +97,7 @@ public final class StopIterationBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StopIterationValueNode extends PythonBuiltinNode {
         @Specialization
-        Object generic(PBaseException self, Object value,
+        static Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, 0, STOP_ITERATION_ATTR_FACTORY);
         }

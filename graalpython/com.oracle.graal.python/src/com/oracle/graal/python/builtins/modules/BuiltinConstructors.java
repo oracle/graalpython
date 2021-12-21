@@ -3157,9 +3157,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, isPublic = true, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class BaseExceptionNode extends PythonBuiltinNode {
+    public abstract static class BaseExceptionNode extends PythonVarargsBuiltinNode {
+        @Override
+        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (arguments.length == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new VarargsBuiltinDirectInvocationNotSupported();
+            }
+            if (arguments.length == 1) {
+                return initNoArgs(arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
+            }
+            Object[] argsWithoutSelf = PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length);
+            return execute(frame, arguments[0], argsWithoutSelf, keywords);
+        }
+
         @Specialization(guards = "args.length == 0")
         Object initNoArgs(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return factory().createBaseException(cls);

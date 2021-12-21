@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -92,14 +93,31 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         return attrs;
     };
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    /*
+     * The user-visible signature is: 'ImportError.__init__(self, /, name, path)'. That means, the
+     * init method takes 'name' and 'path' as keyword-only parameters. We still need to specify
+     * 'takesVarArgs = true' and ' takesVarKeywordArgs = true' because otherwise the created root
+     * node would fail.
+     */
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, //
+                    takesVarArgs = true, varArgsMarker = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ImportErrorInitNode extends PythonVarargsBuiltinNode {
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (arguments.length == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new VarargsBuiltinDirectInvocationNotSupported();
+            }
+            Object[] argsWithoutSelf = PythonVarargsBuiltinNode.getArgsWithoutSelf(arguments);
+            return execute(frame, arguments[0], argsWithoutSelf, keywords);
+        }
+
         @Specialization
         Object init(PBaseException self, Object[] args, PKeyword[] kwargs,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            Object[] attrs = IMPORT_ERROR_ATTR_FACTORY.create(args, factory());
+            Object[] attrs = IMPORT_ERROR_ATTR_FACTORY.create(args, null);
             for (PKeyword kw : kwargs) {
                 switch (kw.getName()) {
                     case "name":

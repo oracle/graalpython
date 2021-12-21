@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.ErrorMessages.P_TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_IS_NOT_A_DICT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
@@ -51,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -68,6 +70,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
@@ -101,25 +104,47 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         return BaseExceptionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class BaseExceptionInitNode extends PythonBuiltinNode {
-        public abstract Object execute(PBaseException self, Object[] args);
+    public abstract static class BaseExceptionInitNode extends PythonVarargsBuiltinNode {
 
-        @Specialization(guards = "args.length == 0")
-        static Object initNoArgs(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object[] args) {
+        public final Object execute(PBaseException self, Object[] args) {
+            return execute(null, self, args, PKeyword.EMPTY_KEYWORDS);
+        }
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (arguments.length == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new VarargsBuiltinDirectInvocationNotSupported();
+            }
+            Object[] argsWithoutSelf = PythonVarargsBuiltinNode.getArgsWithoutSelf(arguments);
+            return execute(frame, arguments[0], argsWithoutSelf, keywords);
+        }
+
+        @Specialization(guards = {"args.length == 0", "keywords.length == 0"})
+        static Object doNoArguments(PBaseException self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
             self.setArgs(null);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "args.length != 0")
-        Object initArgs(PBaseException self, Object[] args) {
+        @Specialization(guards = {"args.length != 0", "keywords.length == 0"})
+        Object doWithArguments(PBaseException self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
             self.setArgs(factory().createTuple(args));
             return PNone.NONE;
         }
 
-        public static BaseExceptionInitNode create() {
-            return BaseExceptionBuiltinsFactory.BaseExceptionInitNodeFactory.create(null);
+        @Specialization(replaces = {"doNoArguments", "doWithArguments"})
+        Object doGeneric(PBaseException self, Object[] args, PKeyword[] keywords) {
+            if (keywords.length != 0) {
+                throw raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
+            }
+            if (args.length == 0) {
+                self.setArgs(null);
+            } else {
+                self.setArgs(factory().createTuple(args));
+            }
+            return PNone.NONE;
         }
     }
 
