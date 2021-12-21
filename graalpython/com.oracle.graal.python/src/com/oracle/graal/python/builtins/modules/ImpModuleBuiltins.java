@@ -40,17 +40,24 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_BAD_NAME;
+import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_EXCLUDED;
+import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_INVALID;
+import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_NOT_FOUND;
+import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_OKAY;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory;
-import com.oracle.graal.python.frozen.PythonFrozenModule;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins.Marshal.MarshalError;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.lib.PyCodeCheckNode;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -60,6 +67,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MemoryViewNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PyUnicodeFromStringNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -78,18 +87,24 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.frozen.PythonFrozenModule;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -110,6 +125,35 @@ import com.oracle.truffle.api.library.CachedLibrary;
 public class ImpModuleBuiltins extends PythonBuiltins {
 
     static final String HPY_SUFFIX = ".hpy.so";
+
+    private static class FrozenResult {
+        FrozenStatus status;
+        FrozenInfo info = new FrozenInfo();
+    }
+
+    private static class FrozenInfo {
+        Object nameObj;
+        byte[] data;
+        int size;
+        boolean isPackage;
+        boolean isAlias;
+        String origName;
+    };
+
+    enum FrozenStatus {
+        FROZEN_OKAY,
+        FROZEN_BAD_NAME,    // The given module name wasn't valid.
+        FROZEN_NOT_FOUND,   // It wasn't in PyImport_FrozenModules.
+        FROZEN_DISABLED,    // -X frozen_modules=off (and not essential)
+        FROZEN_EXCLUDED, /*
+                          * The PyImport_FrozenModules entry has NULL "code" (module is present but
+                          * marked as unimportable, stops search).
+                          */
+        FROZEN_INVALID, /*
+                         * The PyImport_FrozenModules entry is bogus (eg. does not contain
+                         * executable code).
+                         */
+    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -386,9 +430,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_frozen", minNumOfPositionalArgs = 1)
+    @Builtin(name = "is_frozen", parameterNames = {"name"}, minNumOfPositionalArgs = 1, doc = "is_frozen($module, name, /)\\n\"\n" +
+                    "--\n" +
+                    "\n" +
+                    "Returns True if the module name corresponds to a frozen module.")
     @GenerateNodeFactory
-    public abstract static class IsFrozen extends PythonBuiltinNode {
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    public abstract static class IsFrozen extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.IsFrozenClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
         public boolean run(String name) {
@@ -396,33 +449,225 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_frozen_object", minNumOfPositionalArgs = 1)
+    @Builtin(name = "init_frozen", parameterNames = {"name"}, minNumOfPositionalArgs = 1, doc = "init_frozen($module, name, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Initializes a frozen module.")
     @GenerateNodeFactory
-    public static abstract class GetFrozenObject extends PythonBuiltinNode {
-        @Specialization
-        public Object run(VirtualFrame frame, String name) {
-            //TODO: dataobj based path
-            PythonFrozenModule frozenModule = lookupFrozenModule(name);
-            // TODO: if (frozenModule == null) {// set frozen error}
-            if (frozenModule.getName() == null) {
-                frozenModule.setName(name);
-            }
-//            if (frozenModule.getSize() == 0) {
-//                // TODO: set frozen error
-//            }
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    public abstract static class InitFrozen extends PythonUnaryClinicBuiltinNode {
 
-            // byte[] byteCode = SequenceStorageNodesFactory.ToByteArrayNodeGen.getUncached().execute(frozenModule.getCode());
-            Object code = MarshalModuleBuiltins.Marshal.load(frozenModule.getCode(), frozenModule.getSize());
-            // Todo: error if if (code == null)
-
-            // TODO: Code object check
-
-            return code;
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.InitFrozenClinicProviderGen.INSTANCE;
         }
 
-        @TruffleBoundary
-        private PythonFrozenModule lookupFrozenModule(String name) {
-            return getCore().lookupFrozenModule(name);
+        @Specialization
+        public Object run(String name) {
+            return PNone.NONE;
+        }
+    }
+
+    // Will be part of CPython from 3.11 (already merged into main)
+    @Builtin(name = "find_frozen", parameterNames = {"name", "withData"}, minNumOfPositionalArgs = 1, isPublic = false, doc = "find_frozen($module, name, /, *, withdata=False)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Return info about the corresponding frozen module (if there is one) or None.\n" +
+                    "\n" +
+                    "The returned info (a 2-tuple):\n" +
+                    "\n" +
+                    " * data         the raw marshalled bytes\n" +
+                    " * is_package   whether or not it is a package\n" +
+                    " * origname     the originally frozen module\'s name, or None if not\n" +
+                    "                a stdlib module (this will usually be the same as\n" +
+                    "                the module\'s current name)")
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "withData", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
+    public abstract static class FindFrozen extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.FindFrozenClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object run(VirtualFrame frame, String name, boolean withData,
+                        @Cached MemoryViewNode memoryViewNode,
+                        @Cached PyUnicodeFromStringNode pyUnicodeFromStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            FrozenResult result = findFrozen(name);
+            FrozenStatus status = result.status;
+            FrozenInfo info = result.info;
+
+            if (status == FrozenStatus.FROZEN_NOT_FOUND || status == FrozenStatus.FROZEN_DISABLED) {
+                return PNone.NONE;
+            } else if (status == FROZEN_BAD_NAME) {
+                return PNone.NONE;
+            } else if (status != FrozenStatus.FROZEN_OKAY) {
+                raiseFrozenError(status, name, raiseNode);
+            }
+
+            PMemoryView data = null;
+
+            if (withData) {
+                data = memoryViewNode.execute(frame, factory().createBytes(info.data));
+            }
+
+            Object originalName = null;
+            if (info.origName != null && info.origName.charAt(0) != '\0') {
+                originalName = pyUnicodeFromStringNode.execute(frame, info.origName);
+            }
+
+            Object[] returnValues = new Object[]{
+                            data == null ? PNone.NONE : data,
+                            info.isAlias,
+                            originalName == null ? PNone.NONE : originalName
+            };
+
+            return factory().createTuple(returnValues);
+        }
+    }
+
+    private static void raiseFrozenError(FrozenStatus status, String moduleName, PRaiseNode raiseNode) {
+        switch (status) {
+            case FROZEN_BAD_NAME:
+                throw raiseNode.raise(ImportError, ErrorMessages.NO_SUCH_FROZEN_OBJECT, moduleName);
+            case FROZEN_NOT_FOUND:
+                throw raiseNode.raise(ImportError, ErrorMessages.NO_SUCH_FROZEN_OBJECT, moduleName);
+            case FROZEN_DISABLED:
+                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_DISABLED, moduleName);
+            case FROZEN_EXCLUDED:
+                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_EXCLUDED, moduleName);
+            case FROZEN_INVALID:
+                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_INVALID, moduleName);
+            case FROZEN_OKAY:
+                // There was no error.
+                break;
+            default:
+                CompilerDirectives.shouldNotReachHere("Unknown FrozenStatus " + status);
+        }
+    }
+
+    private static FrozenResult findFrozen(Object nameobj) {
+
+        FrozenResult result = new FrozenResult();
+        if (nameobj == null || nameobj == PNone.NONE) {
+            result.status = FROZEN_BAD_NAME;
+            return result;
+        }
+
+        String name;
+        try {
+            name = CastToJavaStringNode.getUncached().execute(nameobj);
+        } catch (CannotCastException e) {
+            result.status = FROZEN_BAD_NAME;
+            return result;
+        }
+
+        PythonContext ctx = PythonContext.get(null);
+        PythonFrozenModule module = ctx.lookupFrozenModule(name);
+
+        if (module == null) {
+            result.status = FROZEN_NOT_FOUND;
+            return result;
+        }
+
+        result.info.nameObj = nameobj;  // borrowed
+        result.info.data = module.getCode();
+        result.info.size = module.getSize() < 0 ? -(module.getSize()) : module.getSize();
+        result.info.isPackage = module.getSize() < 0 ? true : false;
+        result.info.isAlias = ctx.isFrozenModuleAlias(name);
+        result.info.origName = result.info.isAlias ? ctx.getFrozenModuleOriginalName(name) : name;
+
+        // TODO: Can this be moved ahead of result.info value assignment?
+        if (module.getCode() == null) {
+            /* It is frozen but marked as un-importable. */
+            result.status = FROZEN_EXCLUDED;
+            return result;
+        }
+
+        if (module.getCode()[0] == '\0' || module.getSize() == 0) {
+            /* Does not contain executable code. */
+            result.status = FROZEN_INVALID;
+            return result;
+        }
+
+        result.status = FROZEN_OKAY;
+        return result;
+
+    }
+
+    /*
+     * Equivalent to CPythons @Code PyImport_FrozenModuleObject Initialize a frozen module. Return 1
+     * for success, 0 if the module is not found, and -1 with an exception set if the initialization
+     * failed. This function is also used from frozenmain.c
+     */
+    private static int importFrozenModuleObject(Object name) {
+
+        return 0;
+    }
+
+    @Builtin(name = "get_frozen_object", parameterNames = {"name", "data"},
+                    minNumOfPositionalArgs = 1, doc = "get_frozen_object($module, name, data=None, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Create a code object for a frozen module.")
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "data", conversion = ClinicConversion.ReadableBuffer, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    public static abstract class GetFrozenObject extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.GetFrozenObjectClinicProviderGen.INSTANCE;
+        }
+
+        //TODO: Specialization for dataObj == NO_VALUE
+        //TODO: ReadableBuffer release?
+
+        @Specialization
+        public Object run(VirtualFrame frame, String name, Object dataObj,
+                          @CachedLibrary(limit="1") PythonBufferAccessLibrary bufferLib,
+                          @Cached PRaiseNode raiseNode,
+                          @Cached PyCodeCheckNode pyCodeCheckNode,
+                          @Cached PyObjectReprAsJavaStringNode reprNode) {
+
+            FrozenInfo info = new FrozenInfo();
+
+            if (dataObj != PNone.NONE) {
+                try {
+                    info.data = bufferLib.getInternalOrCopiedByteArray(dataObj);
+                    info.size = bufferLib.getBufferLength(dataObj);
+                } finally {
+                    bufferLib.release(dataObj);
+                }
+            } else {
+                FrozenResult result = findFrozen(name);
+                FrozenStatus status = result.status;
+                info = result.info;
+                if (status != FROZEN_OKAY) {
+                    raiseFrozenError(status, name, raiseNode);
+                }
+            }
+
+            if (info.nameObj == null) {
+                info.nameObj = name;
+            }
+
+            Object code = null;
+            try {
+                code = MarshalModuleBuiltins.Marshal.load(info.data, info.size);
+            } catch (MarshalError | NumberFormatException e){ //TODO: Should NumberFormatException be caught here?
+                raiseFrozenError(FROZEN_INVALID, name, raiseNode);
+            }
+
+            if (!pyCodeCheckNode.execute(code)){
+                throw raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, reprNode.execute(frame, info.nameObj));
+                //TODO: A bit wasteful to use reprNode if we could also just use name ? Could we?
+            }
+
+            return code;
         }
     }
 

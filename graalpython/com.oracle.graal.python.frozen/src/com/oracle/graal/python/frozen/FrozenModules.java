@@ -42,26 +42,43 @@ package com.oracle.graal.python.frozen;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public final class FrozenModules {
     public static Map<String, PythonFrozenModule> frozenModules = createFrozenModulesMap();
+    public static Map<String, String>  frozenAliases = createFrozenAliasesMap();
 
     private static Map<String, PythonFrozenModule> createFrozenModulesMap() {
         Map<String, PythonFrozenModule> frozenModules = new HashMap<String, PythonFrozenModule>();
-		frozenModules.put("importlib._bootstrap", new PythonFrozenModule("ImportlibBootstrap", FrozenImportlibBootstrap.importlibBootstrapByteCode, FrozenImportlibBootstrap.importlibBootstrapByteCodeSize));
-		frozenModules.put("importlib._bootstrap_external", new PythonFrozenModule("ImportlibBootstrapExternal", FrozenImportlibBootstrapExternal.importlibBootstrapExternalByteCode, FrozenImportlibBootstrapExternal.importlibBootstrapExternalByteCodeSize));
-		frozenModules.put("zipimport", new PythonFrozenModule("Zipimport", FrozenZipimport.zipimportByteCode, FrozenZipimport.zipimportByteCodeSize));
-		frozenModules.put("abc", new PythonFrozenModule("Abc", FrozenAbc.abcByteCode, FrozenAbc.abcByteCodeSize));
-		frozenModules.put("codecs", new PythonFrozenModule("Codecs", FrozenCodecs.codecsByteCode, FrozenCodecs.codecsByteCodeSize));
-		frozenModules.put("io", new PythonFrozenModule("Io", FrozenIo.ioByteCode, FrozenIo.ioByteCodeSize));
-		frozenModules.put("_collections_abc", new PythonFrozenModule("CollectionsAbc", FrozenCollectionsAbc.collectionsAbcByteCode, FrozenCollectionsAbc.collectionsAbcByteCodeSize));
-		frozenModules.put("_sitebuiltins", new PythonFrozenModule("Sitebuiltins", FrozenSitebuiltins.sitebuiltinsByteCode, FrozenSitebuiltins.sitebuiltinsByteCodeSize));
-		frozenModules.put("genericpath", new PythonFrozenModule("Genericpath", FrozenGenericpath.genericpathByteCode, FrozenGenericpath.genericpathByteCodeSize));
-		frozenModules.put("ntpath", new PythonFrozenModule("Ntpath", FrozenNtpath.ntpathByteCode, FrozenNtpath.ntpathByteCodeSize));
-		frozenModules.put("posixpath", new PythonFrozenModule("Posixpath", FrozenPosixpath.posixpathByteCode, FrozenPosixpath.posixpathByteCodeSize));
-		frozenModules.put("os", new PythonFrozenModule("Os", FrozenOs.osByteCode, FrozenOs.osByteCodeSize));
-		frozenModules.put("site", new PythonFrozenModule("Site", FrozenSite.siteByteCode, FrozenSite.siteByteCodeSize));
-		frozenModules.put("stat", new PythonFrozenModule("Stat", FrozenStat.statByteCode, FrozenStat.statByteCodeSize));
-    return frozenModules;
+        frozenModules.put("importlib._bootstrap",
+                        new PythonFrozenModule("ImportlibBootstrap", FrozenImportlibBootstrap.importlibBootstrapByteCode, FrozenImportlibBootstrap.importlibBootstrapByteCodeSize));
+        frozenModules.put("importlib._bootstrap_external", new PythonFrozenModule("ImportlibBootstrapExternal", FrozenImportlibBootstrapExternal.importlibBootstrapExternalByteCode,
+                        FrozenImportlibBootstrapExternal.importlibBootstrapExternalByteCodeSize));
+        frozenModules.put("zipimport", new PythonFrozenModule("Zipimport", FrozenZipimport.zipimportByteCode, FrozenZipimport.zipimportByteCodeSize));
+        frozenModules.put("abc", new PythonFrozenModule("Abc", FrozenAbc.abcByteCode, FrozenAbc.abcByteCodeSize));
+        frozenModules.put("codecs", new PythonFrozenModule("Codecs", FrozenCodecs.codecsByteCode, FrozenCodecs.codecsByteCodeSize));
+        frozenModules.put("io", new PythonFrozenModule("Io", FrozenIo.ioByteCode, FrozenIo.ioByteCodeSize));
+        frozenModules.put("_collections_abc", new PythonFrozenModule("CollectionsAbc", FrozenCollectionsAbc.collectionsAbcByteCode, FrozenCollectionsAbc.collectionsAbcByteCodeSize));
+        frozenModules.put("_sitebuiltins", new PythonFrozenModule("Sitebuiltins", FrozenSitebuiltins.sitebuiltinsByteCode, FrozenSitebuiltins.sitebuiltinsByteCodeSize));
+        frozenModules.put("genericpath", new PythonFrozenModule("Genericpath", FrozenGenericpath.genericpathByteCode, FrozenGenericpath.genericpathByteCodeSize));
+        frozenModules.put("ntpath", new PythonFrozenModule("Ntpath", FrozenNtpath.ntpathByteCode, FrozenNtpath.ntpathByteCodeSize));
+        frozenModules.put("posixpath", new PythonFrozenModule("Posixpath", FrozenPosixpath.posixpathByteCode, FrozenPosixpath.posixpathByteCodeSize));
+        frozenModules.put("os", new PythonFrozenModule("Os", FrozenOs.osByteCode, FrozenOs.osByteCodeSize));
+        frozenModules.put("site", new PythonFrozenModule("Site", FrozenSite.siteByteCode, FrozenSite.siteByteCodeSize));
+        frozenModules.put("stat", new PythonFrozenModule("Stat", FrozenStat.statByteCode, FrozenStat.statByteCodeSize));
+        return frozenModules;
+    }
+
+    private static Map<String, String> createFrozenAliasesMap() {
+        // alias, originalName
+        Map<String, String> frozenAliases = new HashMap<String, String>();
+        frozenAliases.put("_frozen_importlib", "importlib._bootstrap");
+        frozenAliases.put("_frozen_importlib_external", "importlib._bootstrap_external");
+        frozenAliases.put("os.path", "posixpath");
+        frozenAliases.put("__hello_alias__", "__hello__");
+        frozenAliases.put("__phello_alias__", "__hello__");
+        frozenAliases.put("__phello_alias__.spam", "__hello__");
+        frozenAliases.put("__phello__.__init__", "<__phello__");
+        frozenAliases.put("__phello__.ham.__init__", "<__phello__.ham");
+        frozenAliases.put("__hello_only__", null);
+        return frozenAliases;
     }
 }

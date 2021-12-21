@@ -11,14 +11,6 @@ public final class PythonFrozenModule {
         this.size = size;
     }
 
-    // Some modules are too big to be stored within the 2^16 bytes size limit of code artifacts
-    // and need to be passed in via multiple portions
-    public PythonFrozenModule(String name, byte[][] code, int size) {
-        this.name = name;
-        this.code = flattenByteArray(code);
-        this.size = size;
-    }
-
     public String getName() {
         return name;
     }
@@ -43,24 +35,4 @@ public final class PythonFrozenModule {
         this.size = size;
     }
 
-    // @TruffleBoundary How to include TruffleBoundary here? / Necessary?
-    private static byte[] flattenByteArray(byte[][] byteArrays) {
-        int totalLength = 0;
-        for (byte[] array : byteArrays) {
-            totalLength += array.length;
-        }
-
-        if (totalLength == 0)
-            return new byte[0];
-
-        byte[] result = new byte[totalLength];
-        int offset = 0;
-
-        for (byte[] array : byteArrays) {
-            System.arraycopy(array, 0, result, offset, array.length);
-            offset += array.length;
-        }
-
-        return result;
-    }
 }

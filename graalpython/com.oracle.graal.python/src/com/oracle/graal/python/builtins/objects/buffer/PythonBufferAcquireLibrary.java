@@ -77,7 +77,7 @@ import com.oracle.truffle.api.library.LibraryFactory;
 @GenerateLibrary(assertions = PythonBufferAcquireLibrary.Assertions.class)
 public abstract class PythonBufferAcquireLibrary extends Library {
     /**
-     * Return whether it is be possible to acquire a read-only buffer for this object. The actual
+     * Return whether it is possible to acquire a read-only buffer for this object. The actual
      * acquisition may still raise an exception. Equivalent of CPython's
      * {@code PyObject_CheckBuffer}.
      */

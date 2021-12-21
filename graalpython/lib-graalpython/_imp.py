@@ -37,10 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-@__graalpython__.builtin
-def init_frozen(name):
-    return None
-
+# @__graalpython__.builtin
+# def init_frozen(name):
+#     return None
+#
 #
 # @__graalpython__.builtin
 # def is_frozen(name):
