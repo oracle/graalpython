@@ -708,6 +708,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     private final Map<String, PythonModule> builtinModules = new HashMap<>();
     private final Map<String, PythonFrozenModule> frozenModules = FrozenModules.frozenModules;
+    private final Map<String, String> frozenAliases = FrozenModules.frozenAliases;
     @CompilationFinal private PythonModule builtinsModule;
     @CompilationFinal private PythonModule sysModule;
     @CompilationFinal private PDict sysModules;
@@ -857,6 +858,14 @@ public abstract class Python3Core extends ParserErrorCallback {
     @TruffleBoundary
     public final PythonFrozenModule lookupFrozenModule(String name) {
         return frozenModules.get(name);
+    }
+
+    public final boolean isFrozenModuleAlias(String name) {
+        return frozenAliases.containsKey(name);
+    }
+
+    public final String getFrozenModuleOriginalName(String alias) {
+        return frozenAliases.get(alias);
     }
 
     public final PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
