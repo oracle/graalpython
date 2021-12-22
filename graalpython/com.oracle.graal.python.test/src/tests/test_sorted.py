@@ -37,3 +37,11 @@ class TestSorted(unittest.TestCase):
     def test_baddecorator(self):
         data = 'The quick Brown fox Jumped over The lazy Dog'.split()
         self.assertRaises(TypeError, sorted, data, None, lambda x,y: 0)
+
+    def test_list_subclass(self):
+        class MyList(list):
+            def __iter__(self):
+                return iter([4, 2, 5])
+
+        # Use eval to get the fast path specialization
+        self.assertEqual(eval("sorted(MyList())", {"MyList": MyList}), [2, 4, 5])
