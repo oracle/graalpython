@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -90,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodesFactory.GetFullyQualifiedNameNodeGen;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -119,18 +119,22 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
+import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -524,21 +528,59 @@ public abstract class ObjectNodes {
 
     @ImportStatic({PythonOptions.class, PGuards.class})
     abstract static class GetSlotNamesNode extends Node {
-        public abstract Object execute(VirtualFrame frame, Object cls, Object copyReg);
+        @Child PyObjectLookupAttr lookupAttr = PyObjectLookupAttr.create();
+
+        public final Object execute(VirtualFrame frame, Object cls, Object copyReg) {
+            Object clsDict = lookupAttr.execute(frame, cls, __DICT__);
+            return executeInternal(frame, cls, clsDict, copyReg);
+        }
+
+        abstract Object executeInternal(VirtualFrame frame, Object cls, Object clsDict, Object copyReg);
 
         @Specialization
-        Object dispatch(VirtualFrame frame, Object cls, Object copyReg,
-                        @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
-                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
-                        @Cached PyObjectLookupAttr lookupAttr,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
+        Object dispatchDict(VirtualFrame frame, Object cls, PDict clsDict, Object copyReg,
+                        @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
+                        @Shared("storageLib") @CachedLibrary(limit = "3") HashingStorageLibrary storageLib) {
+            Object slotNames = storageLib.getItem(clsDict.getDictStorage(), __SLOTNAMES__);
+            slotNames = slotNames == null ? PNone.NO_VALUE : slotNames;
+            return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);
+        }
+
+        // Fast paths for a common case of PMappingproxy and NO_VALUE
+        @Specialization(guards = "isDict(mapping)")
+        Object dispatchMappingProxy(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PMappingproxy clsDict, Object copyReg,
+                        @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
+                        @Bind("clsDict.getMapping()") Object mapping,
+                        @Shared("storageLib") @CachedLibrary(limit = "3") HashingStorageLibrary storageLib) {
+            PDict mappingDict = (PDict) mapping;
+            return dispatchDict(frame, cls, mappingDict, copyReg, getSlotNamesInternalNode, storageLib);
+        }
+
+        @Specialization(guards = "isNoValue(noValue)")
+        Object dispatchNoValue(VirtualFrame frame, Object cls, PNone noValue, Object copyReg,
+                        @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode) {
+            return getSlotNamesInternalNode.execute(frame, cls, copyReg, noValue);
+        }
+
+        @Fallback
+        Object dispatchGeneric(VirtualFrame frame, Object cls, Object clsDict, Object copyReg,
+                        @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
+                        @Cached GetItemNode getItemNode,
+                        @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+            /*
+             * CPython looks at tp_dict of the type and assumes that it must be a builtin
+             * dictionary, otherwise it fails with type error. We do not have tp_dict for managed
+             * classes and what comes here is __dict__, so among other things it may be a mapping
+             * proxy, but also tp_dict for native classes. We "over-approximate" what CPython does
+             * here a bit and just use __getitem__.
+             */
+
             Object slotNames = PNone.NO_VALUE;
-            Object clsDict = lookupAttr.execute(frame, cls, __DICT__);
             if (!PGuards.isNoValue(clsDict)) {
-                HashingStorage hashingStorage = getHashingStorageNode.execute(frame, clsDict);
-                Object item = hashLib.getItem(hashingStorage, __SLOTNAMES__);
-                if (item != null) {
-                    slotNames = item;
+                try {
+                    slotNames = getItemNode.execute(frame, clsDict, __SLOTNAMES__);
+                } catch (PException ex) {
+                    ex.expect(PythonBuiltinClassType.KeyError, isBuiltinClassProfile);
                 }
             }
             return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);
