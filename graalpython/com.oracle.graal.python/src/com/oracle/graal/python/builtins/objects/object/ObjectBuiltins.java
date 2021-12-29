@@ -682,7 +682,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return null;
         }
 
-        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)", "!isDeleteMarker(mapping)"})
         Object dict(@SuppressWarnings("unused") Object self, Object mapping) {
             throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
