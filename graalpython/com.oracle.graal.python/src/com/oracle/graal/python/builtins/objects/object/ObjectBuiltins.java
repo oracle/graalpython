@@ -234,7 +234,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
 
-                if (overridesInit.profile(!overridesBuiltinMethod(type, profileInit, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class))) {
+                if (overridesInit.profile(!overridesBuiltinMethod(type, profileNew, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class))) {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
             }
