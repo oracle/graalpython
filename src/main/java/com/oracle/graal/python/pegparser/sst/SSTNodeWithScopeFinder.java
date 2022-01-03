@@ -172,17 +172,12 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     public SSTNodeWithScope visit(CallSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;
-            for (SSTNode param : node.parameters.getArgs()) {
+            for (SSTNode param : node.args) {
                 if ((result = param.accept(this)) != null) {
                     return result;
                 }
             }
-            for (SSTNode param : node.parameters.getNameArgNodes()) {
-                if ((result = param.accept(this)) != null) {
-                    return result;
-                }
-            }
-            for (SSTNode param : node.parameters.getKwArg()) {
+            for (SSTNode param : node.kwargs) {
                 if ((result = param.accept(this)) != null) {
                     return result;
                 }
