@@ -189,19 +189,19 @@ public class ScopeEnvironment {
     }
 
     private void analyzeName(Scope scope, HashMap<String, DefUse> scopes, String name, EnumSet<DefUse> flags, HashSet<String> bound, HashSet<String> local, HashSet<String> free, HashSet<String> global) {
-        if (flags.contains(DefUse.Global)) {
-            if (flags.contains(DefUse.NonLocal)) {
+        if (flags.contains(DefUse.DefGlobal)) {
+            if (flags.contains(DefUse.DefNonLocal)) {
                 // TODO: SyntaxError:
                 // "name '%s' is nonlocal and global", name
             }
-            scopes.put(name, DefUse.VGlobalExplicit);
+            scopes.put(name, DefUse.GlobalExplicit);
             if (global != null) {
                 global.add(name);
             }
             if (bound != null) {
                 bound.remove(name);
             }
-        } else if (flags.contains(DefUse.NonLocal)) {
+        } else if (flags.contains(DefUse.DefNonLocal)) {
             if (bound == null) {
                 // TODO: SyntaxError:
                 // "nonlocal declaration not allowed at module level"
@@ -209,39 +209,39 @@ public class ScopeEnvironment {
                 // TODO: SyntaxError:
                 // "no binding for nonlocal '%s' found", name
             }
-            scopes.put(name, DefUse.VFree);
+            scopes.put(name, DefUse.Free);
             scope.flags.add(ScopeFlags.HasFreeVars);
             free.add(name);
         } else if (!Collections.disjoint(flags, DefUse.DefBound)) {
-            scopes.put(name, DefUse.VLocal);
+            scopes.put(name, DefUse.Local);
             local.add(name);
             if (global != null) {
                 global.remove(name);
             }
         } else if (bound != null && bound.contains(name)) {
-            scopes.put(name, DefUse.VFree);
+            scopes.put(name, DefUse.Free);
             scope.flags.add(ScopeFlags.HasFreeVars);
             free.add(name);
         } else if (global != null && global.contains(name)) {
-            scopes.put(name, DefUse.VGlobalImplicit);
+            scopes.put(name, DefUse.GlobalImplicit);
         } else {
             if (scope.flags.contains(ScopeFlags.IsNested)) {
                 scope.flags.add(ScopeFlags.HasFreeVars);
             }
-            scopes.put(name, DefUse.VGlobalImplicit);
+            scopes.put(name, DefUse.GlobalImplicit);
         }
     }
 
     private void analyzeCells(HashMap<String, DefUse> scopes, HashSet<String> free) {
         for (Entry<String, DefUse> e : scopes.entrySet()) {
-            if (e.getValue() != DefUse.VLocal) {
+            if (e.getValue() != DefUse.Local) {
                 continue;
             }
             String name = e.getKey();
             if (!free.contains(name)) {
                 continue;
             }
-            scopes.put(name, DefUse.VCell);
+            scopes.put(name, DefUse.Cell);
             free.remove(name);
         }
     }
@@ -264,12 +264,12 @@ public class ScopeEnvironment {
         for (String name : free) {
             EnumSet<DefUse> v = symbols.get(name);
             if (v != null) {
-                if (isClass && (v.contains(DefUse.Global) || !Collections.disjoint(v, DefUse.DefBound))) {
-                    v.add(DefUse.FreeClass);
+                if (isClass && (v.contains(DefUse.DefGlobal) || !Collections.disjoint(v, DefUse.DefBound))) {
+                    v.add(DefUse.DefFreeClass);
                 }
             } else if (bound != null && !bound.contains(name)) {
             } else {
-                symbols.put(name, EnumSet.of(DefUse.VFree));
+                symbols.put(name, EnumSet.of(DefUse.Free));
             }
         }
     }
@@ -325,7 +325,7 @@ public class ScopeEnvironment {
             String mangled = mangle(name);
             EnumSet<DefUse> flags = currentScope.symbols.get(mangled);
             if (flags != null) {
-                if (flag == DefUse.Param && flags.contains(DefUse.Param)) {
+                if (flag == DefUse.DefParam && flags.contains(DefUse.DefParam)) {
                     // TODO: raises SyntaxError:
                     // "duplicate argument '%s' in function definition", name
                 }
@@ -333,18 +333,18 @@ public class ScopeEnvironment {
                 flags = EnumSet.of(flag);
             }
             if (currentScope.flags.contains(ScopeFlags.IsVisitingIterTarget)) {
-                if (flags.contains(DefUse.Global) || flags.contains(DefUse.NonLocal)) {
+                if (flags.contains(DefUse.DefGlobal) || flags.contains(DefUse.DefNonLocal)) {
                     // TODO: raises SyntaxError:
                     // "comprehension inner loop cannot rebind assignment expression target '%s'", name
                 }
-                flags.add(DefUse.CompIter);
+                flags.add(DefUse.DefCompIter);
             }
             currentScope.symbols.put(mangled, flags);
             switch (flag) {
-                case Param:
+                case DefParam:
                     currentScope.varnames.add(mangled);
                     break;
-                case Global:
+                case DefGlobal:
                     EnumSet<DefUse> globalFlags = globals.get(mangled);
                     if (globalFlags != null) {
                         globalFlags.add(flag);
@@ -473,7 +473,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(FunctionDefSSTNode node) {
-            addDef(node.getName(), DefUse.Local);
+            addDef(node.getName(), DefUse.DefLocal);
             SSTNode[] defaults = node.getArgBuilder().getDefaults();
             if (defaults != null) {
                 for (SSTNode n : defaults) {
@@ -496,7 +496,7 @@ public class ScopeEnvironment {
             try {
                 enterBlock(ScopeType.Function, node);
                 for (String n : node.getArgBuilder().getParameterNames()) {
-                    addDef(n, DefUse.Param);
+                    addDef(n, DefUse.DefParam);
                 }
                 if (node.getArgBuilder().hasSplat()) {
                     currentScope.flags.add(ScopeFlags.HasVarArgs);

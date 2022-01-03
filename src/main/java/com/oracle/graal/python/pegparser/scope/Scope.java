@@ -64,24 +64,24 @@ public class Scope {
     }
 
     enum DefUse {
-        Global,
-        Local,
-        Param,
-        NonLocal,
+        DefGlobal,
+        DefLocal,
+        DefParam,
+        DefNonLocal,
         Use,
-        Free,
-        FreeClass,
-        Import,
-        Annot,
-        CompIter,
+        DefFree,
+        DefFreeClass,
+        DefImport,
+        DefAnnot,
+        DefCompIter,
         // shifted VariableScope flags
-        VLocal,
-        VGlobalExplicit,
-        VGlobalImplicit,
-        VFree,
-        VCell;
+        Local,
+        GlobalExplicit,
+        GlobalImplicit,
+        Free,
+        Cell;
 
-        static EnumSet<DefUse> DefBound = EnumSet.of(Local, Param, Import);
+        static EnumSet<DefUse> DefBound = EnumSet.of(DefLocal, DefParam, DefImport);
     };
 
     HashMap<String, EnumSet<DefUse>> symbols;
