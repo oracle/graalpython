@@ -91,30 +91,33 @@ import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.sst.WhileSSTNode;
 import com.oracle.graal.python.pegparser.sst.WithSSTNode;
 import com.oracle.graal.python.pegparser.sst.YieldExpressionSSTNode;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
+import java.util.Stack;
 
 /**
  * Roughly plays the role of CPython's {@code symtable}.
+ *
+ * Just like in CPython, the scope analysis uses two passes. The first simply visits everything and
+ * creates {@link Scope} objects with some facts about the names. The second pass determines based
+ * on the scope nestings which names are free, cells etc.
  */
 public class ScopeEnvironment {
-    Scope topScope;
-    HashMap<SSTNode, Scope> blocks;
+    final Scope topScope;
+    final HashMap<SSTNode, Scope> blocks;
 
-    public void firstPass(BlockSSTNode moduleNode) {
-        assert topScope == null;
-        assert blocks == null;
+    // TODO: accept only a module sst node
+    public ScopeEnvironment(BlockSSTNode moduleNode) {
         blocks = new HashMap<>();
-        // TODO:accept only the module sst node
+        // First pass, similar to the entry point `symtable_enter_block' on CPython
         FirstPassVisitor visitor = new FirstPassVisitor(moduleNode);
-        moduleNode.accept(visitor);
         topScope = visitor.currentScope;
+        moduleNode.accept(visitor);
 
-        // second pass. walk the scopes for analysis
+        // Second pass
         analyzeBlock(topScope, null, null, null);
     }
 
@@ -154,7 +157,7 @@ public class ScopeEnvironment {
 
         HashSet<String> allFree = new HashSet<>();
         for (Scope s : scope.children) {
-            // copy the bound, free, and global dicts
+            // inline the logic from CPython's analyze_child_block
             HashSet<String> tempBound = new HashSet<>(newBound);
             HashSet<String> tempFree = new HashSet<>(newFree);
             HashSet<String> tempGlobal = new HashSet<>(newGlobal);
@@ -202,8 +205,7 @@ public class ScopeEnvironment {
             if (bound == null) {
                 // TODO: SyntaxError:
                 // "nonlocal declaration not allowed at module level"
-            }
-            if (!bound.contains(name)) {
+            } else if (!bound.contains(name)) {
                 // TODO: SyntaxError:
                 // "no binding for nonlocal '%s' found", name
             }
@@ -273,32 +275,33 @@ public class ScopeEnvironment {
     }
 
     private final class FirstPassVisitor implements SSTreeVisitor<Void> {
-        private ArrayList<Scope> stack;
+        private Stack<Scope> stack;
         private final HashMap<String, EnumSet<DefUse>> globals;
         private Scope currentScope;
         private String currentClassName;
 
         private FirstPassVisitor(SSTNode moduleNode) {
-            this.stack = new ArrayList<>();
-            this.currentScope = enterBlock(Scope.ScopeType.Module, moduleNode, null);
+            this.stack = new Stack<>();
+            enterBlock(Scope.ScopeType.Module, moduleNode);
             this.globals = this.currentScope.symbols;
         }
 
-        private Scope enterBlock(Scope.ScopeType type, SSTNode ast, Scope parent) {
+        private void enterBlock(Scope.ScopeType type, SSTNode ast) {
             Scope scope = new Scope(type, ast);
             stack.add(scope);
             if (type == Scope.ScopeType.Annotation) {
-                return null;
+                return;
             }
-            if (parent != null) {
-                scope.comprehensionIterExpression = parent.comprehensionIterExpression;
-                parent.children.add(scope);
+            if (currentScope != null) {
+                scope.comprehensionIterExpression = currentScope.comprehensionIterExpression;
+                currentScope.children.add(scope);
             }
-            return scope;
+            currentScope = scope;
         }
 
-        private Scope exitBlock() {
-
+        private void exitBlock() {
+            stack.pop();
+            currentScope = stack.peek();
         }
 
         private String mangle(String name) {
@@ -490,9 +493,8 @@ public class ScopeEnvironment {
                     n.accept(this);
                 }
             }
-            Scope previousScope = currentScope;
             try {
-                currentScope = enterBlock(ScopeType.Function, node, currentScope);
+                enterBlock(ScopeType.Function, node);
                 for (String n : node.getArgBuilder().getParameterNames()) {
                     addDef(n, DefUse.Param);
                 }
@@ -506,7 +508,7 @@ public class ScopeEnvironment {
                     n.accept(this);
                 }
             } finally {
-                currentScope = previousScope;
+                exitBlock();
             }
             return null;
         }
