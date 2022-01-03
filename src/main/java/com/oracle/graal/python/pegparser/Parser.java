@@ -10442,21 +10442,24 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Token _literal_1;
             SSTNode a;
-            Object b;
+            SSTNode[] b;
             if (
                 (a = primary_rule()) != null  // primary
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((b = _tmp_145_rule()) != null || true)  // arguments?
+                ((b = (SSTNode[])_tmp_145_rule()) != null || true)  // arguments?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, _mark, mark(), "primary '(' arguments? ')'");
-                // TODO: node.action: _PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createCall(a,this.extractArgs(b),this.extractKeywordArgs(b),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '(' arguments? ')'");
                 level--;
                 return (SSTNode)_res;
@@ -11828,20 +11831,20 @@ public final class Parser extends AbstractParser {
     }
 
     // arguments: args ','? &')' | invalid_arguments
-    public SSTNode arguments_rule()
+    public SSTNode[] arguments_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ARGUMENTS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, ARGUMENTS_ID);
+            _res = (SSTNode[])cache.getResult(_mark, ARGUMENTS_ID);
             level--;
-            return (SSTNode)_res;
+            return (SSTNode[])_res;
         }
         { // args ','? &')'
             debugMessageln("%d> arguments[%d-%d]: %s", level, _mark, mark(), "args ','? &')'");
             Object _opt_var;
-            SSTNode a;
+            SSTNode[] a;
             if (
                 (a = args_rule()) != null  // args
                 &&
@@ -11855,7 +11858,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ','? &')'");
                 cache.putResult(_mark, ARGUMENTS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (SSTNode[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s arguments[%d-%d]: %s failed!", level,
@@ -11873,7 +11876,7 @@ public final class Parser extends AbstractParser {
                 _res = invalid_arguments_var;
                 cache.putResult(_mark, ARGUMENTS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (SSTNode[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s arguments[%d-%d]: %s failed!", level,
@@ -11883,38 +11886,36 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, ARGUMENTS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (SSTNode[])_res;
     }
 
     // args: ','.(starred_expression | direct_named_expression !'=')+ [',' kwargs] | kwargs
-    public SSTNode args_rule()
+    public SSTNode[] args_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ARGS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, ARGS_ID);
+            _res = (SSTNode[])cache.getResult(_mark, ARGS_ID);
             level--;
-            return (SSTNode)_res;
+            return (SSTNode[])_res;
         }
         { // ','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]
             debugMessageln("%d> args[%d-%d]: %s", level, _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
             SSTNode[] a;
-            Object b;
+            SSTNode[] b;
             if (
-                (a = (SSTNode[])_gather_168_rule()) != null  // ','.(starred_expression | direct_named_expression !'=')+
+                (a = _gather_168_rule()) != null  // ','.(starred_expression | direct_named_expression !'=')+
                 &&
-                ((b = _tmp_170_rule()) != null || true)  // [',' kwargs]
+                ((b = (SSTNode[])_tmp_170_rule()) != null || true)  // [',' kwargs]
             )
             {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
-                // TODO: node.action: _PyPegen_collect_call_seqs ( p , a , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_collect_call_seqs ( p , a , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = this.join(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
                 cache.putResult(_mark, ARGS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (SSTNode[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s args[%d-%d]: %s failed!", level,
@@ -11928,13 +11929,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, _mark, mark(), "kwargs");
-                // TODO: node.action: _PyAST_Call ( _PyPegen_dummy_name ( p ) , CHECK_NULL_ALLOWED ( asdl_expr_seq * , _PyPegen_seq_extract_starred_exprs ( p , a ) ) , CHECK_NULL_ALLOWED ( asdl_keyword_seq * , _PyPegen_seq_delete_starred_exprs ( p , a ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( _PyPegen_dummy_name ( p ) , CHECK_NULL_ALLOWED ( asdl_expr_seq * , _PyPegen_seq_extract_starred_exprs ( p , a ) ) , CHECK_NULL_ALLOWED ( asdl_keyword_seq * , _PyPegen_seq_delete_starred_exprs ( p , a ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "kwargs");
                 cache.putResult(_mark, ARGS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (SSTNode[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s args[%d-%d]: %s failed!", level,
@@ -11944,7 +11943,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, ARGS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (SSTNode[])_res;
     }
 
     // kwargs:
@@ -11971,13 +11970,11 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (b = _gather_173_rule()) != null  // ','.kwarg_or_double_starred+
+                (b = (SSTNode[])_gather_173_rule()) != null  // ','.kwarg_or_double_starred+
             )
             {
                 debugMessageln("%d kwargs[%d-%d]: %s succeeded!", level, _mark, mark(), "','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+");
-                // TODO: node.action: _PyPegen_join_sequences ( p , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_join_sequences ( p , a , b ) to Java !!![0m");
-                _res = null;
+                _res = this.join(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+");
                 cache.putResult(_mark, KWARGS_ID, _res);
                 level--;
@@ -12041,6 +12038,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '*' expression
             debugMessageln("%d> starred_expression[%d-%d]: %s", level, _mark, mark(), "'*' expression");
             Token _literal;
@@ -12052,9 +12050,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d starred_expression[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression");
-                // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Starred ( a , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createStarred(a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression");
                 cache.putResult(_mark, STARRED_EXPRESSION_ID, _res);
                 level--;
@@ -12072,15 +12073,15 @@ public final class Parser extends AbstractParser {
     }
 
     // kwarg_or_starred: NAME '=' expression | starred_expression | invalid_kwarg
-    public SSTNode[] kwarg_or_starred_rule()
+    public SSTNode kwarg_or_starred_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWARG_OR_STARRED_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, KWARG_OR_STARRED_ID);
+            _res = (SSTNode)cache.getResult(_mark, KWARG_OR_STARRED_ID);
             level--;
-            return (SSTNode[])_res;
+            return (SSTNode)_res;
         }
         { // NAME '=' expression
             debugMessageln("%d> kwarg_or_starred[%d-%d]: %s", level, _mark, mark(), "NAME '=' expression");
@@ -12096,13 +12097,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwarg_or_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME '=' expression");
-                // TODO: node.action: _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( a -> v . Name . id , b , EXTRA ) ) , 1 )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( a -> v . Name . id , b , EXTRA ) ) , 1 ) to Java !!![0m");
-                _res = null;
+                _res = factory.createKeyValuePair(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' expression");
                 cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (SSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_starred[%d-%d]: %s failed!", level,
@@ -12116,13 +12115,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwarg_or_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "starred_expression");
-                // TODO: node.action: _PyPegen_keyword_or_starred ( p , a , 0 )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_keyword_or_starred ( p , a , 0 ) to Java !!![0m");
-                _res = null;
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "starred_expression");
                 cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (SSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_starred[%d-%d]: %s failed!", level,
@@ -12140,7 +12137,7 @@ public final class Parser extends AbstractParser {
                 _res = invalid_kwarg_var;
                 cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (SSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_starred[%d-%d]: %s failed!", level,
@@ -12150,19 +12147,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (SSTNode)_res;
     }
 
     // kwarg_or_double_starred: NAME '=' expression | '**' expression | invalid_kwarg
-    public SSTNode[] kwarg_or_double_starred_rule()
+    public SSTNode kwarg_or_double_starred_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWARG_OR_DOUBLE_STARRED_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, KWARG_OR_DOUBLE_STARRED_ID);
+            _res = (SSTNode)cache.getResult(_mark, KWARG_OR_DOUBLE_STARRED_ID);
             level--;
-            return (SSTNode[])_res;
+            return (SSTNode)_res;
         }
         { // NAME '=' expression
             debugMessageln("%d> kwarg_or_double_starred[%d-%d]: %s", level, _mark, mark(), "NAME '=' expression");
@@ -12178,13 +12175,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME '=' expression");
-                // TODO: node.action: _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( a -> v . Name . id , b , EXTRA ) ) , 1 )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( a -> v . Name . id , b , EXTRA ) ) , 1 ) to Java !!![0m");
-                _res = null;
+                _res = factory.createKeyValuePair(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' expression");
                 cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (SSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_double_starred[%d-%d]: %s failed!", level,
@@ -12201,13 +12196,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' expression");
-                // TODO: node.action: _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( NULL , a , EXTRA ) ) , 1 )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( NULL , a , EXTRA ) ) , 1 ) to Java !!![0m");
-                _res = null;
+                _res = factory.createKeyValuePair(null,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' expression");
                 cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (SSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_double_starred[%d-%d]: %s failed!", level,
@@ -12225,7 +12218,7 @@ public final class Parser extends AbstractParser {
                 _res = invalid_kwarg_var;
                 cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (SSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_double_starred[%d-%d]: %s failed!", level,
@@ -12235,7 +12228,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (SSTNode)_res;
     }
 
     // star_targets: star_target !',' | star_target ((',' star_target))* ','?
@@ -13346,13 +13339,13 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Token _literal_1;
             SSTNode a;
-            Object b;
+            SSTNode[] b;
             if (
                 (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((b = _tmp_197_rule()) != null || true)  // arguments?
+                ((b = (SSTNode[])_tmp_197_rule()) != null || true)  // arguments?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
                 &&
@@ -13360,9 +13353,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '(' arguments? ')' &t_lookahead");
-                // TODO: node.action: _PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createCall(a,this.extractArgs(b),this.extractKeywordArgs(b),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '(' arguments? ')' &t_lookahead");
                 level--;
                 return (SSTNode)_res;
@@ -13604,7 +13600,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_arguments[%d-%d]: %s", level, _mark, mark(), "args ',' '*'");
             Token _literal;
             Token _literal_1;
-            SSTNode args_var;
+            SSTNode[] args_var;
             if (
                 (args_var = args_rule()) != null  // args
                 &&
@@ -13657,7 +13653,7 @@ public final class Parser extends AbstractParser {
         }
         { // args for_if_clauses
             debugMessageln("%d> invalid_arguments[%d-%d]: %s", level, _mark, mark(), "args for_if_clauses");
-            SSTNode a;
+            SSTNode[] a;
             ForComprehensionSSTNode[] for_if_clauses_var;
             if (
                 (a = args_rule()) != null  // args
@@ -13682,7 +13678,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_arguments[%d-%d]: %s", level, _mark, mark(), "args ',' expression for_if_clauses");
             Token _literal;
             SSTNode a;
-            SSTNode args_var;
+            SSTNode[] args_var;
             ForComprehensionSSTNode[] for_if_clauses_var;
             if (
                 (args_var = args_rule()) != null  // args
@@ -13710,8 +13706,8 @@ public final class Parser extends AbstractParser {
         { // args ',' args
             debugMessageln("%d> invalid_arguments[%d-%d]: %s", level, _mark, mark(), "args ',' args");
             Token _literal;
-            SSTNode a;
-            SSTNode args_var;
+            SSTNode[] a;
+            SSTNode[] args_var;
             if (
                 (a = args_rule()) != null  // args
                 &&
@@ -21680,7 +21676,7 @@ public final class Parser extends AbstractParser {
         }
         { // arguments
             debugMessageln("%d> _tmp_145[%d-%d]: %s", level, _mark, mark(), "arguments");
-            SSTNode arguments_var;
+            SSTNode[] arguments_var;
             if (
                 (arguments_var = arguments_rule()) != null  // arguments
             )
@@ -22817,7 +22813,7 @@ public final class Parser extends AbstractParser {
         { // ',' kwarg_or_starred
             debugMessageln("%d> _loop0_172[%d-%d]: %s", level, _mark, mark(), "',' kwarg_or_starred");
             Token _literal;
-            SSTNode[] elem;
+            SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -22856,7 +22852,7 @@ public final class Parser extends AbstractParser {
         }
         { // kwarg_or_starred _loop0_172
             debugMessageln("%d> _gather_171[%d-%d]: %s", level, _mark, mark(), "kwarg_or_starred _loop0_172");
-            SSTNode[] elem;
+            SSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
@@ -22899,7 +22895,7 @@ public final class Parser extends AbstractParser {
         { // ',' kwarg_or_double_starred
             debugMessageln("%d> _loop0_174[%d-%d]: %s", level, _mark, mark(), "',' kwarg_or_double_starred");
             Token _literal;
-            SSTNode[] elem;
+            SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -22938,7 +22934,7 @@ public final class Parser extends AbstractParser {
         }
         { // kwarg_or_double_starred _loop0_174
             debugMessageln("%d> _gather_173[%d-%d]: %s", level, _mark, mark(), "kwarg_or_double_starred _loop0_174");
-            SSTNode[] elem;
+            SSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
@@ -22981,7 +22977,7 @@ public final class Parser extends AbstractParser {
         { // ',' kwarg_or_starred
             debugMessageln("%d> _loop0_176[%d-%d]: %s", level, _mark, mark(), "',' kwarg_or_starred");
             Token _literal;
-            SSTNode[] elem;
+            SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -23020,7 +23016,7 @@ public final class Parser extends AbstractParser {
         }
         { // kwarg_or_starred _loop0_176
             debugMessageln("%d> _gather_175[%d-%d]: %s", level, _mark, mark(), "kwarg_or_starred _loop0_176");
-            SSTNode[] elem;
+            SSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
@@ -23063,7 +23059,7 @@ public final class Parser extends AbstractParser {
         { // ',' kwarg_or_double_starred
             debugMessageln("%d> _loop0_178[%d-%d]: %s", level, _mark, mark(), "',' kwarg_or_double_starred");
             Token _literal;
-            SSTNode[] elem;
+            SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -23102,7 +23098,7 @@ public final class Parser extends AbstractParser {
         }
         { // kwarg_or_double_starred _loop0_178
             debugMessageln("%d> _gather_177[%d-%d]: %s", level, _mark, mark(), "kwarg_or_double_starred _loop0_178");
-            SSTNode[] elem;
+            SSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
@@ -23834,7 +23830,7 @@ public final class Parser extends AbstractParser {
         }
         { // arguments
             debugMessageln("%d> _tmp_197[%d-%d]: %s", level, _mark, mark(), "arguments");
-            SSTNode arguments_var;
+            SSTNode[] arguments_var;
             if (
                 (arguments_var = arguments_rule()) != null  // arguments
             )
@@ -23942,7 +23938,7 @@ public final class Parser extends AbstractParser {
         }
         { // args
             debugMessageln("%d> _tmp_200[%d-%d]: %s", level, _mark, mark(), "args");
-            SSTNode args_var;
+            SSTNode[] args_var;
             if (
                 (args_var = args_rule()) != null  // args
             )
@@ -25698,7 +25694,7 @@ public final class Parser extends AbstractParser {
         }
         { // arguments
             debugMessageln("%d> _tmp_235[%d-%d]: %s", level, _mark, mark(), "arguments");
-            SSTNode arguments_var;
+            SSTNode[] arguments_var;
             if (
                 (arguments_var = arguments_rule()) != null  // arguments
             )
@@ -26679,5 +26675,4 @@ public final class Parser extends AbstractParser {
     // TODO replacing arg_ty --> SSTNode[]
     // TODO replacing NameDefaultPair* --> SSTNode[]
     // TODO replacing CmpopExprPair* --> SSTNode[]
-    // TODO replacing KeywordOrStarred* --> SSTNode[]
 }

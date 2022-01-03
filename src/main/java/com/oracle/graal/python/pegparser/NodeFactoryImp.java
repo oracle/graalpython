@@ -50,6 +50,7 @@ import com.oracle.graal.python.pegparser.sst.AugAssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
+import com.oracle.graal.python.pegparser.sst.CallSSTNode;
 import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
 import com.oracle.graal.python.pegparser.sst.ComprehensionSSTNode;
 import com.oracle.graal.python.pegparser.sst.ForComprehensionSSTNode;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SimpleSSTNode;
+import com.oracle.graal.python.pegparser.sst.StarSSTNode;
 import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SubscriptSSTNode;
 import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
@@ -128,6 +130,11 @@ public class NodeFactoryImp implements NodeFactory{
     public SSTNode createBreak(int startOffset, int endOffset) {
         return new SimpleSSTNode(SimpleSSTNode.Type.BREAK, startOffset, endOffset);
     }
+    
+    @Override
+    public CallSSTNode createCall(SSTNode target, SSTNode[] args, SSTNode[] kwargs, int startOffset, int endOffset) {
+        return new CallSSTNode(target, args, kwargs, startOffset, endOffset);
+    }
 
     @Override
     public SSTNode createContinue(int startOffset, int endOffset) {
@@ -163,6 +170,11 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public UntypedSSTNode createUntyped(int tokenPosition) {
         return new UntypedSSTNode(tokenPosition);
+    }
+    
+    @Override
+    public StarSSTNode createStarred(SSTNode value, int startOffset, int endOffset) {
+        return new StarSSTNode(value, startOffset, endOffset);
     }
     
     @Override

@@ -1,0 +1,10 @@
+BlockSSTNode[0, 23]
+    CallSSTNode[0, 23]
+        Target: VarLookupSSTNode[0, 3] Value: "foo"
+        KWArgs: 
+            KeyValueSSTNode[4, 12]
+                Key: VarLookupSSTNode[4, 8] Value: "arg1"
+                Val: IntegerLiteralSSTNode[11, 12] Value: "1"
+            KeyValueSSTNode[14, 22]
+                Key: VarLookupSSTNode[14, 18] Value: "arg2"
+                Val: IntegerLiteralSSTNode[21, 22] Value: "2"

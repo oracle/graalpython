@@ -43,12 +43,14 @@ package com.oracle.graal.python.pegparser.sst;
 
 public class CallSSTNode extends SSTNode {
     protected final SSTNode target;
-    protected final ArgListBuilder parameters;
+    protected final SSTNode[] args;
+    protected final SSTNode[] kwargs;
 
-    public CallSSTNode(SSTNode target, ArgListBuilder parameters, int startOffset, int endOffset) {
+    public CallSSTNode(SSTNode target, SSTNode[] args, SSTNode[] kwargs, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.target = target;
-        this.parameters = parameters;
+        this.args = args;
+        this.kwargs = kwargs;
     }
 
     @Override

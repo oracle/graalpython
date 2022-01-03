@@ -90,10 +90,10 @@ public class AssignmentTests extends ParserTestBase {
         checkTreeResult("a.b = 1");
     }
 
-//    @Test
-//    public void assignment09() throws Exception {
-//        checkTreeResult("f().b = 1");
-//    }
+    @Test
+    public void assignment09() throws Exception {
+        checkTreeResult("f().b = 1");
+    }
 
     @Test
     public void assignment10() throws Exception {

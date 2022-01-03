@@ -689,11 +689,8 @@ primary[SSTNode]: # originally return type expr_ty
     | invalid_primary  # must be before 'primay genexp' because of invalid_genexp
     | a=primary '.' b=NAME { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
     | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)this.singletonSequence(b)), NULL, EXTRA) }
-    | a=primary '(' b=[arguments] ')' {
-        _PyAST_Call(a,
-                 (b) ? ((expr_ty) b)->v.Call.args : NULL,
-                 (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
-                 EXTRA) }
+    | a=primary '(' b[SSTNode*]=[arguments] ')' {
+        factory.createCall(a, this.extractArgs(b), this.extractKeywordArgs(b), startToken.startOffset, endToken.endOffset ) }
     | a=primary '[' b=slices ']' { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | atom
 
@@ -760,30 +757,25 @@ yield_expr[SSTNode]: # originally return type expr_ty
     | 'yield' 'from' a=expression { factory.createYield((SSTNode)a, true, startToken.startOffset, endToken.endOffset) }
     | 'yield' a=[star_expressions] { factory.createYield((SSTNode)a, false, startToken.startOffset, endToken.endOffset) }
 
-arguments[SSTNode] (memo): # originally return type expr_ty
+arguments[SSTNode*] (memo): # originally return type expr_ty
     | a=args [','] &')' { a }
     | invalid_arguments
-args[SSTNode]: # originally return type expr_ty
-    | a[asdl_expr_seq*]=','.(starred_expression | direct_named_expression !'=')+ b=[',' k=kwargs {k}] { _PyPegen_collect_call_seqs(p, a, b, EXTRA) }
-    | a=kwargs { _PyAST_Call(_PyPegen_dummy_name(p),
-                          CHECK_NULL_ALLOWED(asdl_expr_seq*, _PyPegen_seq_extract_starred_exprs(p, a)),
-                          CHECK_NULL_ALLOWED(asdl_keyword_seq*, _PyPegen_seq_delete_starred_exprs(p, a)),
-                          EXTRA) }
-kwargs[asdl_seq*]:
-    | a=','.kwarg_or_starred+ ',' b=','.kwarg_or_double_starred+ { _PyPegen_join_sequences(p, a, b) }
+args[SSTNode*]: # originally return type expr_ty
+    | a=','.(starred_expression | direct_named_expression !'=')+ b[SSTNode*]=[',' k=kwargs {k}] { this.join(a, b) }
+    | a=kwargs { a }
+kwargs[SSTNode*]:
+    | a=','.kwarg_or_starred+ ',' b[SSTNode*]=','.kwarg_or_double_starred+ { this.join(a, b) }
     | ','.kwarg_or_starred+
     | ','.kwarg_or_double_starred+
 starred_expression[SSTNode]: # originally return type expr_ty
-    | '*' a=expression { _PyAST_Starred(a, Load, EXTRA) }
-kwarg_or_starred[KeywordOrStarred*]:
-    | a=NAME '=' b=expression {
-        _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, b, EXTRA)), 1) }
-    | a=starred_expression { _PyPegen_keyword_or_starred(p, a, 0) }
+    | '*' a=expression { factory.createStarred(a,  startToken.startOffset, endToken.endOffset) }
+kwarg_or_starred[SSTNode]:
+    | a=NAME '=' b=expression { factory.createKeyValuePair(a, b) }
+    | a=starred_expression { a }
     | invalid_kwarg
-kwarg_or_double_starred[KeywordOrStarred*]:
-    | a=NAME '=' b=expression {
-        _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, b, EXTRA)), 1) }
-    | '**' a=expression { _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(NULL, a, EXTRA)), 1) }
+kwarg_or_double_starred[SSTNode]:
+    | a=NAME '=' b=expression { factory.createKeyValuePair(a, b) }
+    | '**' a=expression { factory.createKeyValuePair(null, a) }
     | invalid_kwarg
 
 # NOTE: star_targets may contain *bitwise_or, targets may not.
@@ -838,11 +830,9 @@ t_primary[SSTNode]: # originally return type expr_ty
     | a=t_primary '[' b=slices ']' &t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | a=t_primary b=genexp &t_lookahead {
         _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)this.singletonSequence(b)), NULL, EXTRA) }
-    | a=t_primary '(' b=[arguments] ')' &t_lookahead {
-        _PyAST_Call(a,
-                 (b) ? ((expr_ty) b)->v.Call.args : NULL,
-                 (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
-                 EXTRA) }
+    | a=t_primary '(' b[SSTNode*]=[arguments] ')' &t_lookahead {
+            factory.createCall(a, this.extractArgs(b), this.extractKeywordArgs(b), startToken.startOffset, endToken.endOffset ) 
+        }
     | a=atom &t_lookahead { a }
 t_lookahead: '(' | '[' | '.'
 t_atom[SSTNode]: # originally return type expr_ty
