@@ -41,18 +41,14 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-import com.oracle.graal.python.pegparser.ScopeInfo;
-
 public class ImportSSTNode extends SSTNode {
     protected final String name;
     protected final String asName;
-    protected final ScopeInfo scope;
 
-    public ImportSSTNode(ScopeInfo scope, String name, String asName, int startOffset, int endOffset) {
+    public ImportSSTNode(String name, String asName, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.name = name;
         this.asName = asName;
-        this.scope = scope;
     }
 
     @Override

@@ -41,14 +41,12 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-import com.oracle.graal.python.pegparser.ScopeInfo;
-
-public class LambdaSSTNode extends SSTNodeWithScope {
+public class LambdaSSTNode extends SSTNode {
     protected final ArgDefListBuilder args;
     protected final SSTNode body;
 
-    public LambdaSSTNode(ScopeInfo functionScope, ArgDefListBuilder args, SSTNode body, int startOffset, int endOffset) {
-        super(startOffset, endOffset, functionScope);
+    public LambdaSSTNode(ArgDefListBuilder args, SSTNode body, int startOffset, int endOffset) {
+        super(startOffset, endOffset);
         this.args = args;
         this.body = body;
     }
