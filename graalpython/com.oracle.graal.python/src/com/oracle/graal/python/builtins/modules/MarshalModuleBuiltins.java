@@ -202,7 +202,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     abstract static class LoadsNode extends PythonUnaryClinicBuiltinNode {
         @TruffleBoundary
         @Specialization(limit = "3")
-        static Object doit(Object buffer,
+        Object doit(VirtualFrame frame, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raise) {
             try {
@@ -211,6 +211,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
                 throw raise.raise(me.type, me.message, me.arguments);
+            }  finally {
+                bufferLib.release(buffer, frame, this);
             }
         }
 
