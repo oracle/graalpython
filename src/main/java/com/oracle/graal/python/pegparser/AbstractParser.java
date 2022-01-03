@@ -393,10 +393,10 @@ abstract class AbstractParser {
         return token != null ? factory.createTypeComment(getText(token), token.startOffset, token.endOffset) : null;
     }
 
-    protected int getKewordArgsCount (SSTNode[] argsOrKeywprdArgs) {
+    private int getKeywordArgsCount(SSTNode[] argsOrKeywordArgs) {
         int count = 0;
-        if (argsOrKeywprdArgs != null && argsOrKeywprdArgs.length > 0) {
-            for (SSTNode argsOrKeywprdArg : argsOrKeywprdArgs) {
+        if (argsOrKeywordArgs != null && argsOrKeywordArgs.length > 0) {
+            for (SSTNode argsOrKeywprdArg : argsOrKeywordArgs) {
                 if (argsOrKeywprdArg instanceof KeyValueSSTNode) {
                     count++;
                 }
@@ -406,11 +406,11 @@ abstract class AbstractParser {
     }
 
     protected SSTNode[] extractArgs(SSTNode[] argsOrKeywordArgs) {
-        int keywords = getKewordArgsCount(argsOrKeywordArgs);
+        int keywords = getKeywordArgsCount(argsOrKeywordArgs);
         if (keywords == 0) {
             return argsOrKeywordArgs;
         }
-        SSTNode[] result = (SSTNode[])Array.newInstance(SSTNode.class, argsOrKeywordArgs.length - keywords);
+        SSTNode[] result = new SSTNode[argsOrKeywordArgs.length - keywords];
         int i = 0;
         for (SSTNode node : argsOrKeywordArgs) {
             if (!(node instanceof KeyValueSSTNode)) {
@@ -421,11 +421,11 @@ abstract class AbstractParser {
     }
 
     protected SSTNode[] extractKeywordArgs(SSTNode[] argsOrKeywordArgs) {
-        int keywords = getKewordArgsCount(argsOrKeywordArgs);
+        int keywords = getKeywordArgsCount(argsOrKeywordArgs);
         if (keywords == 0) {
             return null;
         }
-        SSTNode[] result = (SSTNode[])Array.newInstance(SSTNode.class, keywords);
+        SSTNode[] result = new SSTNode[keywords];
         int i = 0;
         for (SSTNode node : argsOrKeywordArgs) {
             if (node instanceof KeyValueSSTNode) {
