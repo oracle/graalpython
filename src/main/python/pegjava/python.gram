@@ -178,13 +178,6 @@ assignment[SSTNode]:
                         b,
                         a.getStartOffset(), b.getEndOffset()),
                     (SSTNode)c, startToken.startOffset, endToken.endOffset);
-
-        //CHECK_VERSION(
-        //    stmt_ty,
-        //    6,
-        //    "Variable annotation syntax is",
-        //    _PyAST_AnnAssign(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b, c, 1, EXTRA)
-        // )
         }
     | a=('(' b=single_target ')' { b }
          | single_subscript_attribute_target) ':' b=expression c=['=' d=annotated_rhs { d }] {
