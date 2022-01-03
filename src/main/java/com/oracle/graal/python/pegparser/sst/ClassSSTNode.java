@@ -58,4 +58,16 @@ public class ClassSSTNode extends SSTNode {
         return visitor.visit(this);
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public ArgListBuilder getBaseClasses() {
+        return baseClasses;
+    }
+
+    public SSTNode getBody() {
+        return body;
+    }
+
 }

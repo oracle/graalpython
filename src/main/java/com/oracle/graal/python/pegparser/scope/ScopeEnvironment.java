@@ -413,7 +413,23 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ClassSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            addDef(node.getName(), DefUse.DefLocal);
+            for (SSTNode n : node.getBaseClasses().getArgs()) {
+                n.accept(this);
+            }
+            for (SSTNode n : node.getBaseClasses().getKwArg()) {
+                n.accept(this);
+            }
+            String tmp = currentClassName;
+            try {
+                enterBlock(ScopeType.Class, node);
+                currentClassName = node.getName();
+                node.getBody().accept(this);
+            } finally {
+                currentClassName = tmp;
+                exitBlock();
+            }
+            return null;
         }
 
         @Override
