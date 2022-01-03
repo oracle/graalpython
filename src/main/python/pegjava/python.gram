@@ -203,7 +203,7 @@ augassign[BinaryArithmeticSSTNode___Type]:
     | '+=' { BinaryArithmeticSSTNode.Type.ADD }
     | '-=' { BinaryArithmeticSSTNode.Type.SUB }
     | '*=' { BinaryArithmeticSSTNode.Type.MULT }
-    | '@=' { CHECK_VERSION(AugOperator*, 5, "The '@' operator is", _PyPegen_augoperator(p, MatMult)) }
+    | '@=' { BinaryArithmeticSSTNode.Type.MAT_MULT }
     | '/=' { BinaryArithmeticSSTNode.Type.DIV }
     | '%=' { BinaryArithmeticSSTNode.Type.MOD }
     | '&=' { BinaryArithmeticSSTNode.Type.BIT_AND }
