@@ -408,7 +408,7 @@ Py_UNICODE* PyUnicode_AsUnicode(PyObject *unicode) {
 
 UPCALL_ID(PyTruffle_Unicode_AsWideChar);
 Py_UNICODE* PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size) {
-    PyObject* bytes = UPCALL_CEXT_O(_jls_PyTruffle_Unicode_AsWideChar, native_to_java(unicode), Py_UNICODE_SIZE, native_to_java(Py_None), ERROR_MARKER);
+    PyObject* bytes = UPCALL_CEXT_O(_jls_PyTruffle_Unicode_AsWideChar, native_to_java(unicode), Py_UNICODE_SIZE, ERROR_MARKER);
     if (bytes != NULL) {
         // exclude null terminator at the end
         *size = PyBytes_Size(bytes) / Py_UNICODE_SIZE;
@@ -669,4 +669,9 @@ Py_UCS4 PyUnicode_ReadChar(PyObject *unicode, Py_ssize_t index) {
 UPCALL_ID(PyUnicode_Contains)
 int PyUnicode_Contains(PyObject *str, PyObject *substr) {
     return UPCALL_CEXT_I(_jls_PyUnicode_Contains, native_to_java(str), native_to_java(substr));
+}
+
+UPCALL_ID(PyUnicode_Split)
+PyObject* PyUnicode_Split(PyObject *s, PyObject *sep, Py_ssize_t maxsplit) {
+    return UPCALL_CEXT_O(_jls_PyUnicode_Split, native_to_java(s), native_to_java(sep), maxsplit);
 }

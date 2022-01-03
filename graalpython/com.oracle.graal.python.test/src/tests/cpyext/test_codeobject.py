@@ -62,6 +62,17 @@ class TestCodeobject(CPyExtTestCase):
 
     testmod = type(sys)("foo")
 
+    test_PyCode_NewEmpty = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            ("file.c", "myfunc", 54),
+        ),
+        resultspec="O",
+        argspec="ssi",
+        arguments=["char* filename", "char* funcname", "int firstlineno"],
+        cmpfunc=lambda cr, pr: pr[0] == cr.co_filename and pr[1] == cr.co_name and pr[2] == cr.co_firstlineno,
+    )
+
     test_PyCode_New = CPyExtFunction(
         lambda args: args,
         lambda: (

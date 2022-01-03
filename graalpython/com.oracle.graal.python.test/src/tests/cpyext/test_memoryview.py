@@ -74,6 +74,26 @@ suboffsets_buf = '''\
     '''
 
 
+def decode_ucs(mv, kind):
+    b = bytes(mv)
+    if kind == 1:
+        return b.decode('latin-1')
+    elif kind == 2:
+        return b.decode('utf-16')
+    else:
+        assert kind == 4
+        return b.decode('utf-32')
+
+
+def compare_unicode_bytes_with_kind(x, y):
+    if isinstance(x, BaseException) and isinstance(y, BaseException):
+        return type(x) == type(y)
+    elif isinstance(x, BaseException) or isinstance(y, BaseException):
+        return False
+    else:
+        return decode_ucs(*x) == decode_ucs(*y)
+
+
 class TestPyMemoryView(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -165,6 +185,54 @@ class TestPyMemoryView(CPyExtTestCase):
         arguments=["PyObject* key", "PyObject* expected"],
         callfunction="test_frommemory",
         cmpfunc=unhandled_error_compare_with_message,
+    )
+
+    # Test creating memoryview on top of a pointer that is in fact a managed bytes object wrapper
+    test_memoryview_frommemory_bytes_wrapper = CPyExtFunction(
+        lambda args: memoryview(args[0])[args[1]],
+        lambda: (
+            (b"a", 0),
+            (b"abcdefgh", 5),
+            (b"abcdefgh", 8),
+        ),
+        code='''
+            static PyObject* test_frommemory_bytes(PyObject* input, PyObject *key) {
+                PyObject *mv = PyMemoryView_FromMemory(PyBytes_AS_STRING(input), PyBytes_GET_SIZE(input), PyBUF_READ);
+                if (!mv)
+                    return NULL;
+                PyObject *item = PyObject_GetItem(mv, key);
+                Py_DECREF(mv);
+                return item;
+            }
+        ''',
+        resultspec='O',
+        argspec='OO',
+        arguments=["PyObject* input", "PyObject* key"],
+        callfunction="test_frommemory_bytes",
+        cmpfunc=unhandled_error_compare,
+    )
+
+    # Test creating memoryview on top of a pointer that is in fact a managed unicode object wrapper
+    test_memoryview_frommemory_unicode_wrapper = CPyExtFunction(
+        lambda args: (memoryview(args[0].encode('utf-32')), 4),
+        lambda: (
+            ("asdf",),
+            ("ニャー",),
+            # ("😂",),  # TODO doesn't work because PyUnicode_GET_LENGTH returns 2
+        ),
+        code='''
+            static PyObject* test_frommemory_unicode(PyObject* input) {
+                PyObject *mv = PyMemoryView_FromMemory(PyUnicode_DATA(input), PyUnicode_GET_LENGTH(input) * PyUnicode_KIND(input), PyBUF_READ);
+                if (!mv)
+                    return NULL;
+                return Py_BuildValue("Oi", mv, PyUnicode_KIND(input));
+            }
+        ''',
+        resultspec='O',
+        argspec='O',
+        arguments=["PyObject* input"],
+        callfunction="test_frommemory_unicode",
+        cmpfunc=compare_unicode_bytes_with_kind,
     )
 
     test_memoryview_tolist = CPyExtFunction(

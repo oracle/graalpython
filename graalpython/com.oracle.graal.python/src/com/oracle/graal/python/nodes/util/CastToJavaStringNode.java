@@ -99,7 +99,7 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
         throw CannotCastException.INSTANCE;
     }
 
-    @Specialization(guards = "!isString(x)")
+    @Specialization(guards = {"!isString(x)", "!isNativeObject(x)"})
     static String doUnsupported(@SuppressWarnings("unused") Object x) {
         throw CannotCastException.INSTANCE;
     }

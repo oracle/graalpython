@@ -45,7 +45,13 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -66,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -110,11 +117,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -731,7 +733,7 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
     abstract static class PyUnicodeNewNode extends PythonBuiltinNode {
         @Specialization
         Object doGeneric(Object ptr, int elementSize, int isAscii,
-                        @Cached CExtNodes.ToNewRefNode toNewRefNode) {
+                        @Cached ToNewRefNode toNewRefNode) {
             return toNewRefNode.execute(factory().createString(new NativeCharSequence(ptr, elementSize, isAscii != 0)));
         }
     }
@@ -762,6 +764,23 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
+            }
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Split", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyUnicodeSplit extends PythonQuaternaryBuiltinNode {
+        @Specialization
+        Object split(VirtualFrame frame, Object module, Object string, Object sep, Object maxsplit,
+                        @Cached StringBuiltins.SplitNode splitNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return splitNode.execute(frame, string, sep, maxsplit);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getNativeNullNode.execute(module);
             }
         }
     }
@@ -813,7 +832,7 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization
         Object doDecode(VirtualFrame frame, Object module, PMemoryView mv, String encoding, String errors,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
-                        @Cached CExtNodes.ToNewRefNode toSulongNode,
+                        @Cached ToNewRefNode toSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {

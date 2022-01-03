@@ -36,8 +36,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import types
 
-from . import CPyExtType
+from . import CPyExtType, CPyExtTestCase, unhandled_error_compare, CPyExtFunction
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -101,3 +102,20 @@ class TestMethod(object):
         assert obj.meth_static_noargs() == (None, None)
         assert obj.meth_static_varargs(1, 2, 3) == (None, (1, 2, 3))
         assert obj.meth_static_varargs_keywords(1, 2, 3, a=1, b=2) == (None, (1, 2, 3), {'a': 1, 'b': 2})
+
+
+class TestPyMethod(CPyExtTestCase):
+    def compile_module(self, name):
+        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
+        super().compile_module(name)
+
+    test_PyMethod_New = CPyExtFunction(
+        lambda args: types.MethodType(*args),
+        lambda: (
+            (list.append, 6),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* func", "PyObject* self"],
+        cmpfunc=unhandled_error_compare
+    )

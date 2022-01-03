@@ -2,6 +2,7 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+import sys
 
 
 def coding_checker(self, coder):
@@ -323,3 +324,37 @@ class LookupTest(unittest.TestCase):
 
         encoded = codecs.ascii_encode(s)
         self.assertEqual(s, codecs.ascii_decode(encoded[0])[0])
+
+
+class UTFByteOrderTest(unittest.TestCase):
+    def test_utf16_byteorder(self):
+        self.assertEqual("😂".encode("utf-16-le"), b'=\xd8\x02\xde')
+        self.assertEqual("😂".encode("utf-16-be"), b'\xd8=\xde\x02')
+        if sys.byteorder == 'little':
+            self.assertEqual("😂".encode("utf-16"), b'\xff\xfe=\xd8\x02\xde')
+        else:
+            self.assertEqual("😂".encode("utf-16"), b'\xfe\xff\xd8=\xde\x02')
+        self.assertEqual(b'=\xd8\x02\xde'.decode('utf-16-le'), "😂")
+        self.assertEqual(b'\xd8=\xde\x02'.decode('utf-16-be'), "😂")
+        self.assertEqual(b'\xff\xfe=\xd8\x02\xde'.decode('utf-16'), "😂")
+        self.assertEqual(b'\xfe\xff\xd8=\xde\x02'.decode('utf-16'), "😂")
+        if sys.byteorder == 'little':
+            self.assertEqual(b'=\xd8\x02\xde'.decode('utf-16'), "😂")
+        else:
+            self.assertEqual(b'\xd8=\xde\x02'.decode('utf-16'), "😂")
+
+    def test_utf32_byteorder(self):
+        self.assertEqual("😂".encode("utf-32-le"), b'\x02\xf6\x01\x00')
+        self.assertEqual("😂".encode("utf-32-be"), b'\x00\x01\xf6\x02')
+        if sys.byteorder == 'little':
+            self.assertEqual("😂".encode("utf-32"), b'\xff\xfe\x00\x00\x02\xf6\x01\x00')
+        else:
+            self.assertEqual("😂".encode("utf-32"), b'\x00\x00\xfe\xff\xd8=\xde\x02')
+        self.assertEqual(b'\x02\xf6\x01\x00'.decode('utf-32-le'), "😂")
+        self.assertEqual(b'\x00\x01\xf6\x02'.decode('utf-32-be'), "😂")
+        self.assertEqual(b'\xff\xfe\x00\x00\x02\xf6\x01\x00'.decode('utf-32'), "😂")
+        self.assertEqual(b'\x00\x00\xfe\xff\x00\x01\xf6\x02'.decode('utf-32'), "😂")
+        if sys.byteorder == 'little':
+            self.assertEqual(b'\x02\xf6\x01\x00'.decode('utf-32'), "😂")
+        else:
+            self.assertEqual(b'\x00\x01\xf6\x02'.decode('utf-32'), "😂")

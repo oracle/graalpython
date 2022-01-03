@@ -151,7 +151,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
@@ -264,6 +263,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -1432,27 +1432,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_AsWideChar", minNumOfPositionalArgs = 4)
+    @Builtin(name = "PyTruffle_Unicode_AsWideChar", minNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
-        @Child private UnicodeAsWideCharNode asWideCharNode;
-
         @Specialization
-        Object doUnicode(VirtualFrame frame, Object s, long elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
-            return doUnicode(frame, s, elementSize, -1, errorMarker, castStr);
-        }
-
-        @Specialization
-        Object doUnicode(VirtualFrame frame, Object s, long elementSize, long elements, Object errorMarker,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
+        Object doUnicode(VirtualFrame frame, Object s, long elementSize, Object errorMarker,
+                        @Cached UnicodeAsWideCharNode asWideCharNode,
+                        @Cached CastToJavaStringNode castStr) {
             try {
-                if (asWideCharNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asWideCharNode = insert(UnicodeAsWideCharNodeGen.create());
-                }
-
-                PBytes wchars = asWideCharNode.executeLittleEndian(castStr.execute(s), elementSize, elements);
+                PBytes wchars = asWideCharNode.executeLittleEndian(castStr.execute(s), elementSize);
                 if (wchars != null) {
                     return wchars;
                 } else {
@@ -1461,26 +1450,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 // TODO
                 return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "%m", e);
-            }
-        }
-
-        @Specialization
-        Object doUnicode(VirtualFrame frame, String s, PInt elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
-            try {
-                return doUnicode(frame, s, elementSize.longValueExact(), -1, errorMarker, castStr);
-            } catch (OverflowException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, ErrorMessages.INVALID_PARAMS);
-            }
-        }
-
-        @Specialization
-        Object doUnicode(VirtualFrame frame, String s, PInt elementSize, PInt elements, Object errorMarker,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
-            try {
-                return doUnicode(frame, s, elementSize.longValueExact(), elements.longValueExact(), errorMarker, castStr);
-            } catch (OverflowException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, ErrorMessages.INVALID_PARAMS);
             }
         }
     }
@@ -1571,17 +1540,28 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyCode_NewEmpty", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyCodeNewEmpty extends PythonTernaryBuiltinNode {
+        public abstract PCode execute(String filename, String funcname, int lineno);
+
+        @Specialization
+        static PCode newEmpty(String filename, String funcname, int lineno,
+                        @Cached CodeNodes.CreateCodeNode createCodeNode) {
+            return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
+                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY,
+                            filename, funcname, lineno, EMPTY_BYTE_ARRAY);
+        }
+    }
+
     @Builtin(name = "_PyTraceback_Add", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTracebackAdd extends PythonTernaryBuiltinNode {
         @Specialization
         Object tbHere(String funcname, String filename, int lineno,
-                        @Cached CodeNodes.CreateCodeNode createCodeNode,
+                        @Cached PyCodeNewEmpty newCode,
                         @Cached PyTraceBackHereNode pyTraceBackHereNode) {
-            PCode code = createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
-                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY,
-                            filename, funcname, lineno, EMPTY_BYTE_ARRAY);
-            PFrame frame = factory().createPFrame(null, code, factory().createDict(), factory().createDict());
+            PFrame frame = factory().createPFrame(null, newCode.execute(filename, funcname, lineno), factory().createDict(), factory().createDict());
             pyTraceBackHereNode.execute(null, frame);
             return PNone.NONE;
         }
@@ -3901,6 +3881,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CastToJavaLongLossyNode cast) {
             getContext().getCApiContext().tssDelete(cast.execute(key));
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "PyMethod_New", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyMethodNew extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object methodNew(Object func, Object self) {
+            // Note: CPython also constructs the object directly, without running the constructor or
+            // checking the inputs
+            return factory().createMethod(self, func);
         }
     }
 }

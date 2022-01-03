@@ -42,6 +42,11 @@
 
 PyTypeObject PyCode_Type = PY_TRUFFLE_TYPE("code", &PyType_Type, Py_TPFLAGS_DEFAULT, sizeof(PyTypeObject));
 
+UPCALL_ID(PyCode_NewEmpty)
+PyCodeObject* PyCode_NewEmpty(const char *filename, const char *funcname, int firstlineno) {
+    return (PyCodeObject*)UPCALL_CEXT_O(_jls_PyCode_NewEmpty, polyglot_from_string(filename, SRC_CS), polyglot_from_string(funcname, SRC_CS), firstlineno);
+}
+
 UPCALL_ID(PyCode_New);
 PyCodeObject* PyCode_New(int argcount, int kwonlyargcount,
                          int nlocals, int stacksize, int flags,

@@ -96,6 +96,7 @@ public enum NativeMember {
     TP_SETATTR("tp_setattr"),
     TP_GETATTRO("tp_getattro"),
     TP_SETATTRO("tp_setattro"),
+    TP_ITER("tp_iter"),
     TP_ITERNEXT("tp_iternext"),
     TP_NEW("tp_new"),
     TP_INIT("tp_init"),

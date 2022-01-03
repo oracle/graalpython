@@ -45,8 +45,10 @@ import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FU
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.LIST_INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
+
 import java.util.Arrays;
 import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -85,6 +87,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -514,7 +517,7 @@ public class PythonCextListBuiltins extends PythonBuiltins {
     abstract static class PyListInsertNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        Object append(VirtualFrame frame, PList list, int i, Object item,
+        Object insert(VirtualFrame frame, PList list, Object i, Object item,
                         @Cached ListInsertNode insertNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -526,18 +529,17 @@ public class PythonCextListBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object asTupleNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") int i, @SuppressWarnings("unused") Object item,
+        @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"}, limit = "1")
+        public Object insertNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") long i, @SuppressWarnings("unused") Object item,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
         }
 
-        @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object asTuple(VirtualFrame frame, Object obj, @SuppressWarnings("unused") int i, @SuppressWarnings("unused") Object item,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object error(VirtualFrame frame, Object obj, Object i, Object item,
                         @Cached StrNode strNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);

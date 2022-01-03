@@ -1,0 +1,50 @@
+From 852c32013fe9a288243a3edc16891e09a33fdb23 Mon Sep 17 00:00:00 2001
+From: Michael Simacek <michael.simacek@oracle.com>
+Date: Fri, 17 Dec 2021 09:51:56 +0100
+Subject: [PATCH] GraalPython compatibility
+
+---
+ src/lxml/etree.c     | 6 +++++-
+ src/lxml/objectify.c | 2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/lxml/etree.c b/src/lxml/etree.c
+index 1dbdf55..00bb33b 100644
+--- a/src/lxml/etree.c
++++ b/src/lxml/etree.c
+@@ -219,7 +219,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
+@@ -49239,6 +49239,10 @@ static void __pyx_f_4lxml_5etree__receiveGenericError(void *__pyx_v_c_log_handle
+  *                     c_text = c_str  # msg == "%s..."
+  */
+         __pyx_v_c_str = va_charptr(__pyx_v_args);
++        /* XXX GraalVM change: Sulong doesn't support varargs in a native callback */
++        if (__pyx_v_c_str == NULL) {
++            __pyx_v_c_str = "<unknown>";
++        }
+ 
+         /* "src/lxml/xmlerror.pxi":724
+  *                 format_count += 1
+diff --git a/src/lxml/objectify.c b/src/lxml/objectify.c
+index e32a5a4..0db20f0 100644
+--- a/src/lxml/objectify.c
++++ b/src/lxml/objectify.c
+@@ -194,7 +194,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
+-- 
+2.31.1
+

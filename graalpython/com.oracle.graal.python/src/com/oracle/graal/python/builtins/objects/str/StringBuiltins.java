@@ -152,7 +152,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -2501,22 +2500,22 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StrGetItemNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isString(primary)")
-        public String doString(VirtualFrame frame, Object primary, PSlice slice,
+        @Specialization
+        public String doString(VirtualFrame frame, Object self, PSlice slice,
                         @Cached CastToJavaStringNode castToJavaString,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached StrGetItemNodeWithSlice getItemNodeWithSlice) {
-            String str = castToJavaString.execute(primary);
+            String str = castToString(self, castToJavaString);
             SliceInfo info = compute.execute(frame, sliceCast.execute(slice), str.length());
             return getItemNodeWithSlice.execute(str, info);
         }
 
-        @Specialization(guards = {"!isPSlice(idx)", "isString(primary)"})
-        public String doString(VirtualFrame frame, Object primary, Object idx,
+        @Specialization(guards = "!isPSlice(idx)")
+        public String doString(VirtualFrame frame, Object self, Object idx,
                         @Cached CastToJavaStringNode castToJavaString,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            String str = castToJavaString.execute(primary);
+            String str = castToString(self, castToJavaString);
             int index = asSizeNode.executeExact(frame, idx);
             if (index < 0) {
                 index += str.length();
@@ -2527,16 +2526,18 @@ public final class StringBuiltins extends PythonBuiltins {
             return charAtToString(str, index);
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doGeneric(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
         @TruffleBoundary
         private static String charAtToString(String primary, int index) {
             char character = primary.charAt(index);
-            return new String(new char[]{character});
+            return String.valueOf(character);
+        }
+
+        private String castToString(Object self, CastToJavaStringNode castToJavaString) {
+            try {
+                return castToJavaString.execute(self);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __GETITEM__, "str", self);
+            }
         }
     }
 

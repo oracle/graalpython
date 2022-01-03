@@ -585,7 +585,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 CodingErrorAction errorAction = convertCodingErrorAction(errors);
-                Charset charset = CharsetMapping.getCharset(encoding);
+                Charset charset = CharsetMapping.getCharsetForDecoding(encoding, bytes, len);
                 if (charset == null) {
                     throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
                 }

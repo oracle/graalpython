@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.BinaryFirstToSulongNodeGen;
@@ -1405,6 +1404,10 @@ public abstract class CExtNodes {
             }
             return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), false));
         }
+
+        public static ToJavaNode create() {
+            return ToJavaNodeGen.create();
+        }
     }
 
     /**
@@ -1739,7 +1742,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public abstract static class AllToJavaNode extends PNodeWithContext {
+    public abstract static class AllToPythonNode extends PNodeWithContext {
 
         final Object[] execute(Object[] args) {
             return execute(args, 0);
@@ -1788,8 +1791,63 @@ public abstract class CExtNodes {
             return nodes;
         }
 
+        public static AllToPythonNode create() {
+            return CExtNodesFactory.AllToPythonNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class AllToJavaNode extends PNodeWithContext {
+
+        final Object[] execute(Object[] args) {
+            return execute(args, 0);
+        }
+
+        abstract Object[] execute(Object[] args, int offset);
+
+        @Specialization(guards = { //
+                        "args.length == cachedLength", //
+                        "offset == cachedOffset", //
+                        "effectiveLen(cachedLength, cachedOffset) < 5"}, //
+                        limit = "5")
+        @ExplodeLoop
+        static Object[] cached(Object[] args, @SuppressWarnings("unused") int offset,
+                        @Cached("args.length") int cachedLength,
+                        @Cached("offset") int cachedOffset,
+                        @Cached("createNodes(args.length)") ToJavaNode[] toJavaNodes) {
+            int n = cachedLength - cachedOffset;
+            Object[] output = new Object[n];
+            for (int i = 0; i < n; i++) {
+                output[i] = toJavaNodes[i].execute(args[i + cachedOffset]);
+            }
+            return output;
+        }
+
+        @Specialization(replaces = "cached")
+        static Object[] uncached(Object[] args, int offset,
+                        @Exclusive @Cached ToJavaNode toJavaNode) {
+            int len = args.length - offset;
+            Object[] output = new Object[len];
+            for (int i = 0; i < len; i++) {
+                output[i] = toJavaNode.execute(args[i + offset]);
+            }
+            return output;
+        }
+
+        static int effectiveLen(int len, int offset) {
+            return len - offset;
+        }
+
+        static ToJavaNode[] createNodes(int n) {
+            ToJavaNode[] nodes = new ToJavaNode[n];
+            for (int i = 0; i < n; i++) {
+                nodes[i] = ToJavaNode.create();
+            }
+            return nodes;
+        }
+
         public static AllToJavaNode create() {
-            return AllToJavaNodeGen.create();
+            return CExtNodesFactory.AllToJavaNodeGen.create();
         }
     }
 
@@ -1887,24 +1945,24 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 3")
         Object upcall2(VirtualFrame frame, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
+            Object[] converted = allToPythonNode.execute(args, 1);
             return callNode.executeObject(frame, args[0], converted[0], converted[1]);
         }
 
         @Specialization(guards = "args.length == 4")
         Object upcall3(VirtualFrame frame, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
+            Object[] converted = allToPythonNode.execute(args, 1);
             return callNode.execute(frame, args[0], converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
         Object upcall(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
+            Object[] converted = allToPythonNode.execute(args, 1);
             return callNode.execute(frame, args[0], converted, new PKeyword[0]);
         }
 
@@ -2115,9 +2173,9 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 3")
         Object upcall2(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+            Object[] converted = allToPythonNode.execute(args, 1);
             assert args[0] instanceof String;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.executeObject(frame, callable, converted[0], converted[1]);
@@ -2126,9 +2184,9 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 4")
         Object upcall3(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+            Object[] converted = allToPythonNode.execute(args, 1);
             assert args[0] instanceof String;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
@@ -2137,9 +2195,9 @@ public abstract class CExtNodes {
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
         Object upcall(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+            Object[] converted = allToPythonNode.execute(args, 1);
             assert args[0] instanceof String;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
@@ -2191,9 +2249,9 @@ public abstract class CExtNodes {
         Object upcall2(VirtualFrame frame, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 2);
+            Object[] converted = allToPythonNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
             Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
@@ -2204,9 +2262,9 @@ public abstract class CExtNodes {
         Object upcall3(VirtualFrame frame, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 2);
+            Object[] converted = allToPythonNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
             Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
@@ -2217,11 +2275,11 @@ public abstract class CExtNodes {
         Object upcall(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             // we needs at least a receiver and a member name
             assert args.length >= 2;
-            Object[] converted = allToJavaNode.execute(args, 2);
+            Object[] converted = allToPythonNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
             Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
