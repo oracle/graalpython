@@ -136,6 +136,7 @@ public class CDataObject extends PythonBuiltinObject {
                     @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
         if (b_ptr.ptr != null) {
             bufferLib.writeByte(b_ptr.ptr, b_ptr.offset + byteIndex, value);
+            return;
         }
         throw CompilerDirectives.shouldNotReachHere("buffer write to empty CDataObject");
     }
