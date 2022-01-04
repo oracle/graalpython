@@ -324,36 +324,53 @@ class TestPyObject(CPyExtTestCase):
         lambda: ([], {}, 0, 123, b"ello")
     )
 
-    # richcompare_args = ([ ([], [], i) for i in range(6) ] +
-    #                     [ (12, 24, i) for i in range(6) ] +
-    #                     [ ("aa", "ba", i) for i in range(6) ])
+    richcompare_args = lambda: (([], [], 0),  
+                 ([], [], 1),
+                 ([], [], 2),
+                 ([], [], 3),
+                 ([], [], 4),
+                 ([], [], 5),
+                 (12, 24, 0),
+                 (12, 24, 1),
+                 (12, 24, 2),
+                 (12, 24, 3),
+                 (12, 24, 4),
+                 (12, 24, 5),
+                 ("aa", "ba", 0),
+                 ("aa", "ba", 1),
+                 ("aa", "ba", 2),
+                 ("aa", "ba", 3),
+                 ("aa", "ba", 4),
+                 ("aa", "ba", 5))
 
-    # def richcompare(args):
-    #     return eval("%r %s %r" % (args[0], ["<", "<=", "==", "!=", ">", ">="][args[2]], args[1]))
+    def richcompare(args):
+        return eval("%r %s %r" % (args[0], ["<", "<=", "==", "!=", ">", ">="][args[2]], args[1]))
 
-    # test_PyObject_RichCompare = CPyExtFunction(
-    #     richcompare,
-    #     richcompare_args,
-    #     arguments=["PyObject* left", "PyObject* right", "int op"],
-    #     argspec="OOi",
-    # )
+    test_PyObject_RichCompare = CPyExtFunction(
+        richcompare,
+        richcompare_args,
+        arguments=["PyObject* left", "PyObject* right", "int op"],
+        argspec="OOi",
+        resultspec="O",
+    )
 
-    # def richcompare_bool(args):
-    #     try:
-    #         if eval("%r %s %r" % (args[0], ["<", "<=", "==", "!=", ">", ">="][args[2]], args[1])):
-    #             return 1
-    #         else:
-    #             return 0
-    #     except:
-    #         return -1
+    def richcompare_bool(args):
+        try:
+            if eval("%r %s %r" % (args[0], ["<", "<=", "==", "!=", ">", ">="][args[2]], args[1])):
+                return 1
+            else:
+                return 0
+        except:
+            return -1
 
-    # test_PyObject_RichCompareBool = CPyExtFunction(
-    #     richcompare_bool,
-    #     richcompare_args,
-    #     arguments=["PyObject* left", "PyObject* right", "int op"],
-    #     argspec="OOi",
-    #     resultspec="i",
-    # )
+    test_PyObject_RichCompareBool = CPyExtFunction(
+        richcompare_bool,
+        richcompare_args,
+        arguments=["PyObject* left", "PyObject* right", "int op"],
+        argspec="OOi",
+        resultspec="i",
+    )
+    
     __PyObject_GetAttrString_ARGS = (
             (MyObject(), "foo"),
             ([], "__len__"),
