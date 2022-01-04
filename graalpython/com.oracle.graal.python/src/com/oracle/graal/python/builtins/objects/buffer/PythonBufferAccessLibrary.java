@@ -100,7 +100,11 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
-     * multiple times on the same buffer.
+     * multiple times on the same buffer. If the caller has access to a VirtualFrame
+     * {@link #release(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)} or
+     * {@link #release(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)} should be used.
+     * If the caller doesn't have access to a VirtualFrame it must be ensured that an IndirectCallContext
+     * was already created in the call path.
      */
     public void release(@SuppressWarnings("unused") Object receiver) {
     }
