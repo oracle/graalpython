@@ -41,21 +41,74 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-public class BooleanLiteralSSTNode extends SSTNode {
-    protected final boolean value;
+public abstract class ModTy extends SSTNode {
+    public static final class TypeIgnore extends SSTNode {
+        final String tag;
 
-    public BooleanLiteralSSTNode(boolean value, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
-        this.value = value;
+        public TypeIgnore(String tag, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+            this.tag = tag;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 
-    @Override
-    public <T> T accept(SSTreeVisitor<T> visitor) {
-        return visitor.visit(this);
+    public static final class Module extends ModTy {
+        final StmtTy[] body;
+        final TypeIgnore[] typeIgnores;
+
+        Module(StmtTy[] body, TypeIgnore[] typeIgnores) {
+            this.body = body;
+            this.typeIgnores = typeIgnores;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 
-    public boolean getValue() {
-        return value;
+    public static final class Interactive extends ModTy {
+        final StmtTy[] body;
+
+        Interactive(StmtTy[] body) {
+            this.body = body;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 
+    public static final class Expression extends ModTy {
+        final ExprTy body;
+
+        Expression(ExprTy body) {
+            this.body = body;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class FunctionType extends ModTy {
+        final ExprTy[] argTypes;
+        final ExprTy returns;
+
+        FunctionType(ExprTy[] argTypes, ExprTy returns) {
+            this.argTypes = argTypes;
+            this.returns = returns;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
 }

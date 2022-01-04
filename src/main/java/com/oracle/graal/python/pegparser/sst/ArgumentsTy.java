@@ -41,14 +41,24 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-public class ImportSSTNode extends SSTNode {
-    protected final String name;
-    protected final String asName;
+public final class ArgumentsTy extends SSTNode {
+    final ArgTy[] posOnlyArgs;
+    final ArgTy[] args;
+    final ArgTy varArg;
+    final ArgTy[] kwOnlyArgs;
+    final ExprTy[] kwDefaults;
+    final ArgTy kwArg;
+    final ExprTy[] defaults;
 
-    public ImportSSTNode(String name, String asName, int startOffset, int endOffset) {
+    public ArgumentsTy(ArgTy[] posOnlyArgs, ArgTy[] args, ArgTy varArg, ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults, ArgTy kwArg, ExprTy[] defaults, int startOffset, int endOffset) {
         super(startOffset, endOffset);
-        this.name = name;
-        this.asName = asName;
+        this.posOnlyArgs = posOnlyArgs;
+        this.args = args;
+        this.varArg = varArg;
+        this.kwOnlyArgs = kwOnlyArgs;
+        this.kwDefaults = kwDefaults;
+        this.kwArg = kwArg;
+        this.defaults = defaults;
     }
 
     @Override

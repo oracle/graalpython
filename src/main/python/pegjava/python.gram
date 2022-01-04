@@ -107,7 +107,7 @@ _PyPegen_parse(Parser *p)
 
 // The end
 '''
-file[SSTNode]: a=[statements] ENDMARKER { factory.createBlock((SSTNode[])a, startToken.startOffset, endToken.endOffset); } # TODO create module from the statements instead block
+file[SSTNode]: a=[statements] ENDMARKER { factory.createBlock((SSTNode[])a, startToken.startOffset, endToken.endOffset) } # TODO create module from the statements instead block
 interactive[SSTNode]: a=statement_newline { _PyAST_Interactive(a, p->arena) }
 eval[SSTNode]: a=expressions NEWLINE* ENDMARKER { a }
 func_type[SSTNode]: '(' a=[type_expressions] ')' '->' b=expression NEWLINE* ENDMARKER { _PyAST_FunctionType(a, b, p->arena) }
@@ -187,7 +187,7 @@ assignment[SSTNode]:
             a, 
             (SSTNode)b, 
            this.newTypeComment((Token) tc),
-             startToken.startOffset, endToken.endOffset); }
+             startToken.startOffset, endToken.endOffset) }
     | a=single_target b=augassign ~ c=(yield_expr | star_expressions) {
          factory.createAugAssignment(a, b, (SSTNode)c, startToken.startOffset, endToken.endOffset) }
     | invalid_assignment
@@ -341,8 +341,8 @@ literal_pattern[SSTNode]: # originally return type expr_ty
     | real=signed_number '-' imag=NUMBER  { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.SUB, real, imag, startToken.startOffset, endToken.endOffset ) }
     | strings
     | 'None' { factory.createNone(startToken.startOffset, startToken.endOffset) }
-    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset); }
-    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset); }
+    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset) }
+    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset) }
 signed_number[SSTNode]: # originally return type expr_ty
     | NUMBER
     | '-' number=NUMBER { _PyAST_UnaryOp(USub, number, EXTRA) }
@@ -484,16 +484,16 @@ kwds[arg_ty]: '**' a=param_no_default { a }
 # - No comma, optional type comment, must be followed by close paren
 # The latter form is for a final parameter without trailing comma.
 #
-param_no_default[arg_ty]:
-    | a=param ',' tc=TYPE_COMMENT? { _PyPegen_add_type_comment_to_arg(p, a, tc) }
-    | a=param tc=TYPE_COMMENT? &')' { _PyPegen_add_type_comment_to_arg(p, a, tc) }
-param_with_default[NameDefaultPair*]:
-    | a=param c=default_param ',' tc=TYPE_COMMENT? { _PyPegen_name_default_pair(p, a, c, tc) }
-    | a=param c=default_param tc=TYPE_COMMENT? &')' { _PyPegen_name_default_pair(p, a, c, tc) }
-param_maybe_default[NameDefaultPair*]:
-    | a=param c=default_param? ',' tc=TYPE_COMMENT? { _PyPegen_name_default_pair(p, a, c, tc) }
-    | a=param c=default_param? tc=TYPE_COMMENT? &')' { _PyPegen_name_default_pair(p, a, c, tc) }
-param[arg_ty]: a=NAME b=annotation? { _PyAST_arg(a->v.Name.id, b, NULL, EXTRA) }
+param_no_default[AnnotationSSTNode]:
+    | a=param ',' tc=TYPE_COMMENT? { factory.createAnnotation(a.getLhs(), a.getType(), getText((Token)tc), a.getStartOffset(), a.getEndOffset()) }
+    | a=param tc=TYPE_COMMENT? &')' { factory.createAnnotation(a.getLhs(), a.getType(), getText((Token)tc), a.getStartOffset(), a.getEndOffset()) }
+param_with_default[AnnotationSSTNode]:
+    | a=param c=default_param ',' tc=TYPE_COMMENT? { factory.createAnnotation(factory.createKeyValuePair(a, c), null, getText((Token)tc), a.getStartOffset(), c.getEndOffset()) }
+    | a=param c=default_param tc=TYPE_COMMENT? &')' { factory.createAnnotation(factory.createKeyValuePair(a, c), null, getText((Token)tc), a.getStartOffset(), c.getEndOffset()) }
+param_maybe_default[AnnotationSSTNode]:
+    | a=param c=default_param? ',' tc=TYPE_COMMENT? { factory.createAnnotation(factory.createKeyValuePair(a, (SSTNode)c), null, getText((Token)tc), a.getStartOffset(), c == null ? a.getEndOffset() : ((SSTNode)c).getEndOffset()) }
+    | a=param c=default_param? tc=TYPE_COMMENT? &')' { factory.createAnnotation(factory.createKeyValuePair(a, (SSTNode)c), null, getText((Token)tc), a.getStartOffset(),  c == null ? a.getEndOffset() : ((SSTNode)c).getEndOffset()) }
+param[AnnotationSSTNode]: a=NAME b=annotation? { factory.createAnnotation(a, (SSTNode)b, startToken.startOffset, endToken.endOffset) }
 
 annotation[SSTNode]: ':' a=expression { a } # originally return type expr_ty
 default_param[SSTNode]: '=' a=expression { a } # originally return type expr_ty
@@ -695,8 +695,8 @@ slice[SSTNode]: # originally return type expr_ty
     | a=named_expression { a }
 atom[SSTNode]: # originally return type expr_ty
     | NAME
-    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, endToken.endOffset);}
-    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, endToken.endOffset); }
+    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, endToken.endOffset) }
+    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, endToken.endOffset) }
     | 'None' { factory.createNone(startToken.startOffset, startToken.endOffset) }
     | &STRING strings
     | NUMBER

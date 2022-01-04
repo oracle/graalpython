@@ -619,7 +619,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createBlock((SSTNode[])a,startToken.startOffset,endToken.endOffset);;
+                _res = factory.createBlock((SSTNode[])a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "statements? $");
                 cache.putResult(_mark, FILE_ID, _res);
                 level--;
@@ -1789,7 +1789,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createAnnAssignment(factory.createAnnotation(setExprContext(a,ExprContext.Store),b,a.getStartOffset(),b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
+                _res = factory.createAnnAssignment(factory.createAnnotation(setExprContext(a,ExprContext.Store),b,a.getStartOffset(),b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 level--;
@@ -1849,7 +1849,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createAssignment(a,(SSTNode)b,this.newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset);;
+                _res = factory.createAssignment(a,(SSTNode)b,this.newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 level--;
@@ -2006,9 +2006,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'@='");
-                // TODO: node.action: CHECK_VERSION ( AugOperator * , 5 , "The '@' operator is" , _PyPegen_augoperator ( p , MatMult ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( AugOperator * , 5 , 'The '@' operator is' , _PyPegen_augoperator ( p , MatMult ) ) to Java !!![0m");
-                _res = null;
+                _res = BinaryArithmeticSSTNode.Type.MAT_MULT;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'@='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
                 level--;
@@ -4625,7 +4623,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "'True'");
-                _res = factory.createBooleanLiteral(true,startToken.startOffset,startToken.endOffset);;
+                _res = factory.createBooleanLiteral(true,startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'True'");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 level--;
@@ -4643,7 +4641,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "'False'");
-                _res = factory.createBooleanLiteral(false,startToken.startOffset,startToken.endOffset);;
+                _res = factory.createBooleanLiteral(false,startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'False'");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 level--;
@@ -6417,7 +6415,7 @@ public final class Parser extends AbstractParser {
         { // '*' param_no_default param_maybe_default* kwds?
             debugMessageln("%d> star_etc[%d-%d]: %s", level, _mark, mark(), "'*' param_no_default param_maybe_default* kwds?");
             Token _literal;
-            SSTNode a;
+            AnnotationSSTNode a;
             SSTNode[] b;
             Object c;
             if (
@@ -6531,7 +6529,7 @@ public final class Parser extends AbstractParser {
         { // '**' param_no_default
             debugMessageln("%d> kwds[%d-%d]: %s", level, _mark, mark(), "'**' param_no_default");
             Token _literal;
-            SSTNode a;
+            AnnotationSSTNode a;
             if (
                 (_literal = expect(35)) != null  // token='**'
                 &&
@@ -6557,20 +6555,20 @@ public final class Parser extends AbstractParser {
     }
 
     // param_no_default: param ',' TYPE_COMMENT? | param TYPE_COMMENT? &')'
-    public SSTNode param_no_default_rule()
+    public AnnotationSSTNode param_no_default_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_NO_DEFAULT_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, PARAM_NO_DEFAULT_ID);
+            _res = (AnnotationSSTNode)cache.getResult(_mark, PARAM_NO_DEFAULT_ID);
             level--;
-            return (SSTNode)_res;
+            return (AnnotationSSTNode)_res;
         }
         { // param ',' TYPE_COMMENT?
             debugMessageln("%d> param_no_default[%d-%d]: %s", level, _mark, mark(), "param ',' TYPE_COMMENT?");
             Token _literal;
-            SSTNode a;
+            AnnotationSSTNode a;
             Object tc;
             if (
                 (a = param_rule()) != null  // param
@@ -6581,13 +6579,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d param_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param ',' TYPE_COMMENT?");
-                // TODO: node.action: _PyPegen_add_type_comment_to_arg ( p , a , tc )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_add_type_comment_to_arg ( p , a , tc ) to Java !!![0m");
-                _res = null;
+                _res = factory.createAnnotation(a.getLhs(),a.getType(),getText((Token)tc),a.getStartOffset(),a.getEndOffset());
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param ',' TYPE_COMMENT?");
                 cache.putResult(_mark, PARAM_NO_DEFAULT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (AnnotationSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param_no_default[%d-%d]: %s failed!", level,
@@ -6595,7 +6591,7 @@ public final class Parser extends AbstractParser {
         }
         { // param TYPE_COMMENT? &')'
             debugMessageln("%d> param_no_default[%d-%d]: %s", level, _mark, mark(), "param TYPE_COMMENT? &')'");
-            SSTNode a;
+            AnnotationSSTNode a;
             Object tc;
             if (
                 (a = param_rule()) != null  // param
@@ -6606,13 +6602,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d param_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param TYPE_COMMENT? &')'");
-                // TODO: node.action: _PyPegen_add_type_comment_to_arg ( p , a , tc )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_add_type_comment_to_arg ( p , a , tc ) to Java !!![0m");
-                _res = null;
+                _res = factory.createAnnotation(a.getLhs(),a.getType(),getText((Token)tc),a.getStartOffset(),a.getEndOffset());
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param TYPE_COMMENT? &')'");
                 cache.putResult(_mark, PARAM_NO_DEFAULT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (AnnotationSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param_no_default[%d-%d]: %s failed!", level,
@@ -6622,26 +6616,26 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, PARAM_NO_DEFAULT_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (AnnotationSSTNode)_res;
     }
 
     // param_with_default:
     //     | param default_param ',' TYPE_COMMENT?
     //     | param default_param TYPE_COMMENT? &')'
-    public SSTNode[] param_with_default_rule()
+    public AnnotationSSTNode param_with_default_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_WITH_DEFAULT_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, PARAM_WITH_DEFAULT_ID);
+            _res = (AnnotationSSTNode)cache.getResult(_mark, PARAM_WITH_DEFAULT_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode)_res;
         }
         { // param default_param ',' TYPE_COMMENT?
             debugMessageln("%d> param_with_default[%d-%d]: %s", level, _mark, mark(), "param default_param ',' TYPE_COMMENT?");
             Token _literal;
-            SSTNode a;
+            AnnotationSSTNode a;
             SSTNode c;
             Object tc;
             if (
@@ -6655,13 +6649,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d param_with_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param default_param ',' TYPE_COMMENT?");
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , tc )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , tc ) to Java !!![0m");
-                _res = null;
+                _res = factory.createAnnotation(factory.createKeyValuePair(a,c),null,getText((Token)tc),a.getStartOffset(),c.getEndOffset());
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param ',' TYPE_COMMENT?");
                 cache.putResult(_mark, PARAM_WITH_DEFAULT_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (AnnotationSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param_with_default[%d-%d]: %s failed!", level,
@@ -6669,7 +6661,7 @@ public final class Parser extends AbstractParser {
         }
         { // param default_param TYPE_COMMENT? &')'
             debugMessageln("%d> param_with_default[%d-%d]: %s", level, _mark, mark(), "param default_param TYPE_COMMENT? &')'");
-            SSTNode a;
+            AnnotationSSTNode a;
             SSTNode c;
             Object tc;
             if (
@@ -6683,13 +6675,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d param_with_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param default_param TYPE_COMMENT? &')'");
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , tc )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , tc ) to Java !!![0m");
-                _res = null;
+                _res = factory.createAnnotation(factory.createKeyValuePair(a,c),null,getText((Token)tc),a.getStartOffset(),c.getEndOffset());
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param TYPE_COMMENT? &')'");
                 cache.putResult(_mark, PARAM_WITH_DEFAULT_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (AnnotationSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param_with_default[%d-%d]: %s failed!", level,
@@ -6699,26 +6689,26 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, PARAM_WITH_DEFAULT_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (AnnotationSSTNode)_res;
     }
 
     // param_maybe_default:
     //     | param default_param? ',' TYPE_COMMENT?
     //     | param default_param? TYPE_COMMENT? &')'
-    public SSTNode[] param_maybe_default_rule()
+    public AnnotationSSTNode param_maybe_default_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_MAYBE_DEFAULT_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, PARAM_MAYBE_DEFAULT_ID);
+            _res = (AnnotationSSTNode)cache.getResult(_mark, PARAM_MAYBE_DEFAULT_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode)_res;
         }
         { // param default_param? ',' TYPE_COMMENT?
             debugMessageln("%d> param_maybe_default[%d-%d]: %s", level, _mark, mark(), "param default_param? ',' TYPE_COMMENT?");
             Token _literal;
-            SSTNode a;
+            AnnotationSSTNode a;
             Object c;
             Object tc;
             if (
@@ -6732,13 +6722,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d param_maybe_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param default_param? ',' TYPE_COMMENT?");
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , tc )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , tc ) to Java !!![0m");
-                _res = null;
+                _res = factory.createAnnotation(factory.createKeyValuePair(a,(SSTNode)c),null,getText((Token)tc),a.getStartOffset(),c==null?a.getEndOffset():((SSTNode)c).getEndOffset());
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param? ',' TYPE_COMMENT?");
                 cache.putResult(_mark, PARAM_MAYBE_DEFAULT_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (AnnotationSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param_maybe_default[%d-%d]: %s failed!", level,
@@ -6746,7 +6734,7 @@ public final class Parser extends AbstractParser {
         }
         { // param default_param? TYPE_COMMENT? &')'
             debugMessageln("%d> param_maybe_default[%d-%d]: %s", level, _mark, mark(), "param default_param? TYPE_COMMENT? &')'");
-            SSTNode a;
+            AnnotationSSTNode a;
             Object c;
             Object tc;
             if (
@@ -6760,13 +6748,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d param_maybe_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param default_param? TYPE_COMMENT? &')'");
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , tc )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , tc ) to Java !!![0m");
-                _res = null;
+                _res = factory.createAnnotation(factory.createKeyValuePair(a,(SSTNode)c),null,getText((Token)tc),a.getStartOffset(),c==null?a.getEndOffset():((SSTNode)c).getEndOffset());
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param? TYPE_COMMENT? &')'");
                 cache.putResult(_mark, PARAM_MAYBE_DEFAULT_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (AnnotationSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param_maybe_default[%d-%d]: %s failed!", level,
@@ -6776,20 +6762,21 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, PARAM_MAYBE_DEFAULT_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (AnnotationSSTNode)_res;
     }
 
     // param: NAME annotation?
-    public SSTNode param_rule()
+    public AnnotationSSTNode param_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, PARAM_ID);
+            _res = (AnnotationSSTNode)cache.getResult(_mark, PARAM_ID);
             level--;
-            return (SSTNode)_res;
+            return (AnnotationSSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME annotation?
             debugMessageln("%d> param[%d-%d]: %s", level, _mark, mark(), "NAME annotation?");
             VarLookupSSTNode a;
@@ -6801,13 +6788,16 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d param[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME annotation?");
-                // TODO: node.action: _PyAST_arg ( a -> v . Name . id , b , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_arg ( a -> v . Name . id , b , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createAnnotation(a,(SSTNode)b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME annotation?");
                 cache.putResult(_mark, PARAM_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (AnnotationSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param[%d-%d]: %s failed!", level,
@@ -6817,7 +6807,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, PARAM_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (AnnotationSSTNode)_res;
     }
 
     // annotation: ':' expression
@@ -10694,7 +10684,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createBooleanLiteral(true,startToken.startOffset,endToken.endOffset);;
+                _res = factory.createBooleanLiteral(true,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'True'");
                 cache.putResult(_mark, ATOM_ID, _res);
                 level--;
@@ -10717,7 +10707,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createBooleanLiteral(false,startToken.startOffset,endToken.endOffset);;
+                _res = factory.createBooleanLiteral(false,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'False'");
                 cache.putResult(_mark, ATOM_ID, _res);
                 level--;
@@ -14446,7 +14436,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_parameters[%d-%d]: %s", level, _mark, mark(), "param_no_default* invalid_parameters_helper param_no_default");
             SSTNode[] _loop0_212_var;
             Object invalid_parameters_helper_var;
-            SSTNode param_no_default_var;
+            AnnotationSSTNode param_no_default_var;
             if (
                 (_loop0_212_var = _loop0_212_rule()) != null  // param_no_default*
                 &&
@@ -19450,7 +19440,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_91: param_no_default
-    public SSTNode[] _loop0_91_rule()
+    public AnnotationSSTNode[] _loop0_91_rule()
     {
         level++;
         Object _res = null;
@@ -19458,25 +19448,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_91_ID)) {
             _res = cache.getResult(_mark, _LOOP0_91_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop0_91[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            SSTNode param_no_default_var;
+            AnnotationSSTNode param_no_default_var;
             while (
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -19484,14 +19474,14 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_91[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_91_ID, _seq);
         level--;
         return _seq;
     }
 
     // _loop0_92: param_with_default
-    public SSTNode[] _loop0_92_rule()
+    public AnnotationSSTNode[] _loop0_92_rule()
     {
         level++;
         Object _res = null;
@@ -19499,25 +19489,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_92_ID)) {
             _res = cache.getResult(_mark, _LOOP0_92_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop0_92[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            SSTNode[] param_with_default_var;
+            AnnotationSSTNode param_with_default_var;
             while (
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -19525,7 +19515,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_92[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_with_default");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_92_ID, _seq);
         level--;
         return _seq;
@@ -19568,7 +19558,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_94: param_with_default
-    public SSTNode[] _loop0_94_rule()
+    public AnnotationSSTNode[] _loop0_94_rule()
     {
         level++;
         Object _res = null;
@@ -19576,25 +19566,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_94_ID)) {
             _res = cache.getResult(_mark, _LOOP0_94_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop0_94[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            SSTNode[] param_with_default_var;
+            AnnotationSSTNode param_with_default_var;
             while (
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -19602,7 +19592,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_94[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_with_default");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_94_ID, _seq);
         level--;
         return _seq;
@@ -19645,7 +19635,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_96: param_no_default
-    public SSTNode[] _loop1_96_rule()
+    public AnnotationSSTNode[] _loop1_96_rule()
     {
         level++;
         Object _res = null;
@@ -19653,25 +19643,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_96_ID)) {
             _res = cache.getResult(_mark, _LOOP1_96_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop1_96[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            SSTNode param_no_default_var;
+            AnnotationSSTNode param_no_default_var;
             while (
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -19683,14 +19673,14 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_96_ID, _seq);
         level--;
         return _seq;
     }
 
     // _loop0_97: param_with_default
-    public SSTNode[] _loop0_97_rule()
+    public AnnotationSSTNode[] _loop0_97_rule()
     {
         level++;
         Object _res = null;
@@ -19698,25 +19688,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_97_ID)) {
             _res = cache.getResult(_mark, _LOOP0_97_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop0_97[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            SSTNode[] param_with_default_var;
+            AnnotationSSTNode param_with_default_var;
             while (
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -19724,7 +19714,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_97[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_with_default");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_97_ID, _seq);
         level--;
         return _seq;
@@ -19767,7 +19757,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_99: param_with_default
-    public SSTNode[] _loop1_99_rule()
+    public AnnotationSSTNode[] _loop1_99_rule()
     {
         level++;
         Object _res = null;
@@ -19775,25 +19765,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_99_ID)) {
             _res = cache.getResult(_mark, _LOOP1_99_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop1_99[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            SSTNode[] param_with_default_var;
+            AnnotationSSTNode param_with_default_var;
             while (
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -19805,7 +19795,7 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_99_ID, _seq);
         level--;
         return _seq;
@@ -19848,7 +19838,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_101: param_no_default
-    public SSTNode[] _loop1_101_rule()
+    public AnnotationSSTNode[] _loop1_101_rule()
     {
         level++;
         Object _res = null;
@@ -19856,25 +19846,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_101_ID)) {
             _res = cache.getResult(_mark, _LOOP1_101_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop1_101[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            SSTNode param_no_default_var;
+            AnnotationSSTNode param_no_default_var;
             while (
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -19886,14 +19876,14 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_101_ID, _seq);
         level--;
         return _seq;
     }
 
     // _loop1_102: param_no_default
-    public SSTNode[] _loop1_102_rule()
+    public AnnotationSSTNode[] _loop1_102_rule()
     {
         level++;
         Object _res = null;
@@ -19901,25 +19891,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_102_ID)) {
             _res = cache.getResult(_mark, _LOOP1_102_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop1_102[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            SSTNode param_no_default_var;
+            AnnotationSSTNode param_no_default_var;
             while (
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -19931,14 +19921,14 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_102_ID, _seq);
         level--;
         return _seq;
     }
 
     // _loop0_103: param_no_default
-    public SSTNode[] _loop0_103_rule()
+    public AnnotationSSTNode[] _loop0_103_rule()
     {
         level++;
         Object _res = null;
@@ -19946,25 +19936,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_103_ID)) {
             _res = cache.getResult(_mark, _LOOP0_103_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop0_103[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            SSTNode param_no_default_var;
+            AnnotationSSTNode param_no_default_var;
             while (
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -19972,14 +19962,14 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_103[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_103_ID, _seq);
         level--;
         return _seq;
     }
 
     // _loop1_104: param_with_default
-    public SSTNode[] _loop1_104_rule()
+    public AnnotationSSTNode[] _loop1_104_rule()
     {
         level++;
         Object _res = null;
@@ -19987,25 +19977,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_104_ID)) {
             _res = cache.getResult(_mark, _LOOP1_104_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop1_104[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            SSTNode[] param_with_default_var;
+            AnnotationSSTNode param_with_default_var;
             while (
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -20017,14 +20007,14 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_104_ID, _seq);
         level--;
         return _seq;
     }
 
     // _loop0_105: param_no_default
-    public SSTNode[] _loop0_105_rule()
+    public AnnotationSSTNode[] _loop0_105_rule()
     {
         level++;
         Object _res = null;
@@ -20032,25 +20022,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_105_ID)) {
             _res = cache.getResult(_mark, _LOOP0_105_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop0_105[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            SSTNode param_no_default_var;
+            AnnotationSSTNode param_no_default_var;
             while (
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -20058,14 +20048,14 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_105[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_105_ID, _seq);
         level--;
         return _seq;
     }
 
     // _loop1_106: param_with_default
-    public SSTNode[] _loop1_106_rule()
+    public AnnotationSSTNode[] _loop1_106_rule()
     {
         level++;
         Object _res = null;
@@ -20073,25 +20063,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_106_ID)) {
             _res = cache.getResult(_mark, _LOOP1_106_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop1_106[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            SSTNode[] param_with_default_var;
+            AnnotationSSTNode param_with_default_var;
             while (
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -20103,14 +20093,14 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_106_ID, _seq);
         level--;
         return _seq;
     }
 
     // _loop0_107: param_maybe_default
-    public SSTNode[] _loop0_107_rule()
+    public AnnotationSSTNode[] _loop0_107_rule()
     {
         level++;
         Object _res = null;
@@ -20118,25 +20108,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_107_ID)) {
             _res = cache.getResult(_mark, _LOOP0_107_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
             debugMessageln("%d> _loop0_107[%d-%d]: %s", level, _mark, mark(), "param_maybe_default");
-            SSTNode[] param_maybe_default_var;
+            AnnotationSSTNode param_maybe_default_var;
             while (
                 (param_maybe_default_var = param_maybe_default_rule()) != null  // param_maybe_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_maybe_default");
                 _res = param_maybe_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -20144,7 +20134,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_107[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_maybe_default");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_107_ID, _seq);
         level--;
         return _seq;
@@ -20187,7 +20177,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_109: param_maybe_default
-    public SSTNode[] _loop1_109_rule()
+    public AnnotationSSTNode[] _loop1_109_rule()
     {
         level++;
         Object _res = null;
@@ -20195,25 +20185,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_109_ID)) {
             _res = cache.getResult(_mark, _LOOP1_109_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
             debugMessageln("%d> _loop1_109[%d-%d]: %s", level, _mark, mark(), "param_maybe_default");
-            SSTNode[] param_maybe_default_var;
+            AnnotationSSTNode param_maybe_default_var;
             while (
                 (param_maybe_default_var = param_maybe_default_rule()) != null  // param_maybe_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_maybe_default");
                 _res = param_maybe_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -20225,7 +20215,7 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_109_ID, _seq);
         level--;
         return _seq;
@@ -24647,7 +24637,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_212: param_no_default
-    public SSTNode[] _loop0_212_rule()
+    public AnnotationSSTNode[] _loop0_212_rule()
     {
         level++;
         Object _res = null;
@@ -24655,25 +24645,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_212_ID)) {
             _res = cache.getResult(_mark, _LOOP0_212_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop0_212[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            SSTNode param_no_default_var;
+            AnnotationSSTNode param_no_default_var;
             while (
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -24681,14 +24671,14 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_212[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_212_ID, _seq);
         level--;
         return _seq;
     }
 
     // _loop1_213: param_with_default
-    public SSTNode[] _loop1_213_rule()
+    public AnnotationSSTNode[] _loop1_213_rule()
     {
         level++;
         Object _res = null;
@@ -24696,25 +24686,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_213_ID)) {
             _res = cache.getResult(_mark, _LOOP1_213_ID);
             level--;
-            return (SSTNode[])_res;
+            return (AnnotationSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<AnnotationSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop1_213[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            SSTNode[] param_with_default_var;
+            AnnotationSSTNode param_with_default_var;
             while (
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof AnnotationSSTNode) {
+                    _children.add((AnnotationSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((AnnotationSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -24726,7 +24716,7 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        AnnotationSSTNode[] _seq = _children.toArray(new AnnotationSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_213_ID, _seq);
         level--;
         return _seq;
@@ -26670,7 +26660,7 @@ public final class Parser extends AbstractParser {
     // TODO replacing SlashWithDefault* --> SSTNode[]
     // TODO replacing StarEtc* --> SSTNode[]
     // TODO replacing arg_ty --> SSTNode[]
-    // TODO replacing NameDefaultPair* --> SSTNode[]
     // TODO replacing arguments_ty --> SSTNode[]
+    // TODO replacing NameDefaultPair* --> SSTNode[]
     // TODO replacing CmpopExprPair* --> SSTNode[]
 }

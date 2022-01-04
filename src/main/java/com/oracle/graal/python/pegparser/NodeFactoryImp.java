@@ -77,8 +77,8 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int startOffset, int endOffset) {
-        return new AnnotationSSTNode(lhs, type, startOffset, endOffset);
+    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, String typeComment, int startOffset, int endOffset) {
+        return new AnnotationSSTNode(lhs, type, typeComment, startOffset, endOffset);
     }
 
     @Override
@@ -130,7 +130,7 @@ public class NodeFactoryImp implements NodeFactory{
     public SSTNode createBreak(int startOffset, int endOffset) {
         return new SimpleSSTNode(SimpleSSTNode.Type.BREAK, startOffset, endOffset);
     }
-    
+
     @Override
     public CallSSTNode createCall(SSTNode target, SSTNode[] args, SSTNode[] kwargs, int startOffset, int endOffset) {
         return new CallSSTNode(target, args, kwargs, startOffset, endOffset);
@@ -176,7 +176,7 @@ public class NodeFactoryImp implements NodeFactory{
     public StarSSTNode createStarred(SSTNode value, int startOffset, int endOffset) {
         return new StarSSTNode(value, startOffset, endOffset);
     }
-    
+
     @Override
     public SubscriptSSTNode createSubscript(SSTNode receiver, SSTNode subscript, int startOffset, int endOffset) {
         return new SubscriptSSTNode(receiver, subscript, startOffset, endOffset);

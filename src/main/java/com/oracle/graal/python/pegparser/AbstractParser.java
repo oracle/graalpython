@@ -40,9 +40,10 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import com.oracle.graal.python.pegparser.sst.AnnotationSSTNode;
 import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
+import com.oracle.graal.python.pegparser.sst.ComparisonSSTNode;
 import com.oracle.graal.python.pegparser.sst.GetAttributeSSTNode;
-import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StarSSTNode;
@@ -163,6 +164,9 @@ abstract class AbstractParser {
      * @return
      */
     public String getText(Token token) {
+        if (token == null) {
+            return null;
+        }
         return tokenizer.getText(token);
     }
 
@@ -388,51 +392,8 @@ abstract class AbstractParser {
     /**
      * _PyPegen_new_type_comment
      */
-    protected SSTNode newTypeComment(Token token) {
-        // FIXME: this is creating an SSTNode, the Python parser just creates a String from the text
-        return token != null ? factory.createTypeComment(getText(token), token.startOffset, token.endOffset) : null;
-    }
-
-    private int getKeywordArgsCount(SSTNode[] argsOrKeywordArgs) {
-        int count = 0;
-        if (argsOrKeywordArgs != null && argsOrKeywordArgs.length > 0) {
-            for (SSTNode argsOrKeywprdArg : argsOrKeywordArgs) {
-                if (argsOrKeywprdArg instanceof KeyValueSSTNode) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    protected SSTNode[] extractArgs(SSTNode[] argsOrKeywordArgs) {
-        int keywords = getKeywordArgsCount(argsOrKeywordArgs);
-        if (keywords == 0) {
-            return argsOrKeywordArgs;
-        }
-        SSTNode[] result = new SSTNode[argsOrKeywordArgs.length - keywords];
-        int i = 0;
-        for (SSTNode node : argsOrKeywordArgs) {
-            if (!(node instanceof KeyValueSSTNode)) {
-                result[i++] = node;
-            }
-        }
-        return result;
-    }
-
-    protected SSTNode[] extractKeywordArgs(SSTNode[] argsOrKeywordArgs) {
-        int keywords = getKeywordArgsCount(argsOrKeywordArgs);
-        if (keywords == 0) {
-            return null;
-        }
-        SSTNode[] result = new SSTNode[keywords];
-        int i = 0;
-        for (SSTNode node : argsOrKeywordArgs) {
-            if (node instanceof KeyValueSSTNode) {
-                result[i++] = node;
-            }
-        }
-        return result;
+    protected String newTypeComment(Object token) {
+        return getText((Token)token);
     }
 
     /**
@@ -518,5 +479,80 @@ abstract class AbstractParser {
         indent(sb);
         sb.append(String.format(text, args));
         System.out.println(sb.toString());
+    }
+
+    // Helper classes that are not really meaningful parts of the AST, just containers to move the
+    // data where we need it.
+
+    public static final class CmpopExprPair {
+        final ComparisonSSTNode op;
+        final SSTNode expr;
+
+        CmpopExprPair(ComparisonSSTNode op, SSTNode expr) {
+            this.op = op;
+            this.expr = expr;
+        }
+    }
+
+    public static final class KeyValuePair {
+        final SSTNode key;
+        final SSTNode value;
+
+        KeyValuePair(SSTNode key, SSTNode value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    public static final class KeyPatternPair {
+        final SSTNode key;
+        final SSTNode pattern;
+
+        KeyPatternPair(SSTNode key, SSTNode pattern) {
+            this.key = key;
+            this.pattern = pattern;
+        }
+    }
+
+    public static final class NameDefaultPair {
+        final SSTNode name;
+        final SSTNode def;
+
+        NameDefaultPair(SSTNode name, SSTNode def) {
+            this.name = name;
+            this.def = def;
+        }
+    }
+
+    public static final class SlashWithDefault {
+        final SSTNode[] plainNames;
+        final NameDefaultPair[] namesWithDefaults;
+
+        SlashWithDefault(SSTNode[] plainNames, NameDefaultPair[] namesWithDefaults) {
+            this.plainNames = plainNames;
+            this.namesWithDefaults = namesWithDefaults;
+        }
+    }
+
+    public static final class StarEtc {
+        final AnnotationSSTNode varArg;
+        final NameDefaultPair[] kwOnlyArgs;
+        final AnnotationSSTNode kwArg;
+
+        StarEtc(AnnotationSSTNode varArg, NameDefaultPair[] kwOnlyArgs, AnnotationSSTNode kwArg) {
+            this.varArg = varArg;
+            this.kwOnlyArgs = kwOnlyArgs;
+            this.kwArg = kwArg;
+        }
+    }
+
+    public static final class KeywordOrStarred {
+        final Object element;
+        final boolean isKeyword;
+
+        KeywordOrStarred(Object element, boolean isKeyword) {
+            this.element = element;
+            this.isKeyword = isKeyword;
+        }
     }
 }

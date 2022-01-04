@@ -45,7 +45,11 @@ import com.oracle.graal.python.pegparser.sst.*;
 public interface NodeFactory {
     public AnnAssignmentSSTNode createAnnAssignment(AnnotationSSTNode annotation, SSTNode rhs, int startOffset, int endOffset);
 
-    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int startOffset, int endOffset);
+    default AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int startOffset, int endOffset) {
+        return createAnnotation(lhs, type, null, startOffset, endOffset);
+    }
+
+    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, String typeComment, int startOffset, int endOffset);
 
     public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, SSTNode typeComment, int startOffset, int endOffset);
 
@@ -66,7 +70,7 @@ public interface NodeFactory {
     public SSTNode createPass(int startOffset, int endOffset);
 
     public SSTNode createBreak(int startOffset, int endOffset);
-    
+
     public CallSSTNode createCall(SSTNode target, SSTNode[] args, SSTNode[] kwargs, int startOffset, int endOffset);
 
     public SSTNode createContinue(int startOffset, int endOffset);
@@ -96,7 +100,7 @@ public interface NodeFactory {
     public SSTNode createDict(SSTNode[] keyValuePairs, int startOffset, int endOffset);
 
     public SSTNode createSet(SSTNode[] values, int startOffset, int endOffset);
-    
+
     public StarSSTNode createStarred(SSTNode value, int startOffset, int endOffset);
 
     public UntypedSSTNode createUntyped(int tokenPosition);
