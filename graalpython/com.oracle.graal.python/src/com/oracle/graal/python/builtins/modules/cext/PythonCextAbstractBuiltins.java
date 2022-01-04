@@ -69,26 +69,35 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyErrRestoreNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.MulNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
@@ -106,10 +115,12 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -973,6 +984,53 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(frame, e);
                 return toNewRefNode.execute(getContext().getNativeNull());
             }
+        }
+    }
+
+    @Builtin(name = "PyObject_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class PyObject_Size extends PythonUnaryBuiltinNode {
+
+        // n.b.: specializations 'doSequence' and 'doMapping' are not just shortcuts but also
+        // required for correctness because CPython's implementation uses
+        // 'type->tp_as_sequence->sq_length', 'type->tp_as_mapping->mp_length' which will bypass
+        // any
+        // user implementation of '__len__'.
+        @Specialization
+        static int doSequence(PSequence sequence,
+                        @Cached SequenceNodes.LenNode seqLenNode) {
+            return seqLenNode.execute(sequence);
+        }
+
+        @Specialization
+        static int doMapping(PHashingCollection container,
+                        @Cached HashingCollectionNodes.LenNode seqLenNode) {
+            return seqLenNode.execute(container);
+        }
+
+        @Specialization(guards = "!isMappingOrSequence(obj)")
+        static Object doGenericUnboxed(VirtualFrame frame, Object obj,
+                        @Cached("create(Len)") LookupAndCallUnaryNode callLenNode,
+                        @Cached ConditionProfile noLenProfile,
+                        @Cached CExtNodes.CastToNativeLongNode castToLongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object result = callLenNode.executeObject(frame, obj);
+                if (noLenProfile.profile(result == PNone.NO_VALUE)) {
+                    return -1;
+                }
+                Object lresult = castToLongNode.execute(result);
+                assert lresult instanceof Long || lresult instanceof PythonNativeVoidPtr;
+                return lresult;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        protected static boolean isMappingOrSequence(Object obj) {
+            return obj instanceof PSequence || obj instanceof PHashingCollection;
         }
     }
 

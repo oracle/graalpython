@@ -135,11 +135,6 @@ int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
 }
 
-UPCALL_ID(PyObject_Size);
-Py_ssize_t PyObject_Size(PyObject *o) {
-    return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(o));
-}
-
 typedef void (*object_dump_fun_t)(PyObject *);
 UPCALL_TYPED_ID(_PyObject_Dump, object_dump_fun_t);
 void _PyObject_Dump(PyObject* op) {

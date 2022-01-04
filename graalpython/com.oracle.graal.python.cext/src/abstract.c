@@ -347,6 +347,10 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
     return _jls_PyObject_GetItem(native_to_java(o), polyglot_from_string(key, SRC_CS));
 }
 
+Py_ssize_t PyObject_Size(PyObject *o) {
+    return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(o));
+}
+
 UPCALL_ID(PyMapping_Keys);
 PyObject * PyMapping_Keys(PyObject *o) {
     return UPCALL_CEXT_O(_jls_PyMapping_Keys, native_to_java(o));

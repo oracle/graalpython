@@ -163,8 +163,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -255,7 +253,6 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -1979,53 +1976,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyObject_Size", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @ImportStatic(SpecialMethodNames.class)
-    abstract static class PyObject_Size extends PythonUnaryBuiltinNode {
-
-        // n.b.: specializations 'doSequence' and 'doMapping' are not just shortcuts but also
-        // required for correctness because CPython's implementation uses
-        // 'type->tp_as_sequence->sq_length', 'type->tp_as_mapping->mp_length' which will bypass
-        // any
-        // user implementation of '__len__'.
-        @Specialization
-        static int doSequence(PSequence sequence,
-                        @Cached SequenceNodes.LenNode seqLenNode) {
-            return seqLenNode.execute(sequence);
-        }
-
-        @Specialization
-        static int doMapping(PHashingCollection container,
-                        @Cached HashingCollectionNodes.LenNode seqLenNode) {
-            return seqLenNode.execute(container);
-        }
-
-        @Specialization(guards = "!isMappingOrSequence(obj)")
-        static Object doGenericUnboxed(VirtualFrame frame, Object obj,
-                        @Cached("create(Len)") LookupAndCallUnaryNode callLenNode,
-                        @Cached ConditionProfile noLenProfile,
-                        @Cached CastToNativeLongNode castToLongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object result = callLenNode.executeObject(frame, obj);
-                if (noLenProfile.profile(result == PNone.NO_VALUE)) {
-                    return -1;
-                }
-                Object lresult = castToLongNode.execute(result);
-                assert lresult instanceof Long || lresult instanceof PythonNativeVoidPtr;
-                return lresult;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
-            }
-        }
-
-        protected static boolean isMappingOrSequence(Object obj) {
-            return obj instanceof PSequence || obj instanceof PHashingCollection;
-        }
-    }
-    
     @ReportPolymorphism
     abstract static class CastArgsNode extends Node {
 
