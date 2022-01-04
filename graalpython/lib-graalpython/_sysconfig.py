@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -110,4 +110,8 @@ def _get_posix_vars():
     g['VERSION'] = get_python_version()
     g['Py_HASH_ALGORITHM'] = 0 # does not give any specific info about the hashing algorithm
     g['NM'] = __graalpython__.get_toolchain_tool_path('NM')
+    g['MULTIARCH'] = sys.implementation._multiarch
+    g['ABIFLAGS'] = ""
+    g['Py_DEBUG'] = 0
+    g['Py_ENABLE_SHARED'] = 0
     return g
