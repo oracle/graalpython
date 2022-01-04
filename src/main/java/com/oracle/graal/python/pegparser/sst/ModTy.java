@@ -42,6 +42,10 @@
 package com.oracle.graal.python.pegparser.sst;
 
 public abstract class ModTy extends SSTNode {
+    ModTy(int startOffset, int endOffset) {
+        super(startOffset, endOffset);
+    }
+
     public static final class TypeIgnore extends SSTNode {
         final String tag;
 
@@ -60,7 +64,8 @@ public abstract class ModTy extends SSTNode {
         final StmtTy[] body;
         final TypeIgnore[] typeIgnores;
 
-        Module(StmtTy[] body, TypeIgnore[] typeIgnores) {
+        public Module(StmtTy[] body, TypeIgnore[] typeIgnores, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
             this.body = body;
             this.typeIgnores = typeIgnores;
         }
@@ -74,7 +79,8 @@ public abstract class ModTy extends SSTNode {
     public static final class Interactive extends ModTy {
         final StmtTy[] body;
 
-        Interactive(StmtTy[] body) {
+        public Interactive(StmtTy[] body, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
             this.body = body;
         }
 
@@ -87,7 +93,8 @@ public abstract class ModTy extends SSTNode {
     public static final class Expression extends ModTy {
         final ExprTy body;
 
-        Expression(ExprTy body) {
+        public Expression(ExprTy body, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
             this.body = body;
         }
 
@@ -101,7 +108,8 @@ public abstract class ModTy extends SSTNode {
         final ExprTy[] argTypes;
         final ExprTy returns;
 
-        FunctionType(ExprTy[] argTypes, ExprTy returns) {
+        public FunctionType(ExprTy[] argTypes, ExprTy returns, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
             this.argTypes = argTypes;
             this.returns = returns;
         }

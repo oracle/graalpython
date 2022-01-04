@@ -42,13 +42,13 @@
 package com.oracle.graal.python.pegparser.sst;
 
 public final class ArgumentsTy extends SSTNode {
-    final ArgTy[] posOnlyArgs;
-    final ArgTy[] args;
-    final ArgTy varArg;
-    final ArgTy[] kwOnlyArgs;
-    final ExprTy[] kwDefaults;
-    final ArgTy kwArg;
-    final ExprTy[] defaults;
+    public final ArgTy[] posOnlyArgs;
+    public final ArgTy[] args;
+    public final ArgTy varArg;
+    public final ArgTy[] kwOnlyArgs;
+    public final ExprTy[] kwDefaults;
+    public final ArgTy kwArg;
+    public final ExprTy[] defaults;
 
     public ArgumentsTy(ArgTy[] posOnlyArgs, ArgTy[] args, ArgTy varArg, ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults, ArgTy kwArg, ExprTy[] defaults, int startOffset, int endOffset) {
         super(startOffset, endOffset);

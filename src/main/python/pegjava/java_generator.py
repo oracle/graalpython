@@ -98,10 +98,13 @@ class FunctionCall:
 # TODO this is temporary solution until all types in the grammar will not be java types
 def _check_type(self, ttype: str) -> str:
     self._type_conversions = getattr(self, "_type_conversions", {})
+
     if (
             ttype and
             type(ttype) == str and
             "Token" not in ttype and
+            "StmtTy" not in ttype and
+            "ExprTy" not in ttype and
             "SSTNode" not in ttype and
             "Object" not in ttype and
             "ArgDefListBuilder" not in ttype
@@ -688,7 +691,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print(")")
 
     def emit_action(self, node: Alt, cleanup_code: Optional[str] = None) -> None:
-        node_action = str(node.action).replace(' ', '').replace ('newSST', 'new SST')
+        node_action = str(node.action).replace(' ', '').replace ('new', 'new ')
         # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
         if (node_action.startswith('factory') or
             node_action.startswith('new') or

@@ -43,9 +43,9 @@ package com.oracle.graal.python.pegparser.sst;
 
 
 public final class ArgTy extends SSTNode {
-    final String arg;
-    final ExprTy annotation;
-    final String typeComment;
+    public final String arg;
+    public final ExprTy annotation;
+    public final String typeComment;
 
     public ArgTy(String arg, ExprTy annotation, String typeComment, int startOffset, int endOffset) {
         super(startOffset, endOffset);

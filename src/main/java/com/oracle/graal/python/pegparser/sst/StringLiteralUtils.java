@@ -54,106 +54,8 @@ import java.util.Locale;
 import java.util.Map;
 
 
-public abstract class StringLiteralSSTNode extends SSTNode {
-    private static final SSTNode[] EMPTY_SST_ARRAY = new SSTNode[0];
-
-    private StringLiteralSSTNode(int start, int end) {
-        super(start, end);
-    }
-
-    public static final class RawStringLiteralSSTNode extends StringLiteralSSTNode {
-        protected String value;
-
-        public RawStringLiteralSSTNode(String value, int startIndex, int endIndex) {
-            super(startIndex, endIndex);
-            this.value = value;
-        }
-
-        @Override
-        public <T> T accept(SSTreeVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
-
-    public static final class BytesLiteralSSTNode extends StringLiteralSSTNode {
-        protected byte[] value;
-
-        protected BytesLiteralSSTNode(byte[] value, int startIndex, int endIndex) {
-            super(startIndex, endIndex);
-            this.value = value;
-        }
-
-        @Override
-        public <T> T accept(SSTreeVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-    }
-
-    private enum FormatStringConversionType {
-        STR_CONVERTION,
-        REPR_CONVERSION,
-        ASCII_CONVERSION,
-        NO_CONVERSION
-    }
-
-    public static final class FormatExpressionSSTNode extends StringLiteralSSTNode {
-        protected final String expressionCode;
-        protected final SSTNode expression;
-        protected final SSTNode specifier;
-        protected final FormatStringConversionType conversionType;
-
-        protected FormatExpressionSSTNode(String expressionCode, SSTNode expression, SSTNode specifier, FormatStringConversionType conversionType, int startIndex, int endIndex) {
-            super(startIndex, endIndex);
-            this.expressionCode = expressionCode;
-            this.expression = expression;
-            this.specifier = specifier;
-            this.conversionType = conversionType;
-        }
-
-        @Override
-        public <T> T accept(SSTreeVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-
-        public String getExpressionCode() {
-            return expressionCode;
-        }
-
-        public SSTNode getExpression() {
-            return expression;
-        }
-
-        public SSTNode getSpecifier() {
-            return specifier;
-        }
-
-        public FormatStringConversionType getConversionType() {
-            return conversionType;
-        }
-
-    }
-
-    public static final class FormatStringLiteralSSTNode extends StringLiteralSSTNode {
-        protected final SSTNode[] parts;
-
-        protected FormatStringLiteralSSTNode(SSTNode[] parts, int startIndex, int endIndex) {
-            super(startIndex, endIndex);
-            this.parts = parts;
-        }
-
-        @Override
-        public <T> T accept(SSTreeVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-
-        public SSTNode[] getParts() {
-            return parts;
-        }
-    }
+public abstract class StringLiteralUtils {
+    private static final ExprTy[] EMPTY_SST_ARRAY = new ExprTy[0];
 
     private static final String CANNOT_MIX_MESSAGE = "cannot mix bytes and nonbytes literals";
 
@@ -177,11 +79,11 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         }
     }
 
-    public static StringLiteralSSTNode create(String[] values, int startOffset, int endOffset, NodeFactory nodeFactory, FExprParser exprParser, ParserErrorCallback errorCallback) {
+    public static ExprTy createStringLiteral(String[] values, int startOffset, int endOffset, NodeFactory nodeFactory, FExprParser exprParser, ParserErrorCallback errorCallback) {
         StringBuilder sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
-        ArrayList<SSTNode> formatStringParts = null;
+        ArrayList<ExprTy> formatStringParts = null;
         int startPartOffsetInValues = 0;
         int endPartOffsetInValues = 0;
         int sbStartOffset = 0;
@@ -228,11 +130,11 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                 if (sb != null || isFormatString) {
                     errorCallback.onError(startOffset, endOffset, CANNOT_MIX_MESSAGE);
                     if (sb != null) {
-                        return new RawStringLiteralSSTNode(sb.toString(), startOffset, endOffset);
+                        return new ExprTy.Constant(sb.toString(), ExprTy.Constant.Kind.RAW, startOffset, endOffset);
                     } else if (bb != null) {
-                        return new BytesLiteralSSTNode(bb.build(), startOffset, endOffset);
+                        return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, startOffset, endOffset);
                     } else {
-                        return new BytesLiteralSSTNode(text.getBytes(), startOffset, endOffset);
+                        return new ExprTy.Constant(text.getBytes(), ExprTy.Constant.Kind.BYTES, startOffset, endOffset);
                     }
                 }
                 if (bb == null) {
@@ -246,7 +148,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
             } else {
                 if (bb != null) {
                     errorCallback.onError(startOffset, endOffset, CANNOT_MIX_MESSAGE);
-                    return new BytesLiteralSSTNode(bb.build(), startOffset, endOffset);
+                    return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, startOffset, endOffset);
                 }
                 if (!isRaw && !isFormat) {
                     text = unescapeString(startOffset + startPartOffsetInValues, startOffset + endPartOffsetInValues, errorCallback, text);
@@ -261,7 +163,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                         if (!isRaw) {
                             part = unescapeString(startOffset + sbStartOffset, startOffset + sbEndOffset, errorCallback, part);
                         }
-                        formatStringParts.add(new RawStringLiteralSSTNode(part, startOffset + sbStartOffset, startOffset + sbEndOffset));
+                        formatStringParts.add(new ExprTy.Constant(part, ExprTy.Constant.Kind.RAW, startOffset + sbStartOffset, startOffset + sbEndOffset));
                         sb = null;
                     }
 
@@ -279,17 +181,17 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         }
 
         if (bb != null) {
-            return new BytesLiteralSSTNode(bb.build(), startOffset, endOffset);
+            return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, startOffset, endOffset);
         } else if (isFormatString) {
             assert formatStringParts != null; // guaranteed due to how isFormatString is set
             if (sb != null && sb.length() > 0) {
                 String part = sb.toString();
-                formatStringParts.add(new RawStringLiteralSSTNode(part, startOffset + sbStartOffset, startOffset + endPartOffsetInValues));
+                formatStringParts.add(new ExprTy.Constant(part, ExprTy.Constant.Kind.RAW, startOffset + sbStartOffset, startOffset + endPartOffsetInValues));
             }
-            SSTNode[] formatParts = formatStringParts.toArray(EMPTY_SST_ARRAY);
-            return new FormatStringLiteralSSTNode(formatParts, startOffset, endOffset);
+            ExprTy[] formatParts = formatStringParts.toArray(EMPTY_SST_ARRAY);
+            return new ExprTy.JoinedStr(formatParts, startOffset, endOffset);
         }
-        return new RawStringLiteralSSTNode(sb == null ? "" : sb.toString(), startOffset, endOffset);
+        return new ExprTy.Constant(sb == null ? "" : sb.toString(), ExprTy.Constant.Kind.RAW, startOffset, endOffset);
     }
 
     private static final class FormatStringParser {
@@ -342,22 +244,22 @@ public abstract class StringLiteralSSTNode extends SSTNode {
             }
         }
 
-        private static SSTNode createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource, NodeFactory nodeFactory, ParserErrorCallback errorCallback, FExprParser exprParser) {
+        private static ExprTy createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource, NodeFactory nodeFactory, ParserErrorCallback errorCallback, FExprParser exprParser) {
             Token token = tokens.get(tokenIndex);
             String code = text.substring(token.startIndex, token.endIndex);
             if (token.type == TOKEN_TYPE_STRING) {
                 if (!isRawString) {
                     code = unescapeString(textOffsetInSource, textOffsetInSource + code.length(), errorCallback, code);
                 }
-                return new StringLiteralSSTNode.RawStringLiteralSSTNode(code, textOffsetInSource + token.startIndex, textOffsetInSource + token.endIndex);
+                return new ExprTy.Constant(code, ExprTy.Constant.Kind.RAW, textOffsetInSource + token.startIndex, textOffsetInSource + token.endIndex);
             }
             int specTokensCount = token.formatTokensCount;
             // the expression has to be wrapped in ()
             code = "(" + code + ")";
-            SSTNode expression = exprParser.parse(code); // TODO: pass isInteractive flag
-            SSTNode specifier = null;
+            ExprTy expression = exprParser.parse(code); // TODO: pass isInteractive flag
+            ExprTy specifier = null;
             if (specTokensCount > 0) {
-                SSTNode[] specifierParts = new SSTNode[specTokensCount];
+                ExprTy[] specifierParts = new ExprTy[specTokensCount];
                 int specifierTokenStartIndex = tokenIndex + 1;
                 Token specToken = tokens.get(specifierTokenStartIndex);
                 int specifierStartOffset = textOffsetInSource + tokens.get(specifierTokenStartIndex).startIndex - ((specToken != null && specToken.type != TOKEN_TYPE_STRING) ? 1 : 0);
@@ -379,34 +281,34 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                 if (specToken != null) {
                     specifierEndOffset = textOffsetInSource + specToken.endIndex + (specToken.type != TOKEN_TYPE_STRING ? 1 : 0);
                 }
-                specifier = new StringLiteralSSTNode.FormatStringLiteralSSTNode(specifierParts, specifierStartOffset, specifierEndOffset);
+                specifier = new ExprTy.JoinedStr(specifierParts, specifierStartOffset, specifierEndOffset);
             }
-            StringLiteralSSTNode.FormatStringConversionType conversionType;
+            ExprTy.FormattedValue.ConversionType conversionType;
             switch (token.type) {
             case TOKEN_TYPE_EXPRESSION_STR:
-                conversionType = StringLiteralSSTNode.FormatStringConversionType.STR_CONVERTION;
+                conversionType = ExprTy.FormattedValue.ConversionType.STR;
                 break;
             case TOKEN_TYPE_EXPRESSION_REPR:
-                conversionType = StringLiteralSSTNode.FormatStringConversionType.REPR_CONVERSION;
+                conversionType = ExprTy.FormattedValue.ConversionType.REPR;
                 break;
             case TOKEN_TYPE_EXPRESSION_ASCII:
-                conversionType = StringLiteralSSTNode.FormatStringConversionType.ASCII_CONVERSION;
+                conversionType = ExprTy.FormattedValue.ConversionType.ASCII;
                 break;
             default:
-                conversionType = StringLiteralSSTNode.FormatStringConversionType.NO_CONVERSION;
+                conversionType = ExprTy.FormattedValue.ConversionType.NONE;
             }
             int endOffset = specifier == null ? textOffsetInSource + token.endIndex : specifier.endOffset;
-            if (conversionType != StringLiteralSSTNode.FormatStringConversionType.NO_CONVERSION) {
+            if (conversionType != ExprTy.FormattedValue.ConversionType.NONE) {
                 endOffset = endOffset + 2;
             }
-            return new StringLiteralSSTNode.FormatExpressionSSTNode(code, expression, specifier, conversionType, textOffsetInSource + token.startIndex, endOffset);
+            return new ExprTy.FormattedValue(expression, conversionType, specifier, textOffsetInSource + token.startIndex, endOffset);
         }
 
         /**
-         * Parses f-string into an array of SSTNodes. The nodes can be RawStringLiteralSSTNode or
-         * FormatExpressionSSTNode.
+         * Parses f-string into an array of {@link ExprTy}. The nodes can end up being {@link
+         * ExprTy.Constant} or {@link ExprTy.FormattedValue}.
          */
-        public static void parse(ArrayList<SSTNode> formatStringParts, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource, NodeFactory nodeFactory, FExprParser exprParser, ParserErrorCallback errorCallback) {
+        public static void parse(ArrayList<ExprTy> formatStringParts, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource, NodeFactory nodeFactory, FExprParser exprParser, ParserErrorCallback errorCallback) {
             int estimatedTokensCount = 1;
             for (int i = 0; i < text.length(); i++) {
                 char c = text.charAt(i);
@@ -431,7 +333,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
 
             while (tokenIndex < tokens.size()) {
                 token = tokens.get(tokenIndex);
-                SSTNode part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, isRawString, partOffsetInSource, textOffsetInSource, nodeFactory, errorCallback, exprParser);
+                ExprTy part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, isRawString, partOffsetInSource, textOffsetInSource, nodeFactory, errorCallback, exprParser);
                 formatStringParts.add(part);
                 tokenIndex = tokenIndex + 1 + token.formatTokensCount;
             }

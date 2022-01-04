@@ -42,143 +42,160 @@
 package com.oracle.graal.python.pegparser.sst;
 
 public interface SSTreeVisitor<T> {
-    T visit(ExprTy.BoolOp aThis);
+    default <T> T visitSequence(SSTNode[] sequence) {
+        if (sequence != null) {
+            for (SSTNode n : sequence) {
+                n.accept(this);
+            }
+        }
+        return null;
+    }
 
-    T visit(ExprTy.NamedExpr aThis);
+    T visit(AliasTy node);
 
-    T visit(ExprTy.BinOp aThis);
+    T visit(ArgTy node);
 
-    T visit(ExprTy.UnaryOp aThis);
+    T visit(ArgumentsTy node);
 
-    T visit(ArgTy aThis);
+    T visit(ComprehensionTy aThis);
 
-    T visit(ArgumentsTy aThis);
+    T visit(ExprTy.Attribute node);
 
-    T visit(ExprTy.Lambda aThis);
+    T visit(ExprTy.Await node);
 
-    T visit(ExprTy.IfExp aThis);
+    T visit(ExprTy.BinOp node);
 
-    T visit(ExprTy.Dict aThis);
+    T visit(ExprTy.BoolOp node);
 
-    T visit(ExprTy.Set aThis);
+    T visit(ExprTy.Call node);
 
-    T visit(ExprTy.ListComp aThis);
+    T visit(ExprTy.Compare node);
 
-    T visit(ExprTy.SetComp aThis);
+    T visit(ExprTy.Constant node);
 
-    T visit(ExprTy.DictComp aThis);
+    T visit(ExprTy.Dict node);
 
-    T visit(ExprTy.GeneratorExp aThis);
+    T visit(ExprTy.DictComp node);
 
-    T visit(ExprTy.Await aThis);
+    T visit(ExprTy.FormattedValue node);
 
-    T visit(ExprTy.Yield aThis);
+    T visit(ExprTy.GeneratorExp node);
 
-    T visit(ExprTy.YieldFrom aThis);
+    T visit(ExprTy.IfExp node);
 
-    T visit(ExprTy.Compare aThis);
+    T visit(ExprTy.JoinedStr node);
 
-    T visit(KeywordTy aThis);
+    T visit(ExprTy.Lambda node);
 
-    T visit(ExprTy.FormattedValue aThis);
+    T visit(ExprTy.List node);
 
-    T visit(ExprTy.JoinedStr aThis);
+    T visit(ExprTy.ListComp node);
 
-    T visit(ExprTy.Constant aThis);
+    T visit(ExprTy.Name node);
 
-    T visit(ExprTy.Attribute aThis);
+    T visit(ExprTy.NamedExpr node);
 
-    T visit(ExprTy.Subscript aThis);
+    T visit(ExprTy.Set node);
 
-    T visit(ExprTy.Starred aThis);
+    T visit(ExprTy.SetComp node);
 
-    T visit(ExprTy.Name aThis);
+    T visit(ExprTy.Slice node);
 
-    T visit(ExprTy.List aThis);
+    T visit(ExprTy.Starred node);
 
-    T visit(ExprTy.Tuple aThis);
+    T visit(ExprTy.Subscript node);
 
-    T visit(ExprTy.Slice aThis);
+    T visit(ExprTy.Tuple node);
 
-    T visit(ExprTy.Call aThis);
+    T visit(ExprTy.UnaryOp node);
 
-    T visit(StmtTy.FunctionDef aThis);
+    T visit(ExprTy.Yield node);
 
-    T visit(StmtTy.AsyncFunctionDef aThis);
+    T visit(ExprTy.YieldFrom node);
 
-    T visit(StmtTy.ClassDef aThis);
+    T visit(KeywordTy node);
 
-    T visit(StmtTy.Return aThis);
+    T visit(ModTy.Expression node);
 
-    T visit(StmtTy.Delete aThis);
+    T visit(ModTy.FunctionType node);
 
-    T visit(StmtTy.Assign aThis);
+    T visit(ModTy.Interactive node);
 
-    T visit(StmtTy.AugAssign aThis);
+    T visit(ModTy.Module node);
 
-    T visit(StmtTy.AnnAssign aThis);
+    T visit(ModTy.TypeIgnore node);
 
-    T visit(StmtTy.For aThis);
+    T visit(StmtTy.AnnAssign node);
 
-    T visit(StmtTy.AsyncFor aThis);
+    T visit(StmtTy.Assert node);
 
-    T visit(StmtTy.While aThis);
+    T visit(StmtTy.Assign node);
 
-    T visit(StmtTy.If aThis);
+    T visit(StmtTy.AsyncFor node);
 
-    T visit(StmtTy.With.Item aThis);
+    T visit(StmtTy.AsyncFunctionDef node);
 
-    T visit(StmtTy.With aThis);
+    T visit(StmtTy.AsyncWith node);
 
-    T visit(StmtTy.AsyncWith aThis);
+    T visit(StmtTy.AugAssign node);
 
-    T visit(StmtTy.Match aThis);
+    T visit(StmtTy.ClassDef node);
 
-    T visit(StmtTy.Match.Case aThis);
+    T visit(StmtTy.Delete node);
 
-    T visit(StmtTy.Match.Pattern.MatchValue aThis);
+    T visit(StmtTy.Expr node);
 
-    T visit(StmtTy.Match.Pattern.MatchSingleton aThis);
+    T visit(StmtTy.For node);
 
-    T visit(StmtTy.Match.Pattern.MatchSequence aThis);
+    T visit(StmtTy.FunctionDef node);
 
-    T visit(StmtTy.Match.Pattern.MatchMapping aThis);
+    T visit(StmtTy.Global node);
 
-    T visit(StmtTy.Match.Pattern.MatchClass aThis);
+    T visit(StmtTy.If node);
 
-    T visit(StmtTy.Match.Pattern.MatchStar aThis);
+    T visit(StmtTy.Import node);
 
-    T visit(StmtTy.Match.Pattern.MatchAs aThis);
+    T visit(StmtTy.ImportFrom node);
 
-    T visit(StmtTy.Match.Pattern.MatchOr aThis);
+    T visit(StmtTy.Match node);
 
-    T visit(StmtTy.Raise aThis);
+    T visit(StmtTy.Match.Case node);
 
-    T visit(StmtTy.Try.ExceptHandler aThis);
+    T visit(StmtTy.Match.Pattern.MatchAs node);
 
-    T visit(StmtTy.Try aThis);
+    T visit(StmtTy.Match.Pattern.MatchClass node);
 
-    T visit(StmtTy.Assert aThis);
+    T visit(StmtTy.Match.Pattern.MatchMapping node);
 
-    T visit(AliasTy aThis);
+    T visit(StmtTy.Match.Pattern.MatchOr node);
 
-    T visit(StmtTy.Import aThis);
+    T visit(StmtTy.Match.Pattern.MatchSequence node);
 
-    T visit(StmtTy.ImportFrom aThis);
+    T visit(StmtTy.Match.Pattern.MatchSingleton node);
 
-    T visit(StmtTy.Global aThis);
+    T visit(StmtTy.Match.Pattern.MatchStar node);
 
-    T visit(StmtTy.NonLocal aThis);
+    T visit(StmtTy.Match.Pattern.MatchValue node);
 
-    T visit(StmtTy.Expr aThis);
+    T visit(StmtTy.NonLocal node);
 
-    T visit(ModTy.TypeIgnore aThis);
+    T visit(StmtTy.Raise node);
 
-    T visit(ModTy.Module aThis);
+    T visit(StmtTy.Return node);
 
-    T visit(ModTy.Interactive aThis);
+    T visit(StmtTy.Try node);
 
-    T visit(ModTy.Expression aThis);
+    T visit(StmtTy.Try.ExceptHandler node);
 
-    T visit(ModTy.FunctionType aThis);
+    T visit(StmtTy.While node);
+
+    T visit(StmtTy.With node);
+
+    T visit(StmtTy.With.Item node);
+
+    T visit(StmtTy.Break aThis);
+
+    T visit(StmtTy.Continue aThis);
+
+    T visit(StmtTy.Pass aThis);
 }

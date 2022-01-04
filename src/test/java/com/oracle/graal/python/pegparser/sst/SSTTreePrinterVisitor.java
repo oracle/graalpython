@@ -405,22 +405,22 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
     }
 
     @Override
-    public String visit(StringLiteralSSTNode.RawStringLiteralSSTNode node) {
+    public String visit(StringLiteralUtils.RawStringLiteralSSTNode node) {
         return addHeader(node);
     }
 
     @Override
-    public String visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
+    public String visit(StringLiteralUtils.BytesLiteralSSTNode node) {
         return addHeader(node);
     }
 
     @Override
-    public String visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
+    public String visit(StringLiteralUtils.FormatExpressionSSTNode node) {
         return addHeader(node);
     }
 
     @Override
-    public String visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
+    public String visit(StringLiteralUtils.FormatStringLiteralSSTNode node) {
         return addHeader(node);
     }
 

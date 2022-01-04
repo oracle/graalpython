@@ -59,8 +59,8 @@ public abstract class ExprTy extends SSTNode {
             And, Or;
         }
 
-        final Type op;
-        final ExprTy[] values;
+        public final Type op;
+        public final ExprTy[] values;
 
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
@@ -69,8 +69,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class NamedExpr extends ExprTy {
-        final ExprTy target;
-        final ExprTy value;
+        public final ExprTy target;
+        public final ExprTy value;
 
         public NamedExpr(ExprTy target, ExprTy value, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -86,14 +86,14 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class BinOp extends ExprTy {
         public static enum Operator {
-            Add, Sub, Mult, MatMult, Div, Mod, Pow,
-            LShift, RShift, BitOr, BitXor, BitAnd,
-            FloorDiv;
+            ADD, SUB, MULT, MATMULT, DIV, MOD, POW,
+            LSHIFT, RSHIFT, BITOR, BITXOR, BITAND,
+            FLOORDIV;
         }
 
-        final ExprTy left;
-        final Operator op;
-        final ExprTy right;
+        public final ExprTy left;
+        public final Operator op;
+        public final ExprTy right;
 
         public BinOp(ExprTy left, Operator op, ExprTy right, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -113,8 +113,8 @@ public abstract class ExprTy extends SSTNode {
             Invert, Not, UAdd, USub;
         }
 
-        final Operator op;
-        final ExprTy operand;
+        public final Operator op;
+        public final ExprTy operand;
 
         public UnaryOp(Operator op, ExprTy operand, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -129,8 +129,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Lambda extends ExprTy {
-        final ArgumentsTy args;
-        final ExprTy body;
+        public final ArgumentsTy args;
+        public final ExprTy body;
 
         public Lambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -145,9 +145,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class IfExp extends ExprTy {
-        final ExprTy test;
-        final ExprTy body;
-        final ExprTy orElse;
+        public final ExprTy test;
+        public final ExprTy body;
+        public final ExprTy orElse;
 
         public IfExp(ExprTy test, ExprTy body, ExprTy orElse, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -163,8 +163,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Dict extends ExprTy {
-        final ExprTy[] keys;
-        final ExprTy[] values;
+        public final ExprTy[] keys;
+        public final ExprTy[] values;
 
         public Dict(ExprTy[] keys, ExprTy[] values, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -179,7 +179,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Set extends ExprTy {
-        final ExprTy[] elements;
+        public final ExprTy[] elements;
 
         public Set(ExprTy[] elements, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -193,8 +193,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class ListComp extends ExprTy {
-        final ExprTy element;
-        final ComprehensionTy[] generators;
+        public final ExprTy element;
+        public final ComprehensionTy[] generators;
 
         public ListComp(ExprTy element, ComprehensionTy[] generators, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -209,8 +209,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class SetComp extends ExprTy {
-        final ExprTy element;
-        final ComprehensionTy[] generators;
+        public final ExprTy element;
+        public final ComprehensionTy[] generators;
 
         public SetComp(ExprTy element, ComprehensionTy[] generators, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -225,9 +225,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class DictComp extends ExprTy {
-        final ExprTy key;
-        final ExprTy value;
-        final ComprehensionTy[] generators;
+        public final ExprTy key;
+        public final ExprTy value;
+        public final ComprehensionTy[] generators;
 
         public DictComp(ExprTy key, ExprTy value, ComprehensionTy[] generators, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -243,8 +243,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class GeneratorExp extends ExprTy {
-        final ExprTy element;
-        final ComprehensionTy[] generators;
+        public final ExprTy element;
+        public final ComprehensionTy[] generators;
 
         public GeneratorExp(ExprTy element, ComprehensionTy[] generators, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -259,7 +259,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Await extends ExprTy {
-        final ExprTy value;
+        public final ExprTy value;
 
         public Await(ExprTy value, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -273,7 +273,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Yield extends ExprTy {
-        final ExprTy value;
+        public final ExprTy value;
 
         public Yield(ExprTy value, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -287,7 +287,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class YieldFrom extends ExprTy {
-        final ExprTy value;
+        public final ExprTy value;
 
         public YieldFrom(ExprTy value, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -306,9 +306,9 @@ public abstract class ExprTy extends SSTNode {
             In, NotIn;
         }
 
-        final ExprTy left;
-        final Operator[] ops;
-        final ExprTy[] comparators;
+        public final ExprTy left;
+        public final Operator[] ops;
+        public final ExprTy[] comparators;
 
         public Compare(ExprTy left, Operator[] ops, ExprTy[] comparators, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -324,9 +324,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Call extends ExprTy {
-        final ExprTy func;
-        final ExprTy[] args;
-        final KeywordTy[] keywords;
+        public final ExprTy func;
+        public final ExprTy[] args;
+        public final KeywordTy[] keywords;
 
         public Call(ExprTy func, ExprTy[] args, KeywordTy[] keywords, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -342,11 +342,18 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class FormattedValue extends ExprTy {
-        final ExprTy value;
-        final int conversion;
-        final ExprTy formatSpec;
+        public enum ConversionType {
+            STR,
+            REPR,
+            ASCII,
+            NONE;
+        }
 
-        public FormattedValue(ExprTy value, int conversion, ExprTy formatSpec, int startOffset, int endOffset) {
+        public final ExprTy value;
+        public final ConversionType conversion;
+        public final ExprTy formatSpec;
+
+        public FormattedValue(ExprTy value, ConversionType conversion, ExprTy formatSpec, int startOffset, int endOffset) {
             super(startOffset, endOffset);
             this.value = value;
             this.conversion = conversion;
@@ -360,7 +367,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class JoinedStr extends ExprTy {
-        final ExprTy[] values;
+        public final ExprTy[] values;
 
         public JoinedStr(ExprTy[] values, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -374,12 +381,32 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Constant extends ExprTy {
-        final Object value;
-        final String kind;
+        public static enum Kind {
+            NONE,
+            ELLIPSIS,
+            BOOLEAN,
+            LONG,
+            DOUBLE,
+            BIGINTEGER,
+            RAW,
+            BYTES;
+        }
 
-        public Constant(Object value, String kind, int startOffset, int endOffset) {
+        public final Object value;
+        public final long longValue;
+        public final Kind kind;
+
+        public Constant(Object value, Kind kind, int startOffset, int endOffset) {
             super(startOffset, endOffset);
             this.value = value;
+            this.longValue = 0;
+            this.kind = kind;
+        }
+
+        public Constant(long longValue, Kind kind, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+            this.value = null;
+            this.longValue = longValue;
             this.kind = kind;
         }
 
@@ -390,9 +417,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Attribute extends ExprTy {
-        final ExprTy value;
-        final String attr;
-        final ExprContext context;
+        public final ExprTy value;
+        public final String attr;
+        public final ExprContext context;
 
         public Attribute(ExprTy value, String attr, ExprContext context, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -408,9 +435,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Subscript extends ExprTy {
-        final ExprTy value;
-        final ExprTy slice;
-        final ExprContext context;
+        public final ExprTy value;
+        public final ExprTy slice;
+        public final ExprContext context;
 
         public Subscript(ExprTy value, ExprTy slice, ExprContext context, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -426,8 +453,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Starred extends ExprTy {
-        final ExprTy value;
-        final ExprContext context;
+        public final ExprTy value;
+        public final ExprContext context;
 
         public Starred(ExprTy value, ExprContext context, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -442,8 +469,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Name extends ExprTy {
-        final String id;
-        final ExprContext context;
+        public final String id;
+        public final ExprContext context;
 
         public Name(String id, ExprContext context, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -458,8 +485,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class List extends ExprTy {
-        final ExprTy[] elements;
-        final ExprContext context;
+        public final ExprTy[] elements;
+        public final ExprContext context;
 
         public List(ExprTy[] elements, ExprContext context, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -474,8 +501,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Tuple extends ExprTy {
-        final ExprTy[] elements;
-        final ExprContext context;
+        public final ExprTy[] elements;
+        public final ExprContext context;
 
         public Tuple(ExprTy[] elements, ExprContext context, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -490,9 +517,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Slice extends ExprTy {
-        final ExprTy lower;
-        final ExprTy upper;
-        final ExprTy step;
+        public final ExprTy lower;
+        public final ExprTy upper;
+        public final ExprTy step;
 
         public Slice(ExprTy lower, ExprTy upper, ExprTy step, int startOffset, int endOffset) {
             super(startOffset, endOffset);

@@ -40,16 +40,11 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.sst.AnnotationSSTNode;
-import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
-import com.oracle.graal.python.pegparser.sst.ComparisonSSTNode;
-import com.oracle.graal.python.pegparser.sst.GetAttributeSSTNode;
-import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
+import com.oracle.graal.python.pegparser.sst.ArgTy;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
-import com.oracle.graal.python.pegparser.sst.StarSSTNode;
-import com.oracle.graal.python.pegparser.sst.SubscriptSSTNode;
+import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
-import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -70,7 +65,7 @@ abstract class AbstractParser {
 
     protected int level = 0;
     protected boolean callInvalidRules = false;
-    private VarLookupSSTNode cachedDummyName;
+    private ExprTy.Name cachedDummyName;
 
     protected final RuleResultCache<Object> cache = new RuleResultCache(this);
     protected final Map<Integer, String> comments = new LinkedHashMap<>();
@@ -205,7 +200,7 @@ abstract class AbstractParser {
     /**
      * _PyPegen_name_token
      */
-    public VarLookupSSTNode name_token() {
+    public ExprTy.Name name_token() {
         Token t = expect(Token.Kind.NAME);
         if (t != null) {
             return factory.createVariable(getText(t), t.startOffset, t.endOffset);
@@ -217,7 +212,7 @@ abstract class AbstractParser {
     /**
      * _PyPegen_expect_soft_keyword
      */
-    protected VarLookupSSTNode expect_SOFT_KEYWORD(String keyword) {
+    protected ExprTy.Name expect_SOFT_KEYWORD(String keyword) {
         Token t = tokenizer.peekToken();
         if (t.type == Token.Kind.NAME && getText(t).equals(keyword)) {
             tokenizer.getToken();
@@ -243,7 +238,7 @@ abstract class AbstractParser {
     /**
      * _PyPegen_number_token
      */
-    public NumberLiteralSSTNode number_token() {
+    public ExprTy number_token() {
         Token t = expect(Token.Kind.NUMBER);
         if (t != null) {
             return factory.createNumber(getText(t), t.startOffset, t.endOffset);
@@ -265,7 +260,7 @@ abstract class AbstractParser {
         return t;
     }
 
-    public VarLookupSSTNode name_from_token(Token t) {
+    public ExprTy.Name name_from_token(Token t) {
         if (t == null) {
             return null;
         }
@@ -276,7 +271,7 @@ abstract class AbstractParser {
     /**
      * _PyPegen_soft_keyword_token
      */
-    public VarLookupSSTNode soft_keyword_token() {
+    public ExprTy.Name soft_keyword_token() {
         Token t = expect(Token.Kind.NAME);
         if (t == null) {
             return null;
@@ -304,8 +299,8 @@ abstract class AbstractParser {
     /**
      * _PyPegen_join_names_with_dot
      */
-    public SSTNode joinNamesWithDot(VarLookupSSTNode a, VarLookupSSTNode b) {
-        String id = a.getName() + "." + b.getName();
+    public SSTNode joinNamesWithDot(ExprTy.Name a, ExprTy.Name b) {
+        String id = a.id + "." + b.id;
         return factory.createVariable(id, a.getStartOffset(), b.getEndOffset());
     }
 
@@ -423,35 +418,39 @@ abstract class AbstractParser {
      * includes an attempt with a symbol and a scope stream synchronized to the token stream, but
      * it doesn't really work with the pegen generator.
      */
-    protected SSTNode setExprContext(SSTNode node, ExprContext context) {
-        if (node instanceof VarLookupSSTNode) {
-            return factory.createVariable(((VarLookupSSTNode) node).getName(), node.getStartOffset(), node.getEndOffset(), context);
-        } else if (node instanceof CollectionSSTNode) {
-            CollectionSSTNode.Type type = ((CollectionSSTNode) node).getType();
-            if (type == CollectionSSTNode.Type.Tuple || type == CollectionSSTNode.Type.List) {
-                SSTNode[] values = ((CollectionSSTNode) node).getValues();
-                for (int i = 0; i < values.length; i++) {
-                    values[i] = setExprContext(values[i], context);
-                }
-                int start = node.getStartOffset();
-                int end = node.getEndOffset();
-                if (type == CollectionSSTNode.Type.Tuple) {
-                    return factory.createTuple(values, start, end);
-                } else {
-                    return factory.createList(values, start, end);
-                }
+    protected ExprTy setExprContext(ExprTy node, ExprContext context) {
+        if (node instanceof ExprTy.Name) {
+            return factory.createVariable(((ExprTy.Name) node).id, node.getStartOffset(), node.getEndOffset(), context);
+        } else if (node instanceof ExprTy.Tuple) {
+            ExprTy[] values = ((ExprTy.Tuple) node).elements;
+            for (int i = 0; i < values.length; i++) {
+                values[i] = setExprContext(values[i], context);
             }
-        } else if (node instanceof SubscriptSSTNode) {
-            return factory.createSubscript(setExprContext(((SubscriptSSTNode) node).getReceiver(), context),
-                            setExprContext(((SubscriptSSTNode) node).getSubscript(), context),
+            int start = node.getStartOffset();
+            int end = node.getEndOffset();
+            return factory.createTuple(values, context, start, end);
+        } else if (node instanceof ExprTy.List) {
+            ExprTy[] values = ((ExprTy.Tuple) node).elements;
+            for (int i = 0; i < values.length; i++) {
+                values[i] = setExprContext(values[i], context);
+            }
+            int start = node.getStartOffset();
+            int end = node.getEndOffset();
+            return factory.createList(values, context, start, end);
+        } else if (node instanceof ExprTy.Subscript) {
+            return factory.createSubscript(setExprContext(((ExprTy.Subscript) node).value, context),
+                            setExprContext(((ExprTy.Subscript) node).slice, context),
+                            context,
                             node.getStartOffset(), node.getEndOffset());
-        } else if (node instanceof GetAttributeSSTNode) {
-            return factory.createGetAttribute(setExprContext(((GetAttributeSSTNode) node).getReceiver(), context),
-                            ((GetAttributeSSTNode) node).getName(),
+        } else if (node instanceof ExprTy.Attribute) {
+            return factory.createGetAttribute(setExprContext(((ExprTy.Attribute) node).value, context),
+                            ((ExprTy.Attribute) node).attr,
+                            context,
                             node.getStartOffset(), node.getEndOffset());
-        } else if (node instanceof StarSSTNode) {
-            // todo
-            throw new RuntimeException("missing");
+        } else if (node instanceof ExprTy.Starred) {
+            return factory.createStarred(((ExprTy.Starred) node).value,
+                            context,
+                            node.getStartOffset(), node.getEndOffset());
         }
         return node;
     }
@@ -485,61 +484,61 @@ abstract class AbstractParser {
     // data where we need it.
 
     public static final class CmpopExprPair {
-        final ComparisonSSTNode op;
-        final SSTNode expr;
+        final ExprTy.Compare.Operator op;
+        final ExprTy expr;
 
-        CmpopExprPair(ComparisonSSTNode op, SSTNode expr) {
+        CmpopExprPair(ExprTy.Compare.Operator op, ExprTy expr) {
             this.op = op;
             this.expr = expr;
         }
     }
 
     public static final class KeyValuePair {
-        final SSTNode key;
-        final SSTNode value;
+        final ExprTy key;
+        final ExprTy value;
 
-        KeyValuePair(SSTNode key, SSTNode value) {
+        KeyValuePair(ExprTy key, ExprTy value) {
             this.key = key;
             this.value = value;
         }
     }
 
     public static final class KeyPatternPair {
-        final SSTNode key;
-        final SSTNode pattern;
+        final ExprTy key;
+        final StmtTy.Match.Pattern pattern;
 
-        KeyPatternPair(SSTNode key, SSTNode pattern) {
+        KeyPatternPair(ExprTy key, StmtTy.Match.Pattern pattern) {
             this.key = key;
             this.pattern = pattern;
         }
     }
 
     public static final class NameDefaultPair {
-        final SSTNode name;
-        final SSTNode def;
+        final ArgTy name;
+        final ExprTy def;
 
-        NameDefaultPair(SSTNode name, SSTNode def) {
+        NameDefaultPair(ArgTy name, ExprTy def) {
             this.name = name;
             this.def = def;
         }
     }
 
     public static final class SlashWithDefault {
-        final SSTNode[] plainNames;
+        final ArgTy[] plainNames;
         final NameDefaultPair[] namesWithDefaults;
 
-        SlashWithDefault(SSTNode[] plainNames, NameDefaultPair[] namesWithDefaults) {
+        SlashWithDefault(ArgTy[] plainNames, NameDefaultPair[] namesWithDefaults) {
             this.plainNames = plainNames;
             this.namesWithDefaults = namesWithDefaults;
         }
     }
 
     public static final class StarEtc {
-        final AnnotationSSTNode varArg;
+        final ArgTy varArg;
         final NameDefaultPair[] kwOnlyArgs;
-        final AnnotationSSTNode kwArg;
+        final ArgTy kwArg;
 
-        StarEtc(AnnotationSSTNode varArg, NameDefaultPair[] kwOnlyArgs, AnnotationSSTNode kwArg) {
+        StarEtc(ArgTy varArg, NameDefaultPair[] kwOnlyArgs, ArgTy kwArg) {
             this.varArg = varArg;
             this.kwOnlyArgs = kwOnlyArgs;
             this.kwArg = kwArg;

@@ -46,13 +46,46 @@ public abstract class StmtTy extends SSTNode {
         super(startOffset, endOffset);
     }
 
+    public static final class Pass extends StmtTy {
+        public Pass(int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class Break extends StmtTy {
+        public Break(int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class Continue extends StmtTy {
+        public Continue(int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
     public static class FunctionDef extends StmtTy {
-        final String name;
-        final ArgumentsTy args;
-        final StmtTy[] body;
-        final ExprTy[] decoratorList;
-        final ExprTy returns;
-        final String typeComment;
+        public final String name;
+        public final ArgumentsTy args;
+        public final StmtTy[] body;
+        public final ExprTy[] decoratorList;
+        public final ExprTy returns;
+        public final String typeComment;
 
         public FunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -82,11 +115,11 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class ClassDef extends StmtTy {
-        final String name;
-        final ExprTy[] bases;
-        final KeywordTy[] keywords;
-        final StmtTy[] body;
-        final ExprTy[] decoratorList;
+        public final String name;
+        public final ExprTy[] bases;
+        public final KeywordTy[] keywords;
+        public final StmtTy[] body;
+        public final ExprTy[] decoratorList;
 
         public ClassDef(String name, ExprTy[] bases, KeywordTy[] keywords, StmtTy[] body, ExprTy[] decoratorList, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -104,7 +137,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Return extends StmtTy {
-        final ExprTy value;
+        public final ExprTy value;
 
         public Return(ExprTy value, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -118,7 +151,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Delete extends StmtTy {
-        final ExprTy[] targets;
+        public final ExprTy[] targets;
 
         public Delete(ExprTy[] targets, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -132,9 +165,9 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Assign extends StmtTy {
-        final ExprTy[] targets;
-        final ExprTy value;
-        final String typeComment;
+        public final ExprTy[] targets;
+        public final ExprTy value;
+        public final String typeComment;
 
         public Assign(ExprTy[] targets, ExprTy value, String typeComment, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -150,9 +183,9 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class AugAssign extends StmtTy {
-        final ExprTy target;
-        final ExprTy.BinOp.Operator op;
-        final ExprTy value;
+        public final ExprTy target;
+        public final ExprTy.BinOp.Operator op;
+        public final ExprTy value;
 
         public AugAssign(ExprTy target, ExprTy.BinOp.Operator op, ExprTy value, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -168,10 +201,10 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class AnnAssign extends StmtTy {
-        final ExprTy target;
-        final ExprTy annotation;
-        final ExprTy value;
-        final boolean isSimple;
+        public final ExprTy target;
+        public final ExprTy annotation;
+        public final ExprTy value;
+        public final boolean isSimple;
 
         public AnnAssign(ExprTy target, ExprTy annotation, ExprTy value, boolean isSimple, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -188,11 +221,11 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static class For extends StmtTy {
-        final ExprTy target;
-        final ExprTy iter;
-        final StmtTy[] body;
-        final StmtTy[] orElse;
-        final String typeComment;
+        public final ExprTy target;
+        public final ExprTy iter;
+        public final StmtTy[] body;
+        public final StmtTy[] orElse;
+        public final String typeComment;
 
         public For(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, String typeComment, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -221,9 +254,9 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class While extends StmtTy {
-        final ExprTy test;
-        final StmtTy[] body;
-        final StmtTy[] orElse;
+        public final ExprTy test;
+        public final StmtTy[] body;
+        public final StmtTy[] orElse;
 
         public While(ExprTy test, StmtTy[] body, StmtTy[] orElse, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -239,9 +272,9 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class If extends StmtTy {
-        final ExprTy test;
-        final StmtTy[] body;
-        final StmtTy[] orElse;
+        public final ExprTy test;
+        public final StmtTy[] body;
+        public final StmtTy[] orElse;
 
         public If(ExprTy test, StmtTy[] body, StmtTy[] orElse, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -258,8 +291,8 @@ public abstract class StmtTy extends SSTNode {
 
     public static class With extends StmtTy {
         public static final class Item extends SSTNode {
-            final ExprTy contextExpr;
-            final ExprTy optionalVars;
+            public final ExprTy contextExpr;
+            public final ExprTy optionalVars;
 
             public Item(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset) {
                 super(startOffset, endOffset);
@@ -273,9 +306,9 @@ public abstract class StmtTy extends SSTNode {
             }
         }
 
-        final Item[] items;
-        final StmtTy[] body;
-        final String typeComment;
+        public final Item[] items;
+        public final StmtTy[] body;
+        public final String typeComment;
 
         public With(Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -308,7 +341,7 @@ public abstract class StmtTy extends SSTNode {
             }
 
             public static final class MatchValue extends Pattern {
-                final ExprTy value;
+                public final ExprTy value;
 
                 public MatchValue(ExprTy value, int startOffset, int endOffset) {
                     super(startOffset, endOffset);
@@ -322,7 +355,7 @@ public abstract class StmtTy extends SSTNode {
             }
 
             public static final class MatchSingleton extends Pattern {
-                final ExprTy.Constant value;
+                public final ExprTy.Constant value;
 
                 public MatchSingleton(ExprTy.Constant value, int startOffset, int endOffset) {
                     super(startOffset, endOffset);
@@ -336,7 +369,7 @@ public abstract class StmtTy extends SSTNode {
             }
 
             public static final class MatchSequence extends Pattern {
-                final Pattern[] patterns;
+                public final Pattern[] patterns;
 
                 public MatchSequence(Pattern[] patterns, int startOffset, int endOffset) {
                     super(startOffset, endOffset);
@@ -350,9 +383,9 @@ public abstract class StmtTy extends SSTNode {
             }
 
             public static final class MatchMapping extends Pattern {
-                final ExprTy[] keys;
-                final Pattern[] patterns;
-                final String rest;
+                public final ExprTy[] keys;
+                public final Pattern[] patterns;
+                public final String rest;
 
                 public MatchMapping(ExprTy[] keys, Pattern[] patterns, String rest, int startOffset, int endOffset) {
                     super(startOffset, endOffset);
@@ -368,10 +401,10 @@ public abstract class StmtTy extends SSTNode {
             }
 
             public static final class MatchClass extends Pattern {
-                final ExprTy cls;
-                final Pattern[] patterns;
-                final String[] kwdAttrs;
-                final Pattern[] kwdPatters;
+                public final ExprTy cls;
+                public final Pattern[] patterns;
+                public final String[] kwdAttrs;
+                public final Pattern[] kwdPatters;
 
                 public MatchClass(ExprTy cls, Pattern[] patterns, String[] kwdAttrs, Pattern[] kwdPatters, int startOffset, int endOffset) {
                     super(startOffset, endOffset);
@@ -388,7 +421,7 @@ public abstract class StmtTy extends SSTNode {
             }
 
             public static final class MatchStar extends Pattern {
-                final String name;
+                public final String name;
 
                 public MatchStar(String name, int startOffset, int endOffset) {
                     super(startOffset, endOffset);
@@ -402,8 +435,8 @@ public abstract class StmtTy extends SSTNode {
             }
 
             public static final class MatchAs extends Pattern {
-                final Pattern pattern;
-                final String name;
+                public final Pattern pattern;
+                public final String name;
 
                 public MatchAs(Pattern pattern, String name, int startOffset, int endOffset) {
                     super(startOffset, endOffset);
@@ -418,7 +451,7 @@ public abstract class StmtTy extends SSTNode {
             }
 
             public static final class MatchOr extends Pattern {
-                final Pattern[] patterns;
+                public final Pattern[] patterns;
 
                 public MatchOr(Pattern[] patterns, int startOffset, int endOffset) {
                     super(startOffset, endOffset);
@@ -433,9 +466,16 @@ public abstract class StmtTy extends SSTNode {
         }
 
         public static final class Case extends SSTNode {
-            final Pattern pattern;
-            final ExprTy guard;
-            final StmtTy[] body;
+            public final Pattern pattern;
+            public final ExprTy guard;
+            public final StmtTy[] body;
+
+            public Case(Pattern pattern, ExprTy guard, StmtTy[] body, int startOffset, int endOffset) {
+                super(startOffset, endOffset);
+                this.pattern = pattern;
+                this.guard = guard;
+                this.body = body;
+            }
 
             @Override
             public <T> T accept(SSTreeVisitor<T> visitor) {
@@ -443,8 +483,8 @@ public abstract class StmtTy extends SSTNode {
             }
         }
 
-        final ExprTy subject;
-        final Case[] cases;
+        public final ExprTy subject;
+        public final Case[] cases;
 
         public Match(ExprTy subject, Case[] cases, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -459,8 +499,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Raise extends StmtTy {
-        final ExprTy exc;
-        final ExprTy cause;
+        public final ExprTy exc;
+        public final ExprTy cause;
 
         public Raise(ExprTy exc, ExprTy cause, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -476,9 +516,9 @@ public abstract class StmtTy extends SSTNode {
 
     public static final class Try extends StmtTy {
         public static final class ExceptHandler extends SSTNode {
-            final ExprTy type;
-            final String name;
-            final StmtTy[] body;
+            public final ExprTy type;
+            public final String name;
+            public final StmtTy[] body;
 
             public ExceptHandler(ExprTy type, String name, StmtTy[] body, int startOffset, int endOffset) {
                 super(startOffset, endOffset);
@@ -493,10 +533,10 @@ public abstract class StmtTy extends SSTNode {
             }
         }
 
-        final StmtTy[] body;
-        final ExceptHandler[] handlers;
-        final StmtTy[] orElse;
-        final StmtTy[] finalBody;
+        public final StmtTy[] body;
+        public final ExceptHandler[] handlers;
+        public final StmtTy[] orElse;
+        public final StmtTy[] finalBody;
 
         public Try(StmtTy[] body, ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -513,8 +553,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Assert extends StmtTy {
-        final ExprTy test;
-        final ExprTy msg;
+        public final ExprTy test;
+        public final ExprTy msg;
 
         public Assert(ExprTy test, ExprTy msg, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -529,7 +569,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Import extends StmtTy {
-        final AliasTy[] names;
+        public final AliasTy[] names;
 
         public Import(AliasTy[] names, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -543,9 +583,9 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class ImportFrom extends StmtTy {
-        final String module;
-        final AliasTy[] names;
-        final int level;
+        public final String module;
+        public final AliasTy[] names;
+        public final int level;
 
         public ImportFrom(String module, AliasTy[] names, int level, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -561,7 +601,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Global extends StmtTy {
-        final String[] names;
+        public final String[] names;
 
         public Global(String[] names, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -575,7 +615,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class NonLocal extends StmtTy {
-        final String[] names;
+        public final String[] names;
 
         public NonLocal(String[] names, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -589,7 +629,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Expr extends StmtTy {
-        final ExprTy value;
+        public final ExprTy value;
 
         public Expr(ExprTy value, int startOffset, int endOffset) {
             super(startOffset, endOffset);
