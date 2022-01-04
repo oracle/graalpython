@@ -114,9 +114,10 @@ public abstract class ListNodes {
             return factory.createList(cls);
         }
 
-        @Specialization
+        @Specialization(guards = "cannotBeOverridden(list, getClassNode)", limit = "1")
         // Don't use PSequence, that might copy storages that we don't allow for lists
         static PList fromList(Object cls, PList list,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
