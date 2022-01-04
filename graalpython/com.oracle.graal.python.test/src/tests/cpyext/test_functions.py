@@ -72,9 +72,9 @@ class TestPyObject(CPyExtTestCase):
         type,
         lambda: ([], 12, sys.modules)
     )
-
+    
     # Below are the PyObject_* identifiers that we know are used in numpy
-
+    
     def is_buffer(x):
         __breakpoint__()
         if (isinstance(x, bytes) or isinstance(x, bytearray) or isinstance(x, array.array)):
@@ -103,7 +103,7 @@ class TestPyObject(CPyExtTestCase):
     )
     test_PyObject_Size = CPyExtFunction(
         forgiving_len,
-        lambda: ([], [1, 2, 3, 4], (1,), sys.modules),
+        lambda: ([], [1, 2, 3, 4], (1,), {1:1}, sys.modules),
         resultspec="i",
     )
     # PyObject_MALLOC
@@ -130,7 +130,7 @@ class TestPyObject(CPyExtTestCase):
             (kwonly_fun, tuple(), {"x": 456, "y": 789}),
             (sum, ("hello, world",), None),
             (kwonly_fun, tuple(), None),
-        )
+    )
 
     test_PyObject_Call = CPyExtFunction(
         lambda args: args[0](*args[1], **args[2]) if args[2] else args[0](*args[1], **dict()),
@@ -184,7 +184,7 @@ class TestPyObject(CPyExtTestCase):
         argspec="Os",
         callfunction="PyObject_CallFunction",
     )
-
+    
     class MyObject():
 
         def foo(self, *args, **kwargs):
@@ -386,6 +386,18 @@ class TestPyObject(CPyExtTestCase):
         resultspec="i",
         cmpfunc=unhandled_error_compare
     )
+    test_PyObject_HasAttr = CPyExtFunction(
+        lambda args: 1 if hasattr(*args) else 0,
+        lambda: (
+            (TestPyObject.MyObject, "foo"),
+            ([], "__len__"),
+            ([], "foobar"),
+        ),
+        arguments=["PyObject* object", "PyObject* attr"],
+        argspec="OO",
+        resultspec="i",
+    )
+    
     test_PyObject_HasAttrString = CPyExtFunction(
         lambda args: 1 if hasattr(*args) else 0,
         lambda: (
@@ -396,6 +408,23 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* object", "const char* attr"],
         argspec="Os",
         resultspec="i",
+    )
+    
+    def _ref_hash_not_implemented(args):
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            raise TypeError
+    
+    test_PyObject_HashNotImplemented = CPyExtFunction(
+        _ref_hash_not_implemented,
+        lambda: (
+            ("foo",),
+        ),
+        arguments=["PyObject* object"],
+        argspec="O",
+        resultspec="i",
+        cmpfunc=unhandled_error_compare
     )
     __PyObject_GetAttr_ARGS = (
             (MyObject(), "foo"),
