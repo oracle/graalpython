@@ -269,4 +269,17 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             return sentinelLock;
         }
     }
+
+    @Builtin(name = "interrupt_main", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, doc = "interrupt_main()\n" +
+            "\n" +
+            "Raise a KeyboardInterrupt in the main thread.\n" +
+            "A subthread can use this function to interrupt the main thread.")
+    @GenerateNodeFactory
+    abstract static class InterruptMainThreadNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getCount(@SuppressWarnings("unused") PythonModule self) {
+            // TODO: implement me
+            return PNone.NONE;
+        }
+    }
 }
