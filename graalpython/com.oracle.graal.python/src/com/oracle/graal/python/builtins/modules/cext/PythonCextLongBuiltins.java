@@ -42,7 +42,10 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+
+import java.math.BigInteger;
 import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -93,7 +96,6 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import java.math.BigInteger;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -437,17 +439,8 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
             return toNewRefNode.execute(factory().createInt(convertToBigInteger(n)));
         }
 
-        @TruffleBoundary
-        private static BigInteger convertToBigInteger(long n) {
-            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
-        }
-    }
-
-    @Builtin(name = "PyLong_FromVoidPtr", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyLongFromVoidPtr extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "2")
-        Object doPointer(Object pointer,
+        @Specialization(guards = "!isInteger(pointer)", limit = "2")
+        Object doPointer(Object pointer, @SuppressWarnings("unused") int signed,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @CachedLibrary("pointer") InteropLibrary lib) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
@@ -459,6 +452,11 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
                 }
             }
             return toSulongNode.execute(factory().createNativeVoidPtr(pointer));
+        }
+
+        @TruffleBoundary
+        private static BigInteger convertToBigInteger(long n) {
+            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
         }
     }
 

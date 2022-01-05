@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativeComplexNode;
@@ -780,16 +781,20 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
 
-            // C type: signed short int
+            // C type: PySSize_t
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
-                try {
-                    // TODO(fa): AsNativePrimitiveNode coerces using '__int__', but here we must use
-                    // '__index__'
-                    writeOutVarNode.writeInt64(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, true));
-                } catch (PException e) {
-                    transformExceptionToNativeNode.execute(null, e);
-                    throw ParseArgumentsException.raise();
+                if (arg instanceof PythonNativeVoidPtr) {
+                    writeOutVarNode.writePyObject(varargs, state.outIndex, ((PythonNativeVoidPtr) arg).getPointerObject());
+                } else {
+                    try {
+                        // TODO(fa): AsNativePrimitiveNode coerces using '__int__', but here we must
+                        // use '__index__'
+                        writeOutVarNode.writeInt64(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, true));
+                    } catch (PException e) {
+                        transformExceptionToNativeNode.execute(null, e);
+                        throw ParseArgumentsException.raise();
+                    }
                 }
             }
             return state.incrementOutIndex();
