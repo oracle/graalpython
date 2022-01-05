@@ -1,10 +1,10 @@
-BlockSSTNode[0, 15]
-    AssignmentSSTNode[0, 15]
+Module[0, 15]
+    Assign[0, 15]
         LHS: 
-            CollectionSSTNode[0, 7] Tuple
+            Tuple[0, 7]
                 Values:
-                    VarLookupSSTNode[0, 1] Value: "i" Store
-                    VarLookupSSTNode[3, 4] Value: "j" Store
-                    VarLookupSSTNode[6, 7] Value: "k" Store
-            VarLookupSSTNode[10, 11] Value: "x" Store
-        RHS: VarLookupSSTNode[14, 15] Value: "a"
+                    Name[0, 1] Value: "i" Store
+                    Name[3, 4] Value: "j" Store
+                    Name[6, 7] Value: "k" Store
+            Name[10, 11] Value: "x" Store
+        RHS: Name[14, 15] Value: "a"

@@ -1,16 +1,15 @@
-BlockSSTNode[0, 35]
-    ComprehensionSSTNode[0, 35] List
-        Element: CollectionSSTNode[1, 4] List
+Module[0, 35]
+    ListComp[0, 35]
+        Element: List[1, 4]
             Values:
-                VarLookupSSTNode[2, 3] Value: "i"
-        ForComprehensionSSTNode[5, 15]
-            Target: VarLookupSSTNode[9, 10] Value: "i" Store
-            Iterator: VarLookupSSTNode[14, 15] Value: "a"
-            Ifs:
-        ForComprehensionSSTNode[16, 34]
-            Target: CollectionSSTNode[20, 23] List
+                Name[2, 3] Value: "i"
+        ComprehensionTy[5, 15]
+            Target: Name[9, 10] Value: "i" Store
+            Iterator: Name[14, 15] Value: "a"
+        ComprehensionTy[16, 34]
+            Target: List[20, 23] Context: Store
                 Values:
-                    VarLookupSSTNode[21, 22] Value: "j" Store
-            Iterator: VarLookupSSTNode[27, 28] Value: "b"
+                    Name[21, 22] Value: "j" Store
+            Iterator: Name[27, 28] Value: "b"
             Ifs:
-                IntegerLiteralSSTNode[32, 34] Value: "12"
+                LONG[32, 34] Value: 12

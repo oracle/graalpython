@@ -1,5 +1,5 @@
-BlockSSTNode[0, 12]
-    CallSSTNode[0, 12]
-        Target: VarLookupSSTNode[0, 3] Value: "foo"
+Module[0, 12]
+    Call[0, 12]
+        Target: Name[0, 3] Value: "foo"
         Args: 
-            StarSSTNode[4, 11] Expr: VarLookupSSTNode[5, 11] Value: "mylist"
+            Starred[4, 11] Expr: Name[5, 11] Value: "mylist"

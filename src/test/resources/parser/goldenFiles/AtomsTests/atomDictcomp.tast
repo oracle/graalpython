@@ -1,14 +1,12 @@
-BlockSSTNode[0, 23]
-    ComprehensionSSTNode[0, 23] Dict
-        Element: KeyValueSSTNode[1, 8]
-            Key: CollectionSSTNode[1, 5] Tuple
+Module[0, 23]
+    DictComp[0, 23]
+        Key: Tuple[1, 5]
+            Values:
+                Name[2, 3] Value: "a"
+        Value: Name[7, 8] Value: "b"
+        ComprehensionTy[10, 22]
+            Target: Tuple[14, 17]
                 Values:
-                    VarLookupSSTNode[2, 3] Value: "a"
-            Val: VarLookupSSTNode[7, 8] Value: "b"
-        ForComprehensionSSTNode[10, 22]
-            Target: CollectionSSTNode[14, 17] Tuple
-                Values:
-                    VarLookupSSTNode[14, 15] Value: "a" Store
-                    VarLookupSSTNode[16, 17] Value: "b" Store
-            Iterator: VarLookupSSTNode[21, 22] Value: "y"
-            Ifs:
+                    Name[14, 15] Value: "a" Store
+                    Name[16, 17] Value: "b" Store
+            Iterator: Name[21, 22] Value: "y"

@@ -1,10 +1,8 @@
-BlockSSTNode[0, 25]
-    CallSSTNode[0, 25]
-        Target: VarLookupSSTNode[0, 3] Value: "foo"
+Module[0, 25]
+    Call[0, 25]
+        Target: Name[0, 3] Value: "foo"
         KWArgs: 
-            KeyValueSSTNode[6, 13]
-                Key: null
-                Val: VarLookupSSTNode[6, 13] Value: "mydict1"
-            KeyValueSSTNode[17, 24]
-                Key: null
-                Val: VarLookupSSTNode[17, 24] Value: "mydict2"
+            KeywordTy[4, 13]
+                null: Name[6, 13] Value: "mydict1"
+            KeywordTy[15, 24]
+                null: Name[17, 24] Value: "mydict2"

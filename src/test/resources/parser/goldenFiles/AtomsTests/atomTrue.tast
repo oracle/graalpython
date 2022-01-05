@@ -1,2 +1,2 @@
-BlockSSTNode[0, 4]
-    BooleanLiteralSSTNode[0, 4] Value: True
+Module[0, 4]
+    OBJECT[0, 4] Value: true

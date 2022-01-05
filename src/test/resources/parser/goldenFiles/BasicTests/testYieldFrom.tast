@@ -1,3 +1,3 @@
-BlockSSTNode[0, 12]
-    YieldExpressionSSTNode[0, 12] from
-        VarLookupSSTNode[11, 12] Value: "f"
+Module[0, 12]
+    YieldFrom[0, 12]
+        Name[11, 12] Value: "f"

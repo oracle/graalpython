@@ -1,14 +1,13 @@
-BlockSSTNode[0, 33]
-    FunctionDefSSTNode[0, 33]
+Module[0, 33]
+    FunctionDef[0, 33]
         Name:fn
         ---- Function body of fn ----
-        CallSSTNode[10, 33]
+        Call[10, 33]
             Target: 
-                GetAttributeSSTNode[10, 14] 
-                    Receiver: RawStringLiteralSSTNode[10, 14]
+                Attribute[10, 14] 
+                    Receiver: RAW[10, 14] Value: in
                     Attr: format
             KWArgs: 
-                KeyValueSSTNode[22, 32]
-                    Key: VarLookupSSTNode[22, 26] Value: "name"
-                    Val: RawStringLiteralSSTNode[27, 32]
+                KeywordTy[22, 32]
+                    name: RAW[27, 32] Value: Baf
         ---- End of fn function ----

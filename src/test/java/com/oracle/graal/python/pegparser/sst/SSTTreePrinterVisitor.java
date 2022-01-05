@@ -6,6 +6,7 @@
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.ExprContext;
+import java.math.BigInteger;
 
 
 public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
@@ -41,17 +42,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     // @Override
     // public String visit(AndSSTNode node) {
     //     return addHeader(node);
-    // }
-
-    // @Override
-    // public String visit(AnnAssignmentSSTNode node) {
-    //     StringBuilder sb = new StringBuilder();
-    //     sb.append(addHeader(node)).append("\n");
-    //     level++;
-    //     sb.append(indent()).append("Annotation: ").append(node.annotation.accept(this)).append('\n');
-    //     sb.append(indent()).append("RHS: ").append(node.rhs.accept(this));
-    //     level--;
-    //     return sb.toString();
     // }
 
     // @Override
@@ -97,18 +87,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     //     return sb.toString();
     // }
 
-    // @Override
-    // public String visit(AugAssignmentSSTNode node) {
-    //     StringBuilder sb = new StringBuilder();
-    //     sb.append(addHeader(node)).append("\n");
-    //     level++;
-    //     sb.append(indent()).append("Op: ").append(binOp(node.operation)).append("\n");
-    //     sb.append(indent()).append("LHS: ").append(node.lhs.accept(this)).append("\n");
-    //     sb.append(indent()).append("RHS: ").append(node.rhs.accept(this));
-    //     level--;
-    //     return sb.toString();
-    // }
-
     // private String binOp(BinaryArithmeticSSTNode.Type type) {
     //     switch(type) {
     //         case EQ: return "==";
@@ -146,38 +124,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     //     sb.append(indent()).append("Op: ").append(binOp(node.operation)).append("\n");
     //     sb.append(indent()).append("LHS: ").append(node.left.accept(this)).append("\n");
     //     sb.append(indent()).append("RHS: ").append(node.right.accept(this));
-    //     level--;
-    //     return sb.toString();
-    // }
-
-    // @Override
-    // public String visit(CallSSTNode node) {
-    //     StringBuilder sb = new StringBuilder();
-    //     sb.append(addHeader(node)).append("\n");
-    //     level++;
-    //     sb.append(indent()).append("Target: ");
-    //     putOnSameLineIfShort(sb, node.target);
-    //     if ((node.args != null && node.args.length > 0)
-    //             || (node.kwargs != null && node.kwargs.length > 0)) {
-    //         sb.append("\n");
-    //     }
-    //     if (node.args != null && node.args.length > 0) {
-    //         sb.append(indent()).append("Args: ");
-    //         level++;
-    //         for(SSTNode arg: node.args) {
-    //             sb.append('\n').append(indent()).append(arg.accept(this));
-    //         }
-    //         sb.append('\n');
-    //         level--;
-    //     }
-    //     if (node.kwargs != null && node.kwargs.length > 0) {
-    //         sb.append(indent()).append("KWArgs: ");
-    //         level++;
-    //         for(SSTNode arg: node.kwargs) {
-    //             sb.append('\n').append(indent()).append(arg.accept(this));
-    //         }
-    //         level--;
-    //     }
     //     level--;
     //     return sb.toString();
     // }
@@ -238,23 +184,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     // }
 
     // @Override
-    // public String visit(ForComprehensionSSTNode node) {
-    //     StringBuilder sb = new StringBuilder();
-    //     sb.append(addHeader(node)).append('\n');
-    //     level++;
-    //     sb.append(indent()).append("Target: ").append(node.target.accept(this)).append('\n');
-    //     sb.append(indent()).append("Iterator: ").append(node.iterator.accept(this)).append('\n');
-    //     sb.append(indent()).append("Ifs:");
-    //     level++;
-    //     for (SSTNode i : node.ifs) {
-    //         sb.append('\n').append(indent()).append(i.accept(this));
-    //     }
-    //     level--;
-    //     level--;
-    //     return sb.toString();
-    // }
-
-    // @Override
     // public String visit(ComprehensionSSTNode node) {
     //     StringBuilder sb = new StringBuilder();
     //     sb.append(addHeader(node)).append(' ').append(node.resultType.name()).append('\n');
@@ -300,19 +229,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     //     sb.append(indent()).append("---- End of ").append(node.name).append(" function ----");
     //     level--;
 
-    //     return sb.toString();
-    // }
-
-    // @Override
-    // public String visit(GetAttributeSSTNode node) {
-    //     StringBuilder sb = new StringBuilder();
-    //     sb.append(addHeader(node)).append(' ').append('\n');
-    //     level++;
-    //     sb.append(indent()).append("Receiver: ");
-    //     putOnSameLineIfShort(sb, node.receiver);
-    //     sb.append("\n");
-    //     sb.append(indent()).append("Attr: ").append(node.name);
-    //     level--;
     //     return sb.toString();
     // }
 
@@ -381,13 +297,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     // }
 
     // @Override
-    // public String visit(StarSSTNode node) {
-    //     StringBuilder sb = new StringBuilder();
-    //     sb.append(addHeader(node)).append(" Expr: ").append(node.value.accept(this));
-    //     return sb.toString();
-    // }
-
-    // @Override
     // public String visit(StringLiteralUtils.RawStringLiteralSSTNode node) {
     //     return addHeader(node);
     // }
@@ -439,16 +348,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     //     sb.append(indent()).append("Op: ").append(unaryOp(node.arithmetic)).append("\n");
     //     sb.append(indent()).append("Value: ").append(node.value.accept(this));
     //     level--;
-    //     return sb.toString();
-    // }
-
-    // @Override
-    // public String visit(VarLookupSSTNode node) {
-    //     StringBuilder sb = new StringBuilder();
-    //     sb.append(addHeader(node)).append(" Value: \"").append(node.name).append('"');
-    //     if (node.getContext() != ExprContext.Load) {
-    //         sb.append(' ').append(node.getContext());
-    //     }
     //     return sb.toString();
     // }
 
@@ -543,16 +442,33 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ComprehensionTy node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Target: ").append(node.target.accept(this)).append('\n');
+        sb.append(indent()).append("Iterator: ").append(node.iter.accept(this));
+        if (node.ifs != null && node.ifs.length > 0) {
+            sb.append('\n').append(indent()).append("Ifs:");
+            level++;
+            for (SSTNode i : node.ifs) {
+                sb.append('\n').append(indent()).append(i.accept(this));
+            }
+            level--;
+        }
+        level--;
         return sb.toString();
     }
 
     @Override
     public String visit(ExprTy.Attribute node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append(' ').append('\n');
+        level++;
+        sb.append(indent()).append("Receiver: ");
+        putOnSameLineIfShort(sb, node.value);
+        sb.append("\n");
+        sb.append(indent()).append("Attr: ").append(node.attr);
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -566,9 +482,13 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.BinOp node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Op: ").append(node.op).append("\n");
+        sb.append(indent()).append("LHS: ").append(node.left.accept(this)).append("\n");
+        sb.append(indent()).append("RHS: ").append(node.right.accept(this));
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -582,54 +502,125 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.Call node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Target: ");
+        putOnSameLineIfShort(sb, node.func);
+        if ((node.args != null && node.args.length > 0)
+                || (node.keywords != null && node.keywords.length > 0)) {
+            sb.append("\n");
+        }
+        if (node.args != null && node.args.length > 0) {
+            sb.append(indent()).append("Args: ");
+            level++;
+            for(SSTNode arg: node.args) {
+                sb.append('\n').append(indent()).append(arg.accept(this));
+            }
+            sb.append('\n');
+            level--;
+        }
+        if (node.keywords != null && node.keywords.length > 0) {
+            sb.append(indent()).append("KWArgs: ");
+            level++;
+            for(SSTNode arg: node.keywords) {
+                sb.append('\n').append(indent()).append(arg.accept(this));
+            }
+            level--;
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(ExprTy.Compare node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("LHS: ").append(node.left.accept(this)).append("\n");
+        for (int i = 0; i < node.ops.length; i++) {
+            sb.append(indent()).append("Op: ").append(node.ops[i].toString()).append("\n");
+            sb.append(indent()).append("RHS: ").append(node.comparators[i].accept(this));
+        }
+        level--;
         return sb.toString();
 
     }
 
     @Override
     public String visit(ExprTy.Constant node) {
-        return addHeader(node) + " Value: " + (node.value == null ? node.longValue : node.value) + " Type: " + node.kind.toString();
+        StringBuilder sb = new StringBuilder();
+        sb.append(node.kind).append("[").append(node.getStartOffset());
+        sb.append(", ").append(node.getEndOffset()).append("]");
+        sb.append(" Value: ");
+        if (node.value == null) {
+            sb.append(node.longValue);
+        } else {
+            if (node.value instanceof Boolean || node.value instanceof BigInteger || node.value instanceof String) {
+                sb.append(node.value);
+            } else {
+                sb.append("<unprintable value>");
+            }
+        }
+        return sb.toString();
     }
 
     @Override
     public String visit(ExprTy.Dict node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Values:");
+        level++;
+        for (int i = 0; i < node.keys.length; i++) {
+            sb.append('\n').append(indent()).append("Key: ").append(node.keys[i].accept(this));
+            sb.append('\n').append(indent()).append("Val: ").append(node.values[i].accept(this));
+        }
+        level--;
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(ExprTy.DictComp node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Key: ").append(node.key.accept(this)).append('\n');
+        sb.append(indent()).append("Value: ").append(node.value.accept(this));
+        for (SSTNode n : node.generators) {
+            sb.append('\n').append(indent()).append(n.accept(this));
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(ExprTy.FormattedValue node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        if (node.formatSpec != null) {
+            sb.append(indent()).append("Spec: ").append(node.formatSpec.accept(this)).append('\n');
+        }
+        sb.append(indent()).append("Value: ").append(node.value.accept(this));
+        if (node.conversion != null) {
+            sb.append('\n').append(indent()).append("Conversion: ").append(node.conversion);
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(ExprTy.GeneratorExp node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Element: ").append(node.element.accept(this));
+        for (SSTNode n : node.generators) {
+            sb.append('\n').append(indent()).append(n.accept(this));
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -643,7 +634,14 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.JoinedStr node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append(" Values:");
+        level++;
+        for (ExprTy v : node.values) {
+            sb.append('\n').append(indent()).append(v.accept(this));
+        }
+        level -= 2;
         return sb.toString();
 
     }
@@ -660,22 +658,41 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.List node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        if (node.context != null && node.context != ExprContext.Load) {
+            sb.append(" Context: ").append(node.context);
+        }
+        sb.append('\n');
+        level++;
+        sb.append(indent()).append("Values:");
+        level++;
+        for (SSTNode value : node.elements) {
+            sb.append('\n').append(indent()).append(value.accept(this));
+        }
+        level--;
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(ExprTy.ListComp node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Element: ").append(node.element.accept(this));
+        for (SSTNode n : node.generators) {
+            sb.append('\n').append(indent()).append(n.accept(this));
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(ExprTy.Name node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append(" Value: \"").append(node.id).append('"');
+        if (node.context != ExprContext.Load) {
+            sb.append(' ').append(node.context);
+        }
         return sb.toString();
 
     }
@@ -691,17 +708,29 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.Set node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Values:");
+        level++;
+        for (SSTNode value : node.elements) {
+            sb.append('\n').append(indent()).append(value.accept(this));
+        }
+        level--;
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(ExprTy.SetComp node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Element: ").append(node.element.accept(this));
+        for (SSTNode n : node.generators) {
+            sb.append('\n').append(indent()).append(n.accept(this));
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -715,9 +744,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.Starred node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append(" Expr: ").append(node.value.accept(this));
         return sb.toString();
-
     }
 
     @Override
@@ -732,14 +760,29 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Tuple node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        if (node.context != null && node.context != ExprContext.Load) {
+            sb.append(" Context: ").append(node.context);
+        }
+        sb.append('\n');
+        level++;
+        sb.append(indent()).append("Values:");
+        level++;
+        for (SSTNode value : node.elements) {
+            sb.append('\n').append(indent()).append(value.accept(this));
+        }
+        level--;
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(ExprTy.UnaryOp node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Op: ").append(node.op.toString()).append("\n");
+        sb.append(indent()).append("Value: ").append(node.operand.accept(this));
+        level--;
         return sb.toString();
 
     }
@@ -748,24 +791,34 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Yield node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        if (node.value != null) {
+            level++;
+            sb.append('\n').append(indent()).append(node.value.accept(this));
+            level--;
+        }
         return sb.toString();
-
     }
 
     @Override
     public String visit(ExprTy.YieldFrom node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        if (node.value != null) {
+            level++;
+            sb.append('\n').append(indent()).append(node.value.accept(this));
+            level--;
+        }
         return sb.toString();
-
     }
 
     @Override
     public String visit(KeywordTy node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        sb.append('\n').append(indent()).append(node.arg).append(": ").append(node.value.accept(this));
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -815,9 +868,13 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(StmtTy.AnnAssign node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append(node.isSimple ? "simple" : "not simple").append("\n");
+        level++;
+        sb.append(indent()).append("Annotation: ").append(node.annotation.accept(this)).append('\n');
+        sb.append(indent()).append("LHS: ").append(node.target.accept(this)).append('\n');
+        sb.append(indent()).append("RHS: ").append(node.value.accept(this));
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -831,9 +888,28 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(StmtTy.Assign node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("LHS: ");
+        if (node.targets.length == 1) {
+            putOnSameLineIfShort(sb, node.targets[0]);
+            sb.append("\n");
+        } else {
+            sb.append("\n");
+            level++;
+            for(SSTNode lh: node.targets) {
+                sb.append(indent()).append(lh.accept(this)).append("\n");
+            }
+            level--;
+        }
+        sb.append(indent()).append("RHS: ");
+        putOnSameLineIfShort(sb, node.value);
+        if (node.typeComment != null) {
+            sb.append('\n');
+            sb.append(indent()).append("TypeComment: ").append(node.typeComment);
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -863,9 +939,13 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(StmtTy.AugAssign node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Op: ").append(node.op).append("\n");
+        sb.append(indent()).append("LHS: ").append(node.target.accept(this)).append("\n");
+        sb.append(indent()).append("RHS: ").append(node.value.accept(this));
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -886,10 +966,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     @Override
     public String visit(StmtTy.Expr node) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
-        return sb.toString();
-
+        return node.value.accept(this);
     }
 
     @Override
@@ -904,8 +981,35 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(StmtTy.FunctionDef node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
-        return sb.toString();
+        level++;
+        sb.append('\n').append(indent()).append("Name:").append(node.name);
+        if (node.decoratorList != null) {
+            sb.append('\n').append(indent()).append("Decorators:");
+            for (SSTNode n : node.decoratorList) {
+                sb.append('\n').append(indent()).append(n.accept(this));
+            }
+        }
+        if (node.args != null) {
+            sb.append('\n').append(indent()).append("Args:");
+            sb.append('\n').append(indent()).append(node.args.accept(this));
+        }
+        if (node.returns != null) {
+            sb.append('\n').append(indent()).append("Result Annotation: ").append(node.returns.accept(this));
+        }
+        if (node.typeComment != null) {
+            sb.append('\n').append(indent()).append("Type Comment: ").append(node.typeComment);
+        }
+        sb.append('\n').append(indent()).append("---- Function body of ").append(node.name).append(" ----");
+        for(SSTNode stm : node.body) {
+            sb.append('\n').append(indent()).append(stm.accept(this));
+        }
+        if (sb.lastIndexOf("\n") != sb.length() - 1) {
+            sb.append('\n');
+        }
+        sb.append(indent()).append("---- End of ").append(node.name).append(" function ----");
+        level--;
 
+        return sb.toString();
     }
 
     @Override

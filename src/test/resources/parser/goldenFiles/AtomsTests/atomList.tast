@@ -1,4 +1,4 @@
-BlockSSTNode[0, 3]
-    CollectionSSTNode[0, 3] List
+Module[0, 3]
+    List[0, 3]
         Values:
-            IntegerLiteralSSTNode[1, 2] Value: "2"
+            LONG[1, 2] Value: 2

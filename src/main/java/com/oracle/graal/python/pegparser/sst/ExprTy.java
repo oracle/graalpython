@@ -382,6 +382,7 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Constant extends ExprTy {
         public static enum Kind {
+            OBJECT,
             NONE,
             ELLIPSIS,
             BOOLEAN,
@@ -400,7 +401,7 @@ public abstract class ExprTy extends SSTNode {
             super(startOffset, endOffset);
             this.value = value;
             this.longValue = 0;
-            this.kind = kind;
+            this.kind = kind == null ? Kind.OBJECT : kind;
         }
 
         public Constant(long longValue, Kind kind, int startOffset, int endOffset) {

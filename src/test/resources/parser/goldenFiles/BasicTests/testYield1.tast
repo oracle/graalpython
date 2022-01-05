@@ -1,2 +1,2 @@
-BlockSSTNode[0, 5]
-    YieldExpressionSSTNode[0, 5]
+Module[0, 5]
+    Yield[0, 5]
