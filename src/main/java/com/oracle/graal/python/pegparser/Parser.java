@@ -11332,7 +11332,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> dict[%d-%d]: %s", level, _mark, mark(), "'{' double_starred_kvpairs? '}'");
             Token _literal;
             Token _literal_1;
-            KeyValuePair a;
+            KeyValuePair[] a;
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
@@ -11458,24 +11458,24 @@ public final class Parser extends AbstractParser {
     }
 
     // double_starred_kvpairs: ','.double_starred_kvpair+ ','?
-    public KeyValuePair double_starred_kvpairs_rule()
+    public KeyValuePair[] double_starred_kvpairs_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STARRED_KVPAIRS_ID)) {
-            _res = (KeyValuePair)cache.getResult(_mark, DOUBLE_STARRED_KVPAIRS_ID);
+            _res = (KeyValuePair[])cache.getResult(_mark, DOUBLE_STARRED_KVPAIRS_ID);
             level--;
-            return (KeyValuePair)_res;
+            return (KeyValuePair[])_res;
         }
         { // ','.double_starred_kvpair+ ','?
             debugMessageln("%d> double_starred_kvpairs[%d-%d]: %s", level, _mark, mark(), "','.double_starred_kvpair+ ','?");
             Token _opt_var;
             KeyValuePair[] a;
             if (
-                (a = _gather_160_rule()) != null  // ','.double_starred_kvpair+
+                (a = (KeyValuePair[])_gather_160_rule()) != null  // ','.double_starred_kvpair+
                 &&
-                ((_opt_var = _tmp_162_rule()) != null || true)  // ','?
+                ((_opt_var = (Token)_tmp_162_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d double_starred_kvpairs[%d-%d]: %s succeeded!", level, _mark, mark(), "','.double_starred_kvpair+ ','?");
@@ -11483,7 +11483,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.double_starred_kvpair+ ','?");
                 cache.putResult(_mark, DOUBLE_STARRED_KVPAIRS_ID, _res);
                 level--;
-                return (KeyValuePair)_res;
+                return (KeyValuePair[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpairs[%d-%d]: %s failed!", level,
@@ -11493,7 +11493,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, DOUBLE_STARRED_KVPAIRS_ID, _res);
         level--;
-        return (KeyValuePair)_res;
+        return (KeyValuePair[])_res;
     }
 
     // double_starred_kvpair: '**' bitwise_or | kvpair
@@ -22338,21 +22338,21 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_159: double_starred_kvpairs
-    public KeyValuePair _tmp_159_rule()
+    public KeyValuePair[] _tmp_159_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_159_ID)) {
-            _res = (KeyValuePair)cache.getResult(_mark, _TMP_159_ID);
+            _res = (KeyValuePair[])cache.getResult(_mark, _TMP_159_ID);
             level--;
-            return (KeyValuePair)_res;
+            return (KeyValuePair[])_res;
         }
         { // double_starred_kvpairs
             debugMessageln("%d> _tmp_159[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpairs");
-            KeyValuePair double_starred_kvpairs_var;
+            KeyValuePair[] double_starred_kvpairs_var;
             if (
-                (double_starred_kvpairs_var = (KeyValuePair)double_starred_kvpairs_rule()) != null  // double_starred_kvpairs
+                (double_starred_kvpairs_var = (KeyValuePair[])double_starred_kvpairs_rule()) != null  // double_starred_kvpairs
             )
             {
                 debugMessageln("%d _tmp_159[%d-%d]: %s succeeded!", level, _mark, mark(), "double_starred_kvpairs");
@@ -22360,7 +22360,7 @@ public final class Parser extends AbstractParser {
                 _res = double_starred_kvpairs_var;
                 cache.putResult(_mark, _TMP_159_ID, _res);
                 level--;
-                return (KeyValuePair)_res;
+                return (KeyValuePair[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_159[%d-%d]: %s failed!", level,
@@ -22370,7 +22370,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_159_ID, _res);
         level--;
-        return (KeyValuePair)_res;
+        return (KeyValuePair[])_res;
     }
 
     // _loop0_161: ',' double_starred_kvpair

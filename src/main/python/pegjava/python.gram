@@ -714,7 +714,7 @@ dict[expr_ty]:
 dictcomp[expr_ty]:
     | '{' a=kvpair b=for_if_clauses '}' { factory.createDictComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_dict_comprehension
-double_starred_kvpairs[KeyValuePair*]: a=','.double_starred_kvpair+ [','] { a }
+double_starred_kvpairs: a=','.double_starred_kvpair+ [','] { a }
 double_starred_kvpair[KeyValuePair*]:
     | '**' a=bitwise_or { new KeyValuePair(null, a) }
     | kvpair
