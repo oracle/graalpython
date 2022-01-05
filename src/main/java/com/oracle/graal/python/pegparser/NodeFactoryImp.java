@@ -111,6 +111,11 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
+    public StmtTy createExpression(ExprTy expr) {
+        return new StmtTy.Expr(expr);
+    }
+
+    @Override
     public ExprTy createCall(ExprTy target, ExprTy[] args, KeywordTy[] kwargs, int startOffset, int endOffset) {
         return new ExprTy.Call(target, args, kwargs, startOffset, endOffset);
     }

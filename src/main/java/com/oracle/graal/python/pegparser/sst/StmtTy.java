@@ -631,8 +631,8 @@ public abstract class StmtTy extends SSTNode {
     public static final class Expr extends StmtTy {
         public final ExprTy value;
 
-        public Expr(ExprTy value, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Expr(ExprTy value) {
+            super(value.startOffset, value.endOffset);
             this.value = value;
         }
 

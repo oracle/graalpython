@@ -71,6 +71,8 @@ public interface NodeFactory {
 
     public StmtTy createBreak(int startOffset, int endOffset);
 
+    public StmtTy createExpression(ExprTy expr);
+
     public ExprTy createCall(ExprTy func, ExprTy[] args, KeywordTy[] kwargs, int startOffset, int endOffset);
 
     public StmtTy createContinue(int startOffset, int endOffset);

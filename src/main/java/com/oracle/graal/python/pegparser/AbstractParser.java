@@ -58,6 +58,9 @@ import java.util.Map;
  * parser generator very similar to CPython for easier updating in the future.
  */
 abstract class AbstractParser {
+    protected static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
+    protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
+
     private final ParserTokenizer tokenizer;
     private final ParserErrorCallback errorCb;
     private final FExprParser fexprParser;
@@ -571,9 +574,6 @@ abstract class AbstractParser {
             this.isKeyword = isKeyword;
         }
     }
-
-    private static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
-    private static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
 
     /**
      * _PyPegen_seq_extract_starred_exprs

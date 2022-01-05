@@ -829,9 +829,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         node_action = re.sub(r" ?([\.\(\),]) ?", r"\1", str(node.action))
 
         # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
-        if (node_action.startswith('factory') or
-            node_action.startswith('new') or
-            'SSTNode' in node_action
+        if (node_action.startswith('factory')
+            or node_action.startswith('new')
+            or "ExprTy." in node_action
+            or 'SSTNode' in node_action
             or len(node_action) == 1
             or node_action.startswith('finish')
             or node_action == "elem"

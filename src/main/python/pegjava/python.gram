@@ -134,7 +134,7 @@ simple_stmts[asdl_stmt_seq*]:
 # will throw a SyntaxError.
 simple_stmt[stmt_ty] (memo):
     | assignment
-    | e=star_expressions   { e }
+    | e=star_expressions   { factory.createExpression(e) }
     | &'return' return_stmt
     | &('import' | 'from') import_stmt
     | &'raise' raise_stmt
@@ -193,7 +193,7 @@ global_stmt[stmt_ty]: 'global' a[asdl_expr_seq*]=','.NAME+ {
 nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
     _PyAST_Nonlocal(CHECK(String*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
 
-yield_stmt[stmt_ty]: y=yield_expr { y }
+yield_stmt[stmt_ty]: y=yield_expr { factory.createExpression(y) }
 
 assert_stmt[stmt_ty]: 'assert' a=expression b=[',' z=expression { z }] { _PyAST_Assert(a, b, EXTRA) }
 
@@ -665,7 +665,7 @@ primary[expr_ty]:
     | a=primary '.' b=NAME { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
     | a=primary '(' b=[arguments] ')' {
-        factory.createCall(a, ((ExprTy.Call)b).args, ((ExprTy.Call)b).keywords, startToken.startOffset, endToken.endOffset ) }
+        factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) }
     | a=primary '[' b=slices ']' { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | atom
 
@@ -809,7 +809,7 @@ t_primary[expr_ty]:
     | a=t_primary b=genexp &t_lookahead {
         _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
     | a=t_primary '(' b=[arguments] ')' &t_lookahead {
-            factory.createCall(a, ((ExprTy.Call)b).args, ((ExprTy.Call)b).keywords, startToken.startOffset, endToken.endOffset ) 
+            factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) 
         }
     | a=atom &t_lookahead { a }
 t_lookahead: '(' | '[' | '.'

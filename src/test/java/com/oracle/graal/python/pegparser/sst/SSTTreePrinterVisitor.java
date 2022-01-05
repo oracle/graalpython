@@ -151,23 +151,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     // }
 
     // @Override
-    // public String visit(BlockSSTNode node) {
-    //     StringBuilder sb = new StringBuilder();
-    //     sb.append(addHeader(node));
-    //     level++;
-    //     for(SSTNode child: node.getStatements()) {
-    //         sb.append('\n').append(indent()).append(child.accept(this));
-    //     }
-    //     level--;
-    //     return sb.toString();
-    // }
-
-    // @Override
-    // public String visit(BooleanLiteralSSTNode node) {
-    //     return addHeader(node) + " Value: " + (node.value ? "True" : "False");
-    // }
-
-    // @Override
     // public String visit(CallSSTNode node) {
     //     StringBuilder sb = new StringBuilder();
     //     sb.append(addHeader(node)).append("\n");
@@ -496,371 +479,632 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     @Override
     public String visit(AliasTy node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return addHeader(node) + " " + node.name + " as " + node.asName;
     }
 
     @Override
     public String visit(ArgTy node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return addHeader(node) + " " + node.arg;
     }
 
     @Override
     public String visit(ArgumentsTy node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        sb.append("\nArgs:");
+        level++;
+        for(SSTNode child: node.args) {
+            sb.append('\n').append(indent()).append(child.accept(this));
+        }
+        level -= 2;
+
+        level++;
+        sb.append("\nPosOnlyArgs:");
+        level++;
+        for(SSTNode child: node.posOnlyArgs) {
+            sb.append('\n').append(indent()).append(child.accept(this));
+        }
+        level -= 2;
+
+        level++;
+        sb.append("\nKwOnlyArgs:");
+        level++;
+        for(SSTNode child: node.kwOnlyArgs) {
+            sb.append('\n').append(indent()).append(child.accept(this));
+        }
+        level -= 2;
+
+        level++;
+        sb.append("\nKwarg:");
+        level++;
+        sb.append('\n').append(indent()).append(node.kwArg.accept(this));
+        level -= 2;
+
+        level++;
+        sb.append("\nDefaults:");
+        level++;
+        for(SSTNode child: node.defaults) {
+            sb.append('\n').append(indent()).append(child.accept(this));
+        }
+        level -= 2;
+
+        level++;
+        sb.append("\nKwDefaults:");
+        level++;
+        for(SSTNode child: node.kwDefaults) {
+            sb.append('\n').append(indent()).append(child.accept(this));
+        }
+        level -= 2;
+
+        return sb.toString();
     }
 
     @Override
-    public String visit(ComprehensionTy aThis) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public String visit(ComprehensionTy node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
     }
 
     @Override
     public String visit(ExprTy.Attribute node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Await node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.BinOp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.BoolOp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Call node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Compare node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Constant node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return addHeader(node) + " Value: " + (node.value == null ? node.longValue : node.value) + " Type: " + node.kind.toString();
     }
 
     @Override
     public String visit(ExprTy.Dict node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.DictComp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.FormattedValue node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.GeneratorExp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.IfExp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.JoinedStr node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Lambda node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.List node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.ListComp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Name node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.NamedExpr node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Set node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.SetComp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Slice node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Starred node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Subscript node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Tuple node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.UnaryOp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.Yield node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ExprTy.YieldFrom node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(KeywordTy node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ModTy.Expression node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ModTy.FunctionType node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ModTy.Interactive node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(ModTy.Module node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        for(SSTNode child: node.body) {
+            sb.append('\n').append(indent()).append(child.accept(this));
+        }
+        level--;
+        return sb.toString();
     }
 
     @Override
     public String visit(ModTy.TypeIgnore node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.AnnAssign node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Assert node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Assign node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.AsyncFor node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.AsyncFunctionDef node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.AsyncWith node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.AugAssign node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.ClassDef node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Delete node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Expr node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.For node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.FunctionDef node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Global node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.If node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Import node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.ImportFrom node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match.Case node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match.Pattern.MatchAs node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match.Pattern.MatchClass node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match.Pattern.MatchMapping node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match.Pattern.MatchOr node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match.Pattern.MatchSequence node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match.Pattern.MatchSingleton node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match.Pattern.MatchStar node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Match.Pattern.MatchValue node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.NonLocal node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Raise node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Return node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Try node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.Try.ExceptHandler node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.While node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.With node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
     public String visit(StmtTy.With.Item node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
-    public String visit(StmtTy.Break aThis) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public String visit(StmtTy.Break node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
-    public String visit(StmtTy.Continue aThis) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public String visit(StmtTy.Continue node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 
     @Override
-    public String visit(StmtTy.Pass aThis) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public String visit(StmtTy.Pass node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        return sb.toString();
+
     }
 }
