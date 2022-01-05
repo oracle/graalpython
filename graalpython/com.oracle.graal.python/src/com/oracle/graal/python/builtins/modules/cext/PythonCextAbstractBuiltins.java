@@ -73,13 +73,17 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_SEQUENCE_SIZE;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
@@ -112,6 +116,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -928,7 +933,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PySequence_Check", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PySequenceCheck extends PythonUnaryBuiltinNode {
+    abstract static class PyCextSequenceCheckNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean check(Object object,
                         @Cached PySequenceCheckNode check) {
@@ -959,6 +964,43 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(frame, e);
                 return toNewRefNode.execute(getContext().getNativeNull());
             }
+        }
+    }
+
+    @Builtin(name = "PySequence_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class PySequenceSizeNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "checkNode.execute(obj)")
+        static int doSequence(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return sizeNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "isNativeObject(obj)")
+        static Object doNative(VirtualFrame frame, Object obj,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_SEQUENCE_SIZE, toSulongNode.execute(obj));
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_SEQUENCE_SIZE.getName(), result);
+            return asPythonObjectNode.execute(result);
+        }
+
+        @Specialization(guards = {"!isNativeObject(obj)", "!checkNode.execute(obj)"})
+        Object notSequence(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
         }
     }
 

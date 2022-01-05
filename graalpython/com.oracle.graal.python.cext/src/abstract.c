@@ -285,9 +285,34 @@ int PySequence_Check(PyObject *s) {
     return UPCALL_CEXT_I(_jls_PySequence_Check, native_to_java(s));
 }
 
-UPCALL_ID(PyObject_Size);
+UPCALL_ID(PySequence_Size);
 Py_ssize_t PySequence_Size(PyObject *s) {
-    return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(s));
+    return UPCALL_CEXT_L(_jls_PySequence_Size, native_to_java(s));
+}
+
+// taken from CPython "Objects/abstract.c"
+// called for native python objects
+Py_ssize_t PyTruffle_Sequence_Size(PyObject *s) {
+    PySequenceMethods *m;
+
+    if (s == NULL) {
+        null_error();
+        return -1;
+    }
+
+    m = s->ob_type->tp_as_sequence;
+    if (m && m->sq_length) {
+        Py_ssize_t len = m->sq_length(s);
+        assert(len >= 0 || PyErr_Occurred());
+        return len;
+    }
+
+    if (s->ob_type->tp_as_mapping && s->ob_type->tp_as_mapping->mp_length) {
+        PyErr_Format(PyExc_TypeError, "%s is not a sequence", s);
+        return -1;
+    }
+    PyErr_Format(PyExc_TypeError, "object of type '%s' has no len()", Py_TYPE(s)->tp_name);
+    return -1;    
 }
 
 UPCALL_ID(PySequence_Contains);
