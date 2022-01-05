@@ -44,7 +44,6 @@ import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
-import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -225,14 +224,14 @@ abstract class AbstractParser {
      * IMPORTANT! _PyPegen_string_token returns (through void*) a Token*. We are
      * trying to be type safe, so we create a container.
      */
-    public SSTNode string_token() {
+    public Token string_token() {
         int pos = mark();
         Token t = expect(Token.Kind.STRING);
         if (t == null) {
             return null;
         }
         assert tokenizer.peekToken(pos) == t : ("token at " + pos + " is not equal to " + t);
-        return factory.createUntyped(pos);
+        return t;
     }
 
     /**
@@ -299,8 +298,8 @@ abstract class AbstractParser {
     /**
      * _PyPegen_join_names_with_dot
      */
-    public SSTNode joinNamesWithDot(ExprTy.Name a, ExprTy.Name b) {
-        String id = a.id + "." + b.id;
+    public SSTNode joinNamesWithDot(ExprTy a, ExprTy b) {
+        String id = ((ExprTy.Name)a).id + "." + ((ExprTy.Name)b).id;
         return factory.createVariable(id, a.getStartOffset(), b.getEndOffset());
     }
 
@@ -350,14 +349,14 @@ abstract class AbstractParser {
     /**
      * _PyPegen_concatenate_strings
      */
-    public SSTNode concatenateStrings(SSTNode[] tokens) {
+    public SSTNode concatenateStrings(Token[] tokens) {
         int n = tokens.length;
         String[] values = new String[n];
-        Token t = tokenizer.peekToken(((UntypedSSTNode)tokens[0]).getTokenPosition());
+        Token t = tokens[0];
         int startOffset = t.startOffset;
         values[0] = getText(t);
         for (int i = 1; i < n; i++) {
-            t = tokenizer.peekToken(((UntypedSSTNode)tokens[i]).getTokenPosition());
+            t = tokens[i];
             values[i] = getText(t);
         }
         int endOffset = t.endOffset;
@@ -501,6 +500,23 @@ abstract class AbstractParser {
             this.key = key;
             this.value = value;
         }
+
+    }
+
+    static ExprTy[] extractKeys(KeyValuePair[] l) {
+        ExprTy[] keys = new ExprTy[l.length];
+        for (int i = 0; i < l.length; i++) {
+            keys[i] = l[i].key;
+        }
+        return keys;
+    }
+
+    static ExprTy[] extractValues(KeyValuePair[] l) {
+        ExprTy[] values = new ExprTy[l.length];
+        for (int i = 0; i < l.length; i++) {
+            values[i] = l[i].value;
+        }
+        return values;
     }
 
     public static final class KeyPatternPair {

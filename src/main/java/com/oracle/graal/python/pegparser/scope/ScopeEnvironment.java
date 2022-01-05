@@ -46,6 +46,7 @@ import com.oracle.graal.python.pegparser.scope.Scope.ScopeType;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
+import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -702,6 +703,26 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.With.Item node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ComprehensionTy aThis) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.Break aThis) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.Continue aThis) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.Pass aThis) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
     }

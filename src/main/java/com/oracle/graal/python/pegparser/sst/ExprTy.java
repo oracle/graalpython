@@ -302,8 +302,8 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Compare extends ExprTy {
         public static enum Operator {
-            Eq, NotEq, Lt, LtE, Gt, GtE, Is, IsNot,
-            In, NotIn;
+            EQ, NOTEQ, LT, LTE, GT, GTE, IS, ISNOT,
+            IN, NOTIN;
         }
 
         public final ExprTy left;

@@ -42,15 +42,14 @@ package com.oracle.graal.python.pegparser;
 
 // TODO this class has to be moved to impl package and from this package we need to do api.
 
+import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
-import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
-import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import java.math.BigInteger;
 
 
@@ -196,11 +195,6 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public UntypedSSTNode createUntyped(int tokenPosition) {
-        return new UntypedSSTNode(tokenPosition);
-    }
-
-    @Override
     public ExprTy createStarred(ExprTy value, ExprContext context, int startOffset, int endOffset) {
         return new ExprTy.Starred(value, context, startOffset, endOffset);
     }
@@ -208,6 +202,22 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public KeywordTy createKeyword(String arg, ExprTy value, int startOffset, int endOffset) {
         return new KeywordTy(arg, value, startOffset, endOffset);
+    }
+
+    @Override
+    public ArgTy createArgument(String argument, ExprTy annotation, String typeComment, int startOffset, int endOffset) {
+        return new ArgTy(argument, annotation, typeComment, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] pairs, int startOffset, int endOffset) {
+        ExprTy.Compare.Operator[] ops = new ExprTy.Compare.Operator[pairs.length];
+        ExprTy[] rights = new ExprTy[pairs.length];
+        for (int i = 0; i < pairs.length; i++) {
+            ops[i] = pairs[i].op;
+            rights[i] = pairs[i].expr;
+        }
+        return new ExprTy.Compare(left, ops, rights, startOffset, endOffset);
     }
 
     @Override
@@ -226,13 +236,7 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public ExprTy createDict(ExprTy[] keyValuePairs, int startOffset, int endOffset) {
-        ExprTy[] keys = new ExprTy[keyValuePairs.length / 2];
-        ExprTy[] values = new ExprTy[keyValuePairs.length / 2];
-        for (int i = 0; i < keys.length; i++) {
-            keys[i] = keyValuePairs[i * 2];
-            values[i] = keyValuePairs[i * 2 + 1];
-        }
+    public ExprTy createDict(ExprTy[] keys, ExprTy[] values, int startOffset, int endOffset) {
         return new ExprTy.Dict(keys, values, startOffset, endOffset);
     }
 

@@ -212,7 +212,7 @@ import_from[stmt_ty]:
 import_from_targets[asdl_alias_seq*]:
     | '(' a=import_from_as_names [','] ')' { a }
     | import_from_as_names !','
-    | '*' { (AliasTy[])this.singletonSequence(CHECK(alias_ty, _PyPegen_alias_for_star(p, EXTRA))) }
+    | '*' { (asdl_alias_seq*)_PyPegen_singleton_seq(p, CHECK(alias_ty, _PyPegen_alias_for_star(p, EXTRA))) }
     | invalid_import_from_targets
 import_from_as_names[asdl_alias_seq*]:
     | a[asdl_alias_seq*]=','.import_from_as_name+ { a }
@@ -338,7 +338,7 @@ wildcard_pattern[expr_ty]:
 value_pattern[expr_ty]:
     | attr=attr !('.' | '(' | '=') { attr }
 attr[expr_ty]:
-    | value=name_or_attr '.' attr=NAME { factory.createGetAttribute(value, ((ExprTy.Name)attr).name, startToken.startOffset, startToken.endOffset)}
+    | value=name_or_attr '.' attr=NAME { factory.createGetAttribute(value, ((ExprTy.Name)attr).id, startToken.startOffset, startToken.endOffset)}
 name_or_attr[expr_ty]:
     | attr
     | NAME
@@ -401,7 +401,7 @@ function_def[stmt_ty]:
 
 function_def_raw[stmt_ty]:
     | 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
-        factory.createFunctionDef(((ExprTy.Name)n).name,
+        factory.createFunctionDef(((ExprTy.Name)n).id,
                         params,
                         b, null, (ExprTy)a, newTypeComment((Token)tc),
                         startToken.startOffset, endToken.endOffset) }
@@ -474,7 +474,7 @@ param_with_default[NameDefaultPair*]:
 param_maybe_default[NameDefaultPair*]:
     | a=param c=default_param? ',' tc=TYPE_COMMENT? { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
     | a=param c=default_param? tc=TYPE_COMMENT? &')' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
-param[arg_ty]: a=NAME b=annotation? { factory.createArgument(a, b, null, startToken.startOffset, startToken.endOffset) }
+param[arg_ty]: a=NAME b=annotation? { factory.createArgument(((ExprTy.Name)a).id, b, null, startToken.startOffset, startToken.endOffset) }
 
 annotation[expr_ty]: ':' a=expression { a }
 default_param[expr_ty]: '=' a=expression { a }
@@ -665,7 +665,7 @@ primary[expr_ty]:
     | a=primary '.' b=NAME { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
     | a=primary '(' b=[arguments] ')' {
-        factory.createCall(a, this.extractArgs(b), this.extractKeywordArgs(b), startToken.startOffset, endToken.endOffset ) }
+        factory.createCall(a, ((ExprTy.Call)b).args, ((ExprTy.Call)b).keywords, startToken.startOffset, endToken.endOffset ) }
     | a=primary '[' b=slices ']' { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | atom
 
@@ -689,26 +689,26 @@ atom[expr_ty]:
 
 strings[expr_ty] (memo): a=STRING+ { this.concatenateStrings(a) }
 list[expr_ty]:
-    | '[' a=[star_named_expressions] ']' { factory.createList((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
+    | '[' a=[star_named_expressions] ']' { factory.createList(a, startToken.startOffset, endToken.endOffset) }
 listcomp[expr_ty]:
     | '[' a=named_expression b=for_if_clauses ']' { factory.createListComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
 tuple[expr_ty]:
-    | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, (SSTNode[])z) } ] ')' {
-        factory.createTuple((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
+    | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, z) } ] ')' {
+        factory.createTuple((ExprTy[])a, startToken.startOffset, endToken.endOffset) }
 group[expr_ty]:
     | '(' a=(yield_expr | named_expression) ')' { a }
     | invalid_group
 genexp[expr_ty]:
     | '(' a=direct_named_expression b=for_if_clauses ')' { factory.createGenerator(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
-set[expr_ty]: '{' a=star_named_expressions '}' { factory.createSet((SSTNode[])a,startToken.startOffset,endToken.endOffset) }
+set[expr_ty]: '{' a=star_named_expressions '}' { factory.createSet(a,startToken.startOffset,endToken.endOffset) }
 setcomp[expr_ty]:
     | '{' a=named_expression b=for_if_clauses '}' { factory.createSetComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
 dict[expr_ty]:
     | '{' a=[double_starred_kvpairs] '}' {
-        factory.createDict((SSTNode[])a,startToken.startOffset,endToken.endOffset) }
+        factory.createDict(extractKeys(a),extractValues(a),startToken.startOffset,endToken.endOffset) }
     | '{' invalid_double_starred_kvpairs '}'
 
 dictcomp[expr_ty]:
@@ -729,14 +729,14 @@ for_if_clause[comprehension_ty]:
     | invalid_for_target
 
 yield_expr[expr_ty]:
-    | 'yield' 'from' a=expression { factory.createYield((SSTNode)a, true, startToken.startOffset, endToken.endOffset) }
-    | 'yield' a=[star_expressions] { factory.createYield((SSTNode)a, false, startToken.startOffset, endToken.endOffset) }
+    | 'yield' 'from' a=expression { factory.createYield(a, true, startToken.startOffset, endToken.endOffset) }
+    | 'yield' a=[star_expressions] { factory.createYield(a, false, startToken.startOffset, endToken.endOffset) }
 
 arguments[expr_ty] (memo):
     | a=args [','] &')' { a }
     | invalid_arguments
 args[expr_ty]:
-    | a[asdl_expr_seq*]=','.(starred_expression | direct_named_expression !'=')+ b=[',' k=kwargs {k}] { this.join(a, b) }
+    | a[asdl_expr_seq*]=','.(starred_expression | direct_named_expression !'=')+ b=[',' k=kwargs {k}] { this.join(a,b) }
     | a=kwargs { a }
 kwargs[asdl_seq*]:
     | a=','.kwarg_or_starred+ ',' b=','.kwarg_or_double_starred+ { this.join(a, b) }
@@ -745,12 +745,12 @@ kwargs[asdl_seq*]:
 starred_expression[expr_ty]:
     | '*' a=expression { factory.createStarred(a, startToken.startOffset, endToken.endOffset) }
 kwarg_or_starred[KeywordOrStarred*]:
-    | a=NAME '=' b=expression { new KeywordOrStarred(factory.createKeyword(a, b, startToken.startOffset, endToken.endOffset), true) }
+    | a=NAME '=' b=expression { new KeywordOrStarred(factory.createKeyword(((ExprTy.Name)a).id, b, startToken.startOffset, endToken.endOffset), true) }
     | a=starred_expression { a }
     | invalid_kwarg
 kwarg_or_double_starred[KeywordOrStarred*]:
-    | a=NAME '=' b=expression { new KeywordOrStarred(factory.createKeyword(a, b, startToken.startOffset, endToken.endOffset), true) }
-    | '**' a=expression { new KeywordOrStarred(factory.createKeyword(NULL, a, startToken.startOffset, endToken.endOffset), true) }
+    | a=NAME '=' b=expression { new KeywordOrStarred(factory.createKeyword(((ExprTy.Name)a).id, b, startToken.startOffset, endToken.endOffset), true) }
+    | '**' a=expression { new KeywordOrStarred(factory.createKeyword(null, a, startToken.startOffset, endToken.endOffset), true) }
     | invalid_kwarg
 
 # NOTE: star_targets may contain *bitwise_or, targets may not.
@@ -767,7 +767,7 @@ star_target[expr_ty] (memo):
         _PyAST_Starred(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), Store, EXTRA) }
     | target_with_star_atom
 target_with_star_atom[expr_ty] (memo):
-    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).name, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
+    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
     | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
     | star_atom
 star_atom[expr_ty]:
@@ -806,7 +806,7 @@ t_primary[expr_ty]:
     | a=t_primary b=genexp &t_lookahead {
         _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
     | a=t_primary '(' b=[arguments] ')' &t_lookahead {
-            factory.createCall(a, this.extractArgs(b), this.extractKeywordArgs(b), startToken.startOffset, endToken.endOffset ) 
+            factory.createCall(a, ((ExprTy.Call)b).args, ((ExprTy.Call)b).keywords, startToken.startOffset, endToken.endOffset ) 
         }
     | a=atom &t_lookahead { a }
 t_lookahead: '(' | '[' | '.'

@@ -51,6 +51,8 @@ public interface NodeFactory {
 
     public ExprTy createBinaryOp(ExprTy.BinOp.Operator op, ExprTy left, ExprTy right, int startOffset, int endOffset);
 
+    public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] rights, int startOffset, int endOffset);
+
     public ModTy createModule(StmtTy[] statements, int startOffset, int endOffset);
 
     public ExprTy createBooleanLiteral(boolean value, int startOffset, int endOffset);
@@ -109,7 +111,7 @@ public interface NodeFactory {
 
     public ExprTy createList(ExprTy[] values, ExprContext context, int startOffset, int endOffset);
 
-    public ExprTy createDict(ExprTy[] keyValuePairs, int startOffset, int endOffset);
+    public ExprTy createDict(ExprTy[] keys, ExprTy[] values, int startOffset, int endOffset);
 
     public ExprTy createSet(ExprTy[] values, int startOffset, int endOffset);
 
@@ -121,7 +123,7 @@ public interface NodeFactory {
 
     public KeywordTy createKeyword(String arg, ExprTy value, int startOffset, int endOffset);
 
-    public UntypedSSTNode createUntyped(int tokenPosition);
+    public ArgTy createArgument(String argument, ExprTy annotation, String typeComment, int startOffset, int endOffset);
 
     public ComprehensionTy createComprehension(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, int startOffset, int endOffset);
 
