@@ -52,10 +52,10 @@ class NodeTypes(Enum):
 
 
 BASE_NODETYPES = {
-    "NAME": (NodeTypes.NAME_TOKEN, "VarLookupSSTNode"),
-    "NUMBER": (NodeTypes.NUMBER_TOKEN, "NumberLiteralSSTNode"),
-    "STRING": (NodeTypes.STRING_TOKEN, "SSTNode"),
-    "SOFT_KEYWORD": (NodeTypes.SOFT_KEYWORD, "VarLookupSSTNode"),
+    "NAME": (NodeTypes.NAME_TOKEN, "ExprTy.Name"),
+    "NUMBER": (NodeTypes.NUMBER_TOKEN, "ExprTy.Constant"),
+    "STRING": (NodeTypes.STRING_TOKEN, "ExprTy"),
+    "SOFT_KEYWORD": (NodeTypes.SOFT_KEYWORD, "ExprTy.Name"),
 }
 
 
@@ -95,32 +95,44 @@ class FunctionCall:
         return "".join(parts)
 
 
-# TODO this is temporary solution until all types in the grammar will not be java types
+TYPE_MAPPINGS = {
+    "expr_ty": "ExprTy",
+    "stmt_ty": "StmtTy",
+    "asdl_arg_seq*": "ArgTy[]",
+    "arg_ty": "ArgTy",
+    "arguments_ty": "ArgumentsTy",
+    "mod_ty": "ModTy",
+    "AugOperator*": "ExprTy___BinOp___Operator",
+    "asdl_stmt_seq*": "StmtTy*",
+    "asdl_expr_seq*": "ExprTy*",
+    "asdl_alias_seq*": "AliasTy*",
+    "alias_ty": "AliasTy",
+    "KeyValuePair*": "KeyValuePair",
+    "NameDefaultPair*": "NameDefaultPair",
+    "Token*": "Token",
+    "CmpopExprPair*": "CmpopExprPair",
+    "asdl_seq*": "Object*",
+    "KeywordOrStarred*": "KeywordOrStarred",
+    "SlashWithDefault*": "SlashWithDefault",
+    "StarEtc*": "StarEtc",
+    "asdl_withitem_seq*": "StmtTy.With.Item[]",
+    "withitem_ty": "StmtTy.With.Item",
+    "asdl_excepthandler_seq*": "StmtTy.Try.ExceptHandler[]",
+    "excepthandler_ty": "StmtTy.Try.ExceptHandler",
+    "asdl_match_case_seq*": "StmtTy.Match.Case[]",
+    "match_case_ty": "StmtTy.Match.Case",
+    "asdl_keyword_seq*": "KeywordTy[]",
+    "keyword_ty": "KeywordTy",
+    "asdl_comprehension_seq*": "ComprehensionTy[]",
+    "comprehension_ty": "ComprehensionTy",
+}
+
 def _check_type(self, ttype: str) -> str:
     self._type_conversions = getattr(self, "_type_conversions", {})
-
-    if (
-            ttype and
-            type(ttype) == str and
-            "Token" not in ttype and
-            "StmtTy" not in ttype and
-            "ExprTy" not in ttype and
-            "SSTNode" not in ttype and
-            "Object" not in ttype and
-            "ArgDefListBuilder" not in ttype
-    ):
-        if "[]" in ttype or "*" in ttype:
-            self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
-            return "SSTNode[]"
-        if hasattr(self, "print"):
-            self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
-        return "SSTNode"
-    elif "SSTNode*" == ttype:
-        return "SSTNode[]"
-    elif ttype and '___' in ttype:          # another hack, the ___ is replaced with .
-        return ttype.replace('___', '.')
-    if ttype and ttype.endswith('*'):
-        ttype = ttype.replace("*", "[]")
+    mappedType = TYPE_MAPPINGS.get(ttype, None)
+    if ttype and not mappedType:
+        self._type_conversions.setdefault(f"// TODO replacing {ttype} --> Object")
+        mappedType = "Object"
     return ttype
 
 
@@ -155,7 +167,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable="_keyword",
             function="expect_SOFT_KEYWORD",
             arguments=[value],
-            return_type="VarLookupSSTNode",
+            return_type="ExprTy.Name",
             nodetype=NodeTypes.SOFT_KEYWORD,
             comment=f"soft_keyword='{value}'",
         )
@@ -691,7 +703,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print(")")
 
     def emit_action(self, node: Alt, cleanup_code: Optional[str] = None) -> None:
-        node_action = str(node.action).replace(' ', '').replace ('new', 'new ')
+        node_action = re.sub(r" ?([\.\(\),]) ?", r"\1", str(node.action))
+
         # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
         if (node_action.startswith('factory') or
             node_action.startswith('new') or

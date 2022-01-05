@@ -110,7 +110,7 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class UnaryOp extends ExprTy {
         public static enum Operator {
-            Invert, Not, UAdd, USub;
+            INVERT, NOT, ADD, SUB;
         }
 
         public final Operator op;
