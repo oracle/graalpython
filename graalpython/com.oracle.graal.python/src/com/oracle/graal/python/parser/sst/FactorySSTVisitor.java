@@ -132,6 +132,7 @@ import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
+import com.oracle.graal.python.nodes.statement.PrintExpressionNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
@@ -163,15 +164,17 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     protected final PythonParser.ParserErrorCallback errors;
 
     protected int comprLevel;
+    protected boolean interactive;
 
     private static final String RETURN = "return";
 
-    public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, RootNodeFactory nodeFactory, Source source) {
+    public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, RootNodeFactory nodeFactory, Source source, boolean interactive) {
         this.scopeEnvironment = scopeEnvironment;
         this.source = source;
         this.nodeFactory = nodeFactory;
         this.errors = errors;
         this.comprLevel = 0;
+        this.interactive = interactive;
     }
 
     /**
@@ -732,6 +735,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(ExpressionStatementSSTNode node) {
         ExpressionNode expression = (ExpressionNode) node.expression.accept(this);
+        if (interactive && scopeEnvironment.atModuleLevel()) {
+            expression = PrintExpressionNode.create(expression);
+        }
         return expression.asStatement();
     }
 

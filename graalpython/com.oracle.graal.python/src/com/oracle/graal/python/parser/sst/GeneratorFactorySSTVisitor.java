@@ -109,7 +109,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     protected FactorySSTVisitor parentVisitor;
 
     public GeneratorFactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, RootNodeFactory nodeFactory, Source source, FactorySSTVisitor parentVisitor) {
-        super(errors, scopeEnvironment, nodeFactory, source);
+        super(errors, scopeEnvironment, nodeFactory, source, parentVisitor.interactive);
         this.parentVisitor = parentVisitor;
     }
 
