@@ -102,7 +102,7 @@ TYPE_MAPPINGS = {
     "arg_ty": "ArgTy",
     "arguments_ty": "ArgumentsTy",
     "mod_ty": "ModTy",
-    "AugOperator*": "ExprTy___BinOp___Operator",
+    "AugOperator*": "ExprTy.BinOp.Operator",
     "asdl_stmt_seq*": "StmtTy[]",
     "asdl_expr_seq*": "ExprTy[]",
     "asdl_alias_seq*": "AliasTy[]",
@@ -134,7 +134,7 @@ TYPE_MAPPINGS = {
     "ExprTy.Constant": "ExprTy.Constant",
     "ExprTy.Name": "ExprTy.Name",
     "Object": "Object",
-    "SSTNode[]": "SSTNode[]",
+    "Object[]": "Object[]",
 }
 
 def _check_type(self, ttype: str) -> str:
@@ -205,7 +205,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
         type = None
         rule = self.gen.all_rules.get(name.lower())
         if rule is not None:
-            type = "SSTNode[]" if rule.is_loop() or rule.is_gather() else rule.type
+            type = f"{rule.type or 'Object'}[]" if rule.is_loop() or rule.is_gather() else rule.type
 
         return FunctionCall(
             assigned_variable=f"{name}_var",
@@ -245,6 +245,11 @@ class JavaCallMakerVisitor(GrammarVisitor):
             arguments=[],
             comment=f"{node}",
         )
+        # Begin Java type hack
+        types = {c.return_type for c in [self.generate_call(i) for a in node.alts for i in a.items] if c}
+        if len(types) == 1:
+            self.cache[node].return_type = types.pop()
+        # End Java type hack
         return self.cache[node]
 
     def visit_NamedItem(self, node: NamedItem) -> FunctionCall:
@@ -327,6 +332,9 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable="_opt_var",
             function=call.function,
             arguments=call.arguments,
+            # Begin Java type hack
+            return_type=call.return_type,
+            # End Java type hack
             force_true=True,
             comment=f"{node}",
         )
@@ -339,9 +347,13 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type="SSTNode[]",
+            return_type="Object[]",
             comment=f"{node}",
         )
+        # Begin Java type hack
+        if self.generate_call(node.node).return_type:
+            self.cache[node].return_type = self.generate_call(node.node).return_type
+        # End Java type hack
         return self.cache[node]
 
     def visit_Repeat1(self, node: Repeat1) -> FunctionCall:
@@ -352,9 +364,13 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type="SSTNode[]",
+            return_type="Object[]",
             comment=f"{node}",
         )
+        # Begin Java type hack
+        if self.generate_call(node.node).return_type:
+            self.cache[node].return_type = self.generate_call(node.node).return_type
+        # End Java type hack
         return self.cache[node]
 
     def visit_Gather(self, node: Gather) -> FunctionCall:
@@ -365,9 +381,13 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type= "SSTNode[]",
+            return_type= "Object[]",
             comment=f"{node}",
         )
+        # Begin Java type hack
+        if self.generate_call(node.node).return_type:
+            self.cache[node].return_type = self.generate_call(node.node).return_type
+        # End Java type hack
         return self.cache[node]
 
     def visit_Group(self, node: Group) -> FunctionCall:
@@ -650,20 +670,35 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         rhs = node.flatten()
         if is_loop or is_gather:
             # Hacky way to get more specific Java type
-            collected_type = "SSTNode"
-            if len(node.rhs.alts) == 1:
-                items = [i.item for i in node.rhs.alts[0].items if isinstance(i.item, NameLeaf)]
-                if len(items) == 1:
-                    parent_rule = self.all_rules.get(items[0].value)
+            collected_types = set()
+            for alt in node.rhs.alts:
+                items = [i.item for i in alt.items if isinstance(i.item, (NameLeaf, NamedItem))]
+                for item in items:
+                    parent_rule = self.all_rules.get(item.value if isinstance(item, NameLeaf) else item.item.value)
                     if parent_rule and parent_rule.type:
-                        collected_type = _check_type(self, parent_rule.type).replace("[]", "")
-            self._collected_type.append(collected_type)
+                        collected_types.add(_check_type(self, parent_rule.type).replace("[]", ""))
+            if len(collected_types) == 1:
+                self._collected_type.append(collected_types.pop())
+            else:
+                self._collected_type.append("Object")
             # end of hacky way to get better Java type
-            result_type = f"{collected_type}[]"
+            result_type = f"{self._collected_type[-1]}[]"
         elif node.type:
             result_type = _check_type(self, node.type)
         else:
             result_type = "Object"
+            # Another hacky way to get more specific Java type
+            inner_types = set()
+            for alt in node.rhs.alts:
+                items = [i.item for i in alt.items if isinstance(i.item, (NameLeaf, NamedItem))]
+                for item in items:
+                    parent_rule = self.all_rules.get(item.value if isinstance(item, NameLeaf) else item.item.value)
+                    if parent_rule and parent_rule.type:
+                        inner_types.add(_check_type(self, parent_rule.type))
+            if len(inner_types) == 1:
+                result_type = inner_types.pop()
+                node.type = result_type
+            # end of hacky way to get more specific Java type
 
         for line in str(node).splitlines():
             self.print(f"// {line}")
@@ -887,7 +922,6 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
             with self.indent():
                 self.print("int tmpPos = mark();")
-                return_type = "Object"
                 if call.return_type:
                     return_type = call.return_type;
                 else:
