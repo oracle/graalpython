@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.SSTTreePrinterVisitor;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -111,7 +112,7 @@ public class ParserTestBase {
         };
         FExprParser fexpParser = new FExprParser() {
             @Override
-            public SSTNode parse(String code) {
+            public ExprTy parse(String code) {
                 ParserTokenizer tok = new ParserTokenizer(code);
                 return new Parser(tok, factory, this, errorCb).fstring_rule();
             }
@@ -277,7 +278,7 @@ public class ParserTestBase {
         };
         FExprParser fexpParser = new FExprParser() {
             @Override
-            public SSTNode parse(String code) {
+            public ExprTy parse(String code) {
                 ParserTokenizer tok = new ParserTokenizer(code);
                 return new Parser(tok, factory, this, errorCb).fstring_rule();
             }
