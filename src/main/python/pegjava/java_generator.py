@@ -103,15 +103,15 @@ TYPE_MAPPINGS = {
     "arguments_ty": "ArgumentsTy",
     "mod_ty": "ModTy",
     "AugOperator*": "ExprTy___BinOp___Operator",
-    "asdl_stmt_seq*": "StmtTy*",
-    "asdl_expr_seq*": "ExprTy*",
-    "asdl_alias_seq*": "AliasTy*",
+    "asdl_stmt_seq*": "StmtTy[]",
+    "asdl_expr_seq*": "ExprTy[]",
+    "asdl_alias_seq*": "AliasTy[]",
     "alias_ty": "AliasTy",
     "KeyValuePair*": "KeyValuePair",
     "NameDefaultPair*": "NameDefaultPair",
     "Token*": "Token",
     "CmpopExprPair*": "CmpopExprPair",
-    "asdl_seq*": "Object*",
+    "asdl_seq*": "Object[]",
     "KeywordOrStarred*": "KeywordOrStarred",
     "SlashWithDefault*": "SlashWithDefault",
     "StarEtc*": "StarEtc",
@@ -125,6 +125,16 @@ TYPE_MAPPINGS = {
     "keyword_ty": "KeywordTy",
     "asdl_comprehension_seq*": "ComprehensionTy[]",
     "comprehension_ty": "ComprehensionTy",
+
+    # already properly declared return types here
+    "boolean": "boolean",
+    "int": "int",
+    "Token": "Token",
+    "ExprTy": "ExprTy",
+    "ExprTy.Constant": "ExprTy.Constant",
+    "ExprTy.Name": "ExprTy.Name",
+    "Object": "Object",
+    "SSTNode[]": "SSTNode[]",
 }
 
 def _check_type(self, ttype: str) -> str:
@@ -133,7 +143,7 @@ def _check_type(self, ttype: str) -> str:
     if ttype and not mappedType:
         self._type_conversions.setdefault(f"// TODO replacing {ttype} --> Object")
         mappedType = "Object"
-    return ttype
+    return mappedType
 
 
 class JavaCallMakerVisitor(GrammarVisitor):
@@ -201,7 +211,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type=_check_type(self, type),
+            return_type=type,
             comment=f"{node}",
         )
 
@@ -550,7 +560,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     f"cache.putResult(_mark, {node.name.upper()}_ID, _res)", "_res"
                 )
                 self.print("reset(_mark);")
-                self.print(f"SSTNode _raw = {node.name}_raw();")
+                self.print(f"Object _raw = {node.name}_raw();")
                 self.print("if (_raw == null || mark() <= _resmark)")
                 with self.indent():
                     self.print("break;")
@@ -850,7 +860,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.local_variable_context():
             for item in node.items:
                 name, type = self.add_var(item)
-                types[name] = type
+                types[name] = _check_type(self, type)
         return types
 
     def add_var(self, node: NamedItem) -> Tuple[Optional[str], Optional[str]]:
@@ -858,7 +868,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         name = node.name if node.name else call.assigned_variable
         if name is not None:
             name = self.dedupe(name)
-        return_type = call.return_type if node.type is None else _check_type(self, node.type)
+        return_type = call.return_type if node.type is None else node.type
         return name, return_type
 
     # Java generator additions
