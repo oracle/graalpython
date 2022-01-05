@@ -42,6 +42,7 @@ package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
@@ -287,7 +288,7 @@ abstract class AbstractParser {
     /**
      * _PyPegen_dummy_name
      */
-    public SSTNode dummyName(Object... args) {
+    public ExprTy.Name dummyName(Object... args) {
         if (cachedDummyName != null) {
             return cachedDummyName;
         }
@@ -562,12 +563,48 @@ abstract class AbstractParser {
     }
 
     public static final class KeywordOrStarred {
-        final Object element;
+        final SSTNode element;
         final boolean isKeyword;
 
-        KeywordOrStarred(Object element, boolean isKeyword) {
+        KeywordOrStarred(SSTNode element, boolean isKeyword) {
             this.element = element;
             this.isKeyword = isKeyword;
+        }
+    }
+
+    private static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
+    private static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
+
+    /**
+     * _PyPegen_seq_extract_starred_exprs
+     */
+    static ExprTy[] extractStarredExpressions(KeywordOrStarred[] kwds) {
+        return Arrays.stream(kwds).filter(n -> !n.isKeyword).map(n -> (ExprTy)n.element).toList().toArray(EMPTY_EXPR);
+    }
+
+    /**
+     * _PyPegen_seq_delete_starred_exprs
+     */
+    static KeywordTy[] deleteStarredExpressions(KeywordOrStarred[] kwds) {
+        return Arrays.stream(kwds).filter(n -> n.isKeyword).map(n -> (KeywordTy)n.element).toList().toArray(EMPTY_KWDS);
+    }
+
+    /**
+     * _PyPegen_collect_call_seqs
+     */
+    final ExprTy collectCallSequences(ExprTy[] a, KeywordOrStarred[] b, int startOffset, int endOffset) {
+        if (b == null) {
+            return factory.createCall(dummyName(), a, EMPTY_KWDS, startOffset, endOffset);
+        } else {
+            ExprTy[] starred = extractStarredExpressions(b);
+            ExprTy[] args;
+            if (starred.length > 0) {
+                args = Arrays.copyOf(a, a.length + starred.length);
+                System.arraycopy(starred, 0, args, a.length, starred.length);
+            } else {
+                args = a;
+            }
+            return factory.createCall(dummyName(), args, deleteStarredExpressions(b), startOffset, endOffset);
         }
     }
 }

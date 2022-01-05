@@ -11899,6 +11899,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // ','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]
             debugMessageln("%d> args[%d-%d]: %s", level, _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
             ExprTy[] a;
@@ -11910,7 +11911,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
-                _res = this.join(a,b);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = this.collectCallSequences(a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
                 cache.putResult(_mark, ARGS_ID, _res);
                 level--;
@@ -11928,7 +11934,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, _mark, mark(), "kwargs");
-                _res = a;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createCall(dummyName(),extractStarredExpressions(a),deleteStarredExpressions(a),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "kwargs");
                 cache.putResult(_mark, ARGS_ID, _res);
                 level--;

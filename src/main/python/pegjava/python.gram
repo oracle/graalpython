@@ -736,8 +736,11 @@ arguments[expr_ty] (memo):
     | a=args [','] &')' { a }
     | invalid_arguments
 args[expr_ty]:
-    | a[asdl_expr_seq*]=','.(starred_expression | direct_named_expression !'=')+ b=[',' k=kwargs {k}] { this.join(a,b) }
-    | a=kwargs { a }
+    | a[asdl_expr_seq*]=','.(starred_expression | direct_named_expression !'=')+ b=[',' k=kwargs {k}] { this.collectCallSequences(a,b,startToken.startOffset,endToken.endOffset) }
+    | a=kwargs { factory.createCall(dummyName(),
+                                    extractStarredExpressions(a),
+                                    deleteStarredExpressions(a),
+                                    startToken.startOffset, endToken.endOffset) }
 kwargs[asdl_seq*]:
     | a=','.kwarg_or_starred+ ',' b=','.kwarg_or_double_starred+ { this.join(a, b) }
     | ','.kwarg_or_starred+
