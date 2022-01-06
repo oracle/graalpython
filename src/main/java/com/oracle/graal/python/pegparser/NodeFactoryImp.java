@@ -42,6 +42,9 @@ package com.oracle.graal.python.pegparser;
 
 // TODO this class has to be moved to impl package and from this package we need to do api.
 
+import com.oracle.graal.python.pegparser.AbstractParser.NameDefaultPair;
+import com.oracle.graal.python.pegparser.AbstractParser.SlashWithDefault;
+import com.oracle.graal.python.pegparser.AbstractParser.StarEtc;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
@@ -51,6 +54,7 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 
 public class NodeFactoryImp implements NodeFactory{
@@ -114,6 +118,7 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy createExpression(ExprTy expr) {
         return new StmtTy.Expr(expr);
     }
+
 
     @Override
     public ExprTy createCall(ExprTy target, ExprTy[] args, KeywordTy[] kwargs, int startOffset, int endOffset) {
@@ -212,6 +217,82 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public ArgTy createArgument(String argument, ExprTy annotation, String typeComment, int startOffset, int endOffset) {
         return new ArgTy(argument, annotation, typeComment, startOffset, endOffset);
+    }
+
+    @Override
+    public ArgumentsTy createArguments(ArgTy[] slashWithoutDefault, SlashWithDefault slashWithDefault, ArgTy[] paramWithoutDefault, NameDefaultPair[] paramWithDefault, StarEtc starEtc) {
+        ArgTy[] posOnlyArgs;
+        if (slashWithoutDefault != null) {
+            posOnlyArgs = slashWithoutDefault;
+        } else if (slashWithDefault != null) {
+            posOnlyArgs = Arrays.copyOf(slashWithDefault.plainNames,
+                            slashWithDefault.plainNames.length +
+                            slashWithDefault.namesWithDefaults.length);
+            int i = slashWithDefault.plainNames.length;
+            for (NameDefaultPair p : slashWithDefault.namesWithDefaults) {
+                posOnlyArgs[i++] = p.name;
+            }
+        } else {
+            posOnlyArgs = new ArgTy[0];
+        }
+
+        ArgTy[] posArgs;
+        if (paramWithDefault != null) {
+            int i;
+            if (paramWithoutDefault != null) {
+                posArgs = Arrays.copyOf(paramWithoutDefault,
+                                paramWithoutDefault.length +
+                                paramWithDefault.length);
+                i = paramWithoutDefault.length;
+            } else {
+                posArgs = new ArgTy[paramWithDefault.length];
+                i = 0;
+            }
+            for (NameDefaultPair p : paramWithDefault) {
+                posArgs[i++] = p.name;
+            }
+        } else if (paramWithoutDefault != null) {
+            posArgs = paramWithoutDefault;
+        } else {
+            posArgs = new ArgTy[0];
+        }
+
+        ExprTy[] posDefaults;
+        int posDefaultsLen = 0;
+        if (slashWithDefault != null) {
+            posDefaultsLen = slashWithDefault.namesWithDefaults.length;
+        }
+        if (paramWithDefault != null) {
+            posDefaultsLen += paramWithDefault.length;
+        }
+        posDefaults = new ExprTy[posDefaultsLen];
+        int i = 0;
+        if (slashWithDefault != null) {
+            for (NameDefaultPair p : slashWithDefault.namesWithDefaults) {
+                posDefaults[i++] = p.def;
+            }
+        }
+        if (paramWithDefault != null) {
+            for (NameDefaultPair p : paramWithDefault) {
+                posDefaults[i++] = p.def;
+            }
+        }
+
+        ArgTy[] kwOnlyArgs;
+        ExprTy[] kwDefaults;
+        if (starEtc != null && starEtc.kwOnlyArgs != null) {
+            kwOnlyArgs = new ArgTy[starEtc.kwOnlyArgs.length];
+            kwDefaults = new ExprTy[kwOnlyArgs.length];
+            for (int j = 0; j < kwOnlyArgs.length; j++) {
+                kwOnlyArgs[j] = starEtc.kwOnlyArgs[j].name;
+                kwDefaults[j] = starEtc.kwOnlyArgs[j].def;
+            }
+        } else {
+            kwOnlyArgs = new ArgTy[0];
+            kwDefaults = new ExprTy[0];
+        }
+
+        return new ArgumentsTy(posOnlyArgs, posArgs, starEtc != null ? starEtc.varArg : null, kwOnlyArgs, kwDefaults, starEtc != null ? starEtc.kwArg : null, posDefaults, 0, 0);
     }
 
     @Override

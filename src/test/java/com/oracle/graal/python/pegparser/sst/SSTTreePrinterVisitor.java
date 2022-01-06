@@ -53,51 +53,74 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ArgumentsTy node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
-        level++;
-        sb.append("\nArgs:");
-        level++;
-        for(SSTNode child: node.args) {
-            sb.append('\n').append(indent()).append(child.accept(this));
-        }
-        level -= 2;
 
-        level++;
-        sb.append("\nPosOnlyArgs:");
-        level++;
-        for(SSTNode child: node.posOnlyArgs) {
-            sb.append('\n').append(indent()).append(child.accept(this));
+        if (node.args.length > 0) {
+            level++;
+            sb.append('\n').append(indent()).append("Args:");
+            level++;
+            for(SSTNode child: node.args) {
+                sb.append('\n').append(indent()).append(child.accept(this));
+            }
+            level -= 2;
         }
-        level -= 2;
 
-        level++;
-        sb.append("\nKwOnlyArgs:");
-        level++;
-        for(SSTNode child: node.kwOnlyArgs) {
-            sb.append('\n').append(indent()).append(child.accept(this));
+        if (node.posOnlyArgs.length > 0) {
+            level++;
+            sb.append('\n').append(indent()).append("PosOnlyArgs:");
+            level++;
+            for(SSTNode child: node.posOnlyArgs) {
+                sb.append('\n').append(indent()).append(child.accept(this));
+            }
+            level -= 2;
         }
-        level -= 2;
 
-        level++;
-        sb.append("\nKwarg:");
-        level++;
-        sb.append('\n').append(indent()).append(node.kwArg.accept(this));
-        level -= 2;
-
-        level++;
-        sb.append("\nDefaults:");
-        level++;
-        for(SSTNode child: node.defaults) {
-            sb.append('\n').append(indent()).append(child.accept(this));
+        if (node.varArg != null) {
+            level++;
+            sb.append('\n').append(indent()).append("VarArg:");
+            level++;
+            sb.append('\n').append(indent()).append(node.varArg.accept(this));
+            level -= 2;
         }
-        level -= 2;
 
-        level++;
-        sb.append("\nKwDefaults:");
-        level++;
-        for(SSTNode child: node.kwDefaults) {
-            sb.append('\n').append(indent()).append(child.accept(this));
+        if (node.kwOnlyArgs.length > 0) {
+            level++;
+            sb.append('\n').append(indent()).append("KwOnlyArgs:");
+            level++;
+            for(SSTNode child: node.kwOnlyArgs) {
+                sb.append('\n').append(indent()).append(child.accept(this));
+            }
+            level -= 2;
         }
-        level -= 2;
+
+        if (node.kwArg != null) {
+            level++;
+            sb.append('\n').append(indent()).append("Kwarg:");
+            level++;
+            sb.append('\n').append(indent()).append(node.kwArg.accept(this));
+            level -= 2;
+        }
+
+        if (node.defaults.length > 0) {
+            level++;
+            sb.append('\n').append(indent()).append("Defaults:");
+            level++;
+            for(SSTNode child: node.defaults) {
+                sb.append('\n').append(indent()).append(child.accept(this));
+            }
+            level -= 2;
+        }
+
+        if (node.kwDefaults.length > 0) {
+            level++;
+            sb.append('\n').append(indent()).append("KwDefaults:");
+            level++;
+            for(SSTNode child : node.kwDefaults) {
+                if (child != null) {
+                    sb.append('\n').append(indent()).append(child.accept(this));
+                }
+            }
+            level -= 2;
+        }
 
         return sb.toString();
     }
@@ -653,7 +676,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
             }
         }
         if (node.args != null) {
-            sb.append('\n').append(indent()).append("Args:");
             sb.append('\n').append(indent()).append(node.args.accept(this));
         }
         if (node.returns != null) {

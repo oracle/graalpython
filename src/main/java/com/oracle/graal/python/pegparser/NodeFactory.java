@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import com.oracle.graal.python.pegparser.AbstractParser.NameDefaultPair;
+import com.oracle.graal.python.pegparser.AbstractParser.SlashWithDefault;
+import com.oracle.graal.python.pegparser.AbstractParser.StarEtc;
 import com.oracle.graal.python.pegparser.sst.*;
 
 public interface NodeFactory {
@@ -126,6 +129,8 @@ public interface NodeFactory {
     public KeywordTy createKeyword(String arg, ExprTy value, int startOffset, int endOffset);
 
     public ArgTy createArgument(String argument, ExprTy annotation, String typeComment, int startOffset, int endOffset);
+
+    public ArgumentsTy createArguments(ArgTy[] slashWithoutDefault, SlashWithDefault slashWithDefault, ArgTy[] paramWithoutDefault, NameDefaultPair[] paramWithDefault, StarEtc starEtc);
 
     public ComprehensionTy createComprehension(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, int startOffset, int endOffset);
 

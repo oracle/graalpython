@@ -425,13 +425,13 @@ params[arguments_ty]:
 
 parameters[arguments_ty]:
     | a=slash_no_default b[asdl_arg_seq*]=param_no_default* c=param_with_default* d=[star_etc] {
-        _PyPegen_make_arguments(p, a, NULL, b, c, d) }
+        factory.createArguments(a, null, b, c, d) }
     | a=slash_with_default b=param_with_default* c=[star_etc] {
-        _PyPegen_make_arguments(p, NULL, a, NULL, b, c) }
+        factory.createArguments(null, a, null, b, c) }
     | a[asdl_arg_seq*]=param_no_default+ b=param_with_default* c=[star_etc] {
-        _PyPegen_make_arguments(p, NULL, NULL, a, b, c) }
-    | a=param_with_default+ b=[star_etc] { _PyPegen_make_arguments(p, NULL, NULL, NULL, a, b)}
-    | a=star_etc { _PyPegen_make_arguments(p, NULL, NULL, NULL, NULL, a) }
+        factory.createArguments(null, null, a, b, c) }
+    | a=param_with_default+ b=[star_etc] { factory.createArguments(null, null, null, a, b)}
+    | a=star_etc { factory.createArguments(null, null, null, null, a) }
 
 # Some duplication here because we can't write (',' | &')'),
 # which is because we don't support empty alternatives (yet).
@@ -445,10 +445,10 @@ slash_with_default[SlashWithDefault*]:
 
 star_etc[StarEtc*]:
     | '*' a=param_no_default b=param_maybe_default* c=[kwds] {
-        _PyPegen_star_etc(p, a, b, c) }
+        new StarEtc(a, b, c) }
     | '*' ',' b=param_maybe_default+ c=[kwds] {
-        _PyPegen_star_etc(p, NULL, b, c) }
-    | a=kwds { _PyPegen_star_etc(p, NULL, NULL, a) }
+        new StarEtc(null, b, c) }
+    | a=kwds { new StarEtc(null, null, a) }
     | invalid_star_etc
 
 kwds[arg_ty]: '**' a=param_no_default { a }
