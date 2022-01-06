@@ -1,0 +1,16 @@
+Module[0, 64]
+    FunctionDef[0, 64]
+        Name:__init__
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[13, 17] self
+                ArgTy[19, 27] max_size
+            KwOnlyArgs:
+                ArgTy[34, 37] ctx
+                ArgTy[39, 57] pending_work_items
+            Defaults:
+                LONG[28, 29] Value: 0
+            KwDefaults:
+        ---- Function body of __init__ ----
+        Pass[60, 64]
+        ---- End of __init__ function ----

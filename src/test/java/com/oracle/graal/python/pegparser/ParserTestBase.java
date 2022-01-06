@@ -41,6 +41,7 @@
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTTreePrinterVisitor;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,7 +101,7 @@ public class ParserTestBase {
 //        return PythonLanguage.newSource(context, src, getFileName(testFile));
 //    }
 
-    public SSTNode parse(String src, String moduleName, int mode) {
+    public ModTy parse(String src, String moduleName, int mode) {
 
         ParserTokenizer tokenizer = new ParserTokenizer(src);
         NodeFactory factory = new NodeFactoryImp();
@@ -118,7 +119,7 @@ public class ParserTestBase {
             }
         };
         Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-        SSTNode result = parser.file_rule();
+        ModTy result = parser.file_rule();
 
 //        lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
 //        lastSST = ((PythonParserImpl) parser).getLastSST();

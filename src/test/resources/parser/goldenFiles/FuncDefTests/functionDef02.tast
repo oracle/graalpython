@@ -1,0 +1,6 @@
+Module[0, 17]
+    FunctionDef[0, 17]
+        Name:foo
+        ---- Function body of foo ----
+        Pass[13, 17]
+        ---- End of foo function ----

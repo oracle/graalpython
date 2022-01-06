@@ -1,0 +1,8 @@
+Module[0, 23]
+    FunctionDef[0, 23]
+        Name:foo
+        ArgumentsTy[0, 0]
+            VarArg: ArgTy[9, 13] args
+        ---- Function body of foo ----
+        Pass[19, 23]
+        ---- End of foo function ----

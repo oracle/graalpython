@@ -1,0 +1,11 @@
+Module[0, 30]
+    FunctionDef[0, 30]
+        Name:foo
+        ArgumentsTy[0, 0]
+            VarArg: ArgTy[9, 13] args
+        ---- Function body of foo ----
+        Call[19, 30]
+            Target: Name[19, 24] Value: "print"
+            Args:
+                Name[25, 29] Value: "args"
+        ---- End of foo function ----

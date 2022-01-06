@@ -6342,9 +6342,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d slash_with_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param_no_default* param_with_default+ '/' ','");
-                // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
-                _res = null;
+                _res = new SlashWithDefault(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default* param_with_default+ '/' ','");
                 cache.putResult(_mark, SLASH_WITH_DEFAULT_ID, _res);
                 level--;
@@ -6370,9 +6368,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d slash_with_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param_no_default* param_with_default+ '/' &')'");
-                // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
-                _res = null;
+                _res = new SlashWithDefault(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default* param_with_default+ '/' &')'");
                 cache.putResult(_mark, SLASH_WITH_DEFAULT_ID, _res);
                 level--;
