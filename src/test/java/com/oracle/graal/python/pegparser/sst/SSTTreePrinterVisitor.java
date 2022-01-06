@@ -238,14 +238,22 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         sb.append(node.kind).append("[").append(node.getStartOffset());
         sb.append(", ").append(node.getEndOffset()).append("]");
         sb.append(" Value: ");
-        if (node.value == null) {
-            sb.append(node.longValue);
-        } else {
-            if (node.value instanceof Boolean || node.value instanceof BigInteger || node.value instanceof String) {
-                sb.append(node.value);
-            } else {
-                sb.append("<unprintable value>");
-            }
+        switch (node.kind) {
+            case LONG:
+                sb.append(node.longValue);
+                break;
+            case DOUBLE:
+                sb.append(Double.longBitsToDouble(node.longValue));
+                break;
+            case COMPLEX:
+                sb.append(Double.longBitsToDouble(node.longValue)).append('j');
+                break;
+            default:
+                if (node.value == null || node.value instanceof Boolean || node.value instanceof BigInteger || node.value instanceof String) {
+                    sb.append(node.value);
+                } else {
+                    sb.append("<unprintable value>");
+                }
         }
         return sb.toString();
     }

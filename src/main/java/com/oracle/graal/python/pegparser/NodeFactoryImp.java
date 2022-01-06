@@ -151,42 +151,76 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public ExprTy createNumber(String number, int start, int base, int startOffset, int endOffset) {
-        String value = number.replace("_", "");
-        final long max = Long.MAX_VALUE;
-        final long moltmax = max / base;
-        int i = start;
-        long result = 0;
-        int lastD;
-        boolean overunder = false;
-        while (i < value.length()) {
-            lastD = digitValue(value.charAt(i));
+    public ExprTy createNumber(String number, int startOffset, int endOffset) {
+        int base = 10;
+        int start = 0;
+        boolean isFloat = false;
+        boolean isComplex = false;
 
-            long next = result;
-            if (next > moltmax) {
-                overunder = true;
-            } else {
-                next *= base;
-                if (next > (max - lastD)) {
+        if (number.startsWith("0")) {
+            if (number.startsWith("0x") || number.startsWith("0X")) {
+                base = 16;
+                start = 2;
+            } else if (number.startsWith("0o") || number.startsWith("0O")) {
+                base = 8;
+                start = 2;
+            } else if (number.startsWith("0o") || number.startsWith("0O")) {
+                base = 2;
+                start = 2;
+            }
+        }
+        if (base == 10) {
+            isComplex = number.endsWith("j") || number.endsWith("J");
+            if (!isComplex) {
+                isFloat = number.contains(".") || number.contains("e") || number.contains("E");
+            }
+        }
+        String value = number.replace("_", "");
+
+        if (isComplex) {
+            return new ExprTy.Constant(Double.parseDouble(value.substring(0, value.length() - 1)),
+                            ExprTy.Constant.Kind.COMPLEX,
+                            startOffset, endOffset);
+        } else if (isFloat) {
+            return new ExprTy.Constant(Double.parseDouble(value),
+                            ExprTy.Constant.Kind.DOUBLE,
+                            startOffset, endOffset);
+        } else {
+            final long max = Long.MAX_VALUE;
+            final long moltmax = max / base;
+            int i = start;
+            long result = 0;
+            int lastD;
+            boolean overunder = false;
+            while (i < value.length()) {
+                lastD = digitValue(value.charAt(i));
+
+                long next = result;
+                if (next > moltmax) {
                     overunder = true;
                 } else {
-                    next += lastD;
+                    next *= base;
+                    if (next > (max - lastD)) {
+                        overunder = true;
+                    } else {
+                        next += lastD;
+                    }
                 }
-            }
-            if (overunder) {
-                // overflow
-                BigInteger bigResult = BigInteger.valueOf(result);
-                BigInteger bigBase = BigInteger.valueOf(base);
-                while (i < value.length()) {
-                    bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(value.charAt(i))));
-                    i++;
+                if (overunder) {
+                    // overflow
+                    BigInteger bigResult = BigInteger.valueOf(result);
+                    BigInteger bigBase = BigInteger.valueOf(base);
+                    while (i < value.length()) {
+                        bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(value.charAt(i))));
+                        i++;
+                    }
+                    return new ExprTy.Constant(bigResult, ExprTy.Constant.Kind.BIGINTEGER, startOffset, endOffset);
                 }
-                return new ExprTy.Constant(bigResult, ExprTy.Constant.Kind.BIGINTEGER, startOffset, endOffset);
+                result = next;
+                i++;
             }
-            result = next;
-            i++;
+            return new ExprTy.Constant(result, startOffset, endOffset);
         }
-        return new ExprTy.Constant(result, ExprTy.Constant.Kind.LONG, startOffset, endOffset);
     }
 
     @Override

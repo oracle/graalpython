@@ -388,6 +388,7 @@ public abstract class ExprTy extends SSTNode {
             BOOLEAN,
             LONG,
             DOUBLE,
+            COMPLEX,
             BIGINTEGER,
             RAW,
             BYTES;
@@ -404,11 +405,25 @@ public abstract class ExprTy extends SSTNode {
             this.kind = kind == null ? Kind.OBJECT : kind;
         }
 
-        public Constant(long longValue, Kind kind, int startOffset, int endOffset) {
+        public Constant(double value, Kind kind, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+            this.value = null;
+            this.longValue = Double.doubleToLongBits(value);
+            this.kind = kind;
+        }
+
+        public Constant(long longValue, int startOffset, int endOffset) {
             super(startOffset, endOffset);
             this.value = null;
             this.longValue = longValue;
-            this.kind = kind;
+            this.kind = Kind.LONG;
+        }
+
+        public Constant(double real, double imag, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+            this.value = real;
+            this.longValue = Double.doubleToLongBits(imag);
+            this.kind = Kind.COMPLEX;
         }
 
         @Override

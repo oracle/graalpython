@@ -82,11 +82,7 @@ public interface NodeFactory {
 
     public ExprTy createYield(ExprTy value, boolean isFrom, int startOffset, int endOffset);
 
-    default ExprTy createNumber(String number, int startOffset, int endOffset) {
-        return createNumber(number, 0, 10, startOffset, endOffset);
-    }
-
-    public ExprTy createNumber(String number, int start, int base, int startOffset, int endOffset);
+    public ExprTy createNumber(String number, int startOffset, int endOffset);
 
     public ExprTy createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
 
