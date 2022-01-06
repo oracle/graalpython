@@ -1,0 +1,8 @@
+Module[0, 8]
+    Subscript[0, 1]
+        Slice: Tuple[2, 7]
+            Values:
+                LONG[2, 3] Value: 1
+                LONG[4, 5] Value: 3
+                LONG[6, 7] Value: 4
+        Value: Name[0, 1] Value: "a"

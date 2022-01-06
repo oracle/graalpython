@@ -1,0 +1,12 @@
+Module[0, 27]
+    Tuple[0, 27]
+        Values:
+            LONG[1, 2] Value: 1
+            Call[4, 18]
+                Target: Name[4, 10] Value: "call01"
+                Args:
+                    Tuple[11, 17]
+                        Values:
+                            LONG[12, 13] Value: 1
+                            LONG[14, 15] Value: 2
+            RAW[20, 26] Value: ahoj

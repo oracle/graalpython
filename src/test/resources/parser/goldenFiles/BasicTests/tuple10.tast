@@ -1,0 +1,9 @@
+Module[0, 14]
+    Assign[0, 14]
+        LHS: Name[0, 1] Value: "t" Store
+        RHS: 
+            Tuple[4, 14]
+                Values:
+                    LONG[4, 5] Value: 1
+                    Call[7, 14]
+                        Target: Name[7, 12] Value: "call1"

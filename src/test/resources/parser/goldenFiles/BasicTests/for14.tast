@@ -18,6 +18,8 @@ Module[0, 165]
                                 LHS: Name[91, 100] Value: "candidate"
                                 Op: IN
                                 RHS: Subscript[104, 106]
+                                    Slice: Slice[107, 109]
+                                    Value: Name[104, 106] Value: "s2"
                             Then:
                                 Break[128, 133]
                     Else:
@@ -26,6 +28,8 @@ Module[0, 165]
                                 LHS: Name[91, 100] Value: "candidate"
                                 Op: IN
                                 RHS: Subscript[104, 106]
+                                    Slice: Slice[107, 109]
+                                    Value: Name[104, 106] Value: "s2"
                             Then:
                                 Break[128, 133]
         ---- End of merge function ----

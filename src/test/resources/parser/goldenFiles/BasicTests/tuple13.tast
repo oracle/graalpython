@@ -1,0 +1,10 @@
+Module[0, 29]
+    Assign[0, 29]
+        LHS: Name[0, 1] Value: "b" Store
+        RHS: 
+            Tuple[4, 29]
+                Values:
+                    Tuple[8, 21]
+                        Values:
+                            LONG[9, 13] Value: 105
+                            LONG[15, 20] Value: 305

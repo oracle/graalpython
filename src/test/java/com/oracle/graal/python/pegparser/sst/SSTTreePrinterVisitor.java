@@ -448,8 +448,14 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Subscript node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        if (node.context != null && node.context != ExprContext.Load) {
+            sb.append(" Context: ").append(node.context);
+        }
+        level++;
+        sb.append('\n').append(indent()).append("Slice: ").append(node.slice.accept(this));
+        sb.append('\n').append(indent()).append("Value: ").append(node.value.accept(this));
+        level--;
         return sb.toString();
-
     }
 
     @Override

@@ -1,0 +1,7 @@
+Module[0, 8]
+    Assign[0, 8]
+        LHS: Name[0, 1] Value: "t" Store
+        RHS: 
+            Tuple[4, 8]
+                Values:
+                    LONG[5, 6] Value: 2

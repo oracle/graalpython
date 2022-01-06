@@ -1,0 +1,6 @@
+Module[0, 5]
+    Tuple[0, 5]
+        Values:
+            LONG[0, 1] Value: 1
+            LONG[2, 3] Value: 2
+            LONG[4, 5] Value: 3

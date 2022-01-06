@@ -710,72 +710,72 @@ public class BasicTests extends ParserTestBase {
 //                                        "        print(err)");
 //    }
 //
-//    @Test
-//    public void tuple01() throws Exception {
-//        checkTreeResult("(1, 2, 3)");
-//    }
-//
-//    @Test
-//    public void tuple02() throws Exception {
-//        checkTreeResult("(1, call01((1,2,)), 'ahoj')");
-//    }
-//
-//    @Test
-//    public void tuple03() throws Exception {
-//        checkTreeResult("t = ()");
-//    }
-//
-//    @Test
-//    public void tuple04() throws Exception {
-//        checkTreeResult("t = (2)");
-//    }
-//
-//    @Test
-//    public void tuple05() throws Exception {
-//        checkTreeResult("t = (2,)");
-//    }
-//
-//    @Test
-//    public void tuple06() throws Exception {
-//        checkTreeResult("t = ('strange,')");
-//    }
-//
-//    @Test
-//    public void tuple07() throws Exception {
-//        checkTreeResult("1,2,3");
-//    }
-//
-//    @Test
-//    public void tuple08() throws Exception {
-//        checkTreeResult("1,");
-//    }
-//
-//    @Test
-//    public void tuple09() throws Exception {
-//        checkTreeResult("1, call1()");
-//    }
-//
-//    @Test
-//    public void tuple10() throws Exception {
-//        checkTreeResult("t = 1, call1()");
-//    }
-//
-//    @Test
-//    public void tuple11() throws Exception {
-//        checkTreeResult("a += 1,2,3");
-//    }
-//
-//    @Test
-//    public void tuple12() throws Exception {
-//        checkTreeResult("a[1,3,4]");
-//    }
-//
-//    @Test
-//    public void tuple13() throws Exception {
-//        checkTreeResult("b = (\n" +
-//                        "  (0x69, 0x131), # iı\n" +
-//                        ")");
-//    }
+   @Test
+   public void tuple01() throws Exception {
+       checkTreeResult("(1, 2, 3)");
+   }
+
+   @Test
+   public void tuple02() throws Exception {
+       checkTreeResult("(1, call01((1,2,)), 'ahoj')");
+   }
+
+   @Test
+   public void tuple03() throws Exception {
+       checkTreeResult("t = ()");
+   }
+
+   @Test
+   public void tuple04() throws Exception {
+       checkTreeResult("t = (2)");
+   }
+
+   @Test
+   public void tuple05() throws Exception {
+       checkTreeResult("t = (2,)");
+   }
+
+   @Test
+   public void tuple06() throws Exception {
+       checkTreeResult("t = ('strange,')");
+   }
+
+   @Test
+   public void tuple07() throws Exception {
+       checkTreeResult("1,2,3");
+   }
+
+   @Test
+   public void tuple08() throws Exception {
+       checkTreeResult("1,");
+   }
+
+   @Test
+   public void tuple09() throws Exception {
+       checkTreeResult("1, call1()");
+   }
+
+   @Test
+   public void tuple10() throws Exception {
+       checkTreeResult("t = 1, call1()");
+   }
+
+   @Test
+   public void tuple11() throws Exception {
+       checkTreeResult("a += 1,2,3");
+   }
+
+   @Test
+   public void tuple12() throws Exception {
+       checkTreeResult("a[1,3,4]");
+   }
+
+   @Test
+   public void tuple13() throws Exception {
+       checkTreeResult("b = (\n" +
+                       "  (0x69, 0x131), # iı\n" +
+                       ")");
+   }
 
     @Test
     public void unary01() throws Exception {

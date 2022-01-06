@@ -498,8 +498,8 @@ block[asdl_stmt_seq*] (memo):
 
 star_expressions[expr_ty]:
     | a=star_expression b=(',' c=star_expression { c })+ [','] {
-        _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Load, EXTRA) }
-    | a=star_expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, this.singletonSequence(a)), Load, EXTRA) }
+        factory.createTuple(this.insertInFront(a, b), ExprContext.Load, startToken.startOffset, endToken.endOffset) }
+    | a=star_expression ',' { factory.createTuple(this.singletonSequence(a), ExprContext.Load, startToken.startOffset, endToken.endOffset) }
     | star_expression
 star_expression[expr_ty] (memo):
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
@@ -671,7 +671,7 @@ primary[expr_ty]:
 
 slices[expr_ty]:
     | a=slice !',' { a }
-    | a[asdl_expr_seq*]=','.slice+ [','] { _PyAST_Tuple(a, Load, EXTRA) }
+    | a[asdl_expr_seq*]=','.slice+ [','] { factory.createTuple(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 slice[expr_ty]:
     | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { factory.createSlice(a, b, c, startToken.startOffset, endToken.endOffset) }
     | a=named_expression { a }
