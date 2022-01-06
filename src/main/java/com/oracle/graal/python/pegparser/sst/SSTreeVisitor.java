@@ -45,7 +45,9 @@ public interface SSTreeVisitor<T> {
     default <T> T visitSequence(SSTNode[] sequence) {
         if (sequence != null) {
             for (SSTNode n : sequence) {
-                n.accept(this);
+                if (n != null) {
+                    n.accept(this);
+                }
             }
         }
         return null;

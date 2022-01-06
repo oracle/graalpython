@@ -40,17 +40,20 @@
  */
 package com.oracle.graal.python.pegparser.scope;
 
+import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Roughly equivalent to CPython's {@code symtable_entry}.
  */
 public class Scope {
 
-    Scope(ScopeType type, SSTNode ast) {
+    Scope(String name, ScopeType type, SSTNode ast) {
+        this.name = name;
         this.type = type;
         this.startOffset = ast.getStartOffset();
         this.endOffset = ast.getEndOffset();
@@ -84,12 +87,24 @@ public class Scope {
         static EnumSet<DefUse> DefBound = EnumSet.of(DefLocal, DefParam, DefImport);
     };
 
-    HashMap<String, EnumSet<DefUse>> symbols;
+    HashMap<String, EnumSet<DefUse>> symbols = new HashMap<>();
+
+    static final class Directive {
+        final String name;
+        final int startOffset;
+        final int endOffset;
+
+        Directive(String name, int startOffset, int endOffset) {
+            this.name = name;
+            this.startOffset = startOffset;
+            this.endOffset = endOffset;
+        }
+    }
 
     String name;
-    ArrayList<String> varnames;
-    ArrayList<Scope> children;
-    ArrayList<String> directives;
+    ArrayList<String> varnames = new ArrayList<>();
+    ArrayList<Scope> children = new ArrayList<>();
+    ArrayList<Directive> directives;
     ScopeType type;
 
     enum ScopeFlags {
@@ -106,8 +121,8 @@ public class Scope {
         IsVisitingIterTarget;
     }
 
-    EnumSet<ScopeFlags> flags;
-    int comprehensionIterExpression;
+    EnumSet<ScopeFlags> flags = EnumSet.noneOf(ScopeFlags.class);
+    int comprehensionIterExpression = 0;
 
     int startOffset;
     int endOffset;
@@ -122,14 +137,16 @@ public class Scope {
         for (int i = 0; i < indent; i++) {
             sb.append("  ");
         }
-        sb.append("Scope ").append(name).append(" ").append(type).append("\n");
+        sb.append("Scope ").append(name).append(" ").append(type);
         if (!flags.isEmpty()) {
+            sb.append('\n');
             for (int i = 0; i < indent; i++) {
                 sb.append("    ");
             }
             sb.append("Flags: ").append(flags).append("\n");
         }
         if (!varnames.isEmpty()) {
+            sb.append('\n');
             for (int i = 0; i < indent; i++) {
                 sb.append("    ");
             }
@@ -138,9 +155,30 @@ public class Scope {
                 sb.append(", ").append(varnames.get(i));
             }
         }
+        if (!symbols.isEmpty()) {
+            sb.append('\n');
+            for (int i = 0; i < indent; i++) {
+                sb.append("    ");
+            }
+            sb.append("Symbols: ");
+            for (Map.Entry<String, EnumSet<DefUse>> k : symbols.entrySet()) {
+                sb.append('\n');
+                for (int i = 0; i < indent; i++) {
+                    sb.append("      ");
+                }
+                sb.append(k.getKey()).append(": ").append(k.getValue());
+            }
+        }
         for (Scope child : children) {
-            sb.append(child.toString(indent + 1));
+            sb.append("\n").append(child.toString(indent + 1));
         }
         return sb.toString();
+    }
+
+    void recordDirective(String name, int startOffset, int endOffset) {
+        if (directives == null) {
+            directives = new ArrayList<>();
+        }
+        directives.add(new Directive(name, startOffset, endOffset));
     }
 }

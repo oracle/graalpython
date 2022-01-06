@@ -42,10 +42,10 @@
 package com.oracle.graal.python.pegparser.sst;
 
 public final class ComprehensionTy extends SSTNode {
-    final ExprTy target;
-    final ExprTy iter;
-    final ExprTy[] ifs;
-    final boolean isAsync;
+    public final ExprTy target;
+    public final ExprTy iter;
+    public final ExprTy[] ifs;
+    public final boolean isAsync;
 
     public ComprehensionTy(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, int startOffset, int endOffset) {
         super(startOffset, endOffset);

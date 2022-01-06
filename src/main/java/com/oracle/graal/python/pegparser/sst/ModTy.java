@@ -61,7 +61,7 @@ public abstract class ModTy extends SSTNode {
     }
 
     public static final class Module extends ModTy {
-        final StmtTy[] body;
+        public final StmtTy[] body;
         final TypeIgnore[] typeIgnores;
 
         public Module(StmtTy[] body, TypeIgnore[] typeIgnores, int startOffset, int endOffset) {
