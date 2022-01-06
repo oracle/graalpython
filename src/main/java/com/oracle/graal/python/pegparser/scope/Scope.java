@@ -111,4 +111,36 @@ public class Scope {
 
     int startOffset;
     int endOffset;
+
+    @Override
+    public String toString() {
+        return toString(0);
+    }
+
+    String toString(int indent) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < indent; i++) {
+            sb.append("  ");
+        }
+        sb.append("Scope ").append(name).append(" ").append(type).append("\n");
+        if (!flags.isEmpty()) {
+            for (int i = 0; i < indent; i++) {
+                sb.append("    ");
+            }
+            sb.append("Flags: ").append(flags).append("\n");
+        }
+        if (!varnames.isEmpty()) {
+            for (int i = 0; i < indent; i++) {
+                sb.append("    ");
+            }
+            sb.append("Varnames: ").append(varnames.get(0));
+            for (int i = 1; i < varnames.size(); i++) {
+                sb.append(", ").append(varnames.get(i));
+            }
+        }
+        for (Scope child : children) {
+            sb.append(child.toString(indent + 1));
+        }
+        return sb.toString();
+    }
 }

@@ -82,6 +82,14 @@ public class ScopeEnvironment {
         analyzeBlock(topScope, null, null, null);
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(super.toString());
+        sb.append(topScope.toString(1));
+        return sb.toString();
+    }
+
     private void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global) {
         HashSet<String> local = new HashSet<>();
         HashMap<String, DefUse> scopes = new HashMap<>();
