@@ -809,11 +809,11 @@ public class BasicTests extends ParserTestBase {
 //        checkTreeResult("a().b.c(x).d.f()");
 //    }
 
-//    @Test
-//    public void while01() throws Exception {
-//        checkTreeResult("while True:\n" + "  pass");
-//    }
-//
+   @Test
+   public void while01() throws Exception {
+       checkTreeResult("while True:\n" + "  pass");
+   }
+
 //    @Test
 //    public void while02() throws Exception {
 //        checkTreeResult("while True:\n" + "  if False:\n" + "    continue\n" + "  pass");
@@ -848,17 +848,17 @@ public class BasicTests extends ParserTestBase {
 //    public void while08() throws Exception {
 //        checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  if True:\n" + "    continue\n" + "  pass\n" + "else:\n" + "  print('done')");
 //    }
-//
-//    @Test
-//    public void while09() throws Exception {
-//        checkTreeResult("while True:\n" + "  pass\n" + "else:\n" + "  pass");
-//    }
-//
-//    @Test
-//    public void while10() throws Exception {
-//        checkTreeResult("while tb is not None: pass");
-//    }
-//
+
+   @Test
+   public void while09() throws Exception {
+       checkTreeResult("while True:\n" + "  pass\n" + "else:\n" + "  pass");
+   }
+
+   @Test
+   public void while10() throws Exception {
+       checkTreeResult("while tb is not None: pass");
+   }
+
 //    @Test
 //    public void while11() throws Exception {
 //        checkTreeResult(
@@ -873,13 +873,13 @@ public class BasicTests extends ParserTestBase {
 //                                        "        break");
 //    }
 //
-//    @Test
-//    public void while12() throws Exception {
-//        checkSyntaxError(
-//                        "while False:\n" +
-//                                        "    def foo():\n" +
-//                                        "        break");
-//    }
+// @Test
+// public void while12() throws Exception {
+//     checkSyntaxError(
+//                     "while False:\n" +
+//                                     "    def foo():\n" +
+//                                     "        break");
+// }
 //
 //    @Test
 //    public void with01() throws Exception {

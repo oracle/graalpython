@@ -394,4 +394,9 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decorators, ExprTy returns, String typeComment, int startOffset, int endOffset) {
         return new StmtTy.FunctionDef(name, args, body, decorators, returns, typeComment, startOffset, endOffset);
     }
+
+    @Override
+    public StmtTy createWhile(ExprTy condition, StmtTy[] block, StmtTy[] elseBlock, int startOffset, int endOffset) {
+        return new StmtTy.While(condition, block, elseBlock, startOffset, endOffset);
+    }
 }

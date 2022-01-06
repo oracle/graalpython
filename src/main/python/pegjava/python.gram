@@ -243,7 +243,7 @@ elif_stmt[stmt_ty]:
 else_block[asdl_stmt_seq*]: 'else' &&':' b=block { b }
 
 while_stmt[stmt_ty]:
-    | 'while' a=named_expression ':' b=block c=[else_block] { _PyAST_While(a, b, c, EXTRA) }
+    | 'while' a=named_expression ':' b=block c=[else_block] { factory.createWhile(a, b, c, startToken.startOffset, endToken.endOffset) }
     | invalid_while_stmt
 
 for_stmt[stmt_ty]:

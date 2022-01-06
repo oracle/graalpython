@@ -3173,6 +3173,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'while' named_expression ':' block else_block?
             debugMessageln("%d> while_stmt[%d-%d]: %s", level, _mark, mark(), "'while' named_expression ':' block else_block?");
             Token _keyword;
@@ -3193,9 +3194,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d while_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'while' named_expression ':' block else_block?");
-                // TODO: node.action: _PyAST_While ( a , b , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_While ( a , b , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createWhile(a,b,c,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'while' named_expression ':' block else_block?");
                 cache.putResult(_mark, WHILE_STMT_ID, _res);
                 level--;

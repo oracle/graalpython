@@ -861,8 +861,24 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(StmtTy.While node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        sb.append('\n').append(indent()).append("Condition: ").append(node.test.accept(this));
+        sb.append('\n').append(indent()).append("Body:");
+        level++;
+        for (StmtTy s : node.body) {
+            sb.append('\n').append(indent()).append(s.accept(this));
+        }
+        level--;
+        if (node.orElse != null) {
+            sb.append('\n').append(indent()).append("Else:");
+            level++;
+            for (StmtTy s : node.body) {
+                sb.append('\n').append(indent()).append(s.accept(this));
+            }
+            level--;
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
