@@ -86,7 +86,7 @@ public class ScopeEnvironment {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(super.toString()).append('\n');
+        sb.append("ScopeEnvironment\n");
         sb.append(topScope.toString(1));
         return sb.toString();
     }
@@ -387,19 +387,21 @@ public class ScopeEnvironment {
         }
 
         private void visitAnnotations(StmtTy node, ArgumentsTy args, ExprTy returns) {
-            enterBlock("_annotation", ScopeType.Annotation, node);
-            try {
-                visitAnnotations(args.posOnlyArgs);
-                visitAnnotations(args.args);
-                if (args.varArg != null) {
-                    args.varArg.accept(this);
+            if (args != null) {
+                enterBlock("_annotation", ScopeType.Annotation, node);
+                try {
+                    visitAnnotations(args.posOnlyArgs);
+                    visitAnnotations(args.args);
+                    if (args.varArg != null) {
+                        args.varArg.accept(this);
+                    }
+                    if (args.kwArg != null) {
+                        args.kwArg.accept(this);
+                    }
+                    visitAnnotations(args.kwOnlyArgs);
+                } finally {
+                    exitBlock();
                 }
-                if (args.kwArg != null) {
-                    args.kwArg.accept(this);
-                }
-                visitAnnotations(args.kwOnlyArgs);
-            } finally {
-                exitBlock();
             }
             if (returns != null) {
                 visitAnnotation(returns);
@@ -687,7 +689,8 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(KeywordTy node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            return null;
         }
 
         @Override
@@ -824,13 +827,17 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.FunctionDef node) {
             addDef(node.name, DefUse.DefLocal);
-            visitSequence(node.args.defaults);
-            visitSequence(node.args.kwDefaults);
+            if (node.args != null) {
+                visitSequence(node.args.defaults);
+                visitSequence(node.args.kwDefaults);
+            }
             visitAnnotations(node, node.args, node.returns);
             visitSequence(node.decoratorList);
             enterBlock(node.name, ScopeType.Function, node);
             try {
-                node.args.accept(this);
+                if (node.args != null) {
+                    node.args.accept(this);
+                }
                 visitSequence(node.body);
             } finally {
                 exitBlock();

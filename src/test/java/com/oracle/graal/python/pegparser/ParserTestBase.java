@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTTreePrinterVisitor;
@@ -293,20 +294,17 @@ public class ParserTestBase {
 //        checkTreeResult(source, mode, null);
 //    }
 
-//    public void checkScopeResult(String source, PythonParser.ParserMode mode) throws Exception {
-//        parse(source, name.getMethodName(), mode);
-//        ScopeInfo scopeNew = getLastGlobalScope();
-//        StringBuilder scopes = new StringBuilder();
-//        scopeNew.debugPrint(scopes, 0);
-//        File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
-//        if (REGENERATE_TREE || !goldenScopeFile.exists()) {
-//            try (FileWriter fw = new FileWriter(goldenScopeFile)) {
-//                fw.write(scopes.toString());
-//            }
-//
-//        }
-//        assertDescriptionMatches(scopes.toString(), goldenScopeFile);
-//    }
+   public void checkScopeResult(String source, int mode) throws Exception {
+       ModTy mod = parse(source, "<module>", mode);
+       File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
+       ScopeEnvironment env = new ScopeEnvironment(mod);
+       if (REGENERATE_TREE || !goldenScopeFile.exists()) {
+           try (FileWriter fw = new FileWriter(goldenScopeFile)) {
+               fw.write(env.toString());
+           }
+       }
+       assertDescriptionMatches(env.toString(), goldenScopeFile);
+   }
 
 //    public void checkSSTNodeOffsets(SSTNode node) {
 //        SSTCheckOffsetVisitor checker = new SSTCheckOffsetVisitor(node);
@@ -490,7 +488,7 @@ public class ParserTestBase {
 //    }
 //
    public void checkScopeAndTree(String source) throws Exception {
-       // checkScopeAndTree(source, PythonParser.ParserMode.File);
+       checkScopeResult(source, 1);
        checkTreeResult(source);
    }
 

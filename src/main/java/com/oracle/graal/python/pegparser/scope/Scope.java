@@ -143,7 +143,7 @@ public class Scope {
             for (int i = 0; i < indent; i++) {
                 sb.append("    ");
             }
-            sb.append("Flags: ").append(flags).append("\n");
+            sb.append("Flags: ").append(flags);
         }
         if (!varnames.isEmpty()) {
             sb.append('\n');
