@@ -86,6 +86,8 @@ public interface NodeFactory {
 
     public StmtTy createWhile(ExprTy condition, StmtTy[] block, StmtTy[] elseBlock, int startOffset, int endOffset);
 
+    public StmtTy createFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, int startOffset, int endOffset);
+
     public ExprTy createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
 
     default ExprTy createSubscript(ExprTy receiver, ExprTy slice, int startOffset, int endOffset) {

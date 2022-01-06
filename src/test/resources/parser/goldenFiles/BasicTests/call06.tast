@@ -1,7 +1,7 @@
 Module[0, 23]
     Call[0, 23]
         Target: Name[0, 3] Value: "foo"
-        KWArgs: 
+        KWArgs:
             KeywordTy[4, 12]
                 arg1: LONG[11, 12] Value: 1
             KeywordTy[14, 22]

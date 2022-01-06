@@ -76,10 +76,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
         if (node.varArg != null) {
             level++;
-            sb.append('\n').append(indent()).append("VarArg:");
-            level++;
-            sb.append('\n').append(indent()).append(node.varArg.accept(this));
-            level -= 2;
+            sb.append('\n').append(indent()).append("VarArg: ").append(node.varArg.accept(this));
+            level--;
         }
 
         if (node.kwOnlyArgs.length > 0) {
@@ -94,10 +92,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
         if (node.kwArg != null) {
             level++;
-            sb.append('\n').append(indent()).append("Kwarg:");
-            level++;
-            sb.append('\n').append(indent()).append(node.kwArg.accept(this));
-            level -= 2;
+            sb.append('\n').append(indent()).append("Kwarg: ").append(node.kwArg.accept(this));
+            level--;
         }
 
         if (node.defaults.length > 0) {
@@ -197,7 +193,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
             sb.append("\n");
         }
         if (node.args != null && node.args.length > 0) {
-            sb.append(indent()).append("Args: ");
+            sb.append(indent()).append("Args:");
             level++;
             for(SSTNode arg: node.args) {
                 sb.append('\n').append(indent()).append(arg.accept(this));
@@ -206,7 +202,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
             level--;
         }
         if (node.keywords != null && node.keywords.length > 0) {
-            sb.append(indent()).append("KWArgs: ");
+            sb.append(indent()).append("KWArgs:");
             level++;
             for(SSTNode arg: node.keywords) {
                 sb.append('\n').append(indent()).append(arg.accept(this));
@@ -457,15 +453,17 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         if (node.context != null && node.context != ExprContext.Load) {
             sb.append(" Context: ").append(node.context);
         }
-        sb.append('\n');
-        level++;
-        sb.append(indent()).append("Values:");
-        level++;
-        for (SSTNode value : node.elements) {
-            sb.append('\n').append(indent()).append(value.accept(this));
+        if (node.elements != null) {
+            sb.append('\n');
+            level++;
+            sb.append(indent()).append("Values:");
+            level++;
+            for (SSTNode value : node.elements) {
+                sb.append('\n').append(indent()).append(value.accept(this));
+            }
+            level--;
+            level--;
         }
-        level--;
-        level--;
         return sb.toString();
     }
 
@@ -667,8 +665,25 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(StmtTy.For node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        sb.append('\n').append(indent()).append("Target: ").append(node.target.accept(this));
+        sb.append('\n').append(indent()).append("Iter: ").append(node.iter.accept(this));
+        sb.append('\n').append(indent()).append("Body:");
+        level++;
+        for (StmtTy s : node.body) {
+            sb.append('\n').append(indent()).append(s.accept(this));
+        }
+        level--;
+        if (node.orElse != null) {
+            sb.append('\n').append(indent()).append("Else:");
+            level++;
+            for (StmtTy s : node.body) {
+                sb.append('\n').append(indent()).append(s.accept(this));
+            }
+            level--;
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override

@@ -3248,6 +3248,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?
             debugMessageln("%d> for_stmt[%d-%d]: %s", level, _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
             int _cut_var = 0;
@@ -3280,9 +3281,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d for_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
-                // TODO: node.action: _PyAST_For ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_For ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createFor(t,ex,b,el,newTypeComment(tc),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
                 cache.putResult(_mark, FOR_STMT_ID, _res);
                 level--;

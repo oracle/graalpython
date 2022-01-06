@@ -7,7 +7,7 @@ Module[0, 33]
                 Attribute[10, 14] 
                     Receiver: RAW[10, 14] Value: in
                     Attr: format
-            KWArgs: 
+            KWArgs:
                 KeywordTy[22, 32]
                     name: RAW[27, 32] Value: Baf
         ---- End of fn function ----

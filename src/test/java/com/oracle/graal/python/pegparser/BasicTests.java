@@ -395,17 +395,17 @@ public class BasicTests extends ParserTestBase {
 //    public void del03() throws Exception {
 //        checkTreeResult("del (x, y, z)");
 //    }
-//
-//    @Test
-//    public void for01() throws Exception {
-//        checkTreeResult("for i in 'ahoj':\n" + "  pass");
-//    }
-//
-//    @Test
-//    public void for02() throws Exception {
-//        checkTreeResult("for i in range(210):\n" + "  print(i)");
-//    }
-//
+
+   @Test
+   public void for01() throws Exception {
+       checkTreeResult("for i in 'ahoj':\n" + "  pass");
+   }
+
+   @Test
+   public void for02() throws Exception {
+       checkTreeResult("for i in range(210):\n" + "  print(i)");
+   }
+
 //    @Test
 //    public void for03() throws Exception {
 //        checkScopeAndTree(
@@ -475,19 +475,19 @@ public class BasicTests extends ParserTestBase {
 //                                        "      pass");
 //    }
 //
-//    @Test
-//    public void for11() throws Exception {
-//        checkTreeResult("for i, b in (): pass");
-//    }
-//
-//    @Test
-//    public void for12() throws Exception {
-//        checkScopeAndTree(
-//                        "def fn():\n" +
-//                                        "  for a, b in ((1,2), (3,4)):\n" +
-//                                        "    print(a)");
-//    }
-//
+   @Test
+   public void for11() throws Exception {
+       checkTreeResult("for i, b in (): pass");
+   }
+
+   @Test
+   public void for12() throws Exception {
+       checkScopeAndTree(
+                       "def fn():\n" +
+                                       "  for a, b in ((1,2), (3,4)):\n" +
+                                       "    print(a)");
+   }
+
 //    @Test
 //    public void for13() throws Exception {
 //        checkScopeAndTree(
@@ -513,14 +513,14 @@ public class BasicTests extends ParserTestBase {
 //                                        "            break");
 //    }
 //
-//    @Test
-//    public void for15() throws Exception {
-//        checkScopeAndTree(
-//                        "def formatyear():\n" +
-//                                        "        for (i, row) in something:\n" +
-//                                        "            pass\n" +
-//                                        "        return 10");
-//    }
+//   @Test
+//   public void for15() throws Exception {
+//       checkScopeAndTree(
+//                       "def formatyear():\n" +
+//                                       "        for (i, row) in something:\n" +
+//                                       "            pass\n" +
+//                                       "        return 10");
+//   }
 //
 //    @Test
 //    public void for16() throws Exception {

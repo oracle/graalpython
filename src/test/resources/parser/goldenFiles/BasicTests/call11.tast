@@ -1,6 +1,6 @@
 Module[0, 13]
     Call[0, 13]
         Target: Name[0, 3] Value: "foo"
-        KWArgs: 
+        KWArgs:
             KeywordTy[4, 12]
                 null: Name[6, 12] Value: "mydict"

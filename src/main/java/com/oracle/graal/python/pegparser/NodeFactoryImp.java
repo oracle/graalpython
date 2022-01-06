@@ -399,4 +399,9 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy createWhile(ExprTy condition, StmtTy[] block, StmtTy[] elseBlock, int startOffset, int endOffset) {
         return new StmtTy.While(condition, block, elseBlock, startOffset, endOffset);
     }
+
+    @Override
+    public StmtTy createFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, int startOffset, int endOffset) {
+        return new StmtTy.For(target, iter, block, elseBlock, typeComment, startOffset, endOffset);
+    }
 }

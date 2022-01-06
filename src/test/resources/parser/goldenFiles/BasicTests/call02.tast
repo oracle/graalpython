@@ -1,5 +1,5 @@
 Module[0, 6]
     Call[0, 6]
         Target: Name[0, 3] Value: "foo"
-        Args: 
+        Args:
             LONG[4, 5] Value: 1
