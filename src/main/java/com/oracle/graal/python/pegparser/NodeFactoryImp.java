@@ -409,4 +409,24 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy createReturn(ExprTy value, int startOffset, int endOffset) {
         return new StmtTy.Return(value, startOffset, endOffset);
     }
+
+    @Override
+    public ExprTy createSlice(ExprTy start, ExprTy stop, ExprTy step, int startOffset, int endOffset) {
+        return new ExprTy.Slice(step, step, step, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createIf(ExprTy condition, StmtTy[] block, StmtTy[] orElse, int startOffset, int endOffset) {
+        return new StmtTy.If(condition, block, orElse, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createIfExpression(ExprTy condition, ExprTy then, ExprTy orElse, int startOffset, int endOffset) {
+        return new ExprTy.IfExp(condition, then, orElse, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createLambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset) {
+        return new ExprTy.Lambda(args, body, startOffset, endOffset);
+    }
 }

@@ -232,13 +232,13 @@ dotted_name[expr_ty]:
 
 if_stmt[stmt_ty]:
     | 'if' a=named_expression ':' b=block c=elif_stmt {
-        _PyAST_If(a, b, CHECK(asdl_stmt_seq*, this.singletonSequence(c)), EXTRA) }
-    | 'if' a=named_expression ':' b=block c=[else_block] { _PyAST_If(a, b, c, EXTRA) }
+        factory.createIf(a, b, this.singletonSequence(c), startToken.startOffset, endToken.endOffset) }
+    | 'if' a=named_expression ':' b=block c=[else_block] { factory.createIf(a, b, c, startToken.startOffset, endToken.endOffset) }
     | invalid_if_stmt
 elif_stmt[stmt_ty]:
     | 'elif' a=named_expression ':' b=block c=elif_stmt {
-        _PyAST_If(a, b, CHECK(asdl_stmt_seq*, this.singletonSequence(c)), EXTRA) }
-    | 'elif' a=named_expression ':' b=block c=[else_block] { _PyAST_If(a, b, c, EXTRA) }
+        factory.createIf(a, b, this.singletonSequence(c), startToken.startOffset, endToken.endOffset) }
+    | 'elif' a=named_expression ':' b=block c=[else_block] { factory.createIf(a, b, c, startToken.startOffset, endToken.endOffset) }
     | invalid_elif_stmt
 else_block[asdl_stmt_seq*]: 'else' &&':' b=block { b }
 
@@ -326,7 +326,7 @@ literal_pattern[expr_ty]:
     | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset) }
 signed_number[expr_ty]:
     | NUMBER
-    | '-' number=NUMBER { _PyAST_UnaryOp(USub, number, EXTRA) }
+    | '-' number=NUMBER { factory.createUnaryOp(ExprTy.UnaryOp.Operator.SUB, number, startToken.startOffset, endToken.endOffset) }
 
 capture_pattern[expr_ty]:
     | !"_" name=NAME !('.' | '(' | '=') {
@@ -528,13 +528,13 @@ expressions[expr_ty]:
     | expression
 expression[expr_ty] (memo):
     | invalid_expression
-    | a=disjunction 'if' b=disjunction 'else' c=expression { _PyAST_IfExp(b, a, c, EXTRA) }
+    | a=disjunction 'if' b=disjunction 'else' c=expression { factory.createIfExpression(b, a, c, startToken.startOffset, endToken.endOffset) }
     | disjunction
     | lambdef
 
 lambdef[expr_ty]:
     | 'lambda' a=[lambda_params] ':' b=expression {
-        _PyAST_Lambda((a) ? a : CHECK(arguments_ty, _PyPegen_empty_arguments(p)), b, EXTRA) }
+        factory.createLambda(a, b, startToken.startOffset, endToken.endOffset) }
 
 lambda_params[arguments_ty]:
     | invalid_lambda_parameters
@@ -546,13 +546,13 @@ lambda_params[arguments_ty]:
 #
 lambda_parameters[arguments_ty]:
     | a=lambda_slash_no_default b[asdl_arg_seq*]=lambda_param_no_default* c=lambda_param_with_default* d=[lambda_star_etc] {
-        _PyPegen_make_arguments(p, a, NULL, b, c, d) }
+        factory.createArguments(a, null, b, c, d) }
     | a=lambda_slash_with_default b=lambda_param_with_default* c=[lambda_star_etc] {
-        _PyPegen_make_arguments(p, NULL, a, NULL, b, c) }
+        factory.createArguments(null, a, null, b, c) }
     | a[asdl_arg_seq*]=lambda_param_no_default+ b=lambda_param_with_default* c=[lambda_star_etc] {
-        _PyPegen_make_arguments(p, NULL, NULL, a, b, c) }
-    | a=lambda_param_with_default+ b=[lambda_star_etc] { _PyPegen_make_arguments(p, NULL, NULL, NULL, a, b)}
-    | a=lambda_star_etc { _PyPegen_make_arguments(p, NULL, NULL, NULL, NULL, a) }
+        factory.createArguments(null, null, a, b, c) }
+    | a=lambda_param_with_default+ b=[lambda_star_etc] { factory.createArguments(null, null, null, a, b)}
+    | a=lambda_star_etc { factory.createArguments(null, null, null, null, a) }
 
 lambda_slash_no_default[asdl_arg_seq*]:
     | a[asdl_arg_seq*]=lambda_param_no_default+ '/' ',' { a }
@@ -580,7 +580,7 @@ lambda_param_with_default[NameDefaultPair*]:
 lambda_param_maybe_default[NameDefaultPair*]:
     | a=lambda_param c=default_param? ',' { _PyPegen_name_default_pair(p, a, c, NULL) }
     | a=lambda_param c=default_param? &':' { _PyPegen_name_default_pair(p, a, c, NULL) }
-lambda_param[arg_ty]: a=NAME { _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA) }
+lambda_param[arg_ty]: a=NAME { factory.createArgument(((ExprTy.Name)a).id, null, null, startToken.startOffset, endToken.endOffset) }
 
 disjunction[expr_ty] (memo):
     | a=conjunction b=('or' c=conjunction { c })+ { _PyAST_BoolOp(
@@ -595,7 +595,7 @@ conjunction[expr_ty] (memo):
         EXTRA) }
     | inversion
 inversion[expr_ty] (memo):
-    | 'not' a=inversion { _PyAST_UnaryOp(Not, a, EXTRA) }
+    | 'not' a=inversion { factory.createUnaryOp(ExprTy.UnaryOp.Operator.NOT, a, startToken.startOffset, endToken.endOffset) }
     | comparison
 comparison[expr_ty]:
     | a=bitwise_or b=compare_op_bitwise_or_pair+ {
@@ -673,7 +673,7 @@ slices[expr_ty]:
     | a=slice !',' { a }
     | a[asdl_expr_seq*]=','.slice+ [','] { _PyAST_Tuple(a, Load, EXTRA) }
 slice[expr_ty]:
-    | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { _PyAST_Slice(a, b, c, EXTRA) }
+    | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { factory.createSlice(a, b, c, startToken.startOffset, endToken.endOffset) }
     | a=named_expression { a }
 atom[expr_ty]:
     | NAME

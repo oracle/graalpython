@@ -145,4 +145,12 @@ public interface NodeFactory {
     public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decorators, ExprTy returns, String typeComment, int startOffset, int endOffset);
 
     public StmtTy createReturn(ExprTy value, int startOffset, int endOffset);
+
+    public ExprTy createSlice(ExprTy start, ExprTy stop, ExprTy step, int startOffset, int endOffset);
+
+    public StmtTy createIf(ExprTy condition, StmtTy[] block, StmtTy[] orElse, int startOffset, int endOffset);
+
+    public ExprTy createIfExpression(ExprTy condition, ExprTy then, ExprTy orElse, int startOffset, int endOffset);
+
+    public ExprTy createLambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset);
 }

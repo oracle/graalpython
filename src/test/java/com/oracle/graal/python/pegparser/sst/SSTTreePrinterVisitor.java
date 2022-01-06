@@ -312,8 +312,12 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.IfExp node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        sb.append('\n').append(indent()).append("Test: ").append(node.test.accept(this));
+        sb.append('\n').append(indent()).append("Then: ").append(node.body.accept(this));
+        sb.append('\n').append(indent()).append("Else: ").append(node.orElse.accept(this));
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -335,8 +339,13 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Lambda node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        if (node.args != null) {
+            sb.append('\n').append(indent()).append(node.args.accept(this));
+        }
+        sb.append('\n').append(indent()).append("Body: ").append(node.body.accept(this));
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -729,8 +738,24 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(StmtTy.If node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        sb.append('\n').append(indent()).append("Test: ").append(node.test.accept(this));
+        sb.append('\n').append(indent()).append("Then:");
+        level++;
+        for (StmtTy s : node.body) {
+            sb.append('\n').append(indent()).append(s.accept(this));
+        }
+        level--;
+        if (node.orElse != null) {
+            sb.append('\n').append(indent()).append("Else:");
+            level++;
+            for (StmtTy s : node.orElse) {
+                sb.append('\n').append(indent()).append(s.accept(this));
+            }
+            level--;
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override

@@ -1,0 +1,9 @@
+Module[0, 40]
+    While[0, 40]
+        Condition: OBJECT[6, 10] Value: true
+        Body:
+            If[14, 33]
+                Test: OBJECT[17, 22] Value: false
+                Then:
+                    Break[28, 33]
+            Pass[36, 40]

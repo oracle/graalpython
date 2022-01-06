@@ -2928,6 +2928,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'if' named_expression ':' block elif_stmt
             debugMessageln("%d> if_stmt[%d-%d]: %s", level, _mark, mark(), "'if' named_expression ':' block elif_stmt");
             Token _keyword;
@@ -2948,9 +2949,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'if' named_expression ':' block elif_stmt");
-                // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIf(a,b,this.singletonSequence(c),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression ':' block elif_stmt");
                 cache.putResult(_mark, IF_STMT_ID, _res);
                 level--;
@@ -2980,9 +2984,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'if' named_expression ':' block else_block?");
-                // TODO: node.action: _PyAST_If ( a , b , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIf(a,b,c,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression ':' block else_block?");
                 cache.putResult(_mark, IF_STMT_ID, _res);
                 level--;
@@ -3031,6 +3038,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'elif' named_expression ':' block elif_stmt
             debugMessageln("%d> elif_stmt[%d-%d]: %s", level, _mark, mark(), "'elif' named_expression ':' block elif_stmt");
             Token _keyword;
@@ -3051,9 +3059,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'elif' named_expression ':' block elif_stmt");
-                // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIf(a,b,this.singletonSequence(c),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression ':' block elif_stmt");
                 cache.putResult(_mark, ELIF_STMT_ID, _res);
                 level--;
@@ -3083,9 +3094,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'elif' named_expression ':' block else_block?");
-                // TODO: node.action: _PyAST_If ( a , b , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIf(a,b,c,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression ':' block else_block?");
                 cache.putResult(_mark, ELIF_STMT_ID, _res);
                 level--;
@@ -4669,6 +4683,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NUMBER
             debugMessageln("%d> signed_number[%d-%d]: %s", level, _mark, mark(), "NUMBER");
             ExprTy number_var;
@@ -4698,9 +4713,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d signed_number[%d-%d]: %s succeeded!", level, _mark, mark(), "'-' NUMBER");
-                // TODO: node.action: _PyAST_UnaryOp ( USub , number , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_UnaryOp ( USub , number , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.SUB,number,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-' NUMBER");
                 cache.putResult(_mark, SIGNED_NUMBER_ID, _res);
                 level--;
@@ -7650,6 +7668,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_expression
             debugMessageln("%d> expression[%d-%d]: %s", level, _mark, mark(), "invalid_expression");
             ExprTy invalid_expression_var;
@@ -7688,9 +7707,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, _mark, mark(), "disjunction 'if' disjunction 'else' expression");
-                // TODO: node.action: _PyAST_IfExp ( b , a , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_IfExp ( b , a , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIfExpression(b,a,c,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "disjunction 'if' disjunction 'else' expression");
                 cache.putResult(_mark, EXPRESSION_ID, _res);
                 level--;
@@ -7754,6 +7776,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'lambda' lambda_params? ':' expression
             debugMessageln("%d> lambdef[%d-%d]: %s", level, _mark, mark(), "'lambda' lambda_params? ':' expression");
             Token _keyword;
@@ -7771,9 +7794,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambdef[%d-%d]: %s succeeded!", level, _mark, mark(), "'lambda' lambda_params? ':' expression");
-                // TODO: node.action: _PyAST_Lambda ( ( a ) ? a : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Lambda ( ( a ) ? a : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createLambda(a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'lambda' lambda_params? ':' expression");
                 cache.putResult(_mark, LAMBDEF_ID, _res);
                 level--;
@@ -7877,9 +7903,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , a , NULL , b , c , d )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , a , NULL , b , c , d ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(a,null,b,c,d);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
                 level--;
@@ -7903,9 +7927,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_slash_with_default lambda_param_with_default* lambda_star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , a , NULL , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , a , NULL , b , c ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,a,null,b,c);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_with_default lambda_param_with_default* lambda_star_etc?");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
                 level--;
@@ -7929,9 +7951,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , a , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , NULL , a , b , c ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,null,a,b,c);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
                 level--;
@@ -7952,9 +7972,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_param_with_default+ lambda_star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , NULL , NULL , a , b ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,null,null,a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_with_default+ lambda_star_etc?");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
                 level--;
@@ -7972,9 +7990,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_star_etc");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , NULL , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , NULL , NULL , NULL , a ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,null,null,null,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_star_etc");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
                 level--;
@@ -8504,6 +8520,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (ArgTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> lambda_param[%d-%d]: %s", level, _mark, mark(), "NAME");
             ExprTy a;
@@ -8512,9 +8529,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_param[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
-                // TODO: node.action: _PyAST_arg ( a -> v . Name . id , NULL , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_arg ( a -> v . Name . id , NULL , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createArgument(((ExprTy.Name)a).id,null,null,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, LAMBDA_PARAM_ID, _res);
                 level--;
@@ -8660,6 +8680,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'not' inversion
             debugMessageln("%d> inversion[%d-%d]: %s", level, _mark, mark(), "'not' inversion");
             Token _keyword;
@@ -8671,9 +8692,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d inversion[%d-%d]: %s succeeded!", level, _mark, mark(), "'not' inversion");
-                // TODO: node.action: _PyAST_UnaryOp ( Not , a , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_UnaryOp ( Not , a , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.NOT,a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'not' inversion");
                 cache.putResult(_mark, INVERSION_ID, _res);
                 level--;
@@ -10538,6 +10562,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // expression? ':' expression? [':' expression?]
             debugMessageln("%d> slice[%d-%d]: %s", level, _mark, mark(), "expression? ':' expression? [':' expression?]");
             Token _literal;
@@ -10555,9 +10580,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d slice[%d-%d]: %s succeeded!", level, _mark, mark(), "expression? ':' expression? [':' expression?]");
-                // TODO: node.action: _PyAST_Slice ( a , b , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Slice ( a , b , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createSlice(a,b,c,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression? ':' expression? [':' expression?]");
                 cache.putResult(_mark, SLICE_ID, _res);
                 level--;
