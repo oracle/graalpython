@@ -14,7 +14,7 @@ public class BasicTests extends ParserTestBase {
     public void pass() throws Exception {
         checkTreeResult("pass");
     }
-    
+
     @Test
     public void testBreak() throws Exception {
         checkTreeResult("break");
@@ -39,7 +39,7 @@ public class BasicTests extends ParserTestBase {
     public void testYieldFrom() throws Exception {
         checkTreeResult("yield from f");
     }
-    
+
 //    @Test
 //    public void moduleDoc01() throws Exception {
 //        checkTreeFromFile();
@@ -193,36 +193,61 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("3 ** 2 ** 2");
     }
 
-//    @Test
-//    public void comparision01() throws Exception {
-//        checkTreeResult("3 < 10");
-//    }
-//
-//    @Test
-//    public void comparision02() throws Exception {
-//        checkTreeResult("1 < '10' > True");
-//    }
-//
-//    @Test
-//    public void comparision03() throws Exception {
-//        checkTreeResult("1 < '10' > True != 1.0");
-//    }
+   @Test
+   public void comparision01() throws Exception {
+       checkTreeResult("3 < 10");
+   }
 
-//    @Test
-//    public void comparision04() throws Exception {
-//        checkScopeAndTree("x < y() <= z");
-//    }
-//
-//    @Test
-//    public void comparision05() throws Exception {
-//        checkScopeAndTree("x() < y() <= z()");
-//    }
-//
-//    @Test
-//    public void comparision06() throws Exception {
-//        checkScopeAndTree("x() < y() < y() <= z()");
-//    }
-//
+   @Test
+   public void comparision02() throws Exception {
+       checkTreeResult("1 < '10' > True");
+   }
+
+   // @Test
+   // public void comparision03() throws Exception {
+   //     checkTreeResult("1 < '10' > True != 1.0");
+   // }
+
+   @Test
+   public void comparision04() throws Exception {
+       checkScopeAndTree("x < y() <= z");
+   }
+
+   // @Test
+   // public void comparision05() throws Exception {
+   //     checkScopeAndTree("x() < y() <= z()");
+   // }
+
+   // @Test
+   // public void comparision06() throws Exception {
+   //     checkScopeAndTree("x() < y() < y() <= z()");
+   // }
+
+   @Test
+   public void comparision07() throws Exception {
+       checkScopeAndTree("x is y");
+   }
+
+   @Test
+   public void comparision08() throws Exception {
+       checkScopeAndTree("x is not y");
+   }
+
+   @Test
+   public void comparision09() throws Exception {
+       checkScopeAndTree("x in y");
+   }
+
+   @Test
+   public void comparision10() throws Exception {
+       checkScopeAndTree("x not in y");
+   }
+
+   @Test
+   public void comparision11() throws Exception {
+       checkScopeAndTree("x >= y");
+   }
+
 //    @Test
 //    public void if01() throws Exception {
 //        checkTreeResult(
@@ -955,5 +980,5 @@ public class BasicTests extends ParserTestBase {
 //        checkTreeFromFile(testFile, true);
 //    }
 
-    
+
 }

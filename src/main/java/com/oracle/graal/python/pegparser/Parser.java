@@ -9073,9 +9073,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lte_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'<=' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , LtE , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , LtE , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.LTE,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'<=' bitwise_or");
                 cache.putResult(_mark, LTE_BITWISE_OR_ID, _res);
                 level--;
@@ -9114,9 +9112,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lt_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'<' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , Lt , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , Lt , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.LT,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'<' bitwise_or");
                 cache.putResult(_mark, LT_BITWISE_OR_ID, _res);
                 level--;
@@ -9155,9 +9151,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d gte_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'>=' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , GtE , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , GtE , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.GTE,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'>=' bitwise_or");
                 cache.putResult(_mark, GTE_BITWISE_OR_ID, _res);
                 level--;
@@ -9196,9 +9190,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d gt_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'>' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , Gt , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , Gt , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.GT,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'>' bitwise_or");
                 cache.putResult(_mark, GT_BITWISE_OR_ID, _res);
                 level--;
@@ -9240,9 +9232,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d notin_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'not' 'in' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , NotIn , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , NotIn , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.NOTIN,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'not' 'in' bitwise_or");
                 cache.putResult(_mark, NOTIN_BITWISE_OR_ID, _res);
                 level--;
@@ -9281,9 +9271,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d in_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'in' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , In , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , In , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.IN,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'in' bitwise_or");
                 cache.putResult(_mark, IN_BITWISE_OR_ID, _res);
                 level--;
@@ -9325,9 +9313,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d isnot_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'is' 'not' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , IsNot , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , IsNot , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.ISNOT,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'is' 'not' bitwise_or");
                 cache.putResult(_mark, ISNOT_BITWISE_OR_ID, _res);
                 level--;
@@ -9366,9 +9352,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d is_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'is' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , Is , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , Is , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.IS,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'is' bitwise_or");
                 cache.putResult(_mark, IS_BITWISE_OR_ID, _res);
                 level--;
