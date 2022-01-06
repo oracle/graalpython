@@ -290,8 +290,8 @@ Py_ssize_t PySequence_Size(PyObject *s) {
     return UPCALL_CEXT_L(_jls_PySequence_Size, native_to_java(s));
 }
 
-// taken from CPython "Objects/abstract.c"
-// called for native python objects
+// PySequence_Size downcall for native python objects
+// taken from CPython "Objects/abstract.c/Py_Sequence_Size"
 Py_ssize_t PyTruffle_Sequence_Size(PyObject *s) {
     PySequenceMethods *m;
 
@@ -546,8 +546,14 @@ int PyBuffer_IsContiguous(const Py_buffer *view, char order) {
     return 0;
 }
 
-// partially taken from CPython "Objects/abstract.c"
-Py_ssize_t PyMapping_Size(PyObject *o) {
+UPCALL_ID(PyMapping_Size);
+Py_ssize_t PyMapping_Size(PyObject *s) {
+    return UPCALL_CEXT_L(_jls_PyMapping_Size, native_to_java(s));
+}
+
+// PyMapping_Size downcall for native python objects
+// partially taken from CPython "Objects/abstract.c/Py_Mapping_Size"
+Py_ssize_t PyTruffle_Mapping_Size(PyObject *o) {
     PyMappingMethods *m;
 
     if (o == NULL) {

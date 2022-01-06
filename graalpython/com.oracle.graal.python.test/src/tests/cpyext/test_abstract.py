@@ -105,15 +105,24 @@ def _reference_next(args):
     except BaseException:
         raise SystemError
 
-
-def _reference_size(args):
+def _reference_seq_size(args):
     seq = args[0]
-    if isinstance(seq, dict):
-        return -1
-    if not hasattr(seq, '__len__'):
-        raise TypeError()
+    # XXX check
+    if isinstance(seq, dict) or isinstance(seq, type(type.__dict__)) or isinstance(seq, set) or isinstance(seq, frozenset) or not hasattr(seq, '__len__'):
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            raise TypeError
     return len(seq)
 
+def _reference_mapping_size(args):
+    m = args[0]
+    if not (isinstance(m, dict) or isinstance(m, type(type.__dict__))) or not hasattr(m, '__getitem__'):
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            raise TypeError
+    return len(m)    
 
 def _reference_getitem(args):
     seq = args[0]
@@ -728,7 +737,9 @@ class TestAbstract(CPyExtTestCase):
     )
 
     test_PySequence_Check = CPyExtFunction(
-        lambda args: not isinstance(args[0], dict) and hasattr(args[0], '__getitem__'),
+        lambda args: not isinstance(args[0], dict) and not isinstance(args[0], type(type.__dict__)) and hasattr(args[0], '__getitem__'),
+        # XXX check
+#        lambda args: not isinstance(args[0], dict) and (isinstance(args[0], set) or isinstance(args[0], frozenset) or hasattr(args[0], '__getitem__')),
         lambda: (
             (tuple(),),
             ((1, 2, 3),),
@@ -738,11 +749,14 @@ class TestAbstract(CPyExtTestCase):
             ([None],),
             (dict(),),
             (set(),),
+            (frozenset(),),
             ({'a', 'b'},),
             ({'a':0, 'b':1},),
+            (type.__dict__,), #mappingproxy
             (DummySequence(),),
             (DummyListSubclass(),),
             ('hello',),
+            (NoNumber(),),
         ),
         resultspec="i",
         argspec='O',
@@ -750,7 +764,7 @@ class TestAbstract(CPyExtTestCase):
     )
 
     test_PySequence_Size = CPyExtFunction(
-        _reference_size,
+        _reference_seq_size,
         lambda: (
             (tuple(),),
             ((1, 2, 3),),
@@ -759,8 +773,13 @@ class TestAbstract(CPyExtTestCase):
             (['a', 'b', 'c'],),
             ([None],),
             (set(),),
+            (frozenset(),),
             (DummyListSubclass(),),
             ('hello',),
+            ({},),
+            ({1, 1},),
+            (type.__dict__,), #mappingproxy
+            (NoNumber(),),
         ),
         resultspec="n",
         argspec='O',
@@ -951,6 +970,30 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyMapping_Size = CPyExtFunction(
+        _reference_mapping_size,
+        lambda: (
+            (tuple(),),
+            ((1, 2, 3),),
+            ((None,),),
+            ([],),
+            (['a', 'b', 'c'],),
+            ([None],),
+            (set(),),
+            (frozenset(),),
+            (DummyListSubclass(),),
+            ('hello',),
+            ({},),
+            ({1, 1},),
+            (type.__dict__,), #mappingproxy
+            (NoNumber(),),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* mapping"],
+        cmpfunc=unhandled_error_compare
+    )    
+    
     test_PyIndex_Check = CPyExtFunction(
         lambda args: hasattr(args[0], "__index__"),
         lambda: (

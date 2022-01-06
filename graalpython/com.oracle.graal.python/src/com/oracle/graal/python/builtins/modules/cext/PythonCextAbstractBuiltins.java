@@ -40,9 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MAPPING_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_SEQUENCE_SIZE;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
@@ -83,7 +86,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_SEQUENCE_SIZE;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
@@ -943,7 +945,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PySequence_GetItem", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PySequenceGetItem extends PythonBinaryBuiltinNode {
+    abstract static class PySequenceGetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         Object doManaged(VirtualFrame frame, Object listWrapper, Object position,
@@ -1008,7 +1010,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyObject_GetItem", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyObjectGetItem extends PythonBinaryBuiltinNode {
+    abstract static class PyObjectGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doManaged(VirtualFrame frame, Object listWrapper, Object key,
                         @Cached com.oracle.graal.python.lib.PyObjectGetItem getItem,
@@ -1174,6 +1176,43 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
             }
+        }
+    }
+
+    @Builtin(name = "PyMapping_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class PyMappingSizeNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "checkNode.execute(obj)")
+        static int doSequence(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached PyMappingCheckNode checkNode,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return sizeNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "isNativeObject(obj)")
+        static Object doNative(VirtualFrame frame, Object obj,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MAPPING_SIZE, toSulongNode.execute(obj));
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_MAPPING_SIZE.getName(), result);
+            return asPythonObjectNode.execute(result);
+        }
+
+        @Specialization(guards = {"!isNativeObject(obj)", "!checkNode.execute(obj)"})
+        Object notSequence(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached PyMappingCheckNode checkNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, OBJ_ISNT_MAPPING, obj);
         }
     }
 
