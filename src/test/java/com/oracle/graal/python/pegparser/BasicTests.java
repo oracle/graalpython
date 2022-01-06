@@ -512,16 +512,16 @@ public class BasicTests extends ParserTestBase {
 //                                        "        else:\n" +
 //                                        "            break");
 //    }
-//
-//   @Test
-//   public void for15() throws Exception {
-//       checkScopeAndTree(
-//                       "def formatyear():\n" +
-//                                       "        for (i, row) in something:\n" +
-//                                       "            pass\n" +
-//                                       "        return 10");
-//   }
-//
+
+  @Test
+  public void for15() throws Exception {
+      checkScopeAndTree(
+                      "def formatyear():\n" +
+                                      "        for (i, row) in something:\n" +
+                                      "            pass\n" +
+                                      "        return 10");
+  }
+
 //    @Test
 //    public void for16() throws Exception {
 //        checkSyntaxError(

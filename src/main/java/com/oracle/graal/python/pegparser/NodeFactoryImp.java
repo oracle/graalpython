@@ -404,4 +404,9 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy createFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, int startOffset, int endOffset) {
         return new StmtTy.For(target, iter, block, elseBlock, typeComment, startOffset, endOffset);
     }
+
+    @Override
+    public StmtTy createReturn(ExprTy value, int startOffset, int endOffset) {
+        return new StmtTy.Return(value, startOffset, endOffset);
+    }
 }

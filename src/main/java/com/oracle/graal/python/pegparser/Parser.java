@@ -5704,6 +5704,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'return' star_expressions?
             debugMessageln("%d> return_stmt[%d-%d]: %s", level, _mark, mark(), "'return' star_expressions?");
             Token _keyword;
@@ -5715,9 +5716,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d return_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'return' star_expressions?");
-                // TODO: node.action: _PyAST_Return ( a , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Return ( a , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createReturn(a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'return' star_expressions?");
                 cache.putResult(_mark, RETURN_STMT_ID, _res);
                 level--;
@@ -12340,9 +12344,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_targets_tuple_seq[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target ((',' star_target))+ ','?");
-                // TODO: node.action: ( asdl_expr_seq * ) this . insertInFront ( a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . insertInFront ( a , b ) to Java !!![0m");
-                _res = null;
+                _res = this.insertInFront(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ((',' star_target))+ ','?");
                 cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
                 level--;

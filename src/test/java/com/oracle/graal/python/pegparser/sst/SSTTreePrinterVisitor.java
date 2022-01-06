@@ -851,9 +851,9 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(StmtTy.Return node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append(" ");
+        putOnSameLineIfShort(sb, node.value);
         return sb.toString();
-
     }
 
     @Override

@@ -143,4 +143,6 @@ public interface NodeFactory {
     public ExprTy createGenerator(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset);
 
     public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decorators, ExprTy returns, String typeComment, int startOffset, int endOffset);
+
+    public StmtTy createReturn(ExprTy value, int startOffset, int endOffset);
 }
