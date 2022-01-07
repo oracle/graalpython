@@ -86,9 +86,6 @@ public abstract class WriteUnraisableNode extends Node {
             Object unraisablehook = lookup.execute(frame, sysModule, BuiltinNames.UNRAISABLEHOOK);
             Object exceptionType = getClassNode.execute(exception);
             Object traceback = getExceptionTracebackNode.execute(exception);
-            if (traceback == null) {
-                traceback = PNone.NONE;
-            }
             Object messageObj = PNone.NONE;
             if (message != null) {
                 messageObj = formatMessage(message);

@@ -53,7 +53,9 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -64,6 +66,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @Child private ExceptionStateNodes.RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private PythonObjectFactory ofactory;
+    @Child private InteropLibrary lib;
     @CompilationFinal private LoopConditionProfile contextChainHandledProfile;
     @CompilationFinal private LoopConditionProfile contextChainContextProfile;
 
@@ -168,6 +171,18 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return ofactory;
     }
 
+    private InteropLibrary getInteropLibrary() {
+        if (lib == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lib = insert(InteropLibrary.getFactory().createDispatched(3));
+        }
+        return lib;
+    }
+
+    protected final boolean isTruffleException(Throwable t) {
+        return getInteropLibrary().isException(t);
+    }
+
     protected final boolean shouldCatchAllExceptions() {
         return PythonLanguage.get(this).getEngineOption(PythonOptions.CatchAllExceptions);
     }
@@ -179,6 +194,10 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         // the cutoff point to the catch site
         pe.getTruffleStackTrace();
         return pe;
+    }
+
+    protected PException exceptionStateForTruffleException(AbstractTruffleException exception) {
+        return wrapJavaException(exception, this, factory().createBaseException(SystemError, "%m", new Object[]{exception}));
     }
 
     protected final PException wrapJavaExceptionIfApplicable(Throwable e) {
