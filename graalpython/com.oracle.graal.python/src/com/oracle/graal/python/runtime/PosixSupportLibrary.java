@@ -291,6 +291,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void mmapUnmap(Object receiver, Object mmap, long length) throws PosixException;
 
+    public abstract long mmapGetPointer(Object receiver, Object mmap);
+
     public static final class PwdResult {
         public final String name;
         /**

@@ -831,6 +831,13 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public long mmapGetPointer(Object mmap,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("mmapFlush", "%s", mmap);
+        return lib.mmapGetPointer(delegate, mmap);
+    }
+
+    @ExportMessage
     final void execv(Object pathname, Object[] args,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("execv", "%s, %s", pathname, args);

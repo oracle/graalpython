@@ -2329,6 +2329,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long mmapGetPointer(@SuppressWarnings("unused") Object mmap) {
+        throw new UnsupportedPosixFeatureException("Unable to obtain mmap pointer in emulated posix backend");
+    }
+
     @TruffleBoundary
     private static void closeChannel(Channel ch) throws IOException {
         ch.close();

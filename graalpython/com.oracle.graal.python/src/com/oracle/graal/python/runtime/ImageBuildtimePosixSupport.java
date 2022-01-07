@@ -682,6 +682,14 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    final long mmapGetPointer(Object mmap,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        checkNotInImageBuildtime();
+        return nativeLib.mmapGetPointer(nativePosixSupport, mmap);
+    }
+
+    @ExportMessage
     public PwdResult getpwuid(long uid,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();

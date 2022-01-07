@@ -68,10 +68,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.PythonOS;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
@@ -110,8 +110,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 import com.oracle.truffle.llvm.api.Toolchain;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 import sun.misc.Unsafe;
 
@@ -1354,6 +1354,13 @@ public final class NFIPosixSupport extends PosixSupport {
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long mmapGetPointer(Object mmap) {
+        MMapHandle handle = (MMapHandle) mmap;
+        return handle.pointer;
     }
 
     private static void checkIndexAndLen(MMapHandle handle, long index, long length) {
