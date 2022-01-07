@@ -183,7 +183,7 @@ public final class PythonSSTNodeFactory {
 
     public SSTNode createAnnotationType(SSTNode type) {
         SSTNode annotType = type;
-        if (futureAnnotations) {
+        if (futureAnnotations && type != null) {
             final String value = source.getCharacters().subSequence(type.getStartOffset() - 1, type.getEndOffset() + 1).toString();
             annotType = createStringLiteral(new String[]{value}, type.getStartOffset(), type.getEndOffset());
         }
