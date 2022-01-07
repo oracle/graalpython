@@ -292,10 +292,9 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class TracebackNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(tb)")
-        public static Object getTraceback(PBaseException self, @SuppressWarnings("unused") Object tb,
+        public static Object getTraceback(Object self, @SuppressWarnings("unused") Object tb,
                         @Cached GetExceptionTracebackNode getExceptionTracebackNode) {
-            PTraceback traceback = getExceptionTracebackNode.execute(self);
-            return traceback == null ? PNone.NONE : traceback;
+            return getExceptionTracebackNode.execute(self);
         }
 
         @Specialization(guards = "!isNoValue(tb)")

@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
-
 import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -74,7 +72,6 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
-    @Child private InteropLibrary excLib;
 
     private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
 
@@ -116,11 +113,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             // If we reach here, no explicit return could have happened as it would throw
             return PNone.NONE;
         } catch (AbstractTruffleException e) {
-            if (excLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                excLib = insert(InteropLibrary.getFactory().createDispatched(3));
-            }
-            if (excLib.isException(e) && catchTruffleException(frame, e)) {
+            if (isTruffleException(e) && catchTruffleException(frame, e)) {
                 return PNone.NONE;
             }
             throw e;
@@ -180,31 +173,23 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         try {
             for (ExceptNode exceptNode : exceptNodes) {
                 if (everMatched.profile(exceptNode.matchesTruffleException(frame, exception))) {
-                    ExceptionState exceptionState = saveExceptionState(frame);
+                    ExceptionState savedState = saveExceptionState(frame);
                     /*
-                     * In this case, we are catching not a Python exception. While the exception can
-                     * usually not be accessed by the user, she can at least re-raise it. So, we
+                     * In this case, we are not catching a Python exception. While the exception can
+                     * usually not be accessed by the user, they can at least re-raise it. So, we
                      * need to wrap the exception into a Python exception.
                      */
-                    PException wrappedTruffleException = wrapJavaException(exception, this, factory().createBaseException(SystemError, "%m", new Object[]{exception}));
-                    SetCaughtExceptionNode.execute(frame, wrappedTruffleException);
+                    PException exceptionState = exceptionStateForTruffleException(exception);
+                    SetCaughtExceptionNode.execute(frame, exceptionState);
                     try {
                         exceptNode.executeExcept(frame, exception);
                     } finally {
-                        restoreExceptionState(frame, exceptionState);
+                        restoreExceptionState(frame, savedState);
                     }
                 }
             }
         } catch (ExceptionHandledException eh) {
             return true;
-        } catch (PException handlerException) {
-            throw handlerException;
-        } catch (Exception | StackOverflowError | AssertionError e) {
-            PException handlerException = wrapJavaExceptionIfApplicable(e);
-            if (handlerException == null) {
-                throw e;
-            }
-            throw handlerException.getExceptionForReraise();
         }
         return false;
     }
