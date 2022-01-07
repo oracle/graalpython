@@ -63,6 +63,10 @@ it easier to keep up with upstream development.
 
     git diff --word-diff grammar-import -- src/main/python/pegjava/python.gram
 
+or use our own tool:
+
+    git show grammar-import:src/main/python/pegjava/python.gram | python3 src/main/python/diff_generator.py src/main/python/pegjava/python.gram
+
 ##### To update the grammar
 
     git checkout grammar-import
