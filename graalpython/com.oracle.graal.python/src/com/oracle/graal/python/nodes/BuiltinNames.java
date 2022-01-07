@@ -54,6 +54,7 @@ public abstract class BuiltinNames {
     public static final String __MAIN__ = "__main__";
     public static final String __BUILTINS__ = "__builtins__";
     public static final String __DEBUG__ = "__debug__";
+    public static final String __FUTURE__ = "__future__";
 
     // sys
     public static final String TRACEBACKLIMIT = "tracebacklimit";

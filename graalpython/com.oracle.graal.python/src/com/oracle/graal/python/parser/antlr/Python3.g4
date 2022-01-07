@@ -580,11 +580,11 @@ funcdef
         }
 	s = suite
 	{ 
-            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, optimize($s.result), resultType, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
-            scopeEnvironment.popScope();
-            loopState = savedLoopState;
-            push(funcDef);
-        }
+        SSTNode funcDef = factory.createFunctionDef(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, optimize($s.result), resultType, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
+        scopeEnvironment.popScope();
+        loopState = savedLoopState;
+        push(funcDef);
+    }
 ;
 
 parameters returns [ArgDefListBuilder result]
@@ -639,7 +639,7 @@ defparameter [ArgDefListBuilder args]
             if (name != null) {
                 name = factory.mangleNameInCurrentScope(name);
             }
-            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue);
+            ArgDefListBuilder.AddParamResult result = args.addParam(name, factory.createAnnotationType(type), defValue);
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());

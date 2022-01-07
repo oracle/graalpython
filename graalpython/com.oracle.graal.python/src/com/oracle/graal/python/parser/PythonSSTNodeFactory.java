@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AnnotationSSTNode;
+import com.oracle.graal.python.parser.sst.ArgDefListBuilder;
 import com.oracle.graal.python.parser.sst.ArgListBuilder;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
@@ -104,6 +105,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.__FUTURE__;
+
 public final class PythonSSTNodeFactory {
 
     /**
@@ -118,6 +121,7 @@ public final class PythonSSTNodeFactory {
     private final Source source;
     private final PythonParser.ParserErrorCallback errors;
     private FStringExprParser fStringExprParser;
+    private boolean futureAnnotations = false;
 
     public PythonSSTNodeFactory(PythonParser.ParserErrorCallback errors, Source source, FStringExprParser fStringExprParser) {
         this.errors = errors;
@@ -163,6 +167,9 @@ public final class PythonSSTNodeFactory {
     public SSTNode createImportFrom(String from, String[][] asNames, int startOffset, int endOffset) {
         if (asNames != null) {
             for (String[] asName : asNames) {
+                if (from.equals(__FUTURE__) && asName[0].equals("annotations")) {
+                    futureAnnotations = true;
+                }
                 scopeEnvironment.createLocal(asName[1] == null ? asName[0] : asName[1]);
             }
         } else {
@@ -172,6 +179,20 @@ public final class PythonSSTNodeFactory {
         }
 
         return new ImportFromSSTNode(scopeEnvironment.getCurrentScope(), from, asNames, startOffset, endOffset);
+    }
+
+    public SSTNode createAnnotationType(SSTNode type) {
+        SSTNode annotType = type;
+        if (futureAnnotations) {
+            final String value = source.getCharacters().subSequence(type.getStartOffset() - 1, type.getEndOffset() + 1).toString();
+            annotType = createStringLiteral(new String[]{value}, type.getStartOffset(), type.getEndOffset());
+        }
+        return annotType;
+    }
+
+    public FunctionDefSSTNode createFunctionDef(ScopeInfo functionScope, String name, String enclosingClassName, ArgDefListBuilder argBuilder, SSTNode body, SSTNode resultAnnotation, int startOffset, int endOffset) {
+        SSTNode annotation = createAnnotationType(resultAnnotation);
+        return new FunctionDefSSTNode(functionScope, name, enclosingClassName, argBuilder, body, annotation, startOffset, endOffset);
     }
 
     public String mangleNameInCurrentScope(String name) {
@@ -340,6 +361,7 @@ public final class PythonSSTNodeFactory {
     }
 
     public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int start, int end) {
+        SSTNode annotType = createAnnotationType(type);
         // checking if the annotation has the right target
         if (!(lhs instanceof VarLookupSSTNode || lhs instanceof GetAttributeSSTNode || lhs instanceof SubscriptSSTNode)) {
             if (lhs instanceof CollectionSSTNode) {
@@ -355,7 +377,7 @@ public final class PythonSSTNodeFactory {
         if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
             scopeEnvironment.getCurrentScope().setHasAnnotations(true);
         }
-        return new AnnotationSSTNode(lhs, type, start, end);
+        return new AnnotationSSTNode(lhs, annotType, start, end);
     }
 
     public SSTNode createAugAssignment(SSTNode lhs, String operation, SSTNode rhs, int startOffset, int endOffset) {

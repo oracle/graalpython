@@ -204,6 +204,11 @@ public class FuncDefTests extends ParserTestBase {
     }
 
     @Test
+    public void annotations01() throws Exception {
+        checkScopeAndTree();
+    }
+
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree();
     }
