@@ -292,7 +292,7 @@ Py_ssize_t PySequence_Size(PyObject *s) {
 
 // PySequence_Size downcall for native python objects
 // taken from CPython "Objects/abstract.c/Py_Sequence_Size"
-Py_ssize_t PyTruffle_Sequence_Size(PyObject *s) {
+Py_ssize_t PyTruffle_PySequence_Size(PyObject *s) {
     PySequenceMethods *m;
 
     if (s == NULL) {
@@ -372,8 +372,29 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
     return _jls_PyObject_GetItem(native_to_java(o), polyglot_from_string(key, SRC_CS));
 }
 
+UPCALL_ID(PyObject_Size);
 Py_ssize_t PyObject_Size(PyObject *o) {
     return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(o));
+}
+
+// PyObject_Size downcall for native python objects
+// taken from CPython "Objects/abstract.c/Py_Object_Size"
+Py_ssize_t PyTruffle_PyObject_Size(PyObject *o) {
+    PySequenceMethods *m;
+
+    if (o == NULL) {
+        null_error();
+        return -1;
+    }
+
+    m = o->ob_type->tp_as_sequence;
+    if (m && m->sq_length) {
+        Py_ssize_t len = m->sq_length(o);
+        assert(len >= 0 || PyErr_Occurred());
+        return len;
+    }
+
+    return PyMapping_Size(o);
 }
 
 UPCALL_ID(PyMapping_Keys);
@@ -553,7 +574,7 @@ Py_ssize_t PyMapping_Size(PyObject *s) {
 
 // PyMapping_Size downcall for native python objects
 // partially taken from CPython "Objects/abstract.c/Py_Mapping_Size"
-Py_ssize_t PyTruffle_Mapping_Size(PyObject *o) {
+Py_ssize_t PyTruffle_PyMapping_Size(PyObject *o) {
     PyMappingMethods *m;
 
     if (o == NULL) {

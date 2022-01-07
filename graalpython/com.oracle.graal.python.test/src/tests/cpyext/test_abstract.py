@@ -107,22 +107,47 @@ def _reference_next(args):
 
 def _reference_seq_size(args):
     seq = args[0]
-    # XXX check
-    if isinstance(seq, dict) or isinstance(seq, type(type.__dict__)) or isinstance(seq, set) or isinstance(seq, frozenset) or not hasattr(seq, '__len__'):
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise TypeError
-    return len(seq)
+    if can_be_seq(seq):
+        return len(seq)
+    if sys.version_info.minor >= 6:
+        raise SystemError
+    else:
+        raise TypeError
 
 def _reference_mapping_size(args):
     m = args[0]
-    if not (isinstance(m, dict) or isinstance(m, type(type.__dict__))) or not hasattr(m, '__getitem__'):
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise TypeError
-    return len(m)    
+    if can_be_mapping(m): 
+        return len(m)    
+    if sys.version_info.minor >= 6:
+        raise SystemError
+    else:
+        raise TypeError
+        
+def _reference_object_size(args):
+    o = args[0]        
+    if can_be_seq(o) or can_be_mapping(o):
+        return len(o)
+    if sys.version_info.minor >= 6:
+        raise SystemError
+    else:
+        raise TypeError()
+
+def can_be_seq(obj):
+    # XXX check seq/frozenseq
+    if isinstanceof(obj, [dict, type(type.__dict__), set, frozenset]):
+        return False
+    return hasattr(obj, '__getitem__')
+
+def can_be_mapping(obj):
+    if isinstanceof(obj, [str, bytes, list, tuple, set, frozenset, memoryview, range]):
+        return False
+    return hasattr(obj, '__getitem__')
+
+def isinstanceof(obj, types):
+    for t in types:
+        if isinstance(obj, t):
+            return True
+    return False    
 
 def _reference_getitem(args):
     seq = args[0]
@@ -195,8 +220,10 @@ class DummyFloatSubclass(float):
 class DummySequence():
 
     def __getitem__(self, idx):
-        return idx * 10
-
+        raise IndexError
+    
+    def __len__(self):
+        return 0
 
 class DummyListSubclass(list):
     pass
@@ -774,6 +801,7 @@ class TestAbstract(CPyExtTestCase):
             ([None],),
             (set(),),
             (frozenset(),),
+            (DummySequence(),),
             (DummyListSubclass(),),
             ('hello',),
             ({},),
@@ -981,6 +1009,7 @@ class TestAbstract(CPyExtTestCase):
             ([None],),
             (set(),),
             (frozenset(),),
+            (DummySequence(),),
             (DummyListSubclass(),),
             ('hello',),
             ({},),
@@ -1097,3 +1126,31 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* s", "PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyObject_Size = CPyExtFunction(
+        _reference_object_size,
+        lambda: (
+            (tuple(),),
+            ((1, 2, 3),),
+            ((None,),),
+            ([],),
+            (['a', 'b', 'c'],),
+            ([None],),
+            (set(),),
+            (frozenset(),),
+            (DummySequence(),),
+            (DummyListSubclass(),),
+            ('hello',),
+            ({},),
+            ({1, 1},),
+            (type.__dict__,), #mappingproxy
+            (NoNumber(),),
+            (sys.modules, ),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyObject_Length = test_PyObject_Size

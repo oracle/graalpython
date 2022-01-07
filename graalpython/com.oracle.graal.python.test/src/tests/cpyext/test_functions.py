@@ -90,22 +90,7 @@ class TestPyObject(CPyExtTestCase):
     # PyObject_Del
     # PyObject_FREE
     # PyObject_Free
-    def forgiving_len(o):
-        try:
-            return len(o)
-        except TypeError:
-            return -1
 
-    test_PyObject_Length = CPyExtFunction(
-        forgiving_len,
-        lambda: ([], [1, 2, 3, 4], (1,), sys.modules),
-        resultspec="i",
-    )
-    test_PyObject_Size = CPyExtFunction(
-        forgiving_len,
-        lambda: ([], [1, 2, 3, 4], (1,), {1:1}, sys.modules),
-        resultspec="i",
-    )
     # PyObject_MALLOC
     # PyObject_Malloc
     # PyObject_New

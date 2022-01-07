@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MAPPING_SIZE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_SEQUENCE_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_MAPPING_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_OBJECT_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
@@ -993,8 +994,8 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
-            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_SEQUENCE_SIZE, toSulongNode.execute(obj));
-            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_SEQUENCE_SIZE.getName(), result);
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(obj));
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE.getName(), result);
             return asPythonObjectNode.execute(result);
         }
 
@@ -1073,6 +1074,23 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
 
         protected static boolean isMappingOrSequence(Object obj) {
             return obj instanceof PSequence || obj instanceof PHashingCollection;
+        }
+
+        @Specialization(guards = {"isNativeObject(obj)"})
+        static Object size(VirtualFrame frame, Object obj,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_OBJECT_SIZE, toSulongNode.execute(obj));
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_OBJECT_SIZE.getName(), result);
+            return asPythonObjectNode.execute(result);
+        }
+
+        @Specialization(guards = {"!isNativeObject(obj)", "!isMappingOrSequence(obj)"})
+        static Object size(VirtualFrame frame, Object obj,                        
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.OBJ_HAS_NO_LEN, obj);
         }
     }
 
@@ -1184,9 +1202,8 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialMethodNames.class)
     abstract static class PyMappingSizeNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "checkNode.execute(obj)")
-        static int doSequence(VirtualFrame frame, Object obj,
-                        @SuppressWarnings("unused") @Cached PyMappingCheckNode checkNode,
+        @Specialization
+        static int doSequence(VirtualFrame frame, PHashingCollection obj,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -1203,16 +1220,19 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
-            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MAPPING_SIZE, toSulongNode.execute(obj));
-            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_MAPPING_SIZE.getName(), result);
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_SIZE, toSulongNode.execute(obj));
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_MAPPING_SIZE.getName(), result);
             return asPythonObjectNode.execute(result);
         }
 
-        @Specialization(guards = {"!isNativeObject(obj)", "!checkNode.execute(obj)"})
+        @Specialization(guards = {"!isNativeObject(obj)", "!isMapping(obj)"})
         Object notSequence(VirtualFrame frame, Object obj,
-                        @SuppressWarnings("unused") @Cached PyMappingCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, TypeError, OBJ_ISNT_MAPPING, obj);
+        }
+
+        protected boolean isMapping(Object obj) {
+            return obj instanceof PHashingCollection;
         }
     }
 
