@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
-import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPILE;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
 import static com.oracle.graal.python.nodes.PGuards.isDict;
@@ -73,7 +72,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public class PythonCextPythonRunBuiltins extends PythonBuiltins {
+public final class PythonCextPythonRunBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

@@ -305,7 +305,7 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 @CoreFunctions(defineModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public class PythonCextBuiltins extends PythonBuiltins {
+public final class PythonCextBuiltins extends PythonBuiltins {
 
     public static final String PYTHON_CEXT = "python_cext";
 

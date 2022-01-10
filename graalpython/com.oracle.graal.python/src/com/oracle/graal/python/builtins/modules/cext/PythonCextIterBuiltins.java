@@ -61,7 +61,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public class PythonCextIterBuiltins extends PythonBuiltins {
+public final class PythonCextIterBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

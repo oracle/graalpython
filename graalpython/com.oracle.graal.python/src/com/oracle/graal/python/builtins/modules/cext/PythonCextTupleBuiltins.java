@@ -93,7 +93,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public class PythonCextTupleBuiltins extends PythonBuiltins {
+public final class PythonCextTupleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
