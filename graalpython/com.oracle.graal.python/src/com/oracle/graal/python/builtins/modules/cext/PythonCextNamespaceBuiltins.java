@@ -47,11 +47,14 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.InitNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -90,6 +93,29 @@ public class PythonCextNamespaceBuiltins extends PythonBuiltins {
             try {
                 PSimpleNamespace ns = factory().createSimpleNamespace();
                 HashingStorageIterable<DictEntry> entries = lib.entries(dict.getDictStorage());
+                HashingStorageIterator<DictEntry> it = entries.iterator();
+                while (it.hasNext()) {
+                    DictEntry e = it.next();
+                    dyLib.put(ns, e.key, e.value);
+                }
+                return ns;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNull.execute();
+            }
+        }
+
+        @Specialization(guards = "!isDict(dict)")
+        public Object imp(VirtualFrame frame, Object dict,
+                        @Cached InitNode initNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNull) {
+            try {
+                PSimpleNamespace ns = factory().createSimpleNamespace();
+                HashingStorage hs = initNode.execute(frame, dict, PKeyword.EMPTY_KEYWORDS);
+                HashingStorageIterable<DictEntry> entries = lib.entries(hs);
                 HashingStorageIterator<DictEntry> it = entries.iterator();
                 while (it.hasNext()) {
                     DictEntry e = it.next();
