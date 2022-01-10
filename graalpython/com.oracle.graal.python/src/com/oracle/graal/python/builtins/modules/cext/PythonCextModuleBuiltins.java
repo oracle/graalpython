@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -202,19 +203,11 @@ public class PythonCextModuleBuiltins extends PythonBuiltins {
         Object addObject(VirtualFrame frame, Object m, String k, Object o,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached GetDictIfExistsNode getDictNode,
-                        @Cached BranchProfile noDictProfile,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached WriteAttributeToObjectNode writeAtrrNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                PDict dict = getDictNode.execute(m);
-                if (dict == null) {
-                    noDictProfile.enter();
-                    return raiseNativeNode.raiseInt(frame, -1, SystemError, MODULE_S_HAS_NO, lookupAttrNode.execute(frame, m, __NAME__), __DICT__);
-                }
-                lib.setItem(dict.getDictStorage(), k, o);
+                writeAtrrNode.execute(m, k, o);
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -226,13 +219,10 @@ public class PythonCextModuleBuiltins extends PythonBuiltins {
         Object addObject(VirtualFrame frame, Object m, PString k, Object o,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached GetDictIfExistsNode getDictNode,
-                        @Cached BranchProfile noDictProfile,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached WriteAttributeToObjectNode writeAtrrNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return addObject(frame, m, k.getValue(), o, getClassNode, isSubtypeNode, lookupAttrNode, getDictNode, noDictProfile, lib, raiseNativeNode, transformExceptionToNativeNode);
+            return addObject(frame, m, k.getValue(), o, getClassNode, isSubtypeNode, writeAtrrNode, raiseNativeNode, transformExceptionToNativeNode);
         }
 
         @SuppressWarnings("unused")
