@@ -87,6 +87,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class AbstractImportNode extends StatementNode {
 
+    @CompilationFinal(dimensions = 1) public static final String[] IMPORT_ALL = new String[]{"*"};
+    
     @Child ImportName importNameNode;
 
     public AbstractImportNode() {

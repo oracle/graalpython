@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.nodes.statement.AbstractImportNode.IMPORT_ALL;
+
 import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -80,7 +82,7 @@ public class PythonCextImportBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNull) {
             try {
-                return AbstractImportNode.importModule(name, new String[]{"*"});
+                return AbstractImportNode.importModule(name, IMPORT_ALL);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getNativeNull.execute();
