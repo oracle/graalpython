@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,50 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def __dir__(klass):
-    """__dir__ for type objects
-
-    This includes all attributes of klass and all of the base
-    classes recursively.
-    """
-    names = set()
-    ns = getattr(klass, '__dict__', None)
-    if ns is not None:
-        names.update(ns)
-    bases = getattr(klass, '__bases__', None)
-    if bases is not None:
-        # Note that since we are only interested in the keys, the order
-        # we merge classes is unimportant
-        for base in bases:
-            names.update(_classdir(base))
-    return sorted(names)
-_classdir = __dir__
-
-
-def __dir__(obj):
-    """__dir__ for generic objects
-
-     Returns __dict__, __class__ and recursively up the
-     __class__.__bases__ chain.
-    """
-    names = set()
-    ns = getattr(obj, '__dict__', None)
-    if isinstance(ns, dict):
-        names.update(ns)
-    klass = getattr(obj, '__class__', None)
-    if klass is not None:
-        names.update(_classdir(klass))
-    return sorted(names)
-_objectdir = __dir__
-
-
-object.__dir__ = _objectdir
-type.__dir__ = _classdir
-
-def __subclasshook(cls, subclass):
-    return NotImplemented
-
-type.__subclasshook__ = classmethod(__subclasshook)
 
 
 # TODO -----------------------------------------------------------------------------------------------------------------
