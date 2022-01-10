@@ -117,7 +117,7 @@ public class PythonCextMemoryViewBuiltins extends PythonBuiltins {
                         return raiseNativeNode.raise(frame, getNativeNullNode.execute(), BufferError, WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS);
                     }
                     PMemoryView mvBytes = memoryViewFromObject.execute(frame, toBytesNode.execute(frame, mv, Character.toString(order)));
-                    if (mv.getFormatString().equals("B")) {
+                    if ("B".equals(mv.getFormatString())) {
                         return mvBytes;
                     } else {
                         try {
