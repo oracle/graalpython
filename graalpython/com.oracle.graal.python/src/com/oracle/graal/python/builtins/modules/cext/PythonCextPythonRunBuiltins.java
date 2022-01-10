@@ -97,7 +97,7 @@ public class PythonCextPythonRunBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNull) {
             try {
-                PythonModule builtins = getContext().getCore().lookupBuiltinModule(BUILTINS);
+                PythonModule builtins = getCore().getBuiltins();
                 Object compileCallable = lookupNode.execute(frame, builtins, COMPILE);
                 Object code = callNode.execute(frame, compileCallable, source, stype, stype);
                 Object execCallable = lookupNode.execute(frame, builtins, EXEC);

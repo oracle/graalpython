@@ -139,7 +139,7 @@ public class PythonCextCEvalBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
-                PythonModule cext = getContext().getCore().lookupBuiltinModule(BUILTINS);
+                PythonModule cext = getCore().getBuiltins();
                 return getDictNode.execute(cext);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
