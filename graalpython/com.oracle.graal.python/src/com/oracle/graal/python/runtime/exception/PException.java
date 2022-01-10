@@ -46,14 +46,10 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
@@ -207,28 +203,9 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
-    public void expectStopIteration(IsBuiltinClassProfile profile, PRaiseNode raise, Object o) {
-        if (!profile.profileException(this, PythonBuiltinClassType.StopIteration)) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            Object clazz = GetClassNode.getUncached().execute(getUnreifiedException());
-            if (IsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.AttributeError)) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, GetClassNode.getUncached().execute(o));
-            }
-            throw this;
-        }
-    }
-
     public void expectAttributeError(IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, PythonBuiltinClassType.AttributeError)) {
             throw this;
-        }
-    }
-
-    public void expectAttributeErrorOrIOUnsupportedOperation(IsBuiltinClassProfile profile) {
-        if (!profile.profileException(this, PythonBuiltinClassType.AttributeError)) {
-            if (!profile.profileException(this, PythonBuiltinClassType.IOUnsupportedOperation)) {
-                throw this;
-            }
         }
     }
 

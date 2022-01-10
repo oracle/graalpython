@@ -84,7 +84,7 @@ public abstract class GetNextNode extends PNodeWithContext {
 
             @Override
             public Object execute(Object receiver) {
-                throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, __NEXT__);
+                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
             }
         });
 
