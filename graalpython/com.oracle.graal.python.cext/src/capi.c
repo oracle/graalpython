@@ -42,6 +42,7 @@
 
 void *PY_TRUFFLE_CEXT;
 void *PY_BUILTIN;
+void *PY_SYS;
 void *Py_NoValue;
 
 void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
@@ -72,6 +73,7 @@ __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
     PY_BUILTIN = (void*)polyglot_eval("python", "import builtins\nbuiltins");
+    PY_SYS = (void*)polyglot_eval("python", "import sys\nsys");
 
     pytruffle_decorate_function = ((void*(*)(void *fun0, void* fun1))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Decorate_Function", SRC_CS)));
 
@@ -322,6 +324,10 @@ static void initialize_bufferprocs() {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyMemoryView_Type), (getbufferproc)memoryview_getbuffer, (releasebufferproc)memoryview_releasebuffer);
 }
 
+static void initialize_filesystemencoding() {
+    Py_FileSystemDefaultEncoding = (const char *)to_sulong(polyglot_invoke(PY_SYS, "getfilesystemencoding"));
+}
+
 __attribute__((constructor (20000)))
 static void initialize_capi() {
     // initialize global variables like '_Py_NoneStruct', etc.
@@ -329,6 +335,7 @@ static void initialize_capi() {
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
+    initialize_filesystemencoding();
 }
 
 // Workaround: use 'uint64' to avoid conversion to an LLVM boxed primitive such
