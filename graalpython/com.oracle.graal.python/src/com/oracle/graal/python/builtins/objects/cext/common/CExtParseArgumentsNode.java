@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_RW;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -391,22 +392,24 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             ParserState state = stateIn;
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
-            if (isLookahead(format, format_idx, '*')) {
-                /* format_idx++; */
-                // 'y*'; output to 'Py_buffer*'
-                if (!skipOptionalArg(arg, state.restOptional)) {
-                    Object pybufferPtr = getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
-                    getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, argToSulongNode.execute(arg), pybufferPtr, true);
-                }
-            } else {
-                Object voidPtr = getVaArgNode.getVoidPtr(varargs, state.outIndex);
-                Object count = convertbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, argToSulongNode.execute(arg), voidPtr);
-                if (isLookahead(format, format_idx, '#')) {
+            if (!skipOptionalArg(arg, state.restOptional)) {
+                if (isLookahead(format, format_idx, '*')) {
                     /* format_idx++; */
-                    // 'y#'
-                    state = state.incrementOutIndex();
-                    writeOutVarNode.writeInt64(varargs, state.outIndex, count);
+                    // 'y*'; output to 'Py_buffer*'
+                    Object pybufferPtr = getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
+                    getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, arg, argToSulongNode, pybufferPtr, true);
+                } else {
+                    Object voidPtr = getVaArgNode.getVoidPtr(varargs, state.outIndex);
+                    Object count = convertbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, arg, argToSulongNode, voidPtr);
+                    if (isLookahead(format, format_idx, '#')) {
+                        /* format_idx++; */
+                        // 'y#'
+                        state = state.incrementOutIndex();
+                        writeOutVarNode.writeInt64(varargs, state.outIndex, count);
+                    }
                 }
+            } else if (isLookahead(format, format_idx, '#')) {
+                state = state.incrementOutIndex();
             }
             return state.incrementOutIndex();
         }
@@ -961,29 +964,37 @@ public abstract class CExtParseArgumentsNode {
             }
             if (!skipOptionalArg(arg, state.restOptional)) {
                 Object pybufferPtr = getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
-                getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, toNativeNode.execute(arg), pybufferPtr, false);
+                getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, arg, toNativeNode, pybufferPtr, false);
             }
             return state.incrementOutIndex();
         }
 
-        private static void getbuffer(CExtContext nativeContext, PCallCExtFunction callGetBufferRwNode, PRaiseNativeNode raiseNode, Object sulongArg, Object pybufferPtr, boolean readOnly)
+        private static void getbuffer(CExtContext nativeContext, PCallCExtFunction callGetBufferRwNode, PRaiseNativeNode raiseNode, Object arg, CExtToNativeNode toSulongNode, Object pybufferPtr,
+                        boolean readOnly)
                         throws ParseArgumentsException {
             NativeCAPISymbol funSymbol = readOnly ? FUN_GET_BUFFER_R : FUN_GET_BUFFER_RW;
-            Object rc = callGetBufferRwNode.call(nativeContext, funSymbol, sulongArg, pybufferPtr);
+            Object rc = callGetBufferRwNode.call(nativeContext, funSymbol, toSulongNode.execute(arg), pybufferPtr);
             if (!(rc instanceof Number)) {
                 throw raise(raiseNode, SystemError, ErrorMessages.RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S, funSymbol, rc.getClass());
             }
             int i = intValue((Number) rc);
             if (i == -1) {
-                throw raise(raiseNode, TypeError, ErrorMessages.READ_WRITE_BYTELIKE_OBJ);
+                throw converterr(raiseNode, readOnly ? ErrorMessages.READ_ONLY_BYTELIKE_OBJ : ErrorMessages.READ_WRITE_BYTELIKE_OBJ, arg);
             } else if (i == -2) {
-                throw raise(raiseNode, TypeError, ErrorMessages.CONTIGUOUS_BUFFER);
+                throw converterr(raiseNode, ErrorMessages.CONTIGUOUS_BUFFER, arg);
             }
         }
 
-        private static int convertbuffer(CExtContext nativeContext, PCallCExtFunction callConvertbuffer, PRaiseNativeNode raiseNode, Object sulongArg, Object voidPtr)
+        private static ParseArgumentsException converterr(PRaiseNativeNode raiseNode, String msg, Object arg) {
+            if (arg == PNone.NONE) {
+                throw raise(raiseNode, TypeError, "must be %s, not None", msg);
+            }
+            throw raise(raiseNode, TypeError, "must be %s, not %p", msg, arg);
+        }
+
+        private static int convertbuffer(CExtContext nativeContext, PCallCExtFunction callConvertbuffer, PRaiseNativeNode raiseNode, Object arg, CExtToNativeNode toSulong, Object voidPtr)
                         throws ParseArgumentsException {
-            Object rc = callConvertbuffer.call(nativeContext, FUN_CONVERTBUFFER, sulongArg, voidPtr);
+            Object rc = callConvertbuffer.call(nativeContext, FUN_CONVERTBUFFER, toSulong.execute(arg), voidPtr);
             if (!(rc instanceof Number)) {
                 throw CompilerDirectives.shouldNotReachHere("wrong result of internal function");
             }
@@ -991,11 +1002,11 @@ public abstract class CExtParseArgumentsNode {
             // first two results are the error results from getbuffer, the third is the one from
             // convertbuffer
             if (i == -1) {
-                throw raise(raiseNode, TypeError, ErrorMessages.READ_WRITE_BYTELIKE_OBJ);
+                throw converterr(raiseNode, ErrorMessages.READ_WRITE_BYTELIKE_OBJ, arg);
             } else if (i == -2) {
-                throw raise(raiseNode, TypeError, ErrorMessages.CONTIGUOUS_BUFFER);
+                throw converterr(raiseNode, ErrorMessages.CONTIGUOUS_BUFFER, arg);
             } else if (i == -3) {
-                throw raise(raiseNode, TypeError, ErrorMessages.READ_ONLY_BYTELIKE_OBJ);
+                throw converterr(raiseNode, ErrorMessages.READ_ONLY_BYTELIKE_OBJ, arg);
             }
             return i;
         }
