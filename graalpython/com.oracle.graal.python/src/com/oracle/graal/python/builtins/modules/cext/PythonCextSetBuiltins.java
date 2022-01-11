@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,7 +92,7 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public class PythonCextSetBuiltins extends PythonBuiltins {
+public final class PythonCextSetBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -403,7 +403,7 @@ public class PythonCextSetBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PySet_Add", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class PySet_Add extends PythonBinaryBuiltinNode {
+    public abstract static class PySetAdd extends PythonBinaryBuiltinNode {
 
         @Specialization
         int add(VirtualFrame frame, PBaseSet self, Object o,

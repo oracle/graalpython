@@ -40,23 +40,27 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
-import java.util.List;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.ErrorMessages.WRITEOBJ_WITH_NULL_FILE;
+
 import com.oracle.graal.python.builtins.Builtin;
+import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ReprNode;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,11 +68,11 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public final class PythonCextFloatBuiltins extends PythonBuiltins {
+public final class PythonCextFileBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextFloatBuiltinsFactory.getFactories();
+        return PythonCextFileBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -76,52 +80,52 @@ public final class PythonCextFloatBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    ///////////// float /////////////
-
-    @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyFile_WriteObject", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyFloatFromDoubleNode extends PythonUnaryBuiltinNode {
+    public abstract static class PyFileWriteObjectNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        double fromDouble(double d) {
-            return d;
-        }
-
-        @Specialization(guards = {"!isDouble(obj)"})
-        public Object fromDouble(VirtualFrame frame, Object obj,
-                        @Cached StrNode strNode,
+        public Object writeNone(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") PNone f, @SuppressWarnings("unused") int flags,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            // cpython PyFloat_FromDouble takes only 'double'
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
-        }
-    }
-
-    @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyFloatAsDouble extends PythonUnaryBuiltinNode {
-
-        @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getLong();
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, WRITEOBJ_WITH_NULL_FILE);
         }
 
-        @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getDouble();
-        }
-
-        @Specialization
-        static double doGenericErr(VirtualFrame frame, Object object,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached PyFloatAsDoubleNode asDoubleNode,
+        @Specialization(guards = {"!isPNone(f)", "isWriteStr(flags)"})
+        public Object writeStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
+                        @Cached StrNode strNode,
+                        @Shared("getAttr") @Cached PyObjectGetAttr getAttr,
+                        @Shared("call") @Cached CallNode callNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
+                Object value = strNode.executeWith(frame, obj);
+                Object writeCallable = getAttr.execute(frame, f, WRITE);
+                callNode.execute(frame, writeCallable, value);
+                return 0;
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1.0;
+                transformExceptionToNativeNode.execute(e);
+                return -1;
             }
         }
-    }
 
+        @Specialization(guards = {"!isPNone(f)", "!isWriteStr(flags)"})
+        public Object getStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
+                        @Cached ReprNode reprNode,
+                        @Shared("getAttr") @Cached PyObjectGetAttr getAttr,
+                        @Shared("call") @Cached CallNode callNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object value = reprNode.execute(frame, obj);
+                Object writeCallable = getAttr.execute(frame, f, WRITE);
+                callNode.execute(frame, writeCallable, value);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        protected boolean isWriteStr(int flags) {
+            return (flags & 0x1) > 0;
+        }
+    }
 }

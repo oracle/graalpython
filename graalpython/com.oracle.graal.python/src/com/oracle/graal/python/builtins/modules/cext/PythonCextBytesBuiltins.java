@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -98,7 +98,7 @@ import java.util.Arrays;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public class PythonCextBytesBuiltins extends PythonBuiltins {
+public final class PythonCextBytesBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -349,7 +349,7 @@ public class PythonCextBytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_PyBytes_Resize", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
+    public abstract static class PyBytesResize extends PythonBinaryBuiltinNode {
 
         @Specialization
         int resize(VirtualFrame frame, PBytes self, long newSizeL,

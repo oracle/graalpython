@@ -1877,7 +1877,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // repr(object)
     @Builtin(name = REPR, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         static Object repr(VirtualFrame frame, Object obj,

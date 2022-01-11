@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarar
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -111,7 +112,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "allocate_lock", maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class AllocateLockNode extends PythonBuiltinNode {
+    public abstract static class AllocateLockNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         PLock construct(Object self, Object unused) {

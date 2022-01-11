@@ -439,6 +439,7 @@ public abstract class ErrorMessages {
     public static final String MISSING_S = "Missing %s";
     public static final String MMAP_INDEX_OUT_OF_RANGE = "mmap index out of range";
     public static final String MODULE_HAS_NO_ATTR_S = "module has no attribute '%s'";
+    public static final String MODULE_S_HAS_NO = "module '%s' has no %s";
     public static final String MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S = "partially initialized module '%s' has no attribute '%s' (most likely due to a circular import)";
     public static final String MODULE_S_HAS_NO_ATTR_S = "module '%s' has no attribute '%s'";
     public static final String MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED = "multi-dimensional sub-views are not implemented";
@@ -476,6 +477,7 @@ public abstract class ErrorMessages {
     public static final String NATIVE_S_SUBTYPES_NOT_IMPLEMENTED = "native %s subtypes not implemented";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
     public static final String DECODING_STR_NOT_SUPPORTED = "decoding str is not supported";
+    public static final String S_NEEDS_S_AS_FIRST_ARG = "%s() needs %s as first arg";
     public static final String NEG_INF_PLUS_INF_IN = "-inf + inf in fsum";
     public static final String NEGATIVE_COUNT = "negative count";
     public static final String NEGATIVE_DATA_SIZE = "negative data size";
@@ -702,6 +704,8 @@ public abstract class ErrorMessages {
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL_P = "Was not possible to marshal %p";
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
+    public static final String WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS = "writable contiguous buffer requested for a non-contiguous object";
+    public static final String WRITEOBJ_WITH_NULL_FILE = "writeobject with NULL file";
     public static final String X_NOT_IN_LIST = "x not in list";
     public static final String X_NOT_IN_TUPLE = "tuple.index(x): x not in tuple";
     public static final String S_IS_AN_INVALID_ARG_FOR_S = "'%s' is an invalid keyword argument for %s";

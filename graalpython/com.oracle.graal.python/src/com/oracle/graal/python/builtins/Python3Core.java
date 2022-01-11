@@ -111,13 +111,25 @@ import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextImportBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextMemoryViewBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextIterBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextNamespaceBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextSysBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
@@ -478,12 +490,24 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextBuiltins(),
                         new PythonCextAbstractBuiltins(),
                         new PythonCextBytesBuiltins(),
+                        new PythonCextCEvalBuiltins(),
+                        new PythonCextCodeBuiltins(),
                         new PythonCextComplexBuiltins(),
                         new PythonCextDictBuiltins(),
+                        new PythonCextFileBuiltins(),
                         new PythonCextFloatBuiltins(),
+                        new PythonCextImportBuiltins(),
+                        new PythonCextIterBuiltins(),
                         new PythonCextListBuiltins(),
                         new PythonCextLongBuiltins(),
+                        new PythonCextMemoryViewBuiltins(),
+                        new PythonCextModuleBuiltins(),
+                        new PythonCextPythonRunBuiltins(),
+                        new PythonCextNamespaceBuiltins(),
                         new PythonCextSetBuiltins(),
+                        new PythonCextSliceBuiltins(),
+                        new PythonCextSysBuiltins(),
+                        new PythonCextTupleBuiltins(),
                         new PythonCextUnicodeBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),

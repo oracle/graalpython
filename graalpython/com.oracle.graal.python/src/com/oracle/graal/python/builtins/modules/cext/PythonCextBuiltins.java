@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,10 +48,6 @@ import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.i
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
@@ -100,7 +96,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CextUpcallNode;
@@ -171,16 +166,12 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -193,8 +184,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager;
@@ -219,10 +208,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -241,7 +227,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -259,7 +244,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -321,7 +305,7 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 @CoreFunctions(defineModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public class PythonCextBuiltins extends PythonBuiltins {
+public final class PythonCextBuiltins extends PythonBuiltins {
 
     public static final String PYTHON_CEXT = "python_cext";
 
@@ -452,195 +436,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyModule_SetDocString", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class SetDocStringNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object run(VirtualFrame frame, PythonModule module, Object doc,
-                        @Cached ObjectBuiltins.SetattrNode setattrNode) {
-            setattrNode.execute(frame, module, __DOC__, doc);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "PyModule_NewObject", minNumOfPositionalArgs = 1, parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
-    @GenerateNodeFactory
-    public abstract static class PyModuleNewObjectNode extends PythonUnaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyModuleNewObjectNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object run(VirtualFrame frame, String name,
-                        @Cached CallNode callNode) {
-            return callNode.execute(frame, PythonBuiltinClassType.PythonModule, new Object[]{name});
-        }
-    }
-
-    @Builtin(name = "_PyModule_CreateInitialized_PyModule_New", parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
-    @GenerateNodeFactory
-    public abstract static class PyModuleCreateInitializedNewNode extends PythonUnaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyModuleCreateInitializedNewNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object run(VirtualFrame frame, String name,
-                        @Cached CallNode callNode,
-                        @Cached ObjectBuiltins.SetattrNode setattrNode) {
-            // see CPython's Objects/moduleobject.c - _PyModule_CreateInitialized for
-            // comparison how they handle _Py_PackageContext
-            String newModuleName = name;
-            PythonContext ctx = getContext();
-            String pyPackageContext = ctx.getPyPackageContext();
-            if (pyPackageContext != null && pyPackageContext.endsWith(newModuleName)) {
-                newModuleName = pyPackageContext;
-                ctx.setPyPackageContext(null);
-            }
-            Object newModule = callNode.execute(frame, PythonBuiltinClassType.PythonModule, new Object[]{newModuleName});
-            // TODO: (tfel) I don't think this is the right place to set it, but somehow
-            // at least in the import of sklearn.neighbors.dist_metrics through
-            // sklearn.neighbors.ball_tree the __package__ attribute seems to be already
-            // set in CPython. To not produce a warning, I'm setting it here, although I
-            // could not find what CPython really does
-            int idx = newModuleName.lastIndexOf(".");
-            if (idx > -1) {
-                setattrNode.execute(frame, newModule, __PACKAGE__, newModuleName.substring(0, idx));
-            }
-            return newModule;
-        }
-    }
-
-    @Builtin(name = "PyMapping_Keys", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyMappingKeysNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object keys(VirtualFrame frame, PDict obj,
-                        @Cached KeysNode keysNode,
-                        @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return listNode.execute(frame, keysNode.execute(frame, obj));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @Specialization(guards = "!isDict(obj)")
-        public Object keys(VirtualFrame frame, Object obj,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CallNode callNode,
-                        @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return getKeys(frame, obj, getAttrNode, callNode, listNode);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-    }
-
-    private static PList getKeys(VirtualFrame frame, Object obj, PyObjectGetAttr getAttrNode, CallNode callNode, ConstructListNode listNode) {
-        Object attr = getAttrNode.execute(frame, obj, KEYS);
-        return listNode.execute(frame, callNode.execute(frame, attr));
-    }
-
-    @Builtin(name = "PyMapping_Items", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyMappingItemsNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object items(VirtualFrame frame, PDict obj,
-                        @Cached ItemsNode itemsNode,
-                        @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return listNode.execute(frame, itemsNode.execute(frame, obj));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @Specialization(guards = "!isDict(obj)")
-        public Object items(VirtualFrame frame, Object obj,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CallNode callNode,
-                        @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                Object attr = getAttrNode.execute(frame, obj, ITEMS);
-                return listNode.execute(frame, callNode.execute(frame, attr));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
-    @Builtin(name = "PyMapping_Values", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyMappingValuesNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object values(VirtualFrame frame, PDict obj,
-                        @Cached ConstructListNode listNode,
-                        @Cached ValuesNode valuesNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return listNode.execute(frame, valuesNode.execute(frame, obj));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-
-        @Specialization(guards = "!isDict(obj)")
-        public Object values(VirtualFrame frame, Object obj,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CallNode callNode,
-                        @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                Object attr = getAttrNode.execute(frame, obj, VALUES);
-                return listNode.execute(frame, callNode.execute(frame, attr));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
-    @Builtin(name = "PyModule_GetNameObject", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyModule_GetNameObjectNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object run(VirtualFrame frame, Object o,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            try {
-                return lookupAttrNode.execute(frame, o, __NAME__);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
-            }
-        }
-    }
-
     ///////////// mappingproxy /////////////
 
     @Builtin(name = "PyDictProxy_New", minNumOfPositionalArgs = 1)
@@ -710,56 +505,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
             }
             throw raise(PythonErrorType.KeyError, "'%s'", typeName);
-        }
-    }
-
-    @Builtin(name = "PyTuple_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTuple_New extends PythonUnaryBuiltinNode {
-        @Specialization
-        PTuple doGeneric(VirtualFrame frame, Object size,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            return factory().createTuple(new Object[asSizeNode.executeExact(frame, size)]);
-        }
-    }
-
-    @Builtin(name = "PyTuple_SetItem", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    @ImportStatic(CApiGuards.class)
-    abstract static class PyTuple_SetItem extends PythonTernaryBuiltinNode {
-        @Specialization
-        static int doManaged(VirtualFrame frame, PythonNativeWrapper selfWrapper, Object position, Object elementWrapper,
-                        @Cached AsPythonObjectNode selfAsPythonObjectNode,
-                        @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object self = selfAsPythonObjectNode.execute(selfWrapper);
-                if (!PGuards.isPTuple(self) || selfWrapper.getRefCount() != 1) {
-                    throw raiseNode.raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_P, "PTuple_SetItem");
-                }
-                PTuple tuple = (PTuple) self;
-                Object element = elementAsPythonObjectNode.execute(elementWrapper);
-                setItemNode.execute(frame, tuple.getSequenceStorage(), position, element);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
-            }
-        }
-
-        @Specialization(guards = "!isNativeWrapper(tuple)")
-        static int doNative(Object tuple, long position, Object element,
-                        @Cached PCallCapiFunction callSetItem) {
-            // TODO(fa): This path should be avoided since this is called from native code to do a
-            // native operation.
-            callSetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, tuple, position, element);
-            return 0;
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign(), "invalid item for assignment");
         }
     }
 
@@ -903,7 +648,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyErr_Restore", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyErrRestoreNode extends PythonBuiltinNode {
+    abstract static class PyErrRestoreNode extends PythonTernaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         Object run(PNone typ, PNone val, PNone tb) {
@@ -1693,15 +1438,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_SeqIter_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class SeqIterNewNode extends PythonBuiltinNode {
-        @Specialization
-        PSequenceIterator call(Object seq) {
-            return factory().createSequenceIterator(seq);
-        }
-    }
-
     @Builtin(name = "PyTruffle_BuiltinMethod", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class BuiltinMethodNode extends PythonBuiltinNode {
@@ -2110,29 +1846,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         int doSlow(VirtualFrame frame, Object derived, Object cls) {
             return doGeneric(frame, derived, cls, ToJavaNodeGen.getUncached(), ToJavaNodeGen.getUncached(), IsSubtypeNodeGen.getUncached());
-        }
-    }
-
-    @Builtin(name = "PyTuple_GetItem", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTuple_GetItem extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        Object doPTuple(VirtualFrame frame, PTuple tuple, long key,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
-            SequenceStorage sequenceStorage = tuple.getSequenceStorage();
-            // we must do a bounds-check but we must not normalize the index
-            if (key < 0 || key >= lenNode.execute(sequenceStorage)) {
-                throw raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
-            }
-            return getItemNode.execute(frame, sequenceStorage, key);
-        }
-
-        @Fallback
-        Object doPTuple(Object tuple, @SuppressWarnings("unused") Object key) {
-            // TODO(fa) To be absolutely correct, we need to do a 'isinstance' check on the object.
-            throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, tuple, tuple);
         }
     }
 
@@ -2987,45 +2700,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyObject_GetItem", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    abstract static class PyObjectGetItem extends PythonTernaryBuiltinNode {
-        @Specialization
-        Object doManaged(VirtualFrame frame, Object module, Object listWrapper, Object key,
-                        @Cached com.oracle.graal.python.lib.PyObjectGetItem getItem,
-                        @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
-                        @Cached AsPythonObjectNode keyAsPythonObjectNode,
-                        @Cached ToNewRefNode toNewRefNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
-                Object item = getItem.execute(frame, delegate, keyAsPythonObjectNode.execute(key));
-                return toNewRefNode.execute(item);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return toNewRefNode.execute(getNativeNullNode.execute(module));
-            }
-        }
-    }
-
     @Builtin(name = "wrap_PyDateTime_CAPI", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class WrapPyDateTimeCAPI extends PythonBuiltinNode {
         @Specialization
         static Object doGeneric(Object object) {
             return new PyDateTimeCAPIWrapper(object);
-        }
-    }
-
-    @Builtin(name = "_PyModule_GetAndIncMaxModuleNumber")
-    @GenerateNodeFactory
-    abstract static class PyModuleGetAndIncMaxModuleNumber extends PythonBuiltinNode {
-
-        @Specialization
-        long doIt() {
-            CApiContext nativeContext = getContext().getCApiContext();
-            return nativeContext.getAndIncMaxModuleNumber();
         }
     }
 

@@ -49,6 +49,7 @@ class TestPySlice(CPyExtTestCase):
         super(TestPySlice, self).compile_module(name)
 
 
+
     def reference_get_indices(slize, length):
         r = slize.indices(length)
         slicelength = 0
@@ -170,3 +171,25 @@ class TestPySlice(CPyExtTestCase):
             arguments=["int length", "int start", "int stop", "int step"],
             cmpfunc=unhandled_error_compare
         )
+
+    def reference_new_slice(args):
+        return slice(args[0], args[1], args[2])
+    
+    test_PySlice_New = CPyExtFunction(
+        reference_new_slice,
+        lambda: (
+            (1, 2, 3,),             
+            (1, 2, "a",),             
+            (1, 2, None,),             
+            (1, None, None,),             
+            (-1, -1, -1,),          
+            ("a", "b", "c"),
+            ("a", "b", None),            
+            ("a", None, None),            
+            (None, None, None),
+        ),
+        resultspec="O",
+        argspec='OOO',
+        arguments=["PyObject* start", "PyObject* stop", "PyObject* step"],
+        cmpfunc=unhandled_error_compare
+    )

@@ -40,35 +40,31 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
-import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
+import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public final class PythonCextFloatBuiltins extends PythonBuiltins {
+public final class PythonCextSliceBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextFloatBuiltinsFactory.getFactories();
+        return PythonCextSliceBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -76,52 +72,25 @@ public final class PythonCextFloatBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    ///////////// float /////////////
-
-    @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PySlice_New", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
-    abstract static class PyFloatFromDoubleNode extends PythonUnaryBuiltinNode {
-
+    public abstract static class PySliceNewNode extends PythonTernaryBuiltinNode {
         @Specialization
-        double fromDouble(double d) {
-            return d;
-        }
-
-        @Specialization(guards = {"!isDouble(obj)"})
-        public Object fromDouble(VirtualFrame frame, Object obj,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            // cpython PyFloat_FromDouble takes only 'double'
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
-        }
-    }
-
-    @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyFloatAsDouble extends PythonUnaryBuiltinNode {
-
-        @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getLong();
-        }
-
-        @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getDouble();
-        }
-
-        @Specialization
-        static double doGenericErr(VirtualFrame frame, Object object,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1.0;
+        public Object slice(VirtualFrame frame, long start, long stop, Object step,
+                        @Cached SliceLiteralNode sliceNode,
+                        @Cached BranchProfile isIntRangeProfile) {
+            if (PInt.isIntRange(start) && PInt.isIntRange(stop)) {
+                isIntRangeProfile.enter();
+                return sliceNode.execute(frame, (int) start, (int) stop, step);
             }
+            return sliceNode.execute(frame, start, stop, step);
+        }
+
+        @Specialization(guards = {"!isInteger(start) || !isInteger(stop)"})
+        public Object slice(VirtualFrame frame, Object start, Object stop, Object step,
+                        @Cached SliceLiteralNode sliceNode) {
+            return sliceNode.execute(frame, start, stop, step);
         }
     }
-
 }

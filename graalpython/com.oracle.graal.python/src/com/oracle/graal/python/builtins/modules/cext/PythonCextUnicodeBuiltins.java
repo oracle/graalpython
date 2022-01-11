@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -120,7 +120,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public class PythonCextUnicodeBuiltins extends PythonBuiltins {
+public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -787,9 +787,9 @@ public class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_PyUnicode_AsUTF8String", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class _PyUnicode_AsUTF8String extends NativeEncoderNode {
+    abstract static class PyUnicodeAsUTF8String extends NativeEncoderNode {
 
-        protected _PyUnicode_AsUTF8String() {
+        protected PyUnicodeAsUTF8String() {
             super(StandardCharsets.UTF_8);
         }
     }

@@ -40,35 +40,33 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
-import java.util.List;
+import static com.oracle.graal.python.nodes.statement.AbstractImportNode.IMPORT_ALL;
+
 import com.oracle.graal.python.builtins.Builtin;
+import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public final class PythonCextFloatBuiltins extends PythonBuiltins {
+public final class PythonCextImportBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextFloatBuiltinsFactory.getFactories();
+        return PythonCextImportBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -76,50 +74,40 @@ public final class PythonCextFloatBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    ///////////// float /////////////
-
-    @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyImport_ImportModule", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyFloatFromDoubleNode extends PythonUnaryBuiltinNode {
-
+    public abstract static class PyImportImportModuleNode extends PythonUnaryBuiltinNode {
         @Specialization
-        double fromDouble(double d) {
-            return d;
+        public Object imp(String name,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNull) {
+            try {
+                return AbstractImportNode.importModule(name, IMPORT_ALL);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNull.execute();
+            }
         }
 
-        @Specialization(guards = {"!isDouble(obj)"})
-        public Object fromDouble(VirtualFrame frame, Object obj,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            // cpython PyFloat_FromDouble takes only 'double'
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        @Specialization
+        public Object imp(PString name,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNull) {
+            return imp(name.getValue(), transformExceptionToNativeNode, getNativeNull);
         }
     }
 
-    @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyImport_GetModuleDict")
     @GenerateNodeFactory
-    abstract static class PyFloatAsDouble extends PythonUnaryBuiltinNode {
-
-        @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getLong();
-        }
-
-        @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getDouble();
-        }
-
+    public abstract static class PyImportGetModuleDictNode extends PythonBuiltinNode {
         @Specialization
-        static double doGenericErr(VirtualFrame frame, Object object,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        public Object getModuleDict(@Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNull) {
             try {
-                return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
+                return getContext().getSysModules();
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1.0;
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNull.execute();
             }
         }
     }

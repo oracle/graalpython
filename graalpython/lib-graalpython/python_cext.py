@@ -38,7 +38,6 @@
 # SOFTWARE.
 
 import sys
-import _thread
 
 __builtins_module_dict = None
 
@@ -50,56 +49,6 @@ def may_raise(error_result=native_null):
         def decorator(fun):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
-
-@may_raise
-def PyIter_Next(itObj):
-    try:
-        return next(itObj)
-    except StopIteration:
-        PyErr_Restore(None, None, None)
-        return native_null
-
-
-@may_raise
-def PyCallIter_New(it, sentinel):
-    return iter(it, sentinel)
-
-##################### MEMORY_VIEW
-@may_raise
-def PyMemoryView_GetContiguous(obj, buffertype, order_int):
-    PyBUF_READ = 0x100
-    PyBUF_WRITE = 0x200
-    assert buffertype == PyBUF_READ or buffertype == PyBUF_WRITE
-    order = chr(order_int)
-    assert order == 'C' or order == 'F' or order == 'A'
-    mv = memoryview(obj)
-    release = True
-    try:
-        if buffertype == PyBUF_WRITE and mv.readonly:
-            raise BufferError("underlying buffer is not writable")
-        if mv.contiguous:
-            release = False
-            return mv
-        if buffertype == PyBUF_WRITE:
-            raise BufferError("writable contiguous buffer requested for a non-contiguous object.")
-        mv_bytes = memoryview(mv.tobytes(order))
-        if mv.format == 'B':
-            return mv_bytes
-        else:
-            try:
-                return mv_bytes.cast(mv.format)
-            finally:
-                mv_bytes.release()
-    finally:
-        if release:
-            mv.release()
-
-
-@may_raise(-1)
-def PyModule_AddObject(m, k, v):
-    m.__dict__[k] = v
-    return 0
-
 
 def METH_UNSUPPORTED():
     raise NotImplementedError("unsupported message type")
@@ -156,21 +105,6 @@ def PyObject_Str(o):
 
 def PyObject_Repr(o):
     return repr(o)
-
-
-@may_raise(-1)
-def PyTuple_Size(t):
-    if not isinstance(t, tuple):
-        __bad_internal_call(None, None, t)
-    return len(t)
-
-
-@may_raise
-def PyTuple_GetSlice(t, start, end):
-    if not isinstance(t, tuple):
-        __bad_internal_call(None, None, t)
-    return t[start:end]
-
 
 @may_raise
 def dict_from_list(lst):
@@ -439,38 +373,6 @@ def PyException_SetContext(exc, context):
     exc.__context__ = context
 
 
-## FILE
-
-@may_raise(-1)
-def PyFile_WriteObject(obj, file, flags):
-    if file is None:
-        raise TypeError("writeobject with NULL file")
-
-    if flags & 0x1:
-        write_value = str(obj)
-    else:
-        write_value = repr(obj)
-    file.write(write_value)
-    return 0
-
-
-##  CODE
-
-codetype = type(may_raise.__code__)
-
-
-@may_raise
-def PyCode_New(*args):
-    # Add posonlyargcount (2nd arg)
-    args = (args[0], 0) + args[1:]
-    return codetype(*args)
-
-
-@may_raise
-def PyCode_NewWithPosOnlyArgs(*args):
-    return codetype(*args)
-
-
 ##################### C EXT HELPERS
 
 def PyTruffle_Debug(*args):
@@ -537,63 +439,4 @@ def initialize_datetime_capi(capi_library):
     datetime.timedelta.__basicsize__ = import_c_func("get_PyDateTime_Delta_basicsize", capi_library)()
 
 
-@may_raise
-def PyImport_ImportModule(name):
-    return __import__(name, fromlist=["*"])
 
-
-@may_raise
-def PyImport_GetModuleDict():
-    return sys.modules
-
-@may_raise
-def PyRun_String(source, typ, globals, locals):
-    return exec(compile(source, typ, typ), globals, locals)
-
-
-@may_raise
-def PyThread_allocate_lock():
-    return _thread.allocate_lock()
-
-
-@may_raise
-def PyThread_acquire_lock(lock, waitflag):
-    return 1 if lock.acquire(waitflag) else 0
-
-
-@may_raise
-def PyThread_release_lock(lock):
-    return lock.release()
-
-
-@may_raise
-def PySlice_New(start, stop, step):
-    return slice(start, stop, step)
-
-@may_raise
-def PyEval_GetBuiltins():
-    global __builtins_module_dict
-    if not __builtins_module_dict:
-        import builtins
-        __builtins_module_dict = builtins.__dict__
-    return __builtins_module_dict
-
-
-def sequence_clear():
-    return 0
-
-namespace_type = None
-@may_raise
-def _PyNamespace_New(kwds):
-    global namespace_type
-    if not namespace_type:
-        from types import SimpleNamespace as namespace_type
-    return namespace_type(**kwds)
-
-
-@may_raise
-def PySys_GetObject(name):
-    try:
-        return getattr(sys, name)
-    except AttributeError:
-        raise KeyError(name)

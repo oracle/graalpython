@@ -40,19 +40,14 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
-import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
+import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -64,11 +59,11 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public final class PythonCextFloatBuiltins extends PythonBuiltins {
+public final class PythonCextSysBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextFloatBuiltinsFactory.getFactories();
+        return PythonCextSysBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -76,52 +71,24 @@ public final class PythonCextFloatBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    ///////////// float /////////////
-
-    @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PySys_GetObject", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyFloatFromDoubleNode extends PythonUnaryBuiltinNode {
-
+    public abstract static class PySysGetObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
-        double fromDouble(double d) {
-            return d;
-        }
-
-        @Specialization(guards = {"!isDouble(obj)"})
-        public Object fromDouble(VirtualFrame frame, Object obj,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            // cpython PyFloat_FromDouble takes only 'double'
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
-        }
-    }
-
-    @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyFloatAsDouble extends PythonUnaryBuiltinNode {
-
-        @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getLong();
-        }
-
-        @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getDouble();
-        }
-
-        @Specialization
-        static double doGenericErr(VirtualFrame frame, Object object,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        public Object writeStr(VirtualFrame frame, String name,
+                        @Cached PyObjectLookupAttr lookupNode,
+                        @Cached GetNativeNullNode getNativeNull) {
             try {
-                return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
+                Object value = lookupNode.execute(frame, getCore().lookupBuiltinModule("sys"), name);
+                if (value == PNone.NO_VALUE) {
+                    return getNativeNull.execute();
+                }
+                return value;
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1.0;
+                // PySys_GetObject delegates to PyDict_GetItem
+                // which suppresses all exceptions for historical reasons
+                return getNativeNull.execute();
             }
         }
     }
-
 }
