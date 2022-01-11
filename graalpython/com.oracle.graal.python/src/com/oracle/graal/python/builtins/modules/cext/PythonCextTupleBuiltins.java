@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
@@ -183,14 +182,8 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
     public abstract static class PyTupleSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int size(PTuple tuple,
-                        @Cached LenNode lenNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return lenNode.execute(tuple.getSequenceStorage());
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
-            }
+            return tuple.getSequenceStorage().length();
         }
 
         @Specialization(guards = {"!isPTuple(obj)", "isTupleSubtype(frame, obj, getClassNode, isSubtypeNode)"})
