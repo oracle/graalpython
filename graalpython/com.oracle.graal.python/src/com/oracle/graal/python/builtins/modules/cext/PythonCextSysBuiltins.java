@@ -79,7 +79,7 @@ public final class PythonCextSysBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached GetNativeNullNode getNativeNull) {
             try {
-                Object value = lookupNode.execute(frame, getContext().getCore().lookupBuiltinModule("sys"), name);
+                Object value = lookupNode.execute(frame, getCore().lookupBuiltinModule("sys"), name);
                 if (value == PNone.NO_VALUE) {
                     return getNativeNull.execute();
                 }
