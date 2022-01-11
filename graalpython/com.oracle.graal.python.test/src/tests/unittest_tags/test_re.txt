@@ -32,6 +32,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_448951
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_449000
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_449964
+*graalpython.lib-python.3.test.test_re.ReTests.test_bug_527371
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_581080
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_612074
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_6509

@@ -107,6 +107,7 @@
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_encode
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_encode_ascii
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_encode_raw_unicode_escape
+*graalpython.lib-python.3.test.test_bigmem.StrTest.test_encode_utf32
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_encode_utf7
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_endswith
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_expandtabs
