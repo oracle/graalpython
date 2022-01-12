@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.pegparser.scope;
 
+import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeType;
@@ -80,6 +81,14 @@ public class ScopeEnvironment {
 
         // Second pass
         analyzeBlock(topScope, null, null, null);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ScopeEnvironment\n");
+        sb.append(topScope.toString(1));
+        return sb.toString();
     }
 
     private void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global) {
@@ -217,7 +226,7 @@ public class ScopeEnvironment {
         for (Entry<String, EnumSet<DefUse>> e : symbols.entrySet()) {
             String name = e.getKey();
             DefUse vScope = scopes.get(name);
-            assert vScope.toString().startsWith("V");
+            assert !vScope.toString().startsWith("Def");
             // CPython now stores the VariableScope into the DefUse flags at a shifted offset
             e.getValue().add(vScope);
         }
@@ -243,12 +252,12 @@ public class ScopeEnvironment {
 
         private FirstPassVisitor(ModTy moduleNode) {
             this.stack = new Stack<>();
-            enterBlock(Scope.ScopeType.Module, moduleNode);
+            enterBlock(null, Scope.ScopeType.Module, moduleNode);
             this.globals = this.currentScope.symbols;
         }
 
-        private void enterBlock(Scope.ScopeType type, SSTNode ast) {
-            Scope scope = new Scope(type, ast);
+        private void enterBlock(String name, Scope.ScopeType type, SSTNode ast) {
+            Scope scope = new Scope(name, type, ast);
             stack.add(scope);
             if (type == Scope.ScopeType.Annotation) {
                 return;
@@ -283,8 +292,12 @@ public class ScopeEnvironment {
         }
 
         private void addDef(String name, DefUse flag) {
+            addDef(name, flag, currentScope);
+        }
+
+        private void addDef(String name, DefUse flag, Scope scope) {
             String mangled = mangle(name);
-            EnumSet<DefUse> flags = currentScope.symbols.get(mangled);
+            EnumSet<DefUse> flags = scope.symbols.get(mangled);
             if (flags != null) {
                 if (flag == DefUse.DefParam && flags.contains(DefUse.DefParam)) {
                     // TODO: raises SyntaxError:
@@ -293,17 +306,17 @@ public class ScopeEnvironment {
             } else {
                 flags = EnumSet.of(flag);
             }
-            if (currentScope.flags.contains(ScopeFlags.IsVisitingIterTarget)) {
+            if (scope.flags.contains(ScopeFlags.IsVisitingIterTarget)) {
                 if (flags.contains(DefUse.DefGlobal) || flags.contains(DefUse.DefNonLocal)) {
                     // TODO: raises SyntaxError:
                     // "comprehension inner loop cannot rebind assignment expression target '%s'", name
                 }
                 flags.add(DefUse.DefCompIter);
             }
-            currentScope.symbols.put(mangled, flags);
+            scope.symbols.put(mangled, flags);
             switch (flag) {
                 case DefParam:
-                    currentScope.varnames.add(mangled);
+                    scope.varnames.add(mangled);
                     break;
                 case DefGlobal:
                     EnumSet<DefUse> globalFlags = globals.get(mangled);
@@ -316,6 +329,82 @@ public class ScopeEnvironment {
                     break;
                 default:
                     break;
+            }
+        }
+
+        private void handleComprehension(ExprTy e, String scopeName, ComprehensionTy[] generators, ExprTy element, ExprTy value) {
+            boolean isGenerator = e instanceof ExprTy.GeneratorExp;
+            ComprehensionTy outermost = generators[0];
+            currentScope.comprehensionIterExpression++;
+            outermost.iter.accept(this);
+            currentScope.comprehensionIterExpression--;
+            enterBlock(scopeName, Scope.ScopeType.Function, e);
+            try {
+                if (outermost.isAsync) {
+                    currentScope.flags.add(ScopeFlags.IsCoroutine);
+                }
+                currentScope.flags.add(ScopeFlags.IsComprehension);
+                addDef(".0", DefUse.DefParam);
+                currentScope.flags.add(ScopeFlags.IsVisitingIterTarget);
+                outermost.target.accept(this);
+                currentScope.flags.remove(ScopeFlags.IsVisitingIterTarget);
+                visitSequence(outermost.ifs);
+                for (int i = 1; i < generators.length; i++) {
+                    generators[i].accept(this);
+                }
+                if (value != null) {
+                    value.accept(this);
+                }
+                element.accept(this);
+                if (currentScope.flags.contains(ScopeFlags.IsGenerator)) {
+                    // TODO: syntax error 'yield' inside something
+                }
+                if (isGenerator) {
+                    currentScope.flags.add(ScopeFlags.IsGenerator);
+                }
+            } finally {
+                exitBlock();
+            }
+        }
+
+        private void visitAnnotation(ExprTy expr) {
+            enterBlock("_annotation", ScopeType.Annotation, expr);
+            try {
+                expr.accept(this);
+            } finally {
+                exitBlock();
+            }
+        }
+
+        private void visitAnnotations(ArgTy[] args) {
+            if (args != null) {
+                for (ArgTy arg : args) {
+                    if (arg.annotation != null) {
+                        arg.annotation.accept(this);
+                    }
+                }
+            }
+        }
+
+        private void visitAnnotations(StmtTy node, ArgumentsTy args, ExprTy returns) {
+            if (args != null) {
+                enterBlock("_annotation", ScopeType.Annotation, node);
+                try {
+                    visitAnnotations(args.posOnlyArgs);
+                    visitAnnotations(args.args);
+                    if (args.varArg != null) {
+                        args.varArg.accept(this);
+                    }
+                    if (args.kwArg != null) {
+                        args.kwArg.accept(this);
+                    }
+                    visitAnnotations(args.kwOnlyArgs);
+                } finally {
+                    exitBlock();
+                }
+            }
+            if (returns != null) {
+                visitAnnotation(returns);
             }
         }
 
@@ -348,142 +437,260 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.Attribute node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Await node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (currentScope.type == ScopeType.Annotation) {
+                // TODO: raise syntax error
+            }
+            node.value.accept(this);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.BinOp node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.left.accept(this);
+            node.right.accept(this);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.BoolOp node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.values);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Call node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.func.accept(this);
+            visitSequence(node.args);
+            visitSequence(node.keywords);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Compare node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.left.accept(this);
+            visitSequence(node.comparators);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Constant node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Dict node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.keys);
+            visitSequence(node.values);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.DictComp node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            handleComprehension(node, "dictcomp", node.generators, node.key, node.value);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.FormattedValue node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            if (node.formatSpec != null) {
+                node.formatSpec.accept(this);
+            }
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.GeneratorExp node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            handleComprehension(node, "genexp", node.generators, node.element, null);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.IfExp node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.test.accept(this);
+            node.body.accept(this);
+            node.orElse.accept(this);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.JoinedStr node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.values);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Lambda node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.args.defaults);
+            visitSequence(node.args.kwDefaults);
+            enterBlock("lambda", ScopeType.Function, node);
+            try {
+                node.args.accept(this);
+                node.body.accept(this);
+            } finally {
+                exitBlock();
+            }
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.List node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.elements);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.ListComp node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            handleComprehension(node, "listcomp", node.generators, node.element, null);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Name node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            addDef(node.id, node.context == ExprContext.Load ? DefUse.Use : DefUse.DefLocal);
+            // Special-case super: it counts as a use of __class__
+            if (node.context == ExprContext.Load && currentScope.type == ScopeType.Function &&
+                            node.id.equals("super")) {
+                addDef("__class__", DefUse.Use);
+            }
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.NamedExpr node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (currentScope.type == ScopeType.Annotation) {
+                // TODO: raise syntax error
+            }
+            if (currentScope.comprehensionIterExpression > 0) {
+                // TODO: raise syntax error NAMED_EXPR_COMP_ITER_EXPR
+            }
+            if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
+                // symtable_extend_namedexpr_scope
+                String targetName = ((ExprTy.Name)node.target).id;
+                for (int i = stack.size() - 1; i >= 0; i--) {
+                    Scope s = stack.get(i);
+                    // If we find a comprehension scope, check for conflict
+                    if (s.flags.contains(ScopeFlags.IsComprehension)) {
+                        if (s.symbols.get(targetName).contains(DefUse.DefCompIter)) {
+                            // TODO: raise NAMED_EXPR_COMP_CONFLICT
+                        }
+                        continue;
+                    }
+                    // If we find a FunctionBlock entry, add as GLOBAL/LOCAL or NONLOCAL/LOCAL
+                    if (s.type == ScopeType.Function) {
+                        EnumSet<DefUse> uses = s.symbols.get(targetName);
+                        if (uses.contains(DefUse.DefGlobal)) {
+                            addDef(targetName, DefUse.DefGlobal);
+                        } else {
+                            addDef(targetName, DefUse.DefNonLocal);
+                        }
+                        currentScope.recordDirective(mangle(targetName), node.getStartOffset(), node.getEndOffset());
+                        addDef(targetName, DefUse.DefLocal, s);
+                        break;
+                    }
+                    // If we find a ModuleBlock entry, add as GLOBAL
+                    if (s.type == ScopeType.Module) {
+                        addDef(targetName, DefUse.DefGlobal);
+                        currentScope.recordDirective(mangle(targetName), node.getStartOffset(), node.getEndOffset());
+                        addDef(targetName, DefUse.DefGlobal, s);
+                        break;
+                    }
+                    // Disallow usage in ClassBlock
+                    if (s.type == ScopeType.Class) {
+                        // TODO: Syntax error NAMED_EXPR_COMP_IN_CLASS
+                    }
+                }
+            }
+            node.value.accept(this);
+            node.target.accept(this);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Set node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.elements);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.SetComp node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            handleComprehension(node, "setcomp", node.generators, node.element, null);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Slice node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (node.lower != null) {
+                node.lower.accept(this);
+            }
+            if (node.upper != null) {
+                node.upper.accept(this);
+            }
+            if (node.step != null) {
+                node.step.accept(this);
+            }
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Starred node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Subscript node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            node.slice.accept(this);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Tuple node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.elements);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.UnaryOp node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.operand.accept(this);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.Yield node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (currentScope.type == ScopeType.Annotation) {
+                // TODO: raise syntax error
+            }
+            if (node.value != null) {
+                node.value.accept(this);
+            }
+            currentScope.flags.add(ScopeFlags.IsGenerator);
+            return null;
         }
 
         @Override
         public Void visit(ExprTy.YieldFrom node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (currentScope.type == ScopeType.Annotation) {
+                // TODO: raise syntax error
+            }
+            if (node.value != null) {
+                node.value.accept(this);
+            }
+            currentScope.flags.add(ScopeFlags.IsGenerator);
+            return null;
         }
 
         @Override
         public Void visit(KeywordTy node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            return null;
         }
 
         @Override
@@ -503,7 +710,8 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ModTy.Module node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.body);
+            return null;
         }
 
         @Override
@@ -513,17 +721,46 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.AnnAssign node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (node.target instanceof ExprTy.Name) {
+                ExprTy.Name name = (ExprTy.Name) node.target;
+                EnumSet<DefUse> cur = currentScope.symbols.get(mangle(name.id));
+                if (cur.contains(DefUse.DefGlobal) || cur.contains(DefUse.DefNonLocal) &&
+                                currentScope.symbols != globals &&
+                                node.isSimple) {
+                    // TODO: syntax error GLOBAL_ANNOT : NONLOCAL_ANNOT
+                }
+                if (node.isSimple) {
+                    addDef(name.id, DefUse.DefAnnot);
+                    addDef(name.id, DefUse.DefLocal);
+                } else {
+                    if (node.value != null) {
+                        addDef(name.id, DefUse.DefLocal);
+                    }
+                }
+            } else {
+                node.target.accept(this);
+            }
+            visitAnnotation(node.annotation);
+            if (node.value != null) {
+                node.value.accept(this);
+            }
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Assert node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.test.accept(this);
+            if (node.msg != null) {
+                node.msg.accept(this);
+            }
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Assign node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.targets);
+            node.value.accept(this);
+            return null;
         }
 
         @Override
@@ -543,7 +780,9 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.AugAssign node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.target.accept(this);
+            node.value.accept(this);
+            return null;
         }
 
         @Override
@@ -553,7 +792,7 @@ public class ScopeEnvironment {
             visitSequence(node.keywords);
             visitSequence(node.decoratorList);
             String tmp = currentClassName;
-            enterBlock(ScopeType.Class, node);
+            enterBlock(node.name, ScopeType.Class, node);
             try {
                 currentClassName = node.name;
                 visitSequence(node.body);
@@ -566,29 +805,39 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.Delete node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.targets);
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Expr node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.For node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.target.accept(this);
+            node.iter.accept(this);
+            visitSequence(node.body);
+            visitSequence(node.orElse);
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.FunctionDef node) {
             addDef(node.name, DefUse.DefLocal);
-            visitSequence(node.args.defaults);
-            visitSequence(node.args.kwDefaults);
-            // TODO: visit annotations
+            if (node.args != null) {
+                visitSequence(node.args.defaults);
+                visitSequence(node.args.kwDefaults);
+            }
+            visitAnnotations(node, node.args, node.returns);
             visitSequence(node.decoratorList);
-            enterBlock(ScopeType.Function, node);
+            enterBlock(node.name, ScopeType.Function, node);
             try {
-                node.args.accept(this);
+                if (node.args != null) {
+                    node.args.accept(this);
+                }
                 visitSequence(node.body);
             } finally {
                 exitBlock();
@@ -598,27 +847,40 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.Global node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            for (String n : node.names) {
+                // EnumSet<DefUse> f = currentScope.symbols.get(mangle(n));
+                // TODO: error if DEF_PARAM | DEF_LOCAL | USE | DEF_ANNOT
+                addDef(n, DefUse.DefGlobal);
+                currentScope.recordDirective(n, node.getStartOffset(), node.getEndOffset());
+            }
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.If node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.test.accept(this);
+            visitSequence(node.body);
+            visitSequence(node.orElse);
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Import node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.names);
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.ImportFrom node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.names);
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Match node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.subject.accept(this);
+            visitSequence(node.cases);
+            return null;
         }
 
         @Override
@@ -668,22 +930,41 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.NonLocal node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            for (String n : node.names) {
+                // EnumSet<DefUse> f = currentScope.symbols.get(mangle(n));
+                // TODO: error if DEF_PARAM | DEF_LOCAL | USE | DEF_ANNOT
+                addDef(n, DefUse.DefNonLocal);
+                currentScope.recordDirective(n, node.getStartOffset(), node.getEndOffset());
+            }
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Raise node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (node.exc != null) {
+                node.exc.accept(this);
+                if (node.cause != null) {
+                    node.cause.accept(this);
+                }
+            }
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Return node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (node.value != null) {
+                node.value.accept(this);
+            }
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Try node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.body);
+            visitSequence(node.orElse);
+            visitSequence(node.handlers);
+            visitSequence(node.finalBody);
+            return null;
         }
 
         @Override
@@ -693,12 +974,17 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.While node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.test.accept(this);
+            visitSequence(node.body);
+            visitSequence(node.orElse);
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.With node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.items);
+            visitSequence(node.body);
+            return null;
         }
 
         @Override
@@ -713,17 +999,17 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.Break aThis) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Continue aThis) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            return null;
         }
 
         @Override
         public Void visit(StmtTy.Pass aThis) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            return null;
         }
     }
 }

@@ -1,6 +1,6 @@
 Module[0, 23]
     Call[0, 23]
         Target: Name[0, 3] Value: "foo"
-        Args: 
+        Args:
             Starred[4, 12] Expr: Name[5, 12] Value: "mylist1"
             Starred[14, 22] Expr: Name[15, 22] Value: "mylist2"

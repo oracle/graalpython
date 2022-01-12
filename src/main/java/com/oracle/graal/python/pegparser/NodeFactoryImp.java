@@ -42,6 +42,9 @@ package com.oracle.graal.python.pegparser;
 
 // TODO this class has to be moved to impl package and from this package we need to do api.
 
+import com.oracle.graal.python.pegparser.AbstractParser.NameDefaultPair;
+import com.oracle.graal.python.pegparser.AbstractParser.SlashWithDefault;
+import com.oracle.graal.python.pegparser.AbstractParser.StarEtc;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
@@ -51,6 +54,7 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 
 public class NodeFactoryImp implements NodeFactory{
@@ -115,6 +119,7 @@ public class NodeFactoryImp implements NodeFactory{
         return new StmtTy.Expr(expr);
     }
 
+
     @Override
     public ExprTy createCall(ExprTy target, ExprTy[] args, KeywordTy[] kwargs, int startOffset, int endOffset) {
         return new ExprTy.Call(target, args, kwargs, startOffset, endOffset);
@@ -146,42 +151,76 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public ExprTy createNumber(String number, int start, int base, int startOffset, int endOffset) {
-        String value = number.replace("_", "");
-        final long max = Long.MAX_VALUE;
-        final long moltmax = max / base;
-        int i = start;
-        long result = 0;
-        int lastD;
-        boolean overunder = false;
-        while (i < value.length()) {
-            lastD = digitValue(value.charAt(i));
+    public ExprTy createNumber(String number, int startOffset, int endOffset) {
+        int base = 10;
+        int start = 0;
+        boolean isFloat = false;
+        boolean isComplex = false;
 
-            long next = result;
-            if (next > moltmax) {
-                overunder = true;
-            } else {
-                next *= base;
-                if (next > (max - lastD)) {
+        if (number.startsWith("0")) {
+            if (number.startsWith("0x") || number.startsWith("0X")) {
+                base = 16;
+                start = 2;
+            } else if (number.startsWith("0o") || number.startsWith("0O")) {
+                base = 8;
+                start = 2;
+            } else if (number.startsWith("0o") || number.startsWith("0O")) {
+                base = 2;
+                start = 2;
+            }
+        }
+        if (base == 10) {
+            isComplex = number.endsWith("j") || number.endsWith("J");
+            if (!isComplex) {
+                isFloat = number.contains(".") || number.contains("e") || number.contains("E");
+            }
+        }
+        String value = number.replace("_", "");
+
+        if (isComplex) {
+            return new ExprTy.Constant(Double.parseDouble(value.substring(0, value.length() - 1)),
+                            ExprTy.Constant.Kind.COMPLEX,
+                            startOffset, endOffset);
+        } else if (isFloat) {
+            return new ExprTy.Constant(Double.parseDouble(value),
+                            ExprTy.Constant.Kind.DOUBLE,
+                            startOffset, endOffset);
+        } else {
+            final long max = Long.MAX_VALUE;
+            final long moltmax = max / base;
+            int i = start;
+            long result = 0;
+            int lastD;
+            boolean overunder = false;
+            while (i < value.length()) {
+                lastD = digitValue(value.charAt(i));
+
+                long next = result;
+                if (next > moltmax) {
                     overunder = true;
                 } else {
-                    next += lastD;
+                    next *= base;
+                    if (next > (max - lastD)) {
+                        overunder = true;
+                    } else {
+                        next += lastD;
+                    }
                 }
-            }
-            if (overunder) {
-                // overflow
-                BigInteger bigResult = BigInteger.valueOf(result);
-                BigInteger bigBase = BigInteger.valueOf(base);
-                while (i < value.length()) {
-                    bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(value.charAt(i))));
-                    i++;
+                if (overunder) {
+                    // overflow
+                    BigInteger bigResult = BigInteger.valueOf(result);
+                    BigInteger bigBase = BigInteger.valueOf(base);
+                    while (i < value.length()) {
+                        bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(value.charAt(i))));
+                        i++;
+                    }
+                    return new ExprTy.Constant(bigResult, ExprTy.Constant.Kind.BIGINTEGER, startOffset, endOffset);
                 }
-                return new ExprTy.Constant(bigResult, ExprTy.Constant.Kind.BIGINTEGER, startOffset, endOffset);
+                result = next;
+                i++;
             }
-            result = next;
-            i++;
+            return new ExprTy.Constant(result, startOffset, endOffset);
         }
-        return new ExprTy.Constant(result, ExprTy.Constant.Kind.LONG, startOffset, endOffset);
     }
 
     @Override
@@ -212,6 +251,82 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public ArgTy createArgument(String argument, ExprTy annotation, String typeComment, int startOffset, int endOffset) {
         return new ArgTy(argument, annotation, typeComment, startOffset, endOffset);
+    }
+
+    @Override
+    public ArgumentsTy createArguments(ArgTy[] slashWithoutDefault, SlashWithDefault slashWithDefault, ArgTy[] paramWithoutDefault, NameDefaultPair[] paramWithDefault, StarEtc starEtc) {
+        ArgTy[] posOnlyArgs;
+        if (slashWithoutDefault != null) {
+            posOnlyArgs = slashWithoutDefault;
+        } else if (slashWithDefault != null) {
+            posOnlyArgs = Arrays.copyOf(slashWithDefault.plainNames,
+                            slashWithDefault.plainNames.length +
+                            slashWithDefault.namesWithDefaults.length);
+            int i = slashWithDefault.plainNames.length;
+            for (NameDefaultPair p : slashWithDefault.namesWithDefaults) {
+                posOnlyArgs[i++] = p.name;
+            }
+        } else {
+            posOnlyArgs = new ArgTy[0];
+        }
+
+        ArgTy[] posArgs;
+        if (paramWithDefault != null) {
+            int i;
+            if (paramWithoutDefault != null) {
+                posArgs = Arrays.copyOf(paramWithoutDefault,
+                                paramWithoutDefault.length +
+                                paramWithDefault.length);
+                i = paramWithoutDefault.length;
+            } else {
+                posArgs = new ArgTy[paramWithDefault.length];
+                i = 0;
+            }
+            for (NameDefaultPair p : paramWithDefault) {
+                posArgs[i++] = p.name;
+            }
+        } else if (paramWithoutDefault != null) {
+            posArgs = paramWithoutDefault;
+        } else {
+            posArgs = new ArgTy[0];
+        }
+
+        ExprTy[] posDefaults;
+        int posDefaultsLen = 0;
+        if (slashWithDefault != null) {
+            posDefaultsLen = slashWithDefault.namesWithDefaults.length;
+        }
+        if (paramWithDefault != null) {
+            posDefaultsLen += paramWithDefault.length;
+        }
+        posDefaults = new ExprTy[posDefaultsLen];
+        int i = 0;
+        if (slashWithDefault != null) {
+            for (NameDefaultPair p : slashWithDefault.namesWithDefaults) {
+                posDefaults[i++] = p.def;
+            }
+        }
+        if (paramWithDefault != null) {
+            for (NameDefaultPair p : paramWithDefault) {
+                posDefaults[i++] = p.def;
+            }
+        }
+
+        ArgTy[] kwOnlyArgs;
+        ExprTy[] kwDefaults;
+        if (starEtc != null && starEtc.kwOnlyArgs != null) {
+            kwOnlyArgs = new ArgTy[starEtc.kwOnlyArgs.length];
+            kwDefaults = new ExprTy[kwOnlyArgs.length];
+            for (int j = 0; j < kwOnlyArgs.length; j++) {
+                kwOnlyArgs[j] = starEtc.kwOnlyArgs[j].name;
+                kwDefaults[j] = starEtc.kwOnlyArgs[j].def;
+            }
+        } else {
+            kwOnlyArgs = new ArgTy[0];
+            kwDefaults = new ExprTy[0];
+        }
+
+        return new ArgumentsTy(posOnlyArgs, posArgs, starEtc != null ? starEtc.varArg : null, kwOnlyArgs, kwDefaults, starEtc != null ? starEtc.kwArg : null, posDefaults, 0, 0);
     }
 
     @Override
@@ -278,5 +393,40 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decorators, ExprTy returns, String typeComment, int startOffset, int endOffset) {
         return new StmtTy.FunctionDef(name, args, body, decorators, returns, typeComment, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createWhile(ExprTy condition, StmtTy[] block, StmtTy[] elseBlock, int startOffset, int endOffset) {
+        return new StmtTy.While(condition, block, elseBlock, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, int startOffset, int endOffset) {
+        return new StmtTy.For(target, iter, block, elseBlock, typeComment, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createReturn(ExprTy value, int startOffset, int endOffset) {
+        return new StmtTy.Return(value, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createSlice(ExprTy start, ExprTy stop, ExprTy step, int startOffset, int endOffset) {
+        return new ExprTy.Slice(step, step, step, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createIf(ExprTy condition, StmtTy[] block, StmtTy[] orElse, int startOffset, int endOffset) {
+        return new StmtTy.If(condition, block, orElse, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createIfExpression(ExprTy condition, ExprTy then, ExprTy orElse, int startOffset, int endOffset) {
+        return new ExprTy.IfExp(condition, then, orElse, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createLambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset) {
+        return new ExprTy.Lambda(args, body, startOffset, endOffset);
     }
 }

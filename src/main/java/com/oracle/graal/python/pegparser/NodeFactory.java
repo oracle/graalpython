@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import com.oracle.graal.python.pegparser.AbstractParser.NameDefaultPair;
+import com.oracle.graal.python.pegparser.AbstractParser.SlashWithDefault;
+import com.oracle.graal.python.pegparser.AbstractParser.StarEtc;
 import com.oracle.graal.python.pegparser.sst.*;
 
 public interface NodeFactory {
@@ -79,11 +82,11 @@ public interface NodeFactory {
 
     public ExprTy createYield(ExprTy value, boolean isFrom, int startOffset, int endOffset);
 
-    default ExprTy createNumber(String number, int startOffset, int endOffset) {
-        return createNumber(number, 0, 10, startOffset, endOffset);
-    }
+    public ExprTy createNumber(String number, int startOffset, int endOffset);
 
-    public ExprTy createNumber(String number, int start, int base, int startOffset, int endOffset);
+    public StmtTy createWhile(ExprTy condition, StmtTy[] block, StmtTy[] elseBlock, int startOffset, int endOffset);
+
+    public StmtTy createFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, int startOffset, int endOffset);
 
     public ExprTy createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
 
@@ -127,6 +130,8 @@ public interface NodeFactory {
 
     public ArgTy createArgument(String argument, ExprTy annotation, String typeComment, int startOffset, int endOffset);
 
+    public ArgumentsTy createArguments(ArgTy[] slashWithoutDefault, SlashWithDefault slashWithDefault, ArgTy[] paramWithoutDefault, NameDefaultPair[] paramWithDefault, StarEtc starEtc);
+
     public ComprehensionTy createComprehension(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, int startOffset, int endOffset);
 
     public ExprTy createListComprehension(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset);
@@ -138,4 +143,14 @@ public interface NodeFactory {
     public ExprTy createGenerator(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset);
 
     public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decorators, ExprTy returns, String typeComment, int startOffset, int endOffset);
+
+    public StmtTy createReturn(ExprTy value, int startOffset, int endOffset);
+
+    public ExprTy createSlice(ExprTy start, ExprTy stop, ExprTy step, int startOffset, int endOffset);
+
+    public StmtTy createIf(ExprTy condition, StmtTy[] block, StmtTy[] orElse, int startOffset, int endOffset);
+
+    public ExprTy createIfExpression(ExprTy condition, ExprTy then, ExprTy orElse, int startOffset, int endOffset);
+
+    public ExprTy createLambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset);
 }

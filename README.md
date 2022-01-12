@@ -3,6 +3,15 @@
 This is early prototype of the PEG parser for Python sources. The prototype
 is not finished yet and it is under development.
 
+We try to keep all the data structures, ast nodes, parser generator, etc. to be
+very close to CPython. One reason is that the `ast` module in CPython is
+considered to be relatively stable API. To avoid an additional layer of mapping
+and a lot of headache, we simply stick as closely as possible to CPython. The
+other reason is that at the time of this writing (CPython 3.10 was just
+released), the grammar is still changing quite a bit, with big refactorings
+happening in pegen and the official Python grammar and still more parser
+features being planned.
+
 ## Structure of sources
 
 * python - contains python sources needed for generating java parser
@@ -43,9 +52,20 @@ branch). Update also `src/main/python/pegen` from CPython. Then commit to the
 python-grammar branch and push that branch. Now go back to master. And do `git
 merge grammar-import`. Resolve any conflicts. Now regenerate the Java parser.
 
+We try to keep the grammar almost entirely the same, changing only actions if we
+can. Some rule names and some return types had to be changed as well,
+however. But we try to keep these kind of changes to a minimum. The
+`java_generator.py` that implements the parser generator is based as closely as
+possible on the `c_generator.py` from the pegen project. This, too, should make
+it easier to keep up with upstream development.
+
 ##### To see what we changed in the grammar
 
     git diff --word-diff grammar-import -- src/main/python/pegjava/python.gram
+
+or use our own tool:
+
+    git show grammar-import:src/main/python/pegjava/python.gram | python3 src/main/python/diff_generator.py src/main/python/pegjava/python.gram
 
 ##### To update the grammar
 

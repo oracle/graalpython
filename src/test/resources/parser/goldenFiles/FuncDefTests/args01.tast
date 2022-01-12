@@ -1,0 +1,34 @@
+Module[0, 65]
+    FunctionDef[0, 65]
+        Name:fn
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[7, 8] a
+                ArgTy[10, 11] b
+            VarArg: ArgTy[16, 19] arg
+            KwOnlyArgs:
+                ArgTy[21, 23] k1
+                ArgTy[25, 27] k2
+            Defaults:
+                LONG[12, 13] Value: 0
+            KwDefaults:
+                LONG[28, 29] Value: 0
+        ---- Function body of fn ----
+        Return[32, 65] 
+            BinOp[39, 65]
+                Op: ADD
+                LHS: BinOp[39, 54]
+                    Op: ADD
+                    LHS: BinOp[39, 49]
+                        Op: ADD
+                        LHS: BinOp[39, 44]
+                            Op: ADD
+                            LHS: Name[39, 40] Value: "a"
+                            RHS: Name[43, 44] Value: "b"
+                        RHS: Name[47, 49] Value: "k1"
+                    RHS: Name[52, 54] Value: "k2"
+                RHS: Call[57, 65]
+                    Target: Name[57, 60] Value: "sum"
+                    Args:
+                        Name[61, 64] Value: "arg"
+        ---- End of fn function ----

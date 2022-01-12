@@ -43,8 +43,8 @@ package com.oracle.graal.python.pegparser.sst;
 
 
 public final class KeywordTy extends SSTNode {
-    final String arg;
-    final ExprTy value;
+    public final String arg;
+    public final ExprTy value;
 
     public KeywordTy(String arg, ExprTy value, int startOffset, int endOffset) {
         super(startOffset, endOffset);

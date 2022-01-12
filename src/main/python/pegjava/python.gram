@@ -232,23 +232,23 @@ dotted_name[expr_ty]:
 
 if_stmt[stmt_ty]:
     | 'if' a=named_expression ':' b=block c=elif_stmt {
-        _PyAST_If(a, b, CHECK(asdl_stmt_seq*, this.singletonSequence(c)), EXTRA) }
-    | 'if' a=named_expression ':' b=block c=[else_block] { _PyAST_If(a, b, c, EXTRA) }
+        factory.createIf(a, b, this.singletonSequence(c), startToken.startOffset, endToken.endOffset) }
+    | 'if' a=named_expression ':' b=block c=[else_block] { factory.createIf(a, b, c, startToken.startOffset, endToken.endOffset) }
     | invalid_if_stmt
 elif_stmt[stmt_ty]:
     | 'elif' a=named_expression ':' b=block c=elif_stmt {
-        _PyAST_If(a, b, CHECK(asdl_stmt_seq*, this.singletonSequence(c)), EXTRA) }
-    | 'elif' a=named_expression ':' b=block c=[else_block] { _PyAST_If(a, b, c, EXTRA) }
+        factory.createIf(a, b, this.singletonSequence(c), startToken.startOffset, endToken.endOffset) }
+    | 'elif' a=named_expression ':' b=block c=[else_block] { factory.createIf(a, b, c, startToken.startOffset, endToken.endOffset) }
     | invalid_elif_stmt
 else_block[asdl_stmt_seq*]: 'else' &&':' b=block { b }
 
 while_stmt[stmt_ty]:
-    | 'while' a=named_expression ':' b=block c=[else_block] { _PyAST_While(a, b, c, EXTRA) }
+    | 'while' a=named_expression ':' b=block c=[else_block] { factory.createWhile(a, b, c, startToken.startOffset, endToken.endOffset) }
     | invalid_while_stmt
 
 for_stmt[stmt_ty]:
     | 'for' t=star_targets 'in' ~ ex=star_expressions &&':' tc=[TYPE_COMMENT] b=block el=[else_block] {
-        _PyAST_For(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+        factory.createFor(t, ex, b, el, newTypeComment(tc), startToken.startOffset, endToken.endOffset) }
     | ASYNC 'for' t=star_targets 'in' ~ ex=star_expressions &&':' tc=[TYPE_COMMENT] b=block el=[else_block] {
         CHECK_VERSION(stmt_ty, 5, "Async for loops are", _PyAST_AsyncFor(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA)) }
     | invalid_for_target
@@ -326,7 +326,7 @@ literal_pattern[expr_ty]:
     | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset) }
 signed_number[expr_ty]:
     | NUMBER
-    | '-' number=NUMBER { _PyAST_UnaryOp(USub, number, EXTRA) }
+    | '-' number=NUMBER { factory.createUnaryOp(ExprTy.UnaryOp.Operator.SUB, number, startToken.startOffset, endToken.endOffset) }
 
 capture_pattern[expr_ty]:
     | !"_" name=NAME !('.' | '(' | '=') {
@@ -389,7 +389,7 @@ keyword_pattern[keyword_ty]:
     | arg=NAME '=' value=pattern { _PyAST_keyword(arg->v.Name.id, value, EXTRA) }
 
 return_stmt[stmt_ty]:
-    | 'return' a=[star_expressions] { _PyAST_Return(a, EXTRA) }
+    | 'return' a=[star_expressions] { factory.createReturn(a, startToken.startOffset, endToken.endOffset) }
 
 raise_stmt[stmt_ty]:
     | 'raise' a=expression b=['from' z=expression { z }] { _PyAST_Raise(a, b, EXTRA) }
@@ -425,13 +425,13 @@ params[arguments_ty]:
 
 parameters[arguments_ty]:
     | a=slash_no_default b[asdl_arg_seq*]=param_no_default* c=param_with_default* d=[star_etc] {
-        _PyPegen_make_arguments(p, a, NULL, b, c, d) }
+        factory.createArguments(a, null, b, c, d) }
     | a=slash_with_default b=param_with_default* c=[star_etc] {
-        _PyPegen_make_arguments(p, NULL, a, NULL, b, c) }
+        factory.createArguments(null, a, null, b, c) }
     | a[asdl_arg_seq*]=param_no_default+ b=param_with_default* c=[star_etc] {
-        _PyPegen_make_arguments(p, NULL, NULL, a, b, c) }
-    | a=param_with_default+ b=[star_etc] { _PyPegen_make_arguments(p, NULL, NULL, NULL, a, b)}
-    | a=star_etc { _PyPegen_make_arguments(p, NULL, NULL, NULL, NULL, a) }
+        factory.createArguments(null, null, a, b, c) }
+    | a=param_with_default+ b=[star_etc] { factory.createArguments(null, null, null, a, b)}
+    | a=star_etc { factory.createArguments(null, null, null, null, a) }
 
 # Some duplication here because we can't write (',' | &')'),
 # which is because we don't support empty alternatives (yet).
@@ -440,15 +440,15 @@ slash_no_default[asdl_arg_seq*]:
     | a[asdl_arg_seq*]=param_no_default+ '/' ',' { a }
     | a[asdl_arg_seq*]=param_no_default+ '/' &')' { a }
 slash_with_default[SlashWithDefault*]:
-    | a=param_no_default* b=param_with_default+ '/' ',' { _PyPegen_slash_with_default(p, (asdl_arg_seq *)a, b) }
-    | a=param_no_default* b=param_with_default+ '/' &')' { _PyPegen_slash_with_default(p, (asdl_arg_seq *)a, b) }
+    | a=param_no_default* b=param_with_default+ '/' ',' { new SlashWithDefault(a, b) }
+    | a=param_no_default* b=param_with_default+ '/' &')' { new SlashWithDefault(a, b) }
 
 star_etc[StarEtc*]:
     | '*' a=param_no_default b=param_maybe_default* c=[kwds] {
-        _PyPegen_star_etc(p, a, b, c) }
+        new StarEtc(a, b, c) }
     | '*' ',' b=param_maybe_default+ c=[kwds] {
-        _PyPegen_star_etc(p, NULL, b, c) }
-    | a=kwds { _PyPegen_star_etc(p, NULL, NULL, a) }
+        new StarEtc(null, b, c) }
+    | a=kwds { new StarEtc(null, null, a) }
     | invalid_star_etc
 
 kwds[arg_ty]: '**' a=param_no_default { a }
@@ -498,8 +498,8 @@ block[asdl_stmt_seq*] (memo):
 
 star_expressions[expr_ty]:
     | a=star_expression b=(',' c=star_expression { c })+ [','] {
-        _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Load, EXTRA) }
-    | a=star_expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, this.singletonSequence(a)), Load, EXTRA) }
+        factory.createTuple(this.insertInFront(a, b), ExprContext.Load, startToken.startOffset, endToken.endOffset) }
+    | a=star_expression ',' { factory.createTuple(this.singletonSequence(a), ExprContext.Load, startToken.startOffset, endToken.endOffset) }
     | star_expression
 star_expression[expr_ty] (memo):
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
@@ -528,13 +528,13 @@ expressions[expr_ty]:
     | expression
 expression[expr_ty] (memo):
     | invalid_expression
-    | a=disjunction 'if' b=disjunction 'else' c=expression { _PyAST_IfExp(b, a, c, EXTRA) }
+    | a=disjunction 'if' b=disjunction 'else' c=expression { factory.createIfExpression(b, a, c, startToken.startOffset, endToken.endOffset) }
     | disjunction
     | lambdef
 
 lambdef[expr_ty]:
     | 'lambda' a=[lambda_params] ':' b=expression {
-        _PyAST_Lambda((a) ? a : CHECK(arguments_ty, _PyPegen_empty_arguments(p)), b, EXTRA) }
+        factory.createLambda(a, b, startToken.startOffset, endToken.endOffset) }
 
 lambda_params[arguments_ty]:
     | invalid_lambda_parameters
@@ -546,13 +546,13 @@ lambda_params[arguments_ty]:
 #
 lambda_parameters[arguments_ty]:
     | a=lambda_slash_no_default b[asdl_arg_seq*]=lambda_param_no_default* c=lambda_param_with_default* d=[lambda_star_etc] {
-        _PyPegen_make_arguments(p, a, NULL, b, c, d) }
+        factory.createArguments(a, null, b, c, d) }
     | a=lambda_slash_with_default b=lambda_param_with_default* c=[lambda_star_etc] {
-        _PyPegen_make_arguments(p, NULL, a, NULL, b, c) }
+        factory.createArguments(null, a, null, b, c) }
     | a[asdl_arg_seq*]=lambda_param_no_default+ b=lambda_param_with_default* c=[lambda_star_etc] {
-        _PyPegen_make_arguments(p, NULL, NULL, a, b, c) }
-    | a=lambda_param_with_default+ b=[lambda_star_etc] { _PyPegen_make_arguments(p, NULL, NULL, NULL, a, b)}
-    | a=lambda_star_etc { _PyPegen_make_arguments(p, NULL, NULL, NULL, NULL, a) }
+        factory.createArguments(null, null, a, b, c) }
+    | a=lambda_param_with_default+ b=[lambda_star_etc] { factory.createArguments(null, null, null, a, b)}
+    | a=lambda_star_etc { factory.createArguments(null, null, null, null, a) }
 
 lambda_slash_no_default[asdl_arg_seq*]:
     | a[asdl_arg_seq*]=lambda_param_no_default+ '/' ',' { a }
@@ -580,7 +580,7 @@ lambda_param_with_default[NameDefaultPair*]:
 lambda_param_maybe_default[NameDefaultPair*]:
     | a=lambda_param c=default_param? ',' { _PyPegen_name_default_pair(p, a, c, NULL) }
     | a=lambda_param c=default_param? &':' { _PyPegen_name_default_pair(p, a, c, NULL) }
-lambda_param[arg_ty]: a=NAME { _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA) }
+lambda_param[arg_ty]: a=NAME { factory.createArgument(((ExprTy.Name)a).id, null, null, startToken.startOffset, endToken.endOffset) }
 
 disjunction[expr_ty] (memo):
     | a=conjunction b=('or' c=conjunction { c })+ { _PyAST_BoolOp(
@@ -595,7 +595,7 @@ conjunction[expr_ty] (memo):
         EXTRA) }
     | inversion
 inversion[expr_ty] (memo):
-    | 'not' a=inversion { _PyAST_UnaryOp(Not, a, EXTRA) }
+    | 'not' a=inversion { factory.createUnaryOp(ExprTy.UnaryOp.Operator.NOT, a, startToken.startOffset, endToken.endOffset) }
     | comparison
 comparison[expr_ty]:
     | a=bitwise_or b=compare_op_bitwise_or_pair+ {
@@ -615,14 +615,14 @@ compare_op_bitwise_or_pair[CmpopExprPair*]:
 eq_bitwise_or[CmpopExprPair*]: '==' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.EQ, a); }
 noteq_bitwise_or[CmpopExprPair*]:
     | (tok='!=' { _PyPegen_check_barry_as_flufl(p, tok) ? NULL : tok}) a=bitwise_or {_PyPegen_cmpop_expr_pair(p, NotEq, a) }
-lte_bitwise_or[CmpopExprPair*]: '<=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, LtE, a) }
-lt_bitwise_or[CmpopExprPair*]: '<' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Lt, a) }
-gte_bitwise_or[CmpopExprPair*]: '>=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, GtE, a) }
-gt_bitwise_or[CmpopExprPair*]: '>' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Gt, a) }
-notin_bitwise_or[CmpopExprPair*]: 'not' 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
-in_bitwise_or[CmpopExprPair*]: 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, In, a) }
-isnot_bitwise_or[CmpopExprPair*]: 'is' 'not' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
-is_bitwise_or[CmpopExprPair*]: 'is' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Is, a) }
+lte_bitwise_or[CmpopExprPair*]: '<=' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.LTE, a) }
+lt_bitwise_or[CmpopExprPair*]: '<' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.LT, a) }
+gte_bitwise_or[CmpopExprPair*]: '>=' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.GTE, a) }
+gt_bitwise_or[CmpopExprPair*]: '>' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.GT, a) }
+notin_bitwise_or[CmpopExprPair*]: 'not' 'in' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.NOTIN, a) }
+in_bitwise_or[CmpopExprPair*]: 'in' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.IN, a) }
+isnot_bitwise_or[CmpopExprPair*]: 'is' 'not' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.ISNOT, a) }
+is_bitwise_or[CmpopExprPair*]: 'is' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.IS, a) }
 
 bitwise_or[expr_ty]:
     | a=bitwise_or '|' b=bitwise_xor { factory.createBinaryOp(ExprTy.BinOp.Operator.BITOR, a, b, startToken.startOffset, endToken.endOffset ) }
@@ -671,9 +671,9 @@ primary[expr_ty]:
 
 slices[expr_ty]:
     | a=slice !',' { a }
-    | a[asdl_expr_seq*]=','.slice+ [','] { _PyAST_Tuple(a, Load, EXTRA) }
+    | a[asdl_expr_seq*]=','.slice+ [','] { factory.createTuple(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 slice[expr_ty]:
-    | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { _PyAST_Slice(a, b, c, EXTRA) }
+    | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { factory.createSlice(a, b, c, startToken.startOffset, endToken.endOffset) }
     | a=named_expression { a }
 atom[expr_ty]:
     | NAME
@@ -763,7 +763,7 @@ star_targets[expr_ty]:
         factory.createTuple(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset); // Store }
 star_targets_list_seq[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_target+ [','] { a }
 star_targets_tuple_seq[asdl_expr_seq*]:
-    | a=star_target b=(',' c=star_target { c })+ [','] { (asdl_expr_seq*) this.insertInFront(a, b) }
+    | a=star_target b=(',' c=star_target { c })+ [','] { this.insertInFront(a, b) }
     | a=star_target ',' { (asdl_expr_seq*) this.singletonSequence(a) }
 star_target[expr_ty] (memo):
     | '*' a=(!'*' star_target) {

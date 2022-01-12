@@ -586,10 +586,12 @@ public final class Parser extends AbstractParser {
     // file: statements? $
     public ModTy file_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FILE_ID)) {
             _res = (ModTy)cache.getResult(_mark, FILE_ID);
+            level--;
             return (ModTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -606,28 +608,35 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d file[%d-%d]: %s succeeded!", level, _mark, mark(), "statements? $");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createModule(a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "statements? $");
                 cache.putResult(_mark, FILE_ID, _res);
+                level--;
                 return (ModTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s file[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "statements? $");
         }
+        debugMessageln("Fail at %d: file", _mark);
         _res = null;
         cache.putResult(_mark, FILE_ID, _res);
+        level--;
         return (ModTy)_res;
     }
 
     // interactive: statement_newline
     public ModTy interactive_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INTERACTIVE_ID)) {
             _res = (ModTy)cache.getResult(_mark, INTERACTIVE_ID);
+            level--;
             return (ModTy)_res;
         }
         { // statement_newline
@@ -641,25 +650,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Interactive ( a , p -> arena )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Interactive ( a , p -> arena ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "statement_newline");
                 cache.putResult(_mark, INTERACTIVE_ID, _res);
+                level--;
                 return (ModTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s interactive[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "statement_newline");
         }
+        debugMessageln("Fail at %d: interactive", _mark);
         _res = null;
         cache.putResult(_mark, INTERACTIVE_ID, _res);
+        level--;
         return (ModTy)_res;
     }
 
     // eval: expressions NEWLINE* $
     public ModTy eval_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EVAL_ID)) {
             _res = (ModTy)cache.getResult(_mark, EVAL_ID);
+            level--;
             return (ModTy)_res;
         }
         { // expressions NEWLINE* $
@@ -677,25 +692,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d eval[%d-%d]: %s succeeded!", level, _mark, mark(), "expressions NEWLINE* $");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expressions NEWLINE* $");
                 cache.putResult(_mark, EVAL_ID, _res);
+                level--;
                 return (ModTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s eval[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expressions NEWLINE* $");
         }
+        debugMessageln("Fail at %d: eval", _mark);
         _res = null;
         cache.putResult(_mark, EVAL_ID, _res);
+        level--;
         return (ModTy)_res;
     }
 
     // func_type: '(' type_expressions? ')' '->' expression NEWLINE* $
     public ModTy func_type_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FUNC_TYPE_ID)) {
             _res = (ModTy)cache.getResult(_mark, FUNC_TYPE_ID);
+            level--;
             return (ModTy)_res;
         }
         { // '(' type_expressions? ')' '->' expression NEWLINE* $
@@ -727,25 +748,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_FunctionType ( a , b , p -> arena )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_FunctionType ( a , b , p -> arena ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' type_expressions? ')' '->' expression NEWLINE* $");
                 cache.putResult(_mark, FUNC_TYPE_ID, _res);
+                level--;
                 return (ModTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s func_type[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'(' type_expressions? ')' '->' expression NEWLINE* $");
         }
+        debugMessageln("Fail at %d: func_type", _mark);
         _res = null;
         cache.putResult(_mark, FUNC_TYPE_ID, _res);
+        level--;
         return (ModTy)_res;
     }
 
     // fstring: star_expressions
     public ExprTy fstring_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FSTRING_ID)) {
             _res = (ExprTy)cache.getResult(_mark, FSTRING_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // star_expressions
@@ -756,16 +783,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d fstring[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
                 cache.putResult(_mark, FSTRING_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s fstring[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_expressions");
         }
+        debugMessageln("Fail at %d: fstring", _mark);
         _res = null;
         cache.putResult(_mark, FSTRING_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -779,10 +810,12 @@ public final class Parser extends AbstractParser {
     //     | ','.expression+
     public ExprTy[] type_expressions_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TYPE_EXPRESSIONS_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, TYPE_EXPRESSIONS_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // ','.expression+ ',' '*' expression ',' '**' expression
@@ -812,7 +845,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+ ',' '*' expression ',' '**' expression");
                 _res = this.appendToEnd(this.appendToEnd(a,b),c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '*' expression ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
@@ -837,7 +872,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+ ',' '*' expression");
                 _res = this.appendToEnd(a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '*' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
@@ -862,7 +899,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+ ',' '**' expression");
                 _res = this.appendToEnd(a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
@@ -890,7 +929,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression ',' '**' expression");
                 _res = this.appendToEnd(this.singletonSequence(a),b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
@@ -909,7 +950,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression");
                 _res = this.singletonSequence(a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
@@ -928,7 +971,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' expression");
                 _res = this.singletonSequence(a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
@@ -944,25 +989,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s type_expressions[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.expression+");
         }
+        debugMessageln("Fail at %d: type_expressions", _mark);
         _res = null;
         cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // statements: statement+
     public StmtTy[] statements_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STATEMENTS_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, STATEMENTS_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // statement+
@@ -974,25 +1025,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d statements[%d-%d]: %s succeeded!", level, _mark, mark(), "statement+");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "statement+");
                 cache.putResult(_mark, STATEMENTS_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s statements[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "statement+");
         }
+        debugMessageln("Fail at %d: statements", _mark);
         _res = null;
         cache.putResult(_mark, STATEMENTS_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // statement: compound_stmt | simple_stmts
     public StmtTy[] statement_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STATEMENT_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, STATEMENT_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // compound_stmt
@@ -1004,7 +1061,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d statement[%d-%d]: %s succeeded!", level, _mark, mark(), "compound_stmt");
                 _res = new StmtTy [ ] {a};
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "compound_stmt");
                 cache.putResult(_mark, STATEMENT_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
@@ -1020,25 +1079,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d statement[%d-%d]: %s succeeded!", level, _mark, mark(), "simple_stmts");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "simple_stmts");
                 cache.putResult(_mark, STATEMENT_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s statement[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "simple_stmts");
         }
+        debugMessageln("Fail at %d: statement", _mark);
         _res = null;
         cache.putResult(_mark, STATEMENT_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // statement_newline: compound_stmt NEWLINE | simple_stmts | NEWLINE | $
     public StmtTy[] statement_newline_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STATEMENT_NEWLINE_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, STATEMENT_NEWLINE_ID);
+            level--;
             return (StmtTy[])_res;
         }
         Token startToken = getAndInitializeToken();
@@ -1054,7 +1119,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, _mark, mark(), "compound_stmt NEWLINE");
                 _res = this.singletonSequence(a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "compound_stmt NEWLINE");
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
@@ -1069,8 +1136,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, _mark, mark(), "simple_stmts");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "simple_stmts");
                 _res = simple_stmts_var;
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
@@ -1087,10 +1156,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, _mark, mark(), "NEWLINE");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = this.singletonSequence(factory.createPass(startToken.startOffset,endToken.endOffset));
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE");
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
@@ -1108,25 +1180,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_interactive_exit ( p )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_interactive_exit ( p ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "$");
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s statement_newline[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "$");
         }
+        debugMessageln("Fail at %d: statement_newline", _mark);
         _res = null;
         cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // simple_stmts: simple_stmt !';' NEWLINE | ';'.simple_stmt+ ';'? NEWLINE
     public StmtTy[] simple_stmts_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SIMPLE_STMTS_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, SIMPLE_STMTS_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // simple_stmt !';' NEWLINE
@@ -1143,7 +1221,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d simple_stmts[%d-%d]: %s succeeded!", level, _mark, mark(), "simple_stmt !';' NEWLINE");
                 _res = this.singletonSequence(a);;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "simple_stmt !';' NEWLINE");
                 cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
@@ -1165,15 +1245,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d simple_stmts[%d-%d]: %s succeeded!", level, _mark, mark(), "';'.simple_stmt+ ';'? NEWLINE");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "';'.simple_stmt+ ';'? NEWLINE");
                 cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmts[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "';'.simple_stmt+ ';'? NEWLINE");
         }
+        debugMessageln("Fail at %d: simple_stmts", _mark);
         _res = null;
         cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
@@ -1193,10 +1277,12 @@ public final class Parser extends AbstractParser {
     //     | &'nonlocal' nonlocal_stmt
     public StmtTy simple_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SIMPLE_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, SIMPLE_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -1208,8 +1294,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "assignment");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "assignment");
                 _res = assignment_var;
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1225,7 +1313,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expressions");
                 _res = factory.createExpression(e);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expressions");
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1242,8 +1332,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'return' return_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'return' return_stmt");
                 _res = return_stmt_var;
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1260,8 +1352,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&('import' | 'from') import_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('import' | 'from') import_stmt");
                 _res = import_stmt_var;
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1278,8 +1372,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'raise' raise_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'raise' raise_stmt");
                 _res = raise_stmt_var;
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1296,10 +1392,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'pass'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createPass(startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'pass'");
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1316,8 +1415,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'del' del_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'del' del_stmt");
                 _res = del_stmt_var;
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1334,8 +1435,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'yield' yield_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'yield' yield_stmt");
                 _res = yield_stmt_var;
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1352,8 +1455,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'assert' assert_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'assert' assert_stmt");
                 _res = assert_stmt_var;
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1370,10 +1475,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'break'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBreak(startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'break'");
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1390,10 +1498,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'continue'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createContinue(startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'continue'");
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1410,8 +1521,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'global' global_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'global' global_stmt");
                 _res = global_stmt_var;
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1428,16 +1541,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'nonlocal' nonlocal_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'nonlocal' nonlocal_stmt");
                 _res = nonlocal_stmt_var;
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "&'nonlocal' nonlocal_stmt");
         }
+        debugMessageln("Fail at %d: simple_stmt", _mark);
         _res = null;
         cache.putResult(_mark, SIMPLE_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -1452,10 +1569,12 @@ public final class Parser extends AbstractParser {
     //     | match_stmt
     public StmtTy compound_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, COMPOUND_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, COMPOUND_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // &('def' | '@' | ASYNC) function_def
@@ -1468,8 +1587,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&('def' | '@' | ASYNC) function_def");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('def' | '@' | ASYNC) function_def");
                 _res = function_def_var;
                 cache.putResult(_mark, COMPOUND_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1486,8 +1607,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'if' if_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'if' if_stmt");
                 _res = if_stmt_var;
                 cache.putResult(_mark, COMPOUND_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1504,8 +1627,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&('class' | '@') class_def");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('class' | '@') class_def");
                 _res = class_def_var;
                 cache.putResult(_mark, COMPOUND_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1522,8 +1647,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&('with' | ASYNC) with_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('with' | ASYNC) with_stmt");
                 _res = with_stmt_var;
                 cache.putResult(_mark, COMPOUND_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1540,8 +1667,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&('for' | ASYNC) for_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('for' | ASYNC) for_stmt");
                 _res = for_stmt_var;
                 cache.putResult(_mark, COMPOUND_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1558,8 +1687,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'try' try_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'try' try_stmt");
                 _res = try_stmt_var;
                 cache.putResult(_mark, COMPOUND_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1576,8 +1707,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "&'while' while_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'while' while_stmt");
                 _res = while_stmt_var;
                 cache.putResult(_mark, COMPOUND_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1592,16 +1725,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "match_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "match_stmt");
                 _res = match_stmt_var;
                 cache.putResult(_mark, COMPOUND_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s compound_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "match_stmt");
         }
+        debugMessageln("Fail at %d: compound_stmt", _mark);
         _res = null;
         cache.putResult(_mark, COMPOUND_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -1613,10 +1750,12 @@ public final class Parser extends AbstractParser {
     //     | invalid_assignment
     public StmtTy assignment_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ASSIGNMENT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, ASSIGNMENT_ID);
+            level--;
             return (StmtTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -1639,10 +1778,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createAnnAssignment(setExprContext(a,ExprContext.Store),b,(ExprTy)c,true,startToken.startOffset,endToken.endOffset);;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1669,7 +1811,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( stmt_ty , 6 , 'Variable annotations syntax is' , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('(' single_target ')' | single_subscript_attribute_target) ':' expression ['=' annotated_rhs]");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1694,10 +1838,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createAssignment(a,(ExprTy)b,newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -1723,16 +1870,20 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createAugAssignment(a,b,(ExprTy)c,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s assignment[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
             if (_cut_var != 0) {
+                level--;
                 return null;
             }
         }
@@ -1744,16 +1895,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_assignment");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_assignment");
                 _res = invalid_assignment_var;
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s assignment[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_assignment");
         }
+        debugMessageln("Fail at %d: assignment", _mark);
         _res = null;
         cache.putResult(_mark, ASSIGNMENT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -1773,10 +1928,12 @@ public final class Parser extends AbstractParser {
     //     | '//='
     public ExprTy.BinOp.Operator augassign_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AUGASSIGN_ID)) {
             _res = (ExprTy.BinOp.Operator)cache.getResult(_mark, AUGASSIGN_ID);
+            level--;
             return (ExprTy.BinOp.Operator)_res;
         }
         { // '+='
@@ -1788,7 +1945,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'+='");
                 _res = ExprTy.BinOp.Operator.ADD;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'+='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1804,7 +1963,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'-='");
                 _res = ExprTy.BinOp.Operator.SUB;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1820,7 +1981,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'*='");
                 _res = ExprTy.BinOp.Operator.MULT;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1836,7 +1999,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'@='");
                 _res = ExprTy.BinOp.Operator.MATMULT;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'@='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1852,7 +2017,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'/='");
                 _res = ExprTy.BinOp.Operator.DIV;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'/='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1868,7 +2035,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'%='");
                 _res = ExprTy.BinOp.Operator.MOD;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'%='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1884,7 +2053,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'&='");
                 _res = ExprTy.BinOp.Operator.BITAND;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'&='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1900,7 +2071,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'|='");
                 _res = ExprTy.BinOp.Operator.BITOR;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'|='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1916,7 +2089,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'^='");
                 _res = ExprTy.BinOp.Operator.BITXOR;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'^='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1932,7 +2107,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'<<='");
                 _res = ExprTy.BinOp.Operator.LSHIFT;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'<<='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1948,7 +2125,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'>>='");
                 _res = ExprTy.BinOp.Operator.RSHIFT;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'>>='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1964,7 +2143,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'**='");
                 _res = ExprTy.BinOp.Operator.POW;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
@@ -1980,25 +2161,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d augassign[%d-%d]: %s succeeded!", level, _mark, mark(), "'//='");
                 _res = ExprTy.BinOp.Operator.FLOORDIV;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'//='");
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
+                level--;
                 return (ExprTy.BinOp.Operator)_res;
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'//='");
         }
+        debugMessageln("Fail at %d: augassign", _mark);
         _res = null;
         cache.putResult(_mark, AUGASSIGN_ID, _res);
+        level--;
         return (ExprTy.BinOp.Operator)_res;
     }
 
     // global_stmt: 'global' ','.NAME+
     public StmtTy global_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GLOBAL_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, GLOBAL_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'global' ','.NAME+
@@ -2015,25 +2202,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Global ( CHECK ( String * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Global ( CHECK ( String * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'global' ','.NAME+");
                 cache.putResult(_mark, GLOBAL_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s global_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'global' ','.NAME+");
         }
+        debugMessageln("Fail at %d: global_stmt", _mark);
         _res = null;
         cache.putResult(_mark, GLOBAL_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // nonlocal_stmt: 'nonlocal' ','.NAME+
     public StmtTy nonlocal_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, NONLOCAL_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, NONLOCAL_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'nonlocal' ','.NAME+
@@ -2050,25 +2243,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Nonlocal ( CHECK ( String * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Nonlocal ( CHECK ( String * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'nonlocal' ','.NAME+");
                 cache.putResult(_mark, NONLOCAL_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s nonlocal_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'nonlocal' ','.NAME+");
         }
+        debugMessageln("Fail at %d: nonlocal_stmt", _mark);
         _res = null;
         cache.putResult(_mark, NONLOCAL_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // yield_stmt: yield_expr
     public StmtTy yield_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, YIELD_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, YIELD_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // yield_expr
@@ -2080,25 +2279,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d yield_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "yield_expr");
                 _res = factory.createExpression(y);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "yield_expr");
                 cache.putResult(_mark, YIELD_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s yield_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "yield_expr");
         }
+        debugMessageln("Fail at %d: yield_stmt", _mark);
         _res = null;
         cache.putResult(_mark, YIELD_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // assert_stmt: 'assert' expression [',' expression]
     public StmtTy assert_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ASSERT_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, ASSERT_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'assert' expression [',' expression]
@@ -2118,25 +2323,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Assert ( a , b , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Assert ( a , b , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'assert' expression [',' expression]");
                 cache.putResult(_mark, ASSERT_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s assert_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'assert' expression [',' expression]");
         }
+        debugMessageln("Fail at %d: assert_stmt", _mark);
         _res = null;
         cache.putResult(_mark, ASSERT_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // del_stmt: 'del' del_targets &(';' | NEWLINE) | invalid_del_stmt
     public StmtTy del_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEL_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, DEL_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'del' del_targets &(';' | NEWLINE)
@@ -2155,7 +2366,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Delete ( a , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Delete ( a , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'del' del_targets &(';' | NEWLINE)");
                 cache.putResult(_mark, DEL_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -2170,26 +2383,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d del_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_del_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_del_stmt");
                 _res = invalid_del_stmt_var;
                 cache.putResult(_mark, DEL_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s del_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_del_stmt");
         }
+        debugMessageln("Fail at %d: del_stmt", _mark);
         _res = null;
         cache.putResult(_mark, DEL_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // import_stmt: import_name | import_from
     public StmtTy import_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, IMPORT_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // import_name
@@ -2200,8 +2419,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "import_name");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "import_name");
                 _res = import_name_var;
                 cache.putResult(_mark, IMPORT_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -2216,26 +2437,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "import_from");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "import_from");
                 _res = import_from_var;
                 cache.putResult(_mark, IMPORT_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s import_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "import_from");
         }
+        debugMessageln("Fail at %d: import_stmt", _mark);
         _res = null;
         cache.putResult(_mark, IMPORT_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // import_name: 'import' dotted_as_names
     public StmtTy import_name_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_NAME_ID)) {
             _res = (StmtTy)cache.getResult(_mark, IMPORT_NAME_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'import' dotted_as_names
@@ -2252,15 +2479,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Import ( a , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Import ( a , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'import' dotted_as_names");
                 cache.putResult(_mark, IMPORT_NAME_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s import_name[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'import' dotted_as_names");
         }
+        debugMessageln("Fail at %d: import_name", _mark);
         _res = null;
         cache.putResult(_mark, IMPORT_NAME_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -2269,10 +2500,12 @@ public final class Parser extends AbstractParser {
     //     | 'from' (('.' | '...'))+ 'import' import_from_targets
     public StmtTy import_from_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_FROM_ID)) {
             _res = (StmtTy)cache.getResult(_mark, IMPORT_FROM_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'from' (('.' | '...'))* dotted_name 'import' import_from_targets
@@ -2298,7 +2531,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_ImportFrom ( b -> v . Name . id , c , _PyPegen_seq_count_dots ( a ) , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ImportFrom ( b -> v . Name . id , c , _PyPegen_seq_count_dots ( a ) , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'from' (('.' | '...'))* dotted_name 'import' import_from_targets");
                 cache.putResult(_mark, IMPORT_FROM_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -2325,15 +2560,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_ImportFrom ( NULL , b , _PyPegen_seq_count_dots ( a ) , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ImportFrom ( NULL , b , _PyPegen_seq_count_dots ( a ) , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'from' (('.' | '...'))+ 'import' import_from_targets");
                 cache.putResult(_mark, IMPORT_FROM_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s import_from[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'from' (('.' | '...'))+ 'import' import_from_targets");
         }
+        debugMessageln("Fail at %d: import_from", _mark);
         _res = null;
         cache.putResult(_mark, IMPORT_FROM_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -2344,10 +2583,12 @@ public final class Parser extends AbstractParser {
     //     | invalid_import_from_targets
     public AliasTy[] import_from_targets_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_FROM_TARGETS_ID)) {
             _res = (AliasTy[])cache.getResult(_mark, IMPORT_FROM_TARGETS_ID);
+            level--;
             return (AliasTy[])_res;
         }
         { // '(' import_from_as_names ','? ')'
@@ -2368,7 +2609,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d import_from_targets[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' import_from_as_names ','? ')'");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' import_from_as_names ','? ')'");
                 cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
+                level--;
                 return (AliasTy[])_res;
             }
             reset(_mark);
@@ -2385,8 +2628,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_from_targets[%d-%d]: %s succeeded!", level, _mark, mark(), "import_from_as_names !','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "import_from_as_names !','");
                 _res = import_from_as_names_var;
                 cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
+                level--;
                 return (AliasTy[])_res;
             }
             reset(_mark);
@@ -2404,7 +2649,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: ( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*'");
                 cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
+                level--;
                 return (AliasTy[])_res;
             }
             reset(_mark);
@@ -2419,26 +2666,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_from_targets[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_import_from_targets");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_import_from_targets");
                 _res = invalid_import_from_targets_var;
                 cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
+                level--;
                 return (AliasTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s import_from_targets[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_import_from_targets");
         }
+        debugMessageln("Fail at %d: import_from_targets", _mark);
         _res = null;
         cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
+        level--;
         return (AliasTy[])_res;
     }
 
     // import_from_as_names: ','.import_from_as_name+
     public AliasTy[] import_from_as_names_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_FROM_AS_NAMES_ID)) {
             _res = (AliasTy[])cache.getResult(_mark, IMPORT_FROM_AS_NAMES_ID);
+            level--;
             return (AliasTy[])_res;
         }
         { // ','.import_from_as_name+
@@ -2450,25 +2703,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d import_from_as_names[%d-%d]: %s succeeded!", level, _mark, mark(), "','.import_from_as_name+");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.import_from_as_name+");
                 cache.putResult(_mark, IMPORT_FROM_AS_NAMES_ID, _res);
+                level--;
                 return (AliasTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s import_from_as_names[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.import_from_as_name+");
         }
+        debugMessageln("Fail at %d: import_from_as_names", _mark);
         _res = null;
         cache.putResult(_mark, IMPORT_FROM_AS_NAMES_ID, _res);
+        level--;
         return (AliasTy[])_res;
     }
 
     // import_from_as_name: NAME ['as' NAME]
     public AliasTy import_from_as_name_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IMPORT_FROM_AS_NAME_ID)) {
             _res = (AliasTy)cache.getResult(_mark, IMPORT_FROM_AS_NAME_ID);
+            level--;
             return (AliasTy)_res;
         }
         { // NAME ['as' NAME]
@@ -2485,25 +2744,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ['as' NAME]");
                 cache.putResult(_mark, IMPORT_FROM_AS_NAME_ID, _res);
+                level--;
                 return (AliasTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s import_from_as_name[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME ['as' NAME]");
         }
+        debugMessageln("Fail at %d: import_from_as_name", _mark);
         _res = null;
         cache.putResult(_mark, IMPORT_FROM_AS_NAME_ID, _res);
+        level--;
         return (AliasTy)_res;
     }
 
     // dotted_as_names: ','.dotted_as_name+
     public AliasTy[] dotted_as_names_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOTTED_AS_NAMES_ID)) {
             _res = (AliasTy[])cache.getResult(_mark, DOTTED_AS_NAMES_ID);
+            level--;
             return (AliasTy[])_res;
         }
         { // ','.dotted_as_name+
@@ -2515,25 +2780,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d dotted_as_names[%d-%d]: %s succeeded!", level, _mark, mark(), "','.dotted_as_name+");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.dotted_as_name+");
                 cache.putResult(_mark, DOTTED_AS_NAMES_ID, _res);
+                level--;
                 return (AliasTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s dotted_as_names[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.dotted_as_name+");
         }
+        debugMessageln("Fail at %d: dotted_as_names", _mark);
         _res = null;
         cache.putResult(_mark, DOTTED_AS_NAMES_ID, _res);
+        level--;
         return (AliasTy[])_res;
     }
 
     // dotted_as_name: dotted_name ['as' NAME]
     public AliasTy dotted_as_name_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOTTED_AS_NAME_ID)) {
             _res = (AliasTy)cache.getResult(_mark, DOTTED_AS_NAME_ID);
+            level--;
             return (AliasTy)_res;
         }
         { // dotted_name ['as' NAME]
@@ -2550,15 +2821,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "dotted_name ['as' NAME]");
                 cache.putResult(_mark, DOTTED_AS_NAME_ID, _res);
+                level--;
                 return (AliasTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s dotted_as_name[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "dotted_name ['as' NAME]");
         }
+        debugMessageln("Fail at %d: dotted_as_name", _mark);
         _res = null;
         cache.putResult(_mark, DOTTED_AS_NAME_ID, _res);
+        level--;
         return (AliasTy)_res;
     }
 
@@ -2566,10 +2841,12 @@ public final class Parser extends AbstractParser {
     // dotted_name: dotted_name '.' NAME | NAME
     public ExprTy dotted_name_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOTTED_NAME_ID)) {
             _res = cache.getResult(_mark, DOTTED_NAME_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -2583,10 +2860,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy dotted_name_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         { // dotted_name '.' NAME
@@ -2604,6 +2883,8 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d dotted_name[%d-%d]: %s succeeded!", level, _mark, mark(), "dotted_name '.' NAME");
                 _res = this.joinNamesWithDot(a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "dotted_name '.' NAME");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -2618,14 +2899,18 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dotted_name[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NAME");
                 _res = name_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s dotted_name[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME");
         }
+        debugMessageln("Fail at %d: dotted_name", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
@@ -2635,12 +2920,15 @@ public final class Parser extends AbstractParser {
     //     | invalid_if_stmt
     public StmtTy if_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IF_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, IF_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'if' named_expression ':' block elif_stmt
             debugMessageln("%d> if_stmt[%d-%d]: %s", level, _mark, mark(), "'if' named_expression ':' block elif_stmt");
             Token _keyword;
@@ -2661,10 +2949,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'if' named_expression ':' block elif_stmt");
-                // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIf(a,b,this.singletonSequence(c),startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression ':' block elif_stmt");
                 cache.putResult(_mark, IF_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -2691,10 +2984,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'if' named_expression ':' block else_block?");
-                // TODO: node.action: _PyAST_If ( a , b , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIf(a,b,c,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression ':' block else_block?");
                 cache.putResult(_mark, IF_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -2709,16 +3007,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_if_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_if_stmt");
                 _res = invalid_if_stmt_var;
                 cache.putResult(_mark, IF_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s if_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_if_stmt");
         }
+        debugMessageln("Fail at %d: if_stmt", _mark);
         _res = null;
         cache.putResult(_mark, IF_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -2728,12 +3030,15 @@ public final class Parser extends AbstractParser {
     //     | invalid_elif_stmt
     public StmtTy elif_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ELIF_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, ELIF_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'elif' named_expression ':' block elif_stmt
             debugMessageln("%d> elif_stmt[%d-%d]: %s", level, _mark, mark(), "'elif' named_expression ':' block elif_stmt");
             Token _keyword;
@@ -2754,10 +3059,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'elif' named_expression ':' block elif_stmt");
-                // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIf(a,b,this.singletonSequence(c),startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression ':' block elif_stmt");
                 cache.putResult(_mark, ELIF_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -2784,10 +3094,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'elif' named_expression ':' block else_block?");
-                // TODO: node.action: _PyAST_If ( a , b , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIf(a,b,c,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression ':' block else_block?");
                 cache.putResult(_mark, ELIF_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -2802,26 +3117,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_elif_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_elif_stmt");
                 _res = invalid_elif_stmt_var;
                 cache.putResult(_mark, ELIF_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s elif_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_elif_stmt");
         }
+        debugMessageln("Fail at %d: elif_stmt", _mark);
         _res = null;
         cache.putResult(_mark, ELIF_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // else_block: 'else' &&':' block
     public StmtTy[] else_block_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ELSE_BLOCK_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, ELSE_BLOCK_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // 'else' &&':' block
@@ -2839,27 +3160,34 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d else_block[%d-%d]: %s succeeded!", level, _mark, mark(), "'else' &&':' block");
                 _res = b;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'else' &&':' block");
                 cache.putResult(_mark, ELSE_BLOCK_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s else_block[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'else' &&':' block");
         }
+        debugMessageln("Fail at %d: else_block", _mark);
         _res = null;
         cache.putResult(_mark, ELSE_BLOCK_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // while_stmt: 'while' named_expression ':' block else_block? | invalid_while_stmt
     public StmtTy while_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WHILE_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, WHILE_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'while' named_expression ':' block else_block?
             debugMessageln("%d> while_stmt[%d-%d]: %s", level, _mark, mark(), "'while' named_expression ':' block else_block?");
             Token _keyword;
@@ -2880,10 +3208,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d while_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'while' named_expression ':' block else_block?");
-                // TODO: node.action: _PyAST_While ( a , b , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_While ( a , b , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createWhile(a,b,c,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'while' named_expression ':' block else_block?");
                 cache.putResult(_mark, WHILE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -2898,16 +3231,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d while_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_while_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_while_stmt");
                 _res = invalid_while_stmt_var;
                 cache.putResult(_mark, WHILE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s while_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_while_stmt");
         }
+        debugMessageln("Fail at %d: while_stmt", _mark);
         _res = null;
         cache.putResult(_mark, WHILE_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -2917,12 +3254,15 @@ public final class Parser extends AbstractParser {
     //     | invalid_for_target
     public StmtTy for_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FOR_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, FOR_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?
             debugMessageln("%d> for_stmt[%d-%d]: %s", level, _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
             int _cut_var = 0;
@@ -2955,16 +3295,22 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d for_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
-                // TODO: node.action: _PyAST_For ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_For ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createFor(t,ex,b,el,newTypeComment(tc),startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
                 cache.putResult(_mark, FOR_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
             if (_cut_var != 0) {
+                level--;
                 return null;
             }
         }
@@ -3006,13 +3352,16 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async for loops are" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( stmt_ty , 5 , 'Async for loops are' , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
                 cache.putResult(_mark, FOR_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
             if (_cut_var != 0) {
+                level--;
                 return null;
             }
         }
@@ -3024,16 +3373,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d for_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_for_target");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_for_target");
                 _res = invalid_for_target_var;
                 cache.putResult(_mark, FOR_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_for_target");
         }
+        debugMessageln("Fail at %d: for_stmt", _mark);
         _res = null;
         cache.putResult(_mark, FOR_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -3045,10 +3398,12 @@ public final class Parser extends AbstractParser {
     //     | invalid_with_stmt
     public StmtTy with_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WITH_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, WITH_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'with' '(' ','.with_item+ ','? ')' ':' block
@@ -3080,7 +3435,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_With ( a , b , NULL , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_With ( a , b , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'with' '(' ','.with_item+ ','? ')' ':' block");
                 cache.putResult(_mark, WITH_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -3110,7 +3467,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'with' ','.with_item+ ':' TYPE_COMMENT? block");
                 cache.putResult(_mark, WITH_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -3149,7 +3508,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( stmt_ty , 5 , 'Async with statements are' , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block");
                 cache.putResult(_mark, WITH_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -3182,7 +3543,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( stmt_ty , 5 , 'Async with statements are' , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block");
                 cache.putResult(_mark, WITH_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -3197,16 +3560,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_with_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_with_stmt");
                 _res = invalid_with_stmt_var;
                 cache.putResult(_mark, WITH_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s with_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_with_stmt");
         }
+        debugMessageln("Fail at %d: with_stmt", _mark);
         _res = null;
         cache.putResult(_mark, WITH_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -3216,10 +3583,12 @@ public final class Parser extends AbstractParser {
     //     | expression
     public StmtTy.With.Item with_item_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WITH_ITEM_ID)) {
             _res = (StmtTy.With.Item)cache.getResult(_mark, WITH_ITEM_ID);
+            level--;
             return (StmtTy.With.Item)_res;
         }
         { // expression 'as' star_target &(',' | ')' | ':')
@@ -3241,7 +3610,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_withitem ( e , t , p -> arena )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_withitem ( e , t , p -> arena ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression 'as' star_target &(',' | ')' | ':')");
                 cache.putResult(_mark, WITH_ITEM_ID, _res);
+                level--;
                 return (StmtTy.With.Item)_res;
             }
             reset(_mark);
@@ -3256,8 +3627,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d with_item[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_with_item");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_with_item");
                 _res = invalid_with_item_var;
                 cache.putResult(_mark, WITH_ITEM_ID, _res);
+                level--;
                 return (StmtTy.With.Item)_res;
             }
             reset(_mark);
@@ -3275,15 +3648,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_withitem ( e , NULL , p -> arena )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_withitem ( e , NULL , p -> arena ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression");
                 cache.putResult(_mark, WITH_ITEM_ID, _res);
+                level--;
                 return (StmtTy.With.Item)_res;
             }
             reset(_mark);
             debugMessageln("%d%s with_item[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression");
         }
+        debugMessageln("Fail at %d: with_item", _mark);
         _res = null;
         cache.putResult(_mark, WITH_ITEM_ID, _res);
+        level--;
         return (StmtTy.With.Item)_res;
     }
 
@@ -3292,10 +3669,12 @@ public final class Parser extends AbstractParser {
     //     | 'try' &&':' block except_block+ else_block? finally_block?
     public StmtTy try_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TRY_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, TRY_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'try' &&':' block finally_block
@@ -3318,7 +3697,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Try ( b , NULL , NULL , f , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Try ( b , NULL , NULL , f , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'try' &&':' block finally_block");
                 cache.putResult(_mark, TRY_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -3351,15 +3732,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Try ( b , ex , el , f , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Try ( b , ex , el , f , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'try' &&':' block except_block+ else_block? finally_block?");
                 cache.putResult(_mark, TRY_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s try_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'try' &&':' block except_block+ else_block? finally_block?");
         }
+        debugMessageln("Fail at %d: try_stmt", _mark);
         _res = null;
         cache.putResult(_mark, TRY_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -3369,10 +3754,12 @@ public final class Parser extends AbstractParser {
     //     | invalid_except_block
     public StmtTy.Try.ExceptHandler except_block_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EXCEPT_BLOCK_ID)) {
             _res = (StmtTy.Try.ExceptHandler)cache.getResult(_mark, EXCEPT_BLOCK_ID);
+            level--;
             return (StmtTy.Try.ExceptHandler)_res;
         }
         { // 'except' expression ['as' NAME] ':' block
@@ -3398,7 +3785,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'except' expression ['as' NAME] ':' block");
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
+                level--;
                 return (StmtTy.Try.ExceptHandler)_res;
             }
             reset(_mark);
@@ -3422,7 +3811,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_ExceptHandler ( NULL , NULL , b , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ExceptHandler ( NULL , NULL , b , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'except' ':' block");
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
+                level--;
                 return (StmtTy.Try.ExceptHandler)_res;
             }
             reset(_mark);
@@ -3437,26 +3828,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d except_block[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_except_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_except_block");
                 _res = invalid_except_block_var;
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
+                level--;
                 return (StmtTy.Try.ExceptHandler)_res;
             }
             reset(_mark);
             debugMessageln("%d%s except_block[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_except_block");
         }
+        debugMessageln("Fail at %d: except_block", _mark);
         _res = null;
         cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
+        level--;
         return (StmtTy.Try.ExceptHandler)_res;
     }
 
     // finally_block: 'finally' ':' block
     public StmtTy[] finally_block_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FINALLY_BLOCK_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, FINALLY_BLOCK_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // 'finally' ':' block
@@ -3474,15 +3871,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d finally_block[%d-%d]: %s succeeded!", level, _mark, mark(), "'finally' ':' block");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'finally' ':' block");
                 cache.putResult(_mark, FINALLY_BLOCK_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s finally_block[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'finally' ':' block");
         }
+        debugMessageln("Fail at %d: finally_block", _mark);
         _res = null;
         cache.putResult(_mark, FINALLY_BLOCK_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
@@ -3491,10 +3892,12 @@ public final class Parser extends AbstractParser {
     //     | invalid_match_stmt
     public StmtTy match_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MATCH_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, MATCH_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
@@ -3526,7 +3929,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( stmt_ty , 10 , 'Pattern matching is' , _PyAST_Match ( subject , cases , EXTRA ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'match' subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
                 cache.putResult(_mark, MATCH_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -3541,26 +3946,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d match_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_match_stmt");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_match_stmt");
                 _res = invalid_match_stmt_var;
                 cache.putResult(_mark, MATCH_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s match_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_match_stmt");
         }
+        debugMessageln("Fail at %d: match_stmt", _mark);
         _res = null;
         cache.putResult(_mark, MATCH_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // subject_expr: star_named_expression ',' star_named_expressions? | named_expression
     public ExprTy subject_expr_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SUBJECT_EXPR_ID)) {
             _res = (ExprTy)cache.getResult(_mark, SUBJECT_EXPR_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // star_named_expression ',' star_named_expressions?
@@ -3580,7 +3991,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( value , values ) ) , Load , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( value , values ) ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 cache.putResult(_mark, SUBJECT_EXPR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -3595,26 +4008,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d subject_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "named_expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "named_expression");
                 _res = named_expression_var;
                 cache.putResult(_mark, SUBJECT_EXPR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s subject_expr[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "named_expression");
         }
+        debugMessageln("Fail at %d: subject_expr", _mark);
         _res = null;
         cache.putResult(_mark, SUBJECT_EXPR_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // case_block: "case" patterns guard? ':' block | invalid_case_block
     public StmtTy.Match.Case case_block_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CASE_BLOCK_ID)) {
             _res = (StmtTy.Match.Case)cache.getResult(_mark, CASE_BLOCK_ID);
+            level--;
             return (StmtTy.Match.Case)_res;
         }
         { // "case" patterns guard? ':' block
@@ -3640,7 +4059,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_match_case ( pattern , guard , body , p -> arena )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_match_case ( pattern , guard , body , p -> arena ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'case' patterns guard? ':' block");
                 cache.putResult(_mark, CASE_BLOCK_ID, _res);
+                level--;
                 return (StmtTy.Match.Case)_res;
             }
             reset(_mark);
@@ -3655,26 +4076,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d case_block[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_case_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_case_block");
                 _res = invalid_case_block_var;
                 cache.putResult(_mark, CASE_BLOCK_ID, _res);
+                level--;
                 return (StmtTy.Match.Case)_res;
             }
             reset(_mark);
             debugMessageln("%d%s case_block[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_case_block");
         }
+        debugMessageln("Fail at %d: case_block", _mark);
         _res = null;
         cache.putResult(_mark, CASE_BLOCK_ID, _res);
+        level--;
         return (StmtTy.Match.Case)_res;
     }
 
     // guard: 'if' named_expression
     public ExprTy guard_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GUARD_ID)) {
             _res = (ExprTy)cache.getResult(_mark, GUARD_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'if' named_expression
@@ -3691,25 +4118,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: guard
                 debugMessageln("[33;5;7m!!! TODO: Convert guard to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression");
                 cache.putResult(_mark, GUARD_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s guard[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'if' named_expression");
         }
+        debugMessageln("Fail at %d: guard", _mark);
         _res = null;
         cache.putResult(_mark, GUARD_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // patterns: open_sequence_pattern | pattern
     public ExprTy patterns_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PATTERNS_ID)) {
             _res = (ExprTy)cache.getResult(_mark, PATTERNS_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // open_sequence_pattern
@@ -3723,7 +4156,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Tuple ( values , Load , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( values , Load , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "open_sequence_pattern");
                 cache.putResult(_mark, PATTERNS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -3738,26 +4173,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d patterns[%d-%d]: %s succeeded!", level, _mark, mark(), "pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "pattern");
                 _res = pattern_var;
                 cache.putResult(_mark, PATTERNS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s patterns[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "pattern");
         }
+        debugMessageln("Fail at %d: patterns", _mark);
         _res = null;
         cache.putResult(_mark, PATTERNS_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // pattern: as_pattern | or_pattern
     public ExprTy pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // as_pattern
@@ -3768,8 +4209,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "as_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "as_pattern");
                 _res = as_pattern_var;
                 cache.putResult(_mark, PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -3784,26 +4227,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "or_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "or_pattern");
                 _res = or_pattern_var;
                 cache.putResult(_mark, PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "or_pattern");
         }
+        debugMessageln("Fail at %d: pattern", _mark);
         _res = null;
         cache.putResult(_mark, PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // as_pattern: or_pattern 'as' capture_pattern
     public ExprTy as_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AS_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, AS_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // or_pattern 'as' capture_pattern
@@ -3823,25 +4272,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "or_pattern 'as' capture_pattern");
                 cache.putResult(_mark, AS_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s as_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "or_pattern 'as' capture_pattern");
         }
+        debugMessageln("Fail at %d: as_pattern", _mark);
         _res = null;
         cache.putResult(_mark, AS_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // or_pattern: '|'.closed_pattern+
     public ExprTy or_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, OR_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, OR_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '|'.closed_pattern+
@@ -3855,15 +4310,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'|'.closed_pattern+");
                 cache.putResult(_mark, OR_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s or_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'|'.closed_pattern+");
         }
+        debugMessageln("Fail at %d: or_pattern", _mark);
         _res = null;
         cache.putResult(_mark, OR_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -3878,10 +4337,12 @@ public final class Parser extends AbstractParser {
     //     | class_pattern
     public ExprTy closed_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLOSED_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, CLOSED_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // literal_pattern
@@ -3892,8 +4353,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "literal_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "literal_pattern");
                 _res = literal_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -3908,8 +4371,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "capture_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "capture_pattern");
                 _res = capture_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -3924,8 +4389,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "wildcard_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "wildcard_pattern");
                 _res = wildcard_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -3940,8 +4407,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "value_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "value_pattern");
                 _res = value_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -3956,8 +4425,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "group_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "group_pattern");
                 _res = group_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -3972,8 +4443,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "sequence_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "sequence_pattern");
                 _res = sequence_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -3988,8 +4461,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "mapping_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "mapping_pattern");
                 _res = mapping_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4004,16 +4479,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "class_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "class_pattern");
                 _res = class_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s closed_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "class_pattern");
         }
+        debugMessageln("Fail at %d: closed_pattern", _mark);
         _res = null;
         cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -4027,10 +4506,12 @@ public final class Parser extends AbstractParser {
     //     | 'False'
     public ExprTy literal_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LITERAL_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, LITERAL_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -4044,8 +4525,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "signed_number !('+' | '-')");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "signed_number !('+' | '-')");
                 _res = signed_number_var;
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4068,10 +4551,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "signed_number '+' NUMBER");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.ADD,real,imag,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "signed_number '+' NUMBER");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4094,10 +4580,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "signed_number '-' NUMBER");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.SUB,real,imag,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "signed_number '-' NUMBER");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4112,8 +4601,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "strings");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "strings");
                 _res = strings_var;
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4129,7 +4620,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "'None'");
                 _res = factory.createNone(startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'None'");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4145,7 +4638,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "'True'");
                 _res = factory.createBooleanLiteral(true,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'True'");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4161,27 +4656,34 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "'False'");
                 _res = factory.createBooleanLiteral(false,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'False'");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s literal_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'False'");
         }
+        debugMessageln("Fail at %d: literal_pattern", _mark);
         _res = null;
         cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // signed_number: NUMBER | '-' NUMBER
     public ExprTy signed_number_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SIGNED_NUMBER_ID)) {
             _res = (ExprTy)cache.getResult(_mark, SIGNED_NUMBER_ID);
+            level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NUMBER
             debugMessageln("%d> signed_number[%d-%d]: %s", level, _mark, mark(), "NUMBER");
             ExprTy number_var;
@@ -4190,8 +4692,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d signed_number[%d-%d]: %s succeeded!", level, _mark, mark(), "NUMBER");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NUMBER");
                 _res = number_var;
                 cache.putResult(_mark, SIGNED_NUMBER_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4209,28 +4713,37 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d signed_number[%d-%d]: %s succeeded!", level, _mark, mark(), "'-' NUMBER");
-                // TODO: node.action: _PyAST_UnaryOp ( USub , number , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_UnaryOp ( USub , number , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.SUB,number,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-' NUMBER");
                 cache.putResult(_mark, SIGNED_NUMBER_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s signed_number[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'-' NUMBER");
         }
+        debugMessageln("Fail at %d: signed_number", _mark);
         _res = null;
         cache.putResult(_mark, SIGNED_NUMBER_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // capture_pattern: !"_" NAME !('.' | '(' | '=')
     public ExprTy capture_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CAPTURE_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, CAPTURE_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // !"_" NAME !('.' | '(' | '=')
@@ -4248,25 +4761,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_set_expr_context ( p , name , Store )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , name , Store ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "!'_' NAME !('.' | '(' | '=')");
                 cache.putResult(_mark, CAPTURE_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s capture_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "!\"_\" NAME !('.' | '(' | '=')");
         }
+        debugMessageln("Fail at %d: capture_pattern", _mark);
         _res = null;
         cache.putResult(_mark, CAPTURE_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // wildcard_pattern: "_"
     public ExprTy wildcard_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WILDCARD_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, WILDCARD_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // "_"
@@ -4280,25 +4799,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Name ( CHECK ( PyObject * , _PyPegen_new_identifier ( p , "_" ) ) , Store , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Name ( CHECK ( PyObject * , _PyPegen_new_identifier ( p , '_' ) ) , Store , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'_'");
                 cache.putResult(_mark, WILDCARD_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s wildcard_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "\"_\"");
         }
+        debugMessageln("Fail at %d: wildcard_pattern", _mark);
         _res = null;
         cache.putResult(_mark, WILDCARD_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // value_pattern: attr !('.' | '(' | '=')
     public ExprTy value_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, VALUE_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, VALUE_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // attr !('.' | '(' | '=')
@@ -4314,15 +4839,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: attr
                 debugMessageln("[33;5;7m!!! TODO: Convert attr to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "attr !('.' | '(' | '=')");
                 cache.putResult(_mark, VALUE_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s value_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "attr !('.' | '(' | '=')");
         }
+        debugMessageln("Fail at %d: value_pattern", _mark);
         _res = null;
         cache.putResult(_mark, VALUE_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -4330,10 +4859,12 @@ public final class Parser extends AbstractParser {
     // attr: name_or_attr '.' NAME
     public ExprTy attr_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ATTR_ID)) {
             _res = cache.getResult(_mark, ATTR_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -4347,10 +4878,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy attr_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
@@ -4369,13 +4902,17 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d attr[%d-%d]: %s succeeded!", level, _mark, mark(), "name_or_attr '.' NAME");
                 _res = factory.createGetAttribute(value,((ExprTy.Name)attr).id,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '.' NAME");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s attr[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "name_or_attr '.' NAME");
         }
+        debugMessageln("Fail at %d: attr", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
@@ -4383,6 +4920,7 @@ public final class Parser extends AbstractParser {
     // name_or_attr: attr | NAME
     public ExprTy name_or_attr_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         { // attr
@@ -4393,7 +4931,9 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d name_or_attr[%d-%d]: %s succeeded!", level, _mark, mark(), "attr");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "attr");
                 _res = attr_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4408,24 +4948,30 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d name_or_attr[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NAME");
                 _res = name_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s name_or_attr[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME");
         }
+        debugMessageln("Fail at %d: name_or_attr", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
     // group_pattern: '(' pattern ')'
     public ExprTy group_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GROUP_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, GROUP_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '(' pattern ')'
@@ -4445,25 +4991,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: pattern
                 debugMessageln("[33;5;7m!!! TODO: Convert pattern to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' pattern ')'");
                 cache.putResult(_mark, GROUP_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s group_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'(' pattern ')'");
         }
+        debugMessageln("Fail at %d: group_pattern", _mark);
         _res = null;
         cache.putResult(_mark, GROUP_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // sequence_pattern: '[' maybe_sequence_pattern? ']' | '(' open_sequence_pattern? ')'
     public ExprTy sequence_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SEQUENCE_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, SEQUENCE_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '[' maybe_sequence_pattern? ']'
@@ -4483,7 +5035,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_List ( values , Load , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_List ( values , Load , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' maybe_sequence_pattern? ']'");
                 cache.putResult(_mark, SEQUENCE_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4507,25 +5061,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Tuple ( values , Load , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( values , Load , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' open_sequence_pattern? ')'");
                 cache.putResult(_mark, SEQUENCE_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s sequence_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'(' open_sequence_pattern? ')'");
         }
+        debugMessageln("Fail at %d: sequence_pattern", _mark);
         _res = null;
         cache.putResult(_mark, SEQUENCE_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // open_sequence_pattern: maybe_star_pattern ',' maybe_sequence_pattern?
     public ExprTy[] open_sequence_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, OPEN_SEQUENCE_PATTERN_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, OPEN_SEQUENCE_PATTERN_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // maybe_star_pattern ',' maybe_sequence_pattern?
@@ -4543,25 +5103,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d open_sequence_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
                 _res = this.insertInFront(value,(SSTNode [ ])values);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
                 cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s open_sequence_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
         }
+        debugMessageln("Fail at %d: open_sequence_pattern", _mark);
         _res = null;
         cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // maybe_sequence_pattern: ','.maybe_star_pattern+ ','?
     public ExprTy[] maybe_sequence_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MAYBE_SEQUENCE_PATTERN_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, MAYBE_SEQUENCE_PATTERN_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // ','.maybe_star_pattern+ ','?
@@ -4578,25 +5144,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: values
                 debugMessageln("[33;5;7m!!! TODO: Convert values to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.maybe_star_pattern+ ','?");
                 cache.putResult(_mark, MAYBE_SEQUENCE_PATTERN_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s maybe_sequence_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.maybe_star_pattern+ ','?");
         }
+        debugMessageln("Fail at %d: maybe_sequence_pattern", _mark);
         _res = null;
         cache.putResult(_mark, MAYBE_SEQUENCE_PATTERN_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // maybe_star_pattern: star_pattern | pattern
     public ExprTy maybe_star_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MAYBE_STAR_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, MAYBE_STAR_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // star_pattern
@@ -4607,8 +5179,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d maybe_star_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "star_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_pattern");
                 _res = star_pattern_var;
                 cache.putResult(_mark, MAYBE_STAR_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4623,26 +5197,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d maybe_star_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "pattern");
                 _res = pattern_var;
                 cache.putResult(_mark, MAYBE_STAR_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s maybe_star_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "pattern");
         }
+        debugMessageln("Fail at %d: maybe_star_pattern", _mark);
         _res = null;
         cache.putResult(_mark, MAYBE_STAR_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // star_pattern: '*' (capture_pattern | wildcard_pattern)
     public ExprTy star_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, STAR_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '*' (capture_pattern | wildcard_pattern)
@@ -4659,25 +5239,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Starred ( value , Store , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Starred ( value , Store , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (capture_pattern | wildcard_pattern)");
                 cache.putResult(_mark, STAR_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'*' (capture_pattern | wildcard_pattern)");
         }
+        debugMessageln("Fail at %d: star_pattern", _mark);
         _res = null;
         cache.putResult(_mark, STAR_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // mapping_pattern: '{' items_pattern? '}'
     public ExprTy mapping_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MAPPING_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, MAPPING_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '{' items_pattern? '}'
@@ -4697,25 +5283,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , items ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , items ) ) , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , items ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , items ) ) , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' items_pattern? '}'");
                 cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s mapping_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'{' items_pattern? '}'");
         }
+        debugMessageln("Fail at %d: mapping_pattern", _mark);
         _res = null;
         cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // items_pattern: ','.key_value_pattern+ ','?
     public KeyValuePair[] items_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ITEMS_PATTERN_ID)) {
             _res = (KeyValuePair[])cache.getResult(_mark, ITEMS_PATTERN_ID);
+            level--;
             return (KeyValuePair[])_res;
         }
         { // ','.key_value_pattern+ ','?
@@ -4732,25 +5324,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: items
                 debugMessageln("[33;5;7m!!! TODO: Convert items to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.key_value_pattern+ ','?");
                 cache.putResult(_mark, ITEMS_PATTERN_ID, _res);
+                level--;
                 return (KeyValuePair[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s items_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.key_value_pattern+ ','?");
         }
+        debugMessageln("Fail at %d: items_pattern", _mark);
         _res = null;
         cache.putResult(_mark, ITEMS_PATTERN_ID, _res);
+        level--;
         return (KeyValuePair[])_res;
     }
 
     // key_value_pattern: (literal_pattern | value_pattern) ':' pattern | double_star_pattern
     public KeyValuePair key_value_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KEY_VALUE_PATTERN_ID)) {
             _res = (KeyValuePair)cache.getResult(_mark, KEY_VALUE_PATTERN_ID);
+            level--;
             return (KeyValuePair)_res;
         }
         { // (literal_pattern | value_pattern) ':' pattern
@@ -4768,7 +5366,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d key_value_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "(literal_pattern | value_pattern) ':' pattern");
                 _res = new KeyValuePair(key,value);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "(literal_pattern | value_pattern) ':' pattern");
                 cache.putResult(_mark, KEY_VALUE_PATTERN_ID, _res);
+                level--;
                 return (KeyValuePair)_res;
             }
             reset(_mark);
@@ -4783,26 +5383,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d key_value_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "double_star_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "double_star_pattern");
                 _res = double_star_pattern_var;
                 cache.putResult(_mark, KEY_VALUE_PATTERN_ID, _res);
+                level--;
                 return (KeyValuePair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s key_value_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "double_star_pattern");
         }
+        debugMessageln("Fail at %d: key_value_pattern", _mark);
         _res = null;
         cache.putResult(_mark, KEY_VALUE_PATTERN_ID, _res);
+        level--;
         return (KeyValuePair)_res;
     }
 
     // double_star_pattern: '**' capture_pattern
     public KeyValuePair double_star_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STAR_PATTERN_ID)) {
             _res = (KeyValuePair)cache.getResult(_mark, DOUBLE_STAR_PATTERN_ID);
+            level--;
             return (KeyValuePair)_res;
         }
         { // '**' capture_pattern
@@ -4819,15 +5425,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: KeyValuePair ( null , value )
                 debugMessageln("[33;5;7m!!! TODO: Convert KeyValuePair ( null , value ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' capture_pattern");
                 cache.putResult(_mark, DOUBLE_STAR_PATTERN_ID, _res);
+                level--;
                 return (KeyValuePair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s double_star_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'**' capture_pattern");
         }
+        debugMessageln("Fail at %d: double_star_pattern", _mark);
         _res = null;
         cache.putResult(_mark, DOUBLE_STAR_PATTERN_ID, _res);
+        level--;
         return (KeyValuePair)_res;
     }
 
@@ -4838,10 +5448,12 @@ public final class Parser extends AbstractParser {
     //     | name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'
     public ExprTy class_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLASS_PATTERN_ID)) {
             _res = (ExprTy)cache.getResult(_mark, CLASS_PATTERN_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // name_or_attr '(' ')'
@@ -4861,7 +5473,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Call ( func , NULL , NULL , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( func , NULL , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' ')'");
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4891,7 +5505,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Call ( func , args , NULL , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( func , args , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' positional_patterns ','? ')'");
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4921,7 +5537,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Call ( func , NULL , keywords , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( func , NULL , keywords , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' keyword_patterns ','? ')'");
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -4957,25 +5575,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Call ( func , args , keywords , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( func , args , keywords , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'");
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s class_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'");
         }
+        debugMessageln("Fail at %d: class_pattern", _mark);
         _res = null;
         cache.putResult(_mark, CLASS_PATTERN_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // positional_patterns: ','.pattern+
     public ExprTy[] positional_patterns_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, POSITIONAL_PATTERNS_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, POSITIONAL_PATTERNS_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // ','.pattern+
@@ -4989,25 +5613,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: args
                 debugMessageln("[33;5;7m!!! TODO: Convert args to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.pattern+");
                 cache.putResult(_mark, POSITIONAL_PATTERNS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s positional_patterns[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.pattern+");
         }
+        debugMessageln("Fail at %d: positional_patterns", _mark);
         _res = null;
         cache.putResult(_mark, POSITIONAL_PATTERNS_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // keyword_patterns: ','.keyword_pattern+
     public KeywordTy[] keyword_patterns_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KEYWORD_PATTERNS_ID)) {
             _res = (KeywordTy[])cache.getResult(_mark, KEYWORD_PATTERNS_ID);
+            level--;
             return (KeywordTy[])_res;
         }
         { // ','.keyword_pattern+
@@ -5021,25 +5651,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: keywords
                 debugMessageln("[33;5;7m!!! TODO: Convert keywords to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.keyword_pattern+");
                 cache.putResult(_mark, KEYWORD_PATTERNS_ID, _res);
+                level--;
                 return (KeywordTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s keyword_patterns[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.keyword_pattern+");
         }
+        debugMessageln("Fail at %d: keyword_patterns", _mark);
         _res = null;
         cache.putResult(_mark, KEYWORD_PATTERNS_ID, _res);
+        level--;
         return (KeywordTy[])_res;
     }
 
     // keyword_pattern: NAME '=' pattern
     public KeywordTy keyword_pattern_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KEYWORD_PATTERN_ID)) {
             _res = (KeywordTy)cache.getResult(_mark, KEYWORD_PATTERN_ID);
+            level--;
             return (KeywordTy)_res;
         }
         { // NAME '=' pattern
@@ -5059,27 +5695,34 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_keyword ( arg -> v . Name . id , value , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_keyword ( arg -> v . Name . id , value , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' pattern");
                 cache.putResult(_mark, KEYWORD_PATTERN_ID, _res);
+                level--;
                 return (KeywordTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s keyword_pattern[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME '=' pattern");
         }
+        debugMessageln("Fail at %d: keyword_pattern", _mark);
         _res = null;
         cache.putResult(_mark, KEYWORD_PATTERN_ID, _res);
+        level--;
         return (KeywordTy)_res;
     }
 
     // return_stmt: 'return' star_expressions?
     public StmtTy return_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, RETURN_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, RETURN_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'return' star_expressions?
             debugMessageln("%d> return_stmt[%d-%d]: %s", level, _mark, mark(), "'return' star_expressions?");
             Token _keyword;
@@ -5091,28 +5734,37 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d return_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'return' star_expressions?");
-                // TODO: node.action: _PyAST_Return ( a , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Return ( a , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createReturn(a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'return' star_expressions?");
                 cache.putResult(_mark, RETURN_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s return_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'return' star_expressions?");
         }
+        debugMessageln("Fail at %d: return_stmt", _mark);
         _res = null;
         cache.putResult(_mark, RETURN_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // raise_stmt: 'raise' expression ['from' expression] | 'raise'
     public StmtTy raise_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, RAISE_STMT_ID)) {
             _res = (StmtTy)cache.getResult(_mark, RAISE_STMT_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'raise' expression ['from' expression]
@@ -5132,7 +5784,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Raise ( a , b , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Raise ( a , b , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'raise' expression ['from' expression]");
                 cache.putResult(_mark, RAISE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -5150,25 +5804,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Raise ( NULL , NULL , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Raise ( NULL , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'raise'");
                 cache.putResult(_mark, RAISE_STMT_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s raise_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'raise'");
         }
+        debugMessageln("Fail at %d: raise_stmt", _mark);
         _res = null;
         cache.putResult(_mark, RAISE_STMT_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // function_def: decorators function_def_raw | function_def_raw
     public StmtTy function_def_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FUNCTION_DEF_ID)) {
             _res = (StmtTy)cache.getResult(_mark, FUNCTION_DEF_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // decorators function_def_raw
@@ -5185,7 +5845,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_function_def_decorators ( p , d , f )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_function_def_decorators ( p , d , f ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "decorators function_def_raw");
                 cache.putResult(_mark, FUNCTION_DEF_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -5200,16 +5862,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d function_def[%d-%d]: %s succeeded!", level, _mark, mark(), "function_def_raw");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "function_def_raw");
                 _res = function_def_raw_var;
                 cache.putResult(_mark, FUNCTION_DEF_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s function_def[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "function_def_raw");
         }
+        debugMessageln("Fail at %d: function_def", _mark);
         _res = null;
         cache.putResult(_mark, FUNCTION_DEF_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -5218,10 +5884,12 @@ public final class Parser extends AbstractParser {
     //     | ASYNC 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block
     public StmtTy function_def_raw_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FUNCTION_DEF_RAW_ID)) {
             _res = (StmtTy)cache.getResult(_mark, FUNCTION_DEF_RAW_ID);
+            level--;
             return (StmtTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -5259,10 +5927,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d function_def_raw[%d-%d]: %s succeeded!", level, _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createFunctionDef(((ExprTy.Name)n).id,params,b,null,(ExprTy)a,newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
                 cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -5307,15 +5978,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( stmt_ty , 5 , 'Async functions are' , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
                 cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s function_def_raw[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
         }
+        debugMessageln("Fail at %d: function_def_raw", _mark);
         _res = null;
         cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
@@ -5325,10 +6000,12 @@ public final class Parser extends AbstractParser {
     //     | TYPE_COMMENT
     public Token func_type_comment_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FUNC_TYPE_COMMENT_ID)) {
             _res = (Token)cache.getResult(_mark, FUNC_TYPE_COMMENT_ID);
+            level--;
             return (Token)_res;
         }
         { // NEWLINE TYPE_COMMENT &(NEWLINE INDENT)
@@ -5345,7 +6022,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d func_type_comment[%d-%d]: %s succeeded!", level, _mark, mark(), "NEWLINE TYPE_COMMENT &(NEWLINE INDENT)");
                 _res = t;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE TYPE_COMMENT &(NEWLINE INDENT)");
                 cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -5360,8 +6039,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d func_type_comment[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_double_type_comments");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_double_type_comments");
                 _res = invalid_double_type_comments_var;
                 cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -5376,26 +6057,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d func_type_comment[%d-%d]: %s succeeded!", level, _mark, mark(), "TYPE_COMMENT");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
                 cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s func_type_comment[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "TYPE_COMMENT");
         }
+        debugMessageln("Fail at %d: func_type_comment", _mark);
         _res = null;
         cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // params: invalid_parameters | parameters
     public ArgumentsTy params_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAMS_ID)) {
             _res = (ArgumentsTy)cache.getResult(_mark, PARAMS_ID);
+            level--;
             return (ArgumentsTy)_res;
         }
         if (callInvalidRules) { // invalid_parameters
@@ -5406,8 +6093,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d params[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_parameters");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_parameters");
                 _res = invalid_parameters_var;
                 cache.putResult(_mark, PARAMS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -5422,16 +6111,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d params[%d-%d]: %s succeeded!", level, _mark, mark(), "parameters");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "parameters");
                 _res = parameters_var;
                 cache.putResult(_mark, PARAMS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s params[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "parameters");
         }
+        debugMessageln("Fail at %d: params", _mark);
         _res = null;
         cache.putResult(_mark, PARAMS_ID, _res);
+        level--;
         return (ArgumentsTy)_res;
     }
 
@@ -5443,10 +6136,12 @@ public final class Parser extends AbstractParser {
     //     | star_etc
     public ArgumentsTy parameters_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAMETERS_ID)) {
             _res = (ArgumentsTy)cache.getResult(_mark, PARAMETERS_ID);
+            level--;
             return (ArgumentsTy)_res;
         }
         { // slash_no_default param_no_default* param_with_default* star_etc?
@@ -5466,10 +6161,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "slash_no_default param_no_default* param_with_default* star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , a , NULL , b , c , d )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , a , NULL , b , c , d ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(a,null,b,c,d);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_no_default param_no_default* param_with_default* star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -5490,10 +6185,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "slash_with_default param_with_default* star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , a , NULL , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , a , NULL , b , c ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,a,null,b,c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default param_with_default* star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -5514,10 +6209,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "param_no_default+ param_with_default* star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , a , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , NULL , a , b , c ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,null,a,b,c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default+ param_with_default* star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -5535,10 +6230,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "param_with_default+ star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , NULL , NULL , a , b ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,null,null,a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_with_default+ star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -5553,28 +6248,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "star_etc");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , NULL , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , NULL , NULL , NULL , a ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,null,null,null,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_etc");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_etc");
         }
+        debugMessageln("Fail at %d: parameters", _mark);
         _res = null;
         cache.putResult(_mark, PARAMETERS_ID, _res);
+        level--;
         return (ArgumentsTy)_res;
     }
 
     // slash_no_default: param_no_default+ '/' ',' | param_no_default+ '/' &')'
     public ArgTy[] slash_no_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SLASH_NO_DEFAULT_ID)) {
             _res = (ArgTy[])cache.getResult(_mark, SLASH_NO_DEFAULT_ID);
+            level--;
             return (ArgTy[])_res;
         }
         { // param_no_default+ '/' ','
@@ -5592,7 +6291,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d slash_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param_no_default+ '/' ','");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default+ '/' ','");
                 cache.putResult(_mark, SLASH_NO_DEFAULT_ID, _res);
+                level--;
                 return (ArgTy[])_res;
             }
             reset(_mark);
@@ -5613,15 +6314,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d slash_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param_no_default+ '/' &')'");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default+ '/' &')'");
                 cache.putResult(_mark, SLASH_NO_DEFAULT_ID, _res);
+                level--;
                 return (ArgTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s slash_no_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default+ '/' &')'");
         }
+        debugMessageln("Fail at %d: slash_no_default", _mark);
         _res = null;
         cache.putResult(_mark, SLASH_NO_DEFAULT_ID, _res);
+        level--;
         return (ArgTy[])_res;
     }
 
@@ -5630,10 +6335,12 @@ public final class Parser extends AbstractParser {
     //     | param_no_default* param_with_default+ '/' &')'
     public SlashWithDefault slash_with_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SLASH_WITH_DEFAULT_ID)) {
             _res = (SlashWithDefault)cache.getResult(_mark, SLASH_WITH_DEFAULT_ID);
+            level--;
             return (SlashWithDefault)_res;
         }
         { // param_no_default* param_with_default+ '/' ','
@@ -5653,10 +6360,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d slash_with_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param_no_default* param_with_default+ '/' ','");
-                // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
-                _res = null;
+                _res = new SlashWithDefault(a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default* param_with_default+ '/' ','");
                 cache.putResult(_mark, SLASH_WITH_DEFAULT_ID, _res);
+                level--;
                 return (SlashWithDefault)_res;
             }
             reset(_mark);
@@ -5679,18 +6386,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d slash_with_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param_no_default* param_with_default+ '/' &')'");
-                // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
-                _res = null;
+                _res = new SlashWithDefault(a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default* param_with_default+ '/' &')'");
                 cache.putResult(_mark, SLASH_WITH_DEFAULT_ID, _res);
+                level--;
                 return (SlashWithDefault)_res;
             }
             reset(_mark);
             debugMessageln("%d%s slash_with_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default* param_with_default+ '/' &')'");
         }
+        debugMessageln("Fail at %d: slash_with_default", _mark);
         _res = null;
         cache.putResult(_mark, SLASH_WITH_DEFAULT_ID, _res);
+        level--;
         return (SlashWithDefault)_res;
     }
 
@@ -5701,10 +6410,12 @@ public final class Parser extends AbstractParser {
     //     | invalid_star_etc
     public StarEtc star_etc_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_ETC_ID)) {
             _res = (StarEtc)cache.getResult(_mark, STAR_ETC_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // '*' param_no_default param_maybe_default* kwds?
@@ -5724,10 +6435,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_etc[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' param_no_default param_maybe_default* kwds?");
-                // TODO: node.action: _PyPegen_star_etc ( p , a , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , a , b , c ) to Java !!![0m");
-                _res = null;
+                _res = new StarEtc(a,b,c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' param_no_default param_maybe_default* kwds?");
                 cache.putResult(_mark, STAR_ETC_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
@@ -5751,10 +6462,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_etc[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' ',' param_maybe_default+ kwds?");
-                // TODO: node.action: _PyPegen_star_etc ( p , NULL , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , NULL , b , c ) to Java !!![0m");
-                _res = null;
+                _res = new StarEtc(null,b,c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' ',' param_maybe_default+ kwds?");
                 cache.putResult(_mark, STAR_ETC_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
@@ -5769,10 +6480,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_etc[%d-%d]: %s succeeded!", level, _mark, mark(), "kwds");
-                // TODO: node.action: _PyPegen_star_etc ( p , NULL , NULL , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , NULL , NULL , a ) to Java !!![0m");
-                _res = null;
+                _res = new StarEtc(null,null,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "kwds");
                 cache.putResult(_mark, STAR_ETC_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
@@ -5787,26 +6498,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_etc[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_star_etc");
                 _res = invalid_star_etc_var;
                 cache.putResult(_mark, STAR_ETC_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_etc[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_star_etc");
         }
+        debugMessageln("Fail at %d: star_etc", _mark);
         _res = null;
         cache.putResult(_mark, STAR_ETC_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // kwds: '**' param_no_default
     public ArgTy kwds_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWDS_ID)) {
             _res = (ArgTy)cache.getResult(_mark, KWDS_ID);
+            level--;
             return (ArgTy)_res;
         }
         { // '**' param_no_default
@@ -5821,25 +6538,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d kwds[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' param_no_default");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' param_no_default");
                 cache.putResult(_mark, KWDS_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwds[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'**' param_no_default");
         }
+        debugMessageln("Fail at %d: kwds", _mark);
         _res = null;
         cache.putResult(_mark, KWDS_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
     // param_no_default: param ',' TYPE_COMMENT? | param TYPE_COMMENT? &')'
     public ArgTy param_no_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_NO_DEFAULT_ID)) {
             _res = (ArgTy)cache.getResult(_mark, PARAM_NO_DEFAULT_ID);
+            level--;
             return (ArgTy)_res;
         }
         { // param ',' TYPE_COMMENT?
@@ -5857,7 +6580,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d param_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param ',' TYPE_COMMENT?");
                 _res = factory.createArgument(a.arg,a.annotation,newTypeComment(tc),a.getStartOffset(),a.getEndOffset());
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param ',' TYPE_COMMENT?");
                 cache.putResult(_mark, PARAM_NO_DEFAULT_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
@@ -5878,15 +6603,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d param_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param TYPE_COMMENT? &')'");
                 _res = factory.createArgument(a.arg,a.annotation,newTypeComment(tc),a.getStartOffset(),a.getEndOffset());
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param TYPE_COMMENT? &')'");
                 cache.putResult(_mark, PARAM_NO_DEFAULT_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param_no_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param TYPE_COMMENT? &')'");
         }
+        debugMessageln("Fail at %d: param_no_default", _mark);
         _res = null;
         cache.putResult(_mark, PARAM_NO_DEFAULT_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
@@ -5895,10 +6624,12 @@ public final class Parser extends AbstractParser {
     //     | param default_param TYPE_COMMENT? &')'
     public NameDefaultPair param_with_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_WITH_DEFAULT_ID)) {
             _res = (NameDefaultPair)cache.getResult(_mark, PARAM_WITH_DEFAULT_ID);
+            level--;
             return (NameDefaultPair)_res;
         }
         { // param default_param ',' TYPE_COMMENT?
@@ -5919,7 +6650,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d param_with_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param default_param ',' TYPE_COMMENT?");
                 _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,newTypeComment(tc),a.getStartOffset(),a.getEndOffset()),c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param ',' TYPE_COMMENT?");
                 cache.putResult(_mark, PARAM_WITH_DEFAULT_ID, _res);
+                level--;
                 return (NameDefaultPair)_res;
             }
             reset(_mark);
@@ -5943,15 +6676,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d param_with_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param default_param TYPE_COMMENT? &')'");
                 _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,newTypeComment(tc),a.getStartOffset(),a.getEndOffset()),c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param TYPE_COMMENT? &')'");
                 cache.putResult(_mark, PARAM_WITH_DEFAULT_ID, _res);
+                level--;
                 return (NameDefaultPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param_with_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param default_param TYPE_COMMENT? &')'");
         }
+        debugMessageln("Fail at %d: param_with_default", _mark);
         _res = null;
         cache.putResult(_mark, PARAM_WITH_DEFAULT_ID, _res);
+        level--;
         return (NameDefaultPair)_res;
     }
 
@@ -5960,10 +6697,12 @@ public final class Parser extends AbstractParser {
     //     | param default_param? TYPE_COMMENT? &')'
     public NameDefaultPair param_maybe_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_MAYBE_DEFAULT_ID)) {
             _res = (NameDefaultPair)cache.getResult(_mark, PARAM_MAYBE_DEFAULT_ID);
+            level--;
             return (NameDefaultPair)_res;
         }
         { // param default_param? ',' TYPE_COMMENT?
@@ -5984,7 +6723,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d param_maybe_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param default_param? ',' TYPE_COMMENT?");
                 _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,newTypeComment(tc),a.getStartOffset(),a.getEndOffset()),c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param? ',' TYPE_COMMENT?");
                 cache.putResult(_mark, PARAM_MAYBE_DEFAULT_ID, _res);
+                level--;
                 return (NameDefaultPair)_res;
             }
             reset(_mark);
@@ -6008,25 +6749,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d param_maybe_default[%d-%d]: %s succeeded!", level, _mark, mark(), "param default_param? TYPE_COMMENT? &')'");
                 _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,newTypeComment(tc),a.getStartOffset(),a.getEndOffset()),c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param? TYPE_COMMENT? &')'");
                 cache.putResult(_mark, PARAM_MAYBE_DEFAULT_ID, _res);
+                level--;
                 return (NameDefaultPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param_maybe_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param default_param? TYPE_COMMENT? &')'");
         }
+        debugMessageln("Fail at %d: param_maybe_default", _mark);
         _res = null;
         cache.putResult(_mark, PARAM_MAYBE_DEFAULT_ID, _res);
+        level--;
         return (NameDefaultPair)_res;
     }
 
     // param: NAME annotation?
     public ArgTy param_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAM_ID)) {
             _res = (ArgTy)cache.getResult(_mark, PARAM_ID);
+            level--;
             return (ArgTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -6042,25 +6789,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d param[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME annotation?");
                 _res = factory.createArgument(((ExprTy.Name)a).id,b,null,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME annotation?");
                 cache.putResult(_mark, PARAM_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s param[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME annotation?");
         }
+        debugMessageln("Fail at %d: param", _mark);
         _res = null;
         cache.putResult(_mark, PARAM_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
     // annotation: ':' expression
     public ExprTy annotation_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ANNOTATION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, ANNOTATION_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // ':' expression
@@ -6075,25 +6828,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d annotation[%d-%d]: %s succeeded!", level, _mark, mark(), "':' expression");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "':' expression");
                 cache.putResult(_mark, ANNOTATION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s annotation[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "':' expression");
         }
+        debugMessageln("Fail at %d: annotation", _mark);
         _res = null;
         cache.putResult(_mark, ANNOTATION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // default_param: '=' expression
     public ExprTy default_param_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEFAULT_PARAM_ID)) {
             _res = (ExprTy)cache.getResult(_mark, DEFAULT_PARAM_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '=' expression
@@ -6108,25 +6867,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d default_param[%d-%d]: %s succeeded!", level, _mark, mark(), "'=' expression");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'=' expression");
                 cache.putResult(_mark, DEFAULT_PARAM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s default_param[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'=' expression");
         }
+        debugMessageln("Fail at %d: default_param", _mark);
         _res = null;
         cache.putResult(_mark, DEFAULT_PARAM_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // decorators: (('@' named_expression NEWLINE))+
     public ExprTy[] decorators_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DECORATORS_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, DECORATORS_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // (('@' named_expression NEWLINE))+
@@ -6138,25 +6903,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d decorators[%d-%d]: %s succeeded!", level, _mark, mark(), "(('@' named_expression NEWLINE))+");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "(('@' named_expression NEWLINE))+");
                 cache.putResult(_mark, DECORATORS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s decorators[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "(('@' named_expression NEWLINE))+");
         }
+        debugMessageln("Fail at %d: decorators", _mark);
         _res = null;
         cache.putResult(_mark, DECORATORS_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // class_def: decorators class_def_raw | class_def_raw
     public StmtTy class_def_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLASS_DEF_ID)) {
             _res = (StmtTy)cache.getResult(_mark, CLASS_DEF_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // decorators class_def_raw
@@ -6173,7 +6944,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_class_def_decorators ( p , a , b )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_class_def_decorators ( p , a , b ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "decorators class_def_raw");
                 cache.putResult(_mark, CLASS_DEF_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
@@ -6188,26 +6961,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d class_def[%d-%d]: %s succeeded!", level, _mark, mark(), "class_def_raw");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "class_def_raw");
                 _res = class_def_raw_var;
                 cache.putResult(_mark, CLASS_DEF_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s class_def[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "class_def_raw");
         }
+        debugMessageln("Fail at %d: class_def", _mark);
         _res = null;
         cache.putResult(_mark, CLASS_DEF_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // class_def_raw: 'class' NAME ['(' arguments? ')'] &&':' block
     public StmtTy class_def_raw_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLASS_DEF_RAW_ID)) {
             _res = (StmtTy)cache.getResult(_mark, CLASS_DEF_RAW_ID);
+            level--;
             return (StmtTy)_res;
         }
         { // 'class' NAME ['(' arguments? ')'] &&':' block
@@ -6233,25 +7012,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_ClassDef ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , c , NULL , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ClassDef ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , c , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'class' NAME ['(' arguments? ')'] &&':' block");
                 cache.putResult(_mark, CLASS_DEF_RAW_ID, _res);
+                level--;
                 return (StmtTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s class_def_raw[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'class' NAME ['(' arguments? ')'] &&':' block");
         }
+        debugMessageln("Fail at %d: class_def_raw", _mark);
         _res = null;
         cache.putResult(_mark, CLASS_DEF_RAW_ID, _res);
+        level--;
         return (StmtTy)_res;
     }
 
     // block: NEWLINE INDENT statements DEDENT | simple_stmts | invalid_block
     public StmtTy[] block_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, BLOCK_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, BLOCK_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // NEWLINE INDENT statements DEDENT
@@ -6272,7 +7057,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d block[%d-%d]: %s succeeded!", level, _mark, mark(), "NEWLINE INDENT statements DEDENT");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE INDENT statements DEDENT");
                 cache.putResult(_mark, BLOCK_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
@@ -6287,8 +7074,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d block[%d-%d]: %s succeeded!", level, _mark, mark(), "simple_stmts");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "simple_stmts");
                 _res = simple_stmts_var;
                 cache.putResult(_mark, BLOCK_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
@@ -6303,16 +7092,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d block[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_block");
                 _res = invalid_block_var;
                 cache.putResult(_mark, BLOCK_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s block[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_block");
         }
+        debugMessageln("Fail at %d: block", _mark);
         _res = null;
         cache.putResult(_mark, BLOCK_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
@@ -6322,12 +7115,15 @@ public final class Parser extends AbstractParser {
     //     | star_expression
     public ExprTy star_expressions_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_EXPRESSIONS_ID)) {
             _res = (ExprTy)cache.getResult(_mark, STAR_EXPRESSIONS_ID);
+            level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // star_expression ((',' star_expression))+ ','?
             debugMessageln("%d> star_expressions[%d-%d]: %s", level, _mark, mark(), "star_expression ((',' star_expression))+ ','?");
             Token _opt_var;
@@ -6342,10 +7138,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expression ((',' star_expression))+ ','?");
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createTuple(this.insertInFront(a,b),ExprContext.Load,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expression ((',' star_expression))+ ','?");
                 cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6363,10 +7164,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expression ','");
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createTuple(this.singletonSequence(a),ExprContext.Load,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expression ','");
                 cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6381,26 +7187,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expression");
                 _res = star_expression_var;
                 cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_expressions[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_expression");
         }
+        debugMessageln("Fail at %d: star_expressions", _mark);
         _res = null;
         cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // star_expression: '*' bitwise_or | expression
     public ExprTy star_expression_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_EXPRESSION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, STAR_EXPRESSION_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '*' bitwise_or
@@ -6417,7 +7229,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Starred ( a , Load , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' bitwise_or");
                 cache.putResult(_mark, STAR_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6432,26 +7246,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_expression[%d-%d]: %s succeeded!", level, _mark, mark(), "expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
                 cache.putResult(_mark, STAR_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression");
         }
+        debugMessageln("Fail at %d: star_expression", _mark);
         _res = null;
         cache.putResult(_mark, STAR_EXPRESSION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // star_named_expressions: ','.star_named_expression+ ','?
     public ExprTy[] star_named_expressions_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_NAMED_EXPRESSIONS_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, STAR_NAMED_EXPRESSIONS_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // ','.star_named_expression+ ','?
@@ -6466,25 +7286,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d star_named_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.star_named_expression+ ','?");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.star_named_expression+ ','?");
                 cache.putResult(_mark, STAR_NAMED_EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_named_expressions[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.star_named_expression+ ','?");
         }
+        debugMessageln("Fail at %d: star_named_expressions", _mark);
         _res = null;
         cache.putResult(_mark, STAR_NAMED_EXPRESSIONS_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // star_named_expression: '*' bitwise_or | named_expression
     public ExprTy star_named_expression_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_NAMED_EXPRESSION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, STAR_NAMED_EXPRESSION_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '*' bitwise_or
@@ -6501,7 +7327,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Starred ( a , Load , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' bitwise_or");
                 cache.putResult(_mark, STAR_NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6516,26 +7344,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_named_expression[%d-%d]: %s succeeded!", level, _mark, mark(), "named_expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "named_expression");
                 _res = named_expression_var;
                 cache.putResult(_mark, STAR_NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_named_expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "named_expression");
         }
+        debugMessageln("Fail at %d: star_named_expression", _mark);
         _res = null;
         cache.putResult(_mark, STAR_NAMED_EXPRESSION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // named_expression: NAME ':=' ~ expression | invalid_named_expression | expression !':='
     public ExprTy named_expression_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, NAMED_EXPRESSION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, NAMED_EXPRESSION_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // NAME ':=' ~ expression
@@ -6558,13 +7392,16 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':=' ~ expression");
                 cache.putResult(_mark, NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s named_expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME ':=' ~ expression");
             if (_cut_var != 0) {
+                level--;
                 return null;
             }
         }
@@ -6576,8 +7413,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d named_expression[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_named_expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_named_expression");
                 _res = invalid_named_expression_var;
                 cache.putResult(_mark, NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6594,26 +7433,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d named_expression[%d-%d]: %s succeeded!", level, _mark, mark(), "expression !':='");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression !':='");
                 _res = expression_var;
                 cache.putResult(_mark, NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s named_expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression !':='");
         }
+        debugMessageln("Fail at %d: named_expression", _mark);
         _res = null;
         cache.putResult(_mark, NAMED_EXPRESSION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // direct_named_expression: NAME ':=' ~ expression | expression !':='
     public ExprTy direct_named_expression_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DIRECT_NAMED_EXPRESSION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, DIRECT_NAMED_EXPRESSION_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // NAME ':=' ~ expression
@@ -6636,13 +7481,16 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':=' ~ expression");
                 cache.putResult(_mark, DIRECT_NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s direct_named_expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME ':=' ~ expression");
             if (_cut_var != 0) {
+                level--;
                 return null;
             }
         }
@@ -6656,26 +7504,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d direct_named_expression[%d-%d]: %s succeeded!", level, _mark, mark(), "expression !':='");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression !':='");
                 _res = expression_var;
                 cache.putResult(_mark, DIRECT_NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s direct_named_expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression !':='");
         }
+        debugMessageln("Fail at %d: direct_named_expression", _mark);
         _res = null;
         cache.putResult(_mark, DIRECT_NAMED_EXPRESSION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // annotated_rhs: yield_expr | star_expressions
     public ExprTy annotated_rhs_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ANNOTATED_RHS_ID)) {
             _res = (ExprTy)cache.getResult(_mark, ANNOTATED_RHS_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // yield_expr
@@ -6686,8 +7540,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d annotated_rhs[%d-%d]: %s succeeded!", level, _mark, mark(), "yield_expr");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
                 cache.putResult(_mark, ANNOTATED_RHS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6702,26 +7558,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d annotated_rhs[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
                 cache.putResult(_mark, ANNOTATED_RHS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s annotated_rhs[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_expressions");
         }
+        debugMessageln("Fail at %d: annotated_rhs", _mark);
         _res = null;
         cache.putResult(_mark, ANNOTATED_RHS_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // expressions: expression ((',' expression))+ ','? | expression ',' | expression
     public ExprTy expressions_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EXPRESSIONS_ID)) {
             _res = (ExprTy)cache.getResult(_mark, EXPRESSIONS_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // expression ((',' expression))+ ','?
@@ -6741,7 +7603,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ((',' expression))+ ','?");
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6762,7 +7626,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ','");
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6777,16 +7643,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s expressions[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression");
         }
+        debugMessageln("Fail at %d: expressions", _mark);
         _res = null;
         cache.putResult(_mark, EXPRESSIONS_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -6797,12 +7667,15 @@ public final class Parser extends AbstractParser {
     //     | lambdef
     public ExprTy expression_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EXPRESSION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, EXPRESSION_ID);
+            level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_expression
             debugMessageln("%d> expression[%d-%d]: %s", level, _mark, mark(), "invalid_expression");
             ExprTy invalid_expression_var;
@@ -6811,8 +7684,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_expression");
                 _res = invalid_expression_var;
                 cache.putResult(_mark, EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6839,10 +7714,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, _mark, mark(), "disjunction 'if' disjunction 'else' expression");
-                // TODO: node.action: _PyAST_IfExp ( b , a , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_IfExp ( b , a , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createIfExpression(b,a,c,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "disjunction 'if' disjunction 'else' expression");
                 cache.putResult(_mark, EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6857,8 +7737,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, _mark, mark(), "disjunction");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "disjunction");
                 _res = disjunction_var;
                 cache.putResult(_mark, EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -6873,28 +7755,35 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, _mark, mark(), "lambdef");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambdef");
                 _res = lambdef_var;
                 cache.putResult(_mark, EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambdef");
         }
+        debugMessageln("Fail at %d: expression", _mark);
         _res = null;
         cache.putResult(_mark, EXPRESSION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // lambdef: 'lambda' lambda_params? ':' expression
     public ExprTy lambdef_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDEF_ID)) {
             _res = (ExprTy)cache.getResult(_mark, LAMBDEF_ID);
+            level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'lambda' lambda_params? ':' expression
             debugMessageln("%d> lambdef[%d-%d]: %s", level, _mark, mark(), "'lambda' lambda_params? ':' expression");
             Token _keyword;
@@ -6912,28 +7801,37 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambdef[%d-%d]: %s succeeded!", level, _mark, mark(), "'lambda' lambda_params? ':' expression");
-                // TODO: node.action: _PyAST_Lambda ( ( a ) ? a : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Lambda ( ( a ) ? a : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createLambda(a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'lambda' lambda_params? ':' expression");
                 cache.putResult(_mark, LAMBDEF_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambdef[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'lambda' lambda_params? ':' expression");
         }
+        debugMessageln("Fail at %d: lambdef", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDEF_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // lambda_params: invalid_lambda_parameters | lambda_parameters
     public ArgumentsTy lambda_params_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAMS_ID)) {
             _res = (ArgumentsTy)cache.getResult(_mark, LAMBDA_PARAMS_ID);
+            level--;
             return (ArgumentsTy)_res;
         }
         if (callInvalidRules) { // invalid_lambda_parameters
@@ -6944,8 +7842,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_params[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_lambda_parameters");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_lambda_parameters");
                 _res = invalid_lambda_parameters_var;
                 cache.putResult(_mark, LAMBDA_PARAMS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -6960,16 +7860,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_params[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_parameters");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_parameters");
                 _res = lambda_parameters_var;
                 cache.putResult(_mark, LAMBDA_PARAMS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_params[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_parameters");
         }
+        debugMessageln("Fail at %d: lambda_params", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_PARAMS_ID, _res);
+        level--;
         return (ArgumentsTy)_res;
     }
 
@@ -6981,10 +7885,12 @@ public final class Parser extends AbstractParser {
     //     | lambda_star_etc
     public ArgumentsTy lambda_parameters_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAMETERS_ID)) {
             _res = (ArgumentsTy)cache.getResult(_mark, LAMBDA_PARAMETERS_ID);
+            level--;
             return (ArgumentsTy)_res;
         }
         { // lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?
@@ -7004,10 +7910,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , a , NULL , b , c , d )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , a , NULL , b , c , d ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(a,null,b,c,d);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -7028,10 +7934,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_slash_with_default lambda_param_with_default* lambda_star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , a , NULL , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , a , NULL , b , c ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,a,null,b,c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_with_default lambda_param_with_default* lambda_star_etc?");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -7052,10 +7958,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , a , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , NULL , a , b , c ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,null,a,b,c);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -7073,10 +7979,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_param_with_default+ lambda_star_etc?");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , NULL , NULL , a , b ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,null,null,a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_with_default+ lambda_star_etc?");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
@@ -7091,18 +7997,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_star_etc");
-                // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , NULL , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_make_arguments ( p , NULL , NULL , NULL , NULL , a ) to Java !!![0m");
-                _res = null;
+                _res = factory.createArguments(null,null,null,null,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_star_etc");
                 cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_parameters[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_star_etc");
         }
+        debugMessageln("Fail at %d: lambda_parameters", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
+        level--;
         return (ArgumentsTy)_res;
     }
 
@@ -7111,10 +8019,12 @@ public final class Parser extends AbstractParser {
     //     | lambda_param_no_default+ '/' &':'
     public ArgTy[] lambda_slash_no_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_SLASH_NO_DEFAULT_ID)) {
             _res = (ArgTy[])cache.getResult(_mark, LAMBDA_SLASH_NO_DEFAULT_ID);
+            level--;
             return (ArgTy[])_res;
         }
         { // lambda_param_no_default+ '/' ','
@@ -7132,7 +8042,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d lambda_slash_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_param_no_default+ '/' ','");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default+ '/' ','");
                 cache.putResult(_mark, LAMBDA_SLASH_NO_DEFAULT_ID, _res);
+                level--;
                 return (ArgTy[])_res;
             }
             reset(_mark);
@@ -7153,15 +8065,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d lambda_slash_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_param_no_default+ '/' &':'");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default+ '/' &':'");
                 cache.putResult(_mark, LAMBDA_SLASH_NO_DEFAULT_ID, _res);
+                level--;
                 return (ArgTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_slash_no_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_no_default+ '/' &':'");
         }
+        debugMessageln("Fail at %d: lambda_slash_no_default", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_SLASH_NO_DEFAULT_ID, _res);
+        level--;
         return (ArgTy[])_res;
     }
 
@@ -7170,10 +8086,12 @@ public final class Parser extends AbstractParser {
     //     | lambda_param_no_default* lambda_param_with_default+ '/' &':'
     public SlashWithDefault lambda_slash_with_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID)) {
             _res = (SlashWithDefault)cache.getResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID);
+            level--;
             return (SlashWithDefault)_res;
         }
         { // lambda_param_no_default* lambda_param_with_default+ '/' ','
@@ -7196,7 +8114,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default* lambda_param_with_default+ '/' ','");
                 cache.putResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
+                level--;
                 return (SlashWithDefault)_res;
             }
             reset(_mark);
@@ -7222,15 +8142,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default* lambda_param_with_default+ '/' &':'");
                 cache.putResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
+                level--;
                 return (SlashWithDefault)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_slash_with_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_no_default* lambda_param_with_default+ '/' &':'");
         }
+        debugMessageln("Fail at %d: lambda_slash_with_default", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
+        level--;
         return (SlashWithDefault)_res;
     }
 
@@ -7241,10 +8165,12 @@ public final class Parser extends AbstractParser {
     //     | invalid_lambda_star_etc
     public StarEtc lambda_star_etc_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_STAR_ETC_ID)) {
             _res = (StarEtc)cache.getResult(_mark, LAMBDA_STAR_ETC_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
@@ -7267,7 +8193,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_star_etc ( p , a , b , c )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , a , b , c ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?");
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
@@ -7294,7 +8222,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_star_etc ( p , NULL , b , c )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , NULL , b , c ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' ',' lambda_param_maybe_default+ lambda_kwds?");
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
@@ -7312,7 +8242,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_star_etc ( p , NULL , NULL , a )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , NULL , NULL , a ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_kwds");
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
@@ -7327,26 +8259,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_star_etc[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_lambda_star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_lambda_star_etc");
                 _res = invalid_lambda_star_etc_var;
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_star_etc[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_lambda_star_etc");
         }
+        debugMessageln("Fail at %d: lambda_star_etc", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // lambda_kwds: '**' lambda_param_no_default
     public ArgTy lambda_kwds_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_KWDS_ID)) {
             _res = (ArgTy)cache.getResult(_mark, LAMBDA_KWDS_ID);
+            level--;
             return (ArgTy)_res;
         }
         { // '**' lambda_param_no_default
@@ -7361,25 +8299,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d lambda_kwds[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' lambda_param_no_default");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' lambda_param_no_default");
                 cache.putResult(_mark, LAMBDA_KWDS_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_kwds[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'**' lambda_param_no_default");
         }
+        debugMessageln("Fail at %d: lambda_kwds", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_KWDS_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
     // lambda_param_no_default: lambda_param ',' | lambda_param &':'
     public ArgTy lambda_param_no_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAM_NO_DEFAULT_ID)) {
             _res = (ArgTy)cache.getResult(_mark, LAMBDA_PARAM_NO_DEFAULT_ID);
+            level--;
             return (ArgTy)_res;
         }
         { // lambda_param ','
@@ -7394,7 +8338,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d lambda_param_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_param ','");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param ','");
                 cache.putResult(_mark, LAMBDA_PARAM_NO_DEFAULT_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
@@ -7412,15 +8358,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d lambda_param_no_default[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_param &':'");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param &':'");
                 cache.putResult(_mark, LAMBDA_PARAM_NO_DEFAULT_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param_no_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param &':'");
         }
+        debugMessageln("Fail at %d: lambda_param_no_default", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_PARAM_NO_DEFAULT_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
@@ -7429,10 +8379,12 @@ public final class Parser extends AbstractParser {
     //     | lambda_param default_param &':'
     public NameDefaultPair lambda_param_with_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID)) {
             _res = (NameDefaultPair)cache.getResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID);
+            level--;
             return (NameDefaultPair)_res;
         }
         { // lambda_param default_param ','
@@ -7452,7 +8404,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param default_param ','");
                 cache.putResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
+                level--;
                 return (NameDefaultPair)_res;
             }
             reset(_mark);
@@ -7475,15 +8429,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param default_param &':'");
                 cache.putResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
+                level--;
                 return (NameDefaultPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param_with_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param default_param &':'");
         }
+        debugMessageln("Fail at %d: lambda_param_with_default", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
+        level--;
         return (NameDefaultPair)_res;
     }
 
@@ -7492,10 +8450,12 @@ public final class Parser extends AbstractParser {
     //     | lambda_param default_param? &':'
     public NameDefaultPair lambda_param_maybe_default_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID)) {
             _res = (NameDefaultPair)cache.getResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID);
+            level--;
             return (NameDefaultPair)_res;
         }
         { // lambda_param default_param? ','
@@ -7515,7 +8475,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param default_param? ','");
                 cache.putResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
+                level--;
                 return (NameDefaultPair)_res;
             }
             reset(_mark);
@@ -7538,27 +8500,34 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param default_param? &':'");
                 cache.putResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
+                level--;
                 return (NameDefaultPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param_maybe_default[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param default_param? &':'");
         }
+        debugMessageln("Fail at %d: lambda_param_maybe_default", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
+        level--;
         return (NameDefaultPair)_res;
     }
 
     // lambda_param: NAME
     public ArgTy lambda_param_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LAMBDA_PARAM_ID)) {
             _res = (ArgTy)cache.getResult(_mark, LAMBDA_PARAM_ID);
+            level--;
             return (ArgTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> lambda_param[%d-%d]: %s", level, _mark, mark(), "NAME");
             ExprTy a;
@@ -7567,28 +8536,37 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_param[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
-                // TODO: node.action: _PyAST_arg ( a -> v . Name . id , NULL , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_arg ( a -> v . Name . id , NULL , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createArgument(((ExprTy.Name)a).id,null,null,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, LAMBDA_PARAM_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME");
         }
+        debugMessageln("Fail at %d: lambda_param", _mark);
         _res = null;
         cache.putResult(_mark, LAMBDA_PARAM_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
     // disjunction: conjunction (('or' conjunction))+ | conjunction
     public ExprTy disjunction_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DISJUNCTION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, DISJUNCTION_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // conjunction (('or' conjunction))+
@@ -7605,7 +8583,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "conjunction (('or' conjunction))+");
                 cache.putResult(_mark, DISJUNCTION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -7620,26 +8600,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d disjunction[%d-%d]: %s succeeded!", level, _mark, mark(), "conjunction");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "conjunction");
                 _res = conjunction_var;
                 cache.putResult(_mark, DISJUNCTION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s disjunction[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "conjunction");
         }
+        debugMessageln("Fail at %d: disjunction", _mark);
         _res = null;
         cache.putResult(_mark, DISJUNCTION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // conjunction: inversion (('and' inversion))+ | inversion
     public ExprTy conjunction_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CONJUNCTION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, CONJUNCTION_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // inversion (('and' inversion))+
@@ -7656,7 +8642,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "inversion (('and' inversion))+");
                 cache.putResult(_mark, CONJUNCTION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -7671,28 +8659,35 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d conjunction[%d-%d]: %s succeeded!", level, _mark, mark(), "inversion");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "inversion");
                 _res = inversion_var;
                 cache.putResult(_mark, CONJUNCTION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s conjunction[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "inversion");
         }
+        debugMessageln("Fail at %d: conjunction", _mark);
         _res = null;
         cache.putResult(_mark, CONJUNCTION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // inversion: 'not' inversion | comparison
     public ExprTy inversion_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVERSION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVERSION_ID);
+            level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'not' inversion
             debugMessageln("%d> inversion[%d-%d]: %s", level, _mark, mark(), "'not' inversion");
             Token _keyword;
@@ -7704,10 +8699,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d inversion[%d-%d]: %s succeeded!", level, _mark, mark(), "'not' inversion");
-                // TODO: node.action: _PyAST_UnaryOp ( Not , a , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_UnaryOp ( Not , a , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.NOT,a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'not' inversion");
                 cache.putResult(_mark, INVERSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -7722,26 +8722,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d inversion[%d-%d]: %s succeeded!", level, _mark, mark(), "comparison");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "comparison");
                 _res = comparison_var;
                 cache.putResult(_mark, INVERSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s inversion[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "comparison");
         }
+        debugMessageln("Fail at %d: inversion", _mark);
         _res = null;
         cache.putResult(_mark, INVERSION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // comparison: bitwise_or compare_op_bitwise_or_pair+ | bitwise_or
     public ExprTy comparison_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, COMPARISON_ID)) {
             _res = (ExprTy)cache.getResult(_mark, COMPARISON_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -7758,10 +8764,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d comparison[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_or compare_op_bitwise_or_pair+");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createComparison(a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_or compare_op_bitwise_or_pair+");
                 cache.putResult(_mark, COMPARISON_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -7776,16 +8785,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d comparison[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "bitwise_or");
                 _res = bitwise_or_var;
                 cache.putResult(_mark, COMPARISON_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s comparison[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "bitwise_or");
         }
+        debugMessageln("Fail at %d: comparison", _mark);
         _res = null;
         cache.putResult(_mark, COMPARISON_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -7802,10 +8815,12 @@ public final class Parser extends AbstractParser {
     //     | is_bitwise_or
     public CmpopExprPair compare_op_bitwise_or_pair_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // eq_bitwise_or
@@ -7816,8 +8831,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "eq_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "eq_bitwise_or");
                 _res = eq_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
@@ -7832,8 +8849,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "noteq_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "noteq_bitwise_or");
                 _res = noteq_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
@@ -7848,8 +8867,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "lte_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lte_bitwise_or");
                 _res = lte_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
@@ -7864,8 +8885,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "lt_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lt_bitwise_or");
                 _res = lt_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
@@ -7880,8 +8903,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "gte_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "gte_bitwise_or");
                 _res = gte_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
@@ -7896,8 +8921,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "gt_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "gt_bitwise_or");
                 _res = gt_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
@@ -7912,8 +8939,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "notin_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "notin_bitwise_or");
                 _res = notin_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
@@ -7928,8 +8957,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "in_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "in_bitwise_or");
                 _res = in_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
@@ -7944,8 +8975,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "isnot_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "isnot_bitwise_or");
                 _res = isnot_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
@@ -7960,26 +8993,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, _mark, mark(), "is_bitwise_or");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "is_bitwise_or");
                 _res = is_bitwise_or_var;
                 cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "is_bitwise_or");
         }
+        debugMessageln("Fail at %d: compare_op_bitwise_or_pair", _mark);
         _res = null;
         cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // eq_bitwise_or: '==' bitwise_or
     public CmpopExprPair eq_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EQ_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, EQ_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // '==' bitwise_or
@@ -7994,25 +9033,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d eq_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'==' bitwise_or");
                 _res = new CmpopExprPair(ExprTy.Compare.Operator.EQ,a);;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'==' bitwise_or");
                 cache.putResult(_mark, EQ_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s eq_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'==' bitwise_or");
         }
+        debugMessageln("Fail at %d: eq_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, EQ_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // noteq_bitwise_or: ('!=') bitwise_or
     public CmpopExprPair noteq_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, NOTEQ_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, NOTEQ_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // ('!=') bitwise_or
@@ -8029,25 +9074,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , NotEq , a )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , NotEq , a ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('!=') bitwise_or");
                 cache.putResult(_mark, NOTEQ_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s noteq_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "('!=') bitwise_or");
         }
+        debugMessageln("Fail at %d: noteq_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, NOTEQ_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // lte_bitwise_or: '<=' bitwise_or
     public CmpopExprPair lte_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LTE_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, LTE_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // '<=' bitwise_or
@@ -8061,28 +9112,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lte_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'<=' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , LtE , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , LtE , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.LTE,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'<=' bitwise_or");
                 cache.putResult(_mark, LTE_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lte_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'<=' bitwise_or");
         }
+        debugMessageln("Fail at %d: lte_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, LTE_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // lt_bitwise_or: '<' bitwise_or
     public CmpopExprPair lt_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LT_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, LT_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // '<' bitwise_or
@@ -8096,28 +9151,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lt_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'<' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , Lt , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , Lt , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.LT,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'<' bitwise_or");
                 cache.putResult(_mark, LT_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s lt_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'<' bitwise_or");
         }
+        debugMessageln("Fail at %d: lt_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, LT_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // gte_bitwise_or: '>=' bitwise_or
     public CmpopExprPair gte_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GTE_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, GTE_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // '>=' bitwise_or
@@ -8131,28 +9190,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d gte_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'>=' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , GtE , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , GtE , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.GTE,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'>=' bitwise_or");
                 cache.putResult(_mark, GTE_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s gte_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'>=' bitwise_or");
         }
+        debugMessageln("Fail at %d: gte_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, GTE_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // gt_bitwise_or: '>' bitwise_or
     public CmpopExprPair gt_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GT_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, GT_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // '>' bitwise_or
@@ -8166,28 +9229,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d gt_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'>' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , Gt , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , Gt , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.GT,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'>' bitwise_or");
                 cache.putResult(_mark, GT_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s gt_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'>' bitwise_or");
         }
+        debugMessageln("Fail at %d: gt_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, GT_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // notin_bitwise_or: 'not' 'in' bitwise_or
     public CmpopExprPair notin_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, NOTIN_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, NOTIN_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // 'not' 'in' bitwise_or
@@ -8204,28 +9271,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d notin_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'not' 'in' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , NotIn , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , NotIn , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.NOTIN,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'not' 'in' bitwise_or");
                 cache.putResult(_mark, NOTIN_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s notin_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'not' 'in' bitwise_or");
         }
+        debugMessageln("Fail at %d: notin_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, NOTIN_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // in_bitwise_or: 'in' bitwise_or
     public CmpopExprPair in_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IN_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, IN_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // 'in' bitwise_or
@@ -8239,28 +9310,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d in_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'in' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , In , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , In , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.IN,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'in' bitwise_or");
                 cache.putResult(_mark, IN_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s in_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'in' bitwise_or");
         }
+        debugMessageln("Fail at %d: in_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, IN_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // isnot_bitwise_or: 'is' 'not' bitwise_or
     public CmpopExprPair isnot_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ISNOT_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, ISNOT_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // 'is' 'not' bitwise_or
@@ -8277,28 +9352,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d isnot_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'is' 'not' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , IsNot , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , IsNot , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.ISNOT,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'is' 'not' bitwise_or");
                 cache.putResult(_mark, ISNOT_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s isnot_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'is' 'not' bitwise_or");
         }
+        debugMessageln("Fail at %d: isnot_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, ISNOT_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
     // is_bitwise_or: 'is' bitwise_or
     public CmpopExprPair is_bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, IS_BITWISE_OR_ID)) {
             _res = (CmpopExprPair)cache.getResult(_mark, IS_BITWISE_OR_ID);
+            level--;
             return (CmpopExprPair)_res;
         }
         { // 'is' bitwise_or
@@ -8312,18 +9391,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d is_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'is' bitwise_or");
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , Is , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , Is , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.IS,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'is' bitwise_or");
                 cache.putResult(_mark, IS_BITWISE_OR_ID, _res);
+                level--;
                 return (CmpopExprPair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s is_bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'is' bitwise_or");
         }
+        debugMessageln("Fail at %d: is_bitwise_or", _mark);
         _res = null;
         cache.putResult(_mark, IS_BITWISE_OR_ID, _res);
+        level--;
         return (CmpopExprPair)_res;
     }
 
@@ -8331,10 +9412,12 @@ public final class Parser extends AbstractParser {
     // bitwise_or: bitwise_or '|' bitwise_xor | bitwise_xor
     public ExprTy bitwise_or_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, BITWISE_OR_ID)) {
             _res = cache.getResult(_mark, BITWISE_OR_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -8348,10 +9431,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy bitwise_or_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
@@ -8371,9 +9456,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_or '|' bitwise_xor");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.BITOR,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_or '|' bitwise_xor");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8388,14 +9476,18 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_xor");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "bitwise_xor");
                 _res = bitwise_xor_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s bitwise_or[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "bitwise_xor");
         }
+        debugMessageln("Fail at %d: bitwise_or", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
@@ -8403,10 +9495,12 @@ public final class Parser extends AbstractParser {
     // bitwise_xor: bitwise_xor '^' bitwise_and | bitwise_and
     public ExprTy bitwise_xor_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, BITWISE_XOR_ID)) {
             _res = cache.getResult(_mark, BITWISE_XOR_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -8420,10 +9514,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy bitwise_xor_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
@@ -8443,9 +9539,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d bitwise_xor[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_xor '^' bitwise_and");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.BITXOR,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_xor '^' bitwise_and");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8460,14 +9559,18 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d bitwise_xor[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_and");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "bitwise_and");
                 _res = bitwise_and_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s bitwise_xor[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "bitwise_and");
         }
+        debugMessageln("Fail at %d: bitwise_xor", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
@@ -8475,10 +9578,12 @@ public final class Parser extends AbstractParser {
     // bitwise_and: bitwise_and '&' shift_expr | shift_expr
     public ExprTy bitwise_and_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, BITWISE_AND_ID)) {
             _res = cache.getResult(_mark, BITWISE_AND_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -8492,10 +9597,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy bitwise_and_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
@@ -8515,9 +9622,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d bitwise_and[%d-%d]: %s succeeded!", level, _mark, mark(), "bitwise_and '&' shift_expr");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.BITAND,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_and '&' shift_expr");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8532,14 +9642,18 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d bitwise_and[%d-%d]: %s succeeded!", level, _mark, mark(), "shift_expr");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "shift_expr");
                 _res = shift_expr_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s bitwise_and[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "shift_expr");
         }
+        debugMessageln("Fail at %d: bitwise_and", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
@@ -8547,10 +9661,12 @@ public final class Parser extends AbstractParser {
     // shift_expr: shift_expr '<<' sum | shift_expr '>>' sum | sum
     public ExprTy shift_expr_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SHIFT_EXPR_ID)) {
             _res = cache.getResult(_mark, SHIFT_EXPR_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -8564,10 +9680,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy shift_expr_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
@@ -8587,9 +9705,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "shift_expr '<<' sum");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.LSHIFT,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "shift_expr '<<' sum");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8612,9 +9733,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "shift_expr '>>' sum");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.RSHIFT,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "shift_expr '>>' sum");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8629,14 +9753,18 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "sum");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "sum");
                 _res = sum_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s shift_expr[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "sum");
         }
+        debugMessageln("Fail at %d: shift_expr", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
@@ -8644,10 +9772,12 @@ public final class Parser extends AbstractParser {
     // sum: sum '+' term | sum '-' term | term
     public ExprTy sum_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SUM_ID)) {
             _res = cache.getResult(_mark, SUM_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -8661,10 +9791,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy sum_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
@@ -8684,9 +9816,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, _mark, mark(), "sum '+' term");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.ADD,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "sum '+' term");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8709,9 +9844,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, _mark, mark(), "sum '-' term");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.SUB,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "sum '-' term");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8726,14 +9864,18 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, _mark, mark(), "term");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "term");
                 _res = term_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s sum[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "term");
         }
+        debugMessageln("Fail at %d: sum", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
@@ -8747,10 +9889,12 @@ public final class Parser extends AbstractParser {
     //     | factor
     public ExprTy term_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TERM_ID)) {
             _res = cache.getResult(_mark, TERM_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -8764,10 +9908,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy term_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
@@ -8787,9 +9933,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, _mark, mark(), "term '*' factor");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.MULT,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '*' factor");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8812,9 +9961,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, _mark, mark(), "term '/' factor");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.DIV,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '/' factor");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8837,9 +9989,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, _mark, mark(), "term '//' factor");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.FLOORDIV,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '//' factor");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8862,9 +10017,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, _mark, mark(), "term '%' factor");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.MOD,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '%' factor");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8888,6 +10046,8 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "The '@' operator is" , _PyAST_BinOp ( a , MatMult , b , EXTRA ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( expr_ty , 5 , 'The '@' operator is' , _PyAST_BinOp ( a , MatMult , b , EXTRA ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '@' factor");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8902,24 +10062,30 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, _mark, mark(), "factor");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "factor");
                 _res = factor_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s term[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "factor");
         }
+        debugMessageln("Fail at %d: term", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
     // factor: '+' factor | '-' factor | '~' factor | power
     public ExprTy factor_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FACTOR_ID)) {
             _res = (ExprTy)cache.getResult(_mark, FACTOR_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -8936,10 +10102,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, _mark, mark(), "'+' factor");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.ADD,a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'+' factor");
                 cache.putResult(_mark, FACTOR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8959,10 +10128,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, _mark, mark(), "'-' factor");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.SUB,a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-' factor");
                 cache.putResult(_mark, FACTOR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -8982,10 +10154,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, _mark, mark(), "'~' factor");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.INVERT,a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'~' factor");
                 cache.putResult(_mark, FACTOR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9000,26 +10175,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, _mark, mark(), "power");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "power");
                 _res = power_var;
                 cache.putResult(_mark, FACTOR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s factor[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "power");
         }
+        debugMessageln("Fail at %d: factor", _mark);
         _res = null;
         cache.putResult(_mark, FACTOR_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // power: await_primary '**' factor | await_primary
     public ExprTy power_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, POWER_ID)) {
             _res = (ExprTy)cache.getResult(_mark, POWER_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -9039,10 +10220,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d power[%d-%d]: %s succeeded!", level, _mark, mark(), "await_primary '**' factor");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBinaryOp(ExprTy.BinOp.Operator.POW,a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "await_primary '**' factor");
                 cache.putResult(_mark, POWER_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9057,26 +10241,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d power[%d-%d]: %s succeeded!", level, _mark, mark(), "await_primary");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "await_primary");
                 _res = await_primary_var;
                 cache.putResult(_mark, POWER_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s power[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "await_primary");
         }
+        debugMessageln("Fail at %d: power", _mark);
         _res = null;
         cache.putResult(_mark, POWER_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // await_primary: AWAIT primary | primary
     public ExprTy await_primary_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AWAIT_PRIMARY_ID)) {
             _res = (ExprTy)cache.getResult(_mark, AWAIT_PRIMARY_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // AWAIT primary
@@ -9093,7 +10283,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "Await expressions are" , _PyAST_Await ( a , EXTRA ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( expr_ty , 5 , 'Await expressions are' , _PyAST_Await ( a , EXTRA ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "AWAIT primary");
                 cache.putResult(_mark, AWAIT_PRIMARY_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9108,16 +10300,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d await_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "primary");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "primary");
                 _res = primary_var;
                 cache.putResult(_mark, AWAIT_PRIMARY_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s await_primary[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "primary");
         }
+        debugMessageln("Fail at %d: await_primary", _mark);
         _res = null;
         cache.putResult(_mark, AWAIT_PRIMARY_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -9131,10 +10327,12 @@ public final class Parser extends AbstractParser {
     //     | atom
     public ExprTy primary_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PRIMARY_ID)) {
             _res = cache.getResult(_mark, PRIMARY_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -9148,10 +10346,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy primary_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
@@ -9163,7 +10363,9 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_primary");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_primary");
                 _res = invalid_primary_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9185,6 +10387,8 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, _mark, mark(), "primary '.' NAME");
                 _res = factory.createGetAttribute(a,((ExprTy.Name)b).id,ExprContext.Load,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '.' NAME");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9205,6 +10409,8 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( ExprTy [ ] ) this . singletonSequence ( b ) ) , NULL , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( ExprTy [ ] ) this . singletonSequence ( b ) ) , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary genexp");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9230,9 +10436,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, _mark, mark(), "primary '(' arguments? ')'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createCall(a,b != null ?((ExprTy.Call)b).args : EMPTY_EXPR,b != null ?((ExprTy.Call)b).keywords : EMPTY_KWDS,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '(' arguments? ')'");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9257,6 +10466,8 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, _mark, mark(), "primary '[' slices ']'");
                 _res = factory.createSubscript(a,b,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '[' slices ']'");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9271,26 +10482,33 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, _mark, mark(), "atom");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "atom");
                 _res = atom_var;
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s primary[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "atom");
         }
+        debugMessageln("Fail at %d: primary", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
     // slices: slice !',' | ','.slice+ ','?
     public ExprTy slices_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SLICES_ID)) {
             _res = (ExprTy)cache.getResult(_mark, SLICES_ID);
+            level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // slice !','
             debugMessageln("%d> slices[%d-%d]: %s", level, _mark, mark(), "slice !','");
             ExprTy a;
@@ -9302,7 +10520,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d slices[%d-%d]: %s succeeded!", level, _mark, mark(), "slice !','");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slice !','");
                 cache.putResult(_mark, SLICES_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9320,30 +10540,40 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d slices[%d-%d]: %s succeeded!", level, _mark, mark(), "','.slice+ ','?");
-                // TODO: node.action: _PyAST_Tuple ( a , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( a , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createTuple(a,ExprContext.Load,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.slice+ ','?");
                 cache.putResult(_mark, SLICES_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s slices[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.slice+ ','?");
         }
+        debugMessageln("Fail at %d: slices", _mark);
         _res = null;
         cache.putResult(_mark, SLICES_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // slice: expression? ':' expression? [':' expression?] | named_expression
     public ExprTy slice_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SLICE_ID)) {
             _res = (ExprTy)cache.getResult(_mark, SLICE_ID);
+            level--;
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // expression? ':' expression? [':' expression?]
             debugMessageln("%d> slice[%d-%d]: %s", level, _mark, mark(), "expression? ':' expression? [':' expression?]");
             Token _literal;
@@ -9361,10 +10591,15 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d slice[%d-%d]: %s succeeded!", level, _mark, mark(), "expression? ':' expression? [':' expression?]");
-                // TODO: node.action: _PyAST_Slice ( a , b , c , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Slice ( a , b , c , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createSlice(a,b,c,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression? ':' expression? [':' expression?]");
                 cache.putResult(_mark, SLICE_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9380,15 +10615,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d slice[%d-%d]: %s succeeded!", level, _mark, mark(), "named_expression");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "named_expression");
                 cache.putResult(_mark, SLICE_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s slice[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "named_expression");
         }
+        debugMessageln("Fail at %d: slice", _mark);
         _res = null;
         cache.putResult(_mark, SLICE_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -9405,10 +10644,12 @@ public final class Parser extends AbstractParser {
     //     | '...'
     public ExprTy atom_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ATOM_ID)) {
             _res = (ExprTy)cache.getResult(_mark, ATOM_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -9420,8 +10661,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NAME");
                 _res = name_var;
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9438,10 +10681,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'True'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBooleanLiteral(true,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'True'");
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9458,10 +10704,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'False'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createBooleanLiteral(false,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'False'");
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9477,7 +10726,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'None'");
                 _res = factory.createNone(startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'None'");
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9494,8 +10745,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "&STRING strings");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&STRING strings");
                 _res = strings_var;
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9510,8 +10763,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "NUMBER");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NUMBER");
                 _res = number_var;
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9528,8 +10783,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "&'(' (tuple | group | genexp)");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'(' (tuple | group | genexp)");
                 _res = _tmp_152_var;
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9546,8 +10803,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "&'[' (list | listcomp)");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'[' (list | listcomp)");
                 _res = _tmp_153_var;
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9564,8 +10823,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "&'{' (dict | set | dictcomp | setcomp)");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'{' (dict | set | dictcomp | setcomp)");
                 _res = _tmp_154_var;
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9581,25 +10842,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'...'");
                 _res = factory.createEllipsis(startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'...'");
                 cache.putResult(_mark, ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'...'");
         }
+        debugMessageln("Fail at %d: atom", _mark);
         _res = null;
         cache.putResult(_mark, ATOM_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // strings: STRING+
     public ExprTy strings_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STRINGS_ID)) {
             _res = (ExprTy)cache.getResult(_mark, STRINGS_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // STRING+
@@ -9611,25 +10878,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d strings[%d-%d]: %s succeeded!", level, _mark, mark(), "STRING+");
                 _res = this.concatenateStrings(a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "STRING+");
                 cache.putResult(_mark, STRINGS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s strings[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "STRING+");
         }
+        debugMessageln("Fail at %d: strings", _mark);
         _res = null;
         cache.putResult(_mark, STRINGS_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // list: '[' star_named_expressions? ']'
     public ExprTy list_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LIST_ID)) {
             _res = (ExprTy)cache.getResult(_mark, LIST_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -9649,28 +10922,35 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d list[%d-%d]: %s succeeded!", level, _mark, mark(), "'[' star_named_expressions? ']'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createList(a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' star_named_expressions? ']'");
                 cache.putResult(_mark, LIST_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s list[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'[' star_named_expressions? ']'");
         }
+        debugMessageln("Fail at %d: list", _mark);
         _res = null;
         cache.putResult(_mark, LIST_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // listcomp: '[' named_expression for_if_clauses ']' | invalid_comprehension
     public ExprTy listcomp_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LISTCOMP_ID)) {
             _res = (ExprTy)cache.getResult(_mark, LISTCOMP_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -9693,10 +10973,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d listcomp[%d-%d]: %s succeeded!", level, _mark, mark(), "'[' named_expression for_if_clauses ']'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createListComprehension(a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' named_expression for_if_clauses ']'");
                 cache.putResult(_mark, LISTCOMP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9711,26 +10994,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d listcomp[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_comprehension");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_comprehension");
                 _res = invalid_comprehension_var;
                 cache.putResult(_mark, LISTCOMP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s listcomp[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_comprehension");
         }
+        debugMessageln("Fail at %d: listcomp", _mark);
         _res = null;
         cache.putResult(_mark, LISTCOMP_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // tuple: '(' [star_named_expression ',' star_named_expressions?] ')'
     public ExprTy tuple_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TUPLE_ID)) {
             _res = (ExprTy)cache.getResult(_mark, TUPLE_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -9750,28 +11039,35 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d tuple[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createTuple((ExprTy [ ])a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
                 cache.putResult(_mark, TUPLE_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s tuple[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
         }
+        debugMessageln("Fail at %d: tuple", _mark);
         _res = null;
         cache.putResult(_mark, TUPLE_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // group: '(' (yield_expr | named_expression) ')' | invalid_group
     public ExprTy group_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GROUP_ID)) {
             _res = (ExprTy)cache.getResult(_mark, GROUP_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '(' (yield_expr | named_expression) ')'
@@ -9789,7 +11085,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d group[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' (yield_expr | named_expression) ')'");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' (yield_expr | named_expression) ')'");
                 cache.putResult(_mark, GROUP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9804,26 +11102,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d group[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_group");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_group");
                 _res = invalid_group_var;
                 cache.putResult(_mark, GROUP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s group[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_group");
         }
+        debugMessageln("Fail at %d: group", _mark);
         _res = null;
         cache.putResult(_mark, GROUP_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // genexp: '(' direct_named_expression for_if_clauses ')' | invalid_comprehension
     public ExprTy genexp_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GENEXP_ID)) {
             _res = (ExprTy)cache.getResult(_mark, GENEXP_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -9846,10 +11150,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d genexp[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createGenerator(a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
                 cache.putResult(_mark, GENEXP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9864,26 +11171,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d genexp[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_comprehension");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_comprehension");
                 _res = invalid_comprehension_var;
                 cache.putResult(_mark, GENEXP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s genexp[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_comprehension");
         }
+        debugMessageln("Fail at %d: genexp", _mark);
         _res = null;
         cache.putResult(_mark, GENEXP_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // set: '{' star_named_expressions '}'
     public ExprTy set_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SET_ID)) {
             _res = (ExprTy)cache.getResult(_mark, SET_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -9903,28 +11216,35 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d set[%d-%d]: %s succeeded!", level, _mark, mark(), "'{' star_named_expressions '}'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createSet(a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' star_named_expressions '}'");
                 cache.putResult(_mark, SET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s set[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'{' star_named_expressions '}'");
         }
+        debugMessageln("Fail at %d: set", _mark);
         _res = null;
         cache.putResult(_mark, SET_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // setcomp: '{' named_expression for_if_clauses '}' | invalid_comprehension
     public ExprTy setcomp_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SETCOMP_ID)) {
             _res = (ExprTy)cache.getResult(_mark, SETCOMP_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -9947,10 +11267,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d setcomp[%d-%d]: %s succeeded!", level, _mark, mark(), "'{' named_expression for_if_clauses '}'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createSetComprehension(a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' named_expression for_if_clauses '}'");
                 cache.putResult(_mark, SETCOMP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9965,26 +11288,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d setcomp[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_comprehension");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_comprehension");
                 _res = invalid_comprehension_var;
                 cache.putResult(_mark, SETCOMP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s setcomp[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_comprehension");
         }
+        debugMessageln("Fail at %d: setcomp", _mark);
         _res = null;
         cache.putResult(_mark, SETCOMP_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // dict: '{' double_starred_kvpairs? '}' | '{' invalid_double_starred_kvpairs '}'
     public ExprTy dict_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DICT_ID)) {
             _res = (ExprTy)cache.getResult(_mark, DICT_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -10004,10 +11333,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d dict[%d-%d]: %s succeeded!", level, _mark, mark(), "'{' double_starred_kvpairs? '}'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createDict(extractKeys(a),extractValues(a),startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' double_starred_kvpairs? '}'");
                 cache.putResult(_mark, DICT_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -10028,26 +11360,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dict[%d-%d]: %s succeeded!", level, _mark, mark(), "'{' invalid_double_starred_kvpairs '}'");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'{' invalid_double_starred_kvpairs '}'");
                 _res = dummyName(_literal, invalid_double_starred_kvpairs_var, _literal_1);
                 cache.putResult(_mark, DICT_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s dict[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'{' invalid_double_starred_kvpairs '}'");
         }
+        debugMessageln("Fail at %d: dict", _mark);
         _res = null;
         cache.putResult(_mark, DICT_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // dictcomp: '{' kvpair for_if_clauses '}' | invalid_dict_comprehension
     public ExprTy dictcomp_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DICTCOMP_ID)) {
             _res = (ExprTy)cache.getResult(_mark, DICTCOMP_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -10070,10 +11408,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d dictcomp[%d-%d]: %s succeeded!", level, _mark, mark(), "'{' kvpair for_if_clauses '}'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createDictComprehension(a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' kvpair for_if_clauses '}'");
                 cache.putResult(_mark, DICTCOMP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -10088,26 +11429,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dictcomp[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_dict_comprehension");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_dict_comprehension");
                 _res = invalid_dict_comprehension_var;
                 cache.putResult(_mark, DICTCOMP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s dictcomp[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_dict_comprehension");
         }
+        debugMessageln("Fail at %d: dictcomp", _mark);
         _res = null;
         cache.putResult(_mark, DICTCOMP_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // double_starred_kvpairs: ','.double_starred_kvpair+ ','?
     public KeyValuePair[] double_starred_kvpairs_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STARRED_KVPAIRS_ID)) {
             _res = (KeyValuePair[])cache.getResult(_mark, DOUBLE_STARRED_KVPAIRS_ID);
+            level--;
             return (KeyValuePair[])_res;
         }
         { // ','.double_starred_kvpair+ ','?
@@ -10122,25 +11469,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d double_starred_kvpairs[%d-%d]: %s succeeded!", level, _mark, mark(), "','.double_starred_kvpair+ ','?");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.double_starred_kvpair+ ','?");
                 cache.putResult(_mark, DOUBLE_STARRED_KVPAIRS_ID, _res);
+                level--;
                 return (KeyValuePair[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpairs[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.double_starred_kvpair+ ','?");
         }
+        debugMessageln("Fail at %d: double_starred_kvpairs", _mark);
         _res = null;
         cache.putResult(_mark, DOUBLE_STARRED_KVPAIRS_ID, _res);
+        level--;
         return (KeyValuePair[])_res;
     }
 
     // double_starred_kvpair: '**' bitwise_or | kvpair
     public KeyValuePair double_starred_kvpair_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STARRED_KVPAIR_ID)) {
             _res = (KeyValuePair)cache.getResult(_mark, DOUBLE_STARRED_KVPAIR_ID);
+            level--;
             return (KeyValuePair)_res;
         }
         { // '**' bitwise_or
@@ -10155,7 +11508,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d double_starred_kvpair[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' bitwise_or");
                 _res = new KeyValuePair(null,a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' bitwise_or");
                 cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
+                level--;
                 return (KeyValuePair)_res;
             }
             reset(_mark);
@@ -10170,26 +11525,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d double_starred_kvpair[%d-%d]: %s succeeded!", level, _mark, mark(), "kvpair");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "kvpair");
                 _res = kvpair_var;
                 cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
+                level--;
                 return (KeyValuePair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpair[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "kvpair");
         }
+        debugMessageln("Fail at %d: double_starred_kvpair", _mark);
         _res = null;
         cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
+        level--;
         return (KeyValuePair)_res;
     }
 
     // kvpair: expression ':' expression
     public KeyValuePair kvpair_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KVPAIR_ID)) {
             _res = (KeyValuePair)cache.getResult(_mark, KVPAIR_ID);
+            level--;
             return (KeyValuePair)_res;
         }
         { // expression ':' expression
@@ -10207,25 +11568,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d kvpair[%d-%d]: %s succeeded!", level, _mark, mark(), "expression ':' expression");
                 _res = new KeyValuePair(a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' expression");
                 cache.putResult(_mark, KVPAIR_ID, _res);
+                level--;
                 return (KeyValuePair)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kvpair[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression ':' expression");
         }
+        debugMessageln("Fail at %d: kvpair", _mark);
         _res = null;
         cache.putResult(_mark, KVPAIR_ID, _res);
+        level--;
         return (KeyValuePair)_res;
     }
 
     // for_if_clauses: for_if_clause+
     public ComprehensionTy[] for_if_clauses_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FOR_IF_CLAUSES_ID)) {
             _res = (ComprehensionTy[])cache.getResult(_mark, FOR_IF_CLAUSES_ID);
+            level--;
             return (ComprehensionTy[])_res;
         }
         { // for_if_clause+
@@ -10237,15 +11604,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d for_if_clauses[%d-%d]: %s succeeded!", level, _mark, mark(), "for_if_clause+");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "for_if_clause+");
                 cache.putResult(_mark, FOR_IF_CLAUSES_ID, _res);
+                level--;
                 return (ComprehensionTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clauses[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "for_if_clause+");
         }
+        debugMessageln("Fail at %d: for_if_clauses", _mark);
         _res = null;
         cache.putResult(_mark, FOR_IF_CLAUSES_ID, _res);
+        level--;
         return (ComprehensionTy[])_res;
     }
 
@@ -10255,10 +11626,12 @@ public final class Parser extends AbstractParser {
     //     | invalid_for_target
     public ComprehensionTy for_if_clause_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FOR_IF_CLAUSE_ID)) {
             _res = (ComprehensionTy)cache.getResult(_mark, FOR_IF_CLAUSE_ID);
+            level--;
             return (ComprehensionTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -10291,13 +11664,16 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( comprehension_ty , 6 , 'Async comprehensions are' , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
                 cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
+                level--;
                 return (ComprehensionTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clause[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
             if (_cut_var != 0) {
+                level--;
                 return null;
             }
         }
@@ -10326,16 +11702,20 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d for_if_clause[%d-%d]: %s succeeded!", level, _mark, mark(), "'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createComprehension(a,b,c,false,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
                 cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
+                level--;
                 return (ComprehensionTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clause[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
             if (_cut_var != 0) {
+                level--;
                 return null;
             }
         }
@@ -10347,26 +11727,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d for_if_clause[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_for_target");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_for_target");
                 _res = invalid_for_target_var;
                 cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
+                level--;
                 return (ComprehensionTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clause[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_for_target");
         }
+        debugMessageln("Fail at %d: for_if_clause", _mark);
         _res = null;
         cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
+        level--;
         return (ComprehensionTy)_res;
     }
 
     // yield_expr: 'yield' 'from' expression | 'yield' star_expressions?
     public ExprTy yield_expr_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, YIELD_EXPR_ID)) {
             _res = (ExprTy)cache.getResult(_mark, YIELD_EXPR_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -10386,10 +11772,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d yield_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "'yield' 'from' expression");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createYield(a,true,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'yield' 'from' expression");
                 cache.putResult(_mark, YIELD_EXPR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -10409,28 +11798,35 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d yield_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "'yield' star_expressions?");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createYield(a,false,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'yield' star_expressions?");
                 cache.putResult(_mark, YIELD_EXPR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s yield_expr[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'yield' star_expressions?");
         }
+        debugMessageln("Fail at %d: yield_expr", _mark);
         _res = null;
         cache.putResult(_mark, YIELD_EXPR_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // arguments: args ','? &')' | invalid_arguments
     public ExprTy arguments_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ARGUMENTS_ID)) {
             _res = (ExprTy)cache.getResult(_mark, ARGUMENTS_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // args ','? &')'
@@ -10447,7 +11843,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d arguments[%d-%d]: %s succeeded!", level, _mark, mark(), "args ','? &')'");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ','? &')'");
                 cache.putResult(_mark, ARGUMENTS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -10462,26 +11860,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d arguments[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_arguments");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_arguments");
                 _res = invalid_arguments_var;
                 cache.putResult(_mark, ARGUMENTS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s arguments[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_arguments");
         }
+        debugMessageln("Fail at %d: arguments", _mark);
         _res = null;
         cache.putResult(_mark, ARGUMENTS_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // args: ','.(starred_expression | direct_named_expression !'=')+ [',' kwargs] | kwargs
     public ExprTy args_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ARGS_ID)) {
             _res = (ExprTy)cache.getResult(_mark, ARGS_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -10498,10 +11902,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = this.collectCallSequences(a,b,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
                 cache.putResult(_mark, ARGS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -10518,18 +11925,23 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, _mark, mark(), "kwargs");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createCall(dummyName(),extractStarredExpressions(a),deleteStarredExpressions(a),startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "kwargs");
                 cache.putResult(_mark, ARGS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s args[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "kwargs");
         }
+        debugMessageln("Fail at %d: args", _mark);
         _res = null;
         cache.putResult(_mark, ARGS_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -10539,10 +11951,12 @@ public final class Parser extends AbstractParser {
     //     | ','.kwarg_or_double_starred+
     public KeywordOrStarred[] kwargs_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWARGS_ID)) {
             _res = (KeywordOrStarred[])cache.getResult(_mark, KWARGS_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         { // ','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+
@@ -10560,7 +11974,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d kwargs[%d-%d]: %s succeeded!", level, _mark, mark(), "','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+");
                 _res = this.join(a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+");
                 cache.putResult(_mark, KWARGS_ID, _res);
+                level--;
                 return (KeywordOrStarred[])_res;
             }
             reset(_mark);
@@ -10575,8 +11991,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwargs[%d-%d]: %s succeeded!", level, _mark, mark(), "','.kwarg_or_starred+");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','.kwarg_or_starred+");
                 _res = _gather_175_var;
                 cache.putResult(_mark, KWARGS_ID, _res);
+                level--;
                 return (KeywordOrStarred[])_res;
             }
             reset(_mark);
@@ -10591,26 +12009,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwargs[%d-%d]: %s succeeded!", level, _mark, mark(), "','.kwarg_or_double_starred+");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','.kwarg_or_double_starred+");
                 _res = _gather_177_var;
                 cache.putResult(_mark, KWARGS_ID, _res);
+                level--;
                 return (KeywordOrStarred[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwargs[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.kwarg_or_double_starred+");
         }
+        debugMessageln("Fail at %d: kwargs", _mark);
         _res = null;
         cache.putResult(_mark, KWARGS_ID, _res);
+        level--;
         return (KeywordOrStarred[])_res;
     }
 
     // starred_expression: '*' expression
     public ExprTy starred_expression_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STARRED_EXPRESSION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, STARRED_EXPRESSION_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -10627,28 +12051,35 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d starred_expression[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createStarred(a,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression");
                 cache.putResult(_mark, STARRED_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s starred_expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'*' expression");
         }
+        debugMessageln("Fail at %d: starred_expression", _mark);
         _res = null;
         cache.putResult(_mark, STARRED_EXPRESSION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // kwarg_or_starred: NAME '=' expression | starred_expression | invalid_kwarg
     public KeywordOrStarred kwarg_or_starred_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWARG_OR_STARRED_ID)) {
             _res = (KeywordOrStarred)cache.getResult(_mark, KWARG_OR_STARRED_ID);
+            level--;
             return (KeywordOrStarred)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -10668,10 +12099,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d kwarg_or_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME '=' expression");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = new KeywordOrStarred(factory.createKeyword(((ExprTy.Name)a).id,b,startToken.startOffset,endToken.endOffset),true);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' expression");
                 cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
+                level--;
                 return (KeywordOrStarred)_res;
             }
             reset(_mark);
@@ -10687,7 +12121,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d kwarg_or_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "starred_expression");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "starred_expression");
                 cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
+                level--;
                 return (KeywordOrStarred)_res;
             }
             reset(_mark);
@@ -10702,26 +12138,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwarg_or_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_kwarg");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_kwarg");
                 _res = invalid_kwarg_var;
                 cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
+                level--;
                 return (KeywordOrStarred)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_starred[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_kwarg");
         }
+        debugMessageln("Fail at %d: kwarg_or_starred", _mark);
         _res = null;
         cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
+        level--;
         return (KeywordOrStarred)_res;
     }
 
     // kwarg_or_double_starred: NAME '=' expression | '**' expression | invalid_kwarg
     public KeywordOrStarred kwarg_or_double_starred_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KWARG_OR_DOUBLE_STARRED_ID)) {
             _res = (KeywordOrStarred)cache.getResult(_mark, KWARG_OR_DOUBLE_STARRED_ID);
+            level--;
             return (KeywordOrStarred)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -10741,10 +12183,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME '=' expression");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = new KeywordOrStarred(factory.createKeyword(((ExprTy.Name)a).id,b,startToken.startOffset,endToken.endOffset),true);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' expression");
                 cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
+                level--;
                 return (KeywordOrStarred)_res;
             }
             reset(_mark);
@@ -10764,10 +12209,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' expression");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = new KeywordOrStarred(factory.createKeyword(null,a,startToken.startOffset,endToken.endOffset),true);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' expression");
                 cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
+                level--;
                 return (KeywordOrStarred)_res;
             }
             reset(_mark);
@@ -10782,26 +12230,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, _mark, mark(), "invalid_kwarg");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_kwarg");
                 _res = invalid_kwarg_var;
                 cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
+                level--;
                 return (KeywordOrStarred)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_double_starred[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "invalid_kwarg");
         }
+        debugMessageln("Fail at %d: kwarg_or_double_starred", _mark);
         _res = null;
         cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
+        level--;
         return (KeywordOrStarred)_res;
     }
 
     // star_targets: star_target !',' | star_target ((',' star_target))* ','?
     public ExprTy star_targets_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_TARGETS_ID)) {
             _res = (ExprTy)cache.getResult(_mark, STAR_TARGETS_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -10816,7 +12270,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d star_targets[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target !','");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target !','");
                 cache.putResult(_mark, STAR_TARGETS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -10839,28 +12295,35 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d star_targets[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target ((',' star_target))* ','?");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createTuple(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset); // Store;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ((',' star_target))* ','?");
                 cache.putResult(_mark, STAR_TARGETS_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_targets[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_target ((',' star_target))* ','?");
         }
+        debugMessageln("Fail at %d: star_targets", _mark);
         _res = null;
         cache.putResult(_mark, STAR_TARGETS_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // star_targets_list_seq: ','.star_target+ ','?
     public ExprTy[] star_targets_list_seq_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_TARGETS_LIST_SEQ_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, STAR_TARGETS_LIST_SEQ_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // ','.star_target+ ','?
@@ -10875,25 +12338,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d star_targets_list_seq[%d-%d]: %s succeeded!", level, _mark, mark(), "','.star_target+ ','?");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.star_target+ ','?");
                 cache.putResult(_mark, STAR_TARGETS_LIST_SEQ_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_targets_list_seq[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.star_target+ ','?");
         }
+        debugMessageln("Fail at %d: star_targets_list_seq", _mark);
         _res = null;
         cache.putResult(_mark, STAR_TARGETS_LIST_SEQ_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // star_targets_tuple_seq: star_target ((',' star_target))+ ','? | star_target ','
     public ExprTy[] star_targets_tuple_seq_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // star_target ((',' star_target))+ ','?
@@ -10910,10 +12379,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_targets_tuple_seq[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target ((',' star_target))+ ','?");
-                // TODO: node.action: ( asdl_expr_seq * ) this . insertInFront ( a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . insertInFront ( a , b ) to Java !!![0m");
-                _res = null;
+                _res = this.insertInFront(a,b);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ((',' star_target))+ ','?");
                 cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
@@ -10934,25 +12403,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
                 debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ','");
                 cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_targets_tuple_seq[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_target ','");
         }
+        debugMessageln("Fail at %d: star_targets_tuple_seq", _mark);
         _res = null;
         cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // star_target: '*' (!'*' star_target) | target_with_star_atom
     public ExprTy star_target_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_TARGET_ID)) {
             _res = (ExprTy)cache.getResult(_mark, STAR_TARGET_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '*' (!'*' star_target)
@@ -10969,7 +12444,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Starred ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , Store , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Starred ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , Store , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (!'*' star_target)");
                 cache.putResult(_mark, STAR_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -10984,16 +12461,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_target[%d-%d]: %s succeeded!", level, _mark, mark(), "target_with_star_atom");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "target_with_star_atom");
                 _res = target_with_star_atom_var;
                 cache.putResult(_mark, STAR_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_target[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "target_with_star_atom");
         }
+        debugMessageln("Fail at %d: star_target", _mark);
         _res = null;
         cache.putResult(_mark, STAR_TARGET_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -11003,10 +12484,12 @@ public final class Parser extends AbstractParser {
     //     | star_atom
     public ExprTy target_with_star_atom_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TARGET_WITH_STAR_ATOM_ID)) {
             _res = (ExprTy)cache.getResult(_mark, TARGET_WITH_STAR_ATOM_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -11027,7 +12510,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 _res = factory.createGetAttribute(a,((ExprTy.Name)b).id,ExprContext.Store,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11054,7 +12539,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 _res = factory.createSubscript(a,b,ExprContext.Store,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11069,16 +12556,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "star_atom");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_atom");
                 _res = star_atom_var;
                 cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s target_with_star_atom[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_atom");
         }
+        debugMessageln("Fail at %d: target_with_star_atom", _mark);
         _res = null;
         cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -11089,10 +12580,12 @@ public final class Parser extends AbstractParser {
     //     | '[' star_targets_list_seq? ']'
     public ExprTy star_atom_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_ATOM_ID)) {
             _res = (ExprTy)cache.getResult(_mark, STAR_ATOM_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -11105,7 +12598,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
                 _res = this.setExprContext(a,ExprContext.Store);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11127,7 +12622,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' target_with_star_atom ')'");
                 _res = this.setExprContext(a,ExprContext.Store);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' target_with_star_atom ')'");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11150,10 +12647,13 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' star_targets_tuple_seq? ')'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createTuple(a,ExprContext.Store,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' star_targets_tuple_seq? ')'");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11176,28 +12676,35 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'[' star_targets_list_seq? ']'");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createList(a,ExprContext.Store,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' star_targets_list_seq? ']'");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s star_atom[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'[' star_targets_list_seq? ']'");
         }
+        debugMessageln("Fail at %d: star_atom", _mark);
         _res = null;
         cache.putResult(_mark, STAR_ATOM_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // single_target: single_subscript_attribute_target | NAME | '(' single_target ')'
     public ExprTy single_target_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SINGLE_TARGET_ID)) {
             _res = (ExprTy)cache.getResult(_mark, SINGLE_TARGET_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // single_subscript_attribute_target
@@ -11208,8 +12715,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d single_target[%d-%d]: %s succeeded!", level, _mark, mark(), "single_subscript_attribute_target");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "single_subscript_attribute_target");
                 _res = single_subscript_attribute_target_var;
                 cache.putResult(_mark, SINGLE_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11225,7 +12734,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d single_target[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
                 _res = this.setExprContext(a,ExprContext.Store);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, SINGLE_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11247,15 +12758,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d single_target[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' single_target ')'");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' single_target ')'");
                 cache.putResult(_mark, SINGLE_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s single_target[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'(' single_target ')'");
         }
+        debugMessageln("Fail at %d: single_target", _mark);
         _res = null;
         cache.putResult(_mark, SINGLE_TARGET_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -11264,10 +12779,12 @@ public final class Parser extends AbstractParser {
     //     | t_primary '[' slices ']' !t_lookahead
     public ExprTy single_subscript_attribute_target_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID)) {
             _res = (ExprTy)cache.getResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -11288,7 +12805,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d single_subscript_attribute_target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 _res = factory.createGetAttribute(a,((ExprTy.Name)b).id,ExprContext.Store,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11315,25 +12834,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d single_subscript_attribute_target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 _res = factory.createSubscript(a,b,ExprContext.Store,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s single_subscript_attribute_target[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
         }
+        debugMessageln("Fail at %d: single_subscript_attribute_target", _mark);
         _res = null;
         cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // del_targets: ','.del_target+ ','?
     public ExprTy[] del_targets_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEL_TARGETS_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, DEL_TARGETS_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // ','.del_target+ ','?
@@ -11348,15 +12873,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d del_targets[%d-%d]: %s succeeded!", level, _mark, mark(), "','.del_target+ ','?");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.del_target+ ','?");
                 cache.putResult(_mark, DEL_TARGETS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s del_targets[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.del_target+ ','?");
         }
+        debugMessageln("Fail at %d: del_targets", _mark);
         _res = null;
         cache.putResult(_mark, DEL_TARGETS_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
@@ -11366,10 +12895,12 @@ public final class Parser extends AbstractParser {
     //     | del_t_atom
     public ExprTy del_target_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEL_TARGET_ID)) {
             _res = (ExprTy)cache.getResult(_mark, DEL_TARGET_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -11390,7 +12921,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 _res = factory.createGetAttribute(a,((ExprTy.Name)b).id,ExprContext.Delete,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 cache.putResult(_mark, DEL_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11417,7 +12950,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 _res = factory.createSubscript(a,b,ExprContext.Delete,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 cache.putResult(_mark, DEL_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11432,26 +12967,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, _mark, mark(), "del_t_atom");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "del_t_atom");
                 _res = del_t_atom_var;
                 cache.putResult(_mark, DEL_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s del_target[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "del_t_atom");
         }
+        debugMessageln("Fail at %d: del_target", _mark);
         _res = null;
         cache.putResult(_mark, DEL_TARGET_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // del_t_atom: NAME | '(' del_target ')' | '(' del_targets? ')' | '[' del_targets? ']'
     public ExprTy del_t_atom_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEL_T_ATOM_ID)) {
             _res = (ExprTy)cache.getResult(_mark, DEL_T_ATOM_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // NAME
@@ -11465,7 +13006,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Del )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Del ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11489,7 +13032,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Del )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Del ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' del_target ')'");
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11513,7 +13058,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Tuple ( a , Del , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( a , Del , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' del_targets? ')'");
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11537,25 +13084,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_List ( a , Del , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_List ( a , Del , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' del_targets? ']'");
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s del_t_atom[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'[' del_targets? ']'");
         }
+        debugMessageln("Fail at %d: del_t_atom", _mark);
         _res = null;
         cache.putResult(_mark, DEL_T_ATOM_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // targets: ','.target+ ','?
     public ExprTy[] targets_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TARGETS_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, TARGETS_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // ','.target+ ','?
@@ -11570,15 +13123,19 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d targets[%d-%d]: %s succeeded!", level, _mark, mark(), "','.target+ ','?");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.target+ ','?");
                 cache.putResult(_mark, TARGETS_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s targets[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','.target+ ','?");
         }
+        debugMessageln("Fail at %d: targets", _mark);
         _res = null;
         cache.putResult(_mark, TARGETS_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
@@ -11588,10 +13145,12 @@ public final class Parser extends AbstractParser {
     //     | t_atom
     public ExprTy target_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TARGET_ID)) {
             _res = (ExprTy)cache.getResult(_mark, TARGET_ID);
+            level--;
             return (ExprTy)_res;
         }
         Token startToken = getAndInitializeToken();
@@ -11612,7 +13171,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 _res = factory.createGetAttribute(a,((ExprTy.Name)b).id,ExprContext.Store,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 cache.putResult(_mark, TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11639,7 +13200,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 _res = factory.createSubscript(a,b,ExprContext.Store,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 cache.putResult(_mark, TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11654,16 +13217,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, _mark, mark(), "t_atom");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "t_atom");
                 _res = t_atom_var;
                 cache.putResult(_mark, TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s target[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "t_atom");
         }
+        debugMessageln("Fail at %d: target", _mark);
         _res = null;
         cache.putResult(_mark, TARGET_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -11676,10 +13243,12 @@ public final class Parser extends AbstractParser {
     //     | atom &t_lookahead
     public ExprTy t_primary_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, T_PRIMARY_ID)) {
             _res = cache.getResult(_mark, T_PRIMARY_ID);
+            level--;
             return (ExprTy)_res;
         }
         int _resmark = mark();
@@ -11693,10 +13262,12 @@ public final class Parser extends AbstractParser {
             _res = _raw;
         }
         reset(_resmark);
+        level--;
         return (ExprTy)_res;
     }
     private ExprTy t_primary_raw()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
@@ -11717,6 +13288,8 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '.' NAME &t_lookahead");
                 _res = factory.createGetAttribute(a,((ExprTy.Name)b).id,ExprContext.Load,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME &t_lookahead");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11743,6 +13316,8 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '[' slices ']' &t_lookahead");
                 _res = factory.createSubscript(a,b,ExprContext.Load,startToken.startOffset,startToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' &t_lookahead");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11765,6 +13340,8 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( ExprTy [ ] ) this . singletonSequence ( b ) ) , NULL , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( ExprTy [ ] ) this . singletonSequence ( b ) ) , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary genexp &t_lookahead");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11792,9 +13369,12 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary '(' arguments? ')' &t_lookahead");
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
+                    level--;
                     return null;
                 }
                 _res = factory.createCall(a,b != null ?((ExprTy.Call)b).args : EMPTY_EXPR,b != null ?((ExprTy.Call)b).keywords : EMPTY_KWDS,startToken.startOffset,endToken.endOffset);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '(' arguments? ')' &t_lookahead");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11812,23 +13392,29 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "atom &t_lookahead");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "atom &t_lookahead");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s t_primary[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "atom &t_lookahead");
         }
+        debugMessageln("Fail at %d: t_primary", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
     // t_lookahead: '(' | '[' | '.'
     public Token t_lookahead_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, T_LOOKAHEAD_ID)) {
             _res = (Token)cache.getResult(_mark, T_LOOKAHEAD_ID);
+            level--;
             return (Token)_res;
         }
         { // '('
@@ -11839,8 +13425,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_lookahead[%d-%d]: %s succeeded!", level, _mark, mark(), "'('");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'('");
                 _res = _literal;
                 cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -11855,8 +13443,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_lookahead[%d-%d]: %s succeeded!", level, _mark, mark(), "'['");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'['");
                 _res = _literal;
                 cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -11871,26 +13461,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_lookahead[%d-%d]: %s succeeded!", level, _mark, mark(), "'.'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
                 cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s t_lookahead[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'.'");
         }
+        debugMessageln("Fail at %d: t_lookahead", _mark);
         _res = null;
         cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // t_atom: NAME | '(' target ')' | '(' targets? ')' | '[' targets? ']'
     public ExprTy t_atom_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, T_ATOM_ID)) {
             _res = (ExprTy)cache.getResult(_mark, T_ATOM_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // NAME
@@ -11904,7 +13500,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Store ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, T_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11928,7 +13526,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Store ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' target ')'");
                 cache.putResult(_mark, T_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11952,7 +13552,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Tuple ( b , Store , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( b , Store , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' targets? ')'");
                 cache.putResult(_mark, T_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11976,15 +13578,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_List ( b , Store , EXTRA )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_List ( b , Store , EXTRA ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' targets? ']'");
                 cache.putResult(_mark, T_ATOM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s t_atom[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'[' targets? ']'");
         }
+        debugMessageln("Fail at %d: t_atom", _mark);
         _res = null;
         cache.putResult(_mark, T_ATOM_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -11996,10 +13602,12 @@ public final class Parser extends AbstractParser {
     //     | args ',' args
     public Object invalid_arguments_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ARGUMENTS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_ARGUMENTS_ID);
+            level--;
             return (Object)_res;
         }
         { // args ',' '*'
@@ -12019,7 +13627,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "iterable argument unpacking follows keyword argument unpacking" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'iterable argument unpacking follows keyword argument unpacking' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ',' '*'");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12046,7 +13656,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "Generator expression must be parenthesized" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'Generator expression must be parenthesized' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression for_if_clauses ',' [args | expression for_if_clauses]");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12067,7 +13679,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_nonparen_genexp_in_call ( p , a )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_nonparen_genexp_in_call ( p , a ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args for_if_clauses");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12094,7 +13708,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "Generator expression must be parenthesized" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'Generator expression must be parenthesized' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ',' expression for_if_clauses");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12118,25 +13734,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_arguments_parsing_error ( p , a )
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_arguments_parsing_error ( p , a ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ',' args");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "args ',' args");
         }
+        debugMessageln("Fail at %d: invalid_arguments", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // invalid_kwarg: expression '='
     public ExprTy invalid_kwarg_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_KWARG_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_KWARG_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // expression '='
@@ -12153,25 +13775,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression cannot contain assignment, perhaps you meant \"==\"?" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'expression cannot contain assignment, perhaps you meant \'==\'?' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression '='");
                 cache.putResult(_mark, INVALID_KWARG_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kwarg[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression '='");
         }
+        debugMessageln("Fail at %d: invalid_kwarg", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_KWARG_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_expression: !(NAME STRING | SOFT_KEYWORD) disjunction expression
     public ExprTy invalid_expression_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_EXPRESSION_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_EXPRESSION_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // !(NAME STRING | SOFT_KEYWORD) disjunction expression
@@ -12190,15 +13818,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "invalid syntax. Perhaps you forgot a comma?" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , 'invalid syntax. Perhaps you forgot a comma?' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "!(NAME STRING | SOFT_KEYWORD) disjunction expression");
                 cache.putResult(_mark, INVALID_EXPRESSION_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "!(NAME STRING | SOFT_KEYWORD) disjunction expression");
         }
+        debugMessageln("Fail at %d: invalid_expression", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_EXPRESSION_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -12208,10 +13840,12 @@ public final class Parser extends AbstractParser {
     //     | !(list | tuple | genexp | 'True' | 'None' | 'False') bitwise_or '=' bitwise_or !('=' | ':=' | ',')
     public Object invalid_named_expression_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_NAMED_EXPRESSION_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_NAMED_EXPRESSION_ID);
+            level--;
             return (Object)_res;
         }
         { // expression ':=' expression
@@ -12231,7 +13865,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use assignment expressions with %s" , _PyPegen_get_expr_name ( a ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use assignment expressions with %s' , _PyPegen_get_expr_name ( a ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':=' expression");
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12257,7 +13893,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , "invalid syntax. Maybe you meant '==' or ':=' instead of '='?" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , 'invalid syntax. Maybe you meant '==' or ':=' instead of '='?' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' bitwise_or !('=' | ':=' | ',')");
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12285,15 +13923,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , "cannot assign to %s here. Maybe you meant '==' instead of '='?" , _PyPegen_get_expr_name ( a ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , 'cannot assign to %s here. Maybe you meant '==' instead of '='?' , _PyPegen_get_expr_name ( a ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "!(list | tuple | genexp | 'True' | 'None' | 'False') bitwise_or '=' bitwise_or !('=' | ':=' | ',')");
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_named_expression[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "!(list | tuple | genexp | 'True' | 'None' | 'False') bitwise_or '=' bitwise_or !('=' | ':=' | ',')");
         }
+        debugMessageln("Fail at %d: invalid_named_expression", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
+        level--;
         return (Object)_res;
     }
 
@@ -12306,10 +13948,12 @@ public final class Parser extends AbstractParser {
     //     | star_expressions augassign (yield_expr | star_expressions)
     public Object invalid_assignment_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ASSIGNMENT_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_ASSIGNMENT_ID);
+            level--;
             return (Object)_res;
         }
         { // invalid_ann_assign_target ':' expression
@@ -12329,7 +13973,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "only single target (not %s) can be annotated" , _PyPegen_get_expr_name ( a ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'only single target (not %s) can be annotated' , _PyPegen_get_expr_name ( a ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "invalid_ann_assign_target ':' expression");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12359,7 +14005,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "only single target (not tuple) can be annotated" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'only single target (not tuple) can be annotated' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions* ':' expression");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12383,7 +14031,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "illegal target for annotation" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'illegal target for annotation' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' expression");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12407,7 +14057,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))* star_expressions '='");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12431,7 +14083,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "assignment to yield expression not possible" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'assignment to yield expression not possible' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))* yield_expr '='");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12455,25 +14109,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "'%s' is an illegal expression for augmented assignment" , _PyPegen_get_expr_name ( a ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , ''%s' is an illegal expression for augmented assignment' , _PyPegen_get_expr_name ( a ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expressions augassign (yield_expr | star_expressions)");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_expressions augassign (yield_expr | star_expressions)");
         }
+        debugMessageln("Fail at %d: invalid_assignment", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // invalid_ann_assign_target: list | tuple | '(' invalid_ann_assign_target ')'
     public ExprTy invalid_ann_assign_target_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // list
@@ -12484,8 +14144,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_ann_assign_target[%d-%d]: %s succeeded!", level, _mark, mark(), "list");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "list");
                 _res = list_var;
                 cache.putResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -12500,8 +14162,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_ann_assign_target[%d-%d]: %s succeeded!", level, _mark, mark(), "tuple");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "tuple");
                 _res = tuple_var;
                 cache.putResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -12523,25 +14187,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d invalid_ann_assign_target[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' invalid_ann_assign_target ')'");
                 _res = a;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' invalid_ann_assign_target ')'");
                 cache.putResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_ann_assign_target[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'(' invalid_ann_assign_target ')'");
         }
+        debugMessageln("Fail at %d: invalid_ann_assign_target", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_del_stmt: 'del' star_expressions
     public ExprTy invalid_del_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DEL_STMT_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_DEL_STMT_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'del' star_expressions
@@ -12558,25 +14228,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'del' star_expressions");
                 cache.putResult(_mark, INVALID_DEL_STMT_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_del_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'del' star_expressions");
         }
+        debugMessageln("Fail at %d: invalid_del_stmt", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_DEL_STMT_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_block: NEWLINE !INDENT
     public Token invalid_block_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_BLOCK_ID)) {
             _res = (Token)cache.getResult(_mark, INVALID_BLOCK_ID);
+            level--;
             return (Token)_res;
         }
         { // NEWLINE !INDENT
@@ -12592,15 +14268,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_INDENTATION_ERROR ( "expected an indented block" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_INDENTATION_ERROR ( 'expected an indented block' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE !INDENT");
                 cache.putResult(_mark, INVALID_BLOCK_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_block[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NEWLINE !INDENT");
         }
+        debugMessageln("Fail at %d: invalid_block", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_BLOCK_ID, _res);
+        level--;
         return (Token)_res;
     }
 
@@ -12608,6 +14288,7 @@ public final class Parser extends AbstractParser {
     // invalid_primary: primary '{'
     public ExprTy invalid_primary_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         { // primary '{'
@@ -12624,13 +14305,17 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "invalid syntax" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'invalid syntax' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '{'");
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_primary[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "primary '{'");
         }
+        debugMessageln("Fail at %d: invalid_primary", _mark);
         _res = null;
+        level--;
         return (ExprTy)_res;
     }
 
@@ -12639,10 +14324,12 @@ public final class Parser extends AbstractParser {
     //     | ('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses
     public Object invalid_comprehension_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_COMPREHENSION_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_COMPREHENSION_ID);
+            level--;
             return (Object)_res;
         }
         { // ('[' | '(' | '{') starred_expression for_if_clauses
@@ -12662,7 +14349,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "iterable unpacking cannot be used in comprehension" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'iterable unpacking cannot be used in comprehension' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('[' | '(' | '{') starred_expression for_if_clauses");
                 cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12692,25 +14381,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "did you forget parentheses around the comprehension target?" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'did you forget parentheses around the comprehension target?' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses");
                 cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_comprehension[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses");
         }
+        debugMessageln("Fail at %d: invalid_comprehension", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // invalid_dict_comprehension: '{' '**' bitwise_or for_if_clauses '}'
     public Object invalid_dict_comprehension_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DICT_COMPREHENSION_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_DICT_COMPREHENSION_ID);
+            level--;
             return (Object)_res;
         }
         { // '{' '**' bitwise_or for_if_clauses '}'
@@ -12736,25 +14431,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "dict unpacking cannot be used in dict comprehension" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'dict unpacking cannot be used in dict comprehension' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' '**' bitwise_or for_if_clauses '}'");
                 cache.putResult(_mark, INVALID_DICT_COMPREHENSION_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_dict_comprehension[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'{' '**' bitwise_or for_if_clauses '}'");
         }
+        debugMessageln("Fail at %d: invalid_dict_comprehension", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_DICT_COMPREHENSION_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // invalid_parameters: param_no_default* invalid_parameters_helper param_no_default
     public Object invalid_parameters_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_PARAMETERS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_PARAMETERS_ID);
+            level--;
             return (Object)_res;
         }
         { // param_no_default* invalid_parameters_helper param_no_default
@@ -12774,25 +14475,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "non-default argument follows default argument" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'non-default argument follows default argument' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default* invalid_parameters_helper param_no_default");
                 cache.putResult(_mark, INVALID_PARAMETERS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_parameters[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default* invalid_parameters_helper param_no_default");
         }
+        debugMessageln("Fail at %d: invalid_parameters", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_PARAMETERS_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // invalid_parameters_helper: slash_with_default | param_with_default+
     public Object invalid_parameters_helper_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_PARAMETERS_HELPER_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_PARAMETERS_HELPER_ID);
+            level--;
             return (Object)_res;
         }
         { // slash_with_default
@@ -12804,7 +14511,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d invalid_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "slash_with_default");
                 _res = this.singletonSequence(a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default");
                 cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12819,16 +14528,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "param_with_default+");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default+");
                 _res = _loop1_213_var;
                 cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_parameters_helper[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_with_default+");
         }
+        debugMessageln("Fail at %d: invalid_parameters_helper", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
+        level--;
         return (Object)_res;
     }
 
@@ -12836,10 +14549,12 @@ public final class Parser extends AbstractParser {
     //     | lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default
     public Object invalid_lambda_parameters_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_LAMBDA_PARAMETERS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_LAMBDA_PARAMETERS_ID);
+            level--;
             return (Object)_res;
         }
         { // lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default
@@ -12859,15 +14574,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "non-default argument follows default argument" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'non-default argument follows default argument' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default");
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_parameters[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default");
         }
+        debugMessageln("Fail at %d: invalid_lambda_parameters", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_ID, _res);
+        level--;
         return (Object)_res;
     }
 
@@ -12876,10 +14595,12 @@ public final class Parser extends AbstractParser {
     //     | lambda_param_with_default+
     public Object invalid_lambda_parameters_helper_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID);
+            level--;
             return (Object)_res;
         }
         { // lambda_slash_with_default
@@ -12891,7 +14612,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d invalid_lambda_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_slash_with_default");
                 _res = this.singletonSequence(a);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_with_default");
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -12906,26 +14629,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_lambda_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_param_with_default+");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default+");
                 _res = _loop1_215_var;
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_parameters_helper[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_with_default+");
         }
+        debugMessageln("Fail at %d: invalid_lambda_parameters_helper", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // invalid_star_etc: '*' (')' | ',' (')' | '**')) | '*' ',' TYPE_COMMENT
     public Token invalid_star_etc_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_STAR_ETC_ID)) {
             _res = (Token)cache.getResult(_mark, INVALID_STAR_ETC_ID);
+            level--;
             return (Token)_res;
         }
         { // '*' (')' | ',' (')' | '**'))
@@ -12942,7 +14671,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "named arguments must follow bare *" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'named arguments must follow bare *' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (')' | ',' (')' | '**'))");
                 cache.putResult(_mark, INVALID_STAR_ETC_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -12966,25 +14697,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "bare * has associated type comment" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'bare * has associated type comment' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' ',' TYPE_COMMENT");
                 cache.putResult(_mark, INVALID_STAR_ETC_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_star_etc[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'*' ',' TYPE_COMMENT");
         }
+        debugMessageln("Fail at %d: invalid_star_etc", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_STAR_ETC_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // invalid_lambda_star_etc: '*' (':' | ',' (':' | '**'))
     public Token invalid_lambda_star_etc_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_LAMBDA_STAR_ETC_ID)) {
             _res = (Token)cache.getResult(_mark, INVALID_LAMBDA_STAR_ETC_ID);
+            level--;
             return (Token)_res;
         }
         { // '*' (':' | ',' (':' | '**'))
@@ -13001,25 +14738,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "named arguments must follow bare *" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'named arguments must follow bare *' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (':' | ',' (':' | '**'))");
                 cache.putResult(_mark, INVALID_LAMBDA_STAR_ETC_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_star_etc[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'*' (':' | ',' (':' | '**'))");
         }
+        debugMessageln("Fail at %d: invalid_lambda_star_etc", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_LAMBDA_STAR_ETC_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // invalid_double_type_comments: TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT
     public Token invalid_double_type_comments_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID)) {
             _res = (Token)cache.getResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID);
+            level--;
             return (Token)_res;
         }
         { // TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT
@@ -13045,25 +14788,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "Cannot have two type comments on def" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'Cannot have two type comments on def' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT");
                 cache.putResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_type_comments[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT");
         }
+        debugMessageln("Fail at %d: invalid_double_type_comments", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // invalid_with_item: expression 'as' expression &(',' | ')' | ':')
     public ExprTy invalid_with_item_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_WITH_ITEM_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_WITH_ITEM_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // expression 'as' expression &(',' | ')' | ':')
@@ -13085,25 +14834,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression 'as' expression &(',' | ')' | ':')");
                 cache.putResult(_mark, INVALID_WITH_ITEM_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_with_item[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression 'as' expression &(',' | ')' | ':')");
         }
+        debugMessageln("Fail at %d: invalid_with_item", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_WITH_ITEM_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_for_target: ASYNC? 'for' star_expressions
     public ExprTy invalid_for_target_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_FOR_TARGET_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_FOR_TARGET_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // ASYNC? 'for' star_expressions
@@ -13123,25 +14878,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC? 'for' star_expressions");
                 cache.putResult(_mark, INVALID_FOR_TARGET_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_for_target[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC? 'for' star_expressions");
         }
+        debugMessageln("Fail at %d: invalid_for_target", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_FOR_TARGET_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_group: '(' starred_expression ')' | '(' '**' expression ')'
     public ExprTy invalid_group_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_GROUP_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_GROUP_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '(' starred_expression ')'
@@ -13161,7 +14922,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use starred expression here" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use starred expression here' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' starred_expression ')'");
                 cache.putResult(_mark, INVALID_GROUP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -13188,25 +14951,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use double starred expression here" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use double starred expression here' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' '**' expression ')'");
                 cache.putResult(_mark, INVALID_GROUP_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_group[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'(' '**' expression ')'");
         }
+        debugMessageln("Fail at %d: invalid_group", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_GROUP_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_import_from_targets: import_from_as_names ','
     public AliasTy[] invalid_import_from_targets_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID)) {
             _res = (AliasTy[])cache.getResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID);
+            level--;
             return (AliasTy[])_res;
         }
         { // import_from_as_names ','
@@ -13223,15 +14992,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "trailing comma not allowed without surrounding parentheses" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'trailing comma not allowed without surrounding parentheses' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "import_from_as_names ','");
                 cache.putResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID, _res);
+                level--;
                 return (AliasTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_import_from_targets[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "import_from_as_names ','");
         }
+        debugMessageln("Fail at %d: invalid_import_from_targets", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID, _res);
+        level--;
         return (AliasTy[])_res;
     }
 
@@ -13240,10 +15013,12 @@ public final class Parser extends AbstractParser {
     //     | ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' &&':'
     public ExprTy[] invalid_with_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_WITH_STMT_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, INVALID_WITH_STMT_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // ASYNC? 'with' ','.(expression ['as' star_target])+ &&':'
@@ -13263,8 +15038,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_with_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "ASYNC? 'with' ','.(expression ['as' star_target])+ &&':'");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "ASYNC? 'with' ','.(expression ['as' star_target])+ &&':'");
                 _res = dummyName(_opt_var, _keyword, _gather_220_var, _literal);
                 cache.putResult(_mark, INVALID_WITH_STMT_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
@@ -13297,16 +15074,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_with_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' &&':'");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' &&':'");
                 _res = dummyName(_opt_var, _keyword, _literal, _gather_223_var, _opt_var_1, _literal_1, _literal_2);
                 cache.putResult(_mark, INVALID_WITH_STMT_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_with_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' &&':'");
         }
+        debugMessageln("Fail at %d: invalid_with_stmt", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_WITH_STMT_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
@@ -13316,10 +15097,12 @@ public final class Parser extends AbstractParser {
     //     | 'except' &&':'
     public Object invalid_except_block_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_EXCEPT_BLOCK_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_EXCEPT_BLOCK_ID);
+            level--;
             return (Object)_res;
         }
         { // 'except' expression ',' expressions ['as' NAME] ':'
@@ -13348,7 +15131,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "exception group must be parenthesized" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'exception group must be parenthesized' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'except' expression ',' expressions ['as' NAME] ':'");
                 cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -13372,8 +15157,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_except_block[%d-%d]: %s succeeded!", level, _mark, mark(), "'except' expression ['as' NAME] &&':'");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'except' expression ['as' NAME] &&':'");
                 _res = dummyName(_keyword, expression_var, _opt_var, _literal);
                 cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -13391,26 +15178,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_except_block[%d-%d]: %s succeeded!", level, _mark, mark(), "'except' &&':'");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'except' &&':'");
                 _res = dummyName(_keyword, _literal);
                 cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_except_block[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'except' &&':'");
         }
+        debugMessageln("Fail at %d: invalid_except_block", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // invalid_match_stmt: "match" subject_expr !':'
     public ExprTy invalid_match_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_MATCH_STMT_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_MATCH_STMT_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // "match" subject_expr !':'
@@ -13429,25 +15222,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected ':'" ) )
                 debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( void * , 10 , 'Pattern matching is' , RAISE_SYNTAX_ERROR ( 'expected ':'' ) ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'match' subject_expr !':'");
                 cache.putResult(_mark, INVALID_MATCH_STMT_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_match_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "\"match\" subject_expr !':'");
         }
+        debugMessageln("Fail at %d: invalid_match_stmt", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_MATCH_STMT_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_case_block: "case" patterns guard? !':'
     public ExprTy invalid_case_block_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_CASE_BLOCK_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_CASE_BLOCK_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // "case" patterns guard? !':'
@@ -13469,25 +15268,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "expected ':'" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'expected ':'' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'case' patterns guard? !':'");
                 cache.putResult(_mark, INVALID_CASE_BLOCK_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_case_block[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "\"case\" patterns guard? !':'");
         }
+        debugMessageln("Fail at %d: invalid_case_block", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_CASE_BLOCK_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_if_stmt: 'if' named_expression NEWLINE
     public ExprTy invalid_if_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_IF_STMT_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_IF_STMT_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'if' named_expression NEWLINE
@@ -13507,25 +15312,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "expected ':'" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'expected ':'' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression NEWLINE");
                 cache.putResult(_mark, INVALID_IF_STMT_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_if_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'if' named_expression NEWLINE");
         }
+        debugMessageln("Fail at %d: invalid_if_stmt", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_IF_STMT_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_elif_stmt: 'elif' named_expression NEWLINE
     public ExprTy invalid_elif_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ELIF_STMT_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_ELIF_STMT_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'elif' named_expression NEWLINE
@@ -13545,25 +15356,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "expected ':'" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'expected ':'' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression NEWLINE");
                 cache.putResult(_mark, INVALID_ELIF_STMT_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_elif_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'elif' named_expression NEWLINE");
         }
+        debugMessageln("Fail at %d: invalid_elif_stmt", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_ELIF_STMT_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // invalid_while_stmt: 'while' named_expression NEWLINE
     public ExprTy invalid_while_stmt_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_WHILE_STMT_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_WHILE_STMT_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'while' named_expression NEWLINE
@@ -13583,15 +15400,19 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "expected ':'" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR ( 'expected ':'' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'while' named_expression NEWLINE");
                 cache.putResult(_mark, INVALID_WHILE_STMT_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_while_stmt[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'while' named_expression NEWLINE");
         }
+        debugMessageln("Fail at %d: invalid_while_stmt", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_WHILE_STMT_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
@@ -13601,10 +15422,12 @@ public final class Parser extends AbstractParser {
     //     | expression ':' &('}' | ',')
     public Object invalid_double_starred_kvpairs_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID)) {
             _res = (Object)cache.getResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID);
+            level--;
             return (Object)_res;
         }
         { // ','.double_starred_kvpair+ ',' invalid_kvpair
@@ -13621,8 +15444,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_double_starred_kvpairs[%d-%d]: %s succeeded!", level, _mark, mark(), "','.double_starred_kvpair+ ',' invalid_kvpair");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "','.double_starred_kvpair+ ',' invalid_kvpair");
                 _res = dummyName(_gather_227_var, _literal, invalid_kvpair_var);
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -13649,7 +15474,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use a starred expression in a dictionary value" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use a starred expression in a dictionary value' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' '*' bitwise_or");
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -13672,25 +15499,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression expected after dictionary key and ':'" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'expression expected after dictionary key and ':'' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' &('}' | ',')");
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_starred_kvpairs[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression ':' &('}' | ',')");
         }
+        debugMessageln("Fail at %d: invalid_double_starred_kvpairs", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // invalid_kvpair: expression !(':') | expression ':' '*' bitwise_or | expression ':'
     public ExprTy invalid_kvpair_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_KVPAIR_ID)) {
             _res = (ExprTy)cache.getResult(_mark, INVALID_KVPAIR_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // expression !(':')
@@ -13706,7 +15539,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "':' expected after dictionary key" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , '':' expected after dictionary key' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression !(':')");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -13733,7 +15568,9 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use a starred expression in a dictionary value" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use a starred expression in a dictionary value' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' '*' bitwise_or");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -13754,25 +15591,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression expected after dictionary key and ':'" )
                 debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'expression expected after dictionary key and ':'' ) to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':'");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kvpair[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression ':'");
         }
+        debugMessageln("Fail at %d: invalid_kvpair", _mark);
         _res = null;
         cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_1: statements
     public StmtTy[] _tmp_1_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_1_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, _TMP_1_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // statements
@@ -13783,26 +15626,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_1[%d-%d]: %s succeeded!", level, _mark, mark(), "statements");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "statements");
                 _res = statements_var;
                 cache.putResult(_mark, _TMP_1_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_1[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "statements");
         }
+        debugMessageln("Fail at %d: _tmp_1", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_1_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // _loop0_2: NEWLINE
     public Token[] _loop0_2_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_2_ID)) {
             _res = cache.getResult(_mark, _LOOP0_2_ID);
+            level--;
             return (Token[])_res;
         }
         int _start_mark = mark();
@@ -13816,6 +15665,7 @@ public final class Parser extends AbstractParser {
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NEWLINE");
                 _res = newline_var;
                 if (_res instanceof Token) {
                     _children.add((Token)_res);
@@ -13830,16 +15680,19 @@ public final class Parser extends AbstractParser {
         }
         Token[] _seq = _children.toArray(new Token[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_2_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_3: type_expressions
     public ExprTy[] _tmp_3_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_3_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_3_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // type_expressions
@@ -13850,26 +15703,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_3[%d-%d]: %s succeeded!", level, _mark, mark(), "type_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "type_expressions");
                 _res = type_expressions_var;
                 cache.putResult(_mark, _TMP_3_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_3[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "type_expressions");
         }
+        debugMessageln("Fail at %d: _tmp_3", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_3_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop0_4: NEWLINE
     public Token[] _loop0_4_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_4_ID)) {
             _res = cache.getResult(_mark, _LOOP0_4_ID);
+            level--;
             return (Token[])_res;
         }
         int _start_mark = mark();
@@ -13883,6 +15742,7 @@ public final class Parser extends AbstractParser {
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NEWLINE");
                 _res = newline_var;
                 if (_res instanceof Token) {
                     _children.add((Token)_res);
@@ -13897,16 +15757,19 @@ public final class Parser extends AbstractParser {
         }
         Token[] _seq = _children.toArray(new Token[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_4_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_6: ',' expression
     public ExprTy[] _loop0_6_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_6_ID)) {
             _res = cache.getResult(_mark, _LOOP0_6_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -13924,6 +15787,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -13937,16 +15801,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_6_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_5: expression _loop0_6
     public ExprTy[] _gather_5_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_5_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_5_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // expression _loop0_6
@@ -13962,24 +15829,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_5[%d-%d]: %s succeeded!", level, _mark, mark(), "expression _loop0_6");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_5_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_5[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression _loop0_6");
         }
+        debugMessageln("Fail at %d: _gather_5", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_5_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop0_8: ',' expression
     public ExprTy[] _loop0_8_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_8_ID)) {
             _res = cache.getResult(_mark, _LOOP0_8_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -13997,6 +15869,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -14010,16 +15883,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_8_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_7: expression _loop0_8
     public ExprTy[] _gather_7_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_7_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_7_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // expression _loop0_8
@@ -14035,24 +15911,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_7[%d-%d]: %s succeeded!", level, _mark, mark(), "expression _loop0_8");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_7_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_7[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression _loop0_8");
         }
+        debugMessageln("Fail at %d: _gather_7", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_7_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop0_10: ',' expression
     public ExprTy[] _loop0_10_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_10_ID)) {
             _res = cache.getResult(_mark, _LOOP0_10_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -14070,6 +15951,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -14083,16 +15965,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_10_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_9: expression _loop0_10
     public ExprTy[] _gather_9_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_9_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_9_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // expression _loop0_10
@@ -14108,24 +15993,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_9[%d-%d]: %s succeeded!", level, _mark, mark(), "expression _loop0_10");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_9_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_9[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression _loop0_10");
         }
+        debugMessageln("Fail at %d: _gather_9", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_9_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop0_12: ',' expression
     public ExprTy[] _loop0_12_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_12_ID)) {
             _res = cache.getResult(_mark, _LOOP0_12_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -14143,6 +16033,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -14156,16 +16047,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_12_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_11: expression _loop0_12
     public ExprTy[] _gather_11_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_11_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_11_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // expression _loop0_12
@@ -14181,24 +16075,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_11[%d-%d]: %s succeeded!", level, _mark, mark(), "expression _loop0_12");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_11_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_11[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression _loop0_12");
         }
+        debugMessageln("Fail at %d: _gather_11", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_11_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop1_13: statement
     public StmtTy[] _loop1_13_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_13_ID)) {
             _res = cache.getResult(_mark, _LOOP1_13_ID);
+            level--;
             return (StmtTy[])_res;
         }
         int _start_mark = mark();
@@ -14212,6 +16111,7 @@ public final class Parser extends AbstractParser {
                 (statement_var = (StmtTy[])statement_rule()) != null  // statement
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "statement");
                 _res = statement_var;
                 if (_res instanceof StmtTy) {
                     _children.add((StmtTy)_res);
@@ -14225,20 +16125,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "statement");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         StmtTy[] _seq = _children.toArray(new StmtTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_13_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_15: ';' simple_stmt
     public StmtTy[] _loop0_15_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_15_ID)) {
             _res = cache.getResult(_mark, _LOOP0_15_ID);
+            level--;
             return (StmtTy[])_res;
         }
         int _start_mark = mark();
@@ -14256,6 +16160,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "';' simple_stmt");
                 if (_res instanceof StmtTy) {
                     _children.add((StmtTy)_res);
                 } else {
@@ -14269,16 +16174,19 @@ public final class Parser extends AbstractParser {
         }
         StmtTy[] _seq = _children.toArray(new StmtTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_15_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_14: simple_stmt _loop0_15
     public StmtTy[] _gather_14_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_14_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, _GATHER_14_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // simple_stmt _loop0_15
@@ -14294,24 +16202,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_14[%d-%d]: %s succeeded!", level, _mark, mark(), "simple_stmt _loop0_15");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_14_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_14[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "simple_stmt _loop0_15");
         }
+        debugMessageln("Fail at %d: _gather_14", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_14_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // _tmp_16: ';'
     public Token _tmp_16_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_16_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_16_ID);
+            level--;
             return (Token)_res;
         }
         { // ';'
@@ -14322,26 +16235,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_16[%d-%d]: %s succeeded!", level, _mark, mark(), "';'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "';'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_16_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_16[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "';'");
         }
+        debugMessageln("Fail at %d: _tmp_16", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_16_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_17: 'import' | 'from'
     public Token _tmp_17_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_17_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_17_ID);
+            level--;
             return (Token)_res;
         }
         { // 'import'
@@ -14352,8 +16271,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_17[%d-%d]: %s succeeded!", level, _mark, mark(), "'import'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'import'");
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_17_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -14368,26 +16289,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_17[%d-%d]: %s succeeded!", level, _mark, mark(), "'from'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'from'");
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_17_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_17[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'from'");
         }
+        debugMessageln("Fail at %d: _tmp_17", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_17_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_18: 'def' | '@' | ASYNC
     public Token _tmp_18_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_18_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_18_ID);
+            level--;
             return (Token)_res;
         }
         { // 'def'
@@ -14398,8 +16325,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_18[%d-%d]: %s succeeded!", level, _mark, mark(), "'def'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'def'");
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_18_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -14414,8 +16343,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_18[%d-%d]: %s succeeded!", level, _mark, mark(), "'@'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'@'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_18_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -14430,26 +16361,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_18[%d-%d]: %s succeeded!", level, _mark, mark(), "ASYNC");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
                 cache.putResult(_mark, _TMP_18_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_18[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC");
         }
+        debugMessageln("Fail at %d: _tmp_18", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_18_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_19: 'class' | '@'
     public Token _tmp_19_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_19_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_19_ID);
+            level--;
             return (Token)_res;
         }
         { // 'class'
@@ -14460,8 +16397,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_19[%d-%d]: %s succeeded!", level, _mark, mark(), "'class'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'class'");
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_19_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -14476,26 +16415,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_19[%d-%d]: %s succeeded!", level, _mark, mark(), "'@'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'@'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_19_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_19[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'@'");
         }
+        debugMessageln("Fail at %d: _tmp_19", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_19_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_20: 'with' | ASYNC
     public Token _tmp_20_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_20_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_20_ID);
+            level--;
             return (Token)_res;
         }
         { // 'with'
@@ -14506,8 +16451,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_20[%d-%d]: %s succeeded!", level, _mark, mark(), "'with'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'with'");
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_20_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -14522,26 +16469,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_20[%d-%d]: %s succeeded!", level, _mark, mark(), "ASYNC");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
                 cache.putResult(_mark, _TMP_20_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_20[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC");
         }
+        debugMessageln("Fail at %d: _tmp_20", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_20_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_21: 'for' | ASYNC
     public Token _tmp_21_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_21_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_21_ID);
+            level--;
             return (Token)_res;
         }
         { // 'for'
@@ -14552,8 +16505,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_21[%d-%d]: %s succeeded!", level, _mark, mark(), "'for'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'for'");
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_21_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -14568,26 +16523,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_21[%d-%d]: %s succeeded!", level, _mark, mark(), "ASYNC");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
                 cache.putResult(_mark, _TMP_21_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_21[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC");
         }
+        debugMessageln("Fail at %d: _tmp_21", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_21_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_22: '=' annotated_rhs
     public ExprTy _tmp_22_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_22_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_22_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '=' annotated_rhs
@@ -14602,25 +16563,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_22[%d-%d]: %s succeeded!", level, _mark, mark(), "'=' annotated_rhs");
                 _res = d;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'=' annotated_rhs");
                 cache.putResult(_mark, _TMP_22_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_22[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'=' annotated_rhs");
         }
+        debugMessageln("Fail at %d: _tmp_22", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_22_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_23: '(' single_target ')' | single_subscript_attribute_target
     public ExprTy _tmp_23_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_23_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_23_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '(' single_target ')'
@@ -14638,7 +16605,9 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_23[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' single_target ')'");
                 _res = b;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' single_target ')'");
                 cache.putResult(_mark, _TMP_23_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -14653,26 +16622,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_23[%d-%d]: %s succeeded!", level, _mark, mark(), "single_subscript_attribute_target");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "single_subscript_attribute_target");
                 _res = single_subscript_attribute_target_var;
                 cache.putResult(_mark, _TMP_23_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_23[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "single_subscript_attribute_target");
         }
+        debugMessageln("Fail at %d: _tmp_23", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_23_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_24: '=' annotated_rhs
     public ExprTy _tmp_24_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_24_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_24_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '=' annotated_rhs
@@ -14687,25 +16662,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_24[%d-%d]: %s succeeded!", level, _mark, mark(), "'=' annotated_rhs");
                 _res = d;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'=' annotated_rhs");
                 cache.putResult(_mark, _TMP_24_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_24[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'=' annotated_rhs");
         }
+        debugMessageln("Fail at %d: _tmp_24", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_24_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop1_25: (star_targets '=')
     public ExprTy[] _loop1_25_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_25_ID)) {
             _res = cache.getResult(_mark, _LOOP1_25_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -14719,6 +16700,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_231_var = (ExprTy)_tmp_231_rule()) != null  // star_targets '='
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(star_targets '=')");
                 _res = _tmp_231_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -14732,20 +16714,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "(star_targets '=')");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_25_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_26: yield_expr | star_expressions
     public ExprTy _tmp_26_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_26_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_26_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // yield_expr
@@ -14756,8 +16742,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_26[%d-%d]: %s succeeded!", level, _mark, mark(), "yield_expr");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
                 cache.putResult(_mark, _TMP_26_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -14772,26 +16760,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_26[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_26_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_26[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_expressions");
         }
+        debugMessageln("Fail at %d: _tmp_26", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_26_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_27: TYPE_COMMENT
     public Token _tmp_27_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_27_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_27_ID);
+            level--;
             return (Token)_res;
         }
         { // TYPE_COMMENT
@@ -14802,26 +16796,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_27[%d-%d]: %s succeeded!", level, _mark, mark(), "TYPE_COMMENT");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_27_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_27[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "TYPE_COMMENT");
         }
+        debugMessageln("Fail at %d: _tmp_27", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_27_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_28: yield_expr | star_expressions
     public ExprTy _tmp_28_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_28_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_28_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // yield_expr
@@ -14832,8 +16832,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_28[%d-%d]: %s succeeded!", level, _mark, mark(), "yield_expr");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
                 cache.putResult(_mark, _TMP_28_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -14848,26 +16850,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_28[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_28_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_28[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_expressions");
         }
+        debugMessageln("Fail at %d: _tmp_28", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_28_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop0_30: ',' NAME
     public ExprTy[] _loop0_30_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_30_ID)) {
             _res = cache.getResult(_mark, _LOOP0_30_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -14885,6 +16893,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' NAME");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -14898,16 +16907,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_30_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_29: NAME _loop0_30
     public ExprTy[] _gather_29_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_29_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_29_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // NAME _loop0_30
@@ -14923,24 +16935,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_29[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME _loop0_30");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_29_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_29[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME _loop0_30");
         }
+        debugMessageln("Fail at %d: _gather_29", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_29_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop0_32: ',' NAME
     public ExprTy[] _loop0_32_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_32_ID)) {
             _res = cache.getResult(_mark, _LOOP0_32_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -14958,6 +16975,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' NAME");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -14971,16 +16989,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_32_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_31: NAME _loop0_32
     public ExprTy[] _gather_31_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_31_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_31_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // NAME _loop0_32
@@ -14996,24 +17017,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_31[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME _loop0_32");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_31_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_31[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NAME _loop0_32");
         }
+        debugMessageln("Fail at %d: _gather_31", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_31_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_33: ',' expression
     public ExprTy _tmp_33_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_33_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_33_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // ',' expression
@@ -15028,25 +17054,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_33[%d-%d]: %s succeeded!", level, _mark, mark(), "',' expression");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 cache.putResult(_mark, _TMP_33_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_33[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' expression");
         }
+        debugMessageln("Fail at %d: _tmp_33", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_33_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_34: ';' | NEWLINE
     public Token _tmp_34_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_34_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_34_ID);
+            level--;
             return (Token)_res;
         }
         { // ';'
@@ -15057,8 +17089,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_34[%d-%d]: %s succeeded!", level, _mark, mark(), "';'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "';'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_34_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -15073,26 +17107,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_34[%d-%d]: %s succeeded!", level, _mark, mark(), "NEWLINE");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NEWLINE");
                 _res = newline_var;
                 cache.putResult(_mark, _TMP_34_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_34[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NEWLINE");
         }
+        debugMessageln("Fail at %d: _tmp_34", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_34_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_35: ('.' | '...')
     public Token[] _loop0_35_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_35_ID)) {
             _res = cache.getResult(_mark, _LOOP0_35_ID);
+            level--;
             return (Token[])_res;
         }
         int _start_mark = mark();
@@ -15106,6 +17146,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_232_var = (Token)_tmp_232_rule()) != null  // '.' | '...'
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('.' | '...')");
                 _res = _tmp_232_var;
                 if (_res instanceof Token) {
                     _children.add((Token)_res);
@@ -15120,16 +17161,19 @@ public final class Parser extends AbstractParser {
         }
         Token[] _seq = _children.toArray(new Token[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_35_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_36: ('.' | '...')
     public Token[] _loop1_36_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_36_ID)) {
             _res = cache.getResult(_mark, _LOOP1_36_ID);
+            level--;
             return (Token[])_res;
         }
         int _start_mark = mark();
@@ -15143,6 +17187,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_233_var = (Token)_tmp_233_rule()) != null  // '.' | '...'
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('.' | '...')");
                 _res = _tmp_233_var;
                 if (_res instanceof Token) {
                     _children.add((Token)_res);
@@ -15156,20 +17201,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "('.' | '...')");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         Token[] _seq = _children.toArray(new Token[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_36_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_37: ','
     public Token _tmp_37_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_37_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_37_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -15180,26 +17229,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_37[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_37_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_37[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_37", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_37_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_39: ',' import_from_as_name
     public AliasTy[] _loop0_39_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_39_ID)) {
             _res = cache.getResult(_mark, _LOOP0_39_ID);
+            level--;
             return (AliasTy[])_res;
         }
         int _start_mark = mark();
@@ -15217,6 +17272,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' import_from_as_name");
                 if (_res instanceof AliasTy) {
                     _children.add((AliasTy)_res);
                 } else {
@@ -15230,16 +17286,19 @@ public final class Parser extends AbstractParser {
         }
         AliasTy[] _seq = _children.toArray(new AliasTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_39_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_38: import_from_as_name _loop0_39
     public AliasTy[] _gather_38_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_38_ID)) {
             _res = (AliasTy[])cache.getResult(_mark, _GATHER_38_ID);
+            level--;
             return (AliasTy[])_res;
         }
         { // import_from_as_name _loop0_39
@@ -15255,24 +17314,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_38[%d-%d]: %s succeeded!", level, _mark, mark(), "import_from_as_name _loop0_39");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_38_ID, _res);
+                level--;
                 return (AliasTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_38[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "import_from_as_name _loop0_39");
         }
+        debugMessageln("Fail at %d: _gather_38", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_38_ID, _res);
+        level--;
         return (AliasTy[])_res;
     }
 
     // _tmp_40: 'as' NAME
     public ExprTy _tmp_40_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_40_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_40_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'as' NAME
@@ -15287,25 +17351,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_40[%d-%d]: %s succeeded!", level, _mark, mark(), "'as' NAME");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'as' NAME");
                 cache.putResult(_mark, _TMP_40_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_40[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'as' NAME");
         }
+        debugMessageln("Fail at %d: _tmp_40", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_40_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop0_42: ',' dotted_as_name
     public AliasTy[] _loop0_42_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_42_ID)) {
             _res = cache.getResult(_mark, _LOOP0_42_ID);
+            level--;
             return (AliasTy[])_res;
         }
         int _start_mark = mark();
@@ -15323,6 +17393,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' dotted_as_name");
                 if (_res instanceof AliasTy) {
                     _children.add((AliasTy)_res);
                 } else {
@@ -15336,16 +17407,19 @@ public final class Parser extends AbstractParser {
         }
         AliasTy[] _seq = _children.toArray(new AliasTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_42_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_41: dotted_as_name _loop0_42
     public AliasTy[] _gather_41_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_41_ID)) {
             _res = (AliasTy[])cache.getResult(_mark, _GATHER_41_ID);
+            level--;
             return (AliasTy[])_res;
         }
         { // dotted_as_name _loop0_42
@@ -15361,24 +17435,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_41[%d-%d]: %s succeeded!", level, _mark, mark(), "dotted_as_name _loop0_42");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_41_ID, _res);
+                level--;
                 return (AliasTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_41[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "dotted_as_name _loop0_42");
         }
+        debugMessageln("Fail at %d: _gather_41", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_41_ID, _res);
+        level--;
         return (AliasTy[])_res;
     }
 
     // _tmp_43: 'as' NAME
     public ExprTy _tmp_43_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_43_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_43_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'as' NAME
@@ -15393,25 +17472,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_43[%d-%d]: %s succeeded!", level, _mark, mark(), "'as' NAME");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'as' NAME");
                 cache.putResult(_mark, _TMP_43_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_43[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'as' NAME");
         }
+        debugMessageln("Fail at %d: _tmp_43", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_43_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_44: else_block
     public StmtTy[] _tmp_44_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_44_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, _TMP_44_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // else_block
@@ -15422,26 +17507,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_44[%d-%d]: %s succeeded!", level, _mark, mark(), "else_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_44_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_44[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "else_block");
         }
+        debugMessageln("Fail at %d: _tmp_44", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_44_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // _tmp_45: else_block
     public StmtTy[] _tmp_45_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_45_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, _TMP_45_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // else_block
@@ -15452,26 +17543,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_45[%d-%d]: %s succeeded!", level, _mark, mark(), "else_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_45_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_45[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "else_block");
         }
+        debugMessageln("Fail at %d: _tmp_45", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_45_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // _tmp_46: else_block
     public StmtTy[] _tmp_46_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_46_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, _TMP_46_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // else_block
@@ -15482,26 +17579,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_46[%d-%d]: %s succeeded!", level, _mark, mark(), "else_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_46_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_46[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "else_block");
         }
+        debugMessageln("Fail at %d: _tmp_46", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_46_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // _tmp_47: TYPE_COMMENT
     public Token _tmp_47_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_47_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_47_ID);
+            level--;
             return (Token)_res;
         }
         { // TYPE_COMMENT
@@ -15512,26 +17615,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_47[%d-%d]: %s succeeded!", level, _mark, mark(), "TYPE_COMMENT");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_47_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_47[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "TYPE_COMMENT");
         }
+        debugMessageln("Fail at %d: _tmp_47", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_47_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_48: else_block
     public StmtTy[] _tmp_48_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_48_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, _TMP_48_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // else_block
@@ -15542,26 +17651,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_48[%d-%d]: %s succeeded!", level, _mark, mark(), "else_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_48_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_48[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "else_block");
         }
+        debugMessageln("Fail at %d: _tmp_48", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_48_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // _tmp_49: TYPE_COMMENT
     public Token _tmp_49_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_49_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_49_ID);
+            level--;
             return (Token)_res;
         }
         { // TYPE_COMMENT
@@ -15572,26 +17687,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_49[%d-%d]: %s succeeded!", level, _mark, mark(), "TYPE_COMMENT");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_49_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_49[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "TYPE_COMMENT");
         }
+        debugMessageln("Fail at %d: _tmp_49", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_49_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_50: else_block
     public StmtTy[] _tmp_50_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_50_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, _TMP_50_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // else_block
@@ -15602,26 +17723,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_50[%d-%d]: %s succeeded!", level, _mark, mark(), "else_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_50_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_50[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "else_block");
         }
+        debugMessageln("Fail at %d: _tmp_50", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_50_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // _loop0_52: ',' with_item
     public StmtTy.With.Item[] _loop0_52_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_52_ID)) {
             _res = cache.getResult(_mark, _LOOP0_52_ID);
+            level--;
             return (StmtTy.With.Item[])_res;
         }
         int _start_mark = mark();
@@ -15639,6 +17766,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
                 if (_res instanceof StmtTy.With.Item) {
                     _children.add((StmtTy.With.Item)_res);
                 } else {
@@ -15652,16 +17780,19 @@ public final class Parser extends AbstractParser {
         }
         StmtTy.With.Item[] _seq = _children.toArray(new StmtTy.With.Item[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_52_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_51: with_item _loop0_52
     public StmtTy.With.Item[] _gather_51_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_51_ID)) {
             _res = (StmtTy.With.Item[])cache.getResult(_mark, _GATHER_51_ID);
+            level--;
             return (StmtTy.With.Item[])_res;
         }
         { // with_item _loop0_52
@@ -15677,24 +17808,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_51[%d-%d]: %s succeeded!", level, _mark, mark(), "with_item _loop0_52");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_51_ID, _res);
+                level--;
                 return (StmtTy.With.Item[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_51[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "with_item _loop0_52");
         }
+        debugMessageln("Fail at %d: _gather_51", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_51_ID, _res);
+        level--;
         return (StmtTy.With.Item[])_res;
     }
 
     // _loop0_54: ',' with_item
     public StmtTy.With.Item[] _loop0_54_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_54_ID)) {
             _res = cache.getResult(_mark, _LOOP0_54_ID);
+            level--;
             return (StmtTy.With.Item[])_res;
         }
         int _start_mark = mark();
@@ -15712,6 +17848,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
                 if (_res instanceof StmtTy.With.Item) {
                     _children.add((StmtTy.With.Item)_res);
                 } else {
@@ -15725,16 +17862,19 @@ public final class Parser extends AbstractParser {
         }
         StmtTy.With.Item[] _seq = _children.toArray(new StmtTy.With.Item[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_54_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_53: with_item _loop0_54
     public StmtTy.With.Item[] _gather_53_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_53_ID)) {
             _res = (StmtTy.With.Item[])cache.getResult(_mark, _GATHER_53_ID);
+            level--;
             return (StmtTy.With.Item[])_res;
         }
         { // with_item _loop0_54
@@ -15750,24 +17890,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_53[%d-%d]: %s succeeded!", level, _mark, mark(), "with_item _loop0_54");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_53_ID, _res);
+                level--;
                 return (StmtTy.With.Item[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_53[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "with_item _loop0_54");
         }
+        debugMessageln("Fail at %d: _gather_53", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_53_ID, _res);
+        level--;
         return (StmtTy.With.Item[])_res;
     }
 
     // _tmp_55: TYPE_COMMENT
     public Token _tmp_55_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_55_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_55_ID);
+            level--;
             return (Token)_res;
         }
         { // TYPE_COMMENT
@@ -15778,26 +17923,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_55[%d-%d]: %s succeeded!", level, _mark, mark(), "TYPE_COMMENT");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_55_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_55[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "TYPE_COMMENT");
         }
+        debugMessageln("Fail at %d: _tmp_55", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_55_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_57: ',' with_item
     public StmtTy.With.Item[] _loop0_57_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_57_ID)) {
             _res = cache.getResult(_mark, _LOOP0_57_ID);
+            level--;
             return (StmtTy.With.Item[])_res;
         }
         int _start_mark = mark();
@@ -15815,6 +17966,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
                 if (_res instanceof StmtTy.With.Item) {
                     _children.add((StmtTy.With.Item)_res);
                 } else {
@@ -15828,16 +17980,19 @@ public final class Parser extends AbstractParser {
         }
         StmtTy.With.Item[] _seq = _children.toArray(new StmtTy.With.Item[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_57_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_56: with_item _loop0_57
     public StmtTy.With.Item[] _gather_56_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_56_ID)) {
             _res = (StmtTy.With.Item[])cache.getResult(_mark, _GATHER_56_ID);
+            level--;
             return (StmtTy.With.Item[])_res;
         }
         { // with_item _loop0_57
@@ -15853,24 +18008,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_56[%d-%d]: %s succeeded!", level, _mark, mark(), "with_item _loop0_57");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_56_ID, _res);
+                level--;
                 return (StmtTy.With.Item[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_56[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "with_item _loop0_57");
         }
+        debugMessageln("Fail at %d: _gather_56", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_56_ID, _res);
+        level--;
         return (StmtTy.With.Item[])_res;
     }
 
     // _loop0_59: ',' with_item
     public StmtTy.With.Item[] _loop0_59_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_59_ID)) {
             _res = cache.getResult(_mark, _LOOP0_59_ID);
+            level--;
             return (StmtTy.With.Item[])_res;
         }
         int _start_mark = mark();
@@ -15888,6 +18048,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
                 if (_res instanceof StmtTy.With.Item) {
                     _children.add((StmtTy.With.Item)_res);
                 } else {
@@ -15901,16 +18062,19 @@ public final class Parser extends AbstractParser {
         }
         StmtTy.With.Item[] _seq = _children.toArray(new StmtTy.With.Item[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_59_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_58: with_item _loop0_59
     public StmtTy.With.Item[] _gather_58_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_58_ID)) {
             _res = (StmtTy.With.Item[])cache.getResult(_mark, _GATHER_58_ID);
+            level--;
             return (StmtTy.With.Item[])_res;
         }
         { // with_item _loop0_59
@@ -15926,24 +18090,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_58[%d-%d]: %s succeeded!", level, _mark, mark(), "with_item _loop0_59");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_58_ID, _res);
+                level--;
                 return (StmtTy.With.Item[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_58[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "with_item _loop0_59");
         }
+        debugMessageln("Fail at %d: _gather_58", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_58_ID, _res);
+        level--;
         return (StmtTy.With.Item[])_res;
     }
 
     // _tmp_60: TYPE_COMMENT
     public Token _tmp_60_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_60_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_60_ID);
+            level--;
             return (Token)_res;
         }
         { // TYPE_COMMENT
@@ -15954,26 +18123,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_60[%d-%d]: %s succeeded!", level, _mark, mark(), "TYPE_COMMENT");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_60_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_60[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "TYPE_COMMENT");
         }
+        debugMessageln("Fail at %d: _tmp_60", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_60_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_61: ',' | ')' | ':'
     public Token _tmp_61_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_61_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_61_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -15984,8 +18159,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_61[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_61_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -16000,8 +18177,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_61[%d-%d]: %s succeeded!", level, _mark, mark(), "')'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "')'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_61_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -16016,26 +18195,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_61[%d-%d]: %s succeeded!", level, _mark, mark(), "':'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_61_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_61[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "':'");
         }
+        debugMessageln("Fail at %d: _tmp_61", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_61_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop1_62: except_block
     public StmtTy.Try.ExceptHandler[] _loop1_62_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_62_ID)) {
             _res = cache.getResult(_mark, _LOOP1_62_ID);
+            level--;
             return (StmtTy.Try.ExceptHandler[])_res;
         }
         int _start_mark = mark();
@@ -16049,6 +18234,7 @@ public final class Parser extends AbstractParser {
                 (except_block_var = (StmtTy.Try.ExceptHandler)except_block_rule()) != null  // except_block
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "except_block");
                 _res = except_block_var;
                 if (_res instanceof StmtTy.Try.ExceptHandler) {
                     _children.add((StmtTy.Try.ExceptHandler)_res);
@@ -16062,20 +18248,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "except_block");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         StmtTy.Try.ExceptHandler[] _seq = _children.toArray(new StmtTy.Try.ExceptHandler[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_62_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_63: else_block
     public StmtTy[] _tmp_63_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_63_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, _TMP_63_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // else_block
@@ -16086,26 +18276,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_63[%d-%d]: %s succeeded!", level, _mark, mark(), "else_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_63_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_63[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "else_block");
         }
+        debugMessageln("Fail at %d: _tmp_63", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_63_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // _tmp_64: finally_block
     public StmtTy[] _tmp_64_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_64_ID)) {
             _res = (StmtTy[])cache.getResult(_mark, _TMP_64_ID);
+            level--;
             return (StmtTy[])_res;
         }
         { // finally_block
@@ -16116,26 +18312,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_64[%d-%d]: %s succeeded!", level, _mark, mark(), "finally_block");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "finally_block");
                 _res = finally_block_var;
                 cache.putResult(_mark, _TMP_64_ID, _res);
+                level--;
                 return (StmtTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_64[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "finally_block");
         }
+        debugMessageln("Fail at %d: _tmp_64", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_64_ID, _res);
+        level--;
         return (StmtTy[])_res;
     }
 
     // _tmp_65: 'as' NAME
     public ExprTy _tmp_65_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_65_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_65_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'as' NAME
@@ -16150,25 +18352,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_65[%d-%d]: %s succeeded!", level, _mark, mark(), "'as' NAME");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'as' NAME");
                 cache.putResult(_mark, _TMP_65_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_65[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'as' NAME");
         }
+        debugMessageln("Fail at %d: _tmp_65", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_65_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop1_66: case_block
     public StmtTy.Match.Case[] _loop1_66_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_66_ID)) {
             _res = cache.getResult(_mark, _LOOP1_66_ID);
+            level--;
             return (StmtTy.Match.Case[])_res;
         }
         int _start_mark = mark();
@@ -16182,6 +18390,7 @@ public final class Parser extends AbstractParser {
                 (case_block_var = (StmtTy.Match.Case)case_block_rule()) != null  // case_block
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "case_block");
                 _res = case_block_var;
                 if (_res instanceof StmtTy.Match.Case) {
                     _children.add((StmtTy.Match.Case)_res);
@@ -16195,20 +18404,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "case_block");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         StmtTy.Match.Case[] _seq = _children.toArray(new StmtTy.Match.Case[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_66_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_68: '|' closed_pattern
     public ExprTy[] _loop0_68_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_68_ID)) {
             _res = cache.getResult(_mark, _LOOP0_68_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -16226,6 +18439,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'|' closed_pattern");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -16239,16 +18453,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_68_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_67: closed_pattern _loop0_68
     public ExprTy[] _gather_67_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_67_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_67_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // closed_pattern _loop0_68
@@ -16264,24 +18481,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_67[%d-%d]: %s succeeded!", level, _mark, mark(), "closed_pattern _loop0_68");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_67_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_67[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "closed_pattern _loop0_68");
         }
+        debugMessageln("Fail at %d: _gather_67", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_67_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_69: '+' | '-'
     public Token _tmp_69_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_69_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_69_ID);
+            level--;
             return (Token)_res;
         }
         { // '+'
@@ -16292,8 +18514,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_69[%d-%d]: %s succeeded!", level, _mark, mark(), "'+'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'+'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_69_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -16308,26 +18532,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_69[%d-%d]: %s succeeded!", level, _mark, mark(), "'-'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'-'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_69_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_69[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'-'");
         }
+        debugMessageln("Fail at %d: _tmp_69", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_69_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_70: '.' | '(' | '='
     public Token _tmp_70_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_70_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_70_ID);
+            level--;
             return (Token)_res;
         }
         { // '.'
@@ -16338,8 +18568,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_70[%d-%d]: %s succeeded!", level, _mark, mark(), "'.'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_70_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -16354,8 +18586,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_70[%d-%d]: %s succeeded!", level, _mark, mark(), "'('");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'('");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_70_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -16370,26 +18604,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_70[%d-%d]: %s succeeded!", level, _mark, mark(), "'='");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'='");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_70_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_70[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'='");
         }
+        debugMessageln("Fail at %d: _tmp_70", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_70_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_71: '.' | '(' | '='
     public Token _tmp_71_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_71_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_71_ID);
+            level--;
             return (Token)_res;
         }
         { // '.'
@@ -16400,8 +18640,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_71[%d-%d]: %s succeeded!", level, _mark, mark(), "'.'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_71_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -16416,8 +18658,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_71[%d-%d]: %s succeeded!", level, _mark, mark(), "'('");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'('");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_71_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -16432,26 +18676,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_71[%d-%d]: %s succeeded!", level, _mark, mark(), "'='");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'='");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_71_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_71[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'='");
         }
+        debugMessageln("Fail at %d: _tmp_71", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_71_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_73: ',' maybe_star_pattern
     public ExprTy[] _loop0_73_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_73_ID)) {
             _res = cache.getResult(_mark, _LOOP0_73_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -16469,6 +18719,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' maybe_star_pattern");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -16482,16 +18733,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_73_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_72: maybe_star_pattern _loop0_73
     public ExprTy[] _gather_72_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_72_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_72_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // maybe_star_pattern _loop0_73
@@ -16507,24 +18761,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_72[%d-%d]: %s succeeded!", level, _mark, mark(), "maybe_star_pattern _loop0_73");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_72_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_72[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "maybe_star_pattern _loop0_73");
         }
+        debugMessageln("Fail at %d: _gather_72", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_72_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_74: capture_pattern | wildcard_pattern
     public ExprTy _tmp_74_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_74_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_74_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // capture_pattern
@@ -16535,8 +18794,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_74[%d-%d]: %s succeeded!", level, _mark, mark(), "capture_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "capture_pattern");
                 _res = capture_pattern_var;
                 cache.putResult(_mark, _TMP_74_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -16551,26 +18812,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_74[%d-%d]: %s succeeded!", level, _mark, mark(), "wildcard_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "wildcard_pattern");
                 _res = wildcard_pattern_var;
                 cache.putResult(_mark, _TMP_74_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_74[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "wildcard_pattern");
         }
+        debugMessageln("Fail at %d: _tmp_74", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_74_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop0_76: ',' key_value_pattern
     public KeyValuePair[] _loop0_76_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_76_ID)) {
             _res = cache.getResult(_mark, _LOOP0_76_ID);
+            level--;
             return (KeyValuePair[])_res;
         }
         int _start_mark = mark();
@@ -16588,6 +18855,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' key_value_pattern");
                 if (_res instanceof KeyValuePair) {
                     _children.add((KeyValuePair)_res);
                 } else {
@@ -16601,16 +18869,19 @@ public final class Parser extends AbstractParser {
         }
         KeyValuePair[] _seq = _children.toArray(new KeyValuePair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_76_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_75: key_value_pattern _loop0_76
     public KeyValuePair[] _gather_75_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_75_ID)) {
             _res = (KeyValuePair[])cache.getResult(_mark, _GATHER_75_ID);
+            level--;
             return (KeyValuePair[])_res;
         }
         { // key_value_pattern _loop0_76
@@ -16626,24 +18897,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_75[%d-%d]: %s succeeded!", level, _mark, mark(), "key_value_pattern _loop0_76");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_75_ID, _res);
+                level--;
                 return (KeyValuePair[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_75[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "key_value_pattern _loop0_76");
         }
+        debugMessageln("Fail at %d: _gather_75", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_75_ID, _res);
+        level--;
         return (KeyValuePair[])_res;
     }
 
     // _tmp_77: literal_pattern | value_pattern
     public ExprTy _tmp_77_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_77_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_77_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // literal_pattern
@@ -16654,8 +18930,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_77[%d-%d]: %s succeeded!", level, _mark, mark(), "literal_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "literal_pattern");
                 _res = literal_pattern_var;
                 cache.putResult(_mark, _TMP_77_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -16670,26 +18948,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_77[%d-%d]: %s succeeded!", level, _mark, mark(), "value_pattern");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "value_pattern");
                 _res = value_pattern_var;
                 cache.putResult(_mark, _TMP_77_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_77[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "value_pattern");
         }
+        debugMessageln("Fail at %d: _tmp_77", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_77_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop0_79: ',' pattern
     public ExprTy[] _loop0_79_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_79_ID)) {
             _res = cache.getResult(_mark, _LOOP0_79_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -16707,6 +18991,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' pattern");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -16720,16 +19005,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_79_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_78: pattern _loop0_79
     public ExprTy[] _gather_78_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_78_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_78_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // pattern _loop0_79
@@ -16745,24 +19033,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_78[%d-%d]: %s succeeded!", level, _mark, mark(), "pattern _loop0_79");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_78_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_78[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "pattern _loop0_79");
         }
+        debugMessageln("Fail at %d: _gather_78", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_78_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop0_81: ',' keyword_pattern
     public KeywordTy[] _loop0_81_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_81_ID)) {
             _res = cache.getResult(_mark, _LOOP0_81_ID);
+            level--;
             return (KeywordTy[])_res;
         }
         int _start_mark = mark();
@@ -16780,6 +19073,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' keyword_pattern");
                 if (_res instanceof KeywordTy) {
                     _children.add((KeywordTy)_res);
                 } else {
@@ -16793,16 +19087,19 @@ public final class Parser extends AbstractParser {
         }
         KeywordTy[] _seq = _children.toArray(new KeywordTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_81_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_80: keyword_pattern _loop0_81
     public KeywordTy[] _gather_80_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_80_ID)) {
             _res = (KeywordTy[])cache.getResult(_mark, _GATHER_80_ID);
+            level--;
             return (KeywordTy[])_res;
         }
         { // keyword_pattern _loop0_81
@@ -16818,24 +19115,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_80[%d-%d]: %s succeeded!", level, _mark, mark(), "keyword_pattern _loop0_81");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_80_ID, _res);
+                level--;
                 return (KeywordTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_80[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "keyword_pattern _loop0_81");
         }
+        debugMessageln("Fail at %d: _gather_80", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_80_ID, _res);
+        level--;
         return (KeywordTy[])_res;
     }
 
     // _tmp_82: star_expressions
     public ExprTy _tmp_82_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_82_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_82_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // star_expressions
@@ -16846,26 +19148,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_82[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_82_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_82[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_expressions");
         }
+        debugMessageln("Fail at %d: _tmp_82", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_82_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_83: 'from' expression
     public ExprTy _tmp_83_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_83_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_83_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'from' expression
@@ -16880,25 +19188,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_83[%d-%d]: %s succeeded!", level, _mark, mark(), "'from' expression");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'from' expression");
                 cache.putResult(_mark, _TMP_83_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_83[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'from' expression");
         }
+        debugMessageln("Fail at %d: _tmp_83", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_83_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_84: params
     public ArgumentsTy _tmp_84_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_84_ID)) {
             _res = (ArgumentsTy)cache.getResult(_mark, _TMP_84_ID);
+            level--;
             return (ArgumentsTy)_res;
         }
         { // params
@@ -16909,26 +19223,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_84[%d-%d]: %s succeeded!", level, _mark, mark(), "params");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "params");
                 _res = params_var;
                 cache.putResult(_mark, _TMP_84_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_84[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "params");
         }
+        debugMessageln("Fail at %d: _tmp_84", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_84_ID, _res);
+        level--;
         return (ArgumentsTy)_res;
     }
 
     // _tmp_85: '->' expression
     public ExprTy _tmp_85_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_85_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_85_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '->' expression
@@ -16943,25 +19263,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_85[%d-%d]: %s succeeded!", level, _mark, mark(), "'->' expression");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'->' expression");
                 cache.putResult(_mark, _TMP_85_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_85[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'->' expression");
         }
+        debugMessageln("Fail at %d: _tmp_85", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_85_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_86: func_type_comment
     public Token _tmp_86_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_86_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_86_ID);
+            level--;
             return (Token)_res;
         }
         { // func_type_comment
@@ -16972,26 +19298,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_86[%d-%d]: %s succeeded!", level, _mark, mark(), "func_type_comment");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "func_type_comment");
                 _res = func_type_comment_var;
                 cache.putResult(_mark, _TMP_86_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_86[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "func_type_comment");
         }
+        debugMessageln("Fail at %d: _tmp_86", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_86_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_87: params
     public ArgumentsTy _tmp_87_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_87_ID)) {
             _res = (ArgumentsTy)cache.getResult(_mark, _TMP_87_ID);
+            level--;
             return (ArgumentsTy)_res;
         }
         { // params
@@ -17002,26 +19334,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_87[%d-%d]: %s succeeded!", level, _mark, mark(), "params");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "params");
                 _res = params_var;
                 cache.putResult(_mark, _TMP_87_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_87[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "params");
         }
+        debugMessageln("Fail at %d: _tmp_87", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_87_ID, _res);
+        level--;
         return (ArgumentsTy)_res;
     }
 
     // _tmp_88: '->' expression
     public ExprTy _tmp_88_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_88_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_88_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '->' expression
@@ -17036,25 +19374,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_88[%d-%d]: %s succeeded!", level, _mark, mark(), "'->' expression");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'->' expression");
                 cache.putResult(_mark, _TMP_88_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_88[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'->' expression");
         }
+        debugMessageln("Fail at %d: _tmp_88", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_88_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_89: func_type_comment
     public Token _tmp_89_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_89_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_89_ID);
+            level--;
             return (Token)_res;
         }
         { // func_type_comment
@@ -17065,26 +19409,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_89[%d-%d]: %s succeeded!", level, _mark, mark(), "func_type_comment");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "func_type_comment");
                 _res = func_type_comment_var;
                 cache.putResult(_mark, _TMP_89_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_89[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "func_type_comment");
         }
+        debugMessageln("Fail at %d: _tmp_89", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_89_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_90: NEWLINE INDENT
     public Token _tmp_90_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_90_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_90_ID);
+            level--;
             return (Token)_res;
         }
         { // NEWLINE INDENT
@@ -17098,26 +19448,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_90[%d-%d]: %s succeeded!", level, _mark, mark(), "NEWLINE INDENT");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "NEWLINE INDENT");
                 _res = dummyName(newline_var, indent_var);
                 cache.putResult(_mark, _TMP_90_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_90[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "NEWLINE INDENT");
         }
+        debugMessageln("Fail at %d: _tmp_90", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_90_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_91: param_no_default
     public ArgTy[] _loop0_91_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_91_ID)) {
             _res = cache.getResult(_mark, _LOOP0_91_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -17131,6 +19487,7 @@ public final class Parser extends AbstractParser {
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -17145,16 +19502,19 @@ public final class Parser extends AbstractParser {
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_91_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_92: param_with_default
     public NameDefaultPair[] _loop0_92_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_92_ID)) {
             _res = cache.getResult(_mark, _LOOP0_92_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -17168,6 +19528,7 @@ public final class Parser extends AbstractParser {
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -17182,16 +19543,19 @@ public final class Parser extends AbstractParser {
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_92_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_93: star_etc
     public StarEtc _tmp_93_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_93_ID)) {
             _res = (StarEtc)cache.getResult(_mark, _TMP_93_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // star_etc
@@ -17202,26 +19566,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_93[%d-%d]: %s succeeded!", level, _mark, mark(), "star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_etc");
                 _res = star_etc_var;
                 cache.putResult(_mark, _TMP_93_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_93[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_etc");
         }
+        debugMessageln("Fail at %d: _tmp_93", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_93_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // _loop0_94: param_with_default
     public NameDefaultPair[] _loop0_94_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_94_ID)) {
             _res = cache.getResult(_mark, _LOOP0_94_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -17235,6 +19605,7 @@ public final class Parser extends AbstractParser {
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -17249,16 +19620,19 @@ public final class Parser extends AbstractParser {
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_94_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_95: star_etc
     public StarEtc _tmp_95_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_95_ID)) {
             _res = (StarEtc)cache.getResult(_mark, _TMP_95_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // star_etc
@@ -17269,26 +19643,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_95[%d-%d]: %s succeeded!", level, _mark, mark(), "star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_etc");
                 _res = star_etc_var;
                 cache.putResult(_mark, _TMP_95_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_95[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_etc");
         }
+        debugMessageln("Fail at %d: _tmp_95", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_95_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // _loop1_96: param_no_default
     public ArgTy[] _loop1_96_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_96_ID)) {
             _res = cache.getResult(_mark, _LOOP1_96_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -17302,6 +19682,7 @@ public final class Parser extends AbstractParser {
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -17315,20 +19696,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "param_no_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_96_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_97: param_with_default
     public NameDefaultPair[] _loop0_97_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_97_ID)) {
             _res = cache.getResult(_mark, _LOOP0_97_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -17342,6 +19727,7 @@ public final class Parser extends AbstractParser {
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -17356,16 +19742,19 @@ public final class Parser extends AbstractParser {
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_97_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_98: star_etc
     public StarEtc _tmp_98_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_98_ID)) {
             _res = (StarEtc)cache.getResult(_mark, _TMP_98_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // star_etc
@@ -17376,26 +19765,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_98[%d-%d]: %s succeeded!", level, _mark, mark(), "star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_etc");
                 _res = star_etc_var;
                 cache.putResult(_mark, _TMP_98_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_98[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_etc");
         }
+        debugMessageln("Fail at %d: _tmp_98", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_98_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // _loop1_99: param_with_default
     public NameDefaultPair[] _loop1_99_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_99_ID)) {
             _res = cache.getResult(_mark, _LOOP1_99_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -17409,6 +19804,7 @@ public final class Parser extends AbstractParser {
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -17422,20 +19818,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "param_with_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_99_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_100: star_etc
     public StarEtc _tmp_100_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_100_ID)) {
             _res = (StarEtc)cache.getResult(_mark, _TMP_100_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // star_etc
@@ -17446,26 +19846,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_100[%d-%d]: %s succeeded!", level, _mark, mark(), "star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_etc");
                 _res = star_etc_var;
                 cache.putResult(_mark, _TMP_100_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_100[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_etc");
         }
+        debugMessageln("Fail at %d: _tmp_100", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_100_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // _loop1_101: param_no_default
     public ArgTy[] _loop1_101_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_101_ID)) {
             _res = cache.getResult(_mark, _LOOP1_101_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -17479,6 +19885,7 @@ public final class Parser extends AbstractParser {
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -17492,20 +19899,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "param_no_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_101_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_102: param_no_default
     public ArgTy[] _loop1_102_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_102_ID)) {
             _res = cache.getResult(_mark, _LOOP1_102_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -17519,6 +19930,7 @@ public final class Parser extends AbstractParser {
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -17532,20 +19944,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "param_no_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_102_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_103: param_no_default
     public ArgTy[] _loop0_103_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_103_ID)) {
             _res = cache.getResult(_mark, _LOOP0_103_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -17559,6 +19975,7 @@ public final class Parser extends AbstractParser {
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -17573,16 +19990,19 @@ public final class Parser extends AbstractParser {
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_103_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_104: param_with_default
     public NameDefaultPair[] _loop1_104_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_104_ID)) {
             _res = cache.getResult(_mark, _LOOP1_104_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -17596,6 +20016,7 @@ public final class Parser extends AbstractParser {
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -17609,20 +20030,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "param_with_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_104_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_105: param_no_default
     public ArgTy[] _loop0_105_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_105_ID)) {
             _res = cache.getResult(_mark, _LOOP0_105_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -17636,6 +20061,7 @@ public final class Parser extends AbstractParser {
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -17650,16 +20076,19 @@ public final class Parser extends AbstractParser {
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_105_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_106: param_with_default
     public NameDefaultPair[] _loop1_106_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_106_ID)) {
             _res = cache.getResult(_mark, _LOOP1_106_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -17673,6 +20102,7 @@ public final class Parser extends AbstractParser {
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -17686,20 +20116,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "param_with_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_106_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_107: param_maybe_default
     public NameDefaultPair[] _loop0_107_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_107_ID)) {
             _res = cache.getResult(_mark, _LOOP0_107_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -17713,6 +20147,7 @@ public final class Parser extends AbstractParser {
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_maybe_default");
                 _res = param_maybe_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -17727,16 +20162,19 @@ public final class Parser extends AbstractParser {
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_107_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_108: kwds
     public ArgTy _tmp_108_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_108_ID)) {
             _res = (ArgTy)cache.getResult(_mark, _TMP_108_ID);
+            level--;
             return (ArgTy)_res;
         }
         { // kwds
@@ -17747,26 +20185,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_108[%d-%d]: %s succeeded!", level, _mark, mark(), "kwds");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "kwds");
                 _res = kwds_var;
                 cache.putResult(_mark, _TMP_108_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_108[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "kwds");
         }
+        debugMessageln("Fail at %d: _tmp_108", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_108_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
     // _loop1_109: param_maybe_default
     public NameDefaultPair[] _loop1_109_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_109_ID)) {
             _res = cache.getResult(_mark, _LOOP1_109_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -17780,6 +20224,7 @@ public final class Parser extends AbstractParser {
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_maybe_default");
                 _res = param_maybe_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -17793,20 +20238,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "param_maybe_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_109_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_110: kwds
     public ArgTy _tmp_110_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_110_ID)) {
             _res = (ArgTy)cache.getResult(_mark, _TMP_110_ID);
+            level--;
             return (ArgTy)_res;
         }
         { // kwds
@@ -17817,26 +20266,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_110[%d-%d]: %s succeeded!", level, _mark, mark(), "kwds");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "kwds");
                 _res = kwds_var;
                 cache.putResult(_mark, _TMP_110_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_110[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "kwds");
         }
+        debugMessageln("Fail at %d: _tmp_110", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_110_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
     // _loop1_111: ('@' named_expression NEWLINE)
     public ExprTy[] _loop1_111_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_111_ID)) {
             _res = cache.getResult(_mark, _LOOP1_111_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -17850,6 +20305,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_234_var = (ExprTy)_tmp_234_rule()) != null  // '@' named_expression NEWLINE
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('@' named_expression NEWLINE)");
                 _res = _tmp_234_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -17863,20 +20319,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "('@' named_expression NEWLINE)");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_111_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_112: '(' arguments? ')'
     public ExprTy _tmp_112_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_112_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_112_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '(' arguments? ')'
@@ -17894,25 +20354,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_112[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' arguments? ')'");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' arguments? ')'");
                 cache.putResult(_mark, _TMP_112_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_112[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'(' arguments? ')'");
         }
+        debugMessageln("Fail at %d: _tmp_112", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_112_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop1_113: (',' star_expression)
     public ExprTy[] _loop1_113_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_113_ID)) {
             _res = cache.getResult(_mark, _LOOP1_113_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -17926,6 +20392,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_236_var = (ExprTy)_tmp_236_rule()) != null  // ',' star_expression
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' star_expression)");
                 _res = _tmp_236_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -17939,20 +20406,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "(',' star_expression)");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_113_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_114: ','
     public Token _tmp_114_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_114_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_114_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -17963,26 +20434,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_114[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_114_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_114[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_114", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_114_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_116: ',' star_named_expression
     public ExprTy[] _loop0_116_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_116_ID)) {
             _res = cache.getResult(_mark, _LOOP0_116_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -18000,6 +20477,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_named_expression");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -18013,16 +20491,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_116_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_115: star_named_expression _loop0_116
     public ExprTy[] _gather_115_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_115_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_115_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // star_named_expression _loop0_116
@@ -18038,24 +20519,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_115[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expression _loop0_116");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_115_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_115[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_named_expression _loop0_116");
         }
+        debugMessageln("Fail at %d: _gather_115", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_115_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_117: ','
     public Token _tmp_117_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_117_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_117_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -18066,26 +20552,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_117[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_117_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_117[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_117", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_117_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop1_118: (',' expression)
     public ExprTy[] _loop1_118_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_118_ID)) {
             _res = cache.getResult(_mark, _LOOP1_118_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -18099,6 +20591,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_237_var = (ExprTy)_tmp_237_rule()) != null  // ',' expression
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' expression)");
                 _res = _tmp_237_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -18112,20 +20605,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "(',' expression)");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_118_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_119: ','
     public Token _tmp_119_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_119_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_119_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -18136,26 +20633,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_119[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_119_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_119[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_119", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_119_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_120: lambda_params
     public ArgumentsTy _tmp_120_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_120_ID)) {
             _res = (ArgumentsTy)cache.getResult(_mark, _TMP_120_ID);
+            level--;
             return (ArgumentsTy)_res;
         }
         { // lambda_params
@@ -18166,26 +20669,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_120[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_params");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_params");
                 _res = lambda_params_var;
                 cache.putResult(_mark, _TMP_120_ID, _res);
+                level--;
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_120[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_params");
         }
+        debugMessageln("Fail at %d: _tmp_120", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_120_ID, _res);
+        level--;
         return (ArgumentsTy)_res;
     }
 
     // _loop0_121: lambda_param_no_default
     public ArgTy[] _loop0_121_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_121_ID)) {
             _res = cache.getResult(_mark, _LOOP0_121_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -18199,6 +20708,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -18213,16 +20723,19 @@ public final class Parser extends AbstractParser {
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_121_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_122: lambda_param_with_default
     public NameDefaultPair[] _loop0_122_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_122_ID)) {
             _res = cache.getResult(_mark, _LOOP0_122_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -18236,6 +20749,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -18250,16 +20764,19 @@ public final class Parser extends AbstractParser {
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_122_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_123: lambda_star_etc
     public StarEtc _tmp_123_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_123_ID)) {
             _res = (StarEtc)cache.getResult(_mark, _TMP_123_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // lambda_star_etc
@@ -18270,26 +20787,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_123[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_star_etc");
                 _res = lambda_star_etc_var;
                 cache.putResult(_mark, _TMP_123_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_123[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_star_etc");
         }
+        debugMessageln("Fail at %d: _tmp_123", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_123_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // _loop0_124: lambda_param_with_default
     public NameDefaultPair[] _loop0_124_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_124_ID)) {
             _res = cache.getResult(_mark, _LOOP0_124_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -18303,6 +20826,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -18317,16 +20841,19 @@ public final class Parser extends AbstractParser {
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_124_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_125: lambda_star_etc
     public StarEtc _tmp_125_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_125_ID)) {
             _res = (StarEtc)cache.getResult(_mark, _TMP_125_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // lambda_star_etc
@@ -18337,26 +20864,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_125[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_star_etc");
                 _res = lambda_star_etc_var;
                 cache.putResult(_mark, _TMP_125_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_125[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_star_etc");
         }
+        debugMessageln("Fail at %d: _tmp_125", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_125_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // _loop1_126: lambda_param_no_default
     public ArgTy[] _loop1_126_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_126_ID)) {
             _res = cache.getResult(_mark, _LOOP1_126_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -18370,6 +20903,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -18383,20 +20917,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "lambda_param_no_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_126_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_127: lambda_param_with_default
     public NameDefaultPair[] _loop0_127_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_127_ID)) {
             _res = cache.getResult(_mark, _LOOP0_127_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -18410,6 +20948,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -18424,16 +20963,19 @@ public final class Parser extends AbstractParser {
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_127_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_128: lambda_star_etc
     public StarEtc _tmp_128_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_128_ID)) {
             _res = (StarEtc)cache.getResult(_mark, _TMP_128_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // lambda_star_etc
@@ -18444,26 +20986,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_128[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_star_etc");
                 _res = lambda_star_etc_var;
                 cache.putResult(_mark, _TMP_128_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_128[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_star_etc");
         }
+        debugMessageln("Fail at %d: _tmp_128", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_128_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // _loop1_129: lambda_param_with_default
     public NameDefaultPair[] _loop1_129_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_129_ID)) {
             _res = cache.getResult(_mark, _LOOP1_129_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -18477,6 +21025,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -18490,20 +21039,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "lambda_param_with_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_129_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_130: lambda_star_etc
     public StarEtc _tmp_130_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_130_ID)) {
             _res = (StarEtc)cache.getResult(_mark, _TMP_130_ID);
+            level--;
             return (StarEtc)_res;
         }
         { // lambda_star_etc
@@ -18514,26 +21067,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_130[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_star_etc");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_star_etc");
                 _res = lambda_star_etc_var;
                 cache.putResult(_mark, _TMP_130_ID, _res);
+                level--;
                 return (StarEtc)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_130[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_star_etc");
         }
+        debugMessageln("Fail at %d: _tmp_130", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_130_ID, _res);
+        level--;
         return (StarEtc)_res;
     }
 
     // _loop1_131: lambda_param_no_default
     public ArgTy[] _loop1_131_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_131_ID)) {
             _res = cache.getResult(_mark, _LOOP1_131_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -18547,6 +21106,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -18560,20 +21120,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "lambda_param_no_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_131_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_132: lambda_param_no_default
     public ArgTy[] _loop1_132_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_132_ID)) {
             _res = cache.getResult(_mark, _LOOP1_132_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -18587,6 +21151,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -18600,20 +21165,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "lambda_param_no_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_132_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_133: lambda_param_no_default
     public ArgTy[] _loop0_133_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_133_ID)) {
             _res = cache.getResult(_mark, _LOOP0_133_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -18627,6 +21196,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -18641,16 +21211,19 @@ public final class Parser extends AbstractParser {
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_133_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_134: lambda_param_with_default
     public NameDefaultPair[] _loop1_134_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_134_ID)) {
             _res = cache.getResult(_mark, _LOOP1_134_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -18664,6 +21237,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -18677,20 +21251,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "lambda_param_with_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_134_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_135: lambda_param_no_default
     public ArgTy[] _loop0_135_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_135_ID)) {
             _res = cache.getResult(_mark, _LOOP0_135_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -18704,6 +21282,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -18718,16 +21297,19 @@ public final class Parser extends AbstractParser {
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_135_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_136: lambda_param_with_default
     public NameDefaultPair[] _loop1_136_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_136_ID)) {
             _res = cache.getResult(_mark, _LOOP1_136_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -18741,6 +21323,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -18754,20 +21337,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "lambda_param_with_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_136_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_137: lambda_param_maybe_default
     public NameDefaultPair[] _loop0_137_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_137_ID)) {
             _res = cache.getResult(_mark, _LOOP0_137_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -18781,6 +21368,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_maybe_default_var = (NameDefaultPair)lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_maybe_default");
                 _res = lambda_param_maybe_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -18795,16 +21383,19 @@ public final class Parser extends AbstractParser {
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_137_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_138: lambda_kwds
     public ArgTy _tmp_138_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_138_ID)) {
             _res = (ArgTy)cache.getResult(_mark, _TMP_138_ID);
+            level--;
             return (ArgTy)_res;
         }
         { // lambda_kwds
@@ -18815,26 +21406,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_138[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_kwds");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_kwds");
                 _res = lambda_kwds_var;
                 cache.putResult(_mark, _TMP_138_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_138[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_kwds");
         }
+        debugMessageln("Fail at %d: _tmp_138", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_138_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
     // _loop1_139: lambda_param_maybe_default
     public NameDefaultPair[] _loop1_139_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_139_ID)) {
             _res = cache.getResult(_mark, _LOOP1_139_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -18848,6 +21445,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_maybe_default_var = (NameDefaultPair)lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_maybe_default");
                 _res = lambda_param_maybe_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -18861,20 +21459,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "lambda_param_maybe_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_139_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_140: lambda_kwds
     public ArgTy _tmp_140_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_140_ID)) {
             _res = (ArgTy)cache.getResult(_mark, _TMP_140_ID);
+            level--;
             return (ArgTy)_res;
         }
         { // lambda_kwds
@@ -18885,26 +21487,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_140[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_kwds");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_kwds");
                 _res = lambda_kwds_var;
                 cache.putResult(_mark, _TMP_140_ID, _res);
+                level--;
                 return (ArgTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_140[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_kwds");
         }
+        debugMessageln("Fail at %d: _tmp_140", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_140_ID, _res);
+        level--;
         return (ArgTy)_res;
     }
 
     // _loop1_141: ('or' conjunction)
     public ExprTy[] _loop1_141_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_141_ID)) {
             _res = cache.getResult(_mark, _LOOP1_141_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -18918,6 +21526,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_238_var = (ExprTy)_tmp_238_rule()) != null  // 'or' conjunction
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('or' conjunction)");
                 _res = _tmp_238_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -18931,20 +21540,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "('or' conjunction)");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_141_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_142: ('and' inversion)
     public ExprTy[] _loop1_142_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_142_ID)) {
             _res = cache.getResult(_mark, _LOOP1_142_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -18958,6 +21571,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_239_var = (ExprTy)_tmp_239_rule()) != null  // 'and' inversion
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('and' inversion)");
                 _res = _tmp_239_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -18971,20 +21585,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "('and' inversion)");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_142_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_143: compare_op_bitwise_or_pair
     public CmpopExprPair[] _loop1_143_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_143_ID)) {
             _res = cache.getResult(_mark, _LOOP1_143_ID);
+            level--;
             return (CmpopExprPair[])_res;
         }
         int _start_mark = mark();
@@ -18998,6 +21616,7 @@ public final class Parser extends AbstractParser {
                 (compare_op_bitwise_or_pair_var = (CmpopExprPair)compare_op_bitwise_or_pair_rule()) != null  // compare_op_bitwise_or_pair
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "compare_op_bitwise_or_pair");
                 _res = compare_op_bitwise_or_pair_var;
                 if (_res instanceof CmpopExprPair) {
                     _children.add((CmpopExprPair)_res);
@@ -19011,20 +21630,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "compare_op_bitwise_or_pair");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         CmpopExprPair[] _seq = _children.toArray(new CmpopExprPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_143_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_144: '!='
     public Token _tmp_144_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_144_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_144_ID);
+            level--;
             return (Token)_res;
         }
         { // '!='
@@ -19038,25 +21661,31 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_check_barry_as_flufl ( p , tok ) ? NULL : tok
                 debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_check_barry_as_flufl ( p , tok ) ? NULL : tok to Java !!![0m");
                 _res = null;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'!='");
                 cache.putResult(_mark, _TMP_144_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_144[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'!='");
         }
+        debugMessageln("Fail at %d: _tmp_144", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_144_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_145: arguments
     public ExprTy _tmp_145_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_145_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_145_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // arguments
@@ -19067,26 +21696,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_145[%d-%d]: %s succeeded!", level, _mark, mark(), "arguments");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "arguments");
                 _res = arguments_var;
                 cache.putResult(_mark, _TMP_145_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_145[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "arguments");
         }
+        debugMessageln("Fail at %d: _tmp_145", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_145_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop0_147: ',' slice
     public ExprTy[] _loop0_147_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_147_ID)) {
             _res = cache.getResult(_mark, _LOOP0_147_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -19104,6 +21739,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' slice");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -19117,16 +21753,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_147_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_146: slice _loop0_147
     public ExprTy[] _gather_146_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_146_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_146_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // slice _loop0_147
@@ -19142,24 +21781,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_146[%d-%d]: %s succeeded!", level, _mark, mark(), "slice _loop0_147");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_146_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_146[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "slice _loop0_147");
         }
+        debugMessageln("Fail at %d: _gather_146", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_146_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_148: ','
     public Token _tmp_148_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_148_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_148_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -19170,26 +21814,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_148[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_148_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_148[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_148", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_148_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_149: expression
     public ExprTy _tmp_149_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_149_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_149_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // expression
@@ -19200,26 +21850,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_149[%d-%d]: %s succeeded!", level, _mark, mark(), "expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
                 cache.putResult(_mark, _TMP_149_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_149[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression");
         }
+        debugMessageln("Fail at %d: _tmp_149", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_149_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_150: expression
     public ExprTy _tmp_150_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_150_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_150_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // expression
@@ -19230,26 +21886,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_150[%d-%d]: %s succeeded!", level, _mark, mark(), "expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
                 cache.putResult(_mark, _TMP_150_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_150[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression");
         }
+        debugMessageln("Fail at %d: _tmp_150", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_150_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_151: ':' expression?
     public ExprTy _tmp_151_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_151_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_151_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // ':' expression?
@@ -19264,25 +21926,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_151[%d-%d]: %s succeeded!", level, _mark, mark(), "':' expression?");
                 _res = d;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "':' expression?");
                 cache.putResult(_mark, _TMP_151_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_151[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "':' expression?");
         }
+        debugMessageln("Fail at %d: _tmp_151", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_151_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_152: tuple | group | genexp
     public ExprTy _tmp_152_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_152_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_152_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // tuple
@@ -19293,8 +21961,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_152[%d-%d]: %s succeeded!", level, _mark, mark(), "tuple");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "tuple");
                 _res = tuple_var;
                 cache.putResult(_mark, _TMP_152_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -19309,8 +21979,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_152[%d-%d]: %s succeeded!", level, _mark, mark(), "group");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "group");
                 _res = group_var;
                 cache.putResult(_mark, _TMP_152_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -19325,26 +21997,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_152[%d-%d]: %s succeeded!", level, _mark, mark(), "genexp");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "genexp");
                 _res = genexp_var;
                 cache.putResult(_mark, _TMP_152_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_152[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "genexp");
         }
+        debugMessageln("Fail at %d: _tmp_152", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_152_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_153: list | listcomp
     public ExprTy _tmp_153_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_153_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_153_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // list
@@ -19355,8 +22033,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_153[%d-%d]: %s succeeded!", level, _mark, mark(), "list");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "list");
                 _res = list_var;
                 cache.putResult(_mark, _TMP_153_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -19371,26 +22051,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_153[%d-%d]: %s succeeded!", level, _mark, mark(), "listcomp");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "listcomp");
                 _res = listcomp_var;
                 cache.putResult(_mark, _TMP_153_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_153[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "listcomp");
         }
+        debugMessageln("Fail at %d: _tmp_153", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_153_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_154: dict | set | dictcomp | setcomp
     public ExprTy _tmp_154_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_154_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_154_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // dict
@@ -19401,8 +22087,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_154[%d-%d]: %s succeeded!", level, _mark, mark(), "dict");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "dict");
                 _res = dict_var;
                 cache.putResult(_mark, _TMP_154_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -19417,8 +22105,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_154[%d-%d]: %s succeeded!", level, _mark, mark(), "set");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "set");
                 _res = set_var;
                 cache.putResult(_mark, _TMP_154_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -19433,8 +22123,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_154[%d-%d]: %s succeeded!", level, _mark, mark(), "dictcomp");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "dictcomp");
                 _res = dictcomp_var;
                 cache.putResult(_mark, _TMP_154_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -19449,26 +22141,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_154[%d-%d]: %s succeeded!", level, _mark, mark(), "setcomp");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "setcomp");
                 _res = setcomp_var;
                 cache.putResult(_mark, _TMP_154_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_154[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "setcomp");
         }
+        debugMessageln("Fail at %d: _tmp_154", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_154_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop1_155: STRING
     public Token[] _loop1_155_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_155_ID)) {
             _res = cache.getResult(_mark, _LOOP1_155_ID);
+            level--;
             return (Token[])_res;
         }
         int _start_mark = mark();
@@ -19482,6 +22180,7 @@ public final class Parser extends AbstractParser {
                 (string_var = (Token)string_token()) != null  // STRING
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "STRING");
                 _res = string_var;
                 if (_res instanceof Token) {
                     _children.add((Token)_res);
@@ -19495,20 +22194,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "STRING");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         Token[] _seq = _children.toArray(new Token[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_155_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_156: star_named_expressions
     public ExprTy[] _tmp_156_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_156_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_156_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // star_named_expressions
@@ -19519,26 +22222,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_156[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_named_expressions");
                 _res = star_named_expressions_var;
                 cache.putResult(_mark, _TMP_156_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_156[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_named_expressions");
         }
+        debugMessageln("Fail at %d: _tmp_156", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_156_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_157: star_named_expression ',' star_named_expressions?
     public Object _tmp_157_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_157_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_157_ID);
+            level--;
             return (Object)_res;
         }
         { // star_named_expression ',' star_named_expressions?
@@ -19556,25 +22265,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_157[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 _res = this.insertInFront(y,z);
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 cache.putResult(_mark, _TMP_157_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_157[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_named_expression ',' star_named_expressions?");
         }
+        debugMessageln("Fail at %d: _tmp_157", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_157_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // _tmp_158: yield_expr | named_expression
     public ExprTy _tmp_158_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_158_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_158_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // yield_expr
@@ -19585,8 +22300,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_158[%d-%d]: %s succeeded!", level, _mark, mark(), "yield_expr");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
                 cache.putResult(_mark, _TMP_158_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -19601,26 +22318,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_158[%d-%d]: %s succeeded!", level, _mark, mark(), "named_expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "named_expression");
                 _res = named_expression_var;
                 cache.putResult(_mark, _TMP_158_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_158[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "named_expression");
         }
+        debugMessageln("Fail at %d: _tmp_158", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_158_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_159: double_starred_kvpairs
     public KeyValuePair[] _tmp_159_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_159_ID)) {
             _res = (KeyValuePair[])cache.getResult(_mark, _TMP_159_ID);
+            level--;
             return (KeyValuePair[])_res;
         }
         { // double_starred_kvpairs
@@ -19631,26 +22354,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_159[%d-%d]: %s succeeded!", level, _mark, mark(), "double_starred_kvpairs");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "double_starred_kvpairs");
                 _res = double_starred_kvpairs_var;
                 cache.putResult(_mark, _TMP_159_ID, _res);
+                level--;
                 return (KeyValuePair[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_159[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "double_starred_kvpairs");
         }
+        debugMessageln("Fail at %d: _tmp_159", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_159_ID, _res);
+        level--;
         return (KeyValuePair[])_res;
     }
 
     // _loop0_161: ',' double_starred_kvpair
     public KeyValuePair[] _loop0_161_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_161_ID)) {
             _res = cache.getResult(_mark, _LOOP0_161_ID);
+            level--;
             return (KeyValuePair[])_res;
         }
         int _start_mark = mark();
@@ -19668,6 +22397,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' double_starred_kvpair");
                 if (_res instanceof KeyValuePair) {
                     _children.add((KeyValuePair)_res);
                 } else {
@@ -19681,16 +22411,19 @@ public final class Parser extends AbstractParser {
         }
         KeyValuePair[] _seq = _children.toArray(new KeyValuePair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_161_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_160: double_starred_kvpair _loop0_161
     public KeyValuePair[] _gather_160_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_160_ID)) {
             _res = (KeyValuePair[])cache.getResult(_mark, _GATHER_160_ID);
+            level--;
             return (KeyValuePair[])_res;
         }
         { // double_starred_kvpair _loop0_161
@@ -19706,24 +22439,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_160[%d-%d]: %s succeeded!", level, _mark, mark(), "double_starred_kvpair _loop0_161");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_160_ID, _res);
+                level--;
                 return (KeyValuePair[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_160[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "double_starred_kvpair _loop0_161");
         }
+        debugMessageln("Fail at %d: _gather_160", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_160_ID, _res);
+        level--;
         return (KeyValuePair[])_res;
     }
 
     // _tmp_162: ','
     public Token _tmp_162_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_162_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_162_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -19734,26 +22472,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_162[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_162_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_162[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_162", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_162_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop1_163: for_if_clause
     public ComprehensionTy[] _loop1_163_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_163_ID)) {
             _res = cache.getResult(_mark, _LOOP1_163_ID);
+            level--;
             return (ComprehensionTy[])_res;
         }
         int _start_mark = mark();
@@ -19767,6 +22511,7 @@ public final class Parser extends AbstractParser {
                 (for_if_clause_var = (ComprehensionTy)for_if_clause_rule()) != null  // for_if_clause
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "for_if_clause");
                 _res = for_if_clause_var;
                 if (_res instanceof ComprehensionTy) {
                     _children.add((ComprehensionTy)_res);
@@ -19780,20 +22525,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "for_if_clause");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ComprehensionTy[] _seq = _children.toArray(new ComprehensionTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_163_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_164: ('if' disjunction)
     public ExprTy[] _loop0_164_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_164_ID)) {
             _res = cache.getResult(_mark, _LOOP0_164_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -19807,6 +22556,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_242_var = (ExprTy)_tmp_242_rule()) != null  // 'if' disjunction
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('if' disjunction)");
                 _res = _tmp_242_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -19821,16 +22571,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_164_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_165: ('if' disjunction)
     public ExprTy[] _loop0_165_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_165_ID)) {
             _res = cache.getResult(_mark, _LOOP0_165_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -19844,6 +22597,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_243_var = (ExprTy)_tmp_243_rule()) != null  // 'if' disjunction
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('if' disjunction)");
                 _res = _tmp_243_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -19858,16 +22612,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_165_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_166: star_expressions
     public ExprTy _tmp_166_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_166_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_166_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // star_expressions
@@ -19878,26 +22635,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_166[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_166_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_166[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_expressions");
         }
+        debugMessageln("Fail at %d: _tmp_166", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_166_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_167: ','
     public Token _tmp_167_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_167_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_167_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -19908,26 +22671,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_167[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_167_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_167[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_167", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_167_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_169: ',' (starred_expression | direct_named_expression !'=')
     public ExprTy[] _loop0_169_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_169_ID)) {
             _res = cache.getResult(_mark, _LOOP0_169_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -19945,6 +22714,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' (starred_expression | direct_named_expression !'=')");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -19958,16 +22728,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_169_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_168: (starred_expression | direct_named_expression !'=') _loop0_169
     public ExprTy[] _gather_168_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_168_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_168_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // (starred_expression | direct_named_expression !'=') _loop0_169
@@ -19983,24 +22756,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_168[%d-%d]: %s succeeded!", level, _mark, mark(), "(starred_expression | direct_named_expression !'=') _loop0_169");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_168_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_168[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "(starred_expression | direct_named_expression !'=') _loop0_169");
         }
+        debugMessageln("Fail at %d: _gather_168", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_168_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_170: ',' kwargs
     public KeywordOrStarred[] _tmp_170_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_170_ID)) {
             _res = (KeywordOrStarred[])cache.getResult(_mark, _TMP_170_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         { // ',' kwargs
@@ -20015,25 +22793,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_170[%d-%d]: %s succeeded!", level, _mark, mark(), "',' kwargs");
                 _res = k;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwargs");
                 cache.putResult(_mark, _TMP_170_ID, _res);
+                level--;
                 return (KeywordOrStarred[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_170[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' kwargs");
         }
+        debugMessageln("Fail at %d: _tmp_170", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_170_ID, _res);
+        level--;
         return (KeywordOrStarred[])_res;
     }
 
     // _loop0_172: ',' kwarg_or_starred
     public KeywordOrStarred[] _loop0_172_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_172_ID)) {
             _res = cache.getResult(_mark, _LOOP0_172_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         int _start_mark = mark();
@@ -20051,6 +22835,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_starred");
                 if (_res instanceof KeywordOrStarred) {
                     _children.add((KeywordOrStarred)_res);
                 } else {
@@ -20064,16 +22849,19 @@ public final class Parser extends AbstractParser {
         }
         KeywordOrStarred[] _seq = _children.toArray(new KeywordOrStarred[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_172_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_171: kwarg_or_starred _loop0_172
     public KeywordOrStarred[] _gather_171_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_171_ID)) {
             _res = (KeywordOrStarred[])cache.getResult(_mark, _GATHER_171_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         { // kwarg_or_starred _loop0_172
@@ -20089,24 +22877,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_171[%d-%d]: %s succeeded!", level, _mark, mark(), "kwarg_or_starred _loop0_172");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_171_ID, _res);
+                level--;
                 return (KeywordOrStarred[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_171[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "kwarg_or_starred _loop0_172");
         }
+        debugMessageln("Fail at %d: _gather_171", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_171_ID, _res);
+        level--;
         return (KeywordOrStarred[])_res;
     }
 
     // _loop0_174: ',' kwarg_or_double_starred
     public KeywordOrStarred[] _loop0_174_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_174_ID)) {
             _res = cache.getResult(_mark, _LOOP0_174_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         int _start_mark = mark();
@@ -20124,6 +22917,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_double_starred");
                 if (_res instanceof KeywordOrStarred) {
                     _children.add((KeywordOrStarred)_res);
                 } else {
@@ -20137,16 +22931,19 @@ public final class Parser extends AbstractParser {
         }
         KeywordOrStarred[] _seq = _children.toArray(new KeywordOrStarred[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_174_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_173: kwarg_or_double_starred _loop0_174
     public KeywordOrStarred[] _gather_173_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_173_ID)) {
             _res = (KeywordOrStarred[])cache.getResult(_mark, _GATHER_173_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         { // kwarg_or_double_starred _loop0_174
@@ -20162,24 +22959,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_173[%d-%d]: %s succeeded!", level, _mark, mark(), "kwarg_or_double_starred _loop0_174");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_173_ID, _res);
+                level--;
                 return (KeywordOrStarred[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_173[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "kwarg_or_double_starred _loop0_174");
         }
+        debugMessageln("Fail at %d: _gather_173", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_173_ID, _res);
+        level--;
         return (KeywordOrStarred[])_res;
     }
 
     // _loop0_176: ',' kwarg_or_starred
     public KeywordOrStarred[] _loop0_176_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_176_ID)) {
             _res = cache.getResult(_mark, _LOOP0_176_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         int _start_mark = mark();
@@ -20197,6 +22999,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_starred");
                 if (_res instanceof KeywordOrStarred) {
                     _children.add((KeywordOrStarred)_res);
                 } else {
@@ -20210,16 +23013,19 @@ public final class Parser extends AbstractParser {
         }
         KeywordOrStarred[] _seq = _children.toArray(new KeywordOrStarred[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_176_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_175: kwarg_or_starred _loop0_176
     public KeywordOrStarred[] _gather_175_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_175_ID)) {
             _res = (KeywordOrStarred[])cache.getResult(_mark, _GATHER_175_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         { // kwarg_or_starred _loop0_176
@@ -20235,24 +23041,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_175[%d-%d]: %s succeeded!", level, _mark, mark(), "kwarg_or_starred _loop0_176");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_175_ID, _res);
+                level--;
                 return (KeywordOrStarred[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_175[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "kwarg_or_starred _loop0_176");
         }
+        debugMessageln("Fail at %d: _gather_175", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_175_ID, _res);
+        level--;
         return (KeywordOrStarred[])_res;
     }
 
     // _loop0_178: ',' kwarg_or_double_starred
     public KeywordOrStarred[] _loop0_178_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_178_ID)) {
             _res = cache.getResult(_mark, _LOOP0_178_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         int _start_mark = mark();
@@ -20270,6 +23081,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_double_starred");
                 if (_res instanceof KeywordOrStarred) {
                     _children.add((KeywordOrStarred)_res);
                 } else {
@@ -20283,16 +23095,19 @@ public final class Parser extends AbstractParser {
         }
         KeywordOrStarred[] _seq = _children.toArray(new KeywordOrStarred[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_178_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_177: kwarg_or_double_starred _loop0_178
     public KeywordOrStarred[] _gather_177_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_177_ID)) {
             _res = (KeywordOrStarred[])cache.getResult(_mark, _GATHER_177_ID);
+            level--;
             return (KeywordOrStarred[])_res;
         }
         { // kwarg_or_double_starred _loop0_178
@@ -20308,24 +23123,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_177[%d-%d]: %s succeeded!", level, _mark, mark(), "kwarg_or_double_starred _loop0_178");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_177_ID, _res);
+                level--;
                 return (KeywordOrStarred[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_177[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "kwarg_or_double_starred _loop0_178");
         }
+        debugMessageln("Fail at %d: _gather_177", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_177_ID, _res);
+        level--;
         return (KeywordOrStarred[])_res;
     }
 
     // _loop0_179: (',' star_target)
     public ExprTy[] _loop0_179_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_179_ID)) {
             _res = cache.getResult(_mark, _LOOP0_179_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -20339,6 +23159,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_245_var = (ExprTy)_tmp_245_rule()) != null  // ',' star_target
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' star_target)");
                 _res = _tmp_245_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -20353,16 +23174,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_179_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_180: ','
     public Token _tmp_180_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_180_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_180_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -20373,26 +23197,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_180[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_180_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_180[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_180", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_180_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_182: ',' star_target
     public ExprTy[] _loop0_182_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_182_ID)) {
             _res = cache.getResult(_mark, _LOOP0_182_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -20410,6 +23240,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_target");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -20423,16 +23254,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_182_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_181: star_target _loop0_182
     public ExprTy[] _gather_181_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_181_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_181_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // star_target _loop0_182
@@ -20448,24 +23282,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_181[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target _loop0_182");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_181_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_181[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_target _loop0_182");
         }
+        debugMessageln("Fail at %d: _gather_181", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_181_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_183: ','
     public Token _tmp_183_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_183_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_183_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -20476,26 +23315,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_183[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_183_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_183[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_183", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_183_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop1_184: (',' star_target)
     public ExprTy[] _loop1_184_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_184_ID)) {
             _res = cache.getResult(_mark, _LOOP1_184_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -20509,6 +23354,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_246_var = (ExprTy)_tmp_246_rule()) != null  // ',' star_target
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' star_target)");
                 _res = _tmp_246_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -20522,20 +23368,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "(',' star_target)");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_184_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_185: ','
     public Token _tmp_185_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_185_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_185_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -20546,26 +23396,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_185[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_185_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_185[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_185", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_185_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_186: !'*' star_target
     public ExprTy _tmp_186_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_186_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_186_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // !'*' star_target
@@ -20578,26 +23434,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_186[%d-%d]: %s succeeded!", level, _mark, mark(), "!'*' star_target");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "!'*' star_target");
                 _res = star_target_var;
                 cache.putResult(_mark, _TMP_186_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_186[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "!'*' star_target");
         }
+        debugMessageln("Fail at %d: _tmp_186", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_186_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_187: star_targets_tuple_seq
     public ExprTy[] _tmp_187_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_187_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_187_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // star_targets_tuple_seq
@@ -20608,26 +23470,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_187[%d-%d]: %s succeeded!", level, _mark, mark(), "star_targets_tuple_seq");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_targets_tuple_seq");
                 _res = star_targets_tuple_seq_var;
                 cache.putResult(_mark, _TMP_187_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_187[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_targets_tuple_seq");
         }
+        debugMessageln("Fail at %d: _tmp_187", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_187_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_188: star_targets_list_seq
     public ExprTy[] _tmp_188_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_188_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_188_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // star_targets_list_seq
@@ -20638,26 +23506,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_188[%d-%d]: %s succeeded!", level, _mark, mark(), "star_targets_list_seq");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_targets_list_seq");
                 _res = star_targets_list_seq_var;
                 cache.putResult(_mark, _TMP_188_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_188[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_targets_list_seq");
         }
+        debugMessageln("Fail at %d: _tmp_188", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_188_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop0_190: ',' del_target
     public ExprTy[] _loop0_190_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_190_ID)) {
             _res = cache.getResult(_mark, _LOOP0_190_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -20675,6 +23549,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' del_target");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -20688,16 +23563,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_190_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_189: del_target _loop0_190
     public ExprTy[] _gather_189_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_189_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_189_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // del_target _loop0_190
@@ -20713,24 +23591,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_189[%d-%d]: %s succeeded!", level, _mark, mark(), "del_target _loop0_190");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_189_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_189[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "del_target _loop0_190");
         }
+        debugMessageln("Fail at %d: _gather_189", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_189_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_191: ','
     public Token _tmp_191_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_191_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_191_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -20741,26 +23624,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_191[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_191_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_191[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_191", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_191_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_192: del_targets
     public ExprTy[] _tmp_192_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_192_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_192_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // del_targets
@@ -20771,26 +23660,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_192[%d-%d]: %s succeeded!", level, _mark, mark(), "del_targets");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "del_targets");
                 _res = del_targets_var;
                 cache.putResult(_mark, _TMP_192_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_192[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "del_targets");
         }
+        debugMessageln("Fail at %d: _tmp_192", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_192_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_193: del_targets
     public ExprTy[] _tmp_193_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_193_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_193_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // del_targets
@@ -20801,26 +23696,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_193[%d-%d]: %s succeeded!", level, _mark, mark(), "del_targets");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "del_targets");
                 _res = del_targets_var;
                 cache.putResult(_mark, _TMP_193_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_193[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "del_targets");
         }
+        debugMessageln("Fail at %d: _tmp_193", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_193_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop0_195: ',' target
     public ExprTy[] _loop0_195_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_195_ID)) {
             _res = cache.getResult(_mark, _LOOP0_195_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -20838,6 +23739,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' target");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -20851,16 +23753,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_195_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_194: target _loop0_195
     public ExprTy[] _gather_194_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_194_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_194_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // target _loop0_195
@@ -20876,24 +23781,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_194[%d-%d]: %s succeeded!", level, _mark, mark(), "target _loop0_195");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_194_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_194[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "target _loop0_195");
         }
+        debugMessageln("Fail at %d: _gather_194", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_194_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_196: ','
     public Token _tmp_196_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_196_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_196_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -20904,26 +23814,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_196[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_196_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_196[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_196", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_196_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_197: arguments
     public ExprTy _tmp_197_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_197_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_197_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // arguments
@@ -20934,26 +23850,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_197[%d-%d]: %s succeeded!", level, _mark, mark(), "arguments");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "arguments");
                 _res = arguments_var;
                 cache.putResult(_mark, _TMP_197_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_197[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "arguments");
         }
+        debugMessageln("Fail at %d: _tmp_197", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_197_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_198: targets
     public ExprTy[] _tmp_198_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_198_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_198_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // targets
@@ -20964,26 +23886,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_198[%d-%d]: %s succeeded!", level, _mark, mark(), "targets");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "targets");
                 _res = targets_var;
                 cache.putResult(_mark, _TMP_198_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_198[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "targets");
         }
+        debugMessageln("Fail at %d: _tmp_198", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_198_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_199: targets
     public ExprTy[] _tmp_199_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_199_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_199_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // targets
@@ -20994,26 +23922,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_199[%d-%d]: %s succeeded!", level, _mark, mark(), "targets");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "targets");
                 _res = targets_var;
                 cache.putResult(_mark, _TMP_199_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_199[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "targets");
         }
+        debugMessageln("Fail at %d: _tmp_199", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_199_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_200: args | expression for_if_clauses
     public Object _tmp_200_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_200_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_200_ID);
+            level--;
             return (Object)_res;
         }
         { // args
@@ -21024,8 +23958,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_200[%d-%d]: %s succeeded!", level, _mark, mark(), "args");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "args");
                 _res = args_var;
                 cache.putResult(_mark, _TMP_200_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -21043,26 +23979,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_200[%d-%d]: %s succeeded!", level, _mark, mark(), "expression for_if_clauses");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "expression for_if_clauses");
                 _res = dummyName(expression_var, for_if_clauses_var);
                 cache.putResult(_mark, _TMP_200_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_200[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression for_if_clauses");
         }
+        debugMessageln("Fail at %d: _tmp_200", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_200_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // _tmp_201: NAME STRING | SOFT_KEYWORD
     public ExprTy _tmp_201_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_201_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_201_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // NAME STRING
@@ -21076,8 +24018,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_201[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME STRING");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "NAME STRING");
                 _res = dummyName(name_var, string_var);
                 cache.putResult(_mark, _TMP_201_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -21092,26 +24036,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_201[%d-%d]: %s succeeded!", level, _mark, mark(), "SOFT_KEYWORD");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "SOFT_KEYWORD");
                 _res = soft_keyword_var;
                 cache.putResult(_mark, _TMP_201_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_201[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "SOFT_KEYWORD");
         }
+        debugMessageln("Fail at %d: _tmp_201", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_201_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_202: '=' | ':=' | ','
     public Token _tmp_202_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_202_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_202_ID);
+            level--;
             return (Token)_res;
         }
         { // '='
@@ -21122,8 +24072,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_202[%d-%d]: %s succeeded!", level, _mark, mark(), "'='");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'='");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_202_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21138,8 +24090,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_202[%d-%d]: %s succeeded!", level, _mark, mark(), "':='");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':='");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_202_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21154,26 +24108,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_202[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_202_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_202[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_202", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_202_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_203: list | tuple | genexp | 'True' | 'None' | 'False'
     public Object _tmp_203_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_203_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_203_ID);
+            level--;
             return (Object)_res;
         }
         { // list
@@ -21184,8 +24144,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, _mark, mark(), "list");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "list");
                 _res = list_var;
                 cache.putResult(_mark, _TMP_203_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -21200,8 +24162,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, _mark, mark(), "tuple");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "tuple");
                 _res = tuple_var;
                 cache.putResult(_mark, _TMP_203_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -21216,8 +24180,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, _mark, mark(), "genexp");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "genexp");
                 _res = genexp_var;
                 cache.putResult(_mark, _TMP_203_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -21232,8 +24198,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, _mark, mark(), "'True'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'True'");
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_203_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -21248,8 +24216,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, _mark, mark(), "'None'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'None'");
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_203_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
@@ -21264,26 +24234,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, _mark, mark(), "'False'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'False'");
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_203_ID, _res);
+                level--;
                 return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'False'");
         }
+        debugMessageln("Fail at %d: _tmp_203", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_203_ID, _res);
+        level--;
         return (Object)_res;
     }
 
     // _tmp_204: '=' | ':=' | ','
     public Token _tmp_204_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_204_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_204_ID);
+            level--;
             return (Token)_res;
         }
         { // '='
@@ -21294,8 +24270,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_204[%d-%d]: %s succeeded!", level, _mark, mark(), "'='");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'='");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_204_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21310,8 +24288,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_204[%d-%d]: %s succeeded!", level, _mark, mark(), "':='");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':='");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_204_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21326,26 +24306,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_204[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_204_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_204[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_204", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_204_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_205: star_named_expressions
     public ExprTy[] _loop0_205_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_205_ID)) {
             _res = cache.getResult(_mark, _LOOP0_205_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -21359,6 +24345,7 @@ public final class Parser extends AbstractParser {
                 (star_named_expressions_var = (ExprTy[])star_named_expressions_rule()) != null  // star_named_expressions
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_named_expressions");
                 _res = star_named_expressions_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -21373,16 +24360,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_205_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_206: (star_targets '=')
     public ExprTy[] _loop0_206_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_206_ID)) {
             _res = cache.getResult(_mark, _LOOP0_206_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -21396,6 +24386,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_247_var = (ExprTy)_tmp_247_rule()) != null  // star_targets '='
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(star_targets '=')");
                 _res = _tmp_247_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -21410,16 +24401,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_206_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_207: (star_targets '=')
     public ExprTy[] _loop0_207_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_207_ID)) {
             _res = cache.getResult(_mark, _LOOP0_207_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -21433,6 +24427,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_248_var = (ExprTy)_tmp_248_rule()) != null  // star_targets '='
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(star_targets '=')");
                 _res = _tmp_248_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
@@ -21447,16 +24442,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_207_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_208: yield_expr | star_expressions
     public ExprTy _tmp_208_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_208_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_208_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // yield_expr
@@ -21467,8 +24465,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_208[%d-%d]: %s succeeded!", level, _mark, mark(), "yield_expr");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
                 cache.putResult(_mark, _TMP_208_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -21483,26 +24483,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_208[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_208_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_208[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_expressions");
         }
+        debugMessageln("Fail at %d: _tmp_208", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_208_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_209: '[' | '(' | '{'
     public Token _tmp_209_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_209_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_209_ID);
+            level--;
             return (Token)_res;
         }
         { // '['
@@ -21513,8 +24519,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_209[%d-%d]: %s succeeded!", level, _mark, mark(), "'['");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'['");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_209_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21529,8 +24537,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_209[%d-%d]: %s succeeded!", level, _mark, mark(), "'('");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'('");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_209_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21545,26 +24555,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_209[%d-%d]: %s succeeded!", level, _mark, mark(), "'{'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'{'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_209_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_209[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'{'");
         }
+        debugMessageln("Fail at %d: _tmp_209", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_209_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_210: '[' | '{'
     public Token _tmp_210_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_210_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_210_ID);
+            level--;
             return (Token)_res;
         }
         { // '['
@@ -21575,8 +24591,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_210[%d-%d]: %s succeeded!", level, _mark, mark(), "'['");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'['");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_210_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21591,26 +24609,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_210[%d-%d]: %s succeeded!", level, _mark, mark(), "'{'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'{'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_210_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_210[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'{'");
         }
+        debugMessageln("Fail at %d: _tmp_210", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_210_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_211: star_named_expressions
     public ExprTy[] _tmp_211_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_211_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_211_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // star_named_expressions
@@ -21621,26 +24645,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_211[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_named_expressions");
                 _res = star_named_expressions_var;
                 cache.putResult(_mark, _TMP_211_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_211[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_named_expressions");
         }
+        debugMessageln("Fail at %d: _tmp_211", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_211_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _loop0_212: param_no_default
     public ArgTy[] _loop0_212_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_212_ID)) {
             _res = cache.getResult(_mark, _LOOP0_212_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -21654,6 +24684,7 @@ public final class Parser extends AbstractParser {
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -21668,16 +24699,19 @@ public final class Parser extends AbstractParser {
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_212_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_213: param_with_default
     public NameDefaultPair[] _loop1_213_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_213_ID)) {
             _res = cache.getResult(_mark, _LOOP1_213_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -21691,6 +24725,7 @@ public final class Parser extends AbstractParser {
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -21704,20 +24739,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "param_with_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_213_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop0_214: lambda_param_no_default
     public ArgTy[] _loop0_214_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_214_ID)) {
             _res = cache.getResult(_mark, _LOOP0_214_ID);
+            level--;
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -21731,6 +24770,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
                 if (_res instanceof ArgTy) {
                     _children.add((ArgTy)_res);
@@ -21745,16 +24785,19 @@ public final class Parser extends AbstractParser {
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_214_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _loop1_215: lambda_param_with_default
     public NameDefaultPair[] _loop1_215_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_215_ID)) {
             _res = cache.getResult(_mark, _LOOP1_215_ID);
+            level--;
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -21768,6 +24811,7 @@ public final class Parser extends AbstractParser {
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
                 if (_res instanceof NameDefaultPair) {
                     _children.add((NameDefaultPair)_res);
@@ -21781,20 +24825,24 @@ public final class Parser extends AbstractParser {
                   "-", _mark, mark(), "lambda_param_with_default");
         }
         if (_children.size() == 0) {
+            level--;
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_215_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _tmp_216: ')' | ',' (')' | '**')
     public Token _tmp_216_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_216_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_216_ID);
+            level--;
             return (Token)_res;
         }
         { // ')'
@@ -21805,8 +24853,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_216[%d-%d]: %s succeeded!", level, _mark, mark(), "')'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "')'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_216_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21824,26 +24874,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_216[%d-%d]: %s succeeded!", level, _mark, mark(), "',' (')' | '**')");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "',' (')' | '**')");
                 _res = dummyName(_literal, _tmp_249_var);
                 cache.putResult(_mark, _TMP_216_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_216[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' (')' | '**')");
         }
+        debugMessageln("Fail at %d: _tmp_216", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_216_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_217: ':' | ',' (':' | '**')
     public Token _tmp_217_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_217_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_217_ID);
+            level--;
             return (Token)_res;
         }
         { // ':'
@@ -21854,8 +24910,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_217[%d-%d]: %s succeeded!", level, _mark, mark(), "':'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_217_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21873,26 +24931,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_217[%d-%d]: %s succeeded!", level, _mark, mark(), "',' (':' | '**')");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "',' (':' | '**')");
                 _res = dummyName(_literal, _tmp_250_var);
                 cache.putResult(_mark, _TMP_217_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_217[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' (':' | '**')");
         }
+        debugMessageln("Fail at %d: _tmp_217", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_217_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_218: ',' | ')' | ':'
     public Token _tmp_218_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_218_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_218_ID);
+            level--;
             return (Token)_res;
         }
         { // ','
@@ -21903,8 +24967,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_218[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_218_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21919,8 +24985,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_218[%d-%d]: %s succeeded!", level, _mark, mark(), "')'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "')'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_218_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -21935,26 +25003,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_218[%d-%d]: %s succeeded!", level, _mark, mark(), "':'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_218_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_218[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "':'");
         }
+        debugMessageln("Fail at %d: _tmp_218", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_218_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_219: ASYNC
     public Token _tmp_219_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_219_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_219_ID);
+            level--;
             return (Token)_res;
         }
         { // ASYNC
@@ -21965,26 +25039,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_219[%d-%d]: %s succeeded!", level, _mark, mark(), "ASYNC");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
                 cache.putResult(_mark, _TMP_219_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_219[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC");
         }
+        debugMessageln("Fail at %d: _tmp_219", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_219_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_221: ',' (expression ['as' star_target])
     public ExprTy[] _loop0_221_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_221_ID)) {
             _res = cache.getResult(_mark, _LOOP0_221_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -22002,6 +25082,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' (expression ['as' star_target])");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -22015,16 +25096,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_221_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_220: (expression ['as' star_target]) _loop0_221
     public ExprTy[] _gather_220_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_220_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_220_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // (expression ['as' star_target]) _loop0_221
@@ -22040,24 +25124,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_220[%d-%d]: %s succeeded!", level, _mark, mark(), "(expression ['as' star_target]) _loop0_221");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_220_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_220[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "(expression ['as' star_target]) _loop0_221");
         }
+        debugMessageln("Fail at %d: _gather_220", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_220_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_222: ASYNC
     public Token _tmp_222_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_222_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_222_ID);
+            level--;
             return (Token)_res;
         }
         { // ASYNC
@@ -22068,26 +25157,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_222[%d-%d]: %s succeeded!", level, _mark, mark(), "ASYNC");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
                 cache.putResult(_mark, _TMP_222_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_222[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "ASYNC");
         }
+        debugMessageln("Fail at %d: _tmp_222", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_222_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _loop0_224: ',' (expressions ['as' star_target])
     public ExprTy[] _loop0_224_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_224_ID)) {
             _res = cache.getResult(_mark, _LOOP0_224_ID);
+            level--;
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -22105,6 +25200,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' (expressions ['as' star_target])");
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -22118,16 +25214,19 @@ public final class Parser extends AbstractParser {
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_224_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_223: (expressions ['as' star_target]) _loop0_224
     public ExprTy[] _gather_223_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_223_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _GATHER_223_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // (expressions ['as' star_target]) _loop0_224
@@ -22143,24 +25242,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_223[%d-%d]: %s succeeded!", level, _mark, mark(), "(expressions ['as' star_target]) _loop0_224");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_223_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_223[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "(expressions ['as' star_target]) _loop0_224");
         }
+        debugMessageln("Fail at %d: _gather_223", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_223_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_225: 'as' NAME
     public ExprTy _tmp_225_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_225_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_225_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'as' NAME
@@ -22174,26 +25278,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_225[%d-%d]: %s succeeded!", level, _mark, mark(), "'as' NAME");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'as' NAME");
                 _res = dummyName(_keyword, name_var);
                 cache.putResult(_mark, _TMP_225_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_225[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'as' NAME");
         }
+        debugMessageln("Fail at %d: _tmp_225", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_225_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_226: 'as' NAME
     public ExprTy _tmp_226_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_226_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_226_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'as' NAME
@@ -22207,26 +25317,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_226[%d-%d]: %s succeeded!", level, _mark, mark(), "'as' NAME");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'as' NAME");
                 _res = dummyName(_keyword, name_var);
                 cache.putResult(_mark, _TMP_226_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_226[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'as' NAME");
         }
+        debugMessageln("Fail at %d: _tmp_226", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_226_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _loop0_228: ',' double_starred_kvpair
     public KeyValuePair[] _loop0_228_rule()
     {
+        level++;
         Object _res = null;
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_228_ID)) {
             _res = cache.getResult(_mark, _LOOP0_228_ID);
+            level--;
             return (KeyValuePair[])_res;
         }
         int _start_mark = mark();
@@ -22244,6 +25360,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = elem;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' double_starred_kvpair");
                 if (_res instanceof KeyValuePair) {
                     _children.add((KeyValuePair)_res);
                 } else {
@@ -22257,16 +25374,19 @@ public final class Parser extends AbstractParser {
         }
         KeyValuePair[] _seq = _children.toArray(new KeyValuePair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_228_ID, _seq);
+        level--;
         return _seq;
     }
 
     // _gather_227: double_starred_kvpair _loop0_228
     public KeyValuePair[] _gather_227_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_227_ID)) {
             _res = (KeyValuePair[])cache.getResult(_mark, _GATHER_227_ID);
+            level--;
             return (KeyValuePair[])_res;
         }
         { // double_starred_kvpair _loop0_228
@@ -22282,24 +25402,29 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _gather_227[%d-%d]: %s succeeded!", level, _mark, mark(), "double_starred_kvpair _loop0_228");
                 _res = insertInFront(elem, seq);
                 cache.putResult(_mark, _GATHER_227_ID, _res);
+                level--;
                 return (KeyValuePair[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _gather_227[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "double_starred_kvpair _loop0_228");
         }
+        debugMessageln("Fail at %d: _gather_227", _mark);
         _res = null;
         cache.putResult(_mark, _GATHER_227_ID, _res);
+        level--;
         return (KeyValuePair[])_res;
     }
 
     // _tmp_229: '}' | ','
     public Token _tmp_229_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_229_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_229_ID);
+            level--;
             return (Token)_res;
         }
         { // '}'
@@ -22310,8 +25435,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_229[%d-%d]: %s succeeded!", level, _mark, mark(), "'}'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'}'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_229_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -22326,26 +25453,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_229[%d-%d]: %s succeeded!", level, _mark, mark(), "','");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_229_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_229[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "','");
         }
+        debugMessageln("Fail at %d: _tmp_229", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_229_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_230: ':'
     public Token _tmp_230_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_230_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_230_ID);
+            level--;
             return (Token)_res;
         }
         { // ':'
@@ -22356,26 +25489,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_230[%d-%d]: %s succeeded!", level, _mark, mark(), "':'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_230_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_230[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "':'");
         }
+        debugMessageln("Fail at %d: _tmp_230", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_230_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_231: star_targets '='
     public ExprTy _tmp_231_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_231_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_231_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // star_targets '='
@@ -22390,25 +25529,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_231[%d-%d]: %s succeeded!", level, _mark, mark(), "star_targets '='");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_targets '='");
                 cache.putResult(_mark, _TMP_231_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_231[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_targets '='");
         }
+        debugMessageln("Fail at %d: _tmp_231", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_231_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_232: '.' | '...'
     public Token _tmp_232_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_232_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_232_ID);
+            level--;
             return (Token)_res;
         }
         { // '.'
@@ -22419,8 +25564,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_232[%d-%d]: %s succeeded!", level, _mark, mark(), "'.'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_232_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -22435,26 +25582,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_232[%d-%d]: %s succeeded!", level, _mark, mark(), "'...'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'...'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_232_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_232[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'...'");
         }
+        debugMessageln("Fail at %d: _tmp_232", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_232_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_233: '.' | '...'
     public Token _tmp_233_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_233_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_233_ID);
+            level--;
             return (Token)_res;
         }
         { // '.'
@@ -22465,8 +25618,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_233[%d-%d]: %s succeeded!", level, _mark, mark(), "'.'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_233_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -22481,26 +25636,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_233[%d-%d]: %s succeeded!", level, _mark, mark(), "'...'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'...'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_233_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_233[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'...'");
         }
+        debugMessageln("Fail at %d: _tmp_233", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_233_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_234: '@' named_expression NEWLINE
     public ExprTy _tmp_234_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_234_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_234_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // '@' named_expression NEWLINE
@@ -22518,25 +25679,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_234[%d-%d]: %s succeeded!", level, _mark, mark(), "'@' named_expression NEWLINE");
                 _res = f;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'@' named_expression NEWLINE");
                 cache.putResult(_mark, _TMP_234_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_234[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'@' named_expression NEWLINE");
         }
+        debugMessageln("Fail at %d: _tmp_234", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_234_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_235: arguments
     public ExprTy _tmp_235_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_235_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_235_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // arguments
@@ -22547,26 +25714,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_235[%d-%d]: %s succeeded!", level, _mark, mark(), "arguments");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "arguments");
                 _res = arguments_var;
                 cache.putResult(_mark, _TMP_235_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_235[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "arguments");
         }
+        debugMessageln("Fail at %d: _tmp_235", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_235_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_236: ',' star_expression
     public ExprTy _tmp_236_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_236_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_236_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // ',' star_expression
@@ -22581,25 +25754,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_236[%d-%d]: %s succeeded!", level, _mark, mark(), "',' star_expression");
                 _res = c;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_expression");
                 cache.putResult(_mark, _TMP_236_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_236[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' star_expression");
         }
+        debugMessageln("Fail at %d: _tmp_236", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_236_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_237: ',' expression
     public ExprTy _tmp_237_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_237_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_237_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // ',' expression
@@ -22614,25 +25793,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_237[%d-%d]: %s succeeded!", level, _mark, mark(), "',' expression");
                 _res = c;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 cache.putResult(_mark, _TMP_237_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_237[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' expression");
         }
+        debugMessageln("Fail at %d: _tmp_237", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_237_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_238: 'or' conjunction
     public ExprTy _tmp_238_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_238_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_238_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'or' conjunction
@@ -22647,25 +25832,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_238[%d-%d]: %s succeeded!", level, _mark, mark(), "'or' conjunction");
                 _res = c;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'or' conjunction");
                 cache.putResult(_mark, _TMP_238_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_238[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'or' conjunction");
         }
+        debugMessageln("Fail at %d: _tmp_238", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_238_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_239: 'and' inversion
     public ExprTy _tmp_239_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_239_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_239_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'and' inversion
@@ -22680,25 +25871,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_239[%d-%d]: %s succeeded!", level, _mark, mark(), "'and' inversion");
                 _res = c;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'and' inversion");
                 cache.putResult(_mark, _TMP_239_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_239[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'and' inversion");
         }
+        debugMessageln("Fail at %d: _tmp_239", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_239_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_240: expression
     public ExprTy _tmp_240_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_240_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_240_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // expression
@@ -22709,26 +25906,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_240[%d-%d]: %s succeeded!", level, _mark, mark(), "expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
                 cache.putResult(_mark, _TMP_240_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_240[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression");
         }
+        debugMessageln("Fail at %d: _tmp_240", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_240_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_241: star_named_expressions
     public ExprTy[] _tmp_241_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_241_ID)) {
             _res = (ExprTy[])cache.getResult(_mark, _TMP_241_ID);
+            level--;
             return (ExprTy[])_res;
         }
         { // star_named_expressions
@@ -22739,26 +25942,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_241[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expressions");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_named_expressions");
                 _res = star_named_expressions_var;
                 cache.putResult(_mark, _TMP_241_ID, _res);
+                level--;
                 return (ExprTy[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_241[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_named_expressions");
         }
+        debugMessageln("Fail at %d: _tmp_241", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_241_ID, _res);
+        level--;
         return (ExprTy[])_res;
     }
 
     // _tmp_242: 'if' disjunction
     public ExprTy _tmp_242_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_242_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_242_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'if' disjunction
@@ -22773,25 +25982,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_242[%d-%d]: %s succeeded!", level, _mark, mark(), "'if' disjunction");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' disjunction");
                 cache.putResult(_mark, _TMP_242_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_242[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'if' disjunction");
         }
+        debugMessageln("Fail at %d: _tmp_242", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_242_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_243: 'if' disjunction
     public ExprTy _tmp_243_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_243_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_243_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'if' disjunction
@@ -22806,25 +26021,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_243[%d-%d]: %s succeeded!", level, _mark, mark(), "'if' disjunction");
                 _res = z;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' disjunction");
                 cache.putResult(_mark, _TMP_243_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_243[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'if' disjunction");
         }
+        debugMessageln("Fail at %d: _tmp_243", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_243_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_244: starred_expression | direct_named_expression !'='
     public ExprTy _tmp_244_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_244_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_244_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // starred_expression
@@ -22835,8 +26056,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_244[%d-%d]: %s succeeded!", level, _mark, mark(), "starred_expression");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "starred_expression");
                 _res = starred_expression_var;
                 cache.putResult(_mark, _TMP_244_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -22853,26 +26076,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_244[%d-%d]: %s succeeded!", level, _mark, mark(), "direct_named_expression !'='");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "direct_named_expression !'='");
                 _res = direct_named_expression_var;
                 cache.putResult(_mark, _TMP_244_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_244[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "direct_named_expression !'='");
         }
+        debugMessageln("Fail at %d: _tmp_244", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_244_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_245: ',' star_target
     public ExprTy _tmp_245_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_245_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_245_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // ',' star_target
@@ -22887,25 +26116,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_245[%d-%d]: %s succeeded!", level, _mark, mark(), "',' star_target");
                 _res = c;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_target");
                 cache.putResult(_mark, _TMP_245_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_245[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' star_target");
         }
+        debugMessageln("Fail at %d: _tmp_245", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_245_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_246: ',' star_target
     public ExprTy _tmp_246_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_246_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_246_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // ',' star_target
@@ -22920,25 +26155,31 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d _tmp_246[%d-%d]: %s succeeded!", level, _mark, mark(), "',' star_target");
                 _res = c;
+                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_target");
                 cache.putResult(_mark, _TMP_246_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_246[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' star_target");
         }
+        debugMessageln("Fail at %d: _tmp_246", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_246_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_247: star_targets '='
     public ExprTy _tmp_247_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_247_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_247_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // star_targets '='
@@ -22952,26 +26193,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_247[%d-%d]: %s succeeded!", level, _mark, mark(), "star_targets '='");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "star_targets '='");
                 _res = dummyName(star_targets_var, _literal);
                 cache.putResult(_mark, _TMP_247_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_247[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_targets '='");
         }
+        debugMessageln("Fail at %d: _tmp_247", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_247_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_248: star_targets '='
     public ExprTy _tmp_248_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_248_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_248_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // star_targets '='
@@ -22985,26 +26232,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_248[%d-%d]: %s succeeded!", level, _mark, mark(), "star_targets '='");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "star_targets '='");
                 _res = dummyName(star_targets_var, _literal);
                 cache.putResult(_mark, _TMP_248_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_248[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "star_targets '='");
         }
+        debugMessageln("Fail at %d: _tmp_248", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_248_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_249: ')' | '**'
     public Token _tmp_249_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_249_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_249_ID);
+            level--;
             return (Token)_res;
         }
         { // ')'
@@ -23015,8 +26268,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_249[%d-%d]: %s succeeded!", level, _mark, mark(), "')'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "')'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_249_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -23031,26 +26286,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_249[%d-%d]: %s succeeded!", level, _mark, mark(), "'**'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'**'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_249_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_249[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'**'");
         }
+        debugMessageln("Fail at %d: _tmp_249", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_249_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_250: ':' | '**'
     public Token _tmp_250_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_250_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_250_ID);
+            level--;
             return (Token)_res;
         }
         { // ':'
@@ -23061,8 +26322,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_250[%d-%d]: %s succeeded!", level, _mark, mark(), "':'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_250_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
@@ -23077,26 +26340,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_250[%d-%d]: %s succeeded!", level, _mark, mark(), "'**'");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'**'");
                 _res = _literal;
                 cache.putResult(_mark, _TMP_250_ID, _res);
+                level--;
                 return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_250[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'**'");
         }
+        debugMessageln("Fail at %d: _tmp_250", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_250_ID, _res);
+        level--;
         return (Token)_res;
     }
 
     // _tmp_251: expression ['as' star_target]
     public ExprTy _tmp_251_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_251_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_251_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // expression ['as' star_target]
@@ -23110,26 +26379,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_251[%d-%d]: %s succeeded!", level, _mark, mark(), "expression ['as' star_target]");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "expression ['as' star_target]");
                 _res = dummyName(expression_var, _opt_var);
                 cache.putResult(_mark, _TMP_251_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_251[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expression ['as' star_target]");
         }
+        debugMessageln("Fail at %d: _tmp_251", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_251_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_252: expressions ['as' star_target]
     public ExprTy _tmp_252_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_252_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_252_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // expressions ['as' star_target]
@@ -23143,26 +26418,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_252[%d-%d]: %s succeeded!", level, _mark, mark(), "expressions ['as' star_target]");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "expressions ['as' star_target]");
                 _res = dummyName(expressions_var, _opt_var);
                 cache.putResult(_mark, _TMP_252_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_252[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "expressions ['as' star_target]");
         }
+        debugMessageln("Fail at %d: _tmp_252", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_252_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_253: 'as' star_target
     public ExprTy _tmp_253_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_253_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_253_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'as' star_target
@@ -23176,26 +26457,32 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_253[%d-%d]: %s succeeded!", level, _mark, mark(), "'as' star_target");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'as' star_target");
                 _res = dummyName(_keyword, star_target_var);
                 cache.putResult(_mark, _TMP_253_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_253[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'as' star_target");
         }
+        debugMessageln("Fail at %d: _tmp_253", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_253_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
     // _tmp_254: 'as' star_target
     public ExprTy _tmp_254_rule()
     {
+        level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_254_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_254_ID);
+            level--;
             return (ExprTy)_res;
         }
         { // 'as' star_target
@@ -23209,16 +26496,20 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_254[%d-%d]: %s succeeded!", level, _mark, mark(), "'as' star_target");
+                debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'as' star_target");
                 _res = dummyName(_keyword, star_target_var);
                 cache.putResult(_mark, _TMP_254_ID, _res);
+                level--;
                 return (ExprTy)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_254[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "'as' star_target");
         }
+        debugMessageln("Fail at %d: _tmp_254", _mark);
         _res = null;
         cache.putResult(_mark, _TMP_254_ID, _res);
+        level--;
         return (ExprTy)_res;
     }
 
