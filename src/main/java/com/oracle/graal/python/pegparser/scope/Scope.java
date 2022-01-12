@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,20 +38,77 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.pegparser.scope;
 
-package com.oracle.graal.python.pegparser.sst;
+import com.oracle.graal.python.pegparser.sst.SSTNode;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
 
-import com.oracle.graal.python.pegparser.ScopeInfo;
+/**
+ * Roughly equivalent to CPython's {@code symtable_entry}.
+ */
+public class Scope {
 
-public abstract class SSTNodeWithScope extends SSTNode {
-    protected final ScopeInfo scope;
-
-    public SSTNodeWithScope(int startOffset, int endOffset, ScopeInfo scope) {
-        super(startOffset, endOffset);
-        this.scope = scope;
+    Scope(ScopeType type, SSTNode ast) {
+        this.type = type;
+        this.startOffset = ast.getStartOffset();
+        this.endOffset = ast.getEndOffset();
     }
 
-    public ScopeInfo getScope() {
-        return scope;
+    enum ScopeType {
+        Function,
+        Class,
+        Module,
+        Annotation;
     }
+
+    enum DefUse {
+        DefGlobal,
+        DefLocal,
+        DefParam,
+        DefNonLocal,
+        Use,
+        DefFree,
+        DefFreeClass,
+        DefImport,
+        DefAnnot,
+        DefCompIter,
+        // shifted VariableScope flags
+        Local,
+        GlobalExplicit,
+        GlobalImplicit,
+        Free,
+        Cell;
+
+        static EnumSet<DefUse> DefBound = EnumSet.of(DefLocal, DefParam, DefImport);
+    };
+
+    HashMap<String, EnumSet<DefUse>> symbols;
+
+    String name;
+    ArrayList<String> varnames;
+    ArrayList<Scope> children;
+    ArrayList<String> directives;
+    ScopeType type;
+
+    enum ScopeFlags {
+        IsNested,
+        HasFreeVars,
+        HasChildWithFreeVars,
+        IsGenerator,
+        IsCoroutine,
+        IsComprehension,
+        HasVarArgs,
+        HasVarKeywords,
+        ReturnsAValue,
+        NeedsClassClosure,
+        IsVisitingIterTarget;
+    }
+
+    EnumSet<ScopeFlags> flags;
+    int comprehensionIterExpression;
+
+    int startOffset;
+    int endOffset;
 }

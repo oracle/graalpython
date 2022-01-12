@@ -84,6 +84,44 @@ public final class ArgDefListBuilder {
 
     }
 
+    public String[] getParameterNames() {
+        String[] names = new String[args.size() + kwargs.size()];
+        int i;
+        for (i = 0; i < args.size(); i++) {
+            names[i] = args.get(i).name;
+        }
+        for (int j = 0; j < kwargs.size(); i++, j++) {
+            names[i] = kwargs.get(j).name;
+        }
+        return names;
+    }
+
+    public SSTNode[] getDefaults() {
+        SSTNode[] result;
+        if (argsWithDefValue != null) {
+            result = new SSTNode[argsWithDefValue.size()];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = argsWithDefValue.get(i).value;
+            }
+        } else {
+            result = null;
+        }
+        return result;
+    }
+
+    public SSTNode[] getKwDefaults() {
+        SSTNode[] result;
+        if (kwargsWithDefValue != null) {
+            result = new SSTNode[kwargsWithDefValue.size()];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = kwargsWithDefValue.get(i).value;
+            }
+        } else {
+            result = null;
+        }
+        return result;
+    }
+
     private List<Parameter> args;
     private List<ParameterWithDefValue> argsWithDefValue;
     private List<Parameter> kwargs;
@@ -216,6 +254,10 @@ public final class ArgDefListBuilder {
 
     public boolean hasSplat() {
         return splatIndex > -1;
+    }
+
+    public boolean hasKwSplat() {
+        return kwargIndex > -1;
     }
 
     public boolean validateArgumentsAfterSplat() {

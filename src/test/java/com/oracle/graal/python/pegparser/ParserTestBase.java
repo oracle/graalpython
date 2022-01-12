@@ -74,8 +74,7 @@ public class ParserTestBase {
     private static final boolean REGENERATE_TREE = false;
 
     public TestInfo testInfo;
-    
-    private ScopeInfo lastGlobalScope;
+
     private SSTNode lastSST;
 
     public ParserTestBase() {
@@ -94,7 +93,7 @@ public class ParserTestBase {
     private String getFileName() {
         return testInfo.getTestMethod().get().getName();
     }
-    
+
 //    protected Source createSource(File testFile) throws Exception {
 //        TruffleFile src = context.getEnv().getInternalTruffleFile(testFile.getAbsolutePath());
 //        return PythonLanguage.newSource(context, src, getFileName(testFile));
@@ -136,10 +135,6 @@ public class ParserTestBase {
 //        lastSST = ((PythonParserImpl) parser).getLastSST();
 //        return result;
 //    }
-
-    protected ScopeInfo getLastGlobalScope() {
-        return lastGlobalScope;
-    }
 
     protected SSTNode getLastSST() {
         return lastSST;

@@ -41,15 +41,13 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-import com.oracle.graal.python.pegparser.ScopeInfo;
-
-public class ClassSSTNode extends SSTNodeWithScope {
+public class ClassSSTNode extends SSTNode {
     protected final String name;
     protected final ArgListBuilder baseClasses;
     protected final SSTNode body;
 
-    public ClassSSTNode(ScopeInfo classScope, String name, ArgListBuilder baseClasses, SSTNode body, int startOffset, int endOffset) {
-        super(startOffset, endOffset, classScope);
+    public ClassSSTNode(String name, ArgListBuilder baseClasses, SSTNode body, int startOffset, int endOffset) {
+        super(startOffset, endOffset);
         this.name = name;
         this.baseClasses = baseClasses;
         this.body = body;
@@ -58,6 +56,18 @@ public class ClassSSTNode extends SSTNodeWithScope {
     @Override
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ArgListBuilder getBaseClasses() {
+        return baseClasses;
+    }
+
+    public SSTNode getBody() {
+        return body;
     }
 
 }

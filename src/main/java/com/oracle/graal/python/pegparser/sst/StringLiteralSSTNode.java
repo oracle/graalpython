@@ -61,7 +61,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         super(start, end);
     }
 
-    static final class RawStringLiteralSSTNode extends StringLiteralSSTNode {
+    public static final class RawStringLiteralSSTNode extends StringLiteralSSTNode {
         protected String value;
 
         public RawStringLiteralSSTNode(String value, int startIndex, int endIndex) {
@@ -79,7 +79,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         }
     }
 
-    static final class BytesLiteralSSTNode extends StringLiteralSSTNode {
+    public static final class BytesLiteralSSTNode extends StringLiteralSSTNode {
         protected byte[] value;
 
         protected BytesLiteralSSTNode(byte[] value, int startIndex, int endIndex) {
@@ -100,7 +100,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         NO_CONVERSION
     }
 
-    static final class FormatExpressionSSTNode extends StringLiteralSSTNode {
+    public static final class FormatExpressionSSTNode extends StringLiteralSSTNode {
         protected final String expressionCode;
         protected final SSTNode expression;
         protected final SSTNode specifier;
@@ -137,7 +137,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
 
     }
 
-    static final class FormatStringLiteralSSTNode extends StringLiteralSSTNode {
+    public static final class FormatStringLiteralSSTNode extends StringLiteralSSTNode {
         protected final SSTNode[] parts;
 
         protected FormatStringLiteralSSTNode(SSTNode[] parts, int startIndex, int endIndex) {

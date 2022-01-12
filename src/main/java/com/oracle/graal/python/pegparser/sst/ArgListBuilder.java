@@ -123,7 +123,7 @@ public final class ArgListBuilder {
         return isStarArgBitset != null && isStarArgBitset.get(i);
     }
 
-    protected SSTNode[] getKwArg() {
+    public SSTNode[] getKwArg() {
         return kwArg == null ? EMPTY_SSTN : kwArg.toArray(new SSTNode[kwArg.size()]);
     }
 
