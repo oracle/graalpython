@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
@@ -58,6 +57,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -141,7 +141,6 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached IsBuiltinClassProfile errProfile,
-                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached AddRefCntNode incRefNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -156,7 +155,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 } catch (PException e) {
                     e.expectAttributeError(errProfile);
                     transformExceptionToNativeNode.execute(null, e);
-                    return toSulongNode.execute(getNativeNullNode.execute());
+                    return toSulongNode.execute(PythonContext.get(gil).getNativeNull());
                 }
             } finally {
                 gil.release(mustRelease);
@@ -267,7 +266,6 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached ToJavaNode toJavaNode,
                             @Cached ToNewRefNode toSulongNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                            @Cached GetNativeNullNode getNativeNullNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
                 try {
@@ -284,7 +282,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         return toSulongNode.execute(result);
                     } catch (PException e) {
                         transformExceptionToNativeNode.execute(null, e);
-                        return getNativeNullNode.execute();
+                        return PythonContext.get(gil).getNativeNull();
                     }
                 } finally {
                     gil.release(mustRelease);
@@ -316,7 +314,6 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached ToSulongNode nullToSulongNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -332,7 +329,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     return newRef ? toNewRefNode.execute(result) : toSulongNode.execute(result);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(null, e);
-                    return nullToSulongNode.execute(getNativeNullNode.execute());
+                    return nullToSulongNode.execute(PythonContext.get(nullToSulongNode).getNativeNull());
                 }
             } finally {
                 gil.release(mustRelease);

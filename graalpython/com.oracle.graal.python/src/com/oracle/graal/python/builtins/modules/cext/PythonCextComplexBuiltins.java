@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.ComplexNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -94,14 +93,13 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPComplex(obj)")
         Object asComplex(VirtualFrame frame, Object obj,
                         @Cached ComplexNode complexNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 PComplex c = (PComplex) complexNode.execute(frame, PythonBuiltinClassType.PComplex, obj, PNone.NO_VALUE);
                 return factory().createTuple(new Object[]{c.getReal(), c.getImag()});
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }

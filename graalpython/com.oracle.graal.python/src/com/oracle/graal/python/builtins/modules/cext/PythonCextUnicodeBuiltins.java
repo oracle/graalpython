@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.DecodeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -151,13 +150,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached StrNode strNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return strNode.executeWith(frame, obj);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -165,9 +163,8 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         public Object fromObject(VirtualFrame frame, Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.CANT_CONVERT_TO_STR_IMPLICITLY, obj);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.CANT_CONVERT_TO_STR_IMPLICITLY, obj);
         }
 
         protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -223,13 +220,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached StringBuiltins.AddNode addNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return addNode.execute(frame, left, right);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -237,18 +233,16 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         public Object leftNotString(VirtualFrame frame, Object left, @SuppressWarnings("unused") Object right,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, left);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, left);
         }
 
         @Specialization(guards = {"!isString(right)", "!isStringSubtype(frame, right, getClassNode, isSubtypeNode)"})
         public Object rightNotString(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, right);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, right);
         }
 
         protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -262,9 +256,8 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization
         public Object fromBytes(VirtualFrame frame, PBytesLike obj, String encoding, String errors,
                         @Cached DecodeNode decodeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return decode(frame, obj, encoding, errors, decodeNode, transformExceptionToNativeNode, getNativeNullNode);
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            return decode(frame, obj, encoding, errors, decodeNode, transformExceptionToNativeNode);
         }
 
         @Specialization(guards = {"!isBytes(obj)", "!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
@@ -272,18 +265,16 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached DecodeNode decodeNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return decode(frame, obj, encoding, errors, decodeNode, transformExceptionToNativeNode, getNativeNullNode);
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            return decode(frame, obj, encoding, errors, decodeNode, transformExceptionToNativeNode);
         }
 
-        private static Object decode(VirtualFrame frame, Object obj, String encoding, String errors, DecodeNode decodeNode, TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        GetNativeNullNode getNativeNullNode) {
+        private Object decode(VirtualFrame frame, Object obj, String encoding, String errors, DecodeNode decodeNode, TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return decodeNode.execute(frame, obj, encoding, errors);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -291,9 +282,8 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         public Object concat(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") String encoding, @SuppressWarnings("unused") String errors,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.DECODING_STR_NOT_SUPPORTED);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.DECODING_STR_NOT_SUPPORTED);
         }
 
         protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -309,13 +299,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached InternNode internNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return internNode.execute(frame, obj);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -340,13 +329,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached ModNode modNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return modNode.execute(frame, format, args);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -354,9 +342,8 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         public Object find(VirtualFrame frame, Object format, @SuppressWarnings("unused") Object args,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, format);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, format);
         }
 
         protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -423,14 +410,13 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object getItemCallable = lookupAttrNode.execute(frame, s, __GETITEM__);
                 return callNode.execute(getItemCallable, sliceNode.execute(frame, start, end, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -438,9 +424,8 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         public Object find(VirtualFrame frame, Object s, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, s);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, s);
         }
 
         protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -457,13 +442,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached StringBuiltins.JoinNode joinNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return joinNode.execute(frame, separator, seq);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -471,9 +455,8 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         public Object find(VirtualFrame frame, Object separator, @SuppressWarnings("unused") Object seq,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, separator);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.MUST_BE_STR_NOT_P, separator);
         }
 
         protected boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -585,13 +568,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached EncodeNode encodeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return encodeNode.execute(frame, obj, encoding, errors);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -599,9 +581,8 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         public Object encode(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") String encoding, @SuppressWarnings("unused") String errors,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         protected static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -616,13 +597,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isString(s)", "isString(substr)", "isString(replstr)"})
         public Object replace(VirtualFrame frame, Object s, Object substr, Object replstr, long count,
                         @Cached ReplaceNode replaceNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return replaceNode.execute(frame, s, substr, replstr, count);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -634,9 +614,8 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached ReplaceNode replaceNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return replace(frame, s, substr, replstr, count, replaceNode, transformExceptionToNativeNode, getNativeNullNode);
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            return replace(frame, s, substr, replstr, count, replaceNode, transformExceptionToNativeNode);
         }
 
         @Specialization(guards = {"!isString(s)", "!isString(substr)", "!isString(replstr)",
@@ -646,9 +625,8 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         public Object replace(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") String s, @SuppressWarnings("unused") String substr,
                         @SuppressWarnings("unused") String replstr, @SuppressWarnings("unused") long count,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return getNativeNullNode.execute();
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            return getContext().getNativeNull();
         }
 
         protected static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -664,13 +642,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         public Object escape(VirtualFrame frame, Object s,
                         @Cached CodecsEncodeNode encodeNode,
                         @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return getItemNode.execute(frame, encodeNode.execute(frame, s, "unicode_escape", PNone.NO_VALUE), 0);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -680,18 +657,16 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return escape(frame, s, encodeNode, getItemNode, transformExceptionToNativeNode, getNativeNullNode);
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            return escape(frame, s, encodeNode, getItemNode, transformExceptionToNativeNode);
         }
 
         @Specialization(guards = {"!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
         public Object escape(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         protected static boolean isStringSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -774,13 +749,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization
         Object split(VirtualFrame frame, Object module, Object string, Object sep, Object maxsplit,
                         @Cached StringBuiltins.SplitNode splitNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return splitNode.execute(frame, string, sep, maxsplit);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
-                return getNativeNullNode.execute(module);
+                return getContext().getNativeNull();
             }
         }
     }
@@ -794,15 +768,14 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyUnicode_DecodeUTF8Stateful", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
+    @Builtin(name = "PyUnicode_DecodeUTF8Stateful", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyUnicode_DecodeUTF8Stateful extends NativeUnicodeBuiltin {
 
         @Specialization
-        Object doUtf8Decode(VirtualFrame frame, Object module, Object cByteArray, String errors, @SuppressWarnings("unused") int reportConsumed,
+        Object doUtf8Decode(VirtualFrame frame, Object cByteArray, String errors, @SuppressWarnings("unused") int reportConsumed,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached GetByteArrayNode getByteArrayNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached GetByteArrayNode getByteArrayNode) {
 
             try {
                 ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(cByteArray, -1));
@@ -811,9 +784,9 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                 decodeUTF8(resultBuffer, inputBuffer, errors);
                 return toSulongNode.execute(factory().createTuple(new Object[]{toString(resultBuffer), n - remaining(inputBuffer)}));
             } catch (InteropException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
+                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.TypeError, "%m", e);
             } catch (OverflowException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
+                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
             }
         }
 
@@ -825,21 +798,20 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
+    @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyUnicode_Decode extends NativeBuiltin {
 
         @Specialization
-        Object doDecode(VirtualFrame frame, Object module, PMemoryView mv, String encoding, String errors,
+        Object doDecode(VirtualFrame frame, PMemoryView mv, String encoding, String errors,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
-                        @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached CExtNodes.ToNewRefNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return toSulongNode.execute(decodeNode.executeWithStrings(frame, mv, encoding, errors));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
-                return toSulongNode.execute(getNativeNullNode.execute(module));
+                return toSulongNode.execute(getContext().getNativeNull());
             }
         }
     }

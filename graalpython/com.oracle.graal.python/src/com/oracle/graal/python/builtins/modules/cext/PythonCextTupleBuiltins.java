@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectStealingNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -219,8 +218,7 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
                         @Cached GetItemNode getItemNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached BranchProfile isIntRangeProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 if (PInt.isIntRange(iLow) && PInt.isIntRange(iHigh)) {
                     isIntRangeProfile.enter();
@@ -229,7 +227,7 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
                 return getItemNode.execute(frame, tuple, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -237,13 +235,12 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
         Object getSlice(VirtualFrame frame, PTuple tuple, Object iLow, Object iHigh,
                         @Cached GetItemNode getItemNode,
                         @Cached SliceLiteralNode sliceNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return getItemNode.execute(frame, tuple, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -251,9 +248,8 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
         public Object getSliceNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
         }
 
         @Specialization(guards = {"!isPTuple(obj)", "!isTupleSubtype(frame, obj, getClassNode, isSubtypeNode)"})
@@ -261,9 +257,8 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
         }
 
         protected boolean isTupleSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {

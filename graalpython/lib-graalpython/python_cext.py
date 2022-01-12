@@ -39,6 +39,9 @@
 
 import sys
 
+# TODO: when this file is gone, remove also NATIE_NULL constant in PythonCextBuiltins
+# builtinConstants.put(NATIVE_NULL, core.getContext().getNativeNull())
+
 __builtins_module_dict = None
 
 def may_raise(error_result=native_null):

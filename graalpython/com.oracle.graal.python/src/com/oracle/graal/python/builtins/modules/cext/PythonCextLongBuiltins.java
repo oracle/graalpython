@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
@@ -206,13 +205,12 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
         @Specialization
         Object fromDouble(VirtualFrame frame, double d,
                         @Cached IntNode intNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return intNode.execute(frame, d);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -225,13 +223,12 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
         @Specialization(guards = "negative == 0")
         Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
                         @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
-                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return intNode.executeWith(frame, s, base);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -239,13 +236,12 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
         Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
                         @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
                         @Cached NegNode negNode,
-                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return negNode.execute(frame, intNode.executeWith(frame, s, base));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }

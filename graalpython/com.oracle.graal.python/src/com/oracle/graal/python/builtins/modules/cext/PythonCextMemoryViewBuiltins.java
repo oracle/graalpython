@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins.CastNode;
@@ -96,8 +95,7 @@ public final class PythonCextMemoryViewBuiltins extends PythonBuiltins {
                         @Cached CastNode castNode,
                         @Cached ContiguousNode contiguousNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             assert buffertype == PY_BUF_READ || buffertype == PY_BUF_WRITE;
             char order = (char) orderInt;
             assert order == 'C' || order == 'F' || order == 'A';
@@ -107,14 +105,14 @@ public final class PythonCextMemoryViewBuiltins extends PythonBuiltins {
                 boolean release = true;
                 try {
                     if (buffertype == PY_BUF_WRITE && mv.isReadOnly()) {
-                        return raiseNativeNode.raise(frame, getNativeNullNode.execute(), BufferError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
+                        return raiseNativeNode.raise(frame, getContext().getNativeNull(), BufferError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
                     }
                     if ((boolean) contiguousNode.execute(frame, mv)) {
                         release = false;
                         return mv;
                     }
                     if (buffertype == PY_BUF_WRITE) {
-                        return raiseNativeNode.raise(frame, getNativeNullNode.execute(), BufferError, WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS);
+                        return raiseNativeNode.raise(frame, getContext().getNativeNull(), BufferError, WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS);
                     }
                     PMemoryView mvBytes = memoryViewFromObject.execute(frame, toBytesNode.execute(frame, mv, Character.toString(order)));
                     if ("B".equals(mv.getFormatString())) {
@@ -133,7 +131,7 @@ public final class PythonCextMemoryViewBuiltins extends PythonBuiltins {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }

@@ -195,12 +195,11 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(OBJ, key)"})
         static Object getObj(PMemoryView object, @SuppressWarnings("unused") String key,
-                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode) {
             if (object.getOwner() != null) {
                 return toSulongNode.execute(object.getOwner());
             } else {
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
             }
         }
 
@@ -227,12 +226,11 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"eq(FORMAT, key)"})
         static Object getFormat(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
-                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode) {
             if (object.getFormatString() != null) {
                 return asCharPointerNode.execute(object.getFormatString());
             } else {
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
             }
         }
 
@@ -251,20 +249,18 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"eq(SUBOFFSETS, key)"})
         static Object getSuboffsets(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
             if (object.getBufferSuboffsets() != null) {
                 return intArrayToNativePySSizeArray.execute(object.getBufferSuboffsets());
             } else {
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
             }
         }
 
         @Specialization(guards = {"eq(INTERNAL, key)"})
         static Object getInternal(@SuppressWarnings("unused") PMemoryView object, @SuppressWarnings("unused") String key,
-                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
-            return toSulongNode.execute(getNativeNullNode.execute());
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
         }
 
         @Fallback

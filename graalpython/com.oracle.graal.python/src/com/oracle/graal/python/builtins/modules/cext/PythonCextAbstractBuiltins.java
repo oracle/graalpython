@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyErrRes
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -109,7 +108,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -141,13 +139,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         @Specialization
         Object check(VirtualFrame frame, Object obj,
                         @Cached com.oracle.graal.python.lib.PyNumberCheckNode checkNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return checkNode.execute(frame, obj);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -158,13 +155,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         @Specialization
         Object index(VirtualFrame frame, Object obj,
                         @Cached com.oracle.graal.python.lib.PyNumberIndexNode indexNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return indexNode.execute(frame, obj);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -186,13 +182,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         @Fallback
         Object nlong(VirtualFrame frame, Object obj,
                         @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return intNode.executeWith(frame, obj, PNone.NO_VALUE);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -203,13 +198,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         @Specialization
         Object abs(VirtualFrame frame, Object obj,
                         @Cached AbsNode absNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return absNode.execute(frame, obj);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -220,13 +214,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         @Specialization
         Object div(VirtualFrame frame, Object a, Object b,
                         @Cached DivModNode divNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return divNode.execute(frame, a, b);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -238,27 +231,25 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
                         @Cached com.oracle.graal.python.lib.PyNumberIndexNode indexNode,
                         @Cached BinNode binNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object i = indexNode.execute(frame, n);
                 return binNode.execute(frame, i);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
         @Specialization(guards = "base == 8")
         Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
                         @Cached OctNode octNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return octNode.execute(frame, n);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -266,8 +257,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
                         @Cached com.oracle.graal.python.lib.PyNumberIndexNode indexNode,
                         @Cached StrNode strNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object i = indexNode.execute(frame, n);
                 if (i instanceof Boolean) {
@@ -276,7 +266,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 return strNode.executeWith(frame, i);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -284,22 +274,20 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         Object toBase(VirtualFrame frame, Object n, @SuppressWarnings("unused") int base,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached HexNode hexNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object i = indexNode.execute(frame, n);
                 return hexNode.execute(frame, i);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
         @Specialization(guards = "!checkBase(base)")
         Object toBase(VirtualFrame frame, @SuppressWarnings("unused") Object n, @SuppressWarnings("unused") int base,
-                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BASE_MUST_BE);
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), SystemError, BASE_MUST_BE);
         }
 
         protected boolean checkBase(int base) {
@@ -326,7 +314,6 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object object,
-                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached PyNumberFloatNode pyNumberFloat) {
@@ -334,7 +321,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 return toNewRefNode.execute(pyNumberFloat.execute(frame, asPythonObjectNode.execute(object)));
             } catch (PException e) {
                 transformToNative(frame, e);
-                return toNewRefNode.execute(getNativeNullNode.execute());
+                return toNewRefNode.execute(getContext().getNativeNull());
             }
         }
     }
@@ -346,28 +333,26 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         static int MAX_CACHE_SIZE = UnaryArithmetic.values().length;
 
         @Specialization(guards = {"cachedOp == op", "left.isIntLike()"}, limit = "MAX_CACHE_SIZE")
-        static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, @SuppressWarnings("unused") int op,
+        Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, @SuppressWarnings("unused") int op,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
                         @Cached("createCallNode(op)") UnaryOpNode callNode,
                         @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return toSulongNode.execute(callNode.execute(frame, left.getLong()));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(getContext().getNativeNull());
             }
         }
 
         @Specialization(guards = "cachedOp == op", limit = "MAX_CACHE_SIZE", replaces = "doIntLikePrimitiveWrapper")
-        static Object doObject(VirtualFrame frame, Object left, @SuppressWarnings("unused") int op,
+        Object doObject(VirtualFrame frame, Object left, @SuppressWarnings("unused") int op,
                         @Cached AsPythonObjectNode leftToJava,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
                         @Cached("createCallNode(op)") UnaryOpNode callNode,
                         @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             // still try to avoid expensive materialization of primitives
             Object result;
             try {
@@ -380,7 +365,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 result = callNode.execute(frame, leftValue);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                result = getNativeNullNode.execute();
+                result = getContext().getNativeNull();
             }
             return toSulongNode.execute(result);
         }
@@ -414,29 +399,27 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         static int MAX_CACHE_SIZE = BinaryArithmetic.values().length;
 
         @Specialization(guards = {"cachedOp == op", "left.isIntLike()", "right.isIntLike()"}, limit = "MAX_CACHE_SIZE")
-        static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, PrimitiveNativeWrapper right, @SuppressWarnings("unused") int op,
+        Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, PrimitiveNativeWrapper right, @SuppressWarnings("unused") int op,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
                         @Cached("createCallNode(op)") BinaryOpNode callNode,
                         @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return toSulongNode.execute(callNode.executeObject(frame, left.getLong(), right.getLong()));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(getContext().getNativeNull());
             }
         }
 
         @Specialization(guards = "cachedOp == op", limit = "MAX_CACHE_SIZE", replaces = "doIntLikePrimitiveWrapper")
-        static Object doObject(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int op,
+        Object doObject(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int op,
                         @Cached AsPythonObjectNode leftToJava,
                         @Cached AsPythonObjectNode rightToJava,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
                         @Cached("createCallNode(op)") BinaryOpNode callNode,
                         @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             // still try to avoid expensive materialization of primitives
             Object result;
             try {
@@ -459,7 +442,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                result = getNativeNullNode.execute();
+                result = getContext().getNativeNull();
             }
             return toSulongNode.execute(result);
         }
@@ -524,29 +507,27 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         static int MAX_CACHE_SIZE = InplaceArithmetic.values().length;
 
         @Specialization(guards = {"cachedOp == op", "left.isIntLike()", "right.isIntLike()"}, limit = "MAX_CACHE_SIZE")
-        static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, PrimitiveNativeWrapper right, @SuppressWarnings("unused") int op,
+        Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, PrimitiveNativeWrapper right, @SuppressWarnings("unused") int op,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
                         @Cached("createCallNode(op)") LookupAndCallInplaceNode callNode,
                         @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return toSulongNode.execute(callNode.execute(frame, left.getLong(), right.getLong()));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(getContext().getNativeNull());
             }
         }
 
         @Specialization(guards = "cachedOp == op", limit = "MAX_CACHE_SIZE", replaces = "doIntLikePrimitiveWrapper")
-        static Object doObject(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int op,
+        Object doObject(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int op,
                         @Cached AsPythonObjectNode leftToJava,
                         @Cached AsPythonObjectNode rightToJava,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
                         @Cached("createCallNode(op)") LookupAndCallInplaceNode callNode,
                         @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             // still try to avoid expensive materialization of primitives
             Object result;
             try {
@@ -569,7 +550,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                result = getNativeNullNode.execute();
+                result = getContext().getNativeNull();
             }
             return toSulongNode.execute(result);
         }
@@ -623,13 +604,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         @Specialization(guards = {"o1.isIntLike()", "o2.isIntLike()", "o3.isIntLike()"})
         Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper o1, PrimitiveNativeWrapper o2, PrimitiveNativeWrapper o3,
                         @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return toSulongNode.execute(ensureCallNode().executeTernary(frame, o1.getLong(), o2.getLong(), o3.getLong()));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(getContext().getNativeNull());
             }
         }
 
@@ -639,8 +619,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode o2ToJava,
                         @Cached AsPythonObjectNode o3ToJava,
                         @Cached ToNewRefNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             // still try to avoid expensive materialization of primitives
             Object result;
             try {
@@ -650,7 +629,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 result = ensureCallNode().executeTernary(frame, o1Value, o2Value, o3Value);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                result = getNativeNullNode.execute();
+                result = getContext().getNativeNull();
             }
             return toSulongNode.execute(result);
         }
@@ -687,13 +666,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         public Object values(VirtualFrame frame, Object obj,
                         @Cached TupleNode tupleNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return tupleNode.execute(frame, PythonBuiltinClassType.PTuple, obj);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -708,13 +686,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         @Specialization
         public Object values(VirtualFrame frame, Object obj,
                         @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return listNode.execute(frame, obj);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -762,23 +739,21 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object getItemCallable = lookupAttrNode.execute(frame, obj, __GETITEM__);
                 return callNode.execute(getItemCallable, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
         @Specialization(guards = "!checkNode.execute(obj)")
         Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
         }
     }
 
@@ -806,22 +781,20 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         Object repeat(VirtualFrame frame, Object obj, long n,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached("createMul()") MulNode mulNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return mulNode.executeObject(frame, obj, n);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
         @Specialization(guards = "!checkNode.execute(obj)")
         protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
 
         protected MulNode createMul() {
@@ -838,8 +811,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached("createMul()") MulNode mulNode,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object imulCallable = lookupNode.execute(frame, obj, __IMUL__);
                 if (imulCallable != PNone.NO_VALUE) {
@@ -849,16 +821,15 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 return mulNode.executeObject(frame, obj, n);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
         @Specialization(guards = "!checkNode.execute(obj)")
         protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
 
         protected MulNode createMul() {
@@ -873,22 +844,20 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         Object concat(VirtualFrame frame, Object s1, Object s2,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return addNode.executeObject(frame, s1, s2);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
         @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"})
         protected Object cantConcat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
 
         protected BinaryArithmetic.AddNode createAdd() {
@@ -906,8 +875,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object iaddCallable = lookupNode.execute(frame, s1, __IADD__);
                 if (iaddCallable != PNone.NO_VALUE) {
@@ -916,16 +884,15 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 return addNode.executeObject(frame, s1, s2);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
         @Specialization(guards = "!checkNode.execute(s1)")
         protected Object concat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
                         @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
 
         protected BinaryArithmetic.AddNode createAdd() {
@@ -971,7 +938,6 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
                         @Cached AsPythonObjectNode positionAsPythonObjectNode,
                         @Cached ToNewRefNode toNewRefNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
@@ -982,7 +948,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 return toNewRefNode.execute(item);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
-                return toNewRefNode.execute(getNativeNullNode.execute());
+                return toNewRefNode.execute(getContext().getNativeNull());
             }
         }
     }
@@ -998,7 +964,6 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
                         @Cached AsPythonObjectNode keyAsPythonObjectNode,
                         @Cached ToNewRefNode toNewRefNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
@@ -1006,7 +971,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                 return toNewRefNode.execute(item);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
-                return toNewRefNode.execute(getNativeNullNode.execute());
+                return toNewRefNode.execute(getContext().getNativeNull());
             }
         }
     }
@@ -1020,13 +985,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         public Object keys(VirtualFrame frame, PDict obj,
                         @Cached KeysNode keysNode,
                         @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return listNode.execute(frame, keysNode.execute(frame, obj));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -1035,13 +999,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return getKeys(frame, obj, getAttrNode, callNode, listNode);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -1059,13 +1022,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         public Object items(VirtualFrame frame, PDict obj,
                         @Cached ItemsNode itemsNode,
                         @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return listNode.execute(frame, itemsNode.execute(frame, obj));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -1074,14 +1036,13 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object attr = getAttrNode.execute(frame, obj, ITEMS);
                 return listNode.execute(frame, callNode.execute(frame, attr));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -1093,13 +1054,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         public Object values(VirtualFrame frame, PDict obj,
                         @Cached ConstructListNode listNode,
                         @Cached ValuesNode valuesNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return listNode.execute(frame, valuesNode.execute(frame, obj));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
 
@@ -1108,14 +1068,13 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object attr = getAttrNode.execute(frame, obj, VALUES);
                 return listNode.execute(frame, callNode.execute(frame, attr));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNullNode.execute();
+                return getContext().getNativeNull();
             }
         }
     }
@@ -1126,21 +1085,20 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyIterNextCheck extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object check(VirtualFrame frame, Object object,
+        Object check(VirtualFrame frame, Object object,
                         @Cached NextNode nextNode,
                         @Cached PyErrRestoreNode restoreNode,
                         @Cached IsBuiltinClassProfile isClassProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return nextNode.execute(frame, object, PNone.NO_VALUE);
             } catch (PException e) {
                 if (isClassProfile.profileException(e, PythonBuiltinClassType.StopIteration)) {
                     restoreNode.execute(frame, PNone.NONE, PNone.NONE, PNone.NONE);
-                    return getNativeNullNode.execute();
+                    return getContext().getNativeNull();
                 } else {
                     transformExceptionToNativeNode.execute(e);
-                    return getNativeNullNode.execute();
+                    return getContext().getNativeNull();
                 }
             }
         }

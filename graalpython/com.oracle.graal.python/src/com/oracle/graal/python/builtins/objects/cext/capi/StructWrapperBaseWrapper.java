@@ -40,13 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -123,7 +123,6 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
     @ExportMessage
     Object readMember(String member,
                     @Shared("gil") @Cached GilNode gil,
-                    @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                     @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
@@ -139,7 +138,7 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
                 case DOC:
                 case NAME_STROBJ:
                     // TODO(fa): if ever necessary, provide proper values here
-                    return toSulongNode.execute(getNativeNullNode.execute());
+                    return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
                 case FLAGS:
                     return getBuiltinFunction().getFlags();
             }
@@ -170,7 +169,6 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
     @ExportMessage
     Object readArrayElement(long index,
                     @Shared("gil") @Cached GilNode gil,
-                    @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                     @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -187,7 +185,7 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
                 case 4 * Long.BYTES:
                 case 6 * Long.BYTES:
                     // TODO(fa): if ever necessary, provide proper values here
-                    return toSulongNode.execute(getNativeNullNode.execute());
+                    return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
                 case 5 * Long.BYTES:
                     return getBuiltinFunction().getFlags();
             }

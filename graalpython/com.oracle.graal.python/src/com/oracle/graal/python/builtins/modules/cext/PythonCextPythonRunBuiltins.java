@@ -54,7 +54,6 @@ import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -93,8 +92,7 @@ public final class PythonCextPythonRunBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNull) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 PythonModule builtins = getCore().getBuiltins();
                 Object compileCallable = lookupNode.execute(frame, builtins, COMPILE);
@@ -103,24 +101,22 @@ public final class PythonCextPythonRunBuiltins extends PythonBuiltins {
                 return callNode.execute(frame, execCallable, code, globals, locals);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getNativeNull.execute();
+                return getContext().getNativeNull();
             }
         }
 
         @Specialization(guards = "!isString(source) || !isDict(globals)")
         public Object run(VirtualFrame frame, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object stype, @SuppressWarnings("unused") Object globals,
                         @SuppressWarnings("unused") Object locals,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
 
         @Specialization(guards = {"isString(source)", "isDict(globals)", "!isMapping.execute(locals)"})
         public Object run(VirtualFrame frame, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object stype, @SuppressWarnings("unused") Object globals, Object locals,
                         @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, locals);
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, locals);
         }
 
         protected boolean checkArgs(Object source, Object globals, Object locals, PyMappingCheckNode isMapping) {

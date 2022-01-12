@@ -64,7 +64,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -84,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Direc
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNativeNullNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ObjectUpcallNodeGen;
@@ -443,11 +441,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doDeleteMarker(@SuppressWarnings("unused") CExtContext cextContext, DescriptorDeleteMarker marker,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+        Object doDeleteMarker(@SuppressWarnings("unused") CExtContext cextContext, DescriptorDeleteMarker marker) {
             assert marker == DescriptorDeleteMarker.INSTANCE;
-            PythonNativeNull nativeNull = (PythonNativeNull) getNativeNullNode.execute();
-            return nativeNull.getPtr();
+            return getNativeNullPtr(this);
         }
 
         static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
@@ -547,6 +543,10 @@ public abstract class CExtNodes {
 
         protected static boolean isNaN(double d) {
             return Double.isNaN(d);
+        }
+
+        static Object getNativeNullPtr(Node node) {
+            return PythonContext.get(node).getNativeNull().getPtr();
         }
 
         public static ToSulongNode create() {
@@ -705,10 +705,10 @@ public abstract class CExtNodes {
             return ToSulongNode.doNativeNull(cextContext, object);
         }
 
+        @SuppressWarnings("unused")
         @Specialization
-        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
+        Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker) {
+            return ToSulongNode.getNativeNullPtr(this);
         }
 
         static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
@@ -895,10 +895,10 @@ public abstract class CExtNodes {
             return ToSulongNode.doNativeNull(cextContext, object);
         }
 
+        @SuppressWarnings("unused")
         @Specialization
-        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
+        Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker) {
+            return ToSulongNode.getNativeNullPtr(this);
         }
 
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
@@ -2586,8 +2586,6 @@ public abstract class CExtNodes {
         @Child private ExpressionNode wrappedBody;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
 
-        @Child private GetNativeNullNode getNativeNullNode;
-
         private final MayRaiseErrorResult errorResult;
 
         MayRaiseNode(ExpressionNode wrappedBody, MayRaiseErrorResult errorResult) {
@@ -2627,11 +2625,7 @@ public abstract class CExtNodes {
                 case NONE:
                     return PNone.NONE;
                 case NATIVE_NULL:
-                    if (getNativeNullNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getNativeNullNode = insert(GetNativeNullNodeGen.create());
-                    }
-                    return getNativeNullNode.execute();
+                    return getContext().getNativeNull();
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -2801,34 +2795,6 @@ public abstract class CExtNodes {
         public static GetTypeMemberNode getUncached() {
             return GetTypeMemberNodeGen.getUncached();
         }
-    }
-
-    @GenerateUncached
-    public abstract static class GetNativeNullNode extends Node {
-
-        public abstract Object execute(Object module);
-
-        public final Object execute() {
-            return execute(null);
-        }
-
-        @Specialization(guards = "module != null")
-        static Object getNativeNullWithModule(Object module,
-                        @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode) {
-            Object wrapper = readAttrNode.execute(module, PythonCextBuiltins.NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
-        @Specialization(guards = "module == null")
-        static Object getNativeNullWithoutModule(@SuppressWarnings("unused") Object module,
-                        @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode) {
-            PythonModule pythonCextModule = PythonContext.get(readAttrNode).lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
-            Object wrapper = readAttrNode.execute(pythonCextModule, PythonCextBuiltins.NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
     }
 
     /**

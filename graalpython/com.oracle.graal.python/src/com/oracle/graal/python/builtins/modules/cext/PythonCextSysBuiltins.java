@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -76,18 +75,17 @@ public final class PythonCextSysBuiltins extends PythonBuiltins {
     public abstract static class PySysGetObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object writeStr(VirtualFrame frame, String name,
-                        @Cached PyObjectLookupAttr lookupNode,
-                        @Cached GetNativeNullNode getNativeNull) {
+                        @Cached PyObjectLookupAttr lookupNode) {
             try {
                 Object value = lookupNode.execute(frame, getCore().lookupBuiltinModule("sys"), name);
                 if (value == PNone.NO_VALUE) {
-                    return getNativeNull.execute();
+                    return getContext().getNativeNull();
                 }
                 return value;
             } catch (PException e) {
                 // PySys_GetObject delegates to PyDict_GetItem
                 // which suppresses all exceptions for historical reasons
-                return getNativeNull.execute();
+                return getContext().getNativeNull();
             }
         }
     }
