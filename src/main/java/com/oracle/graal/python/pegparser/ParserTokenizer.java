@@ -57,6 +57,12 @@ public class ParserTokenizer {
         this.tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
     }
 
+    public ParserTokenizer(byte[] code) {
+        this.pos = 0;
+        this.tokens = new ArrayList<>();
+        this.tokenizer = new Tokenizer(code, true);
+    }
+
     public int mark() {
         return pos;
     }

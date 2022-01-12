@@ -8,7 +8,7 @@ BlockSSTNode[0, 23]
         ForComprehensionSSTNode[10, 22]
             Target: CollectionSSTNode[14, 17] Tuple
                 Values:
-                    VarLookupSSTNode[14, 15] Value: "a"
-                    VarLookupSSTNode[16, 17] Value: "b"
+                    VarLookupSSTNode[14, 15] Value: "a" Store
+                    VarLookupSSTNode[16, 17] Value: "b" Store
             Iterator: VarLookupSSTNode[21, 22] Value: "y"
             Ifs:

@@ -41,12 +41,15 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-public class VarLookupSSTNode extends SSTNode {
+import com.oracle.graal.python.pegparser.ExprContext;
 
+public class VarLookupSSTNode extends SSTNode {
+    protected final ExprContext context;
     protected final String name;
 
-    public VarLookupSSTNode(String name, int start, int end) {
+    public VarLookupSSTNode(String name, int start, int end, ExprContext context) {
         super(start, end);
+        this.context = context;
         this.name = name;
     }
 
@@ -57,6 +60,10 @@ public class VarLookupSSTNode extends SSTNode {
 
     public String getName() {
         return name;
+    }
+
+    public ExprContext getContext() {
+        return context;
     }
 
 }

@@ -1,6 +1,0 @@
-BlockSSTNode[0, 10]
-    AnnAssignmentSSTNode[0, 10]
-        Annotation: AnnotationSSTNode[0, 6]
-            LHS: VarLookupSSTNode[0, 1] Value: "a"
-            Type: VarLookupSSTNode[3, 6] Value: "int"
-        RHS: IntegerLiteralSSTNode[9, 10] Value: "2"

@@ -4,6 +4,6 @@ BlockSSTNode[0, 17]
             Values:
                 VarLookupSSTNode[2, 3] Value: "a"
         ForComprehensionSSTNode[6, 16]
-            Target: VarLookupSSTNode[10, 11] Value: "a"
+            Target: VarLookupSSTNode[10, 11] Value: "a" Store
             Iterator: VarLookupSSTNode[15, 16] Value: "b"
             Ifs:

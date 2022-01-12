@@ -85,12 +85,12 @@ public class NodeFactoryImp implements NodeFactory{
     public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, SSTNode typeComment, int startOffset, int endOffset) {
         return new AssignmentSSTNode(lhs, rhs, typeComment, startOffset, endOffset);
     }
-    
+
     @Override
     public AugAssignmentSSTNode createAugAssignment(SSTNode lhs, BinaryArithmeticSSTNode.Type operation, SSTNode rhs, int startOffset, int endOffset) {
         return new AugAssignmentSSTNode(lhs, operation, rhs, startOffset, endOffset);
     }
-    
+
     @Override
     public BinaryArithmeticSSTNode createBinaryOp(BinaryArithmeticSSTNode.Type op, SSTNode left, SSTNode right, int startOffset, int endOffset) {
         return new BinaryArithmeticSSTNode(op, left, right, startOffset, endOffset);
@@ -100,7 +100,7 @@ public class NodeFactoryImp implements NodeFactory{
     public BlockSSTNode createBlock(SSTNode[] statements, int startOffset, int endOffset) {
         return new BlockSSTNode(statements, startOffset, endOffset);
     }
-    
+
     @Override
     public BooleanLiteralSSTNode createBooleanLiteral(boolean value, int startOffset, int endOffset) {
         return new BooleanLiteralSSTNode(value, startOffset, endOffset);
@@ -115,7 +115,7 @@ public class NodeFactoryImp implements NodeFactory{
     public SSTNode createEllipsis(int startOffset, int endOffset) {
         return new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS, startOffset, endOffset);
     }
-    
+
     @Override
     public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset) {
         return new GetAttributeSSTNode(receiver, name, startOffset, endOffset);
@@ -147,13 +147,13 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public SSTNode createNumber(String number, int startOffset, int endOffset) {
+    public NumberLiteralSSTNode createNumber(String number, int startOffset, int endOffset) {
         // TODO handle all kind of numbers here.
         return NumberLiteralSSTNode.create(number, 0, 10, startOffset, endOffset);
     }
 
     @Override
-    public SSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb) {
+    public StringLiteralSSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb) {
         return StringLiteralSSTNode.create(values, startOffset, endOffset, this, exprParser, errorCb);
     }
 
@@ -161,17 +161,17 @@ public class NodeFactoryImp implements NodeFactory{
     public UnarySSTNode createUnaryOp(UnarySSTNode.Type op, SSTNode value, int startOffset, int endOffset) {
         return new UnarySSTNode(op, value, startOffset, endOffset);
     }
-    
+
     @Override
-    public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset) {
-        return new VarLookupSSTNode(name, startOffset, endOffset);
+    public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset, ExprContext context) {
+        return new VarLookupSSTNode(name, startOffset, endOffset, context);
     }
 
     @Override
     public UntypedSSTNode createUntyped(int tokenPosition) {
         return new UntypedSSTNode(tokenPosition);
     }
-    
+
     @Override
     public StarSSTNode createStarred(SSTNode value, int startOffset, int endOffset) {
         return new StarSSTNode(value, startOffset, endOffset);
@@ -181,7 +181,7 @@ public class NodeFactoryImp implements NodeFactory{
     public SubscriptSSTNode createSubscript(SSTNode receiver, SSTNode subscript, int startOffset, int endOffset) {
         return new SubscriptSSTNode(receiver, subscript, startOffset, endOffset);
     }
-    
+
     @Override
     public SSTNode createTuple(SSTNode[] values, int startOffset, int endOffset) {
         return CollectionSSTNode.createTuple(values, startOffset, endOffset);
@@ -236,9 +236,10 @@ public class NodeFactoryImp implements NodeFactory{
     public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, SSTNode typeComment, int startOffset, int endOffset) {
         return new FunctionDefSSTNode(name, args, body, decorators, returns, typeComment, startOffset, endOffset);
     }
-    
+
     @Override
     public SSTNode createTypeComment(String typeComment, int startOffset, int ednOffset) {
-        return new VarLookupSSTNode(typeComment, startOffset, ednOffset);
+        // FIXME: see comment in AbstractParser#newTypeComment
+        return new VarLookupSSTNode(typeComment, startOffset, ednOffset, null);
     }
 }

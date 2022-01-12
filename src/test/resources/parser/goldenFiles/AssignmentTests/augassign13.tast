@@ -4,6 +4,6 @@ BlockSSTNode[0, 17]
         ---- Function body of fn ----
         AugAssignmentSSTNode[11, 17]
             Op: +
-            LHS: VarLookupSSTNode[11, 12] Value: "x"
+            LHS: VarLookupSSTNode[11, 12] Value: "x" Store
             RHS: IntegerLiteralSSTNode[16, 17] Value: "3"
         ---- End of fn function ----

@@ -174,7 +174,7 @@ assignment[SSTNode]:
     | a=NAME ':' b=expression c=['=' d=annotated_rhs { d }] {
         factory.createAnnAssignment(
                     factory.createAnnotation(
-                        a,
+                        setExprContext(a, ExprContext.Store),
                         b,
                         a.getStartOffset(), b.getEndOffset()),
                     (SSTNode)c, startToken.startOffset, endToken.endOffset);
@@ -252,8 +252,8 @@ dotted_as_name[alias_ty]:
     | a=dotted_name b=['as' z=NAME { z }] { _PyAST_alias(a->v.Name.id,
                                                       (b) ? ((expr_ty) b)->v.Name.id : NULL,
                                                       EXTRA) }
-dotted_name[SSTNode]: # originally return type expr_ty
-    | a=dotted_name '.' b=NAME { _PyPegen_join_names_with_dot(p, a, b) }
+dotted_name[VarLookupSSTNode]:
+    | a=dotted_name '.' b=NAME { this.joinNamesWithDot(a, b) }
     | NAME
 
 if_stmt[stmt_ty]:
@@ -445,11 +445,11 @@ func_type_comment[Token]:
     | invalid_double_type_comments
     | TYPE_COMMENT
 
-params[arguments_ty]:
+params[ArgDefListBuilder]:
     | invalid_parameters
     | parameters
 
-parameters[arguments_ty]:
+parameters[ArgDefListBuilder]:
     | a=slash_no_default b[asdl_arg_seq*]=param_no_default* c=param_with_default* d=[star_etc] {
         _PyPegen_make_arguments(p, a, NULL, b, c, d) }
     | a=slash_with_default b=param_with_default* c=[star_etc] {
@@ -796,14 +796,14 @@ target_with_star_atom[SSTNode] (memo): # originally return type expr_ty
     | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | star_atom
 star_atom[SSTNode]: # originally return type expr_ty
-    | a=NAME { a }
-    | '(' a=target_with_star_atom ')' { a }
+    | a=NAME { this.setExprContext(a, ExprContext.Store) }
+    | '(' a=target_with_star_atom ')' { this.setExprContext(a, ExprContext.Store) }
     | '(' a=[star_targets_tuple_seq] ')' { factory.createTuple((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
     | '[' a=[star_targets_list_seq] ']' { factory.createList((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
 
 single_target[SSTNode]: # originally return type expr_ty
     | single_subscript_attribute_target
-    | a=NAME  { a } #{ _PyPegen_set_expr_context(p, a, Store) }
+    | a=NAME  { this.setExprContext(a, ExprContext.Store) }
     | '(' a=single_target ')' { a }
 single_subscript_attribute_target[SSTNode]: # originally return type expr_ty
     | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }

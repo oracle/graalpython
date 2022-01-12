@@ -52,10 +52,10 @@ class NodeTypes(Enum):
 
 
 BASE_NODETYPES = {
-    "NAME": NodeTypes.NAME_TOKEN,
-    "NUMBER": NodeTypes.NUMBER_TOKEN,
-    "STRING": NodeTypes.STRING_TOKEN,
-    "SOFT_KEYWORD": NodeTypes.SOFT_KEYWORD,
+    "NAME": (NodeTypes.NAME_TOKEN, "VarLookupSSTNode"),
+    "NUMBER": (NodeTypes.NUMBER_TOKEN, "NumberLiteralSSTNode"),
+    "STRING": (NodeTypes.STRING_TOKEN, "SSTNode"),
+    "SOFT_KEYWORD": (NodeTypes.SOFT_KEYWORD, "VarLookupSSTNode"),
 }
 
 
@@ -98,7 +98,14 @@ class FunctionCall:
 # TODO this is temporary solution until all types in the grammar will not be java types
 def _check_type(self, ttype: str) -> str:
     self._type_conversions = getattr(self, "_type_conversions", {})
-    if ttype and type(ttype) == str and "Token" not in ttype and "SSTNode" not in ttype and not "Object" in ttype:
+    if (
+            ttype and
+            type(ttype) == str and
+            "Token" not in ttype and
+            "SSTNode" not in ttype and
+            "Object" not in ttype and
+            "ArgDefListBuilder" not in ttype
+    ):
         if "[]" in ttype or "*" in ttype:
             self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
             return "SSTNode[]"
@@ -145,7 +152,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable="_keyword",
             function="expect_SOFT_KEYWORD",
             arguments=[value],
-            return_type="SSTNode",
+            return_type="VarLookupSSTNode",
             nodetype=NodeTypes.SOFT_KEYWORD,
             comment=f"soft_keyword='{value}'",
         )
@@ -158,8 +165,8 @@ class JavaCallMakerVisitor(GrammarVisitor):
                     assigned_variable=f"{name.lower()}_var",
                     function = f"{name.lower()}_token",
                     arguments=[],
-                    nodetype=BASE_NODETYPES[name],
-                    return_type="SSTNode",
+                    nodetype=BASE_NODETYPES[name][0],
+                    return_type=BASE_NODETYPES[name][1],
                     comment=name,
                 )
             return FunctionCall(

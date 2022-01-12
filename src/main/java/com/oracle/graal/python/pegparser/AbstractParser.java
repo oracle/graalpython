@@ -40,8 +40,13 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
+import com.oracle.graal.python.pegparser.sst.GetAttributeSSTNode;
 import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
+import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.StarSSTNode;
+import com.oracle.graal.python.pegparser.sst.SubscriptSSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
@@ -196,9 +201,9 @@ abstract class AbstractParser {
     /**
      * _PyPegen_name_token
      */
-    public SSTNode name_token() {
+    public VarLookupSSTNode name_token() {
         Token t = expect(Token.Kind.NAME);
-        if (t != null) {            
+        if (t != null) {
             return factory.createVariable(getText(t), t.startOffset, t.endOffset);
         } else {
             return null;
@@ -208,7 +213,7 @@ abstract class AbstractParser {
     /**
      * _PyPegen_expect_soft_keyword
      */
-    protected SSTNode expect_SOFT_KEYWORD(String keyword) {
+    protected VarLookupSSTNode expect_SOFT_KEYWORD(String keyword) {
         Token t = tokenizer.peekToken();
         if (t.type == Token.Kind.NAME && getText(t).equals(keyword)) {
             tokenizer.getToken();
@@ -234,9 +239,9 @@ abstract class AbstractParser {
     /**
      * _PyPegen_number_token
      */
-    public SSTNode number_token() {
+    public NumberLiteralSSTNode number_token() {
         Token t = expect(Token.Kind.NUMBER);
-        if (t != null) {            
+        if (t != null) {
             return factory.createNumber(getText(t), t.startOffset, t.endOffset);
         } else {
             return null;
@@ -256,7 +261,7 @@ abstract class AbstractParser {
         return t;
     }
 
-    public SSTNode name_from_token(Token t) {
+    public VarLookupSSTNode name_from_token(Token t) {
         if (t == null) {
             return null;
         }
@@ -267,7 +272,7 @@ abstract class AbstractParser {
     /**
      * _PyPegen_soft_keyword_token
      */
-    public SSTNode soft_keyword_token() {
+    public VarLookupSSTNode soft_keyword_token() {
         Token t = expect(Token.Kind.NAME);
         if (t == null) {
             return null;
@@ -290,6 +295,14 @@ abstract class AbstractParser {
         }
         cachedDummyName = factory.createVariable("", 0, 0);
         return cachedDummyName;
+    }
+
+    /**
+     * _PyPegen_join_names_with_dot
+     */
+    public SSTNode joinNamesWithDot(VarLookupSSTNode a, VarLookupSSTNode b) {
+        String id = a.getName() + "." + b.getName();
+        return factory.createVariable(id, a.getStartOffset(), b.getEndOffset());
     }
 
     /**
@@ -364,6 +377,7 @@ abstract class AbstractParser {
                 for (Object[] kwAssoc : kwlist) {
                     if (txt.equals(kwAssoc[0])) {
                         token.type = (int)kwAssoc[1];
+                        break;
                     }
                 }
             }
@@ -375,14 +389,14 @@ abstract class AbstractParser {
      * _PyPegen_new_type_comment
      */
     protected SSTNode newTypeComment(Token token) {
+        // FIXME: this is creating an SSTNode, the Python parser just creates a String from the text
         return token != null ? factory.createTypeComment(getText(token), token.startOffset, token.endOffset) : null;
     }
 
-    
-    protected int getKewordArgsCount (SSTNode[] argsOrKeywprdArgs) {
+    private int getKeywordArgsCount(SSTNode[] argsOrKeywordArgs) {
         int count = 0;
-        if (argsOrKeywprdArgs != null && argsOrKeywprdArgs.length > 0) {
-            for (SSTNode argsOrKeywprdArg : argsOrKeywprdArgs) {
+        if (argsOrKeywordArgs != null && argsOrKeywordArgs.length > 0) {
+            for (SSTNode argsOrKeywprdArg : argsOrKeywordArgs) {
                 if (argsOrKeywprdArg instanceof KeyValueSSTNode) {
                     count++;
                 }
@@ -390,13 +404,13 @@ abstract class AbstractParser {
         }
         return count;
     }
-    
+
     protected SSTNode[] extractArgs(SSTNode[] argsOrKeywordArgs) {
-        int keywords = getKewordArgsCount(argsOrKeywordArgs);
+        int keywords = getKeywordArgsCount(argsOrKeywordArgs);
         if (keywords == 0) {
             return argsOrKeywordArgs;
         }
-        SSTNode[] result = (SSTNode[])Array.newInstance(SSTNode.class, argsOrKeywordArgs.length - keywords);
+        SSTNode[] result = new SSTNode[argsOrKeywordArgs.length - keywords];
         int i = 0;
         for (SSTNode node : argsOrKeywordArgs) {
             if (!(node instanceof KeyValueSSTNode)) {
@@ -405,13 +419,13 @@ abstract class AbstractParser {
         }
         return result;
     }
-    
+
     protected SSTNode[] extractKeywordArgs(SSTNode[] argsOrKeywordArgs) {
-        int keywords = getKewordArgsCount(argsOrKeywordArgs);
+        int keywords = getKeywordArgsCount(argsOrKeywordArgs);
         if (keywords == 0) {
             return null;
         }
-        SSTNode[] result = (SSTNode[])Array.newInstance(SSTNode.class, keywords);
+        SSTNode[] result = new SSTNode[keywords];
         int i = 0;
         for (SSTNode node : argsOrKeywordArgs) {
             if (node instanceof KeyValueSSTNode) {
@@ -420,10 +434,10 @@ abstract class AbstractParser {
         }
         return result;
     }
-    
+
     /**
      * _PyPegen_join_sequences
-     * 
+     *
      */
     protected <T> T[] join(T[] a , T[]b) {
         if (a == null && b != null) {
@@ -432,7 +446,7 @@ abstract class AbstractParser {
         if (a != null && b == null) {
             return a;
         }
-        
+
         if (a != null && b != null) {
             T[] result = Arrays.copyOf(a, a.length + b.length);
             System.arraycopy(b, 0, result, a.length, b.length);
@@ -440,8 +454,47 @@ abstract class AbstractParser {
         }
         return null;
     }
-    
-    
+
+    /**
+     * _PyPegen_set_expr_context
+     *
+     * TODO: (tfel) We should try to avoid having to walk the parse tree so often. The git history
+     * includes an attempt with a symbol and a scope stream synchronized to the token stream, but
+     * it doesn't really work with the pegen generator.
+     */
+    protected SSTNode setExprContext(SSTNode node, ExprContext context) {
+        if (node instanceof VarLookupSSTNode) {
+            return factory.createVariable(((VarLookupSSTNode) node).getName(), node.getStartOffset(), node.getEndOffset(), context);
+        } else if (node instanceof CollectionSSTNode) {
+            CollectionSSTNode.Type type = ((CollectionSSTNode) node).getType();
+            if (type == CollectionSSTNode.Type.Tuple || type == CollectionSSTNode.Type.List) {
+                SSTNode[] values = ((CollectionSSTNode) node).getValues();
+                for (int i = 0; i < values.length; i++) {
+                    values[i] = setExprContext(values[i], context);
+                }
+                int start = node.getStartOffset();
+                int end = node.getEndOffset();
+                if (type == CollectionSSTNode.Type.Tuple) {
+                    return factory.createTuple(values, start, end);
+                } else {
+                    return factory.createList(values, start, end);
+                }
+            }
+        } else if (node instanceof SubscriptSSTNode) {
+            return factory.createSubscript(setExprContext(((SubscriptSSTNode) node).getReceiver(), context),
+                            setExprContext(((SubscriptSSTNode) node).getSubscript(), context),
+                            node.getStartOffset(), node.getEndOffset());
+        } else if (node instanceof GetAttributeSSTNode) {
+            return factory.createGetAttribute(setExprContext(((GetAttributeSSTNode) node).getReceiver(), context),
+                            ((GetAttributeSSTNode) node).getName(),
+                            node.getStartOffset(), node.getEndOffset());
+        } else if (node instanceof StarSSTNode) {
+            // todo
+            throw new RuntimeException("missing");
+        }
+        return node;
+    }
+
     // debug methods
     private void indent(StringBuffer sb) {
         for (int i = 0; i < level; i++) {

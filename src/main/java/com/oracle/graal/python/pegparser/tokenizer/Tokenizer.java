@@ -104,7 +104,7 @@ public class Tokenizer {
     /** {@code tok_state->indstack} */
     private final int[] indentationStack = new int[MAXINDENT];
     /** {@code tok_state->atbol} */
-    private boolean atBeginningOfLine = false;
+    private boolean atBeginningOfLine = true;
     /** {@code tok_state->pendin} */
     private int pendingIndents = 0;
     /** {@code tok_state->lineno, we count lines from one} */
@@ -179,9 +179,13 @@ public class Tokenizer {
             }
         }
         for (; i < byteInput.length - 6; i++) {
+            byte cp = byteInput[i];
+            if (cp == '\n') {
+                return null;
+            }
             if (Arrays.equals(byteInput, i, i + 6, CODINGS_BYTES, 0, 6)) {
                 int t = i + 6;
-                byte cp = byteInput[t];
+                cp = byteInput[t];
                 if (cp == '\n') {
                     return null;
                 }
@@ -307,11 +311,11 @@ public class Tokenizer {
             }
         }
 
-        if (this.fileEncoding == null && hasUTF8BOM) {
+        if (this.fileEncoding == null) {
             this.fileEncoding = StandardCharsets.UTF_8;
         }
 
-        this.codePointsInput = fileEncoding
+        this.codePointsInput = this.fileEncoding
             .decode(ByteBuffer.wrap(code, sourceStart, code.length))
             .codePoints()
             .toArray();

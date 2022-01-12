@@ -1,12 +1,12 @@
 BlockSSTNode[0, 25]
     AssignmentSSTNode[0, 5]
-        LHS: VarLookupSSTNode[0, 1] Value: "a"
+        LHS: VarLookupSSTNode[0, 1] Value: "a" Store
         RHS: IntegerLiteralSSTNode[4, 5] Value: "0"
     AssignmentSSTNode[6, 11]
-        LHS: VarLookupSSTNode[6, 7] Value: "b"
+        LHS: VarLookupSSTNode[6, 7] Value: "b" Store
         RHS: VarLookupSSTNode[10, 11] Value: "a"
     AssignmentSSTNode[12, 25]
-        LHS: VarLookupSSTNode[12, 13] Value: "c"
+        LHS: VarLookupSSTNode[12, 13] Value: "c" Store
         RHS: 
             BinaryArithmeticSSTNode[16, 25]
                 Op: +

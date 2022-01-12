@@ -5,12 +5,14 @@
  */
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.ExprContext;
+
 
 public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     private static final String INDENTATION = "    ";
     private int level = 0;
-        
+
     private String indent() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < level; i++) {
@@ -25,7 +27,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         sb.append(", ").append(node.getEndOffset()).append("]");
         return sb.toString();
     }
-    
+
     private void putOnSameLineIfShort(StringBuilder sb, SSTNode node) {
         String nodeText = node.accept(this);
         if (nodeText.contains("\n")) {
@@ -35,7 +37,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
             sb.append(nodeText);
         }
     }
-    
+
     @Override
     public String visit(AndSSTNode node) {
         return addHeader(node);
@@ -135,7 +137,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         }
         return "UNKNOWN";
     }
-    
+
     @Override
     public String visit(BinaryArithmeticSSTNode node) {
         StringBuilder sb = new StringBuilder();
@@ -314,7 +316,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         }
         sb.append(indent()).append("---- End of ").append(node.name).append(" function ----");
         level--;
-        
+
         return sb.toString();
     }
 
@@ -445,7 +447,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         }
         return '?';
     }
-    
+
     @Override
     public String visit(UnarySSTNode node) {
         StringBuilder sb = new StringBuilder();
@@ -461,6 +463,9 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
     public String visit(VarLookupSSTNode node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append(" Value: \"").append(node.name).append('"');
+        if (node.getContext() != ExprContext.Load) {
+            sb.append(' ').append(node.getContext());
+        }
         return sb.toString();
     }
 

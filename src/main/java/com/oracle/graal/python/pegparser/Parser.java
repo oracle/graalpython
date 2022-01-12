@@ -1770,7 +1770,7 @@ public final class Parser extends AbstractParser {
         { // NAME ':' expression ['=' annotated_rhs]
             debugMessageln("%d> assignment[%d-%d]: %s", level, _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
             Token _literal;
-            SSTNode a;
+            VarLookupSSTNode a;
             SSTNode b;
             Object c;
             if (
@@ -1789,7 +1789,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createAnnAssignment(factory.createAnnotation(a,b,a.getStartOffset(),b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
+                _res = factory.createAnnAssignment(factory.createAnnotation(setExprContext(a,ExprContext.Store),b,a.getStartOffset(),b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 level--;
@@ -2523,7 +2523,7 @@ public final class Parser extends AbstractParser {
             Token _keyword;
             Token _keyword_1;
             SSTNode[] a;
-            SSTNode b;
+            VarLookupSSTNode b;
             SSTNode[] c;
             if (
                 (_keyword = expect(514)) != null  // token='from'
@@ -2742,7 +2742,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME ['as' NAME]
             debugMessageln("%d> import_from_as_name[%d-%d]: %s", level, _mark, mark(), "NAME ['as' NAME]");
-            SSTNode a;
+            VarLookupSSTNode a;
             Object b;
             if (
                 (a = name_token()) != null  // NAME
@@ -2819,7 +2819,7 @@ public final class Parser extends AbstractParser {
         }
         { // dotted_name ['as' NAME]
             debugMessageln("%d> dotted_as_name[%d-%d]: %s", level, _mark, mark(), "dotted_name ['as' NAME]");
-            SSTNode a;
+            VarLookupSSTNode a;
             Object b;
             if (
                 (a = dotted_name_rule()) != null  // dotted_name
@@ -2849,7 +2849,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // dotted_name: dotted_name '.' NAME | NAME
-    public SSTNode dotted_name_rule()
+    public VarLookupSSTNode dotted_name_rule()
     {
         level++;
         int _mark = mark();
@@ -2857,7 +2857,7 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, DOTTED_NAME_ID)) {
             _res = cache.getResult(_mark, DOTTED_NAME_ID);
             level--;
-            return (SSTNode)_res;
+            return (VarLookupSSTNode)_res;
         }
         int _resmark = mark();
         while (true) {
@@ -2871,9 +2871,9 @@ public final class Parser extends AbstractParser {
         }
         reset(_resmark);
         level--;
-        return (SSTNode)_res;
+        return (VarLookupSSTNode)_res;
     }
-    private SSTNode dotted_name_raw()
+    private VarLookupSSTNode dotted_name_raw()
     {
         level++;
         int _mark = mark();
@@ -2881,8 +2881,8 @@ public final class Parser extends AbstractParser {
         { // dotted_name '.' NAME
             debugMessageln("%d> dotted_name[%d-%d]: %s", level, _mark, mark(), "dotted_name '.' NAME");
             Token _literal;
-            SSTNode a;
-            SSTNode b;
+            VarLookupSSTNode a;
+            VarLookupSSTNode b;
             if (
                 (a = dotted_name_rule()) != null  // dotted_name
                 &&
@@ -2892,12 +2892,10 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dotted_name[%d-%d]: %s succeeded!", level, _mark, mark(), "dotted_name '.' NAME");
-                // TODO: node.action: _PyPegen_join_names_with_dot ( p , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_join_names_with_dot ( p , a , b ) to Java !!![0m");
-                _res = null;
+                _res = this.joinNamesWithDot(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "dotted_name '.' NAME");
                 level--;
-                return (SSTNode)_res;
+                return (VarLookupSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s dotted_name[%d-%d]: %s failed!", level,
@@ -2905,7 +2903,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME
             debugMessageln("%d> dotted_name[%d-%d]: %s", level, _mark, mark(), "NAME");
-            SSTNode name_var;
+            VarLookupSSTNode name_var;
             if (
                 (name_var = name_token()) != null  // NAME
             )
@@ -2914,7 +2912,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NAME");
                 _res = name_var;
                 level--;
-                return (SSTNode)_res;
+                return (VarLookupSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s dotted_name[%d-%d]: %s failed!", level,
@@ -2923,7 +2921,7 @@ public final class Parser extends AbstractParser {
         debugMessageln("Fail at %d: dotted_name", _mark);
         _res = null;
         level--;
-        return (SSTNode)_res;
+        return (VarLookupSSTNode)_res;
     }
 
     // if_stmt:
@@ -3892,7 +3890,7 @@ public final class Parser extends AbstractParser {
         }
         { // "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
             debugMessageln("%d> match_stmt[%d-%d]: %s", level, _mark, mark(), "\"match\" subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
-            SSTNode _keyword;
+            VarLookupSSTNode _keyword;
             Token _literal;
             SSTNode[] cases;
             Token dedent_var;
@@ -4028,7 +4026,7 @@ public final class Parser extends AbstractParser {
         }
         { // "case" patterns guard? ':' block
             debugMessageln("%d> case_block[%d-%d]: %s", level, _mark, mark(), "\"case\" patterns guard? ':' block");
-            SSTNode _keyword;
+            VarLookupSSTNode _keyword;
             Token _literal;
             SSTNode[] body;
             Object guard;
@@ -4528,7 +4526,7 @@ public final class Parser extends AbstractParser {
         { // signed_number '+' NUMBER
             debugMessageln("%d> literal_pattern[%d-%d]: %s", level, _mark, mark(), "signed_number '+' NUMBER");
             Token _literal;
-            SSTNode imag;
+            NumberLiteralSSTNode imag;
             SSTNode real;
             if (
                 (real = signed_number_rule()) != null  // signed_number
@@ -4557,7 +4555,7 @@ public final class Parser extends AbstractParser {
         { // signed_number '-' NUMBER
             debugMessageln("%d> literal_pattern[%d-%d]: %s", level, _mark, mark(), "signed_number '-' NUMBER");
             Token _literal;
-            SSTNode imag;
+            NumberLiteralSSTNode imag;
             SSTNode real;
             if (
                 (real = signed_number_rule()) != null  // signed_number
@@ -4675,7 +4673,7 @@ public final class Parser extends AbstractParser {
         }
         { // NUMBER
             debugMessageln("%d> signed_number[%d-%d]: %s", level, _mark, mark(), "NUMBER");
-            SSTNode number_var;
+            NumberLiteralSSTNode number_var;
             if (
                 (number_var = number_token()) != null  // NUMBER
             )
@@ -4694,7 +4692,7 @@ public final class Parser extends AbstractParser {
         { // '-' NUMBER
             debugMessageln("%d> signed_number[%d-%d]: %s", level, _mark, mark(), "'-' NUMBER");
             Token _literal;
-            SSTNode number;
+            NumberLiteralSSTNode number;
             if (
                 (_literal = expect(15)) != null  // token='-'
                 &&
@@ -4734,7 +4732,7 @@ public final class Parser extends AbstractParser {
         }
         { // !"_" NAME !('.' | '(' | '=')
             debugMessageln("%d> capture_pattern[%d-%d]: %s", level, _mark, mark(), "!\"_\" NAME !('.' | '(' | '=')");
-            SSTNode name;
+            VarLookupSSTNode name;
             if (
                 genLookahead_expect_SOFT_KEYWORD(false, "_")
                 &&
@@ -4776,7 +4774,7 @@ public final class Parser extends AbstractParser {
         }
         { // "_"
             debugMessageln("%d> wildcard_pattern[%d-%d]: %s", level, _mark, mark(), "\"_\"");
-            SSTNode _keyword;
+            VarLookupSSTNode _keyword;
             if (
                 (_keyword = expect_SOFT_KEYWORD("_")) != null  // soft_keyword='"_"'
             )
@@ -4876,7 +4874,7 @@ public final class Parser extends AbstractParser {
         { // name_or_attr '.' NAME
             debugMessageln("%d> attr[%d-%d]: %s", level, _mark, mark(), "name_or_attr '.' NAME");
             Token _literal;
-            SSTNode attr;
+            VarLookupSSTNode attr;
             SSTNode value;
             if (
                 (value = name_or_attr_rule()) != null  // name_or_attr
@@ -4928,7 +4926,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME
             debugMessageln("%d> name_or_attr[%d-%d]: %s", level, _mark, mark(), "NAME");
-            SSTNode name_var;
+            VarLookupSSTNode name_var;
             if (
                 (name_var = name_token()) != null  // NAME
             )
@@ -5669,7 +5667,7 @@ public final class Parser extends AbstractParser {
         { // NAME '=' pattern
             debugMessageln("%d> keyword_pattern[%d-%d]: %s", level, _mark, mark(), "NAME '=' pattern");
             Token _literal;
-            SSTNode arg;
+            VarLookupSSTNode arg;
             SSTNode value;
             if (
                 (arg = name_token()) != null  // NAME
@@ -5885,7 +5883,7 @@ public final class Parser extends AbstractParser {
             Token _literal_2;
             Object a;
             SSTNode[] b;
-            SSTNode n;
+            VarLookupSSTNode n;
             Object params;
             Object tc;
             if (
@@ -5933,7 +5931,7 @@ public final class Parser extends AbstractParser {
             Object a;
             Token async_var;
             SSTNode[] b;
-            SSTNode n;
+            VarLookupSSTNode n;
             Object params;
             Object tc;
             if (
@@ -6059,15 +6057,15 @@ public final class Parser extends AbstractParser {
     }
 
     // params: invalid_parameters | parameters
-    public SSTNode params_rule()
+    public ArgDefListBuilder params_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAMS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, PARAMS_ID);
+            _res = (ArgDefListBuilder)cache.getResult(_mark, PARAMS_ID);
             level--;
-            return (SSTNode)_res;
+            return (ArgDefListBuilder)_res;
         }
         if (callInvalidRules) { // invalid_parameters
             debugMessageln("%d> params[%d-%d]: %s", level, _mark, mark(), "invalid_parameters");
@@ -6081,7 +6079,7 @@ public final class Parser extends AbstractParser {
                 _res = invalid_parameters_var;
                 cache.putResult(_mark, PARAMS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s params[%d-%d]: %s failed!", level,
@@ -6089,7 +6087,7 @@ public final class Parser extends AbstractParser {
         }
         { // parameters
             debugMessageln("%d> params[%d-%d]: %s", level, _mark, mark(), "parameters");
-            SSTNode parameters_var;
+            ArgDefListBuilder parameters_var;
             if (
                 (parameters_var = parameters_rule()) != null  // parameters
             )
@@ -6099,7 +6097,7 @@ public final class Parser extends AbstractParser {
                 _res = parameters_var;
                 cache.putResult(_mark, PARAMS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s params[%d-%d]: %s failed!", level,
@@ -6109,7 +6107,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, PARAMS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (ArgDefListBuilder)_res;
     }
 
     // parameters:
@@ -6118,15 +6116,15 @@ public final class Parser extends AbstractParser {
     //     | param_no_default+ param_with_default* star_etc?
     //     | param_with_default+ star_etc?
     //     | star_etc
-    public SSTNode parameters_rule()
+    public ArgDefListBuilder parameters_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PARAMETERS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, PARAMETERS_ID);
+            _res = (ArgDefListBuilder)cache.getResult(_mark, PARAMETERS_ID);
             level--;
-            return (SSTNode)_res;
+            return (ArgDefListBuilder)_res;
         }
         { // slash_no_default param_no_default* param_with_default* star_etc?
             debugMessageln("%d> parameters[%d-%d]: %s", level, _mark, mark(), "slash_no_default param_no_default* param_with_default* star_etc?");
@@ -6151,7 +6149,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_no_default param_no_default* param_with_default* star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6177,7 +6175,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default param_with_default* star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6203,7 +6201,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default+ param_with_default* star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6226,7 +6224,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_with_default+ star_etc?");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6246,7 +6244,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_etc");
                 cache.putResult(_mark, PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ArgDefListBuilder)_res;
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level,
@@ -6256,7 +6254,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, PARAMETERS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (ArgDefListBuilder)_res;
     }
 
     // slash_no_default: param_no_default+ '/' ',' | param_no_default+ '/' &')'
@@ -6794,7 +6792,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME annotation?
             debugMessageln("%d> param[%d-%d]: %s", level, _mark, mark(), "NAME annotation?");
-            SSTNode a;
+            VarLookupSSTNode a;
             Object b;
             if (
                 (a = name_token()) != null  // NAME
@@ -7010,7 +7008,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> class_def_raw[%d-%d]: %s", level, _mark, mark(), "'class' NAME ['(' arguments? ')'] &&':' block");
             Token _keyword;
             Token _literal;
-            SSTNode a;
+            VarLookupSSTNode a;
             Object b;
             SSTNode[] c;
             if (
@@ -7386,7 +7384,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> named_expression[%d-%d]: %s", level, _mark, mark(), "NAME ':=' ~ expression");
             int _cut_var = 0;
             Token _literal;
-            SSTNode a;
+            VarLookupSSTNode a;
             SSTNode b;
             if (
                 (a = name_token()) != null  // NAME
@@ -7475,7 +7473,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> direct_named_expression[%d-%d]: %s", level, _mark, mark(), "NAME ':=' ~ expression");
             int _cut_var = 0;
             Token _literal;
-            SSTNode a;
+            VarLookupSSTNode a;
             SSTNode b;
             if (
                 (a = name_token()) != null  // NAME
@@ -8541,7 +8539,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME
             debugMessageln("%d> lambda_param[%d-%d]: %s", level, _mark, mark(), "NAME");
-            SSTNode a;
+            VarLookupSSTNode a;
             if (
                 (a = name_token()) != null  // NAME
             )
@@ -10396,7 +10394,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> primary[%d-%d]: %s", level, _mark, mark(), "primary '.' NAME");
             Token _literal;
             SSTNode a;
-            SSTNode b;
+            VarLookupSSTNode b;
             if (
                 (a = primary_rule()) != null  // primary
                 &&
@@ -10667,7 +10665,7 @@ public final class Parser extends AbstractParser {
         Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> atom[%d-%d]: %s", level, _mark, mark(), "NAME");
-            SSTNode name_var;
+            VarLookupSSTNode name_var;
             if (
                 (name_var = name_token()) != null  // NAME
             )
@@ -10769,7 +10767,7 @@ public final class Parser extends AbstractParser {
         }
         { // NUMBER
             debugMessageln("%d> atom[%d-%d]: %s", level, _mark, mark(), "NUMBER");
-            SSTNode number_var;
+            NumberLiteralSSTNode number_var;
             if (
                 (number_var = number_token()) != null  // NUMBER
             )
@@ -12086,7 +12084,7 @@ public final class Parser extends AbstractParser {
         { // NAME '=' expression
             debugMessageln("%d> kwarg_or_starred[%d-%d]: %s", level, _mark, mark(), "NAME '=' expression");
             Token _literal;
-            SSTNode a;
+            VarLookupSSTNode a;
             SSTNode b;
             if (
                 (a = name_token()) != null  // NAME
@@ -12164,7 +12162,7 @@ public final class Parser extends AbstractParser {
         { // NAME '=' expression
             debugMessageln("%d> kwarg_or_double_starred[%d-%d]: %s", level, _mark, mark(), "NAME '=' expression");
             Token _literal;
-            SSTNode a;
+            VarLookupSSTNode a;
             SSTNode b;
             if (
                 (a = name_token()) != null  // NAME
@@ -12483,7 +12481,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> target_with_star_atom[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
             SSTNode a;
-            SSTNode b;
+            VarLookupSSTNode b;
             if (
                 (a = t_primary_rule()) != null  // t_primary
                 &&
@@ -12577,13 +12575,13 @@ public final class Parser extends AbstractParser {
         Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> star_atom[%d-%d]: %s", level, _mark, mark(), "NAME");
-            SSTNode a;
+            VarLookupSSTNode a;
             if (
                 (a = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
-                _res = a;
+                _res = this.setExprContext(a,ExprContext.Store);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 level--;
@@ -12607,7 +12605,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' target_with_star_atom ')'");
-                _res = a;
+                _res = this.setExprContext(a,ExprContext.Store);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' target_with_star_atom ')'");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 level--;
@@ -12713,13 +12711,13 @@ public final class Parser extends AbstractParser {
         }
         { // NAME
             debugMessageln("%d> single_target[%d-%d]: %s", level, _mark, mark(), "NAME");
-            SSTNode a;
+            VarLookupSSTNode a;
             if (
                 (a = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d single_target[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
-                _res = a;
+                _res = this.setExprContext(a,ExprContext.Store);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, SINGLE_TARGET_ID, _res);
                 level--;
@@ -12778,7 +12776,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> single_subscript_attribute_target[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
             SSTNode a;
-            SSTNode b;
+            VarLookupSSTNode b;
             if (
                 (a = t_primary_rule()) != null  // t_primary
                 &&
@@ -12894,7 +12892,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> del_target[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
             SSTNode a;
-            SSTNode b;
+            VarLookupSSTNode b;
             if (
                 (a = t_primary_rule()) != null  // t_primary
                 &&
@@ -12983,7 +12981,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME
             debugMessageln("%d> del_t_atom[%d-%d]: %s", level, _mark, mark(), "NAME");
-            SSTNode a;
+            VarLookupSSTNode a;
             if (
                 (a = name_token()) != null  // NAME
             )
@@ -13144,7 +13142,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> target[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
             SSTNode a;
-            SSTNode b;
+            VarLookupSSTNode b;
             if (
                 (a = t_primary_rule()) != null  // t_primary
                 &&
@@ -13261,7 +13259,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> t_primary[%d-%d]: %s", level, _mark, mark(), "t_primary '.' NAME &t_lookahead");
             Token _literal;
             SSTNode a;
-            SSTNode b;
+            VarLookupSSTNode b;
             if (
                 (a = t_primary_rule()) != null  // t_primary
                 &&
@@ -13477,7 +13475,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME
             debugMessageln("%d> t_atom[%d-%d]: %s", level, _mark, mark(), "NAME");
-            SSTNode a;
+            VarLookupSSTNode a;
             if (
                 (a = name_token()) != null  // NAME
             )
@@ -13862,7 +13860,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME '=' bitwise_or !('=' | ':=' | ',')
             debugMessageln("%d> invalid_named_expression[%d-%d]: %s", level, _mark, mark(), "NAME '=' bitwise_or !('=' | ':=' | ',')");
-            SSTNode a;
+            VarLookupSSTNode a;
             Token b;
             SSTNode bitwise_or_var;
             if (
@@ -15194,7 +15192,7 @@ public final class Parser extends AbstractParser {
         }
         { // "match" subject_expr !':'
             debugMessageln("%d> invalid_match_stmt[%d-%d]: %s", level, _mark, mark(), "\"match\" subject_expr !':'");
-            SSTNode _keyword;
+            VarLookupSSTNode _keyword;
             SSTNode subject_expr_var;
             if (
                 (_keyword = expect_SOFT_KEYWORD("match")) != null  // soft_keyword='"match"'
@@ -15237,7 +15235,7 @@ public final class Parser extends AbstractParser {
         }
         { // "case" patterns guard? !':'
             debugMessageln("%d> invalid_case_block[%d-%d]: %s", level, _mark, mark(), "\"case\" patterns guard? !':'");
-            SSTNode _keyword;
+            VarLookupSSTNode _keyword;
             Object _opt_var;
             SSTNode patterns_var;
             if (
@@ -16871,7 +16869,7 @@ public final class Parser extends AbstractParser {
         { // ',' NAME
             debugMessageln("%d> _loop0_30[%d-%d]: %s", level, _mark, mark(), "',' NAME");
             Token _literal;
-            SSTNode elem;
+            VarLookupSSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -16910,7 +16908,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME _loop0_30
             debugMessageln("%d> _gather_29[%d-%d]: %s", level, _mark, mark(), "NAME _loop0_30");
-            SSTNode elem;
+            VarLookupSSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = name_token()) != null  // NAME
@@ -16953,7 +16951,7 @@ public final class Parser extends AbstractParser {
         { // ',' NAME
             debugMessageln("%d> _loop0_32[%d-%d]: %s", level, _mark, mark(), "',' NAME");
             Token _literal;
-            SSTNode elem;
+            VarLookupSSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -16992,7 +16990,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME _loop0_32
             debugMessageln("%d> _gather_31[%d-%d]: %s", level, _mark, mark(), "NAME _loop0_32");
-            SSTNode elem;
+            VarLookupSSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = name_token()) != null  // NAME
@@ -17328,7 +17326,7 @@ public final class Parser extends AbstractParser {
         { // 'as' NAME
             debugMessageln("%d> _tmp_40[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
             Token _keyword;
-            SSTNode z;
+            VarLookupSSTNode z;
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
@@ -17449,7 +17447,7 @@ public final class Parser extends AbstractParser {
         { // 'as' NAME
             debugMessageln("%d> _tmp_43[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
             Token _keyword;
-            SSTNode z;
+            VarLookupSSTNode z;
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
@@ -18329,7 +18327,7 @@ public final class Parser extends AbstractParser {
         { // 'as' NAME
             debugMessageln("%d> _tmp_65[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
             Token _keyword;
-            SSTNode z;
+            VarLookupSSTNode z;
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
@@ -19203,7 +19201,7 @@ public final class Parser extends AbstractParser {
         }
         { // params
             debugMessageln("%d> _tmp_84[%d-%d]: %s", level, _mark, mark(), "params");
-            SSTNode params_var;
+            ArgDefListBuilder params_var;
             if (
                 (params_var = params_rule()) != null  // params
             )
@@ -19314,7 +19312,7 @@ public final class Parser extends AbstractParser {
         }
         { // params
             debugMessageln("%d> _tmp_87[%d-%d]: %s", level, _mark, mark(), "params");
-            SSTNode params_var;
+            ArgDefListBuilder params_var;
             if (
                 (params_var = params_rule()) != null  // params
             )
@@ -23995,7 +23993,7 @@ public final class Parser extends AbstractParser {
         }
         { // NAME STRING
             debugMessageln("%d> _tmp_201[%d-%d]: %s", level, _mark, mark(), "NAME STRING");
-            SSTNode name_var;
+            VarLookupSSTNode name_var;
             SSTNode string_var;
             if (
                 (name_var = name_token()) != null  // NAME
@@ -24016,7 +24014,7 @@ public final class Parser extends AbstractParser {
         }
         { // SOFT_KEYWORD
             debugMessageln("%d> _tmp_201[%d-%d]: %s", level, _mark, mark(), "SOFT_KEYWORD");
-            SSTNode soft_keyword_var;
+            VarLookupSSTNode soft_keyword_var;
             if (
                 (soft_keyword_var = soft_keyword_token()) != null  // SOFT_KEYWORD
             )
@@ -25256,7 +25254,7 @@ public final class Parser extends AbstractParser {
         { // 'as' NAME
             debugMessageln("%d> _tmp_225[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
             Token _keyword;
-            SSTNode name_var;
+            VarLookupSSTNode name_var;
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
@@ -25295,7 +25293,7 @@ public final class Parser extends AbstractParser {
         { // 'as' NAME
             debugMessageln("%d> _tmp_226[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
             Token _keyword;
-            SSTNode name_var;
+            VarLookupSSTNode name_var;
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
@@ -26565,7 +26563,7 @@ public final class Parser extends AbstractParser {
 
     private boolean genLookahead_expect_SOFT_KEYWORD(boolean match, String arg0) {
         int tmpPos = mark();
-        SSTNode result = expect_SOFT_KEYWORD(arg0);
+        VarLookupSSTNode result = expect_SOFT_KEYWORD(arg0);
         reset(tmpPos);
         return (result != null) == match;
     }
@@ -26668,11 +26666,11 @@ public final class Parser extends AbstractParser {
     // TODO replacing KeyValuePair* --> SSTNode[]
     // TODO replacing asdl_keyword_seq* --> SSTNode[]
     // TODO replacing keyword_ty --> SSTNode[]
-    // TODO replacing arguments_ty --> SSTNode[]
     // TODO replacing asdl_arg_seq* --> SSTNode[]
     // TODO replacing SlashWithDefault* --> SSTNode[]
     // TODO replacing StarEtc* --> SSTNode[]
     // TODO replacing arg_ty --> SSTNode[]
     // TODO replacing NameDefaultPair* --> SSTNode[]
+    // TODO replacing arguments_ty --> SSTNode[]
     // TODO replacing CmpopExprPair* --> SSTNode[]
 }

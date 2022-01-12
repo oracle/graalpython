@@ -212,7 +212,12 @@ public class Token {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Token ").append(Token.Kind.TOKEN_NAMES[this.type]);
+        sb.append("Token ");
+        if (this.type < Token.Kind.TOKEN_NAMES.length) {
+            sb.append(Token.Kind.TOKEN_NAMES[this.type]);
+        } else {
+            sb.append(this.type);
+        }
         sb.append(" [").append(this.startOffset).append(", ").append(this.endOffset).append(']');
         return sb.toString();
     }
@@ -428,6 +433,10 @@ public class Token {
     }
 
     public String typeName() {
-        return Kind.TOKEN_NAMES[type];
+        if (type < Kind.TOKEN_NAMES.length) {
+            return Kind.TOKEN_NAMES[type];
+        } else {
+            return Integer.toString(type);
+        }
     }
 }
