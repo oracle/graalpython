@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -64,6 +64,7 @@ public abstract class PSlice extends PythonBuiltinObject {
 
     @Override
     public boolean equals(Object obj) {
+        CompilerAsserts.neverPartOfCompilation();
         if (!(obj instanceof PSlice)) {
             return false;
         }
@@ -71,11 +72,12 @@ public abstract class PSlice extends PythonBuiltinObject {
             return true;
         }
         PSlice other = (PSlice) obj;
-        return (this.getStart() == other.getStart() && this.getStop() == other.getStop() && this.getStep() == other.getStep());
+        return (this.getStart().equals(other.getStart()) && this.getStop().equals(other.getStop()) && this.getStep().equals(other.getStep()));
     }
 
     @Override
     public int hashCode() {
+        CompilerAsserts.neverPartOfCompilation();
         return Objects.hash(this.getStart(), this.getStop(), this.getStep());
     }
 
