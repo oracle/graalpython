@@ -1,4 +1,4 @@
-BlockSSTNode[0, 2]
-    UnarySSTNode[0, 2]
-        Op: +
-        Value: VarLookupSSTNode[1, 2] Value: "u"
+Module[0, 2]
+    UnaryOp[0, 2]
+        Op: ADD
+        Value: Name[1, 2] Value: "u"

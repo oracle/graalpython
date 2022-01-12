@@ -1,8 +1,8 @@
-BlockSSTNode[0, 4]
-    UnarySSTNode[0, 4]
-        Op: -
-        Value: UnarySSTNode[1, 4]
-            Op: -
-            Value: UnarySSTNode[2, 4]
-                Op: -
-                Value: IntegerLiteralSSTNode[3, 4] Value: "2"
+Module[0, 4]
+    UnaryOp[0, 4]
+        Op: SUB
+        Value: UnaryOp[1, 4]
+            Op: SUB
+            Value: UnaryOp[2, 4]
+                Op: SUB
+                Value: LONG[3, 4] Value: 2

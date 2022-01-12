@@ -1,5 +1,5 @@
-BlockSSTNode[0, 6]
-    BinaryArithmeticSSTNode[0, 6]
-        Op: +
-        LHS: IntegerLiteralSSTNode[0, 1] Value: "1"
-        RHS: IntegerLiteralSSTNode[4, 6] Value: "10"
+Module[0, 6]
+    BinOp[0, 6]
+        Op: ADD
+        LHS: LONG[0, 1] Value: 1
+        RHS: LONG[4, 6] Value: 10

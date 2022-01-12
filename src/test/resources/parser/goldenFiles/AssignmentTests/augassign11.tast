@@ -1,5 +1,5 @@
-BlockSSTNode[0, 7]
-    AugAssignmentSSTNode[0, 7]
-        Op: >>
-        LHS: VarLookupSSTNode[0, 1] Value: "a" Store
-        RHS: VarLookupSSTNode[6, 7] Value: "b"
+Module[0, 7]
+    AugAssign[0, 7]
+        Op: RSHIFT
+        LHS: Name[0, 1] Value: "a" Store
+        RHS: Name[6, 7] Value: "b"

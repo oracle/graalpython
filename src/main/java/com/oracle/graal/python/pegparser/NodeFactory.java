@@ -43,75 +43,99 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.sst.*;
 
 public interface NodeFactory {
-    public AnnAssignmentSSTNode createAnnAssignment(AnnotationSSTNode annotation, SSTNode rhs, int startOffset, int endOffset);
+    public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, int startOffset, int endOffset);
 
-    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int startOffset, int endOffset);
+    public StmtTy createAssignment(ExprTy[] lhs, ExprTy rhs, String typeComment, int startOffset, int endOffset);
 
-    public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, SSTNode typeComment, int startOffset, int endOffset);
+    public StmtTy createAugAssignment(ExprTy lhs, ExprTy.BinOp.Operator operation, ExprTy rhs, int startOffset, int endOffset);
 
-    public AugAssignmentSSTNode createAugAssignment(SSTNode lhs, BinaryArithmeticSSTNode.Type operation, SSTNode rhs, int startOffset, int endOffset);
+    public ExprTy createBinaryOp(ExprTy.BinOp.Operator op, ExprTy left, ExprTy right, int startOffset, int endOffset);
 
-    public BinaryArithmeticSSTNode createBinaryOp(BinaryArithmeticSSTNode.Type op, SSTNode left, SSTNode right, int startOffset, int endOffset);
+    public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] rights, int startOffset, int endOffset);
 
-    public BlockSSTNode createBlock(SSTNode[] statements, int startOffset, int endOffset);
+    public ModTy createModule(StmtTy[] statements, int startOffset, int endOffset);
 
-    public BooleanLiteralSSTNode createBooleanLiteral(boolean value, int startOffset, int endOffset);
+    public ExprTy createBooleanLiteral(boolean value, int startOffset, int endOffset);
 
-    public SSTNode createNone(int startOffset, int endOffset);
+    public ExprTy createNone(int startOffset, int endOffset);
 
-    public SSTNode createEllipsis(int startOffset, int endOffset);
+    public ExprTy createEllipsis(int startOffset, int endOffset);
 
-    public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset);
+    default ExprTy createGetAttribute(ExprTy receiver, String name, int startOffset, int endOffset) {
+        return createGetAttribute(receiver, name, null, startOffset, endOffset);
+    }
 
-    public SSTNode createPass(int startOffset, int endOffset);
+    public ExprTy createGetAttribute(ExprTy receiver, String name, ExprContext context, int startOffset, int endOffset);
 
-    public SSTNode createBreak(int startOffset, int endOffset);
-    
-    public CallSSTNode createCall(SSTNode target, SSTNode[] args, SSTNode[] kwargs, int startOffset, int endOffset);
+    public StmtTy createPass(int startOffset, int endOffset);
 
-    public SSTNode createContinue(int startOffset, int endOffset);
+    public StmtTy createBreak(int startOffset, int endOffset);
 
-    public SSTNode createYield(SSTNode value, boolean isFrom, int startOffset, int endOffset);
+    public StmtTy createExpression(ExprTy expr);
 
-    public NumberLiteralSSTNode createNumber(String number, int startOffset, int endOffset);
+    public ExprTy createCall(ExprTy func, ExprTy[] args, KeywordTy[] kwargs, int startOffset, int endOffset);
 
-    public StringLiteralSSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
+    public StmtTy createContinue(int startOffset, int endOffset);
 
-    public SubscriptSSTNode createSubscript(SSTNode receiver, SSTNode subscript, int startOffset, int endOffset);
+    public ExprTy createYield(ExprTy value, boolean isFrom, int startOffset, int endOffset);
 
-    public UnarySSTNode createUnaryOp(UnarySSTNode.Type op, SSTNode value, int startOffset, int endOffset);
+    default ExprTy createNumber(String number, int startOffset, int endOffset) {
+        return createNumber(number, 0, 10, startOffset, endOffset);
+    }
 
-    default VarLookupSSTNode createVariable(String name, int startOffset, int endOffset) {
+    public ExprTy createNumber(String number, int start, int base, int startOffset, int endOffset);
+
+    public ExprTy createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
+
+    default ExprTy createSubscript(ExprTy receiver, ExprTy slice, int startOffset, int endOffset) {
+        return createSubscript(receiver, slice, null, startOffset, endOffset);
+    }
+
+    public ExprTy createSubscript(ExprTy receiver, ExprTy slice, ExprContext context, int startOffset, int endOffset);
+
+    public ExprTy createUnaryOp(ExprTy.UnaryOp.Operator op, ExprTy value, int startOffset, int endOffset);
+
+    default ExprTy.Name createVariable(String name, int startOffset, int endOffset) {
         return createVariable(name, startOffset, endOffset, ExprContext.Load);
     }
 
-    public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset, ExprContext context);
+    public ExprTy.Name createVariable(String name, int startOffset, int endOffset, ExprContext context);
 
-    public SSTNode createTuple(SSTNode[] values, int startOffset, int endOffset);
+    default ExprTy createTuple(ExprTy[] values, int startOffset, int endOffset) {
+        return createTuple(values, null, startOffset, endOffset);
+    }
 
-    public SSTNode createList(SSTNode[] values, int startOffset, int endOffset);
+    public ExprTy createTuple(ExprTy[] values, ExprContext context, int startOffset, int endOffset);
 
-    public SSTNode createKeyValuePair(SSTNode key, SSTNode value);
+    default ExprTy createList(ExprTy[] values, int startOffset, int endOffset) {
+        return createList(values, null, startOffset, endOffset);
+    }
 
-    public SSTNode createDict(SSTNode[] keyValuePairs, int startOffset, int endOffset);
+    public ExprTy createList(ExprTy[] values, ExprContext context, int startOffset, int endOffset);
 
-    public SSTNode createSet(SSTNode[] values, int startOffset, int endOffset);
-    
-    public StarSSTNode createStarred(SSTNode value, int startOffset, int endOffset);
+    public ExprTy createDict(ExprTy[] keys, ExprTy[] values, int startOffset, int endOffset);
 
-    public UntypedSSTNode createUntyped(int tokenPosition);
+    public ExprTy createSet(ExprTy[] values, int startOffset, int endOffset);
 
-    public ForComprehensionSSTNode createComprehension(SSTNode target, SSTNode iter, SSTNode[] ifs, boolean isAsync, int startOffset, int endOffset);
+    default ExprTy createStarred(ExprTy value, int startOffset, int endOffset) {
+        return createStarred(value, null, startOffset, endOffset);
+    }
 
-    public SSTNode createListComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
+    public ExprTy createStarred(ExprTy value, ExprContext context, int startOffset, int endOffset);
 
-    public SSTNode createDictComprehension(KeyValueSSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
+    public KeywordTy createKeyword(String arg, ExprTy value, int startOffset, int endOffset);
 
-    public SSTNode createSetComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
+    public ArgTy createArgument(String argument, ExprTy annotation, String typeComment, int startOffset, int endOffset);
 
-    public SSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
+    public ComprehensionTy createComprehension(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, int startOffset, int endOffset);
 
-    public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, SSTNode typeComment, int startOffset, int endOffset);
+    public ExprTy createListComprehension(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset);
 
-    public SSTNode createTypeComment(String typeComment, int startOffset, int ednOffset);
+    public ExprTy createDictComprehension(AbstractParser.KeyValuePair name, ComprehensionTy[] generators, int startOffset, int endOffset);
+
+    public ExprTy createSetComprehension(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset);
+
+    public ExprTy createGenerator(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset);
+
+    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decorators, ExprTy returns, String typeComment, int startOffset, int endOffset);
 }

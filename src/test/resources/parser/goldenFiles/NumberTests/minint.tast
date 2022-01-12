@@ -1,4 +1,4 @@
-BlockSSTNode[0, 11]
-    UnarySSTNode[0, 11]
-        Op: -
-        Value: IntegerLiteralSSTNode[1, 11] Value: "2147483648"
+Module[0, 11]
+    UnaryOp[0, 11]
+        Op: SUB
+        Value: LONG[1, 11] Value: 2147483648

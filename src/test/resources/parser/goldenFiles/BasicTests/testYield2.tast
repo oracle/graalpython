@@ -1,3 +1,3 @@
-BlockSSTNode[0, 8]
-    YieldExpressionSSTNode[0, 8]
-        IntegerLiteralSSTNode[6, 8] Value: "12"
+Module[0, 8]
+    Yield[0, 8]
+        LONG[6, 8] Value: 12

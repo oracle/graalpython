@@ -1,4 +1,4 @@
-BlockSSTNode[0, 5]
-    UnarySSTNode[0, 5]
-        Op: +
-        Value: IntegerLiteralSSTNode[4, 5] Value: "1"
+Module[0, 5]
+    UnaryOp[0, 5]
+        Op: ADD
+        Value: LONG[4, 5] Value: 1

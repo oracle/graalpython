@@ -38,14 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package com.oracle.graal.python.pegparser.sst;
 
-public class AnnAssignmentSSTNode extends AssignmentSSTNode {
-    protected final AnnotationSSTNode annotation;
+public final class ComprehensionTy extends SSTNode {
+    final ExprTy target;
+    final ExprTy iter;
+    final ExprTy[] ifs;
+    final boolean isAsync;
 
-    public AnnAssignmentSSTNode(AnnotationSSTNode annotation, SSTNode rhs, int start, int end) {
-        super(new SSTNode[]{annotation.lhs}, rhs, null, start, end);
-        this.annotation = annotation;
+    public ComprehensionTy(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, int startOffset, int endOffset) {
+        super(startOffset, endOffset);
+        this.target = target;
+        this.iter = iter;
+        this.ifs = ifs;
+        this.isAsync = isAsync;
     }
 
     @Override

@@ -1,5 +1,5 @@
-BlockSSTNode[0, 6]
-    CallSSTNode[0, 6]
-        Target: VarLookupSSTNode[0, 3] Value: "foo"
+Module[0, 6]
+    Call[0, 6]
+        Target: Name[0, 3] Value: "foo"
         Args: 
-            IntegerLiteralSSTNode[4, 5] Value: "1"
+            LONG[4, 5] Value: 1

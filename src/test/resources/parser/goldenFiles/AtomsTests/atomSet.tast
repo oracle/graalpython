@@ -1,5 +1,5 @@
-BlockSSTNode[0, 6]
-    CollectionSSTNode[0, 6] Set
+Module[0, 6]
+    Set[0, 6]
         Values:
-            VarLookupSSTNode[1, 2] Value: "a"
-            IntegerLiteralSSTNode[4, 5] Value: "2"
+            Name[1, 2] Value: "a"
+            LONG[4, 5] Value: 2

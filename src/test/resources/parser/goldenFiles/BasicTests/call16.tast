@@ -1,12 +1,12 @@
-BlockSSTNode[0, 11]
-    CallSSTNode[0, 11]
+Module[0, 11]
+    Call[0, 11]
         Target: 
-            GetAttributeSSTNode[0, 1] 
+            Attribute[0, 1] 
                 Receiver: 
-                    GetAttributeSSTNode[0, 1] 
+                    Attribute[0, 1] 
                         Receiver: 
-                            GetAttributeSSTNode[0, 1] 
-                                Receiver: VarLookupSSTNode[0, 1] Value: "a"
+                            Attribute[0, 1] 
+                                Receiver: Name[0, 1] Value: "a"
                                 Attr: b
                         Attr: c
                 Attr: foo

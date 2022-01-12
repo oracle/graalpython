@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
 
 @FunctionalInterface
 public interface FExprParser {
-    public abstract SSTNode parse(String code);
+    public abstract ExprTy parse(String code);
 }

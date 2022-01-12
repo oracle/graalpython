@@ -69,14 +69,6 @@ import java.util.stream.Stream;
 '''
 
 @parser_fields '''
-    // caching results for pos -> rule
-    // the null results are cached as well
-
-    // TODO make a special section for private methods
-    private BinaryArithmeticSSTNode finishBinaryOp(SSTNode left, SSTNode[] right) {
-        BinaryArithmeticSSTNode rightOp = (BinaryArithmeticSSTNode)right[0];
-        return factory.createBinaryOp(rightOp.getOperation(), left, rightOp.getRight(), left.getStartOffset(), rightOp.getEndOffset());
-    }
 '''
 
 @trailer '''
@@ -107,47 +99,42 @@ _PyPegen_parse(Parser *p)
 
 // The end
 '''
-file[SSTNode]: a=[statements] ENDMARKER { factory.createBlock((SSTNode[])a, startToken.startOffset, endToken.endOffset); } # TODO create module from the statements instead block
-interactive[SSTNode]: a=statement_newline { _PyAST_Interactive(a, p->arena) }
-eval[SSTNode]: a=expressions NEWLINE* ENDMARKER { a }
-func_type[SSTNode]: '(' a=[type_expressions] ')' '->' b=expression NEWLINE* ENDMARKER { _PyAST_FunctionType(a, b, p->arena) }
-fstring[SSTNode]: star_expressions
+file[mod_ty]: a=[statements] ENDMARKER { factory.createModule(a, startToken.startOffset, endToken.endOffset) }
+interactive[mod_ty]: a=statement_newline { _PyAST_Interactive(a, p->arena) }
+eval[mod_ty]: a=expressions NEWLINE* ENDMARKER { a }
+func_type[mod_ty]: '(' a=[type_expressions] ')' '->' b=expression NEWLINE* ENDMARKER { _PyAST_FunctionType(a, b, p->arena) }
+fstring[expr_ty]: star_expressions
 
 # type_expressions allow */** but ignore them
 type_expressions[asdl_expr_seq*]:
     | a=','.expression+ ',' '*' b=expression ',' '**' c=expression {
-        this.appendToEnd(
-            this.appendToEnd(a, b),
-            c) }
+        this.appendToEnd(this.appendToEnd(a, b), c) }
     | a=','.expression+ ',' '*' b=expression { this.appendToEnd(a, b) }
     | a=','.expression+ ',' '**' b=expression { this.appendToEnd(a, b) }
     | '*' a=expression ',' '**' b=expression {
-        this.appendToEnd(
-            this.singletonSequence(a),
-            b) }
+        this.appendToEnd(this.singletonSequence(a), b) }
     | '*' a=expression { this.singletonSequence(a) }
     | '**' a=expression { this.singletonSequence(a) }
-    | a[SSTNode*]=','.expression+ {a}
+    | a[asdl_expr_seq*]=','.expression+ {a}
 
-statements[SSTNode*]: a=statement+ { a }
-statement[SSTNode*]:
-    | a=compound_stmt { new SSTNode[]{a} }
-    | a[SSTNode*]=simple_stmts { a }
-statement_newline[SSTNode*]:
+statements[asdl_stmt_seq*]: a=statement+ { a }
+statement[asdl_stmt_seq*]:
+    | a=compound_stmt { new StmtTy[]{a} }
+    | a[asdl_stmt_seq*]=simple_stmts { a }
+statement_newline[asdl_stmt_seq*]:
     | a=compound_stmt NEWLINE { this.singletonSequence(a) }
     | simple_stmts
     | NEWLINE { this.singletonSequence(factory.createPass(startToken.startOffset, endToken.endOffset)) }
     | ENDMARKER { _PyPegen_interactive_exit(p) }
-simple_stmts[SSTNode*]: # originally return type asdl_stmt_seq*
+simple_stmts[asdl_stmt_seq*]:
     | a=simple_stmt !';' NEWLINE {
-            this.singletonSequence(a); # Not needed, there for speedup
-        }
-    | a[SSTNode*]=';'.simple_stmt+ [';'] NEWLINE { a }
+            this.singletonSequence(a); } # Not needed, there for speedup
+    | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
-simple_stmt[SSTNode] (memo):
+simple_stmt[stmt_ty] (memo):
     | assignment
-    | e=star_expressions   { e }
+    | e=star_expressions   { factory.createExpression(e) }
     | &'return' return_stmt
     | &('import' | 'from') import_stmt
     | &'raise' raise_stmt
@@ -159,7 +146,7 @@ simple_stmt[SSTNode] (memo):
     | 'continue' { factory.createContinue(startToken.startOffset, endToken.endOffset) }
     | &'global' global_stmt
     | &'nonlocal' nonlocal_stmt
-compound_stmt[SSTNode]:
+compound_stmt[stmt_ty]:
     | &('def' | '@' | ASYNC) function_def
     | &'if' if_stmt
     | &('class' | '@') class_def
@@ -170,56 +157,43 @@ compound_stmt[SSTNode]:
     | match_stmt
 
 # NOTE: annotated_rhs may start with 'yield'; yield_expr must start with 'yield'
-assignment[SSTNode]:
+assignment[stmt_ty]:
     | a=NAME ':' b=expression c=['=' d=annotated_rhs { d }] {
         factory.createAnnAssignment(
-                    factory.createAnnotation(
-                        setExprContext(a, ExprContext.Store),
-                        b,
-                        a.getStartOffset(), b.getEndOffset()),
-                    (SSTNode)c, startToken.startOffset, endToken.endOffset);
-
-        //CHECK_VERSION(
-        //    stmt_ty,
-        //    6,
-        //    "Variable annotation syntax is",
-        //    _PyAST_AnnAssign(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b, c, 1, EXTRA)
-        // )
+                    setExprContext(a, ExprContext.Store),
+                    b,
+                    (ExprTy)c, true, startToken.startOffset, endToken.endOffset);
         }
     | a=('(' b=single_target ')' { b }
          | single_subscript_attribute_target) ':' b=expression c=['=' d=annotated_rhs { d }] {
         CHECK_VERSION(stmt_ty, 6, "Variable annotations syntax is", _PyAST_AnnAssign(a, b, c, 0, EXTRA)) }
     | a[asdl_expr_seq*]=(z=star_targets '=' { z })+ b=(yield_expr | star_expressions) !'=' tc=[TYPE_COMMENT] {
-         factory.createAssignment(
-            a, 
-            (SSTNode)b, 
-           this.newTypeComment((Token) tc),
-             startToken.startOffset, endToken.endOffset); }
+         factory.createAssignment(a, (ExprTy)b, newTypeComment((Token) tc), startToken.startOffset, endToken.endOffset) }
     | a=single_target b=augassign ~ c=(yield_expr | star_expressions) {
-         factory.createAugAssignment(a, b, (SSTNode)c, startToken.startOffset, endToken.endOffset) }
+         factory.createAugAssignment(a, b, (ExprTy)c, startToken.startOffset, endToken.endOffset) }
     | invalid_assignment
 
-augassign[BinaryArithmeticSSTNode___Type]:
-    | '+=' { BinaryArithmeticSSTNode.Type.ADD }
-    | '-=' { BinaryArithmeticSSTNode.Type.SUB }
-    | '*=' { BinaryArithmeticSSTNode.Type.MULT }
-    | '@=' { CHECK_VERSION(AugOperator*, 5, "The '@' operator is", _PyPegen_augoperator(p, MatMult)) }
-    | '/=' { BinaryArithmeticSSTNode.Type.DIV }
-    | '%=' { BinaryArithmeticSSTNode.Type.MOD }
-    | '&=' { BinaryArithmeticSSTNode.Type.BIT_AND }
-    | '|=' { BinaryArithmeticSSTNode.Type.BIT_OR }
-    | '^=' { BinaryArithmeticSSTNode.Type.BIT_XOR }
-    | '<<=' { BinaryArithmeticSSTNode.Type.LSHIFT }
-    | '>>=' { BinaryArithmeticSSTNode.Type.RSHIFT }
-    | '**=' { BinaryArithmeticSSTNode.Type.POW }
-    | '//=' { BinaryArithmeticSSTNode.Type.FLOOR_DIV }
+augassign[AugOperator*]:
+    | '+=' { ExprTy.BinOp.Operator.ADD }
+    | '-=' { ExprTy.BinOp.Operator.SUB }
+    | '*=' { ExprTy.BinOp.Operator.MULT }
+    | '@=' { ExprTy.BinOp.Operator.MATMULT }
+    | '/=' { ExprTy.BinOp.Operator.DIV }
+    | '%=' { ExprTy.BinOp.Operator.MOD }
+    | '&=' { ExprTy.BinOp.Operator.BITAND }
+    | '|=' { ExprTy.BinOp.Operator.BITOR }
+    | '^=' { ExprTy.BinOp.Operator.BITXOR }
+    | '<<=' { ExprTy.BinOp.Operator.LSHIFT }
+    | '>>=' { ExprTy.BinOp.Operator.RSHIFT }
+    | '**=' { ExprTy.BinOp.Operator.POW }
+    | '//=' { ExprTy.BinOp.Operator.FLOORDIV }
 
 global_stmt[stmt_ty]: 'global' a[asdl_expr_seq*]=','.NAME+ {
-    _PyAST_Global(CHECK(asdl_identifier_seq*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
+    _PyAST_Global(CHECK(String*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
 nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
-    _PyAST_Nonlocal(CHECK(asdl_identifier_seq*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
+    _PyAST_Nonlocal(CHECK(String*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
 
-yield_stmt[SSTNode]: y=yield_expr { y }
+yield_stmt[stmt_ty]: y=yield_expr { factory.createExpression(y) }
 
 assert_stmt[stmt_ty]: 'assert' a=expression b=[',' z=expression { z }] { _PyAST_Assert(a, b, EXTRA) }
 
@@ -238,7 +212,7 @@ import_from[stmt_ty]:
 import_from_targets[asdl_alias_seq*]:
     | '(' a=import_from_as_names [','] ')' { a }
     | import_from_as_names !','
-    | '*' { (asdl_alias_seq*)this.singletonSequence(CHECK(alias_ty, _PyPegen_alias_for_star(p, EXTRA))) }
+    | '*' { (asdl_alias_seq*)_PyPegen_singleton_seq(p, CHECK(alias_ty, _PyPegen_alias_for_star(p, EXTRA))) }
     | invalid_import_from_targets
 import_from_as_names[asdl_alias_seq*]:
     | a[asdl_alias_seq*]=','.import_from_as_name+ { a }
@@ -252,7 +226,7 @@ dotted_as_name[alias_ty]:
     | a=dotted_name b=['as' z=NAME { z }] { _PyAST_alias(a->v.Name.id,
                                                       (b) ? ((expr_ty) b)->v.Name.id : NULL,
                                                       EXTRA) }
-dotted_name[VarLookupSSTNode]:
+dotted_name[expr_ty]:
     | a=dotted_name '.' b=NAME { this.joinNamesWithDot(a, b) }
     | NAME
 
@@ -266,7 +240,7 @@ elif_stmt[stmt_ty]:
         _PyAST_If(a, b, CHECK(asdl_stmt_seq*, this.singletonSequence(c)), EXTRA) }
     | 'elif' a=named_expression ':' b=block c=[else_block] { _PyAST_If(a, b, c, EXTRA) }
     | invalid_elif_stmt
-else_block[SSTNode*]: 'else' &&':' b=block { b } # originally return type asdl_stmt_seq*
+else_block[asdl_stmt_seq*]: 'else' &&':' b=block { b }
 
 while_stmt[stmt_ty]:
     | 'while' a=named_expression ':' b=block c=[else_block] { _PyAST_While(a, b, c, EXTRA) }
@@ -303,13 +277,13 @@ except_block[excepthandler_ty]:
         _PyAST_ExceptHandler(e, (t) ? ((expr_ty) t)->v.Name.id : NULL, b, EXTRA) }
     | 'except' ':' b=block { _PyAST_ExceptHandler(NULL, NULL, b, EXTRA) }
     | invalid_except_block
-finally_block[SSTNode*]: 'finally' ':' a=block { a } # originally return type asdl_stmt_seq*
+finally_block[asdl_stmt_seq*]: 'finally' ':' a=block { a }
 
 match_stmt[stmt_ty]:
     | "match" subject=subject_expr ':' NEWLINE INDENT cases[asdl_match_case_seq*]=case_block+ DEDENT {
         CHECK_VERSION(stmt_ty, 10, "Pattern matching is", _PyAST_Match(subject, cases, EXTRA)) }
     | invalid_match_stmt
-subject_expr[SSTNode]:  # originally return type expr_ty
+subject_expr[expr_ty]:
     | value=star_named_expression ',' values=star_named_expressions? {
         _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(value, values)), Load, EXTRA) }
     | named_expression
@@ -317,22 +291,22 @@ case_block[match_case_ty]:
     | "case" pattern=patterns guard=guard? ':' body=block {
         _PyAST_match_case(pattern, guard, body, p->arena) }
     | invalid_case_block
-guard[SSTNode]: 'if' guard=named_expression { guard }  # originally return type expr_ty
+guard[expr_ty]: 'if' guard=named_expression { guard }
 
-patterns[SSTNode]: # originally return type expr_ty
+patterns[expr_ty]:
     | values[asdl_expr_seq*]=open_sequence_pattern {
         _PyAST_Tuple(values, Load, EXTRA) }
     | pattern
-pattern[SSTNode]: # originally return type expr_ty
+pattern[expr_ty]:
     | as_pattern
     | or_pattern
-as_pattern[SSTNode]: # originally return type expr_ty
+as_pattern[expr_ty]:
     | pattern=or_pattern 'as' target=capture_pattern {
         _PyAST_MatchAs(pattern, target->v.Name.id, EXTRA) }
-or_pattern[SSTNode]: # originally return type expr_ty
+or_pattern[expr_ty]:
     | patterns[asdl_expr_seq*]='|'.closed_pattern+ {
         asdl_seq_LEN(patterns) == 1 ? asdl_seq_GET(patterns, 0) : _PyAST_MatchOr(patterns, EXTRA) }
-closed_pattern[SSTNode]:  # originally return type expr_ty
+closed_pattern[expr_ty]:
     | literal_pattern
     | capture_pattern
     | wildcard_pattern
@@ -342,37 +316,37 @@ closed_pattern[SSTNode]:  # originally return type expr_ty
     | mapping_pattern
     | class_pattern
 
-literal_pattern[SSTNode]: # originally return type expr_ty
+literal_pattern[expr_ty]:
     | signed_number !('+' | '-')
-    | real=signed_number '+' imag=NUMBER { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.ADD, real, imag, startToken.startOffset, endToken.endOffset ) }
-    | real=signed_number '-' imag=NUMBER  { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.SUB, real, imag, startToken.startOffset, endToken.endOffset ) }
+    | real=signed_number '+' imag=NUMBER { factory.createBinaryOp(ExprTy.BinOp.Operator.ADD, real, imag, startToken.startOffset, endToken.endOffset ) }
+    | real=signed_number '-' imag=NUMBER  { factory.createBinaryOp(ExprTy.BinOp.Operator.SUB, real, imag, startToken.startOffset, endToken.endOffset ) }
     | strings
     | 'None' { factory.createNone(startToken.startOffset, startToken.endOffset) }
-    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset); }
-    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset); }
-signed_number[SSTNode]: # originally return type expr_ty
+    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset) }
+    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset) }
+signed_number[expr_ty]:
     | NUMBER
     | '-' number=NUMBER { _PyAST_UnaryOp(USub, number, EXTRA) }
 
-capture_pattern[SSTNode]: # originally return type expr_ty
+capture_pattern[expr_ty]:
     | !"_" name=NAME !('.' | '(' | '=') {
         _PyPegen_set_expr_context(p, name, Store) }
 
-wildcard_pattern[SSTNode]: # originally return type expr_ty
+wildcard_pattern[expr_ty]:
     | "_" { _PyAST_Name(CHECK(PyObject*, _PyPegen_new_identifier(p, "_")), Store, EXTRA) }
 
-value_pattern[SSTNode]: # originally return type expr_ty
+value_pattern[expr_ty]:
     | attr=attr !('.' | '(' | '=') { attr }
-attr[SSTNode]: # originally return type expr_ty
-    | value=name_or_attr '.' attr=NAME { factory.createGetAttribute(value, ((VarLookupSSTNode)attr).getName(), startToken.startOffset, startToken.endOffset)}
-name_or_attr[SSTNode]: # originally return type expr_ty
+attr[expr_ty]:
+    | value=name_or_attr '.' attr=NAME { factory.createGetAttribute(value, ((ExprTy.Name)attr).id, startToken.startOffset, startToken.endOffset)}
+name_or_attr[expr_ty]:
     | attr
     | NAME
 
-group_pattern[SSTNode]: # originally return type expr_ty
+group_pattern[expr_ty]:
     | '(' pattern=pattern ')' { pattern }
 
-sequence_pattern[SSTNode]: # originally return type expr_ty
+sequence_pattern[expr_ty]:
     | '[' values=maybe_sequence_pattern? ']' { _PyAST_List(values, Load, EXTRA) }
     | '(' values=open_sequence_pattern? ')' { _PyAST_Tuple(values, Load, EXTRA) }
 open_sequence_pattern[asdl_seq*]:
@@ -380,26 +354,26 @@ open_sequence_pattern[asdl_seq*]:
         this.insertInFront(value, (SSTNode[])values) }
 maybe_sequence_pattern[asdl_seq*]:
     | values=','.maybe_star_pattern+ ','? { values }
-maybe_star_pattern[SSTNode]: # originally return type expr_ty
+maybe_star_pattern[expr_ty]:
     | star_pattern
     | pattern
-star_pattern[SSTNode]: # originally return type expr_ty
+star_pattern[expr_ty]:
     | '*' value=(capture_pattern | wildcard_pattern) {
         _PyAST_Starred(value, Store, EXTRA) }
 
-mapping_pattern[SSTNode]: # originally return type expr_ty
+mapping_pattern[expr_ty]:
     | '{' items=items_pattern? '}' {
         _PyAST_Dict(CHECK(asdl_expr_seq*, _PyPegen_get_keys(p, items)), CHECK(asdl_expr_seq*, _PyPegen_get_values(p, items)), EXTRA) }
 items_pattern[asdl_seq*]:
     | items=','.key_value_pattern+ ','? { items }
 key_value_pattern[KeyValuePair*]:
     | key=(literal_pattern | value_pattern) ':' value=pattern {
-        _PyPegen_key_value_pair(p, key, value) }
+        new KeyValuePair(key, value) }
     | double_star_pattern
 double_star_pattern[KeyValuePair*]:
-    | '**' value=capture_pattern { _PyPegen_key_value_pair(p, NULL, value) }
+    | '**' value=capture_pattern { KeyValuePair(null, value) }
 
-class_pattern[SSTNode]: # originally return type expr_ty
+class_pattern[expr_ty]:
     | func=name_or_attr '(' ')' { _PyAST_Call(func, NULL, NULL, EXTRA) }
     | func=name_or_attr '(' args=positional_patterns ','? ')' {
         _PyAST_Call(func, args, NULL, EXTRA) }
@@ -427,9 +401,9 @@ function_def[stmt_ty]:
 
 function_def_raw[stmt_ty]:
     | 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
-        factory.createFunctionDef(((VarLookupSSTNode)n).getName(),
-                        (ArgDefListBuilder)params,
-                        b, null, (SSTNode)a, this.newTypeComment((Token)tc),
+        factory.createFunctionDef(((ExprTy.Name)n).id,
+                        params,
+                        b, null, (ExprTy)a, newTypeComment((Token)tc),
                         startToken.startOffset, endToken.endOffset) }
     | ASYNC 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
         CHECK_VERSION(
@@ -440,16 +414,16 @@ function_def_raw[stmt_ty]:
                             (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
                             b, NULL, a, NEW_TYPE_COMMENT(p, tc), EXTRA)
         ) }
-func_type_comment[Token]:
+func_type_comment[Token*]:
     | NEWLINE t=TYPE_COMMENT &(NEWLINE INDENT) { t }  # Must be followed by indented block
     | invalid_double_type_comments
     | TYPE_COMMENT
 
-params[ArgDefListBuilder]:
+params[arguments_ty]:
     | invalid_parameters
     | parameters
 
-parameters[ArgDefListBuilder]:
+parameters[arguments_ty]:
     | a=slash_no_default b[asdl_arg_seq*]=param_no_default* c=param_with_default* d=[star_etc] {
         _PyPegen_make_arguments(p, a, NULL, b, c, d) }
     | a=slash_with_default b=param_with_default* c=[star_etc] {
@@ -492,18 +466,18 @@ kwds[arg_ty]: '**' a=param_no_default { a }
 # The latter form is for a final parameter without trailing comma.
 #
 param_no_default[arg_ty]:
-    | a=param ',' tc=TYPE_COMMENT? { _PyPegen_add_type_comment_to_arg(p, a, tc) }
-    | a=param tc=TYPE_COMMENT? &')' { _PyPegen_add_type_comment_to_arg(p, a, tc) }
+    | a=param ',' tc=TYPE_COMMENT? { factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()) }
+    | a=param tc=TYPE_COMMENT? &')' { factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()) }
 param_with_default[NameDefaultPair*]:
-    | a=param c=default_param ',' tc=TYPE_COMMENT? { _PyPegen_name_default_pair(p, a, c, tc) }
-    | a=param c=default_param tc=TYPE_COMMENT? &')' { _PyPegen_name_default_pair(p, a, c, tc) }
+    | a=param c=default_param ',' tc=TYPE_COMMENT? { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
+    | a=param c=default_param tc=TYPE_COMMENT? &')' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
 param_maybe_default[NameDefaultPair*]:
-    | a=param c=default_param? ',' tc=TYPE_COMMENT? { _PyPegen_name_default_pair(p, a, c, tc) }
-    | a=param c=default_param? tc=TYPE_COMMENT? &')' { _PyPegen_name_default_pair(p, a, c, tc) }
-param[arg_ty]: a=NAME b=annotation? { _PyAST_arg(a->v.Name.id, b, NULL, EXTRA) }
+    | a=param c=default_param? ',' tc=TYPE_COMMENT? { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
+    | a=param c=default_param? tc=TYPE_COMMENT? &')' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
+param[arg_ty]: a=NAME b=annotation? { factory.createArgument(((ExprTy.Name)a).id, b, null, startToken.startOffset, startToken.endOffset) }
 
-annotation[SSTNode]: ':' a=expression { a } # originally return type expr_ty
-default_param[SSTNode]: '=' a=expression { a } # originally return type expr_ty
+annotation[expr_ty]: ':' a=expression { a }
+default_param[expr_ty]: '=' a=expression { a }
 
 decorators[asdl_expr_seq*]: a[asdl_expr_seq*]=('@' f=named_expression NEWLINE { f })+ { a }
 
@@ -517,48 +491,48 @@ class_def_raw[stmt_ty]:
                      (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
                      c, NULL, EXTRA) }
 
-block[SSTNode*] (memo): # originally return type asdl_stmt_seq*
+block[asdl_stmt_seq*] (memo):
     | NEWLINE INDENT a=statements DEDENT { a }
     | simple_stmts
     | invalid_block
 
-star_expressions[SSTNode]: # originally return type expr_ty
+star_expressions[expr_ty]:
     | a=star_expression b=(',' c=star_expression { c })+ [','] {
         _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Load, EXTRA) }
     | a=star_expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, this.singletonSequence(a)), Load, EXTRA) }
     | star_expression
-star_expression[SSTNode] (memo): # originally return type expr_ty
+star_expression[expr_ty] (memo):
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
     | expression
 
 star_named_expressions[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_named_expression+ [','] { a }
-star_named_expression[SSTNode]: # originally return type expr_ty
+star_named_expression[expr_ty]:
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
     | named_expression
 
-named_expression[SSTNode]: # originally return type expr_ty
+named_expression[expr_ty]:
     | a=NAME ':=' ~ b=expression { _PyAST_NamedExpr(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b, EXTRA) }
     | invalid_named_expression
     | expression !':='
 
-direct_named_expression[SSTNode]: # originally return type expr_ty
+direct_named_expression[expr_ty]:
     | a=NAME ':=' ~ b=expression { _PyAST_NamedExpr(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b, EXTRA) }
     | expression !':='
 
-annotated_rhs[SSTNode]: yield_expr | star_expressions # originally return type expr_ty
+annotated_rhs[expr_ty]: yield_expr | star_expressions
 
-expressions[SSTNode]: # originally return type expr_ty
+expressions[expr_ty]:
     | a=expression b=(',' c=expression { c })+ [','] {
         _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Load, EXTRA) }
     | a=expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, this.singletonSequence(a)), Load, EXTRA) }
     | expression
-expression[SSTNode] (memo): # originally return type expr_ty
+expression[expr_ty] (memo):
     | invalid_expression
     | a=disjunction 'if' b=disjunction 'else' c=expression { _PyAST_IfExp(b, a, c, EXTRA) }
     | disjunction
     | lambdef
 
-lambdef[SSTNode]: # originally return type expr_ty
+lambdef[expr_ty]:
     | 'lambda' a=[lambda_params] ':' b=expression {
         _PyAST_Lambda((a) ? a : CHECK(arguments_ty, _PyPegen_empty_arguments(p)), b, EXTRA) }
 
@@ -608,25 +582,26 @@ lambda_param_maybe_default[NameDefaultPair*]:
     | a=lambda_param c=default_param? &':' { _PyPegen_name_default_pair(p, a, c, NULL) }
 lambda_param[arg_ty]: a=NAME { _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA) }
 
-disjunction[SSTNode] (memo): # originally return type expr_ty
+disjunction[expr_ty] (memo):
     | a=conjunction b=('or' c=conjunction { c })+ { _PyAST_BoolOp(
         Or,
         CHECK(asdl_expr_seq*, this.insertInFront(a, b)),
         EXTRA) }
     | conjunction
-conjunction[SSTNode] (memo): # originally return type expr_ty
+conjunction[expr_ty] (memo):
     | a=inversion b=('and' c=inversion { c })+ { _PyAST_BoolOp(
         And,
         CHECK(asdl_expr_seq*, this.insertInFront(a, b)),
         EXTRA) }
     | inversion
-inversion[SSTNode] (memo): # originally return type expr_ty
+inversion[expr_ty] (memo):
     | 'not' a=inversion { _PyAST_UnaryOp(Not, a, EXTRA) }
     | comparison
-comparison[SSTNode]: # originally return type expr_ty
-    | a=bitwise_or b=compare_op_bitwise_or_pair+ { finishBinaryOp(a, b)}
+comparison[expr_ty]:
+    | a=bitwise_or b=compare_op_bitwise_or_pair+ {
+         factory.createComparison(a, b, startToken.startOffset, endToken.endOffset) }
     | bitwise_or
-compare_op_bitwise_or_pair[BinaryArithmeticSSTNode]:
+compare_op_bitwise_or_pair[CmpopExprPair*]:
     | eq_bitwise_or
     | noteq_bitwise_or
     | lte_bitwise_or
@@ -637,7 +612,7 @@ compare_op_bitwise_or_pair[BinaryArithmeticSSTNode]:
     | in_bitwise_or
     | isnot_bitwise_or
     | is_bitwise_or
-eq_bitwise_or[BinaryArithmeticSSTNode]: '==' a=bitwise_or { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.EQ, null, a, startToken.startOffset, endToken.endOffset)}#{ _PyPegen_cmpop_expr_pair(p, Eq, a) }
+eq_bitwise_or[CmpopExprPair*]: '==' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.EQ, a); }
 noteq_bitwise_or[CmpopExprPair*]:
     | (tok='!=' { _PyPegen_check_barry_as_flufl(p, tok) ? NULL : tok}) a=bitwise_or {_PyPegen_cmpop_expr_pair(p, NotEq, a) }
 lte_bitwise_or[CmpopExprPair*]: '<=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, LtE, a) }
@@ -649,61 +624,61 @@ in_bitwise_or[CmpopExprPair*]: 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, I
 isnot_bitwise_or[CmpopExprPair*]: 'is' 'not' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
 is_bitwise_or[CmpopExprPair*]: 'is' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Is, a) }
 
-bitwise_or[SSTNode]: # originally return type expr_ty
-    | a=bitwise_or '|' b=bitwise_xor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.BIT_OR, a, b, startToken.startOffset, endToken.endOffset ) }
+bitwise_or[expr_ty]:
+    | a=bitwise_or '|' b=bitwise_xor { factory.createBinaryOp(ExprTy.BinOp.Operator.BITOR, a, b, startToken.startOffset, endToken.endOffset ) }
     | bitwise_xor
-bitwise_xor[SSTNode]: # originally return type expr_ty
-    | a=bitwise_xor '^' b=bitwise_and { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.BIT_XOR, a, b, startToken.startOffset, endToken.endOffset ) }
+bitwise_xor[expr_ty]:
+    | a=bitwise_xor '^' b=bitwise_and { factory.createBinaryOp(ExprTy.BinOp.Operator.BITXOR, a, b, startToken.startOffset, endToken.endOffset ) }
     | bitwise_and
-bitwise_and[SSTNode]: # originally return type expr_ty
-    | a=bitwise_and '&' b=shift_expr { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.BIT_AND, a, b, startToken.startOffset, endToken.endOffset ) }
+bitwise_and[expr_ty]:
+    | a=bitwise_and '&' b=shift_expr { factory.createBinaryOp(ExprTy.BinOp.Operator.BITAND, a, b, startToken.startOffset, endToken.endOffset ) }
     | shift_expr
-shift_expr[SSTNode]: # originally return type expr_ty
-    | a=shift_expr '<<' b=sum { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.LSHIFT, a, b, startToken.startOffset, endToken.endOffset ) }
-    | a=shift_expr '>>' b=sum { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.RSHIFT, a, b, startToken.startOffset, endToken.endOffset ) }
+shift_expr[expr_ty]:
+    | a=shift_expr '<<' b=sum { factory.createBinaryOp(ExprTy.BinOp.Operator.LSHIFT, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=shift_expr '>>' b=sum { factory.createBinaryOp(ExprTy.BinOp.Operator.RSHIFT, a, b, startToken.startOffset, endToken.endOffset ) }
     | sum
 
-sum[SSTNode]: # originally return type expr_ty
-    | a=sum '+' b=term { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.ADD, a, b, startToken.startOffset, endToken.endOffset ) }
-    | a=sum '-' b=term { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.SUB, a, b, startToken.startOffset, endToken.endOffset ) }
+sum[expr_ty]:
+    | a=sum '+' b=term { factory.createBinaryOp(ExprTy.BinOp.Operator.ADD, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=sum '-' b=term { factory.createBinaryOp(ExprTy.BinOp.Operator.SUB, a, b, startToken.startOffset, endToken.endOffset ) }
     | term
-term[SSTNode]: # originally return type expr_ty
-    | a=term '*' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.MULT, a, b, startToken.startOffset, endToken.endOffset ) }
-    | a=term '/' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.DIV, a, b, startToken.startOffset, endToken.endOffset ) }
-    | a=term '//' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.FLOOR_DIV, a, b, startToken.startOffset, endToken.endOffset ) }
-    | a=term '%' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.MOD, a, b, startToken.startOffset, endToken.endOffset ) }
+term[expr_ty]:
+    | a=term '*' b=factor { factory.createBinaryOp(ExprTy.BinOp.Operator.MULT, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=term '/' b=factor { factory.createBinaryOp(ExprTy.BinOp.Operator.DIV, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=term '//' b=factor { factory.createBinaryOp(ExprTy.BinOp.Operator.FLOORDIV, a, b, startToken.startOffset, endToken.endOffset ) }
+    | a=term '%' b=factor { factory.createBinaryOp(ExprTy.BinOp.Operator.MOD, a, b, startToken.startOffset, endToken.endOffset ) }
     | a=term '@' b=factor { CHECK_VERSION(expr_ty, 5, "The '@' operator is", _PyAST_BinOp(a, MatMult, b, EXTRA)) }
     | factor
-factor[SSTNode] (memo): # originally return type expr_ty
-    | '+' a=factor {factory.createUnaryOp(UnarySSTNode.Type.ADD, a, startToken.startOffset, endToken.endOffset)} #{ _PyAST_UnaryOp(UAdd, a, EXTRA) }
-    | '-' a=factor {factory.createUnaryOp(UnarySSTNode.Type.SUB, a, startToken.startOffset, endToken.endOffset)} #{ _PyAST_UnaryOp(USub, a, EXTRA) }
-    | '~' a=factor {factory.createUnaryOp(UnarySSTNode.Type.INVERT, a, startToken.startOffset, endToken.endOffset)} #{ _PyAST_UnaryOp(Invert, a, EXTRA) }
+factor[expr_ty] (memo):
+    | '+' a=factor {factory.createUnaryOp(ExprTy.UnaryOp.Operator.ADD, a, startToken.startOffset, endToken.endOffset)}
+    | '-' a=factor {factory.createUnaryOp(ExprTy.UnaryOp.Operator.SUB, a, startToken.startOffset, endToken.endOffset)}
+    | '~' a=factor {factory.createUnaryOp(ExprTy.UnaryOp.Operator.INVERT, a, startToken.startOffset, endToken.endOffset)}
     | power
-power[SSTNode]: # originally return type expr_ty
-    | a=await_primary '**' b=factor { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.POW, a, b, startToken.startOffset, endToken.endOffset ) }
+power[expr_ty]:
+    | a=await_primary '**' b=factor { factory.createBinaryOp(ExprTy.BinOp.Operator.POW, a, b, startToken.startOffset, endToken.endOffset ) }
     | await_primary
-await_primary[SSTNode] (memo): # originally return type expr_ty
+await_primary[expr_ty] (memo):
     | AWAIT a=primary { CHECK_VERSION(expr_ty, 5, "Await expressions are", _PyAST_Await(a, EXTRA)) }
     | primary
-primary[SSTNode]: # originally return type expr_ty
+primary[expr_ty]:
     | invalid_primary  # must be before 'primay genexp' because of invalid_genexp
-    | a=primary '.' b=NAME { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)this.singletonSequence(b)), NULL, EXTRA) }
-    | a=primary '(' b[SSTNode*]=[arguments] ')' {
-        factory.createCall(a, this.extractArgs(b), this.extractKeywordArgs(b), startToken.startOffset, endToken.endOffset ) }
+    | a=primary '.' b=NAME { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
+    | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
+    | a=primary '(' b=[arguments] ')' {
+        factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) }
     | a=primary '[' b=slices ']' { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
     | atom
 
-slices[SSTNode]: # originally return type expr_ty
+slices[expr_ty]:
     | a=slice !',' { a }
     | a[asdl_expr_seq*]=','.slice+ [','] { _PyAST_Tuple(a, Load, EXTRA) }
-slice[SSTNode]: # originally return type expr_ty
+slice[expr_ty]:
     | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { _PyAST_Slice(a, b, c, EXTRA) }
     | a=named_expression { a }
-atom[SSTNode]: # originally return type expr_ty
+atom[expr_ty]:
     | NAME
-    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, endToken.endOffset);}
-    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, endToken.endOffset); }
+    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, endToken.endOffset) }
+    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, endToken.endOffset) }
     | 'None' { factory.createNone(startToken.startOffset, startToken.endOffset) }
     | &STRING strings
     | NUMBER
@@ -712,74 +687,77 @@ atom[SSTNode]: # originally return type expr_ty
     | &'{' (dict | set | dictcomp | setcomp)
     | '...' { factory.createEllipsis(startToken.startOffset, startToken.endOffset) }
 
-strings[SSTNode] (memo): a=STRING+ { this.concatenateStrings(a) }
-list[SSTNode]: # originally return type expr_ty
-    | '[' a=[star_named_expressions] ']' { factory.createList((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
-listcomp[SSTNode]: # originally return type expr_ty
+strings[expr_ty] (memo): a=STRING+ { this.concatenateStrings(a) }
+list[expr_ty]:
+    | '[' a=[star_named_expressions] ']' { factory.createList(a, startToken.startOffset, endToken.endOffset) }
+listcomp[expr_ty]:
     | '[' a=named_expression b=for_if_clauses ']' { factory.createListComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
-tuple[SSTNode]: # originally return type expr_ty
-    | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, (SSTNode[])z) } ] ')' {
-        factory.createTuple((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
-group[SSTNode]: # originally return type expr_ty
+tuple[expr_ty]:
+    | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, z) } ] ')' {
+        factory.createTuple((ExprTy[])a, startToken.startOffset, endToken.endOffset) }
+group[expr_ty]:
     | '(' a=(yield_expr | named_expression) ')' { a }
     | invalid_group
-genexp[SSTNode]: # originally return type expr_ty
+genexp[expr_ty]:
     | '(' a=direct_named_expression b=for_if_clauses ')' { factory.createGenerator(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
-set[SSTNode]: '{' a=star_named_expressions '}' { factory.createSet((SSTNode[])a,startToken.startOffset,endToken.endOffset) }
-setcomp[SSTNode]: # originally return type expr_ty
+set[expr_ty]: '{' a=star_named_expressions '}' { factory.createSet(a,startToken.startOffset,endToken.endOffset) }
+setcomp[expr_ty]:
     | '{' a=named_expression b=for_if_clauses '}' { factory.createSetComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
-dict[SSTNode]: # originally return type expr_ty
+dict[expr_ty]:
     | '{' a=[double_starred_kvpairs] '}' {
-        factory.createDict((SSTNode[])a,startToken.startOffset,endToken.endOffset) }
+        factory.createDict(extractKeys(a),extractValues(a),startToken.startOffset,endToken.endOffset) }
     | '{' invalid_double_starred_kvpairs '}'
 
-dictcomp[SSTNode]: # originally return type expr_ty
+dictcomp[expr_ty]:
     | '{' a=kvpair b=for_if_clauses '}' { factory.createDictComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_dict_comprehension
-double_starred_kvpairs[KeyValueSSTNode*]: a=','.double_starred_kvpair+ [','] { a }
-double_starred_kvpair[KeyValueSSTNode]:
-    | '**' a=bitwise_or { factory.createKeyValuePair(null, a) }
+double_starred_kvpairs: a=','.double_starred_kvpair+ [','] { a }
+double_starred_kvpair[KeyValuePair*]:
+    | '**' a=bitwise_or { new KeyValuePair(null, a) }
     | kvpair
-kvpair[KeyValueSSTNode]: a=expression ':' b=expression { factory.createKeyValuePair(a, b) }
-for_if_clauses[ForComprehensionSSTNode*]:
-    | a[ForComprehensionSSTNode*]=for_if_clause+ { a }
-for_if_clause[ForComprehensionSSTNode]:
+kvpair[KeyValuePair*]: a=expression ':' b=expression { new KeyValuePair(a, b) }
+for_if_clauses[asdl_comprehension_seq*]:
+    | a[asdl_comprehension_seq*]=for_if_clause+ { a }
+for_if_clause[comprehension_ty]:
     | ASYNC 'for' a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=('if' z=disjunction { z })* {
         CHECK_VERSION(comprehension_ty, 6, "Async comprehensions are", _PyAST_comprehension(a, b, c, 1, p->arena)) }
-    | 'for' a=star_targets 'in' ~ b=disjunction c[SSTNode*]=('if' z=disjunction { z })* {
+    | 'for' a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=('if' z=disjunction { z })* {
         factory.createComprehension(a, b, c, false, startToken.startOffset, endToken.endOffset) }
     | invalid_for_target
 
-yield_expr[SSTNode]: # originally return type expr_ty
-    | 'yield' 'from' a=expression { factory.createYield((SSTNode)a, true, startToken.startOffset, endToken.endOffset) }
-    | 'yield' a=[star_expressions] { factory.createYield((SSTNode)a, false, startToken.startOffset, endToken.endOffset) }
+yield_expr[expr_ty]:
+    | 'yield' 'from' a=expression { factory.createYield(a, true, startToken.startOffset, endToken.endOffset) }
+    | 'yield' a=[star_expressions] { factory.createYield(a, false, startToken.startOffset, endToken.endOffset) }
 
-arguments[SSTNode*] (memo): # originally return type expr_ty
+arguments[expr_ty] (memo):
     | a=args [','] &')' { a }
     | invalid_arguments
-args[SSTNode*]: # originally return type expr_ty
-    | a=','.(starred_expression | direct_named_expression !'=')+ b[SSTNode*]=[',' k=kwargs {k}] { this.join(a, b) }
-    | a=kwargs { a }
-kwargs[SSTNode*]:
-    | a=','.kwarg_or_starred+ ',' b[SSTNode*]=','.kwarg_or_double_starred+ { this.join(a, b) }
+args[expr_ty]:
+    | a[asdl_expr_seq*]=','.(starred_expression | direct_named_expression !'=')+ b=[',' k=kwargs {k}] { this.collectCallSequences(a,b,startToken.startOffset,endToken.endOffset) }
+    | a=kwargs { factory.createCall(dummyName(),
+                                    extractStarredExpressions(a),
+                                    deleteStarredExpressions(a),
+                                    startToken.startOffset, endToken.endOffset) }
+kwargs[asdl_seq*]:
+    | a=','.kwarg_or_starred+ ',' b=','.kwarg_or_double_starred+ { this.join(a, b) }
     | ','.kwarg_or_starred+
     | ','.kwarg_or_double_starred+
-starred_expression[SSTNode]: # originally return type expr_ty
-    | '*' a=expression { factory.createStarred(a,  startToken.startOffset, endToken.endOffset) }
-kwarg_or_starred[SSTNode]:
-    | a=NAME '=' b=expression { factory.createKeyValuePair(a, b) }
+starred_expression[expr_ty]:
+    | '*' a=expression { factory.createStarred(a, startToken.startOffset, endToken.endOffset) }
+kwarg_or_starred[KeywordOrStarred*]:
+    | a=NAME '=' b=expression { new KeywordOrStarred(factory.createKeyword(((ExprTy.Name)a).id, b, startToken.startOffset, endToken.endOffset), true) }
     | a=starred_expression { a }
     | invalid_kwarg
-kwarg_or_double_starred[SSTNode]:
-    | a=NAME '=' b=expression { factory.createKeyValuePair(a, b) }
-    | '**' a=expression { factory.createKeyValuePair(null, a) }
+kwarg_or_double_starred[KeywordOrStarred*]:
+    | a=NAME '=' b=expression { new KeywordOrStarred(factory.createKeyword(((ExprTy.Name)a).id, b, startToken.startOffset, endToken.endOffset), true) }
+    | '**' a=expression { new KeywordOrStarred(factory.createKeyword(null, a, startToken.startOffset, endToken.endOffset), true) }
     | invalid_kwarg
 
 # NOTE: star_targets may contain *bitwise_or, targets may not.
-star_targets[SSTNode]: # originally return type expr_ty
+star_targets[expr_ty]:
     | a=star_target !',' { a }
     | a=star_target b=(',' c=star_target { c })* [','] {
         factory.createTuple(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset); // Store }
@@ -787,55 +765,55 @@ star_targets_list_seq[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_target+ [','] 
 star_targets_tuple_seq[asdl_expr_seq*]:
     | a=star_target b=(',' c=star_target { c })+ [','] { (asdl_expr_seq*) this.insertInFront(a, b) }
     | a=star_target ',' { (asdl_expr_seq*) this.singletonSequence(a) }
-star_target[SSTNode] (memo): # originally return type expr_ty
+star_target[expr_ty] (memo):
     | '*' a=(!'*' star_target) {
         _PyAST_Starred(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), Store, EXTRA) }
     | target_with_star_atom
-target_with_star_atom[SSTNode] (memo): # originally return type expr_ty
-    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
+target_with_star_atom[expr_ty] (memo):
+    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
+    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
     | star_atom
-star_atom[SSTNode]: # originally return type expr_ty
+star_atom[expr_ty]:
     | a=NAME { this.setExprContext(a, ExprContext.Store) }
     | '(' a=target_with_star_atom ')' { this.setExprContext(a, ExprContext.Store) }
-    | '(' a=[star_targets_tuple_seq] ')' { factory.createTuple((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
-    | '[' a=[star_targets_list_seq] ']' { factory.createList((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
+    | '(' a=[star_targets_tuple_seq] ')' { factory.createTuple(a, ExprContext.Store, startToken.startOffset, endToken.endOffset) }
+    | '[' a=[star_targets_list_seq] ']' { factory.createList(a, ExprContext.Store, startToken.startOffset, endToken.endOffset) }
 
-single_target[SSTNode]: # originally return type expr_ty
+single_target[expr_ty]:
     | single_subscript_attribute_target
     | a=NAME  { this.setExprContext(a, ExprContext.Store) }
     | '(' a=single_target ')' { a }
-single_subscript_attribute_target[SSTNode]: # originally return type expr_ty
-    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
+single_subscript_attribute_target[expr_ty]:
+    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
+    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
 
 del_targets[asdl_expr_seq*]: a[asdl_expr_seq*]=','.del_target+ [','] { a }
-del_target[SSTNode] (memo): # originally return type expr_ty
-    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
+del_target[expr_ty] (memo):
+    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Delete, startToken.startOffset, startToken.endOffset) }
+    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, ExprContext.Delete, startToken.startOffset, startToken.endOffset) }
     | del_t_atom
-del_t_atom[SSTNode]: # originally return type expr_ty
+del_t_atom[expr_ty]:
     | a=NAME { _PyPegen_set_expr_context(p, a, Del) }
     | '(' a=del_target ')' { _PyPegen_set_expr_context(p, a, Del) }
     | '(' a=[del_targets] ')' { _PyAST_Tuple(a, Del, EXTRA) }
     | '[' a=[del_targets] ']' { _PyAST_List(a, Del, EXTRA) }
 
 targets[asdl_expr_seq*]: a[asdl_expr_seq*]=','.target+ [','] { a }
-target[SSTNode] (memo): # originally return type expr_ty
-    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
+target[expr_ty] (memo):
+    | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
+    | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
     | t_atom
-t_primary[SSTNode]: # originally return type expr_ty
-    | a=t_primary '.' b=NAME &t_lookahead { factory.createGetAttribute(a, ((VarLookupSSTNode)b).getName(), startToken.startOffset, startToken.endOffset) }
-    | a=t_primary '[' b=slices ']' &t_lookahead { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
+t_primary[expr_ty]:
+    | a=t_primary '.' b=NAME &t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
+    | a=t_primary '[' b=slices ']' &t_lookahead { factory.createSubscript(a, b, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | a=t_primary b=genexp &t_lookahead {
-        _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)this.singletonSequence(b)), NULL, EXTRA) }
-    | a=t_primary '(' b[SSTNode*]=[arguments] ')' &t_lookahead {
-            factory.createCall(a, this.extractArgs(b), this.extractKeywordArgs(b), startToken.startOffset, endToken.endOffset ) 
+        _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
+    | a=t_primary '(' b=[arguments] ')' &t_lookahead {
+            factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) 
         }
     | a=atom &t_lookahead { a }
 t_lookahead: '(' | '[' | '.'
-t_atom[SSTNode]: # originally return type expr_ty
+t_atom[expr_ty]:
     | a=NAME { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=target ')' { _PyPegen_set_expr_context(p, a, Store) }
     | '(' b=[targets] ')' { _PyAST_Tuple(b, Store, EXTRA) }
@@ -892,7 +870,7 @@ invalid_assignment:
             "'%s' is an illegal expression for augmented assignment",
             _PyPegen_get_expr_name(a)
         )}
-invalid_ann_assign_target[SSTNode]: # originally return type expr_ty
+invalid_ann_assign_target[expr_ty]:
     | list
     | tuple
     | '(' a=invalid_ann_assign_target ')' { a }

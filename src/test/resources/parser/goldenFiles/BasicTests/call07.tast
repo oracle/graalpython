@@ -1,12 +1,10 @@
-BlockSSTNode[0, 31]
-    CallSSTNode[0, 31]
-        Target: VarLookupSSTNode[0, 3] Value: "foo"
+Module[0, 31]
+    Call[0, 31]
+        Target: Name[0, 3] Value: "foo"
         Args: 
-            RawStringLiteralSSTNode[4, 10]
+            RAW[4, 10] Value: ahoj
         KWArgs: 
-            KeyValueSSTNode[12, 20]
-                Key: VarLookupSSTNode[12, 16] Value: "arg1"
-                Val: IntegerLiteralSSTNode[19, 20] Value: "1"
-            KeyValueSSTNode[22, 30]
-                Key: VarLookupSSTNode[22, 26] Value: "arg2"
-                Val: IntegerLiteralSSTNode[29, 30] Value: "2"
+            KeywordTy[12, 20]
+                arg1: LONG[19, 20] Value: 1
+            KeywordTy[22, 30]
+                arg2: LONG[29, 30] Value: 2

@@ -1,11 +1,10 @@
-BlockSSTNode[0, 22]
-    FunctionDefSSTNode[0, 22]
+Module[0, 22]
+    FunctionDef[0, 22]
         Name:fn
         ---- Function body of fn ----
-        CallSSTNode[10, 22]
-            Target: VarLookupSSTNode[10, 13] Value: "foo"
+        Call[10, 22]
+            Target: Name[10, 13] Value: "foo"
             KWArgs: 
-                KeyValueSSTNode[14, 21]
-                    Key: VarLookupSSTNode[14, 17] Value: "arg"
-                    Val: IntegerLiteralSSTNode[20, 21] Value: "1"
+                KeywordTy[14, 21]
+                    arg: LONG[20, 21] Value: 1
         ---- End of fn function ----

@@ -41,45 +41,82 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-public class FloatLiteralSSTNode extends SSTNode {
-    protected double value;
-    protected final boolean imaginary;
-
-    public FloatLiteralSSTNode(double value, boolean imaginary, int startOffset, int endOffset) {
+public abstract class ModTy extends SSTNode {
+    ModTy(int startOffset, int endOffset) {
         super(startOffset, endOffset);
-        this.value = value;
-        this.imaginary = imaginary;
     }
 
-    public static FloatLiteralSSTNode create(String rawValue, boolean imaginary, int startOffset, int endOffset) {
-        String value = rawValue.replace("_", "");
-        if (imaginary) {
-            value = value.substring(0, value.length() - 1);
+    public static final class TypeIgnore extends SSTNode {
+        final String tag;
+
+        public TypeIgnore(String tag, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+            this.tag = tag;
         }
-        return new FloatLiteralSSTNode(Double.parseDouble(value), imaginary, startOffset, endOffset);
-    }
 
-    public void negate() {
-        value = -value;
-    }
-
-    public boolean isNegative() {
-        if (value < 0.0) {
-            return true;
-        } else if (value > 0.0) {
-            return false;
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
         }
-        // it's zero
-        return Double.doubleToLongBits(value) == Double.doubleToLongBits(-0.0);
     }
 
-    public boolean isImaginary() {
-        return imaginary;
+    public static final class Module extends ModTy {
+        final StmtTy[] body;
+        final TypeIgnore[] typeIgnores;
+
+        public Module(StmtTy[] body, TypeIgnore[] typeIgnores, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+            this.body = body;
+            this.typeIgnores = typeIgnores;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 
-    @Override
-    public <T> T accept(SSTreeVisitor<T> visitor) {
-        return visitor.visit(this);
+    public static final class Interactive extends ModTy {
+        final StmtTy[] body;
+
+        public Interactive(StmtTy[] body, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+            this.body = body;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 
+    public static final class Expression extends ModTy {
+        final ExprTy body;
+
+        public Expression(ExprTy body, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+            this.body = body;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class FunctionType extends ModTy {
+        final ExprTy[] argTypes;
+        final ExprTy returns;
+
+        public FunctionType(ExprTy[] argTypes, ExprTy returns, int startOffset, int endOffset) {
+            super(startOffset, endOffset);
+            this.argTypes = argTypes;
+            this.returns = returns;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
 }

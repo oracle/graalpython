@@ -1,17 +1,17 @@
-BlockSSTNode[0, 26]
-    FunctionDefSSTNode[0, 26]
+Module[0, 26]
+    FunctionDef[0, 26]
         Name:fn
         ---- Function body of fn ----
-        AssignmentSSTNode[12, 26]
+        Assign[12, 26]
             LHS: 
-                GetAttributeSSTNode[12, 13] 
+                Attribute[12, 13] 
                     Receiver: 
-                        GetAttributeSSTNode[12, 13] 
+                        Attribute[12, 13] 
                             Receiver: 
-                                GetAttributeSSTNode[12, 13] 
-                                    Receiver: VarLookupSSTNode[12, 13] Value: "a"
+                                Attribute[12, 13] 
+                                    Receiver: Name[12, 13] Value: "a"
                                     Attr: b
                             Attr: c
                     Attr: d
-            RHS: IntegerLiteralSSTNode[22, 26] Value: "1222"
+            RHS: LONG[22, 26] Value: 1222
         ---- End of fn function ----

@@ -41,15 +41,28 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-public class TernaryIfSSTNode extends IfSSTNode {
+public final class ArgumentsTy extends SSTNode {
+    public final ArgTy[] posOnlyArgs;
+    public final ArgTy[] args;
+    public final ArgTy varArg;
+    public final ArgTy[] kwOnlyArgs;
+    public final ExprTy[] kwDefaults;
+    public final ArgTy kwArg;
+    public final ExprTy[] defaults;
 
-    public TernaryIfSSTNode(SSTNode test, SSTNode thenStatement, SSTNode elseStatement, int startOffset, int endOffset) {
-        super(test, thenStatement, elseStatement, startOffset, endOffset);
+    public ArgumentsTy(ArgTy[] posOnlyArgs, ArgTy[] args, ArgTy varArg, ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults, ArgTy kwArg, ExprTy[] defaults, int startOffset, int endOffset) {
+        super(startOffset, endOffset);
+        this.posOnlyArgs = posOnlyArgs;
+        this.args = args;
+        this.varArg = varArg;
+        this.kwOnlyArgs = kwOnlyArgs;
+        this.kwDefaults = kwDefaults;
+        this.kwArg = kwArg;
+        this.defaults = defaults;
     }
 
     @Override
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
 }

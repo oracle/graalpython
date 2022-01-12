@@ -41,18 +41,22 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-public class ImportSSTNode extends SSTNode {
-    protected final String name;
-    protected final String asName;
 
-    public ImportSSTNode(String name, String asName, int startOffset, int endOffset) {
+public final class ArgTy extends SSTNode {
+    public final String arg;
+    public final ExprTy annotation;
+    public final String typeComment;
+
+    public ArgTy(String arg, ExprTy annotation, String typeComment, int startOffset, int endOffset) {
         super(startOffset, endOffset);
-        this.name = name;
-        this.asName = asName;
+        this.arg = arg;
+        this.annotation = annotation;
+        this.typeComment = typeComment;
     }
 
     @Override
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
 }

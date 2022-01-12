@@ -1,17 +1,17 @@
-BlockSSTNode[0, 25]
-    AssignmentSSTNode[0, 5]
-        LHS: VarLookupSSTNode[0, 1] Value: "a" Store
-        RHS: IntegerLiteralSSTNode[4, 5] Value: "0"
-    AssignmentSSTNode[6, 11]
-        LHS: VarLookupSSTNode[6, 7] Value: "b" Store
-        RHS: VarLookupSSTNode[10, 11] Value: "a"
-    AssignmentSSTNode[12, 25]
-        LHS: VarLookupSSTNode[12, 13] Value: "c" Store
+Module[0, 25]
+    Assign[0, 5]
+        LHS: Name[0, 1] Value: "a" Store
+        RHS: LONG[4, 5] Value: 0
+    Assign[6, 11]
+        LHS: Name[6, 7] Value: "b" Store
+        RHS: Name[10, 11] Value: "a"
+    Assign[12, 25]
+        LHS: Name[12, 13] Value: "c" Store
         RHS: 
-            BinaryArithmeticSSTNode[16, 25]
-                Op: +
-                LHS: BinaryArithmeticSSTNode[16, 21]
-                    Op: +
-                    LHS: VarLookupSSTNode[16, 17] Value: "a"
-                    RHS: VarLookupSSTNode[20, 21] Value: "a"
-                RHS: VarLookupSSTNode[24, 25] Value: "b"
+            BinOp[16, 25]
+                Op: ADD
+                LHS: BinOp[16, 21]
+                    Op: ADD
+                    LHS: Name[16, 17] Value: "a"
+                    RHS: Name[20, 21] Value: "a"
+                RHS: Name[24, 25] Value: "b"

@@ -52,10 +52,10 @@ class NodeTypes(Enum):
 
 
 BASE_NODETYPES = {
-    "NAME": (NodeTypes.NAME_TOKEN, "VarLookupSSTNode"),
-    "NUMBER": (NodeTypes.NUMBER_TOKEN, "NumberLiteralSSTNode"),
-    "STRING": (NodeTypes.STRING_TOKEN, "SSTNode"),
-    "SOFT_KEYWORD": (NodeTypes.SOFT_KEYWORD, "VarLookupSSTNode"),
+    "NAME": (NodeTypes.NAME_TOKEN, "expr_ty"),
+    "NUMBER": (NodeTypes.NUMBER_TOKEN, "expr_ty"),
+    "STRING": (NodeTypes.STRING_TOKEN, "Token*"),
+    "SOFT_KEYWORD": (NodeTypes.SOFT_KEYWORD, "expr_ty"),
 }
 
 
@@ -95,30 +95,168 @@ class FunctionCall:
         return "".join(parts)
 
 
-# TODO this is temporary solution until all types in the grammar will not be java types
+TYPE_MAPPINGS = {
+    "AugOperator*": "ExprTy.BinOp.Operator",
+    "CmpopExprPair*": "CmpopExprPair",
+    "CmpopExprPair**": "CmpopExprPair[]",
+    "KeyValuePair*": "KeyValuePair",
+    "KeyValuePair**": "KeyValuePair[]",
+    "KeywordOrStarred*": "KeywordOrStarred",
+    "KeywordOrStarred**": "KeywordOrStarred[]",
+    "NameDefaultPair*": "NameDefaultPair",
+    "NameDefaultPair**": "NameDefaultPair[]",
+    "SlashWithDefault*": "SlashWithDefault",
+    "StarEtc*": "StarEtc",
+    "Token*": "Token",
+    "Token**": "Token[]",
+    "alias_ty": "AliasTy",
+    "alias_ty*": "AliasTy[]",
+    "alias_ty**": "AliasTy[]",
+    "arg_ty": "ArgTy",
+    "arg_ty*": "ArgTy[]",
+    "arguments_ty": "ArgumentsTy",
+    "asdl_alias_seq*": "AliasTy[]",
+    "asdl_arg_seq*": "ArgTy[]",
+    "asdl_comprehension_seq*": "ComprehensionTy[]",
+    "asdl_excepthandler_seq*": "StmtTy.Try.ExceptHandler[]",
+    "asdl_expr_seq*": "ExprTy[]",
+    "asdl_expr_seq**": "ExprTy[]",
+    "asdl_keyword_seq*": "KeywordTy[]",
+    "asdl_match_case_seq*": "StmtTy.Match.Case[]",
+    "asdl_stmt_seq*": "StmtTy[]",
+    "asdl_stmt_seq**": "StmtTy[]",
+    "asdl_withitem_seq*": "StmtTy.With.Item[]",
+    "comprehension_ty": "ComprehensionTy",
+    "comprehension_ty*": "ComprehensionTy[]",
+    "excepthandler_ty": "StmtTy.Try.ExceptHandler",
+    "excepthandler_ty*": "StmtTy.Try.ExceptHandler[]",
+    "expr_ty": "ExprTy",
+    "expr_ty*": "ExprTy[]",
+    "expr_ty**": "ExprTy[]",
+    "keyword_ty": "KeywordTy",
+    "keyword_ty*": "KeywordTy[]",
+    "keyword_ty**": "KeywordTy[]",
+    "match_case_ty": "StmtTy.Match.Case",
+    "match_case_ty*": "StmtTy.Match.Case[]",
+    "mod_ty": "ModTy",
+    "stmt_ty": "StmtTy",
+    "stmt_ty*": "StmtTy[]",
+    "stmt_ty**": "StmtTy[]",
+    "withitem_ty": "StmtTy.With.Item",
+    "withitem_ty*": "StmtTy.With.Item[]",
+    "withitem_ty**": "StmtTy.With.Item[]",
+
+    # Java return types here
+    "boolean": "boolean",
+    "int": "int",
+    "Object": "Object",
+    "Object*": "Object[]",
+}
+
 def _check_type(self, ttype: str) -> str:
     self._type_conversions = getattr(self, "_type_conversions", {})
-    if (
-            ttype and
-            type(ttype) == str and
-            "Token" not in ttype and
-            "SSTNode" not in ttype and
-            "Object" not in ttype and
-            "ArgDefListBuilder" not in ttype
-    ):
-        if "[]" in ttype or "*" in ttype:
-            self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
-            return "SSTNode[]"
-        if hasattr(self, "print"):
-            self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
-        return "SSTNode"
-    elif "SSTNode*" == ttype:
-        return "SSTNode[]"
-    elif ttype and '___' in ttype:          # another hack, the ___ is replaced with .
-        return ttype.replace('___', '.')
-    if ttype and ttype.endswith('*'):
-        ttype = ttype.replace("*", "[]")
-    return ttype
+    mappedType = TYPE_MAPPINGS.get(ttype, None)
+    if ttype and not mappedType:
+        self._type_conversions.setdefault(f"// TODO replacing {ttype} --> Object")
+        mappedType = "Object"
+    return mappedType
+
+
+# This class is a Java specific hack to get more specific types
+class TypingVisitor(GrammarVisitor):
+    def __init__(self, gen):
+        self.gen = gen
+
+    def visit_Rule(self, node):
+        type = getattr(node, "type", None)
+        if not type or type == "asdl_seq*": # heuristic: try to be more precise
+            node.type = self.visit(node.rhs)
+            if node.is_loop() or node.is_gather():
+                node.type += "*"
+        return node.type
+
+    def visit_NameLeaf(self, node):
+        return self.gen.callmakervisitor.visit_NameLeaf(node).return_type
+
+    def visit_StringLeaf(self, node):
+        return self.gen.callmakervisitor.visit_StringLeaf(node).return_type
+
+    def visit_Rhs(self, node):
+        types = getattr(node, "types", set())
+        if not types:
+            for alt in node.alts:
+                typ = self.visit(alt)
+                if typ:
+                    types.add(typ)
+            node.types = types
+        if len(types) == 1:
+            return next(iter(types))
+        else:
+            return "Object"
+
+    def visit_Alt(self, node):
+        types = getattr(node, "types", set())
+        if not types:
+            for item in node.items:
+                typ = self.visit(item)
+                if typ:
+                    types.add(typ)
+            if len(types) > 1:
+                types.discard("Token*") # heuristic. when tokens are in there, they are usually dropped
+            if len(types) == 2:
+                # might be a pair for gathering
+                typ1, typ2 = sorted(types)
+                if (f"{typ1}*" == typ2 or
+                    typ2.startswith(f"asdl_{typ1.replace('_ty', '')}_seq")):
+                    types = {typ2.replace("**", "*")}
+            node.types = types
+        if len(types) == 1:
+            return next(iter(types))
+        else:
+            return "Object"
+
+    def visit_NamedItem(self, node):
+        if not getattr(node, "type", None):
+            node.type = self.visit(node.item)
+        return node.type
+
+    def visit_Forced(self, node):
+        if not getattr(node, "type", None):
+            node.type = self.visit(node.node)
+        return node.type
+
+    def visit_PositiveLookahead(self, node):
+        return self.visit(node.node)
+
+    def visit_NegativeLookahead(self, node):
+        return self.visit(node.node)
+
+    def visit_Opt(self, node):
+        return self.visit(node.node)
+
+    def visit_Repeat0(self, node):
+        if not getattr(node, "type", None):
+            node_type = self.visit(node.node)
+            node.type = f"{node_type}*"
+        return node.type
+
+    def visit_Repeat1(self, node):
+        if not getattr(node, "type", None):
+            node_type = self.visit(node.node)
+            node.type = f"{node_type}*"
+        return node.type
+
+    def visit_Gather(self, node):
+        if not getattr(node, "type", None):
+            node_type = self.visit(node.node)
+            node.type = f"{node_type}*"
+        return node.type
+
+    def visit_Group(self, node):
+        return self.visit(node.rhs)
+
+    def visit_Cut(self, node):
+        return None
 
 
 class JavaCallMakerVisitor(GrammarVisitor):
@@ -141,7 +279,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable="_keyword",
             function="expect",
             arguments=[self.keyword_cache[keyword]],
-            return_type="Token",
+            return_type="Token*",
             nodetype=NodeTypes.KEYWORD,
             comment=f"token='{keyword}'",
         )
@@ -152,7 +290,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable="_keyword",
             function="expect_SOFT_KEYWORD",
             arguments=[value],
-            return_type="VarLookupSSTNode",
+            return_type="expr_ty",
             nodetype=NodeTypes.SOFT_KEYWORD,
             comment=f"soft_keyword='{value}'",
         )
@@ -174,19 +312,19 @@ class JavaCallMakerVisitor(GrammarVisitor):
                 function=f"expect",
                 arguments=["Token.Kind." + name],
                 nodetype=NodeTypes.GENERIC_TOKEN,
-                return_type="Token",
+                return_type="Token*",
                 comment=f"token='{name}'",
             )
         type = None
         rule = self.gen.all_rules.get(name.lower())
         if rule is not None:
-            type = "SSTNode[]" if rule.is_loop() or rule.is_gather() else rule.type
+            type = self.gen.typingvisitor.visit(rule) # Java type change
 
         return FunctionCall(
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type=_check_type(self, type),
+            return_type=type,
             comment=f"{node}",
         )
 
@@ -205,7 +343,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
                 function=f"expect",
                 arguments=[type],
                 nodetype=NodeTypes.GENERIC_TOKEN,
-                return_type="Token",
+                return_type="Token*",
                 comment=f"token='{val}'",
             )
 
@@ -218,6 +356,9 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
+            # Begin Java type hack
+            return_type=self.gen.typingvisitor.visit(node),
+            # End Java type hack
             comment=f"{node}",
         )
         return self.cache[node]
@@ -289,7 +430,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
                 function=f"expect_forced_token",
                 arguments=[type, f'"{val}"'],
                 nodetype=NodeTypes.GENERIC_TOKEN,
-                return_type="Token",
+                return_type="Token*",
                 comment=f"forced_token='{val}'",
             )
         else:
@@ -302,6 +443,9 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable="_opt_var",
             function=call.function,
             arguments=call.arguments,
+            # Begin Java type hack
+            return_type=call.return_type,
+            # End Java type hack
             force_true=True,
             comment=f"{node}",
         )
@@ -314,7 +458,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type="SSTNode[]",
+            return_type=self.gen.typingvisitor.visit(node), # Java type hack
             comment=f"{node}",
         )
         return self.cache[node]
@@ -327,7 +471,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type="SSTNode[]",
+            return_type=self.gen.typingvisitor.visit(node), # Java type hack
             comment=f"{node}",
         )
         return self.cache[node]
@@ -340,7 +484,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type= "SSTNode[]",
+            return_type=self.gen.typingvisitor.visit(node), # Java type hack
             comment=f"{node}",
         )
         return self.cache[node]
@@ -372,6 +516,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         skip_actions: bool = False,
     ):
         super().__init__(grammar, tokens, file)
+        self.typingvisitor = TypingVisitor(self) # Java type hack
         self.callmakervisitor = JavaCallMakerVisitor(self, exact_tokens, non_exact_tokens, self.print)
         self.lookahead_functions: Dict[str, FunctionCall] = {}
         self.debug = debug
@@ -535,7 +680,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     f"cache.putResult(_mark, {node.name.upper()}_ID, _res)", "_res"
                 )
                 self.print("reset(_mark);")
-                self.print(f"SSTNode _raw = {node.name}_raw();")
+                self.print(f"Object _raw = {node.name}_raw();")
                 self.print("if (_raw == null || mark() <= _resmark)")
                 with self.indent():
                     self.print("break;")
@@ -625,20 +770,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         rhs = node.flatten()
         if is_loop or is_gather:
             # Hacky way to get more specific Java type
-            collected_type = "SSTNode"
-            if len(node.rhs.alts) == 1:
-                items = [i.item for i in node.rhs.alts[0].items if isinstance(i.item, NameLeaf)]
-                if len(items) == 1:
-                    parent_rule = self.all_rules.get(items[0].value)
-                    if parent_rule and parent_rule.type:
-                        collected_type = _check_type(self, parent_rule.type).replace("[]", "")
-            self._collected_type.append(collected_type)
+            self._collected_type.append(_check_type(self, self.typingvisitor.visit(node)).replace("[]", ""))
             # end of hacky way to get better Java type
-            result_type = f"{collected_type}[]"
+            result_type = f"{self._collected_type[-1]}[]"
         elif node.type:
             result_type = _check_type(self, node.type)
         else:
-            result_type = "Object"
+            result_type = _check_type(self, self.typingvisitor.visit(node)) # Java type hack
 
         for line in str(node).splitlines():
             self.print(f"// {line}")
@@ -688,11 +826,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print(")")
 
     def emit_action(self, node: Alt, cleanup_code: Optional[str] = None) -> None:
-        node_action = str(node.action).replace(' ', '').replace ('newSST', 'new SST')
+        node_action = re.sub(r" ?([\.\(\),]) ?", r"\1", str(node.action))
+
         # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
-        if (node_action.startswith('factory') or
-            node_action.startswith('new') or
-            'SSTNode' in node_action
+        if (node_action.startswith('factory')
+            or node_action.startswith('new')
+            or "ExprTy." in node_action
+            or 'SSTNode' in node_action
             or len(node_action) == 1
             or node_action.startswith('finish')
             or node_action == "elem"
@@ -834,7 +974,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.local_variable_context():
             for item in node.items:
                 name, type = self.add_var(item)
-                types[name] = type
+                types[name] = _check_type(self, type)
         return types
 
     def add_var(self, node: NamedItem) -> Tuple[Optional[str], Optional[str]]:
@@ -842,7 +982,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         name = node.name if node.name else call.assigned_variable
         if name is not None:
             name = self.dedupe(name)
-        return_type = call.return_type if node.type is None else _check_type(self, node.type)
+        return_type = call.return_type if node.type is None else node.type
         return name, return_type
 
     # Java generator additions
@@ -861,9 +1001,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
             with self.indent():
                 self.print("int tmpPos = mark();")
-                return_type = "Object"
                 if call.return_type:
-                    return_type = call.return_type;
+                    return_type = _check_type(self, call.return_type)
                 else:
                     return_type = "Object"
                 if call.arguments:

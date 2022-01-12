@@ -1,8 +1,8 @@
-BlockSSTNode[0, 17]
-    AssignmentSSTNode[0, 17]
+Module[0, 17]
+    Assign[0, 17]
         LHS: 
-            VarLookupSSTNode[0, 1] Value: "a" Store
-            VarLookupSSTNode[4, 5] Value: "b" Store
-            VarLookupSSTNode[8, 9] Value: "c" Store
-            VarLookupSSTNode[12, 13] Value: "d" Store
-        RHS: VarLookupSSTNode[16, 17] Value: "e"
+            Name[0, 1] Value: "a" Store
+            Name[4, 5] Value: "b" Store
+            Name[8, 9] Value: "c" Store
+            Name[12, 13] Value: "d" Store
+        RHS: Name[16, 17] Value: "e"

@@ -42,103 +42,160 @@
 package com.oracle.graal.python.pegparser.sst;
 
 public interface SSTreeVisitor<T> {
-    T visit(AndSSTNode node);
+    default <T> T visitSequence(SSTNode[] sequence) {
+        if (sequence != null) {
+            for (SSTNode n : sequence) {
+                n.accept(this);
+            }
+        }
+        return null;
+    }
 
-    T visit(AnnAssignmentSSTNode node);
+    T visit(AliasTy node);
 
-    T visit(AnnotationSSTNode node);
+    T visit(ArgTy node);
 
-    T visit(AssertSSTNode node);
+    T visit(ArgumentsTy node);
 
-    T visit(AssignmentSSTNode node);
+    T visit(ComprehensionTy aThis);
 
-    T visit(AugAssignmentSSTNode node);
+    T visit(ExprTy.Attribute node);
 
-    T visit(BinaryArithmeticSSTNode node);
+    T visit(ExprTy.Await node);
 
-    T visit(BlockSSTNode node);
+    T visit(ExprTy.BinOp node);
 
-    T visit(BooleanLiteralSSTNode node);
+    T visit(ExprTy.BoolOp node);
 
-    T visit(CallSSTNode node);
+    T visit(ExprTy.Call node);
 
-    T visit(ClassSSTNode node);
+    T visit(ExprTy.Compare node);
 
-    T visit(CollectionSSTNode node);
+    T visit(ExprTy.Constant node);
 
-    T visit(ComparisonSSTNode node);
+    T visit(ExprTy.Dict node);
 
-    T visit(DecoratedSSTNode node);
+    T visit(ExprTy.DictComp node);
 
-    T visit(DecoratorSSTNode node);
+    T visit(ExprTy.FormattedValue node);
 
-    T visit(DelSSTNode node);
+    T visit(ExprTy.GeneratorExp node);
 
-    T visit(ExceptSSTNode node);
+    T visit(ExprTy.IfExp node);
 
-    T visit(ExpressionStatementSSTNode node);
+    T visit(ExprTy.JoinedStr node);
 
-    T visit(FloatLiteralSSTNode node);
+    T visit(ExprTy.Lambda node);
 
-    T visit(ForComprehensionSSTNode node);
+    T visit(ExprTy.List node);
 
-    T visit(ComprehensionSSTNode node);
+    T visit(ExprTy.ListComp node);
 
-    T visit(ForSSTNode node);
+    T visit(ExprTy.Name node);
 
-    T visit(FunctionDefSSTNode node);
+    T visit(ExprTy.NamedExpr node);
 
-    T visit(GetAttributeSSTNode node);
+    T visit(ExprTy.Set node);
 
-    T visit(IfSSTNode node);
+    T visit(ExprTy.SetComp node);
 
-    T visit(ImportFromSSTNode node);
+    T visit(ExprTy.Slice node);
 
-    T visit(ImportSSTNode node);
+    T visit(ExprTy.Starred node);
 
-    T visit(LambdaSSTNode node);
+    T visit(ExprTy.Subscript node);
 
-    T visit(NotSSTNode node);
+    T visit(ExprTy.Tuple node);
 
-    T visit(NumberLiteralSSTNode.IntegerLiteralSSTNode node);
+    T visit(ExprTy.UnaryOp node);
 
-    T visit(NumberLiteralSSTNode.BigIntegerLiteralSSTNode node);
+    T visit(ExprTy.Yield node);
 
-    T visit(OrSSTNode node);
+    T visit(ExprTy.YieldFrom node);
 
-    T visit(RaiseSSTNode node);
+    T visit(KeywordTy node);
 
-    T visit(ReturnSSTNode node);
+    T visit(ModTy.Expression node);
 
-    T visit(SimpleSSTNode node);
+    T visit(ModTy.FunctionType node);
 
-    T visit(SliceSSTNode node);
+    T visit(ModTy.Interactive node);
 
-    T visit(StarSSTNode node);
+    T visit(ModTy.Module node);
 
-    T visit(StringLiteralSSTNode.RawStringLiteralSSTNode node);
+    T visit(ModTy.TypeIgnore node);
 
-    T visit(StringLiteralSSTNode.BytesLiteralSSTNode node);
+    T visit(StmtTy.AnnAssign node);
 
-    T visit(StringLiteralSSTNode.FormatExpressionSSTNode node);
+    T visit(StmtTy.Assert node);
 
-    T visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node);
+    T visit(StmtTy.Assign node);
 
-    T visit(SubscriptSSTNode node);
+    T visit(StmtTy.AsyncFor node);
 
-    T visit(TernaryIfSSTNode node);
+    T visit(StmtTy.AsyncFunctionDef node);
 
-    T visit(TrySSTNode node);
+    T visit(StmtTy.AsyncWith node);
 
-    T visit(UnarySSTNode node);
+    T visit(StmtTy.AugAssign node);
 
-    T visit(VarLookupSSTNode node);
+    T visit(StmtTy.ClassDef node);
 
-    T visit(WhileSSTNode node);
+    T visit(StmtTy.Delete node);
 
-    T visit(WithSSTNode node);
+    T visit(StmtTy.Expr node);
 
-    T visit(YieldExpressionSSTNode node);
+    T visit(StmtTy.For node);
 
-    T visit(KeyValueSSTNode node);
+    T visit(StmtTy.FunctionDef node);
+
+    T visit(StmtTy.Global node);
+
+    T visit(StmtTy.If node);
+
+    T visit(StmtTy.Import node);
+
+    T visit(StmtTy.ImportFrom node);
+
+    T visit(StmtTy.Match node);
+
+    T visit(StmtTy.Match.Case node);
+
+    T visit(StmtTy.Match.Pattern.MatchAs node);
+
+    T visit(StmtTy.Match.Pattern.MatchClass node);
+
+    T visit(StmtTy.Match.Pattern.MatchMapping node);
+
+    T visit(StmtTy.Match.Pattern.MatchOr node);
+
+    T visit(StmtTy.Match.Pattern.MatchSequence node);
+
+    T visit(StmtTy.Match.Pattern.MatchSingleton node);
+
+    T visit(StmtTy.Match.Pattern.MatchStar node);
+
+    T visit(StmtTy.Match.Pattern.MatchValue node);
+
+    T visit(StmtTy.NonLocal node);
+
+    T visit(StmtTy.Raise node);
+
+    T visit(StmtTy.Return node);
+
+    T visit(StmtTy.Try node);
+
+    T visit(StmtTy.Try.ExceptHandler node);
+
+    T visit(StmtTy.While node);
+
+    T visit(StmtTy.With node);
+
+    T visit(StmtTy.With.Item node);
+
+    T visit(StmtTy.Break aThis);
+
+    T visit(StmtTy.Continue aThis);
+
+    T visit(StmtTy.Pass aThis);
 }

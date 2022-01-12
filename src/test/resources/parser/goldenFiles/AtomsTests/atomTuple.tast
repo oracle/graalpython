@@ -1,4 +1,4 @@
-BlockSSTNode[0, 4]
-    CollectionSSTNode[0, 4] Tuple
+Module[0, 4]
+    Tuple[0, 4]
         Values:
-            VarLookupSSTNode[1, 2] Value: "a"
+            Name[1, 2] Value: "a"

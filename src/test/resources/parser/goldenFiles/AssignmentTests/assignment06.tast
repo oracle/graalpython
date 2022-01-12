@@ -1,12 +1,12 @@
-BlockSSTNode[0, 29]
-    FunctionDefSSTNode[0, 29]
+Module[0, 29]
+    FunctionDef[0, 29]
         Name:fn
         ---- Function body of fn ----
-        AssignmentSSTNode[12, 29]
+        Assign[12, 29]
             LHS: 
-                VarLookupSSTNode[12, 13] Value: "a" Store
-                VarLookupSSTNode[16, 17] Value: "b" Store
-                VarLookupSSTNode[20, 21] Value: "c" Store
-                VarLookupSSTNode[24, 25] Value: "d" Store
-            RHS: VarLookupSSTNode[28, 29] Value: "e"
+                Name[12, 13] Value: "a" Store
+                Name[16, 17] Value: "b" Store
+                Name[20, 21] Value: "c" Store
+                Name[24, 25] Value: "d" Store
+            RHS: Name[28, 29] Value: "e"
         ---- End of fn function ----

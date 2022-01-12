@@ -1,7 +1,7 @@
-BlockSSTNode[0, 7]
-    AssignmentSSTNode[0, 7]
+Module[0, 7]
+    Assign[0, 7]
         LHS: 
-            GetAttributeSSTNode[0, 1] 
-                Receiver: VarLookupSSTNode[0, 1] Value: "a"
+            Attribute[0, 1] 
+                Receiver: Name[0, 1] Value: "a"
                 Attr: b
-        RHS: IntegerLiteralSSTNode[6, 7] Value: "1"
+        RHS: LONG[6, 7] Value: 1

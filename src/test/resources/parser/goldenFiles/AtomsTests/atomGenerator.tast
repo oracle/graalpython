@@ -1,9 +1,8 @@
-BlockSSTNode[0, 17]
-    ComprehensionSSTNode[0, 17] Generator
-        Element: CollectionSSTNode[1, 5] Tuple
+Module[0, 17]
+    GeneratorExp[0, 17]
+        Element: Tuple[1, 5]
             Values:
-                VarLookupSSTNode[2, 3] Value: "a"
-        ForComprehensionSSTNode[6, 16]
-            Target: VarLookupSSTNode[10, 11] Value: "a" Store
-            Iterator: VarLookupSSTNode[15, 16] Value: "b"
-            Ifs:
+                Name[2, 3] Value: "a"
+        ComprehensionTy[6, 16]
+            Target: Name[10, 11] Value: "a" Store
+            Iterator: Name[15, 16] Value: "b"

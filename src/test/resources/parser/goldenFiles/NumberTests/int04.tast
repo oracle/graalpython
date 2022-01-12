@@ -1,7 +1,7 @@
-BlockSSTNode[0, 7]
-    BinaryArithmeticSSTNode[0, 7]
-        Op: ==
-        LHS: VarLookupSSTNode[0, 1] Value: "h"
-        RHS: UnarySSTNode[5, 7]
-            Op: -
-            Value: IntegerLiteralSSTNode[6, 7] Value: "1"
+Module[0, 7]
+    Compare[0, 7]
+        LHS: Name[0, 1] Value: "h"
+        Op: EQ
+        RHS: UnaryOp[5, 7]
+            Op: SUB
+            Value: LONG[6, 7] Value: 1

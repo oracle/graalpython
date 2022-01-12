@@ -43,54 +43,16 @@ package com.oracle.graal.python.pegparser.scope;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeType;
-import com.oracle.graal.python.pegparser.sst.AndSSTNode;
-import com.oracle.graal.python.pegparser.sst.AnnAssignmentSSTNode;
-import com.oracle.graal.python.pegparser.sst.AnnotationSSTNode;
-import com.oracle.graal.python.pegparser.sst.AssertSSTNode;
-import com.oracle.graal.python.pegparser.sst.AssignmentSSTNode;
-import com.oracle.graal.python.pegparser.sst.AugAssignmentSSTNode;
-import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
-import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
-import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
-import com.oracle.graal.python.pegparser.sst.CallSSTNode;
-import com.oracle.graal.python.pegparser.sst.ClassSSTNode;
-import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
-import com.oracle.graal.python.pegparser.sst.ComparisonSSTNode;
-import com.oracle.graal.python.pegparser.sst.ComprehensionSSTNode;
-import com.oracle.graal.python.pegparser.sst.DecoratedSSTNode;
-import com.oracle.graal.python.pegparser.sst.DecoratorSSTNode;
-import com.oracle.graal.python.pegparser.sst.DelSSTNode;
-import com.oracle.graal.python.pegparser.sst.ExceptSSTNode;
-import com.oracle.graal.python.pegparser.sst.ExpressionStatementSSTNode;
-import com.oracle.graal.python.pegparser.sst.FloatLiteralSSTNode;
-import com.oracle.graal.python.pegparser.sst.ForComprehensionSSTNode;
-import com.oracle.graal.python.pegparser.sst.ForSSTNode;
-import com.oracle.graal.python.pegparser.sst.FunctionDefSSTNode;
-import com.oracle.graal.python.pegparser.sst.GetAttributeSSTNode;
-import com.oracle.graal.python.pegparser.sst.IfSSTNode;
-import com.oracle.graal.python.pegparser.sst.ImportFromSSTNode;
-import com.oracle.graal.python.pegparser.sst.ImportSSTNode;
-import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
-import com.oracle.graal.python.pegparser.sst.LambdaSSTNode;
-import com.oracle.graal.python.pegparser.sst.NotSSTNode;
-import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
-import com.oracle.graal.python.pegparser.sst.OrSSTNode;
-import com.oracle.graal.python.pegparser.sst.RaiseSSTNode;
-import com.oracle.graal.python.pegparser.sst.ReturnSSTNode;
+import com.oracle.graal.python.pegparser.sst.AliasTy;
+import com.oracle.graal.python.pegparser.sst.ArgTy;
+import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
+import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.KeywordTy;
+import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
-import com.oracle.graal.python.pegparser.sst.SimpleSSTNode;
-import com.oracle.graal.python.pegparser.sst.SliceSSTNode;
-import com.oracle.graal.python.pegparser.sst.StarSSTNode;
-import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
-import com.oracle.graal.python.pegparser.sst.SubscriptSSTNode;
-import com.oracle.graal.python.pegparser.sst.TernaryIfSSTNode;
-import com.oracle.graal.python.pegparser.sst.TrySSTNode;
-import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
-import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
-import com.oracle.graal.python.pegparser.sst.WhileSSTNode;
-import com.oracle.graal.python.pegparser.sst.WithSSTNode;
-import com.oracle.graal.python.pegparser.sst.YieldExpressionSSTNode;
+import com.oracle.graal.python.pegparser.sst.StmtTy;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -109,8 +71,7 @@ public class ScopeEnvironment {
     final Scope topScope;
     final HashMap<SSTNode, Scope> blocks;
 
-    // TODO: accept only a module sst node
-    public ScopeEnvironment(BlockSSTNode moduleNode) {
+    public ScopeEnvironment(ModTy moduleNode) {
         blocks = new HashMap<>();
         // First pass, similar to the entry point `symtable_enter_block' on CPython
         FirstPassVisitor visitor = new FirstPassVisitor(moduleNode);
@@ -275,12 +236,12 @@ public class ScopeEnvironment {
     }
 
     private final class FirstPassVisitor implements SSTreeVisitor<Void> {
-        private Stack<Scope> stack;
+        private final Stack<Scope> stack;
         private final HashMap<String, EnumSet<DefUse>> globals;
         private Scope currentScope;
         private String currentClassName;
 
-        private FirstPassVisitor(SSTNode moduleNode) {
+        private FirstPassVisitor(ModTy moduleNode) {
             this.stack = new Stack<>();
             enterBlock(Scope.ScopeType.Module, moduleNode);
             this.globals = this.currentScope.symbols;
@@ -359,72 +320,243 @@ public class ScopeEnvironment {
         }
 
         @Override
-        public Void visit(AndSSTNode node) {
-            for (SSTNode n : node.getValues()) {
-                n.accept(this);
+        public Void visit(AliasTy node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ArgTy node) {
+            addDef(node.arg, DefUse.DefParam);
+            return null;
+        }
+
+        @Override
+        public Void visit(ArgumentsTy node) {
+            visitSequence(node.posOnlyArgs);
+            visitSequence(node.args);
+            visitSequence(node.kwOnlyArgs);
+            if (node.varArg != null) {
+                node.varArg.accept(this);
+                currentScope.flags.add(ScopeFlags.HasVarArgs);
+            }
+            if (node.kwArg != null) {
+                node.kwArg.accept(this);
+                currentScope.flags.add(ScopeFlags.HasVarKeywords);
             }
             return null;
         }
 
         @Override
-        public Void visit(AnnAssignmentSSTNode node) {
+        public Void visit(ExprTy.Attribute node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(AnnotationSSTNode node) {
+        public Void visit(ExprTy.Await node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(AssertSSTNode node) {
+        public Void visit(ExprTy.BinOp node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(AssignmentSSTNode node) {
+        public Void visit(ExprTy.BoolOp node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(AugAssignmentSSTNode node) {
+        public Void visit(ExprTy.Call node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(BinaryArithmeticSSTNode node) {
+        public Void visit(ExprTy.Compare node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(BlockSSTNode node) {
+        public Void visit(ExprTy.Constant node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(BooleanLiteralSSTNode node) {
+        public Void visit(ExprTy.Dict node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(CallSSTNode node) {
+        public Void visit(ExprTy.DictComp node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(ClassSSTNode node) {
-            addDef(node.getName(), DefUse.DefLocal);
-            for (SSTNode n : node.getBaseClasses().getArgs()) {
-                n.accept(this);
-            }
-            for (SSTNode n : node.getBaseClasses().getKwArg()) {
-                n.accept(this);
-            }
+        public Void visit(ExprTy.FormattedValue node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.GeneratorExp node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.IfExp node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.JoinedStr node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.Lambda node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.List node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.ListComp node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.Name node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.NamedExpr node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.Set node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.SetComp node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.Slice node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.Starred node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.Subscript node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.Tuple node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.UnaryOp node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.Yield node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ExprTy.YieldFrom node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(KeywordTy node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ModTy.Expression node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ModTy.FunctionType node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ModTy.Interactive node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ModTy.Module node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(ModTy.TypeIgnore node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.AnnAssign node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.Assert node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.Assign node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.AsyncFor node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.AsyncFunctionDef node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.AsyncWith node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.AugAssign node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Void visit(StmtTy.ClassDef node) {
+            addDef(node.name, DefUse.DefLocal);
+            visitSequence(node.bases);
+            visitSequence(node.keywords);
+            visitSequence(node.decoratorList);
             String tmp = currentClassName;
+            enterBlock(ScopeType.Class, node);
             try {
-                enterBlock(ScopeType.Class, node);
-                currentClassName = node.getName();
-                node.getBody().accept(this);
+                currentClassName = node.name;
+                visitSequence(node.body);
             } finally {
                 currentClassName = tmp;
                 exitBlock();
@@ -433,96 +565,31 @@ public class ScopeEnvironment {
         }
 
         @Override
-        public Void visit(CollectionSSTNode node) {
+        public Void visit(StmtTy.Delete node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(ComparisonSSTNode node) {
+        public Void visit(StmtTy.Expr node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(DecoratedSSTNode node) {
+        public Void visit(StmtTy.For node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(DecoratorSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public Void visit(DelSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public Void visit(ExceptSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public Void visit(ExpressionStatementSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public Void visit(FloatLiteralSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public Void visit(ForComprehensionSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public Void visit(ComprehensionSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public Void visit(ForSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public Void visit(FunctionDefSSTNode node) {
-            addDef(node.getName(), DefUse.DefLocal);
-            SSTNode[] defaults = node.getArgBuilder().getDefaults();
-            if (defaults != null) {
-                for (SSTNode n : defaults) {
-                    n.accept(this);
-                }
-            }
-            SSTNode[] kwDefaults = node.getArgBuilder().getKwDefaults();
-            if (kwDefaults != null) {
-                for (SSTNode n : kwDefaults) {
-                    n.accept(this);
-                }
-            }
+        public Void visit(StmtTy.FunctionDef node) {
+            addDef(node.name, DefUse.DefLocal);
+            visitSequence(node.args.defaults);
+            visitSequence(node.args.kwDefaults);
             // TODO: visit annotations
-            SSTNode[] decorators = node.getDecorators();
-            if (decorators != null) {
-                for (SSTNode n : decorators) {
-                    n.accept(this);
-                }
-            }
+            visitSequence(node.decoratorList);
+            enterBlock(ScopeType.Function, node);
             try {
-                enterBlock(ScopeType.Function, node);
-                for (String n : node.getArgBuilder().getParameterNames()) {
-                    addDef(n, DefUse.DefParam);
-                }
-                if (node.getArgBuilder().hasSplat()) {
-                    currentScope.flags.add(ScopeFlags.HasVarArgs);
-                }
-                if (node.getArgBuilder().hasKwSplat()) {
-                    currentScope.flags.add(ScopeFlags.HasVarKeywords);
-                }
-                for (SSTNode n : node.getBody()) {
-                    n.accept(this);
-                }
+                node.args.accept(this);
+                visitSequence(node.body);
             } finally {
                 exitBlock();
             }
@@ -530,137 +597,132 @@ public class ScopeEnvironment {
         }
 
         @Override
-        public Void visit(GetAttributeSSTNode node) {
+        public Void visit(StmtTy.Global node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(IfSSTNode node) {
+        public Void visit(StmtTy.If node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(ImportFromSSTNode node) {
+        public Void visit(StmtTy.Import node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(ImportSSTNode node) {
+        public Void visit(StmtTy.ImportFrom node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(LambdaSSTNode node) {
+        public Void visit(StmtTy.Match node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(NotSSTNode node) {
+        public Void visit(StmtTy.Match.Case node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(NumberLiteralSSTNode.IntegerLiteralSSTNode node) {
+        public Void visit(StmtTy.Match.Pattern.MatchAs node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(NumberLiteralSSTNode.BigIntegerLiteralSSTNode node) {
+        public Void visit(StmtTy.Match.Pattern.MatchClass node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(OrSSTNode node) {
+        public Void visit(StmtTy.Match.Pattern.MatchMapping node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(RaiseSSTNode node) {
+        public Void visit(StmtTy.Match.Pattern.MatchOr node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(ReturnSSTNode node) {
+        public Void visit(StmtTy.Match.Pattern.MatchSequence node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(SimpleSSTNode node) {
+        public Void visit(StmtTy.Match.Pattern.MatchSingleton node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(SliceSSTNode node) {
+        public Void visit(StmtTy.Match.Pattern.MatchStar node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StarSSTNode node) {
+        public Void visit(StmtTy.Match.Pattern.MatchValue node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StringLiteralSSTNode.RawStringLiteralSSTNode node) {
+        public Void visit(StmtTy.NonLocal node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
+        public Void visit(StmtTy.Raise node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
+        public Void visit(StmtTy.Return node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
+        public Void visit(StmtTy.Try node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(SubscriptSSTNode node) {
+        public Void visit(StmtTy.Try.ExceptHandler node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(TernaryIfSSTNode node) {
+        public Void visit(StmtTy.While node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(TrySSTNode node) {
+        public Void visit(StmtTy.With node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(UnarySSTNode node) {
+        public Void visit(StmtTy.With.Item node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(VarLookupSSTNode node) {
+        public Void visit(ComprehensionTy aThis) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(WhileSSTNode node) {
+        public Void visit(StmtTy.Break aThis) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(WithSSTNode node) {
+        public Void visit(StmtTy.Continue aThis) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(YieldExpressionSSTNode node) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public Void visit(KeyValueSSTNode node) {
+        public Void visit(StmtTy.Pass aThis) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
     }
