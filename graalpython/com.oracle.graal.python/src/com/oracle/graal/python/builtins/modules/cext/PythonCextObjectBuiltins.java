@@ -70,14 +70,16 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
-import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -481,8 +483,16 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     abstract static class PyObjectGenericGetAttrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getAttr(VirtualFrame frame, Object obj, Object attr,
-                        @Cached PyObjectGetAttr getAttrNode) {
-            return getAttrNode.execute(frame, obj, attr);
+                        @Cached PyObjectLookupAttr lookupSetAttrNode,
+                        @Cached CallBinaryMethodNode callNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object setAttrCallable = lookupSetAttrNode.execute(frame, getCore().lookupType(PythonBuiltinClassType.PythonObject), SpecialMethodNames.__GETATTRIBUTE__);
+                return callNode.executeObject(frame, setAttrCallable, obj, attr);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getContext().getNativeNull();
+            }
         }
     }
 
@@ -491,10 +501,12 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     abstract static class PyObjectGenericSetAttrNode extends PythonTernaryBuiltinNode {
         @Specialization
         int setAttr(VirtualFrame frame, Object obj, Object attr, Object value,
-                        @Cached PyObjectSetAttr setAttrNode,
+                        @Cached PyObjectLookupAttr lookupSetAttrNode,
+                        @Cached CallTernaryMethodNode callNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                setAttrNode.execute(frame, obj, attr, value);
+                Object setAttrCallable = lookupSetAttrNode.execute(frame, getCore().lookupType(PythonBuiltinClassType.PythonObject), __SETATTR__);
+                callNode.execute(frame, setAttrCallable, obj, attr, value);
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
