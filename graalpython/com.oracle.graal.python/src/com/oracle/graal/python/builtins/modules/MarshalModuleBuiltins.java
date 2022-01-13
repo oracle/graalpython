@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -79,7 +79,6 @@ import com.oracle.graal.python.lib.PySetCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyTupleCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -200,16 +199,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LoadsNode extends PythonUnaryClinicBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         Object doit(VirtualFrame frame, Object buffer,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             try {
                 return Marshal.load(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } catch (NumberFormatException e) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
                 throw raise(me.type, me.message, me.arguments);
-            }  finally {
+            } finally {
                 bufferLib.release(buffer, frame, this);
             }
         }
