@@ -200,7 +200,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "bytes", conversion = ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     abstract static class LoadsNode extends PythonUnaryClinicBuiltinNode {
-        @TruffleBoundary
+
         @Specialization(limit = "3")
         Object doit(VirtualFrame frame, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
