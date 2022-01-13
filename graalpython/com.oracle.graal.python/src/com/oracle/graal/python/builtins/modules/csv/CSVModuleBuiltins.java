@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -531,8 +531,13 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.S_MUST_BE_STRING_NOT_S, name, getType.execute(valueObj));
             }
 
-            if (charValue.length() != 1 && charValue.codePointCount(0, charValue.length()) != 1) {
+            if (charValue.length() > 1 && charValue.codePointCount(0, charValue.length()) > 1) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_ONE_CHARACTER_STRING, name);
+            }
+
+            // CPython supports empty quotechars and escapechars until 3.10.
+            if (charValue.length() == 0) {
+                return NOT_SET;
             }
 
             return charValue;
@@ -592,7 +597,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             }
 
             if (!pyLongCheckExactNode.execute(valueObj)) {
-                throw raise(TypeError, ErrorMessages.MUST_BE_INTEGER, name);
+                throw raise(TypeError, ErrorMessages.MUST_BE_INTEGER_QUOTED_ATTR, name);
             }
 
             int value = pyLongAsIntNode.execute(frame, valueObj);
