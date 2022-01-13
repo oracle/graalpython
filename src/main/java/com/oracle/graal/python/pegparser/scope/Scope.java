@@ -213,7 +213,7 @@ public class Scope {
         return type == ScopeType.Class;
     }
 
-    public HashMap<String, Integer> getSymbolByType(EnumSet<DefUse> flags, int start) {
+    public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> flags, int start) {
         int i = start;
         HashMap<String, Integer> mapping = new HashMap<>();
         for (String key : getSortedSymbols()) {

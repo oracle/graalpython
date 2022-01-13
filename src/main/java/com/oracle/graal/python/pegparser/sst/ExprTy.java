@@ -426,6 +426,16 @@ public abstract class ExprTy extends SSTNode {
             this.kind = Kind.COMPLEX;
         }
 
+        public long getReal() {
+            assert kind == Kind.COMPLEX;
+            return Double.doubleToLongBits((Double)value);
+        }
+
+        public long getImaginary() {
+            assert kind == Kind.COMPLEX;
+            return longValue;
+        }
+
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
