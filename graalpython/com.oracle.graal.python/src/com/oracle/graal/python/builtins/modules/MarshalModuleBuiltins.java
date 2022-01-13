@@ -180,8 +180,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, Object file,
                         @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib) {
             Object buffer = callNode.executeObject(frame, file, 0);
             if (!bufferLib.hasBuffer(buffer)) {
                 throw raise(PythonBuiltinClassType.TypeError, "file.read() returned not bytes but %p", buffer);
@@ -189,9 +188,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             try {
                 return Marshal.loadFile(file);
             } catch (NumberFormatException e) {
-                throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raise.raise(me.type, me.message, me.arguments);
+                throw raise(me.type, me.message, me.arguments);
             }
         }
     }
@@ -203,14 +202,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         Object doit(VirtualFrame frame, Object buffer,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 return Marshal.load(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } catch (NumberFormatException e) {
-                throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raise.raise(me.type, me.message, me.arguments);
+                throw raise(me.type, me.message, me.arguments);
             }  finally {
                 bufferLib.release(buffer, frame, this);
             }
