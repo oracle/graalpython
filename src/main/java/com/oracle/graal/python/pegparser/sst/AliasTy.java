@@ -43,8 +43,8 @@ package com.oracle.graal.python.pegparser.sst;
 
 
 public final class AliasTy extends SSTNode {
-    final String name;
-    final String asName;
+    public final String name;
+    public final String asName;
 
     public AliasTy(String name, String asName, int startOffset, int endOffset) {
         super(startOffset, endOffset);
