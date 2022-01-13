@@ -75,7 +75,7 @@ class TestUnicodeCharacters(unittest.TestCase):
                              expected + writer.dialect.lineterminator)
 
 class TestDialectValidity(unittest.TestCase):
-    # CPython supports empty quotechars and escapechars until 3.10.
+    # CPython supports empty quotechars and escapechars until inclusive 3.10.
     def test_quoting(self):
         class MyDialect(csv.Dialect):
             delimiter = ";"

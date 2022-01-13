@@ -48,6 +48,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -92,6 +93,11 @@ import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_csv")
 public final class CSVModuleBuiltins extends PythonBuiltins {
+
+    static {
+        // See comment about Python 3.10 in #getChar() and graalpython/test/test_csv.py
+        assert PythonLanguage.MINOR <= 10;
+    }
 
     static final String WRITE = "write";
     static final String NOT_SET = "NOT_SET";
@@ -535,7 +541,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.MUST_BE_ONE_CHARACTER_STRING, name);
             }
 
-            // CPython supports empty quotechars and escapechars until 3.10.
+            // CPython supports empty quotechars and escapechars until inclusive 3.10.
             if (charValue.length() == 0) {
                 return NOT_SET;
             }
