@@ -1849,7 +1849,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_NewTypeDict")
+    @Builtin(name = "PyTruffle_NewTypeDict", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffleNewTypeDict extends PythonUnaryBuiltinNode {
