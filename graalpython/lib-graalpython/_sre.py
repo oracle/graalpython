@@ -349,12 +349,11 @@ class Pattern():
         if self.__binary and isinstance(input, str):
             raise TypeError("cannot use a bytes pattern on a string-like object")
 
-    def __tregex_compile(self, other_pattern=None, extra_flags="", extra_options=""):
-        pattern = other_pattern or self.pattern
-        flags = self.__flags_str + extra_flags
-        if (pattern, flags, extra_options) not in self.__compiled_regexes:
+    def __tregex_compile(self, method="search", must_advance=False):
+        if (method, must_advance) not in self.__compiled_regexes:
             try:
-                self.__compiled_regexes[(pattern, flags, extra_options)] = tregex_compile_internal(pattern, flags, extra_options, fallback_compiler)
+                extra_options = f"PythonMethod={method},MustAdvance={'true' if must_advance else 'false'}"
+                self.__compiled_regexes[(method, must_advance)] = tregex_compile_internal(self.pattern, self.__flags_str, extra_options, fallback_compiler)
             except ValueError as e:
                 if len(e.args) == 2:
                     msg = e.args[0]
@@ -367,7 +366,7 @@ class Pattern():
                         raise ValueError(msg) from None
                     raise error(msg, self.pattern, e.args[1]) from None
                 raise
-        return self.__compiled_regexes[(pattern, flags, extra_options)]
+        return self.__compiled_regexes[(method, must_advance)]
 
     def __repr__(self):
         flags = self.flags
@@ -405,11 +404,11 @@ class Pattern():
     def __deepcopy__(self, memo):
         return self
 
-    def _search(self, string, pos, endpos, other_pattern=None, sticky=False, must_advance=False):
+    def _search(self, string, pos, endpos, method="search", must_advance=False):
         _check_pos(pos)
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
-        compiled_regex = self.__tregex_compile(other_pattern=other_pattern, extra_flags="y" if sticky else "", extra_options="MustAdvance=true" if must_advance else "")
+        compiled_regex = self.__tregex_compile(method=method, must_advance=must_advance)
         result = tregex_call_exec(compiled_regex.exec, substring, pos)
         if result.isMatch:
             return Match(self, pos, endpos, result, string, self.__indexgroup)
@@ -417,13 +416,13 @@ class Pattern():
             return None
 
     def search(self, string, pos=0, endpos=maxsize):
-        return self._search(string, pos, endpos)
+        return self._search(string, pos, endpos, method="search")
 
     def match(self, string, pos=0, endpos=maxsize):
-        return self._search(string, pos, endpos, sticky=True)
+        return self._search(string, pos, endpos, method="match")
 
     def fullmatch(self, string, pos=0, endpos=maxsize):
-        return self._search(string, pos, endpos, sticky=True, other_pattern=_append_end_assert(self.pattern))
+        return self._search(string, pos, endpos, method="fullmatch")
 
     def __sanitize_out_type(self, elem):
         """Helper function for findall and split. Ensures that the type of the elements of the
@@ -444,7 +443,7 @@ class Pattern():
     def __finditer_gen(self, string, substring, pos, endpos):
         must_advance = False
         while pos <= endpos:
-            compiled_regex = self.__tregex_compile(extra_options = "MustAdvance=true" if must_advance else "")
+            compiled_regex = self.__tregex_compile(must_advance=must_advance)
             result = tregex_call_exec(compiled_regex.exec, substring, pos)
             if not result.isMatch:
                 break
@@ -462,7 +461,7 @@ class Pattern():
         group_count = self.__tregex_compile().groupCount
         must_advance = False
         while pos <= endpos:
-            compiled_regex = self.__tregex_compile(extra_options = "MustAdvance=true" if must_advance else "")
+            compiled_regex = self.__tregex_compile(must_advance=must_advance)
             result = tregex_call_exec(compiled_regex.exec, substring, pos)
             if not result.isMatch:
                 break
@@ -499,7 +498,7 @@ class Pattern():
                     literal = True
 
         while (count == 0 or n < count) and pos <= len(string):
-            compiled_regex = self.__tregex_compile(extra_options = "MustAdvance=true" if must_advance else "")
+            compiled_regex = self.__tregex_compile(must_advance=must_advance)
             match_result = tregex_call_exec(compiled_regex.exec, string, pos)
             if not match_result.isMatch:
                 break
@@ -529,7 +528,7 @@ class Pattern():
         search_pos = 0
         must_advance = False
         while (maxsplit == 0 or n < maxsplit) and search_pos <= len(string):
-            compiled_regex = self.__tregex_compile(extra_options = "MustAdvance=true" if must_advance else "")
+            compiled_regex = self.__tregex_compile(must_advance=must_advance)
             match_result = tregex_call_exec(compiled_regex.exec, string, search_pos)
             if not match_result.isMatch:
                 break
@@ -562,10 +561,10 @@ class SREScanner(object):
         self._end = end
         self._must_advance = False
 
-    def _match_search(self, sticky):
+    def _match_search(self, method):
         if self._start > len(self._string):
             return None
-        match = self.pattern._search(self._string, self._start, self._end, sticky = sticky, must_advance = self._must_advance)
+        match = self.pattern._search(self._string, self._start, self._end, method=method, must_advance=self._must_advance)
         if match is None:
             self._start += 1
         else:
@@ -574,10 +573,10 @@ class SREScanner(object):
         return match
 
     def match(self):
-        return self._match_search(True)
+        return self._match_search("match")
 
     def search(self):
-        return self._match_search(False)
+        return self._match_search("search")
 
 
 _t_compile = Pattern
