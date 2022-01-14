@@ -689,7 +689,7 @@ atom[expr_ty]:
 
 strings[expr_ty] (memo): a=STRING+ { this.concatenateStrings(a) }
 list[expr_ty]:
-    | '[' a=[star_named_expressions] ']' { factory.createList(a, startToken.startOffset, endToken.endOffset) }
+    | '[' a=[star_named_expressions] ']' { factory.createList(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 listcomp[expr_ty]:
     | '[' a=named_expression b=for_if_clauses ']' { factory.createListComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
