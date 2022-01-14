@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -449,6 +449,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
     public static final String MUST_BE_INTEGER = "%s must be an integer";
+    public static final String MUST_BE_INTEGER_QUOTED_ATTR = "\"%s\" must be an integer";
     public static final String MUST_BE_INTEGER_NOT_P = "%s must be an integer, not %p";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
     public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
