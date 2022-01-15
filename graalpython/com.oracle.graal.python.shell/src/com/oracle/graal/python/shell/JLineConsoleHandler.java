@@ -103,9 +103,9 @@ public class JLineConsoleHandler extends ConsoleHandler {
             builder.completer(new Completer() {
                 @Override
                 public void complete(LineReader r, ParsedLine pl, List<Candidate> candidates) {
-                    String line = pl.line();
-                    if (line != null) {
-                        List<String> l = completer.apply(line);
+                    String word = pl.word();
+                    if (word != null) {
+                        List<String> l = completer.apply(word);
                         for (String value : l) {
                             candidates.add(new Candidate(value, value, null, null, null, null, false));
                         }
@@ -115,6 +115,7 @@ public class JLineConsoleHandler extends ConsoleHandler {
         }
         reader = builder.build();
         reader.option(LineReader.Option.DISABLE_EVENT_EXPANSION, true);
+        reader.option(LineReader.Option.INSERT_TAB, true);
         reader.setVariable(LineReader.COMMENT_BEGIN, "#");
 
         // numpad bindings
