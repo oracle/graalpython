@@ -118,9 +118,10 @@ public class JLineConsoleHandler extends ConsoleHandler {
         builder.parser(new DefaultParser() {
             @Override
             public boolean isDelimiterChar(CharSequence buffer, int pos) {
-                // Never count a last character of a char sequence as delimiter. The REPL completer implemented
-                // by `rlcompleter.py` adds a trailing whitespace to keywords, e.g. 'raise '. The default DefaultParser
-                // implementation always escaped this whitespace leading to wrong completions like 'raise\ '.
+                // Never count a last character of a char sequence as delimiter. The REPL completer
+                // implemented by `rlcompleter.py` adds a trailing whitespace to keywords,
+                // e.g. 'raise '. The default DefaultParser implementation always escaped this
+                // whitespace leading to wrong completions like 'raise\ '.
                 if (pos == buffer.length() - 1) {
                     return false;
                 }
