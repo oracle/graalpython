@@ -346,11 +346,9 @@ public abstract class Python3Core extends ParserErrorCallback {
     private static String[] initializeCoreFiles() {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
-                        "object",
                         "type",
                         "_imp",
                         "function",
-                        "method",
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
