@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,6 +67,7 @@ import org.graalvm.shadowed.org.jline.reader.LineReaderBuilder;
 import org.graalvm.shadowed.org.jline.reader.Macro;
 import org.graalvm.shadowed.org.jline.reader.ParsedLine;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
+import org.graalvm.shadowed.org.jline.reader.impl.DefaultParser;
 import org.graalvm.shadowed.org.jline.terminal.Terminal;
 import org.graalvm.shadowed.org.jline.terminal.TerminalBuilder;
 
@@ -113,6 +114,20 @@ public class JLineConsoleHandler extends ConsoleHandler {
                 }
             });
         }
+
+        builder.parser(new DefaultParser() {
+            @Override
+            public boolean isDelimiterChar(CharSequence buffer, int pos) {
+                // Never count a last character of a char sequence as delimiter. The REPL completer implemented
+                // by `rlcompleter.py` adds a trailing whitespace to keywords, e.g. 'raise '. The default DefaultParser
+                // implementation always escaped this whitespace leading to wrong completions like 'raise\ '.
+                if (pos == buffer.length() - 1) {
+                    return false;
+                }
+                return Character.isWhitespace(buffer.charAt(pos));
+            }
+        });
+
         reader = builder.build();
         reader.option(LineReader.Option.DISABLE_EVENT_EXPANSION, true);
         reader.option(LineReader.Option.INSERT_TAB, true);
