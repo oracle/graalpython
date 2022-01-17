@@ -43,6 +43,15 @@ from . import CPyExtType, CPyExtTestCase, unhandled_error_compare, CPyExtFunctio
 __dir__ = __file__.rpartition("/")[0]
 
 
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
+
 def _reference_classmethod(args):
     if isinstance(args[0], type(list.append)):
         return classmethod(args[0])()
@@ -102,6 +111,16 @@ class TestMethod(object):
         assert obj.meth_static_noargs() == (None, None)
         assert obj.meth_static_varargs(1, 2, 3) == (None, (1, 2, 3))
         assert obj.meth_static_varargs_keywords(1, 2, 3, a=1, b=2) == (None, (1, 2, 3), {'a': 1, 'b': 2})
+
+        assert_raises(TypeError, obj.meth_noargs, 1)
+        assert_raises(TypeError, obj.meth_o)
+        assert_raises(TypeError, obj.meth_o, 1, 2)
+        assert_raises(TypeError, obj.meth_class_noargs, 1)
+        assert_raises(TypeError, obj.meth_class_o)
+        assert_raises(TypeError, obj.meth_class_o, 1, 2)
+        assert_raises(TypeError, obj.meth_static_noargs, 1)
+        assert_raises(TypeError, obj.meth_static_o)
+        assert_raises(TypeError, obj.meth_static_o, 1, 2)
 
 
 class TestPyMethod(CPyExtTestCase):

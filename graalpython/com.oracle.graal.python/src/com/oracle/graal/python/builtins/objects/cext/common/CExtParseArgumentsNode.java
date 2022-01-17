@@ -155,13 +155,14 @@ public abstract class CExtParseArgumentsNode {
                         @Cached(value = "getChars(format)", allowUncached = true, dimensions = 1) char[] chars,
                         @Cached("createConvertArgNodes(cachedFormat)") ConvertArgNode[] convertArgNodes,
                         @Cached HashingCollectionNodes.LenNode kwdsLenNode,
+                        @Cached SequenceStorageNodes.LenNode argvLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 PDict kwdsDict = null;
                 if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
                     kwdsDict = (PDict) kwds;
                 }
-                doParsingExploded(funName, argv, kwdsDict, chars, kwdnames, varargs, nativeConext, convertArgNodes, raiseNode);
+                doParsingExploded(funName, argv, kwdsDict, chars, kwdnames, varargs, nativeConext, convertArgNodes, argvLenNode, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
@@ -173,6 +174,7 @@ public abstract class CExtParseArgumentsNode {
         int doGeneric(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs, CExtContext nativeContext,
                         @Cached ConvertArgNode convertArgNode,
                         @Cached HashingCollectionNodes.LenNode kwdsLenNode,
+                        @Cached SequenceStorageNodes.LenNode argvLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 char[] chars = getChars(format);
@@ -184,9 +186,18 @@ public abstract class CExtParseArgumentsNode {
                 for (int i = 0; i < format.length(); i++) {
                     state = convertArg(state, kwdsDict, chars, i, kwdnames, varargs, convertArgNode, raiseNode);
                 }
+                checkExcessArgs(argv, argvLenNode, state, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
+            }
+        }
+
+        private static void checkExcessArgs(PTuple argv, SequenceStorageNodes.LenNode argvLenNode, ParserState state, PRaiseNativeNode raiseNode) {
+            int argvLen = argvLenNode.execute(argv.getSequenceStorage());
+            if (argvLen > state.v.argnum) {
+                raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, state.v.argnum, argvLen);
+                throw ParseArgumentsException.raise();
             }
         }
 
@@ -199,13 +210,14 @@ public abstract class CExtParseArgumentsNode {
 
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         private static void doParsingExploded(String funName, PTuple argv, Object kwds, char[] chars, Object kwdnames, Object varargs, CExtContext nativeContext,
-                        ConvertArgNode[] convertArgNodes, PRaiseNativeNode raiseNode)
+                        ConvertArgNode[] convertArgNodes, SequenceStorageNodes.LenNode argvLenNode, PRaiseNativeNode raiseNode)
                         throws InteropException, ParseArgumentsException {
             CompilerAsserts.partialEvaluationConstant(chars.length);
             ParserState state = new ParserState(funName, new PositionalArgStack(argv, null), nativeContext);
             for (int i = 0; i < chars.length; i++) {
                 state = convertArg(state, kwds, chars, i, kwdnames, varargs, convertArgNodes[i], raiseNode);
             }
+            checkExcessArgs(argv, argvLenNode, state, raiseNode);
         }
 
         private static ParserState convertArg(ParserState state, Object kwds, char[] format, int format_idx, Object kwdnames, Object varargs, ConvertArgNode convertArgNode,
