@@ -1,0 +1,27 @@
+ModuleRootNode Name: <module> SourceSection: [0,23]`try:↵  1↵except:↵  p...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,23]`try:↵  1↵except:↵  p...`
+    ExpressionWithSideEffect SourceSection: [0,23]`try:↵  1↵except:↵  p...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        TryFinallyNode SourceSection: [0,23]`try:↵  1↵except:↵  p...`
+          TryExceptNode SourceSection: None
+            ExpressionStatementNode SourceSection: None
+              PrintExpressionNode SourceSection: None
+                GetAttributeNode SourceSection: None
+                  GetFixedAttributeNodeGen SourceSection: None
+                    Key: displayhook
+                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
+                      Op: __getattribute__
+                CallNodeGen SourceSection: None
+                IntegerLiteralNode SourceSection: [7,8]`1`
+                  Value: 1
+            ExceptNode SourceSection: None
+              ExpressionStatementNode SourceSection: [19,23]`pass`
+                EmptyNode SourceSection: [19,23]`pass`
+            BlockNode SourceSection: None
