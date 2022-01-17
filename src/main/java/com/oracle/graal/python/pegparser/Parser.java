@@ -11042,7 +11042,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createTuple((ExprTy [ ])a,startToken.startOffset,endToken.endOffset);
+                _res = factory.createTuple((ExprTy [ ])a,ExprContext.Load,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
                 cache.putResult(_mark, TUPLE_ID, _res);
                 level--;

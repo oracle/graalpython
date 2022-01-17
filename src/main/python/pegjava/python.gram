@@ -695,7 +695,7 @@ listcomp[expr_ty]:
     | invalid_comprehension
 tuple[expr_ty]:
     | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, z) } ] ')' {
-        factory.createTuple((ExprTy[])a, startToken.startOffset, endToken.endOffset) }
+        factory.createTuple((ExprTy[])a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 group[expr_ty]:
     | '(' a=(yield_expr | named_expression) ')' { a }
     | invalid_group
