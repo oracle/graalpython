@@ -92,6 +92,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
@@ -184,6 +185,13 @@ public abstract class CExtParseArgumentsNode {
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
             }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        int error(String funName, Object argv, Object kwds, Object format, Object kwdnames, Object varargs, CExtContext nativeContext,
+                        @Cached PRaiseNativeNode raiseNode) {
+            return raiseNode.raiseIntWithoutFrame(0, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
         }
 
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)

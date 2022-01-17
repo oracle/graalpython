@@ -61,8 +61,8 @@ def _reference_typecheck(args, expected_type):
 
 
 def _reference_parse_O(args):
-    assert isinstance(args[0], tuple)
-    assert isinstance(args[1], dict)
+    if not isinstance(args[0], tuple) or not isinstance(args[1], dict):
+        raise SystemError
     if args[0]:
         return args[0][0]
     elif "arg0" in args[1]:
@@ -130,6 +130,8 @@ class TestModsupport(CPyExtTestCase):
             (tuple(), {"arg0": 'helloworld'}),
             (tuple(), dict()),
             (tuple(), {"arg1": 'helloworld'}),
+            (1, dict()),
+            (tuple(), 1),
         ),
         code='''
         static PyObject* wrap_PyArg_ParseTupleAndKeywords(PyObject* argTuple, PyObject* kwargs) {
