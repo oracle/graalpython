@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,8 @@ import java.util.Locale;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -78,6 +80,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     static final int LC_MONETARY = 4;
     static final int LC_NUMERIC = 1;
     static final int LC_TIME = 2;
+    static final int CHAR_MAX = 127;
 
     @TruffleBoundary
     public static Locale fromPosix(String posixLocaleId) {
@@ -161,6 +164,22 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
         return LocaleModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(Python3Core core) {
+        builtinConstants.put("LC_ALL", 6);
+        builtinConstants.put("LC_COLLATE", 3);
+        builtinConstants.put("LC_CTYPE", 0);
+        builtinConstants.put("LC_MESSAGES", 5);
+        builtinConstants.put("LC_MONETARY", 4);
+        builtinConstants.put("LC_NUMERIC", 1);
+        builtinConstants.put("LC_TIME", 2);
+        builtinConstants.put("CHAR_MAX", 127);
+
+        builtinConstants.put("Error", PythonBuiltinClassType.ValueError);
+
+        super.initialize(core);
     }
 
     // _locale.localeconv()
