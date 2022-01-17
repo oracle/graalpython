@@ -75,8 +75,10 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -139,6 +141,7 @@ public abstract class CExtParseArgumentsNode {
     static final char FORMAT_LOWER_W = 'w';
     static final char FORMAT_LOWER_P = 'p';
     static final char FORMAT_PAR_OPEN = '(';
+    static final char FORMAT_PAR_CLOSE = ')';
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
@@ -241,15 +244,8 @@ public abstract class CExtParseArgumentsNode {
                 case FORMAT_LOWER_W:
                 case FORMAT_LOWER_P:
                 case FORMAT_PAR_OPEN:
+                case FORMAT_PAR_CLOSE:
                     return convertArgNode.execute(state, kwds, c, format, format_idx, kwdnames, varargs);
-                case ')':
-                    if (state.v.prev == null) {
-                        CompilerDirectives.transferToInterpreter();
-                        raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, ErrorMessages.LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG);
-                        throw ParseArgumentsException.raise();
-                    } else {
-                        return state.close();
-                    }
                 case '|':
                     if (state.restOptional) {
                         raiseNode.raiseIntWithoutFrame(0, SystemError, "Invalid format string (| specified twice)", c);
@@ -1039,8 +1035,10 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization(guards = "c == FORMAT_PAR_OPEN")
-        static ParserState doPredicate(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doParOpen(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, @SuppressWarnings("unused") Object varargs,
+                        @Cached PySequenceCheckNode sequenceCheckNode,
+                        @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
@@ -1049,14 +1047,33 @@ public abstract class CExtParseArgumentsNode {
             if (skipOptionalArg(arg, state.restOptional)) {
                 return state.open(new PositionalArgStack(factory.createEmptyTuple(), state.v));
             } else {
-                // n.b.: there is a small gap in this check: In theory, there could be
-                // native subclass of tuple. But since we do not support this anyway, the
-                // instanceof test is just the most efficient way to do it.
-                if (!(arg instanceof PTuple)) {
+                if (!sequenceCheckNode.execute(arg)) {
                     throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_GOT_P, "tuple", arg);
                 }
-                return state.open(new PositionalArgStack((PTuple) arg, state.v));
+                try {
+                    return state.open(new PositionalArgStack(constructTupleNode.execute(null, arg), state.v));
+                } catch (PException e) {
+                    throw raise(raiseNode, TypeError, "failed to convert sequence");
+                }
             }
+        }
+
+        @Specialization(guards = "c == FORMAT_PAR_CLOSE")
+        static ParserState doParClose(ParserState state, @SuppressWarnings("unused") Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format,
+                        @SuppressWarnings("unused") int format_idx,
+                        @SuppressWarnings("unused") Object kwdnames, @SuppressWarnings("unused") Object varargs,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws ParseArgumentsException {
+            if (state.v.prev == null) {
+                CompilerDirectives.transferToInterpreter();
+                raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, ErrorMessages.LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG);
+                throw ParseArgumentsException.raise();
+            }
+            int len = lenNode.execute(state.v.argv.getSequenceStorage());
+            if (len != state.v.argnum) {
+                throw raise(raiseNode, TypeError, "must be sequence of length %d, not %d", state.v.argnum, len);
+            }
+            return state.close();
         }
 
         private static ParseArgumentsException raise(PRaiseNativeNode raiseNode, PythonBuiltinClassType errType, String format, Object... arguments) {

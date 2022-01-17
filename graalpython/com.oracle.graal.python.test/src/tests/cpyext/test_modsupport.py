@@ -70,6 +70,16 @@ def _reference_parse_O(args):
     raise TypeError
 
 
+def _reference_parse_tuple(args):
+    try:
+        t = args[0][0]
+        if len(t) != 2:
+            raise TypeError
+        return t[0], t[1]
+    except Exception:
+        raise TypeError
+
+
 class Indexable:
     def __int__(self):
         return 456
@@ -77,6 +87,26 @@ class Indexable:
     def __index__(self):
         return 123
 
+
+class MySeq:
+    def __len__(self):
+        return 2
+
+    def __getitem__(self, item):
+        if item == 0:
+            return 'x'
+        elif item == 1:
+            return 'y'
+        else:
+            raise IndexError
+
+
+class BadSeq:
+    def __len__(self):
+        return 2
+
+    def __getitem__(self, item):
+        raise IndexError
 
 class TestModsupport(CPyExtTestCase):
     def compile_module(self, name):
@@ -148,6 +178,34 @@ class TestModsupport(CPyExtTestCase):
         argspec="OO",
         arguments=["PyObject* argTuple", "PyObject* kwargs"],
         callfunction="wrap_PyArg_ParseTupleAndKeywords",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_tuple = CPyExtFunction(
+        _reference_parse_tuple,
+        lambda: (
+            ((("a", "b"),),),
+            ((["a", "b"],),),
+            ((MySeq(),),),
+            ((["a"],),),
+            ((["a", "b", "c"],),),
+            ((1,),),
+            ((BadSeq(),),),
+        ),
+        code='''
+        static PyObject* wrap_PyArg_ParseTuple(PyObject* argTuple) {
+            PyObject* a = NULL;
+            PyObject* b = NULL;
+            if (PyArg_ParseTuple(argTuple, "(OO)", &a, &b) == 0) {
+                return NULL;
+            }
+            return Py_BuildValue("(OO)", a, b);
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_ParseTuple",
         cmpfunc=unhandled_error_compare
     )
 
