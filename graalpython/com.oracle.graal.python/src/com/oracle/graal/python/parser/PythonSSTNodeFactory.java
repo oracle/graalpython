@@ -167,7 +167,7 @@ public final class PythonSSTNodeFactory {
     public SSTNode createImportFrom(String from, String[][] asNames, int startOffset, int endOffset) {
         if (asNames != null) {
             for (String[] asName : asNames) {
-                if (from.equals(__FUTURE__) && asName[0].equals("annotations")) {
+                if (__FUTURE__.equals(from) && asName[0].equals("annotations")) {
                     futureAnnotations = true;
                 }
                 scopeEnvironment.createLocal(asName[1] == null ? asName[0] : asName[1]);
