@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -346,11 +346,9 @@ public abstract class Python3Core extends ParserErrorCallback {
     private static String[] initializeCoreFiles() {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
-                        "object",
                         "type",
                         "_imp",
                         "function",
-                        "method",
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
@@ -358,7 +356,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         PythonCextBuiltins.PYTHON_CEXT,
                         "bytearray",
                         "unicodedata",
-                        "_locale",
                         "_sre",
                         "function",
                         "_sysconfig",
@@ -367,8 +364,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "java",
                         "_contextvars",
                         "pip_hook",
-                        "_struct",
-                        "_posixshmem"));
+                        "_struct"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
