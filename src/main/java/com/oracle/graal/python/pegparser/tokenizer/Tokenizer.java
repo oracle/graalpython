@@ -55,7 +55,7 @@ public class Tokenizer {
         INTERACTIVE,
         TYPE_COMMENT
     }
-    
+
     /**
      * type_comment_prefix
      *
@@ -541,6 +541,7 @@ public class Tokenizer {
     /**
      * tok_get, PyTokenizer_Get
      */
+    @SuppressWarnings("fallthrough")
     public Token next() {
         int c = 0;
         boolean blankline = false;
@@ -668,7 +669,7 @@ public class Tokenizer {
                     indentationOfAsyncDef = 0;
                     asyncDefFollowedByNewline = false;
                 }
-                
+
             case LABEL_AGAIN:
                 // skip spaces
                 do {
@@ -1253,8 +1254,8 @@ public class Tokenizer {
         int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
         int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
         int endLineno = currentLineNumber;
-        int colOffset = (tokenStart >= lineStart) ? (int)(tokenStart - lineStart) : -1;
-        int endColOffset = (nextCharIndex >= lineStartIndex) ? (int)(nextCharIndex - lineStartIndex) : -1;
+        int colOffset = (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
+        int endColOffset = (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
         return new Token(kind, tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset, extraData);
     }
 

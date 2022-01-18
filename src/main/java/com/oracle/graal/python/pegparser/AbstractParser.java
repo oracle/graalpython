@@ -70,7 +70,7 @@ abstract class AbstractParser {
     protected boolean callInvalidRules = false;
     private ExprTy.Name cachedDummyName;
 
-    protected final RuleResultCache<Object> cache = new RuleResultCache(this);
+    protected final RuleResultCache<Object> cache = new RuleResultCache<>(this);
     protected final Map<Integer, String> comments = new LinkedHashMap<>();
 
     private final Object[][][] reservedKeywords;

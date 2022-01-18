@@ -563,6 +563,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         license = self.grammar.metas.get("license")
         if license:
             self.print(license)
+        self.print("// Checkstyle: stop")
+        self.print("// JaCoCo Exclude")
+        self.print("//@formatter:off")
+        self.print(f"// Generated from {filename} by pegen")
         package = self.grammar.metas.get("package")
         if package:
             self.print("package %s;" % package.strip("\n"))
@@ -570,7 +574,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         if imports:
             self.print(imports)
         className = os.path.splitext(os.path.basename(self.file.name))[0]
-        self.print('@SuppressWarnings("all")')
+        self.print('@SuppressWarnings({"all", "cast"})')
         self.print("public final class %s extends AbstractParser {" % className)
         # Java needs a few fields declarations. Also, we're now in a class
         self.level += 1

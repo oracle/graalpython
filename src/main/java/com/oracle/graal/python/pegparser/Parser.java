@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,10 @@
  * SOFTWARE.
  */
 
+// Checkstyle: stop
+// JaCoCo Exclude
+//@formatter:off
+// Generated from src/main/python/pegjava/python.gram by pegen
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.*;
@@ -52,7 +56,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@SuppressWarnings("all")
+@SuppressWarnings({"all", "cast"})
 public final class Parser extends AbstractParser {
 
     // parser fields
