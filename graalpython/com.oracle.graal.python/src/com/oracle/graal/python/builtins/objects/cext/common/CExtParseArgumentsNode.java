@@ -1082,7 +1082,8 @@ public abstract class CExtParseArgumentsNode {
                 throw ParseArgumentsException.raise();
             }
             int len = lenNode.execute(state.v.argv.getSequenceStorage());
-            if (len != state.v.argnum) {
+            // Only check for excess. Too few arguments are checked when obtaining them
+            if (len > state.v.argnum) {
                 throw raise(raiseNode, TypeError, "must be sequence of length %d, not %d", state.v.argnum, len);
             }
             return state.close();
