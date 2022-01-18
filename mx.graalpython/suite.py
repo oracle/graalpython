@@ -151,6 +151,7 @@ suite = {
               "version" : "RELEASE120-1",
             },
         },
+
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -220,6 +221,15 @@ suite = {
             "vpath": False,
         },
 
+        "com.oracle.graal.python.pegparser": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src/main/java"],
+            "javaCompliance": "8+",
+            "dependencies": [
+                "ICU4J-69.1",
+            ],
+        },
+
         "com.oracle.graal.python.shell": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -260,6 +270,7 @@ suite = {
             "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
+                "com.oracle.graal.python.pegparser",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
