@@ -52,7 +52,7 @@
 #     raise ImportError("No such frozen object named %s" % name)
 
 
-is_frozen_package = get_frozen_object
+#is_frozen_package = get_frozen_object
 
 
 @__graalpython__.builtin
