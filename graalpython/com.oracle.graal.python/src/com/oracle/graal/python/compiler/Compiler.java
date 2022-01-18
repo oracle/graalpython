@@ -95,15 +95,16 @@ public class Compiler implements SSTreeVisitor<Void> {
     // helpers
 
     private void enterScope(String name, CompilationScope scopeType, SSTNode node) {
-        enterScope(name, scopeType, node, 0, 0, 0);
+        enterScope(name, scopeType, node, 0, 0, 0, false, false);
     }
 
-    private void enterScope(String name, CompilationScope scopeType, SSTNode node, int argc, int pargc, int kwargc) {
+    private void enterScope(String name, CompilationScope scopeType, SSTNode node, int argc, int pargc, int kwargc,
+                    boolean hasSplat, boolean hasKwSplat) {
         if (unit != null) {
             stack.add(unit);
         }
         unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, argc, pargc, kwargc,
-                        node.getStartOffset(), node.getEndOffset());
+                        hasSplat, hasKwSplat, node.getStartOffset(), node.getEndOffset());
         nestingLevel++;
     }
 
@@ -1033,7 +1034,8 @@ public class Compiler implements SSTreeVisitor<Void> {
         // TODO: visit annotations
 
         enterScope(node.name, CompilationScope.Function, node,
-                        node.args.args.length, node.args.posOnlyArgs.length, node.args.kwOnlyArgs.length);
+                        node.args.args.length, node.args.posOnlyArgs.length, node.args.kwOnlyArgs.length,
+                        node.args.varArg != null, node.args.kwArg != null);
 
         CodeUnit code;
         try {

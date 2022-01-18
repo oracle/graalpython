@@ -66,6 +66,8 @@ public final class CompilationUnit {
     final int argCount;
     final int positionalOnlyArgCount;
     final int kwOnlyArgCount;
+    final boolean takesVarArgs;
+    final boolean takesVarKeywordArgs;
 
     final Block startBlock = new Block();
     final Scope scope;
@@ -78,13 +80,15 @@ public final class CompilationUnit {
     int startOffset;
     int endOffset;
 
-    CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, int startOffset, int endOffset) {
+    CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs, boolean takesVarKeywordArgs, int startOffset, int endOffset) {
         this.scopeType = scopeType;
         this.scope = scope;
         this.name = name;
         this.argCount = argCount;
         this.positionalOnlyArgCount = positionalOnlyArgCount;
         this.kwOnlyArgCount = kwOnlyArgCount;
+        this.takesVarArgs = takesVarArgs;
+        this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.startOffset = startOffset;
         this.endOffset = endOffset;
 
@@ -183,6 +187,9 @@ public final class CompilationUnit {
         }
 
         assert flags < 256;
+        flags |= takesVarArgs ? CodeUnit.HAS_VAR_ARGS : 0;
+        flags |= takesVarKeywordArgs ? CodeUnit.HAS_VAR_KW_ARGS : 0;
+
         assert exceptionHandlerStack.isEmpty();
 
         return new CodeUnit(qualName == null ? name : qualName, filename,

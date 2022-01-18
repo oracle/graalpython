@@ -137,6 +137,14 @@ public final class CodeUnit {
         return overallOffset;
     }
 
+    public boolean takesVarKeywordArgs() {
+        return (flags & HAS_VAR_KW_ARGS) != 0;
+    }
+
+    public boolean takesVarArgs() {
+        return (flags & HAS_VAR_ARGS) != 0;
+    }
+
     @SuppressWarnings("fallthrough")
     @Override
     public String toString() {
