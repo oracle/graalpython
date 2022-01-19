@@ -990,20 +990,28 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.FunctionDef node) {
-        for (ArgTy arg : node.args.posOnlyArgs) {
-            checkForbiddenName(arg.arg, ExprContext.Store);
-        }
-        for (ArgTy arg : node.args.args) {
-            checkForbiddenName(arg.arg, ExprContext.Store);
-        }
-        for (ArgTy arg : node.args.kwOnlyArgs) {
-            checkForbiddenName(arg.arg, ExprContext.Store);
-        }
-        if (node.args.varArg != null) {
-            checkForbiddenName(node.args.varArg.arg, ExprContext.Store);
-        }
-        if (node.args.kwArg != null) {
-            checkForbiddenName(node.args.kwArg.arg, ExprContext.Store);
+        if (node.args != null) {
+            if (node.args.posOnlyArgs != null) {
+                for (ArgTy arg : node.args.posOnlyArgs) {
+                    checkForbiddenName(arg.arg, ExprContext.Store);
+                }
+            }
+            if (node.args.args != null) {
+                for (ArgTy arg : node.args.args) {
+                    checkForbiddenName(arg.arg, ExprContext.Store);
+                }
+            }
+            if (node.args.kwOnlyArgs != null) {
+                for (ArgTy arg : node.args.kwOnlyArgs) {
+                    checkForbiddenName(arg.arg, ExprContext.Store);
+                }
+            }
+            if (node.args.varArg != null) {
+                checkForbiddenName(node.args.varArg.arg, ExprContext.Store);
+            }
+            if (node.args.kwArg != null) {
+                checkForbiddenName(node.args.kwArg.arg, ExprContext.Store);
+            }
         }
 
         // visit decorators
@@ -1011,31 +1019,44 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         // visit defaults outside the function scope
         int hasDefaults = 0;
-        if (node.args.defaults != null && node.args.defaults.length > 0) {
-            collectIntoArray(node.args.defaults);
-            hasDefaults = CodeUnit.HAS_DEFAULTS;
-        }
         int hasKwDefaults = 0;
-        if (node.args.kwDefaults != null && node.args.kwDefaults.length > 0) {
-            setOffset(node.args.kwDefaults[0]);
-            addOp(MAKE_HASHMAP);
-            for (int i = 0; i < node.args.kwOnlyArgs.length; i++) {
-                ArgTy arg = node.args.kwOnlyArgs[i];
-                ExprTy def = node.args.kwDefaults[i];
-                if (def != null) {
-                    String mangled = ScopeEnvironment.mangle(unit.privateName, arg.arg);
-                    def.accept(this);
-                    addOp(PUT_INTO_HASHMAP, addObject(unit.constants, mangled));
-                }
+        if (node.args != null) {
+            if (node.args.defaults != null && node.args.defaults.length > 0) {
+                collectIntoArray(node.args.defaults);
+                hasDefaults = CodeUnit.HAS_DEFAULTS;
             }
-            hasKwDefaults = CodeUnit.HAS_KWONLY_DEFAULTS;
+            if (node.args.kwDefaults != null && node.args.kwDefaults.length > 0) {
+                setOffset(node.args.kwDefaults[0]);
+                addOp(MAKE_HASHMAP);
+                for (int i = 0; i < node.args.kwOnlyArgs.length; i++) {
+                    ArgTy arg = node.args.kwOnlyArgs[i];
+                    ExprTy def = node.args.kwDefaults[i];
+                    if (def != null) {
+                        String mangled = ScopeEnvironment.mangle(unit.privateName, arg.arg);
+                        def.accept(this);
+                        addOp(PUT_INTO_HASHMAP, addObject(unit.constants, mangled));
+                    }
+                }
+                hasKwDefaults = CodeUnit.HAS_KWONLY_DEFAULTS;
+            }
         }
 
         // TODO: visit annotations
 
-        enterScope(node.name, CompilationScope.Function, node,
-                        node.args.args.length, node.args.posOnlyArgs.length, node.args.kwOnlyArgs.length,
-                        node.args.varArg != null, node.args.kwArg != null);
+        int argc, pargc, kwargc;
+        boolean splat, kwSplat;
+        if (node.args == null) {
+            argc = pargc = kwargc = 0;
+            splat = kwSplat = false;
+        } else {
+            argc = node.args.args == null ? 0 : node.args.args.length;
+            pargc = node.args.posOnlyArgs == null ? 0 : node.args.posOnlyArgs.length;
+            kwargc = node.args.kwOnlyArgs == null ? 0 : node.args.kwOnlyArgs.length;
+            splat = node.args.varArg != null;
+            kwSplat = node.args.kwArg != null;
+        }
+
+        enterScope(node.name, CompilationScope.Function, node, argc, pargc, kwargc, splat, kwSplat);
 
         CodeUnit code;
         try {
