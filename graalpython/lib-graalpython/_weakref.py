@@ -49,9 +49,9 @@ def _proxy_get(proxy):
 
 
 class ProxyType(object):
-    def __init__(self, other):
+    def __init__(self, other, callback=None):
         import weakref
-        object.__setattr__(self, "_weakref", weakref.ref(other))
+        object.__setattr__(self, "_weakref", weakref.ref(other, callback))
 
     def __getattribute__(self, key):
         return getattr(_proxy_get(self), key)
