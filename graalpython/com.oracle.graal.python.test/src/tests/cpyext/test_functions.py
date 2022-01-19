@@ -440,7 +440,7 @@ class TestPyObject(CPyExtTestCase):
         ),
         arguments=["PyObject* object"],
         argspec="O",
-        resultspec="i",
+        resultspec="n",
         cmpfunc=unhandled_error_compare
     )
     __PyObject_GetAttr_ARGS = (
