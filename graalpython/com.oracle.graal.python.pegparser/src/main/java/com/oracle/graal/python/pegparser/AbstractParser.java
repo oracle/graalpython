@@ -546,14 +546,14 @@ abstract class AbstractParser {
      * _PyPegen_seq_extract_starred_exprs
      */
     static ExprTy[] extractStarredExpressions(KeywordOrStarred[] kwds) {
-        return Arrays.stream(kwds).filter(n -> !n.isKeyword).map(n -> (ExprTy)n.element).toList().toArray(EMPTY_EXPR);
+        return Arrays.stream(kwds).filter(n -> !n.isKeyword).map(n -> (ExprTy)n.element).toArray(ExprTy[]::new);
     }
 
     /**
      * _PyPegen_seq_delete_starred_exprs
      */
     static KeywordTy[] deleteStarredExpressions(KeywordOrStarred[] kwds) {
-        return Arrays.stream(kwds).filter(n -> n.isKeyword).map(n -> (KeywordTy)n.element).toList().toArray(EMPTY_KWDS);
+        return Arrays.stream(kwds).filter(n -> n.isKeyword).map(n -> (KeywordTy)n.element).toArray(KeywordTy[]::new);
     }
 
     /**
