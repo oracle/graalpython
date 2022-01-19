@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NONBYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 
@@ -67,6 +66,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.SetattrNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
@@ -74,12 +75,11 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NONBYTES;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -483,12 +483,10 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     abstract static class PyObjectGenericGetAttrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getAttr(VirtualFrame frame, Object obj, Object attr,
-                        @Cached PyObjectLookupAttr lookupSetAttrNode,
-                        @Cached CallBinaryMethodNode callNode,
+                        @Cached GetAttributeNode getAttrNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object setAttrCallable = lookupSetAttrNode.execute(frame, getCore().lookupType(PythonBuiltinClassType.PythonObject), SpecialMethodNames.__GETATTRIBUTE__);
-                return callNode.executeObject(frame, setAttrCallable, obj, attr);
+                return getAttrNode.execute(frame, getCore().lookupType(PythonBuiltinClassType.PythonObject), SpecialMethodNames.__GETATTRIBUTE__);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return getContext().getNativeNull();
@@ -501,12 +499,10 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     abstract static class PyObjectGenericSetAttrNode extends PythonTernaryBuiltinNode {
         @Specialization
         int setAttr(VirtualFrame frame, Object obj, Object attr, Object value,
-                        @Cached PyObjectLookupAttr lookupSetAttrNode,
-                        @Cached CallTernaryMethodNode callNode,
+                        @Cached SetattrNode setAttrNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object setAttrCallable = lookupSetAttrNode.execute(frame, getCore().lookupType(PythonBuiltinClassType.PythonObject), __SETATTR__);
-                callNode.execute(frame, setAttrCallable, obj, attr, value);
+                setAttrNode.execute(frame, getCore().lookupType(PythonBuiltinClassType.PythonObject), __SETATTR__, value);
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
