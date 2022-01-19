@@ -621,7 +621,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
             consoleHandler.setContext(context);
 
-            if (commandString != null || inputFile != null) {
+            if (commandString != null || inputFile != null || !stdinIsInteractive) {
                 try {
                     evalNonInteractive(context, consoleHandler);
                     rc = 0;
@@ -722,8 +722,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         if (commandString != null) {
             src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
         } else {
-            assert inputFile != null;
-            // the path is passed through a context option
+            // the path is passed through a context option, may be empty when running from stdin
             src = Source.newBuilder(getLanguageId(), "__graalpython__.run_path()", "<internal>").internal(true).build();
         }
         context.eval(src);
