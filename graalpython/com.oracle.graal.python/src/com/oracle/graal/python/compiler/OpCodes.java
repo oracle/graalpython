@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.compiler;
 
+import com.oracle.graal.python.annotations.GenerateEnumConstants;
+
 class Constants {
     static final int CALL_EFFECT = 0xcaffee00;
     static final int CALL_METHOD_EFFECT = 0xcaffee01;
@@ -51,6 +53,7 @@ class Constants {
     static final int PUSH_OR_JUMP_EFFECT = 0xcaffee07;
 }
 
+@GenerateEnumConstants
 public enum OpCodes {
     POP_TOP(                   0,   -1),
     ROT_TWO(                   0,    0),

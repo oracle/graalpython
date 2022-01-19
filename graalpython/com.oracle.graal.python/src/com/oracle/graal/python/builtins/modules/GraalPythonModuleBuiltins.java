@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -63,7 +64,9 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -84,9 +87,14 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.CompilationUnit;
+import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
@@ -105,6 +113,12 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.NodeFactoryImp;
+import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserErrorCallback;
+import com.oracle.graal.python.pegparser.ParserTokenizer;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -139,6 +153,8 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
+import java.util.Arrays;
+import java.util.EnumSet;
 
 @CoreFunctions(defineModule = __GRAALPYTHON__, isEager = true)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
@@ -829,6 +845,58 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object doit(PythonModule lib) {
             getContext().getCore().registerImportlib(lib);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "compile", parameterNames = {"codestr", "path", "mode"})
+    @GenerateNodeFactory
+    abstract static class CompileNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        PCode compile(VirtualFrame frame, Object codestr, String path, String mode,
+                        @Cached PythonObjectFactory objFactory,
+                        @Cached PRaiseNode raise,
+                        @Cached BytesNodes.ToBytesNode toBytes,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached BuiltinFunctions.CompileNode compileNode) {
+            if (mode.equals("pyc")) {
+                ParserTokenizer tok;
+                if (codestr instanceof PBytesLike) {
+                    tok = new ParserTokenizer(toBytes.execute((PBytesLike) codestr));
+                } else {
+                    try {
+                        tok = new ParserTokenizer(castStr.execute(codestr));
+                    } catch (CannotCastException e) {
+                        throw raise.raise(TypeError, "expected str or bytes, got '%p'", codestr);
+                    }
+                }
+
+                com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
+                ParserErrorCallback errorCb = (ParserErrorCallback.ErrorType type, int start, int end, String message) -> {
+                    System.err.println(String.format("TODO: %s[%d:%d]: %s", type.name(), start, end, message));
+                };
+                FExprParser fexpParser = new FExprParser() {
+                    @Override
+                    public ExprTy parse(String code) {
+                        ParserTokenizer tok = new ParserTokenizer(code);
+                        return new Parser(tok, factory, this, errorCb).fstring_rule();
+                    }
+                };
+                Parser parser = new Parser(tok, factory, fexpParser, errorCb);
+                Compiler compiler = new Compiler();
+                CompilationUnit cu = compiler.compile(parser.file_rule(), path, EnumSet.noneOf(Compiler.Flags.class), 2);
+                CodeUnit co = cu.assemble(path, 0);
+
+                Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
+                                co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, false,
+                                Arrays.copyOf(co.varnames, co.argCount), // parameter names
+                                Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.kwOnlyArgCount));
+                PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), signature, co);
+                return objFactory.createCode(rootNode.getCallTarget(), signature, co.nlocals, co.stacksize, co.flags,
+                                co.constants, co.names, co.varnames, co.freevars, co.cellvars, co.filename, co.name,
+                                co.startOffset, co.srcOffsetTable);
+            } else {
+                return compileNode.execute(frame, codestr, path, mode, 0, false, 2);
+            }
         }
     }
 }

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.compiler.OpCodesConstants.*;
+
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
@@ -65,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -230,69 +233,65 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private static final NodeFunction<String, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
 
-    private static final IntNodeFunction<Node> COMPARE_OP_FACTORY = new IntNodeFunction<Node>() {
-        public Node apply(int op) {
-            switch (op) {
-                case 0:
-                    return BinaryComparisonNode.LtNode.create();
-                case 1:
-                    return BinaryComparisonNode.LeNode.create();
-                case 2:
-                    return BinaryComparisonNode.EqNode.create();
-                case 3:
-                    return BinaryComparisonNode.NeNode.create();
-                case 4:
-                    return BinaryComparisonNode.GtNode.create();
-                case 5:
-                    return BinaryComparisonNode.GeNode.create();
-                case 6:
-                    return ContainsNode.create();
-                case 7:
-                    return ContainsNode.create();
-                case 8:
-                    return IsNode.create();
-                case 9:
-                    return IsNode.create();
-                case 10:
-                    return ExceptMatchNode.create();
-                default:
-                    throw CompilerDirectives.shouldNotReachHere();
-            }
+    private static final IntNodeFunction<Node> COMPARE_OP_FACTORY = (int op) -> {
+        switch (op) {
+            case 0:
+                return BinaryComparisonNode.LtNode.create();
+            case 1:
+                return BinaryComparisonNode.LeNode.create();
+            case 2:
+                return BinaryComparisonNode.EqNode.create();
+            case 3:
+                return BinaryComparisonNode.NeNode.create();
+            case 4:
+                return BinaryComparisonNode.GtNode.create();
+            case 5:
+                return BinaryComparisonNode.GeNode.create();
+            case 6:
+                return ContainsNode.create();
+            case 7:
+                return ContainsNode.create();
+            case 8:
+                return IsNode.create();
+            case 9:
+                return IsNode.create();
+            case 10:
+                return ExceptMatchNode.create();
+            default:
+                throw CompilerDirectives.shouldNotReachHere();
         }
     };
-    private static final IntNodeFunction<LookupAndCallInplaceNode> INPLACE_ARITH_FACTORY = new IntNodeFunction<LookupAndCallInplaceNode>() {
 
-        public LookupAndCallInplaceNode apply(int op) {
-            switch (op) {
-                case INPLACE_POWER:
-                    return InplaceArithmetic.IPow.create();
-                case INPLACE_MULTIPLY:
-                    return InplaceArithmetic.IMul.create();
-                case INPLACE_MATRIX_MULTIPLY:
-                    return InplaceArithmetic.IMatMul.create();
-                case INPLACE_TRUE_DIVIDE:
-                    return InplaceArithmetic.ITrueDiv.create();
-                case INPLACE_FLOOR_DIVIDE:
-                    return InplaceArithmetic.IFloorDiv.create();
-                case INPLACE_MODULO:
-                    return InplaceArithmetic.IMod.create();
-                case INPLACE_ADD:
-                    return InplaceArithmetic.IAdd.create();
-                case INPLACE_SUBTRACT:
-                    return InplaceArithmetic.ISub.create();
-                case INPLACE_LSHIFT:
-                    return InplaceArithmetic.ILShift.create();
-                case INPLACE_RSHIFT:
-                    return InplaceArithmetic.IRShift.create();
-                case INPLACE_AND:
-                    return InplaceArithmetic.IAnd.create();
-                case INPLACE_XOR:
-                    return InplaceArithmetic.IXor.create();
-                case INPLACE_OR:
-                    return InplaceArithmetic.IOr.create();
-                default:
-                    throw CompilerDirectives.shouldNotReachHere();
-            }
+    private static final IntNodeFunction<LookupAndCallInplaceNode> INPLACE_ARITH_FACTORY = (int op) -> {
+        switch (op) {
+            case INPLACE_POWER:
+                return InplaceArithmetic.IPow.create();
+            case INPLACE_MULTIPLY:
+                return InplaceArithmetic.IMul.create();
+            case INPLACE_MATRIX_MULTIPLY:
+                return InplaceArithmetic.IMatMul.create();
+            case INPLACE_TRUE_DIVIDE:
+                return InplaceArithmetic.ITrueDiv.create();
+            case INPLACE_FLOOR_DIVIDE:
+                return InplaceArithmetic.IFloorDiv.create();
+            case INPLACE_MODULO:
+                return InplaceArithmetic.IMod.create();
+            case INPLACE_ADD:
+                return InplaceArithmetic.IAdd.create();
+            case INPLACE_SUBTRACT:
+                return InplaceArithmetic.ISub.create();
+            case INPLACE_LSHIFT:
+                return InplaceArithmetic.ILShift.create();
+            case INPLACE_RSHIFT:
+                return InplaceArithmetic.IRShift.create();
+            case INPLACE_AND:
+                return InplaceArithmetic.IAnd.create();
+            case INPLACE_XOR:
+                return InplaceArithmetic.IXor.create();
+            case INPLACE_OR:
+                return InplaceArithmetic.IOr.create();
+            default:
+                throw CompilerDirectives.shouldNotReachHere();
         }
     };
 
@@ -300,20 +299,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final Signature signature;
     private final String name;
     public final String filename;
-    public final int firstlineno;
+
+    private final CodeUnit co;
 
     @CompilationFinal(dimensions = 1) private final byte[] bytecode;
     @CompilationFinal(dimensions = 1) private final Object[] consts;
+    @CompilationFinal(dimensions = 1) private final long[] longConsts;
     @CompilationFinal(dimensions = 1) private final String[] names;
     @CompilationFinal(dimensions = 1) private final String[] varnames;
     @CompilationFinal(dimensions = 1) private final String[] freevars;
     @CompilationFinal(dimensions = 1) private final String[] cellvars;
 
-    /**
-     * PE-final store for blockstack effects to deal with exceptions. Lazily populated and sorted by
-     * range start.
-     */
-    @CompilationFinal(dimensions = 1) private long[] blockstackRanges = null;
+    @CompilationFinal(dimensions = 1) private final int[] exceptionHandlerRanges;
 
     /**
      * PE-final store for quickened bytecodes.
@@ -345,46 +342,29 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final Object UNREIFIED_EXC_VALUE = new Object();
     private static final Object UNREIFIED_EXC_TRACEBACK = new Object();
 
-    public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, byte[] bc,
-                    String filename, String name, int firstlineno,
-                    Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
-                    int stacksize) {
-        super(language, DESCRIPTOR);
-        this.signature = sign;
-        this.bytecode = bc;
-        this.adoptedNodes = new Node[bc.length];
-        this.extraArgs = new int[bc.length >> 1];
-        this.consts = consts;
-        this.names = names;
-        this.varnames = varnames;
-        this.freevars = freevars;
-        this.cellvars = cellvars;
-        this.stacksize = stacksize;
-        this.filename = filename;
-        this.name = name;
-        this.firstlineno = firstlineno;
-        assert stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
-        assert bytecode.length < Math.pow(2, 16) : "bytecode cannot be longer than 16-bit range";
+    public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, CodeUnit co) {
+        this(language, DESCRIPTOR, sign, co);
     }
 
-    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, byte[] bc,
-                    String filename, String name, int firstlineno,
-                    Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
-                    int stacksize) {
+    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co) {
         super(language, fd);
         this.signature = sign;
-        this.bytecode = bc;
-        this.adoptedNodes = new Node[bc.length];
-        this.extraArgs = new int[bc.length >> 1];
-        this.consts = consts;
-        this.names = names;
-        this.varnames = varnames;
-        this.freevars = freevars;
-        this.cellvars = cellvars;
-        this.stacksize = stacksize;
-        this.filename = filename;
-        this.name = name;
-        this.firstlineno = firstlineno;
+        this.bytecode = co.code;
+        this.adoptedNodes = new Node[co.code.length];
+        this.extraArgs = new int[co.code.length];
+        this.consts = co.constants;
+        this.longConsts = co.primitiveConstants;
+        this.names = co.names;
+        this.varnames = co.varnames;
+        this.freevars = co.freevars;
+        this.cellvars = co.cellvars;
+        this.stacksize = co.stacksize;
+        this.filename = co.filename;
+        this.name = co.name;
+        this.exceptionHandlerRanges = co.exceptionHandlerRanges;
+        this.co = co;
+        assert stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
+        assert bytecode.length < Math.pow(2, 16) : "bytecode cannot be longer than 16-bit range";
     }
 
     @Override
@@ -2076,134 +2056,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    // TODO: Below are 119 bytecodes. That's less than 128, so we can compact them and then use the
-    // sign bit to quicken bytecodes. Thus we could initially just set the sign bit and use an
-    // uncached node, then if we execute with the sign bit, we create a cached node for the
-    // bytecode and optimize from there.
-
-    private static final byte POP_TOP = 1;
-    private static final byte ROT_TWO = 2;
-    private static final byte ROT_THREE = 3;
-    private static final byte DUP_TOP = 4;
-    private static final byte DUP_TOP_TWO = 5;
-    private static final byte ROT_FOUR = 6;
-    private static final byte NOP = 9;
-    private static final byte UNARY_POSITIVE = 10;
-    private static final byte UNARY_NEGATIVE = 11;
-    private static final byte UNARY_NOT = 12;
-    private static final byte UNARY_INVERT = 15;
-    private static final byte BINARY_MATRIX_MULTIPLY = 16;
-    private static final byte INPLACE_MATRIX_MULTIPLY = 17;
-    private static final byte BINARY_POWER = 19;
-    private static final byte BINARY_MULTIPLY = 20;
-    private static final byte BINARY_MODULO = 22;
-    private static final byte BINARY_ADD = 23;
-    private static final byte BINARY_SUBTRACT = 24;
-    private static final byte BINARY_SUBSCR = 25;
-    private static final byte BINARY_FLOOR_DIVIDE = 26;
-    private static final byte BINARY_TRUE_DIVIDE = 27;
-    private static final byte INPLACE_FLOOR_DIVIDE = 28;
-    private static final byte INPLACE_TRUE_DIVIDE = 29;
-    private static final byte GET_AITER = 50;
-    private static final byte GET_ANEXT = 51;
-    private static final byte BEFORE_ASYNC_WITH = 52;
-    private static final byte BEGIN_FINALLY = 53;
-    private static final byte END_ASYNC_FOR = 54;
-    private static final byte INPLACE_ADD = 55;
-    private static final byte INPLACE_SUBTRACT = 56;
-    private static final byte INPLACE_MULTIPLY = 57;
-    private static final byte INPLACE_MODULO = 59;
-    private static final byte STORE_SUBSCR = 60;
-    private static final byte DELETE_SUBSCR = 61;
-    private static final byte BINARY_LSHIFT = 62;
-    private static final byte BINARY_RSHIFT = 63;
-    private static final byte BINARY_AND = 64;
-    private static final byte BINARY_XOR = 65;
-    private static final byte BINARY_OR = 66;
-    private static final byte INPLACE_POWER = 67;
-    private static final byte GET_ITER = 68;
-    private static final byte GET_YIELD_FROM_ITER = 69;
-    private static final byte PRINT_EXPR = 70;
-    private static final byte LOAD_BUILD_CLASS = 71;
-    private static final byte YIELD_FROM = 72;
-    private static final byte GET_AWAITABLE = 73;
-    private static final byte INPLACE_LSHIFT = 75;
-    private static final byte INPLACE_RSHIFT = 76;
-    private static final byte INPLACE_AND = 77;
-    private static final byte INPLACE_XOR = 78;
-    private static final byte INPLACE_OR = 79;
-    private static final byte WITH_CLEANUP_START = 81;
-    private static final byte WITH_CLEANUP_FINISH = 82;
-    private static final byte RETURN_VALUE = 83;
-    private static final byte IMPORT_STAR = 84;
-    private static final byte SETUP_ANNOTATIONS = 85;
-    private static final byte YIELD_VALUE = 86;
-    private static final byte POP_BLOCK = 87;
-    private static final byte END_FINALLY = 88;
-    private static final byte POP_EXCEPT = 89;
-    private static final byte HAVE_ARGUMENT = 90;
-    private static final byte STORE_NAME = 90;
-    private static final byte DELETE_NAME = 91;
-    private static final byte UNPACK_SEQUENCE = 92;
-    private static final byte FOR_ITER = 93;
-    private static final byte UNPACK_EX = 94;
-    private static final byte STORE_ATTR = 95;
-    private static final byte DELETE_ATTR = 96;
-    private static final byte STORE_GLOBAL = 97;
-    private static final byte DELETE_GLOBAL = 98;
-    private static final byte LOAD_CONST = 100;
-    private static final byte LOAD_NAME = 101;
-    private static final byte BUILD_TUPLE = 102;
-    private static final byte BUILD_LIST = 103;
-    private static final byte BUILD_SET = 104;
-    private static final byte BUILD_MAP = 105;
-    private static final byte LOAD_ATTR = 106;
-    private static final byte COMPARE_OP = 107;
-    private static final byte IMPORT_NAME = 108;
-    private static final byte IMPORT_FROM = 109;
-    private static final byte JUMP_FORWARD = 110;
-    private static final byte JUMP_IF_FALSE_OR_POP = 111;
-    private static final byte JUMP_IF_TRUE_OR_POP = 112;
-    private static final byte JUMP_ABSOLUTE = 113;
-    private static final byte POP_JUMP_IF_FALSE = 114;
-    private static final byte POP_JUMP_IF_TRUE = 115;
-    private static final byte LOAD_GLOBAL = 116;
-    private static final byte SETUP_FINALLY = 122;
-    private static final byte LOAD_FAST = 124;
-    private static final byte STORE_FAST = 125;
-    private static final byte DELETE_FAST = 126;
-    private static final byte RAISE_VARARGS = (byte) 130;
-    private static final byte CALL_FUNCTION = (byte) 131;
-    private static final byte MAKE_FUNCTION = (byte) 132;
-    private static final byte BUILD_SLICE = (byte) 133;
-    private static final byte LOAD_CLOSURE = (byte) 135;
-    private static final byte LOAD_DEREF = (byte) 136;
-    private static final byte STORE_DEREF = (byte) 137;
-    private static final byte DELETE_DEREF = (byte) 138;
-    private static final byte CALL_FUNCTION_KW = (byte) 141;
-    private static final byte CALL_FUNCTION_EX = (byte) 142;
-    private static final byte SETUP_WITH = (byte) 143;
-    private static final byte EXTENDED_ARG = (byte) 144;
-    private static final byte LIST_APPEND = (byte) 145;
-    private static final byte SET_ADD = (byte) 146;
-    private static final byte MAP_ADD = (byte) 147;
-    private static final byte LOAD_CLASSDEREF = (byte) 148;
-    private static final byte BUILD_LIST_UNPACK = (byte) 149;
-    private static final byte BUILD_MAP_UNPACK = (byte) 150;
-    private static final byte BUILD_MAP_UNPACK_WITH_CALL = (byte) 151;
-    private static final byte BUILD_TUPLE_UNPACK = (byte) 152;
-    private static final byte BUILD_SET_UNPACK = (byte) 153;
-    private static final byte SETUP_ASYNC_WITH = (byte) 154;
-    private static final byte FORMAT_VALUE = (byte) 155;
-    private static final byte BUILD_CONST_KEY_MAP = (byte) 156;
-    private static final byte BUILD_STRING = (byte) 157;
-    private static final byte BUILD_TUPLE_UNPACK_WITH_CALL = (byte) 158;
-    private static final byte LOAD_METHOD = (byte) 160;
-    private static final byte CALL_METHOD = (byte) 161;
-    private static final byte CALL_FINALLY = (byte) 162;
-    private static final byte POP_FINALLY = (byte) 163;
-
-    // our own quickened bytecodes, counting down towards the CPython codes
+    // our own quickened bytecodes, counting down towards the generic codes
     private static final byte STORE_FAST_BOOLEAN = (byte) 255;
     private static final byte STORE_FAST_INT = (byte) 254;
     private static final byte STORE_FAST_LONG = (byte) 253;
