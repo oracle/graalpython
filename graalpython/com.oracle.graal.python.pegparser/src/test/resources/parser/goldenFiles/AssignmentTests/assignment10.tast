@@ -1,0 +1,10 @@
+Module[0, 15]
+    Assign[0, 15]
+        LHS: 
+            Tuple[0, 7]
+                Values:
+                    Name[0, 1] Value: "i" Store
+                    Name[3, 4] Value: "j" Store
+                    Name[6, 7] Value: "k" Store
+            Name[10, 11] Value: "x" Store
+        RHS: Name[14, 15] Value: "a"

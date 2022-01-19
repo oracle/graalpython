@@ -1,0 +1,4 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols: 
+      foo: [Use, GlobalImplicit]

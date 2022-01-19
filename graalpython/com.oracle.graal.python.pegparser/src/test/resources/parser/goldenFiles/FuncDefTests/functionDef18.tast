@@ -1,0 +1,23 @@
+Module[0, 112]
+    FunctionDef[0, 112]
+        Name:__new__
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[12, 16] _cls
+                ArgTy[18, 22] hits
+                ArgTy[24, 30] misses
+                ArgTy[32, 39] maxsize
+                ArgTy[41, 49] currsize
+        ---- Function body of __new__ ----
+        Return[54, 112] 
+            Call[61, 112]
+                Target: Name[61, 71] Value: "_tuple_new"
+                Args:
+                    Name[72, 76] Value: "_cls"
+                    Tuple[78, 111]
+                        Values:
+                            Name[79, 83] Value: "hits"
+                            Name[85, 91] Value: "misses"
+                            Name[93, 100] Value: "maxsize"
+                            Name[102, 110] Value: "currsize"
+        ---- End of __new__ function ----

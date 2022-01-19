@@ -1,0 +1,26 @@
+Module[0, 89]
+    FunctionDef[0, 74]
+        Name:test
+        ---- Function body of test ----
+        Assign[14, 19]
+            LHS: Name[14, 15] Value: "a" Store
+            RHS: LONG[18, 19] Value: 1
+        FunctionDef[23, 38]
+            Name:fn1
+            ---- Function body of fn1 ----
+            Pass[34, 38]
+            ---- End of fn1 function ----
+        FunctionDef[41, 56]
+            Name:fn2
+            ---- Function body of fn2 ----
+            Pass[52, 56]
+            ---- End of fn2 function ----
+        Return[59, 74] 
+            Call[66, 74]
+                Target: Name[66, 72] Value: "locals"
+        ---- End of test function ----
+    Call[76, 89]
+        Target: Name[76, 81] Value: "print"
+        Args:
+            Call[82, 88]
+                Target: Name[82, 86] Value: "test"
