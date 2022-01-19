@@ -74,7 +74,7 @@ public final class CodeUnit {
     public final Object[] constants;
     public final long[] primitiveConstants;
 
-    public final int[] exceptionHandlerRanges;
+    public final short[] exceptionHandlerRanges;
 
     public final int startOffset;
     public final int endOffset;
@@ -84,7 +84,7 @@ public final class CodeUnit {
                     byte[] code, byte[] linetable, byte flags,
                     String[] names, String[] varnames, String[] cellvars, String[] freevars,
                     Object[] constants, long[] primitiveConstants,
-                    int[] exceptionHandlerRanges, int startOffset, int endOffset) {
+                    short[] exceptionHandlerRanges, int startOffset, int endOffset) {
         this.name = name;
         this.filename = filename;
         this.argCount = argCount;
@@ -230,8 +230,6 @@ public final class CodeUnit {
                 case JUMP_BACKWARD_FAR:
                     arg = -arg;
                     // fall through
-                case MATCH_EXC_OR_JUMP:
-                case MATCH_EXC_OR_JUMP_FAR:
                 case FOR_ITER:
                 case FOR_ITER_FAR:
                 case JUMP_FORWARD:
@@ -249,6 +247,15 @@ public final class CodeUnit {
                     break;
                 }
             }
+        }
+
+        for (int i = 0; i < exceptionHandlerRanges.length; i += 3) {
+            int start = exceptionHandlerRanges[i] & 0xffff;
+            int stop = exceptionHandlerRanges[i + 1] & 0xffff;
+            int stackAtHandler = exceptionHandlerRanges[i + 2];
+            String[] line = lines.get((int)stop);
+            assert line != null;
+            line[5] = String.format("exc handler %d--%d; stack: %d", start, stop - 1, stackAtHandler);
         }
 
         for (bci = 0; bci < code.length; bci++) {

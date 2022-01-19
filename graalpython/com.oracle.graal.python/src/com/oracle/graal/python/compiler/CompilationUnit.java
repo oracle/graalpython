@@ -171,7 +171,7 @@ public final class CompilationUnit {
             assert !stackAtBlock.containsKey(b) || stacksize == stackAtBlock.get(b);
 
             for (Instruction i : b.instr) {
-                if (handleMarker(i, buf, exceptionHandlerStack, finishedExceptionHandlerRanges)) {
+                if (handleMarker(i, buf, exceptionHandlerStack, finishedExceptionHandlerRanges, stacksize)) {
                     continue;
                 }
 
@@ -192,6 +192,13 @@ public final class CompilationUnit {
 
         assert exceptionHandlerStack.isEmpty();
 
+        short[] exceptionHandlerRanges = new short[finishedExceptionHandlerRanges.size() * 3];
+        for (int i = 0; i < finishedExceptionHandlerRanges.size(); i++) {
+            short[] range = finishedExceptionHandlerRanges.get(i);
+            exceptionHandlerRanges[i * 3] = range[0];
+            exceptionHandlerRanges[i * 3 + 1] = range[1];
+            exceptionHandlerRanges[i * 3 + 2] = range[2];
+        }
         return new CodeUnit(qualName == null ? name : qualName, filename,
                         argCount, kwOnlyArgCount, positionalOnlyArgCount,
                         varnames.size(), maxStackSize,
@@ -202,7 +209,7 @@ public final class CompilationUnit {
                         orderedKeys(freevars, new String[0], cellvars.size()),
                         orderedKeys(constants, new Object[0]),
                         orderedLong(primitiveConstants),
-                        finishedExceptionHandlerRanges.stream().mapToInt(r -> ((int) r[0] << 16) | r[1]).toArray(),
+                        exceptionHandlerRanges,
                         startOffset, endOffset);
     }
 
@@ -291,29 +298,33 @@ public final class CompilationUnit {
         }
     }
 
-    private boolean handleMarker(Instruction i, ByteArrayOutputStream buf, Stack<short[]> exceptionHandlerStack, ArrayList<short[]> finishedExceptionHandlerRanges) {
+    private boolean handleMarker(Instruction i, ByteArrayOutputStream buf, Stack<short[]> exceptionHandlerStack, ArrayList<short[]> finishedExceptionHandlerRanges, int stacksize) {
         if (i == Instruction.START_OF_TRY_MARKER) {
-            assert buf.size() == (short)buf.size();
-            exceptionHandlerStack.push(new short[]{(short)buf.size(), -1, -1});
+            assert buf.size() + 1 == (short)(buf.size() + 1);
+            exceptionHandlerStack.push(new short[]{(short)(buf.size() + 1), -1, -1});
             return true;
         } else if (i == Instruction.START_OF_EXCEPT_MARKER) {
             short[] range = exceptionHandlerStack.pop();
             assert range[1] == -1;
-            assert buf.size() == (short)buf.size();
-            range[1] = (short)buf.size();
+            assert buf.size() + 1 == (short)(buf.size() + 1);
+            range[1] = (short)(buf.size() + 1);
+            assert stacksize == (short)stacksize;
+            range[2] = (short)stacksize;
             finishedExceptionHandlerRanges.add(range);
             return true;
         } else if (i == Instruction.START_OF_FINALLY_MARKER) {
             short[] exceptRange = exceptionHandlerStack.pop();
             short[] finallyRange = exceptRange.clone();
-            assert buf.size() == (short)buf.size();
+            assert buf.size() + 1 == (short)(buf.size() + 1);
             if (exceptRange[1] != -1) {
                 // there was an except handler which should handle any exception in the try
                 // block. this range is only used directly for exceptions in try blocks themselves
                 // and the else block
                 finallyRange[0] = finallyRange[1];
             }
-            finallyRange[1] = (short)buf.size();
+            finallyRange[1] = (short)(buf.size() + 1);
+            assert stacksize == (short)stacksize;
+            finallyRange[2] = (short)stacksize;
             finishedExceptionHandlerRanges.add(finallyRange);
             return true;
         } else if (i == Instruction.END_OF_FINALLY_MARKER) {
