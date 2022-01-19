@@ -833,7 +833,7 @@ public class LoggingPosixSupport extends PosixSupport {
     @ExportMessage
     public long mmapGetPointer(Object mmap,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter("mmapFlush", "%s", mmap);
+        logEnter("mmapGetPointer", "%s", mmap);
         return lib.mmapGetPointer(delegate, mmap);
     }
 
