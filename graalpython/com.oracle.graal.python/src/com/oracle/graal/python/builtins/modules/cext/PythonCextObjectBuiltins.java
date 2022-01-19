@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsSubClassNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CastArgsNode;
@@ -75,12 +76,8 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
-import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NONBYTES;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -94,7 +91,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -486,7 +482,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
                         @Cached GetAttributeNode getAttrNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return getAttrNode.execute(frame, getCore().lookupType(PythonBuiltinClassType.PythonObject), SpecialMethodNames.__GETATTRIBUTE__);
+                return getAttrNode.execute(frame, obj, attr);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return getContext().getNativeNull();
@@ -502,7 +498,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
                         @Cached SetattrNode setAttrNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                setAttrNode.execute(frame, getCore().lookupType(PythonBuiltinClassType.PythonObject), __SETATTR__, value);
+                setAttrNode.execute(frame, obj, attr, value);
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
@@ -568,49 +564,35 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
             return bytes;
         }
 
-        @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)", "!isPNone(bytesCallable)"})
+        @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)", "hasBytes(frame, obj, lookupAttrNode)"}, limit = "1")
         Object bytes(VirtualFrame frame, Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Bind("getBytes(frame, obj, lookupAttrNode)") Object bytesCallable,
-                        @Cached CallUnaryMethodNode callNode,
-                        @Cached BranchProfile branchProfile,
-                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached BytesNode bytesNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object res = callNode.executeObject(frame, bytesCallable, obj);
-                if (!isBytesSubtype(frame, res, getClassNode, isSubtypeNode)) {
-                    branchProfile.enter();
-                    return raiseNativeNode.execute(frame, getContext().getNativeNull(), TypeError, RETURNED_NONBYTES, new Object[]{__BYTES__, res});
-                }
-                return res;
+                return bytesNode.execute(frame, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
             }
         }
 
-        @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)", "isPNone(getBytes(frame, obj, lookupAttrNode))"})
-        Object bytes(VirtualFrame frame, Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+        @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)", "!hasBytes(frame, obj, lookupAttrNode)"}, limit = "1")
+        static Object bytes(VirtualFrame frame, Object obj,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached PyBytesFromObjectNode fromObjectNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return fromObjectNode.execute(frame, obj);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+                        @Cached PyBytesFromObjectNode fromObjectNode) {
+            return fromObjectNode.execute(frame, obj);
         }
 
-        protected Object getBytes(VirtualFrame frame, Object obj, PyObjectLookupAttr lookupAttrNode) {
-            return lookupAttrNode.execute(frame, obj, __BYTES__);
+        protected static boolean hasBytes(VirtualFrame frame, Object obj, PyObjectLookupAttr lookupAttrNode) {
+            return lookupAttrNode.execute(frame, obj, __BYTES__) != PNone.NO_VALUE;
         }
 
-        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+        protected static boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
         }
     }
