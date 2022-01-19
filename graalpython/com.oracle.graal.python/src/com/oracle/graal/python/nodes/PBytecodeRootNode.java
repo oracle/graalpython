@@ -1028,21 +1028,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[stackTop] = bitOrNode.executeObject(frame, stack[stackTop], right);
                         break;
                     }
-                    case LIST_APPEND: {
-                        PyObjectCallMethodObjArgs callNode = insertChildNode(localNodes[bci], UNCACHED_OBJECT_CALL_METHOD_OBJ_ARGS, NODE_OBJECT_CALL_METHOD_OBJ_ARGS, bci);
-                        Object list = stack[stackTop - oparg];
-                        Object value = stack[stackTop];
-                        stack[stackTop--] = null;
-                        callNode.execute(frame, list, "append", value);
-                        break;
-                    }
-                    case SET_ADD: {
-                        PyObjectCallMethodObjArgs callNode = insertChildNode(localNodes[bci], UNCACHED_OBJECT_CALL_METHOD_OBJ_ARGS, NODE_OBJECT_CALL_METHOD_OBJ_ARGS, bci);
-                        Object value = stack[stackTop];
-                        stack[stackTop--] = null;
-                        callNode.execute(frame, stack[stackTop], "add", value);
-                        break;
-                    }
+                    // case LIST_APPEND: {
+                    //     PyObjectCallMethodObjArgs callNode = insertChildNode(localNodes[bci], UNCACHED_OBJECT_CALL_METHOD_OBJ_ARGS, NODE_OBJECT_CALL_METHOD_OBJ_ARGS, bci);
+                    //     Object list = stack[stackTop - oparg];
+                    //     Object value = stack[stackTop];
+                    //     stack[stackTop--] = null;
+                    //     callNode.execute(frame, list, "append", value);
+                    //     break;
+                    // }
+                    // case SET_ADD: {
+                    //     PyObjectCallMethodObjArgs callNode = insertChildNode(localNodes[bci], UNCACHED_OBJECT_CALL_METHOD_OBJ_ARGS, NODE_OBJECT_CALL_METHOD_OBJ_ARGS, bci);
+                    //     Object value = stack[stackTop];
+                    //     stack[stackTop--] = null;
+                    //     callNode.execute(frame, stack[stackTop], "add", value);
+                    //     break;
+                    // }
                     case INPLACE_POWER:
                     case INPLACE_MULTIPLY:
                     case INPLACE_MATRIX_MULTIPLY:
@@ -1083,8 +1083,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         delItem.executeWith(frame, container, slice);
                         break;
                     }
-                    case PRINT_EXPR:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "bc print expr");
+                    // case PRINT_EXPR:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "bc print expr");
                     case RAISE_VARARGS: {
                         stackTop = bytecodeRaiseVarargs(frame, stack, stackTop, bci, oparg, localNodes);
                         break;
@@ -1094,71 +1094,71 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             LoopNode.reportLoopCount(this, loopCount);
                         }
                         return stack[stackTop];
-                    case GET_AITER:
-                    case GET_ANEXT:
-                    case GET_AWAITABLE:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "async bytecodes");
-                    case YIELD_FROM:
-                    case YIELD_VALUE:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "yield bytecodes");
-                    case POP_EXCEPT: {
-                        assert isBlockTypeExcept(blockstack[blockstackTop]);
-                        blockstackTop--;
-                        // pop the previous exception info (probably wasn't even materialized)
-                        stack[stackTop--] = null;
-                        stack[stackTop--] = null;
-                        stack[stackTop--] = null;
-                        break;
-                    }
-                    case POP_BLOCK:
-                        blockstackTop--;
-                        break;
-                    case POP_FINALLY: {
-                        // very similar to END_FINALLY, but with an argument
-                        Object result;
-                        if (oparg == 0) {
-                            result = null;
-                        } else {
-                            result = stack[stackTop];
-                            stack[stackTop--] = null;
-                        }
-                        Object exc = stack[stackTop];
-                        stack[stackTop--] = null;
-                        if (exc == null || exc instanceof Integer) {
-                            // nothing to do
-                        } else {
-                            // first, pop the remaining two current exc_info entries
-                            stack[stackTop--] = null;
-                            stack[stackTop--] = null;
-                            assert isBlockTypeExcept(blockstack[blockstackTop]);
-                            assert stackTop == decodeStackTop(blockstack[blockstackTop]) + 3;
-                            blockstackTop--;
-                            // just pop the previously handled exception also, since we can
-                            // recover it differently than CPython (I think...)
-                            stack[stackTop--] = null;
-                            stack[stackTop--] = null;
-                            stack[stackTop--] = null;
-                        }
-                        if (oparg != 0) {
-                            stack[++stackTop] = result;
-                        }
-                        int savedStackTop = localArgs[bci >> 1];
-                        if (savedStackTop == 0) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            localArgs[bci >> 1] = encodeStackTop(stackTop) | encodeBlockstackTop(1);
-                        } else {
-                            stackTop = decodeStackTop(savedStackTop);
-                        }
-                        break;
-                    }
-                    case CALL_FINALLY:
-                        stack[++stackTop] = bci + 2;
-                        bci = oparg + 2;
-                        oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                        continue;
-                    case BEGIN_FINALLY:
-                        stack[++stackTop] = null;
-                        break;
+                    // case GET_AITER:
+                    // case GET_ANEXT:
+                    // case GET_AWAITABLE:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "async bytecodes");
+                    // case YIELD_FROM:
+                    // case YIELD_VALUE:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "yield bytecodes");
+                    // case POP_EXCEPT: {
+                    //     assert isBlockTypeExcept(blockstack[blockstackTop]);
+                    //     blockstackTop--;
+                    //     // pop the previous exception info (probably wasn't even materialized)
+                    //     stack[stackTop--] = null;
+                    //     stack[stackTop--] = null;
+                    //     stack[stackTop--] = null;
+                    //     break;
+                    // }
+                    // case POP_BLOCK:
+                    //     blockstackTop--;
+                    //     break;
+                    // case POP_FINALLY: {
+                    //     // very similar to END_FINALLY, but with an argument
+                    //     Object result;
+                    //     if (oparg == 0) {
+                    //         result = null;
+                    //     } else {
+                    //         result = stack[stackTop];
+                    //         stack[stackTop--] = null;
+                    //     }
+                    //     Object exc = stack[stackTop];
+                    //     stack[stackTop--] = null;
+                    //     if (exc == null || exc instanceof Integer) {
+                    //         // nothing to do
+                    //     } else {
+                    //         // first, pop the remaining two current exc_info entries
+                    //         stack[stackTop--] = null;
+                    //         stack[stackTop--] = null;
+                    //         assert isBlockTypeExcept(blockstack[blockstackTop]);
+                    //         assert stackTop == decodeStackTop(blockstack[blockstackTop]) + 3;
+                    //         blockstackTop--;
+                    //         // just pop the previously handled exception also, since we can
+                    //         // recover it differently than CPython (I think...)
+                    //         stack[stackTop--] = null;
+                    //         stack[stackTop--] = null;
+                    //         stack[stackTop--] = null;
+                    //     }
+                    //     if (oparg != 0) {
+                    //         stack[++stackTop] = result;
+                    //     }
+                    //     int savedStackTop = localArgs[bci >> 1];
+                    //     if (savedStackTop == 0) {
+                    //         CompilerDirectives.transferToInterpreterAndInvalidate();
+                    //         localArgs[bci >> 1] = encodeStackTop(stackTop) | encodeBlockstackTop(1);
+                    //     } else {
+                    //         stackTop = decodeStackTop(savedStackTop);
+                    //     }
+                    //     break;
+                    // }
+                    // case CALL_FINALLY:
+                    //     stack[++stackTop] = bci + 2;
+                    //     bci = oparg + 2;
+                    //     oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                    //     continue;
+                    // case BEGIN_FINALLY:
+                    //     stack[++stackTop] = null;
+                    //     break;
                     case END_FINALLY: {
                         Object exc = stack[stackTop];
                         stack[stackTop--] = null;
@@ -1201,8 +1201,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case END_ASYNC_FOR:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "async bytecodes");
+                    // case END_ASYNC_FOR:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "async bytecodes");
                     case LOAD_BUILD_CLASS: {
                         ReadGlobalOrBuiltinNode read = insertChildNode(localNodes[bci], UNCACHED_READ_GLOBAL_OR_BUILTIN, NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS, bci);
                         stack[++stackTop] = read.read(frame, globals, __BUILD_CLASS__);
@@ -1318,8 +1318,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case LOAD_DEREF:
                     case STORE_DEREF:
                         throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "deref load/store");
-                    case BUILD_STRING:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "build string");
+                    // case BUILD_STRING:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "build string");
                     case BUILD_TUPLE: {
                         Object[] list = new Object[oparg];
                         while (oparg > 0) {
@@ -1340,36 +1340,36 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[++stackTop] = factory.createList(list);
                         break;
                     }
-                    case BUILD_TUPLE_UNPACK_WITH_CALL:
-                    case BUILD_TUPLE_UNPACK:
-                    case BUILD_LIST_UNPACK:
-                    case BUILD_SET:
-                    case BUILD_SET_UNPACK:
-                    case BUILD_MAP:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "build bytecodes");
-                    case SETUP_ANNOTATIONS:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "setup annotations");
-                    case BUILD_CONST_KEY_MAP: {
-                        PTuple keys = ((PTuple) stack[stackTop]);
-                        SequenceStorage keysStorage = keys.getSequenceStorage();
-                        EconomicMapStorage map = EconomicMapStorage.create(oparg);
-                        HashingStorageLibrary mapLib = insertChildNode(localNodes[bci], UNCACHED_HASHING_STORAGE_LIBRARY, NODE_HASHING_STORAGE_LIBRARY_DIRECT, bci, map);
-                        for (int i = oparg; i > 0; i--) {
-                            Object key = keysStorage.getItemNormalized(oparg - i);
-                            int stackIdx = stackTop - oparg + 1;
-                            Object value = stack[stackIdx];
-                            stack[stackIdx] = null;
-                            mapLib.setItemWithFrame(map, key, value, ConditionProfile.getUncached(), frame);
-                        }
-                        stackTop = stackTop - oparg;
-                        stack[++stackTop] = factory.createDict(map);
-                        break;
-                    }
-                    case BUILD_MAP_UNPACK:
-                    case BUILD_MAP_UNPACK_WITH_CALL:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "build bytecodes");
-                    case MAP_ADD:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "MAP_ADD");
+                    // case BUILD_TUPLE_UNPACK_WITH_CALL:
+                    // case BUILD_TUPLE_UNPACK:
+                    // case BUILD_LIST_UNPACK:
+                    // case BUILD_SET:
+                    // case BUILD_SET_UNPACK:
+                    // case BUILD_MAP:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "build bytecodes");
+                    // case SETUP_ANNOTATIONS:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "setup annotations");
+                    // case BUILD_CONST_KEY_MAP: {
+                    //     PTuple keys = ((PTuple) stack[stackTop]);
+                    //     SequenceStorage keysStorage = keys.getSequenceStorage();
+                    //     EconomicMapStorage map = EconomicMapStorage.create(oparg);
+                    //     HashingStorageLibrary mapLib = insertChildNode(localNodes[bci], UNCACHED_HASHING_STORAGE_LIBRARY, NODE_HASHING_STORAGE_LIBRARY_DIRECT, bci, map);
+                    //     for (int i = oparg; i > 0; i--) {
+                    //         Object key = keysStorage.getItemNormalized(oparg - i);
+                    //         int stackIdx = stackTop - oparg + 1;
+                    //         Object value = stack[stackIdx];
+                    //         stack[stackIdx] = null;
+                    //         mapLib.setItemWithFrame(map, key, value, ConditionProfile.getUncached(), frame);
+                    //     }
+                    //     stackTop = stackTop - oparg;
+                    //     stack[++stackTop] = factory.createDict(map);
+                    //     break;
+                    // }
+                    // case BUILD_MAP_UNPACK:
+                    // case BUILD_MAP_UNPACK_WITH_CALL:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "build bytecodes");
+                    // case MAP_ADD:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "MAP_ADD");
                     case LOAD_ATTR: {
                         PyObjectGetAttr getAttr = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_ATTR, NODE_OBJECT_GET_ATTR, bci);
                         String varname = localNames[oparg];
@@ -1413,36 +1413,36 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeImportName(frame, context, builtins, globals, stack, stackTop, bci, oparg, localNames, localNodes);
                         break;
                     }
-                    case IMPORT_STAR:
+                    // case IMPORT_STAR:
                     case IMPORT_FROM:
                         throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "import start / import from");
                     case JUMP_FORWARD:
                         bci += oparg + 2;
                         oparg = Byte.toUnsignedInt(localBC[bci + 1]);
                         continue;
-                    case POP_JUMP_IF_FALSE: {
-                        PyObjectIsTrueNode isTrue = insertChildNode(localNodes[bci], UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE, bci);
-                        Object cond = stack[stackTop];
-                        stack[stackTop--] = null;
-                        // TODO: this hack artificially increases profiled loop counts
-                        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !isTrue.execute(frame, cond))) {
-                            bci = oparg;
-                            oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                            continue;
-                        }
-                        break;
-                    }
-                    case POP_JUMP_IF_TRUE: {
-                        PyObjectIsTrueNode isTrue = insertChildNode(localNodes[bci], UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE, bci);
-                        Object cond = stack[stackTop];
-                        stack[stackTop--] = null;
-                        if (isTrue.execute(frame, cond)) {
-                            bci = oparg;
-                            oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                            continue;
-                        }
-                        break;
-                    }
+                    // case POP_JUMP_IF_FALSE: {
+                    //     PyObjectIsTrueNode isTrue = insertChildNode(localNodes[bci], UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE, bci);
+                    //     Object cond = stack[stackTop];
+                    //     stack[stackTop--] = null;
+                    //     // TODO: this hack artificially increases profiled loop counts
+                    //     if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !isTrue.execute(frame, cond))) {
+                    //         bci = oparg;
+                    //         oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                    //         continue;
+                    //     }
+                    //     break;
+                    // }
+                    // case POP_JUMP_IF_TRUE: {
+                    //     PyObjectIsTrueNode isTrue = insertChildNode(localNodes[bci], UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE, bci);
+                    //     Object cond = stack[stackTop];
+                    //     stack[stackTop--] = null;
+                    //     if (isTrue.execute(frame, cond)) {
+                    //         bci = oparg;
+                    //         oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                    //         continue;
+                    //     }
+                    //     break;
+                    // }
                     case JUMP_IF_FALSE_OR_POP: {
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes[bci], UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE, bci);
                         Object cond = stack[stackTop];
@@ -1467,36 +1467,36 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case JUMP_ABSOLUTE:
-                        if (oparg < bci) {
-                            if (inInterpreter) {
-                                loopCount++;
-                                if (BytecodeOSRNode.pollOSRBackEdge(this)) {
-                                    // we're in the interpreter, so the unboxed storage for locals
-                                    // is not used
-                                    Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(oparg) | encodeStackTop(stackTop) | encodeBlockstackTop(blockstackTop), originalArgs, null, frame);
-                                    if (osrResult != null) {
-                                        LoopNode.reportLoopCount(this, loopCount);
-                                        return osrResult;
-                                    }
-                                }
-                            }
-                        }
-                        bci = oparg;
-                        oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                        continue;
+                    // case JUMP_ABSOLUTE:
+                    //     if (oparg < bci) {
+                    //         if (inInterpreter) {
+                    //             loopCount++;
+                    //             if (BytecodeOSRNode.pollOSRBackEdge(this)) {
+                    //                 // we're in the interpreter, so the unboxed storage for locals
+                    //                 // is not used
+                    //                 Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(oparg) | encodeStackTop(stackTop) | encodeBlockstackTop(blockstackTop), originalArgs, null, frame);
+                    //                 if (osrResult != null) {
+                    //                     LoopNode.reportLoopCount(this, loopCount);
+                    //                     return osrResult;
+                    //                 }
+                    //             }
+                    //         }
+                    //     }
+                    //     bci = oparg;
+                    //     oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                    //     continue;
                     case GET_ITER:
                         stack[stackTop] = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_ITER, NODE_OBJECT_GET_ITER, bci).execute(frame, stack[stackTop]);
                         break;
-                    case GET_YIELD_FROM_ITER: {
-                        Object iterable = stack[stackTop];
-                        // TODO: handle coroutines iterable
-                        if (!(iterable instanceof PGenerator)) {
-                            PyObjectGetIter getIter = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_ITER, NODE_OBJECT_GET_ITER, bci);
-                            stack[stackTop] = getIter.execute(frame, iterable);
-                        }
-                        break;
-                    }
+                    // case GET_YIELD_FROM_ITER: {
+                    //     Object iterable = stack[stackTop];
+                    //     // TODO: handle coroutines iterable
+                    //     if (!(iterable instanceof PGenerator)) {
+                    //         PyObjectGetIter getIter = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_ITER, NODE_OBJECT_GET_ITER, bci);
+                    //         stack[stackTop] = getIter.execute(frame, iterable);
+                    //     }
+                    //     break;
+                    // }
                     case FOR_ITER: {
                         try {
                             Object next = insertChildNode(localNodes[bci], UNCACHED_GET_NEXT, NODE_GET_NEXT, bci).execute(frame, stack[stackTop]);
@@ -1510,24 +1510,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case SETUP_FINALLY: {
-                        blockstack[++blockstackTop] = encodeBCI(bci + oparg) | encodeStackTop(stackTop) | encodeBlockTypeFinally();
-                        break;
-                    }
-                    case BEFORE_ASYNC_WITH:
-                    case SETUP_ASYNC_WITH:
-                    case SETUP_WITH:
-                    case WITH_CLEANUP_START:
-                    case WITH_CLEANUP_FINISH:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "with blocks");
-                    case LOAD_METHOD: {
-                        String methodName = localNames[oparg];
-                        PyObjectGetMethod getMethod = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_METHOD, NODE_OBJECT_GET_METHOD, bci);
-                        Object receiver = stack[stackTop];
-                        stack[stackTop] = getMethod.execute(frame, stack[stackTop], methodName);
-                        stack[++stackTop] = receiver;
-                        break;
-                    }
+                    // case SETUP_FINALLY: {
+                    //     blockstack[++blockstackTop] = encodeBCI(bci + oparg) | encodeStackTop(stackTop) | encodeBlockTypeFinally();
+                    //     break;
+                    // }
+                    // case BEFORE_ASYNC_WITH:
+                    // case SETUP_ASYNC_WITH:
+                    // case SETUP_WITH:
+                    // case WITH_CLEANUP_START:
+                    // case WITH_CLEANUP_FINISH:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "with blocks");
+                    // case LOAD_METHOD: {
+                    //     String methodName = localNames[oparg];
+                    //     PyObjectGetMethod getMethod = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_METHOD, NODE_OBJECT_GET_METHOD, bci);
+                    //     Object receiver = stack[stackTop];
+                    //     stack[stackTop] = getMethod.execute(frame, stack[stackTop], methodName);
+                    //     stack[++stackTop] = receiver;
+                    //     break;
+                    // }
                     case CALL_METHOD:
                         // Python's LOAD_METHOD/CALL_METHOD optimization is not useful for us, we
                         // use BoundDescriptor as wrapper from LOAD_METHOD when it's not a normal
@@ -1543,21 +1543,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeCallFunctionKw(frame, stack, stackTop, bci, oparg, localNodes);
                         break;
                     }
-                    case CALL_FUNCTION_EX: {
-                        stackTop = bytecodeCallFunctionEx(frame, stack, stackTop, bci, oparg, localNodes);
-                        break;
-                    }
+                    // case CALL_FUNCTION_EX: {
+                    //     stackTop = bytecodeCallFunctionEx(frame, stack, stackTop, bci, oparg, localNodes);
+                    //     break;
+                    // }
                     case MAKE_FUNCTION:
                         stackTop = bytecodeMakeFunction(globals, stack, stackTop, bci, oparg);
                         break;
-                    case BUILD_SLICE:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "BUILD_SLICE");
-                    case FORMAT_VALUE:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "FORMAT_VALUE");
-                    case EXTENDED_ARG:
-                        bci += 2;
-                        oparg = Byte.toUnsignedInt(localBC[bci + 1]) | (oparg << 8);
-                        continue;
+                    // case BUILD_SLICE:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "BUILD_SLICE");
+                    // case FORMAT_VALUE:
+                    //     throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "FORMAT_VALUE");
+                    // case EXTENDED_ARG:
+                    //     bci += 2;
+                    //     oparg = Byte.toUnsignedInt(localBC[bci + 1]) | (oparg << 8);
+                    //     continue;
                     default:
                         throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "not implemented bytecode");
                 }
@@ -1568,44 +1568,44 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // if (localBC[bci] >= HAVE_ARGUMENT) oparg = Byte.toUnsignedInt(localBC[bci +
                 // 1]);
             } catch (PException e) {
-                if (blockstackRanges == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    blockstackRanges = new long[0];
-                }
-                long blockstackThumbprint = findHandler(stackTop, stack, blockstack, blockstackTop, bci);
-                CompilerAsserts.partialEvaluationConstant(blockstackThumbprint);
-                // now execute what the thumbprint tells us
-                int stackTopAfterExcepts = decodeExceptBlockStackTop(blockstackThumbprint);
-                stackTop = unwindExceptHandler(stack, stackTop, stackTopAfterExcepts);
-                int stackTopAfterFinally = decodeStackTop((int) blockstackThumbprint);
-                stackTop = unwindBlock(stack, stackTop, stackTopAfterFinally);
-                blockstackTop = decodeBlockstackTop((int) blockstackThumbprint);
-                int handlerBCI = decodeBCI((int) blockstackThumbprint);
+                // if (blockstackRanges == null) {
+                //     CompilerDirectives.transferToInterpreterAndInvalidate();
+                //     blockstackRanges = new long[0];
+                // }
+                // long blockstackThumbprint = findHandler(stackTop, stack, blockstack, blockstackTop, bci);
+                // CompilerAsserts.partialEvaluationConstant(blockstackThumbprint);
+                // // now execute what the thumbprint tells us
+                // int stackTopAfterExcepts = decodeExceptBlockStackTop(blockstackThumbprint);
+                // stackTop = unwindExceptHandler(stack, stackTop, stackTopAfterExcepts);
+                // int stackTopAfterFinally = decodeStackTop((int) blockstackThumbprint);
+                // stackTop = unwindBlock(stack, stackTop, stackTopAfterFinally);
+                // blockstackTop = decodeBlockstackTop((int) blockstackThumbprint);
+                // int handlerBCI = decodeBCI((int) blockstackThumbprint);
 
-                if (handlerBCI > 0) {
-                    // handlerBCI cannot be 0, since +2 is always addeed to the jump target of the
-                    // finally block
-                    assert blockstackTop >= 0 && blockstackTop < MAXBLOCKS;
-                    blockstack[blockstackTop] = encodeBlockTypeExcept() | encodeStackTop(stackTop);
+                // if (handlerBCI > 0) {
+                //     // handlerBCI cannot be 0, since +2 is always addeed to the jump target of the
+                //     // finally block
+                //     assert blockstackTop >= 0 && blockstackTop < MAXBLOCKS;
+                //     blockstack[blockstackTop] = encodeBlockTypeExcept() | encodeStackTop(stackTop);
 
-                    // push the exception that is being handled
-                    // would use GetCaughtExceptionNode to reify the currently handled exception.
-                    // but we don't want to do that if it is not needed
-                    stack[++stackTop] = UNREIFIED_EXC_TRACEBACK;
-                    stack[++stackTop] = UNREIFIED_EXC_VALUE;
-                    stack[++stackTop] = UNREIFIED_EXC_TYPE;
-                    // push the exception currently being raised
-                    stack[++stackTop] = UNREIFIED_EXC_TRACEBACK;
-                    stack[++stackTop] = UNREIFIED_EXC_VALUE;
-                    stack[++stackTop] = e; // just push the exception, for the handler to look at
+                //     // push the exception that is being handled
+                //     // would use GetCaughtExceptionNode to reify the currently handled exception.
+                //     // but we don't want to do that if it is not needed
+                //     stack[++stackTop] = UNREIFIED_EXC_TRACEBACK;
+                //     stack[++stackTop] = UNREIFIED_EXC_VALUE;
+                //     stack[++stackTop] = UNREIFIED_EXC_TYPE;
+                //     // push the exception currently being raised
+                //     stack[++stackTop] = UNREIFIED_EXC_TRACEBACK;
+                //     stack[++stackTop] = UNREIFIED_EXC_VALUE;
+                //     stack[++stackTop] = e; // just push the exception, for the handler to look at
 
-                    bci = handlerBCI;
-                    oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                    continue;
-                } else {
+                //     bci = handlerBCI;
+                //     oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                //     continue;
+                // } else {
                     // didn't find a finally block, we're done
                     throw e;
-                }
+                // }
             } catch (AbstractTruffleException | StackOverflowError e) {
                 throw e;
             } catch (ControlFlowException | ThreadDeath e) {
@@ -1846,111 +1846,111 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    /**
-     * Record the current {@code blockstack} via it's "thumbprint" as the handlers for the current
-     * {@code bci}. This may insert a new blockstack range (in which case it starts out as [bci,
-     * bci]). If we already recorded this exact blockstack range, we assume proper nesting in which
-     * case we extend the range the block belongs to to include {@code bci}. The method ensures the
-     * ranges remain sorted by known start index.
-     *
-     * This is done to control the amount of code before PE when handling exceptions... What does
-     * searching for the handler really do? There are only two kinds of blocks - EXCEPT and FINALLY.
-     * The except blocks use unwindExceptHandler, the first FINALLY block that's found calls
-     * unwindBlock, inserts an EXCEPT block in its own position on the blockstack, and returns the
-     * jump target. We already assume that the blockstacks are properly nested and thus can be
-     * encoded PE safely as nested ranges. This we can just store the blockstack information more
-     * concisely:
-     *
-     * 1) How deep to unwind EXCEPT blocks. Only the last except block can win as being the "new-old
-     * currently handled exception" that is restored and there cannot be any FINALLY blocks
-     * in-between. So we just need the lowest stack level to pop to for EXCEPT blocks ... that's 12
-     * bits;
-     *
-     * 2) 16 bit - the handler BCI. It cannot be 0, we just don't generate that kind of code.
-     *
-     * 3) stackTop before FINALLY block was pushed ... that's another 12 bits.
-     *
-     * 4) which position in the blockstack is transformed into an EXCEPT block .. just 4 bits needed
-     * for this due to MAXBLOCKS being 15
-     *
-     * So really, all we need is to store one long per bci range that raised and that tells use all
-     * we need.
-     */
-    private long saveExceptionBlockstack(int bci, int stackTop, int[] blockstack, int blockstackTop) {
-        CompilerAsserts.neverPartOfCompilation();
-        int stackTopAfterExceptUnwinding = stackTop;
-        int stackTopAfterFinally = stackTop;
-        int handlerBCI = 0;
-        int newExceptBlockIndex = -1;
-        for (int i = blockstackTop; i >= 0; i--) {
-            int block = blockstack[i];
-            int stackTopBeforeBlock = decodeStackTop(block);
-            if (isBlockTypeExcept(block)) {
-                stackTopAfterExceptUnwinding = stackTopBeforeBlock;
-            } else {
-                assert isBlockTypeFinally(block);
-                stackTopAfterFinally = stackTopBeforeBlock;
-                handlerBCI = decodeBCI(block) + 2;
-                newExceptBlockIndex = i;
-                break;
-            }
-        }
-        long currentThumbprint = encodeExceptBlockStackTop(stackTopAfterExceptUnwinding) |
-                        encodeStackTop(stackTopAfterFinally) |
-                        encodeBlockstackTop(newExceptBlockIndex) |
-                        encodeBCI(handlerBCI);
+    // /**
+    //  * Record the current {@code blockstack} via it's "thumbprint" as the handlers for the current
+    //  * {@code bci}. This may insert a new blockstack range (in which case it starts out as [bci,
+    //  * bci]). If we already recorded this exact blockstack range, we assume proper nesting in which
+    //  * case we extend the range the block belongs to to include {@code bci}. The method ensures the
+    //  * ranges remain sorted by known start index.
+    //  *
+    //  * This is done to control the amount of code before PE when handling exceptions... What does
+    //  * searching for the handler really do? There are only two kinds of blocks - EXCEPT and FINALLY.
+    //  * The except blocks use unwindExceptHandler, the first FINALLY block that's found calls
+    //  * unwindBlock, inserts an EXCEPT block in its own position on the blockstack, and returns the
+    //  * jump target. We already assume that the blockstacks are properly nested and thus can be
+    //  * encoded PE safely as nested ranges. This we can just store the blockstack information more
+    //  * concisely:
+    //  *
+    //  * 1) How deep to unwind EXCEPT blocks. Only the last except block can win as being the "new-old
+    //  * currently handled exception" that is restored and there cannot be any FINALLY blocks
+    //  * in-between. So we just need the lowest stack level to pop to for EXCEPT blocks ... that's 12
+    //  * bits;
+    //  *
+    //  * 2) 16 bit - the handler BCI. It cannot be 0, we just don't generate that kind of code.
+    //  *
+    //  * 3) stackTop before FINALLY block was pushed ... that's another 12 bits.
+    //  *
+    //  * 4) which position in the blockstack is transformed into an EXCEPT block .. just 4 bits needed
+    //  * for this due to MAXBLOCKS being 15
+    //  *
+    //  * So really, all we need is to store one long per bci range that raised and that tells use all
+    //  * we need.
+    //  */
+    // private long saveExceptionBlockstack(int bci, int stackTop, int[] blockstack, int blockstackTop) {
+    //     CompilerAsserts.neverPartOfCompilation();
+    //     int stackTopAfterExceptUnwinding = stackTop;
+    //     int stackTopAfterFinally = stackTop;
+    //     int handlerBCI = 0;
+    //     int newExceptBlockIndex = -1;
+    //     for (int i = blockstackTop; i >= 0; i--) {
+    //         int block = blockstack[i];
+    //         int stackTopBeforeBlock = decodeStackTop(block);
+    //         if (isBlockTypeExcept(block)) {
+    //             stackTopAfterExceptUnwinding = stackTopBeforeBlock;
+    //         } else {
+    //             assert isBlockTypeFinally(block);
+    //             stackTopAfterFinally = stackTopBeforeBlock;
+    //             handlerBCI = decodeBCI(block) + 2;
+    //             newExceptBlockIndex = i;
+    //             break;
+    //         }
+    //     }
+    //     long currentThumbprint = encodeExceptBlockStackTop(stackTopAfterExceptUnwinding) |
+    //                     encodeStackTop(stackTopAfterFinally) |
+    //                     encodeBlockstackTop(newExceptBlockIndex) |
+    //                     encodeBCI(handlerBCI);
 
-        int knownIndex = -1;
-        for (int i = 0; i < blockstackRanges.length; i += 3) {
-            if (blockstackRanges[i + 2] == currentThumbprint) {
-                knownIndex = i;
-                break;
-            }
-        }
+    //     int knownIndex = -1;
+    //     for (int i = 0; i < blockstackRanges.length; i += 3) {
+    //         if (blockstackRanges[i + 2] == currentThumbprint) {
+    //             knownIndex = i;
+    //             break;
+    //         }
+    //     }
 
-        if (knownIndex >= 0) {
-            // we already know of this blockstack, so there's a block we need to extend
-            if (bci < blockstackRanges[knownIndex]) {
-                blockstackRanges[knownIndex] = bci;
-                // potentially need to re-sort the ranges
-                for (int j = 0; j < knownIndex; j += 3) {
-                    if (bci < blockstackRanges[j]) {
-                        // shift all ranges from j three places to the right, overwriting the range
-                        // starting at knownIndex, then the re-insert range knownIndex where range
-                        // j was
-                        long savedStop = blockstackRanges[knownIndex + 1];
-                        System.arraycopy(blockstackRanges, j, blockstackRanges, j + 3, knownIndex - j);
-                        blockstackRanges[j] = bci;
-                        blockstackRanges[j + 1] = savedStop;
-                        blockstackRanges[j + 2] = knownIndex;
-                    }
-                }
-            } else {
-                assert bci > blockstackRanges[knownIndex + 1];
-                blockstackRanges[knownIndex + 1] = bci;
-            }
-        } else {
-            // we don't know this blockstack at all, insert a new range
-            int insertionIndex = 0;
-            for (int i = 0; i < blockstackRanges.length; i += 3) {
-                assert bci != blockstackRanges[i] && bci != blockstackRanges[i + 1];
-                if (bci < blockstackRanges[i]) {
-                    insertionIndex = i;
-                } else {
-                    break;
-                }
-            }
-            long[] newRanges = new long[blockstackRanges.length + 3];
-            System.arraycopy(blockstackRanges, 0, newRanges, 0, insertionIndex);
-            System.arraycopy(blockstackRanges, insertionIndex, newRanges, insertionIndex + 3, blockstackRanges.length - insertionIndex);
-            blockstackRanges = newRanges;
-            blockstackRanges[insertionIndex] = bci;
-            blockstackRanges[insertionIndex + 1] = bci;
-            blockstackRanges[insertionIndex + 2] = currentThumbprint;
-        }
+    //     if (knownIndex >= 0) {
+    //         // we already know of this blockstack, so there's a block we need to extend
+    //         if (bci < blockstackRanges[knownIndex]) {
+    //             blockstackRanges[knownIndex] = bci;
+    //             // potentially need to re-sort the ranges
+    //             for (int j = 0; j < knownIndex; j += 3) {
+    //                 if (bci < blockstackRanges[j]) {
+    //                     // shift all ranges from j three places to the right, overwriting the range
+    //                     // starting at knownIndex, then the re-insert range knownIndex where range
+    //                     // j was
+    //                     long savedStop = blockstackRanges[knownIndex + 1];
+    //                     System.arraycopy(blockstackRanges, j, blockstackRanges, j + 3, knownIndex - j);
+    //                     blockstackRanges[j] = bci;
+    //                     blockstackRanges[j + 1] = savedStop;
+    //                     blockstackRanges[j + 2] = knownIndex;
+    //                 }
+    //             }
+    //         } else {
+    //             assert bci > blockstackRanges[knownIndex + 1];
+    //             blockstackRanges[knownIndex + 1] = bci;
+    //         }
+    //     } else {
+    //         // we don't know this blockstack at all, insert a new range
+    //         int insertionIndex = 0;
+    //         for (int i = 0; i < blockstackRanges.length; i += 3) {
+    //             assert bci != blockstackRanges[i] && bci != blockstackRanges[i + 1];
+    //             if (bci < blockstackRanges[i]) {
+    //                 insertionIndex = i;
+    //             } else {
+    //                 break;
+    //             }
+    //         }
+    //         long[] newRanges = new long[blockstackRanges.length + 3];
+    //         System.arraycopy(blockstackRanges, 0, newRanges, 0, insertionIndex);
+    //         System.arraycopy(blockstackRanges, insertionIndex, newRanges, insertionIndex + 3, blockstackRanges.length - insertionIndex);
+    //         blockstackRanges = newRanges;
+    //         blockstackRanges[insertionIndex] = bci;
+    //         blockstackRanges[insertionIndex + 1] = bci;
+    //         blockstackRanges[insertionIndex + 2] = currentThumbprint;
+    //     }
 
-        return currentThumbprint;
-    }
+    //     return currentThumbprint;
+    // }
 
     // Encoding for blockstack thumbprints is basically like for the target (since it is a target),
     // but in addition there's the stackTop for any except blocks on top.
@@ -1962,47 +1962,47 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return decodeStackTop((int) (thumbprint >>> 32));
     }
 
-    /**
-     * @see #saveExceptionBlockstack
-     */
-    @ExplodeLoop
-    private long findHandler(int stackTop, Object[] stack, int[] blockstack, int blockstackTop, int bci) {
-        CompilerAsserts.partialEvaluationConstant(stackTop);
-        CompilerAsserts.partialEvaluationConstant(blockstackTop);
-        CompilerAsserts.partialEvaluationConstant(bci);
-        CompilerDirectives.ensureVirtualized(stack);
-        CompilerDirectives.ensureVirtualized(blockstack);
+    // /**
+    //  * @see #saveExceptionBlockstack
+    //  */
+    // @ExplodeLoop
+    // private long findHandler(int stackTop, Object[] stack, int[] blockstack, int blockstackTop, int bci) {
+    //     CompilerAsserts.partialEvaluationConstant(stackTop);
+    //     CompilerAsserts.partialEvaluationConstant(blockstackTop);
+    //     CompilerAsserts.partialEvaluationConstant(bci);
+    //     CompilerDirectives.ensureVirtualized(stack);
+    //     CompilerDirectives.ensureVirtualized(blockstack);
 
-        CompilerAsserts.partialEvaluationConstant(blockstackRanges.length);
+    //     CompilerAsserts.partialEvaluationConstant(blockstackRanges.length);
 
-        long blockstackThumbprint = -1;
-        for (int i = 0; i < blockstackRanges.length; i += 3) {
-            CompilerAsserts.partialEvaluationConstant(blockstackRanges[i]);
-            CompilerAsserts.partialEvaluationConstant(blockstackRanges[i + 1]);
-            CompilerAsserts.partialEvaluationConstant(blockstackRanges[i + 2]);
-            if (bci < blockstackRanges[i]) {
-                // all following blockstack ranges are after this bci
-                break;
-            } else if (bci > blockstackRanges[i + 1]) {
-                // bci is after this blockstack entry starts, but also after it ends. Assuming
-                // non-overlapping and sorted by begin bci, this means that there cannot be an
-                // entry after this that would match, since that would have to have a higher start
-                // bci and also a higher end bci, which would make it overlap with the current
-                // block
-                break;
-            } else {
-                blockstackThumbprint = blockstackRanges[i + 2];
-            }
-        }
+    //     long blockstackThumbprint = -1;
+    //     for (int i = 0; i < blockstackRanges.length; i += 3) {
+    //         CompilerAsserts.partialEvaluationConstant(blockstackRanges[i]);
+    //         CompilerAsserts.partialEvaluationConstant(blockstackRanges[i + 1]);
+    //         CompilerAsserts.partialEvaluationConstant(blockstackRanges[i + 2]);
+    //         if (bci < blockstackRanges[i]) {
+    //             // all following blockstack ranges are after this bci
+    //             break;
+    //         } else if (bci > blockstackRanges[i + 1]) {
+    //             // bci is after this blockstack entry starts, but also after it ends. Assuming
+    //             // non-overlapping and sorted by begin bci, this means that there cannot be an
+    //             // entry after this that would match, since that would have to have a higher start
+    //             // bci and also a higher end bci, which would make it overlap with the current
+    //             // block
+    //             break;
+    //         } else {
+    //             blockstackThumbprint = blockstackRanges[i + 2];
+    //         }
+    //     }
 
-        CompilerAsserts.partialEvaluationConstant(blockstackThumbprint);
-        if (blockstackThumbprint == -1) {
-            // -1 cannot happen, since we're never setting all the bits in a real thumbprint
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            blockstackThumbprint = saveExceptionBlockstack(bci, stackTop, blockstack, blockstackTop);
-        }
-        return blockstackThumbprint;
-    }
+    //     CompilerAsserts.partialEvaluationConstant(blockstackThumbprint);
+    //     if (blockstackThumbprint == -1) {
+    //         // -1 cannot happen, since we're never setting all the bits in a real thumbprint
+    //         CompilerDirectives.transferToInterpreterAndInvalidate();
+    //         blockstackThumbprint = saveExceptionBlockstack(bci, stackTop, blockstack, blockstackTop);
+    //     }
+    //     return blockstackThumbprint;
+    // }
 
     @ExplodeLoop
     private static int unwindExceptHandler(Object[] stack, int stackTop, int stackTopBeforeBlock) {
@@ -2054,6 +2054,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 setItem.execute(frameToSync, localsObject, n, v);
             }
         }
+    }
+
+    public int getStartOffset() {
+        return co.startOffset;
     }
 
     // our own quickened bytecodes, counting down towards the generic codes

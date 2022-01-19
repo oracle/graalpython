@@ -857,7 +857,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raise,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached CastToJavaStringNode castStr,
-                        @Cached BuiltinFunctions.CompileNode compileNode) {
+                        @Cached("create(false)") BuiltinFunctions.CompileNode compileNode) {
             if (mode.equals("pyc")) {
                 ParserTokenizer tok;
                 if (codestr instanceof PBytesLike) {
