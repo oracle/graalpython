@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
@@ -102,7 +101,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CextUpcallNo
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CharPtrToJavaObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.DirectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseErrorResult;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObjectUpcallNode;
@@ -165,8 +163,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -219,7 +215,6 @@ import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -232,7 +227,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -240,7 +234,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -260,14 +253,12 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -777,47 +768,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             writeUnraisableNode.execute(null, exception, null, (object instanceof PNone) ? PNone.NONE : object);
             getThreadStateNode.setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
-        }
-    }
-
-    @Builtin(name = "do_richcompare", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(guards = "op == 0")
-        Object op0(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.LtNode compNode) {
-            return compNode.executeObject(frame, a, b);
-        }
-
-        @Specialization(guards = "op == 1")
-        Object op1(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.LeNode compNode) {
-            return compNode.executeObject(frame, a, b);
-        }
-
-        @Specialization(guards = "op == 2")
-        Object op2(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.EqNode compNode) {
-            return compNode.executeObject(frame, a, b);
-        }
-
-        @Specialization(guards = "op == 3")
-        Object op3(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.NeNode compNode) {
-            return compNode.executeObject(frame, a, b);
-        }
-
-        @Specialization(guards = "op == 4")
-        Object op4(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.GtNode compNode) {
-            return compNode.executeObject(frame, a, b);
-        }
-
-        @Specialization(guards = "op == 5")
-        Object op5(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.GeNode compNode) {
-            return compNode.executeObject(frame, a, b);
         }
     }
 
@@ -2023,264 +1973,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         protected static boolean isReprFormatCode(int formatCode) {
             return (char) formatCode == 'r';
-        }
-    }
-
-    @Builtin(name = "PyObject_Size", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @ImportStatic(SpecialMethodNames.class)
-    abstract static class PyObject_Size extends PythonUnaryBuiltinNode {
-
-        // n.b.: specializations 'doSequence' and 'doMapping' are not just shortcuts but also
-        // required for correctness because CPython's implementation uses
-        // 'type->tp_as_sequence->sq_length', 'type->tp_as_mapping->mp_length' which will bypass
-        // any
-        // user implementation of '__len__'.
-        @Specialization
-        static int doSequence(PSequence sequence,
-                        @Cached SequenceNodes.LenNode seqLenNode) {
-            return seqLenNode.execute(sequence);
-        }
-
-        @Specialization
-        static int doMapping(PHashingCollection container,
-                        @Cached HashingCollectionNodes.LenNode seqLenNode) {
-            return seqLenNode.execute(container);
-        }
-
-        @Specialization(guards = "!isMappingOrSequence(obj)")
-        static Object doGenericUnboxed(VirtualFrame frame, Object obj,
-                        @Cached("create(Len)") LookupAndCallUnaryNode callLenNode,
-                        @Cached ConditionProfile noLenProfile,
-                        @Cached CastToNativeLongNode castToLongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object result = callLenNode.executeObject(frame, obj);
-                if (noLenProfile.profile(result == PNone.NO_VALUE)) {
-                    return -1;
-                }
-                Object lresult = castToLongNode.execute(result);
-                assert lresult instanceof Long || lresult instanceof PythonNativeVoidPtr;
-                return lresult;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
-            }
-        }
-
-        protected static boolean isMappingOrSequence(Object obj) {
-            return obj instanceof PSequence || obj instanceof PHashingCollection;
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyObject_Call", parameterNames = {"callee", "args", "kwargs", "single_arg"})
-    @GenerateNodeFactory
-    abstract static class PyObjectCallNode extends PythonQuaternaryBuiltinNode {
-        @Specialization
-        Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj, int singleArg,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached CastArgsNode castArgsNode,
-                        @Cached CastKwargsNode castKwargsNode,
-                        @Cached CallNode callNode,
-                        @Cached ToNewRefNode toNewRefNode,
-                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-
-            try {
-                Object callable = asPythonObjectNode.execute(callableObj);
-                Object[] args;
-                if (singleArg != 0) {
-                    args = new Object[]{asPythonObjectNode.execute(argsObj)};
-                } else {
-                    args = castArgsNode.execute(frame, argsObj);
-                }
-                PKeyword[] keywords = castKwargsNode.execute(kwargsObj);
-                return toNewRefNode.execute(callNode.execute(frame, callable, args, keywords));
-            } catch (PException e) {
-                // transformExceptionToNativeNode acts as a branch profile
-                transformExceptionToNativeNode.execute(frame, e);
-                return nullToSulongNode.execute(getContext().getNativeNull());
-            }
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyObject_CallFunctionObjArgs", parameterNames = {"callable", "va_list"})
-    @GenerateNodeFactory
-    abstract static class PyObjectCallFunctionObjArgsNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(limit = "1")
-        Object doFunction(VirtualFrame frame, Object callableObj, Object vaList,
-                        @CachedLibrary("vaList") InteropLibrary argsArrayLib,
-                        @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
-                        @Cached CallNode callNode,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached GetLLVMType getLLVMType,
-                        @Cached ToNewRefNode toNewRefNode,
-                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object callable = asPythonObjectNode.execute(callableObj);
-                return toNewRefNode.execute(callFunction(frame, callable, vaList, argsArrayLib, argLib, callNode, toJavaNode, getLLVMType));
-            } catch (PException e) {
-                // transformExceptionToNativeNode acts as a branch profile
-                transformExceptionToNativeNode.execute(frame, e);
-                return nullToSulongNode.execute(getContext().getNativeNull());
-            }
-        }
-
-        static Object callFunction(VirtualFrame frame, Object callable, Object vaList,
-                        InteropLibrary argsArrayLib,
-                        InteropLibrary argLib,
-                        CallNode callNode,
-                        CExtNodes.ToJavaNode toJavaNode,
-                        GetLLVMType getLLVMType) {
-            if (argsArrayLib.hasArrayElements(vaList)) {
-                try {
-                    /*
-                     * Function 'PyObject_CallFunctionObjArgs' expects a va_list that contains just
-                     * 'PyObject *' and is terminated by 'NULL'. Hence, we allocate an argument
-                     * array with one element less than the va_list object says (since the last
-                     * element is expected to be 'NULL'; this is best effort). However, we must also
-                     * stop at the first 'NULL' element we encounter since a user could pass several
-                     * 'NULL'.
-                     */
-                    long arraySize = argsArrayLib.getArraySize(vaList);
-                    Object[] args = new Object[PInt.intValueExact(arraySize) - 1];
-                    int filled = 0;
-                    Object llvmPyObjectPtrType = getLLVMType.execute(LLVMType.PyObject_ptr_t);
-                    for (int i = 0; i < args.length; i++) {
-                        try {
-                            Object object = argsArrayLib.invokeMember(vaList, "get", i, llvmPyObjectPtrType);
-                            if (argLib.isNull(object)) {
-                                break;
-                            }
-                            args[i] = toJavaNode.execute(object);
-                            filled++;
-                        } catch (ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
-                            throw CompilerDirectives.shouldNotReachHere();
-                        }
-                    }
-                    if (filled < args.length) {
-                        args = PythonUtils.arrayCopyOf(args, filled);
-                    }
-                    return callNode.execute(frame, callable, args);
-                } catch (UnsupportedMessageException | OverflowException e) {
-                    // I think we can just assume that there won't be more than
-                    // Integer.MAX_VALUE arguments.
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyObject_CallMethodObjArgs", parameterNames = {"receiver", "method_name", "va_list"})
-    @GenerateNodeFactory
-    abstract static class PyObjectCallMethodObjArgsNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(limit = "1")
-        Object doMethod(VirtualFrame frame, Object receiverObj, Object methodNameObj, Object vaList,
-                        @CachedLibrary("vaList") InteropLibrary argsArrayLib,
-                        @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
-                        @Cached CallNode callNode,
-                        @Cached GetAnyAttributeNode getAnyAttributeNode,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached GetLLVMType getLLVMType,
-                        @Cached ToNewRefNode toNewRefNode,
-                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-
-            try {
-                Object receiver = asPythonObjectNode.execute(receiverObj);
-                Object methodName = asPythonObjectNode.execute(methodNameObj);
-                Object method = getAnyAttributeNode.executeObject(frame, receiver, methodName);
-                return toNewRefNode.execute(PyObjectCallFunctionObjArgsNode.callFunction(frame, method, vaList, argsArrayLib, argLib, callNode, toJavaNode, getLLVMType));
-            } catch (PException e) {
-                // transformExceptionToNativeNode acts as a branch profile
-                transformExceptionToNativeNode.execute(frame, e);
-                return nullToSulongNode.execute(getContext().getNativeNull());
-            }
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyObject_CallMethod", parameterNames = {"object", "method_name", "args", "single_arg"})
-    @GenerateNodeFactory
-    abstract static class PyObjectCallMethodNode extends PythonQuaternaryBuiltinNode {
-        @Specialization
-        Object doGeneric(VirtualFrame frame, Object receiverObj, String methodName, Object argsObj, int singleArg,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached CastArgsNode castArgsNode,
-                        @Cached ToNewRefNode toNewRefNode,
-                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-
-            try {
-                Object receiver = asPythonObjectNode.execute(receiverObj);
-                Object[] args;
-                if (singleArg != 0) {
-                    args = new Object[]{asPythonObjectNode.execute(argsObj)};
-                } else {
-                    args = castArgsNode.execute(frame, argsObj);
-                }
-                return toNewRefNode.execute(callMethod.execute(frame, receiver, methodName, args));
-            } catch (PException e) {
-                // transformExceptionToNativeNode acts as a branch profile
-                transformExceptionToNativeNode.execute(frame, e);
-                return nullToSulongNode.execute(getContext().getNativeNull());
-            }
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyObject_FastCallDict", parameterNames = {"callable", "argsArray", "kwargs"})
-    @GenerateNodeFactory
-    abstract static class PyObjectFastCallDictNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(limit = "1")
-        Object doGeneric(VirtualFrame frame, Object callableObj, Object argsArray, Object kwargsObj,
-                        @CachedLibrary("argsArray") InteropLibrary argsArrayLib,
-                        @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached CastKwargsNode castKwargsNode,
-                        @Cached CallNode callNode,
-                        @Cached ToNewRefNode toNewRefNode,
-                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            if (argsArrayLib.hasArrayElements(argsArray)) {
-                try {
-                    try {
-                        // consume all arguments of the va_list
-                        long arraySize = argsArrayLib.getArraySize(argsArray);
-                        Object[] args = new Object[PInt.intValueExact(arraySize)];
-                        for (int i = 0; i < args.length; i++) {
-                            try {
-                                args[i] = toJavaNode.execute(argsArrayLib.readArrayElement(argsArray, i));
-                            } catch (InvalidArrayIndexException e) {
-                                throw CompilerDirectives.shouldNotReachHere();
-                            }
-                        }
-                        Object callable = asPythonObjectNode.execute(callableObj);
-                        PKeyword[] keywords = castKwargsNode.execute(kwargsObj);
-                        return toNewRefNode.execute(callNode.execute(frame, callable, args, keywords));
-                    } catch (UnsupportedMessageException | OverflowException e) {
-                        // I think we can just assume that there won't be more than
-                        // Integer.MAX_VALUE arguments.
-                        throw CompilerDirectives.shouldNotReachHere();
-                    }
-                } catch (PException e) {
-                    // transformExceptionToNativeNode acts as a branch profile
-                    transformExceptionToNativeNode.execute(frame, e);
-                    return nullToSulongNode.execute(getContext().getNativeNull());
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 

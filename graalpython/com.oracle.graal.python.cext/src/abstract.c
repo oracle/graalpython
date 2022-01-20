@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -345,6 +345,10 @@ typedef PyObject* (*getitem_fun_t)(PyObject*, PyObject*);
 UPCALL_TYPED_ID(PyObject_GetItem, getitem_fun_t);
 PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
     return _jls_PyObject_GetItem(native_to_java(o), polyglot_from_string(key, SRC_CS));
+}
+
+Py_ssize_t PyObject_Size(PyObject *o) {
+    return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(o));
 }
 
 UPCALL_ID(PyMapping_Keys);

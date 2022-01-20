@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -101,14 +101,6 @@ def PyStaticMethod_New(func):
 
 getset_descriptor = type(type(PyInstanceMethod_New).__code__)
 
-
-def PyObject_Str(o):
-    return str(o)
-
-
-def PyObject_Repr(o):
-    return repr(o)
-
 @may_raise
 def dict_from_list(lst):
     if len(lst) % 2 != 0:
@@ -117,93 +109,6 @@ def dict_from_list(lst):
     for i in range(0, len(lst), 2):
         d[lst[i]] = lst[i + 1]
     return d
-
-
-@may_raise(-1)
-def PyObject_DelItem(obj, key):
-    del obj[key]
-    return 0
-
-
-@may_raise(-1)
-def PyObject_SetItem(obj, key, value):
-    obj[key] = value
-    return 0
-
-
-def PyObject_IsInstance(obj, typ):
-    if isinstance(obj, typ):
-        return 1
-    else:
-        return 0
-
-
-def PyObject_IsSubclass(derived, cls):
-    if issubclass(derived, cls):
-        return 1
-    else:
-        return 0
-
-
-@may_raise
-def PyObject_RichCompare(left, right, op):
-    return do_richcompare(left, right, op)
-
-
-def PyObject_AsFileDescriptor(obj):
-    if isinstance(obj, int):
-        result = obj
-    elif hasattr(obj, "fileno"):
-        result = obj.fileno()
-        if not isinstance(result, int):
-            raise TypeError("fileno() returned a non-integer")
-    else:
-        raise TypeError("argument must be an int, or have a fileno() method")
-    if result < 0:
-        raise ValueError("file descriptor cannot be a negative integer (%d)" % result)
-    return int(result)
-
-
-@may_raise
-def PyObject_GenericGetAttr(obj, attr):
-    return object.__getattribute__(obj, attr)
-
-
-@may_raise(-1)
-def PyObject_GenericSetAttr(obj, attr, value):
-    object.__setattr__(obj, attr, value)
-    return 0
-
-
-# Note: Any exception that occurs during getting the attribute will cause this function to return 0.
-# This is intended and correct (see 'object.c: PyObject_HasAttr').
-def PyObject_HasAttr(obj, attr):
-    try:
-        return 1 if hasattr(obj, attr) else 0
-    except Exception:
-        return 0
-
-
-@may_raise(-1)
-def PyObject_HashNotImplemented(obj):
-    raise TypeError("unhashable type: '%s'" % type(obj).__name__)
-
-
-@may_raise(-1)
-def PyObject_IsTrue(obj):
-    return 1 if obj else 0
-
-
-@may_raise
-def PyObject_Bytes(obj):
-    if type(obj) == bytes:
-        return obj
-    if hasattr(obj, "__bytes__"):
-        res = obj.__bytes__()
-        if not isinstance(res, bytes):
-            raise TypeError("__bytes__ returned non-bytes (type %s)" % type(res).__name__)
-    return PyBytes_FromObject(obj)
-
 
 ## EXCEPTIONS
 

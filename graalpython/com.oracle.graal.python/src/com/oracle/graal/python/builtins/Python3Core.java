@@ -124,6 +124,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextIterBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextNamespaceBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins;
@@ -498,6 +499,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextLongBuiltins(),
                         new PythonCextMemoryViewBuiltins(),
                         new PythonCextModuleBuiltins(),
+                        new PythonCextObjectBuiltins(),
                         new PythonCextPythonRunBuiltins(),
                         new PythonCextNamespaceBuiltins(),
                         new PythonCextSetBuiltins(),
