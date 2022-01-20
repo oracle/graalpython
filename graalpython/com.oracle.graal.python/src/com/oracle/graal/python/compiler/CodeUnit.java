@@ -260,7 +260,7 @@ public final class CodeUnit {
             int start = exceptionHandlerRanges[i] & 0xffff;
             int stop = exceptionHandlerRanges[i + 1] & 0xffff;
             int stackAtHandler = exceptionHandlerRanges[i + 2];
-            String[] line = lines.get((int)stop);
+            String[] line = lines.get(stop);
             assert line != null;
             line[5] = String.format("exc handler %d--%d; stack: %d", start, stop - 1, stackAtHandler);
         }
