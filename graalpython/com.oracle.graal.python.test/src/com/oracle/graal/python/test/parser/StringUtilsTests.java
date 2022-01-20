@@ -114,6 +114,14 @@ public class StringUtilsTests extends ParserTestBase {
     }
 
     @Test
+    public void controlCharacters() {
+        Assert.assertEquals("\f", StringUtils.unescapeJavaString(errorCallback, "\\N{FORM FEED}"));
+        Assert.assertEquals("\f", StringUtils.unescapeJavaString(errorCallback, "\\N{FF}"));
+        Assert.assertEquals("\u0096", StringUtils.unescapeJavaString(errorCallback, "\\N{START OF GUARDED AREA}"));
+        Assert.assertEquals("\udb40\udd57", StringUtils.unescapeJavaString(errorCallback, "\\N{VS104}"));
+    }
+
+    @Test
     public void malformedError() throws Exception {
         checkSyntaxErrorMessage("'\\N'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-1: malformed \\N character escape");
         checkSyntaxErrorMessage("'\\N {LATIN CAPITAL LETTER A}'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-1: malformed \\N character escape");
