@@ -1,0 +1,5 @@
+Module[0, 19]
+    Assert[0, 19]
+        Test: UnaryOp[7, 19]
+            Op: NOT
+            Value: Name[11, 19] Value: "hascased"

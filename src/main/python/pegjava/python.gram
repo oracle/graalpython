@@ -195,7 +195,7 @@ nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
 
 yield_stmt[stmt_ty]: y=yield_expr { factory.createExpression(y) }
 
-assert_stmt[stmt_ty]: 'assert' a=expression b=[',' z=expression { z }] { _PyAST_Assert(a, b, EXTRA) }
+assert_stmt[stmt_ty]: 'assert' a=expression b=[',' z=expression { z }] { factory.createAssert(a, b, startToken.startOffset, endToken.endOffset) }
 
 del_stmt[stmt_ty]:
     | 'del' a=del_targets &(';' | NEWLINE) { _PyAST_Delete(a, EXTRA) }

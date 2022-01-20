@@ -2306,6 +2306,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'assert' expression [',' expression]
             debugMessageln("%d> assert_stmt[%d-%d]: %s", level, _mark, mark(), "'assert' expression [',' expression]");
             Token _keyword;
@@ -2320,9 +2321,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assert_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'assert' expression [',' expression]");
-                // TODO: node.action: _PyAST_Assert ( a , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Assert ( a , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createAssert(a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'assert' expression [',' expression]");
                 cache.putResult(_mark, ASSERT_STMT_ID, _res);
                 level--;
