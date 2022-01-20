@@ -223,7 +223,6 @@ public final class CodeUnit {
                 case STORE_ATTR:
                 case DELETE_ATTR:
                 case CALL_METHOD_VARARGS:
-                case POP_INTO_KWARGS:
                     line[5] = names[arg];
                     break;
                 case JUMP_BACKWARD:

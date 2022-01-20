@@ -42,6 +42,7 @@ package com.oracle.graal.python.compiler;
 
 import com.oracle.graal.python.pegparser.ExprContext;
 import static com.oracle.graal.python.compiler.OpCodes.*;
+import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Stack;
@@ -330,28 +332,46 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.startOffset = node.getStartOffset();
     }
 
-    private void collectIntoArray(ExprTy[] nodes) {
-        addOp(MAKE_ARRAY, nodes.length);
-        int i = 0;
-        for (ExprTy arg : nodes) {
-            arg.accept(this);
-            i++;
-            if (arg instanceof ExprTy.Starred) {
-                addOp(POP_STARRED_INTO_ARRAY);
-            } else if (i == 0xff) {
-                i = 0;
-                addOp(POP_INTO_ARRAY, i);
+    private void collectIntoArray(SSTNode[] nodes, byte bits) {
+        boolean collectionOnStack = false;
+        int cnt = 0;
+        for (SSTNode e : nodes) {
+            assert e instanceof ExprTy || e instanceof KeywordTy || e instanceof ExprTy.Starred;
+            if (e instanceof ExprTy.Starred || (e instanceof KeywordTy && ((KeywordTy) e).arg == null)) {
+                // splat
+                if (!collectionOnStack && cnt > 0) {
+                    addOp(COLLECTION_FROM_STACK, bits | cnt);
+                    e.accept(this);
+                    addOp(COLLECTION_ADD_COLLECTION, bits);
+                } else {
+                    e.accept(this);
+                    addOp(COLLECTION_FROM_COLLECTION, bits);
+                }
+                collectionOnStack = true;
+                cnt = 0;
+            } else {
+                e.accept(this);
+            }
+            if (cnt > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+                if (!collectionOnStack) {
+                    addOp(COLLECTION_FROM_STACK, bits | cnt);
+                } else {
+                    addOp(COLLECTION_ADD_STACK, bits | cnt);
+                }
+                collectionOnStack = true;
+                cnt = 0;
+            } else {
+                cnt++;
             }
         }
-        if (i != 0) {
-            addOp(POP_INTO_ARRAY, i);
+        if (!collectionOnStack) {
+            addOp(COLLECTION_FROM_STACK, bits);
         }
     }
 
     private void makeClosure(CodeUnit code, int hasDefaults, int hasKwDefaults) {
         if (code.freevars.length > 0) {
             // add the closure
-            addOp(MAKE_ARRAY, code.freevars.length);
             for (String fv : code.freevars) {
                 // special case for class scopes
                 int arg;
@@ -362,8 +382,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 }
                 addOp(LOAD_CLOSURE, arg);
             }
-            addOp(POP_INTO_ARRAY, code.freevars.length);
-            addOp(BUILD_TUPLE);
+            addOp(CLOSURE_FROM_STACK, code.freevars.length);
         }
         addOp(LOAD_CONST, addObject(unit.constants, code));
         addOp(MAKE_FUNCTION, hasDefaults + hasKwDefaults + (code.freevars.length > 0 ? 2 : 1));
@@ -535,23 +554,14 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
             return addOp(op, oparg);
         } else {
-            collectIntoArray(node.args);
+            collectIntoArray(node.args, CollectionBits.OBJECT);
             if (node.args.length > 0) {
                 unit.startOffset = node.args[node.args.length - 1].getEndOffset();
             }
             if (node.keywords.length > 0) {
                 assert op == CALL_FUNCTION_VARARGS;
-                addOp(MAKE_KWARGS, node.keywords.length);
-                for (KeywordTy arg : node.keywords) {
-                    arg.value.accept(this);
-                    if (arg.arg == null) {
-                        // a **keyword
-                        addOp(POP_STARRED_INTO_KWARGS);
-                    } else {
-                        addOp(POP_INTO_KWARGS, addObject(unit.names, arg.arg));
-                    }
-                    unit.startOffset = arg.getEndOffset();
-                }
+                collectIntoArray(node.keywords, CollectionBits.KWORDS);
+                unit.startOffset = node.args[node.keywords.length - 1].getEndOffset();
                 return addOp(CALL_FUNCTION_KW);
             } else {
                 return addOp(op, oparg);
@@ -730,7 +740,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (node.context == ExprContext.Store) {
             return unpackInto(node.elements);
         } else if (node.context == ExprContext.Load) {
-            collectIntoArray(node.elements);
+            collectIntoArray(node.elements, CollectionBits.LIST);
             return addOp(BUILD_LIST);
         } else {
             return visitSequence(node.elements);
@@ -756,8 +766,8 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Set node) {
-        collectIntoArray(node.elements);
-        return addOp(BUILD_SET);
+        collectIntoArray(node.elements, CollectionBits.SET);
+        return null;
     }
 
     @Override
@@ -785,7 +795,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (node.context == ExprContext.Store) {
             return unpackInto(node.elements);
         } else if (node.context == ExprContext.Load) {
-            collectIntoArray(node.elements);
+            collectIntoArray(node.elements, CollectionBits.TUPLE);
             return addOp(BUILD_TUPLE);
         } else {
             return visitSequence(node.elements);
@@ -809,7 +819,8 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(KeywordTy node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        node.value.accept(this);
+        return addOp(MAKE_KEYWORD, addObject(unit.constants, node.arg));
     }
 
     @Override
@@ -1022,21 +1033,20 @@ public class Compiler implements SSTreeVisitor<Void> {
         int hasKwDefaults = 0;
         if (node.args != null) {
             if (node.args.defaults != null && node.args.defaults.length > 0) {
-                collectIntoArray(node.args.defaults);
+                collectIntoArray(node.args.defaults, CollectionBits.OBJECT);
                 hasDefaults = CodeUnit.HAS_DEFAULTS;
             }
             if (node.args.kwDefaults != null && node.args.kwDefaults.length > 0) {
-                setOffset(node.args.kwDefaults[0]);
-                addOp(MAKE_HASHMAP);
+                ArrayList<KeywordTy> defs = new ArrayList<>();
                 for (int i = 0; i < node.args.kwOnlyArgs.length; i++) {
                     ArgTy arg = node.args.kwOnlyArgs[i];
                     ExprTy def = node.args.kwDefaults[i];
                     if (def != null) {
                         String mangled = ScopeEnvironment.mangle(unit.privateName, arg.arg);
-                        def.accept(this);
-                        addOp(PUT_INTO_HASHMAP, addObject(unit.constants, mangled));
+                        defs.add(new KeywordTy(mangled, def, arg.getStartOffset(), def.getEndOffset()));
                     }
                 }
+                collectIntoArray(defs.toArray(KeywordTy[]::new), CollectionBits.KWORDS);
                 hasKwDefaults = CodeUnit.HAS_KWONLY_DEFAULTS;
             }
         }

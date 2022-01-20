@@ -48,9 +48,11 @@ class Constants {
     static final int UNPACK_EFFECT = 0xcaffee02;
     static final int UNPACK_EX_EFFECT = 0xcaffee03;
     static final int POP_EFFECT = 0xcaffee04;
-    static final int POP_OR_JUMP_EFFECT = 0xcaffee05;
-    static final int REDUCE_EFFECT = 0xcaffee06;
+    static final int REDUCE_EFFECT = 0xcaffee05;
+    static final int POP_OR_JUMP_EFFECT = 0xcaffee06;
     static final int PUSH_OR_JUMP_EFFECT = 0xcaffee07;
+    static final int POP_EFFECT5 = 0xcaffee08;
+    static final int REDUCE_EFFECT5 = 0xcaffee09;
 }
 
 @GenerateEnumConstants
@@ -142,18 +144,6 @@ public enum OpCodes {
     LOAD_BYTES(                1,    1),
     // make a complex from two doubles on the top of stack
     MAKE_COMPLEX(              0,   -1),
-    // bytecodes to make arrays
-    MAKE_ARRAY(                1,    1),
-    POP_INTO_ARRAY(            1,    Constants.POP_EFFECT),
-    POP_STARRED_INTO_ARRAY(    0,   -1),
-    // bytecodes to make keyword argument arrays
-    MAKE_KWARGS(               1,    1),
-    POP_INTO_KWARGS(           1,   -1),
-    POP_STARRED_INTO_KWARGS(   0,   -1),
-    // bytecodes to make hash maps
-    MAKE_HASHMAP(              0,    1),
-    PUT_INTO_HASHMAP(          1,   -1),
-    PUT_ALL_INTO_HASHMAP(      0,   -1),
 
     // calling
     CALL_METHOD_VARARGS(       1,   -1), // receiver, args[] => result
@@ -186,12 +176,30 @@ public enum OpCodes {
 
     // making callables
     LOAD_CLOSURE(              1,    1),
+    CLOSURE_FROM_STACK(        1,    Constants.REDUCE_EFFECT),
     MAKE_FUNCTION(             1,    Constants.REDUCE_EFFECT),
+
+    // collection literals
+    COLLECTION_ADD_STACK(      1,    Constants.POP_EFFECT5), // add to coll underneath args the arg elements above
+    COLLECTION_FROM_STACK(     1,    Constants.REDUCE_EFFECT5), // build a collection from arg elements on stack
+    COLLECTION_ADD_COLLECTION( 1,   -1), // add the collection on top of stack to the collection underneath
+    COLLECTION_FROM_COLLECTION(1,    0), // replace the collection on top of stack with a collection of another type
+    MAKE_KEYWORD(              1,    0),
 
     // exceptions
     MATCH_EXC_OR_JUMP(         1,   -1),
     MATCH_EXC_OR_JUMP_FAR(     2,   -1),
     END_FINALLY(               0,   -1);
+
+    public static final class CollectionBits {
+        public static final byte MAX_STACK_ELEMENT_COUNT = 0b00011111;
+        public static final byte LIST   = 0b001;
+        public static final byte TUPLE  = 0b010;
+        public static final byte SET    = 0b011;
+        public static final byte DICT   = 0b100;
+        public static final byte KWORDS = 0b101;
+        public static final byte OBJECT = 0b110;
+    }
 
     static {
         assert values().length < 256;
@@ -231,6 +239,11 @@ public enum OpCodes {
             case Constants.REDUCE_EFFECT:
                 // arg is number of elements that get popped and reduced into a new element
                 return -oparg + 1;
+            case Constants.POP_EFFECT5:
+                return -(oparg & 0b11111);
+            case Constants.REDUCE_EFFECT5:
+                // arg is number of elements that get popped and reduced into a new element
+                return -(oparg & 0b11111) + 1;
             case Constants.UNPACK_EFFECT:
                 // arg is number of elements to unpack the list at the top of stack into, removing the
                 // list
