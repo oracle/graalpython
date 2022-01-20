@@ -201,8 +201,11 @@ public enum OpCodes {
         public static final byte OBJECT = 0b110;
     }
 
+    public static final OpCodes[] VALUES = new OpCodes[values().length];
+
     static {
         assert values().length < 256;
+        System.arraycopy(values(), 0, VALUES, 0, VALUES.length);
     }
 
     public final int stackEffect;

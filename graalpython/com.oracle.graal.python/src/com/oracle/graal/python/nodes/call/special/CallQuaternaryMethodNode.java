@@ -61,6 +61,10 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
         return CallQuaternaryMethodNodeGen.create();
     }
 
+    public static CallQuaternaryMethodNode getUncached() {
+        return CallQuaternaryMethodNodeGen.getUncached();
+    }
+
     public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3, Object arg4);
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
