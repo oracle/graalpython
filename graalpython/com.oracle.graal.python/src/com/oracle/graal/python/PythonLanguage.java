@@ -185,6 +185,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
+    @CompilationFinal private boolean singleContext = true;
+
+    public boolean isSingleContext() {
+        return singleContext;
+    }
+
     /**
      * This assumption will be valid if all contexts are single-threaded. Hence, it will be
      * invalidated as soon as at least one context has been initialized for multi-threading.
@@ -727,6 +733,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
         singleContextAssumption.invalidate();
+        singleContext = false;
     }
 
     private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
