@@ -53,7 +53,7 @@ public abstract class InvalidateNativeObjectsAllManagedNode extends PNodeWithCon
 
     public abstract void execute();
 
-    @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption"})
+    @Specialization(guards = "isSingleContext()", assumptions = "nativeObjectsAllManagedAssumption")
     @TruffleBoundary
     static void doValid(
                     @Cached("nativeObjectsAllManagedAssumption()") Assumption nativeObjectsAllManagedAssumption) {

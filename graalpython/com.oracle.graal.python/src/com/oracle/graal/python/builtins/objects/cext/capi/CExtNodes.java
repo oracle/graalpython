@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJav
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
@@ -106,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -2643,7 +2643,7 @@ public abstract class CExtNodes {
 
         public abstract boolean execute(PythonNativeWrapper obj);
 
-        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+        @Specialization(guards = "isSingleContext()", assumptions = "nativeObjectsAllManagedAssumption()")
         static boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
             return false;
         }
@@ -2686,9 +2686,9 @@ public abstract class CExtNodes {
          * native context, so we can be sure that the "nativeClassStableAssumption" (which is
          * per-context) is from the context in which this native object was created.
          */
-        @Specialization(guards = {"lib.isIdentical(cachedObj, obj, lib)", "memberName == cachedMemberName"}, //
+        @Specialization(guards = {"isSingleContext()", "lib.isIdentical(cachedObj, obj, lib)", "memberName == cachedMemberName"}, //
                         limit = "1", //
-                        assumptions = {"getNativeClassStableAssumption(cachedObj)", "singleContextAssumption()"})
+                        assumptions = {"getNativeClassStableAssumption(cachedObj)"})
         public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") NativeMember memberName,
                         @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
                         @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,

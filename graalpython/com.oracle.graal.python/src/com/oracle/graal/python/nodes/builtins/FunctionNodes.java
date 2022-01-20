@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -50,10 +50,10 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetCallTargetNodeGen;
 import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetDefaultsNodeGen;
 import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetKeywordDefaultsNodeGen;
 import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetSignatureNodeGen;
-import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetCallTargetNodeGen;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -70,7 +70,7 @@ public abstract class FunctionNodes {
 
         public abstract Object[] execute(PFunction function);
 
-        @Specialization(guards = {"self == cachedSelf"}, assumptions = {"singleContextAssumption()", "defaultsStableAssumption"})
+        @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = "defaultsStableAssumption")
         static Object[] getDefaultsCached(@SuppressWarnings("unused") PFunction self,
                         @SuppressWarnings("unused") @Cached("self") PFunction cachedSelf,
                         @Cached(value = "self.getDefaults()", dimensions = 1) Object[] cachedDefaults,
@@ -129,7 +129,7 @@ public abstract class FunctionNodes {
 
         public abstract PKeyword[] execute(PFunction function);
 
-        @Specialization(guards = {"self == cachedSelf"}, assumptions = {"singleContextAssumption()", "defaultsStableAssumption"})
+        @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = "defaultsStableAssumption")
         static PKeyword[] getKwDefaultsCached(@SuppressWarnings("unused") PFunction self,
                         @SuppressWarnings("unused") @Cached("self") PFunction cachedSelf,
                         @Cached(value = "self.getKwDefaults()", dimensions = 1) PKeyword[] cachedKeywordDefaults,
@@ -188,7 +188,7 @@ public abstract class FunctionNodes {
 
         public abstract PCode execute(PFunction function);
 
-        @Specialization(guards = {"self == cachedSelf"}, assumptions = {"singleContextAssumption()", "codeStableAssumption"})
+        @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = "codeStableAssumption")
         static PCode getCodeCached(@SuppressWarnings("unused") PFunction self,
                         @SuppressWarnings("unused") @Cached("self") PFunction cachedSelf,
                         @Cached("self.getCode()") PCode cachedCode,
