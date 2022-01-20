@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -121,7 +121,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     // special case for the very common module read
-    @Specialization(guards = {"isSingleContext()", 
+    @Specialization(guards = {"isSingleContext()",
                     "cachedObject == object",
                     // no need to check the cachedDict for equality, module.__dict__ is read-only
                     "getStorage(object, cachedDict) == cachedStorage"
