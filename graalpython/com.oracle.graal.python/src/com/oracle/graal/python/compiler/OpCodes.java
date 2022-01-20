@@ -110,10 +110,6 @@ public enum OpCodes {
     ROT_N(                     1,    0),
     LOAD_CONST(                1,    1),
     LOAD_NAME(                 1,    1),
-    BUILD_TUPLE(               0,    0),
-    BUILD_LIST(                0,    0),
-    BUILD_SET(                 0,    0),
-    BUILD_MAP(                 1,    0),
     LOAD_ATTR(                 1,    0),
     COMPARE_OP(                1,   -1),
     LOAD_GLOBAL(               1,    1),
@@ -192,13 +188,13 @@ public enum OpCodes {
     END_FINALLY(               0,   -1);
 
     public static final class CollectionBits {
-        public static final byte MAX_STACK_ELEMENT_COUNT = 0b00011111;
-        public static final byte LIST   = 0b001;
-        public static final byte TUPLE  = 0b010;
-        public static final byte SET    = 0b011;
-        public static final byte DICT   = 0b100;
-        public static final byte KWORDS = 0b101;
-        public static final byte OBJECT = 0b110;
+        public static final int MAX_STACK_ELEMENT_COUNT = 0b00011111;
+        public static final int LIST                    = 0b00100000;
+        public static final int TUPLE                   = 0b01000000;
+        public static final int SET                     = 0b01100000;
+        public static final int DICT                    = 0b10000000;
+        public static final int KWORDS                  = 0b10100000;
+        public static final int OBJECT                  = 0b11000000;
     }
 
     public static final OpCodes[] VALUES = new OpCodes[values().length];

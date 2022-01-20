@@ -1,0 +1,82 @@
+Disassembly of <module>:
+000000         0 LOAD_CONST                        0    (<module>.docompute from <module>)
+000000         2 MAKE_FUNCTION                     1
+000000         4 STORE_NAME                        0    (docompute)
+000465         6 LOAD_CONST                        1    (<module>.measure from <module>)
+000465         8 MAKE_FUNCTION                     1
+000465        10 STORE_NAME                        1    (measure)
+000465        12 LOAD_BYTE                         5
+000465        14 COLLECTION_FROM_STACK             1    (Object[])
+000465        16 LOAD_CONST                        2    (<module>.__benchmark__ from <module>)
+000465        18 MAKE_FUNCTION                     2
+000465        20 STORE_NAME                        2    (__benchmark__)
+000465        22 LOAD_NONE
+000465        23 RETURN_VALUE
+
+Disassembly of <module>.docompute:
+000033         0 LOAD_GLOBAL                       0    (range)
+000042         2 LOAD_FAST                         1    (num)
+000042         4 CALL_FUNCTION                     1
+000060         6 GET_ITER
+000053   >>    7 FOR_ITER                          62   (to 69)
+000072         9 STORE_FAST                        2    (i)
+000096        11 LOAD_DOUBLE                       0    (0.0)
+000096        13 STORE_FAST                        3    (sum_)
+000121        15 LOAD_BYTE                         0
+000134        17 STORE_FAST                        4    (j)
+000140   >>   19 LOAD_FAST                         4    (j)
+000141        21 LOAD_FAST                         1    (num)
+000145        23 COMPARE_OP                        2
+000154        25 POP_AND_JUMP_IF_FALSE             42   (to 67)
+000159        27 LOAD_FAST                         3    (sum_)
+000163        29 LOAD_DOUBLE                       1    (1.0)
+000124        31 LOAD_FAST                         2    (i)
+000113        33 LOAD_FAST                         4    (j)
+000183        35 BINARY_ADD
+000179        36 LOAD_FAST                         2    (i)
+000178        38 LOAD_FAST                         4    (j)
+000197        40 BINARY_ADD
+000197        41 LOAD_BYTE                         1
+000197        43 BINARY_ADD
+000197        44 BINARY_MULTIPLY
+000197        45 LOAD_BYTE                         1
+000197        47 BINARY_RSHIFT
+000197        48 LOAD_FAST                         2    (i)
+000197        50 BINARY_ADD
+000197        51 LOAD_BYTE                         1
+000197        53 BINARY_ADD
+000197        54 BINARY_TRUE_DIVIDE
+000197        55 INPLACE_ADD
+000197        56 STORE_FAST                        3    (sum_)
+000197        58 LOAD_FAST                         4    (j)
+000197        60 LOAD_BYTE                         1
+000197        62 INPLACE_ADD
+000197        63 STORE_FAST                        4    (j)
+000197        65 JUMP_BACKWARD                     46   (to 19)
+000197   >>   67 JUMP_BACKWARD                     60   (to 7)
+000197   >>   69 LOAD_FAST                         3    (sum_)
+000197        71 RETURN_VALUE
+
+Disassembly of <module>.measure:
+000365         0 LOAD_GLOBAL                       0    (range)
+000374         2 LOAD_FAST                         1    (num)
+000374         4 CALL_FUNCTION                     1
+000392         6 GET_ITER
+000402   >>    7 FOR_ITER                          14   (to 21)
+000385         9 STORE_FAST                        2    (run)
+000422        11 LOAD_GLOBAL                       3    (docompute)
+000435        13 LOAD_LONG                         0    (10000)
+000439        15 CALL_FUNCTION                     1
+000439        17 STORE_FAST                        4    (sum_)
+000439        19 JUMP_BACKWARD                     12   (to 7)
+000439   >>   21 LOAD_GLOBAL                       5    (print)
+000439        23 LOAD_STRING                       1    (sum)
+000439        25 LOAD_FAST                         4    (sum_)
+000439        27 CALL_FUNCTION                     2
+000439        29 POP_TOP
+
+Disassembly of <module>.__benchmark__:
+000473         0 LOAD_GLOBAL                       0    (measure)
+000484         2 LOAD_FAST                         1    (num)
+000484         4 CALL_FUNCTION                     1
+000484         6 POP_TOP

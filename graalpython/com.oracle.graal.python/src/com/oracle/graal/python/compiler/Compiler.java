@@ -332,7 +332,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.startOffset = node.getStartOffset();
     }
 
-    private void collectIntoArray(SSTNode[] nodes, byte bits) {
+    private void collectIntoArray(SSTNode[] nodes, int bits) {
         boolean collectionOnStack = false;
         int cnt = 0;
         for (SSTNode e : nodes) {
@@ -365,7 +365,9 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
         }
         if (!collectionOnStack) {
-            addOp(COLLECTION_FROM_STACK, bits);
+            addOp(COLLECTION_FROM_STACK, bits | cnt);
+        } else {
+            addOp(COLLECTION_ADD_STACK, bits | cnt);
         }
     }
 
@@ -741,7 +743,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             return unpackInto(node.elements);
         } else if (node.context == ExprContext.Load) {
             collectIntoArray(node.elements, CollectionBits.LIST);
-            return addOp(BUILD_LIST);
+            return null;
         } else {
             return visitSequence(node.elements);
         }
@@ -796,7 +798,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             return unpackInto(node.elements);
         } else if (node.context == ExprContext.Load) {
             collectIntoArray(node.elements, CollectionBits.TUPLE);
-            return addOp(BUILD_TUPLE);
+            return null;
         } else {
             return visitSequence(node.elements);
         }

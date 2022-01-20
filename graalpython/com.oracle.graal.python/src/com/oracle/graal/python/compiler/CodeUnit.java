@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.compiler;
 
+import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -184,7 +185,7 @@ public final class CodeUnit {
                 line[4] = "";
             } else {
                 for (int i = 0; i < opcode.argLength; i++) {
-                    arg = (arg << 8) | code[bci++];
+                    arg = (arg << 8) | Byte.toUnsignedInt(code[bci++]);
                 }
                 line[4] = String.format("% 2d", arg);
             }
@@ -232,6 +233,32 @@ public final class CodeUnit {
                 case DELETE_ATTR:
                 case CALL_METHOD_VARARGS:
                     line[5] = names[arg];
+                    break;
+                case COLLECTION_FROM_STACK:
+                case COLLECTION_ADD_STACK:
+                case COLLECTION_FROM_COLLECTION:
+                case COLLECTION_ADD_COLLECTION:
+                    line[4] = String.format("% 2d", arg & CollectionBits.MAX_STACK_ELEMENT_COUNT);
+                    switch (arg & ~CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+                        case CollectionBits.LIST:
+                            line[5] = "list";
+                            break;
+                        case CollectionBits.TUPLE:
+                            line[5] = "tuple";
+                            break;
+                        case CollectionBits.SET:
+                            line[5] = "set";
+                            break;
+                        case CollectionBits.DICT:
+                            line[5] = "dict";
+                            break;
+                        case CollectionBits.KWORDS:
+                            line[5] = "PKeyword[]";
+                            break;
+                        case CollectionBits.OBJECT:
+                            line[5] = "Object[]";
+                            break;
+                    }
                     break;
                 case JUMP_BACKWARD:
                 case JUMP_BACKWARD_FAR:

@@ -1218,28 +1218,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case LOAD_DEREF:
                     case STORE_DEREF:
                         throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "deref load/store");
-                    case BUILD_TUPLE: {
-                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        Object[] list = new Object[oparg];
-                        while (oparg > 0) {
-                            oparg--;
-                            list[oparg] = stack[stackTop];
-                            stack[stackTop--] = null;
-                        }
-                        stack[++stackTop] = factory.createTuple(list);
-                        break;
-                    }
-                    case BUILD_LIST: {
-                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        Object[] list = new Object[oparg];
-                        while (oparg > 0) {
-                            oparg--;
-                            list[oparg] = stack[stackTop];
-                            stack[stackTop--] = null;
-                        }
-                        stack[++stackTop] = factory.createList(list);
-                        break;
-                    }
                     case LOAD_ATTR: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         PyObjectGetAttr getAttr = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_ATTR, NODE_OBJECT_GET_ATTR, bci);
