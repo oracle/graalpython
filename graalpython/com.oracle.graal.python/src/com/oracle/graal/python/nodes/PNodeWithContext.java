@@ -79,4 +79,8 @@ public abstract class PNodeWithContext extends Node {
     public final PythonContext getContext() {
         return PythonContext.get(this);
     }
+
+    public final boolean isSingleContext() {
+        return getLanguage().isSingleContext();
+    }
 }
