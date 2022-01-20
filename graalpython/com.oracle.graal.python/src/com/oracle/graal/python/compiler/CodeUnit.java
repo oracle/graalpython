@@ -145,6 +145,14 @@ public final class CodeUnit {
         return (flags & HAS_VAR_ARGS) != 0;
     }
 
+    public boolean hasDefaults() {
+        return (flags & HAS_DEFAULTS) != 0;
+    }
+
+    public boolean hasKwDefaults() {
+        return (flags & HAS_KWONLY_DEFAULTS) != 0;
+    }
+
     @SuppressWarnings("fallthrough")
     @Override
     public String toString() {
