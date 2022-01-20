@@ -186,7 +186,8 @@ class Match():
         self.__indexgroup = indexgroup
 
     def end(self, groupnum=0):
-        return self.__result.getEnd(groupnum)
+        idxarg = self.__groupidx(groupnum)
+        return self.__result.getEnd(idxarg)
 
     def group(self, *args):
         if not args:
