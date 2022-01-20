@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,6 @@ import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
-import com.oracle.graal.python.nodes.statement.PrintExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
@@ -531,7 +530,7 @@ public final class PythonSSTNodeFactory {
             scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
         }
         scopeEnvironment.setFreeVarsInRootScope(useFrame);
-        FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source);
+        FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source, mode == PythonParser.ParserMode.Statement);
         if (isGen) {
             factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source, factoryVisitor);
         }
@@ -567,9 +566,8 @@ public final class PythonSSTNodeFactory {
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
                 case Statement:
-                    ExpressionNode printExpression = PrintExpressionNode.create(body);
-                    printExpression.assignSourceSection(body.getSourceSection());
-                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    body.assignSourceSection(body.getSourceSection());
+                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;

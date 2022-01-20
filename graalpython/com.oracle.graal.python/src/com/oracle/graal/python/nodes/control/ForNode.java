@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,7 +30,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -140,13 +139,12 @@ abstract class ForNextElementNode extends PNodeWithContext {
     @Specialization
     protected boolean doIterator(VirtualFrame frame, Object object,
                     @Cached GetNextNode next,
-                    @Cached IsBuiltinClassProfile errorProfile,
-                    @Cached PRaiseNode raise) {
+                    @Cached IsBuiltinClassProfile errorProfile) {
         try {
             ((WriteNode) target).executeObject(frame, next.execute(frame, object));
             return true;
         } catch (PException e) {
-            e.expectStopIteration(errorProfile, raise, object);
+            e.expectStopIteration(errorProfile);
             return false;
         }
     }

@@ -5,7 +5,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 22.1.0
 * String conversion (`__str__`) now calls `toString` for Java objects and `toDisplayString` interop message for foreign objects.
-* Improved compatibility with PyPI package `lxml`
+* Improved compatibility with PyPI packages `lxml`, `pytz`, `Pillow`
 
 ## Version 22.0.0
 * Added support for `pyexpat` module.

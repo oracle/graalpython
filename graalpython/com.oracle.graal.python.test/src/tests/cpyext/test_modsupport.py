@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -61,13 +61,23 @@ def _reference_typecheck(args, expected_type):
 
 
 def _reference_parse_O(args):
-    assert isinstance(args[0], tuple)
-    assert isinstance(args[1], dict)
-    if args[0]:
+    if not isinstance(args[0], tuple) or not isinstance(args[1], dict):
+        raise SystemError
+    if len(args[0]) == 1:
         return args[0][0]
     elif "arg0" in args[1]:
         return args[1]["arg0"]
     raise TypeError
+
+
+def _reference_parse_tuple(args):
+    try:
+        t = args[0][0]
+        if len(t) != 2:
+            raise TypeError
+        return t[0], t[1]
+    except Exception:
+        raise TypeError
 
 
 class Indexable:
@@ -77,6 +87,26 @@ class Indexable:
     def __index__(self):
         return 123
 
+
+class MySeq:
+    def __len__(self):
+        return 2
+
+    def __getitem__(self, item):
+        if item == 0:
+            return 'x'
+        elif item == 1:
+            return 'y'
+        else:
+            raise IndexError
+
+
+class BadSeq:
+    def __len__(self):
+        return 2
+
+    def __getitem__(self, item):
+        raise IndexError
 
 class TestModsupport(CPyExtTestCase):
     def compile_module(self, name):
@@ -130,6 +160,9 @@ class TestModsupport(CPyExtTestCase):
             (tuple(), {"arg0": 'helloworld'}),
             (tuple(), dict()),
             (tuple(), {"arg1": 'helloworld'}),
+            (1, dict()),
+            (tuple(), 1),
+            (("a", "excess"), dict()),
         ),
         code='''
         static PyObject* wrap_PyArg_ParseTupleAndKeywords(PyObject* argTuple, PyObject* kwargs) {
@@ -146,6 +179,34 @@ class TestModsupport(CPyExtTestCase):
         argspec="OO",
         arguments=["PyObject* argTuple", "PyObject* kwargs"],
         callfunction="wrap_PyArg_ParseTupleAndKeywords",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_tuple = CPyExtFunction(
+        _reference_parse_tuple,
+        lambda: (
+            ((("a", "b"),),),
+            ((["a", "b"],),),
+            ((MySeq(),),),
+            ((["a"],),),
+            ((["a", "b", "c"],),),
+            ((1,),),
+            ((BadSeq(),),),
+        ),
+        code='''
+        static PyObject* wrap_PyArg_ParseTuple(PyObject* argTuple) {
+            PyObject* a = NULL;
+            PyObject* b = NULL;
+            if (PyArg_ParseTuple(argTuple, "(OO)", &a, &b) == 0) {
+                return NULL;
+            }
+            return Py_BuildValue("(OO)", a, b);
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_ParseTuple",
         cmpfunc=unhandled_error_compare
     )
 

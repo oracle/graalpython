@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -84,7 +84,7 @@ public abstract class GetNextNode extends PNodeWithContext {
 
             @Override
             public Object execute(Object receiver) {
-                throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, __NEXT__);
+                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
             }
         });
 

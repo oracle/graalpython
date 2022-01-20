@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,46 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.exception;
+#include "capi.h"
+#include "fileobject.h"
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.nodes.Node;
-
-/**
- * Use this node to get the traceback object of an exception object. The traceback may need to be
- * created lazily and this node takes care of it.
- */
-@GenerateUncached
-public abstract class GetExceptionTracebackNode extends Node {
-
-    public abstract Object execute(Object e);
-
-    @Specialization
-    static Object doExisting(PBaseException e,
-                    @Cached GetTracebackNode getTracebackNode) {
-        PTraceback result = null;
-        if (e.getTraceback() != null) {
-            result = getTracebackNode.execute(e.getTraceback());
-        }
-        return result != null ? result : PNone.NONE;
-    }
-
-    @Specialization
-    static Object doForeign(@SuppressWarnings("unused") AbstractTruffleException e) {
-        return PNone.NONE;
-    }
-
-    public static GetExceptionTracebackNode create() {
-        return GetExceptionTracebackNodeGen.create();
-    }
-
-    public static GetExceptionTracebackNode getUncached() {
-        return GetExceptionTracebackNodeGen.getUncached();
-    }
-}
+const char *Py_FileSystemDefaultEncoding = NULL;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -176,6 +176,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1086,8 +1087,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(MMAP_DATA, key)")
-        static Object doMmapData(PMMap object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object, 1);
+        Object doMmapData(PMMap object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.mmapGetPointer(getPosixSupport(), object.getPosixSupportHandle());
+            } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+                return new PySequenceArrayWrapper(object, 1);
+            }
         }
 
         @Specialization(guards = "eq(PROP_GET, key)")
@@ -1297,6 +1303,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         static NativeMember getNativeMember(String key) {
             return NativeMember.byName(key);
+        }
+
+        protected final Object getPosixSupport() {
+            return PythonContext.get(this).getPosixSupport();
         }
     }
 

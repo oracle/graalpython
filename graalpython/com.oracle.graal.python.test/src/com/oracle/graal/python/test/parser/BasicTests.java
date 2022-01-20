@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -706,6 +706,16 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void tryPrint() throws Exception {
+        checkScopeAndTree(
+                        "try:\n" +
+                                        "  1\n" +
+                                        "except:\n" +
+                                        "  pass",
+                        PythonParser.ParserMode.Statement);
+    }
+
+    @Test
     public void tuple01() throws Exception {
         checkTreeResult("(1, 2, 3)");
     }
@@ -922,6 +932,14 @@ public class BasicTests extends ParserTestBase {
                                         "  with A() as a:\n" +
                                         "    with B() as b:\n" +
                                         "      pass");
+    }
+
+    @Test
+    public void withPrint() throws Exception {
+        checkScopeAndTree(
+                        "with A():\n" +
+                                        "  1",
+                        PythonParser.ParserMode.Statement);
     }
 
     @Test

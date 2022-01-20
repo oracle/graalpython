@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackN
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -159,8 +158,7 @@ public final class ExceptionUtils {
     @TruffleBoundary
     public static void printExceptionTraceback(PythonContext context, PBaseException pythonException) {
         Object type = GetClassNode.getUncached().execute(pythonException);
-        PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
-        Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
+        Object tb = GetExceptionTracebackNode.getUncached().execute(pythonException);
 
         Object hook = context.lookupBuiltinModule("sys").getAttribute(BuiltinNames.EXCEPTHOOK);
         if (hook != PNone.NO_VALUE) {

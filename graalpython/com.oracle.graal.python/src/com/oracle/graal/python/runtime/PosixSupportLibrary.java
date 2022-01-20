@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -290,6 +290,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void mmapFlush(Object receiver, Object mmap, long offset, long length) throws PosixException;
 
     public abstract void mmapUnmap(Object receiver, Object mmap, long length) throws PosixException;
+
+    public abstract long mmapGetPointer(Object receiver, Object mmap);
 
     public static final class PwdResult {
         public final String name;
