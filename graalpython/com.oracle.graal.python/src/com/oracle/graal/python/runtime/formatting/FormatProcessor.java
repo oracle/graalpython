@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -24,7 +24,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -89,6 +88,8 @@ abstract class FormatProcessor<T> {
     abstract int parseNumber(int start, int end);
 
     abstract Object parseMappingKey(int start, int end);
+
+    protected abstract boolean isMapping(Object obj);
 
     static Object lookupAttribute(Object owner, String name) {
         return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(owner), name);
@@ -228,10 +229,6 @@ abstract class FormatProcessor<T> {
 
     protected static boolean isString(Object args1, Object lazyClass) {
         return PGuards.isString(args1) || isSubtype(lazyClass, PythonBuiltinClassType.PString);
-    }
-
-    protected static boolean isMapping(Object args1) {
-        return PyMappingCheckNode.getUncached().execute(args1);
     }
 
     protected static boolean isSubtype(Object lazyClass, PythonBuiltinClassType clazz) {
