@@ -201,6 +201,7 @@ like so:
 
     find graalpython -name *.scope -delete
     find graalpython -name *.tast -delete
+    find graalpython -name *.co -delete
     mx punittest com.oracle.graal.python.test.parser
 
 
