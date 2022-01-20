@@ -105,7 +105,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
 
     public abstract void executeObjectWithGlobals(VirtualFrame frame, Object globals, Object value);
 
-    @Specialization(guards = {"globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, limit = "1")
     void writeDictObjectCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, Object value,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
@@ -124,7 +124,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
         storeNode.executeWith(frame, globals, attributeId, value);
     }
 
-    @Specialization(guards = {"globals == cachedGlobals"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
     void writeModuleCached(@SuppressWarnings("unused") PythonModule globals, Object value,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
                     @Shared("write") @Cached WriteAttributeToObjectNode write) {

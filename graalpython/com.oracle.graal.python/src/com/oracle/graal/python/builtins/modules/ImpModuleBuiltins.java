@@ -168,7 +168,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Child private IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
         @Child private PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getFactory().createDispatched(1);
 
-        @Specialization(assumptions = "singleContextAssumption()")
+        @Specialization(guards = "isSingleContext()")
         public PBytes runCachedSingleContext(@SuppressWarnings("unused") VirtualFrame frame,
                         @Cached(value = "getMagicNumberPBytes(frame)", weak = true) PBytes magicBytes) {
             return magicBytes;

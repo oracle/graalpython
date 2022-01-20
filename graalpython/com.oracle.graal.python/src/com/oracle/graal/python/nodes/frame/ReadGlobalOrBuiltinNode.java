@@ -124,7 +124,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return WriteGlobalNode.create(attributeId, rhs);
     }
 
-    @Specialization(guards = {"globals == cachedGlobals"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
     protected Object readGlobalCached(@SuppressWarnings("unused") PythonModule globals,
                     @Shared("readFromModule") @Cached ReadAttributeFromObjectNode readFromModuleNode,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals) {
@@ -139,8 +139,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
-    @Specialization(guards = {"globals == cachedGlobals", "isBuiltinDict(cachedGlobals)",
-                    "cachedGlobals.getDictStorage() == cachedStorage"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)",
+                    "cachedGlobals.getDictStorage() == cachedStorage"}, limit = "1")
     protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") PDict globals,
                     @SuppressWarnings("unused") @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Cached(value = "globals.getDictStorage()", weak = true) HashingStorage cachedStorage,
@@ -149,8 +149,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
-    @Specialization(guards = {"globals == cachedGlobals",
-                    "isBuiltinDict(cachedGlobals)"}, assumptions = "singleContextAssumption()", replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals",
+                    "isBuiltinDict(cachedGlobals)"}, replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
     protected Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") PDict globals,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @CachedLibrary(value = "cachedGlobals.getDictStorage()") HashingStorageLibrary hlib) {

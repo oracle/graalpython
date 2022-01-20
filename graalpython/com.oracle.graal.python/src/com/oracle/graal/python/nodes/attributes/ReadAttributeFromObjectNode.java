@@ -121,11 +121,11 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     // special case for the very common module read
-    @Specialization(guards = {
+    @Specialization(guards = {"isSingleContext()", 
                     "cachedObject == object",
                     // no need to check the cachedDict for equality, module.__dict__ is read-only
                     "getStorage(object, cachedDict) == cachedStorage"
-    }, assumptions = "singleContextAssumption()", limit = "1")
+    }, limit = "1")
     @SuppressWarnings("unused")
     protected static Object readFromBuiltinModuleDict(PythonModule object, String key,
                     @Cached(value = "object", weak = true) PythonModule cachedObject,

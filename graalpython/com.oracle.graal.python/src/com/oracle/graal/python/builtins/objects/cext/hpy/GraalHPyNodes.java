@@ -2208,7 +2208,7 @@ public class GraalHPyNodes {
     public abstract static class HPyAttachNFIFunctionTypeNode extends HPyAttachFunctionTypeNode {
         public static final String NFI_LANGUAGE = "nfi";
 
-        @Specialization(guards = "llvmFunctionType == cachedType", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "llvmFunctionType == cachedType"}, limit = "3")
         static Object doCachedSingleContext(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointerObject, @SuppressWarnings("unused") LLVMType llvmFunctionType,
                         @Cached("llvmFunctionType") @SuppressWarnings("unused") LLVMType cachedType,
                         @Cached("getNFISignature(hpyContext, llvmFunctionType)") Object nfiSignature,

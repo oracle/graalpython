@@ -1251,7 +1251,7 @@ public abstract class TypeNodes {
             return cachedClassType;
         }
 
-        @Specialization(guards = "isPythonAbstractClass(object)", assumptions = "singleContextAssumption()", rewriteOn = NotSameTypeException.class)
+        @Specialization(guards = {"isSingleContext()", "isPythonAbstractClass(object)"}, rewriteOn = NotSameTypeException.class)
         static Object doPythonAbstractClass(Object object,
                         @Cached(value = "object", weak = true) Object cachedObject,
                         @CachedLibrary(limit = "2") InteropLibrary lib) throws NotSameTypeException {
@@ -1532,13 +1532,13 @@ public abstract class TypeNodes {
             return clazz.getInstanceShape(getLanguage());
         }
 
-        @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
         static Shape doBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass clazz,
                         @Cached("clazz") PythonBuiltinClass cachedClazz) {
             return cachedClazz.getInstanceShape();
         }
 
-        @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
         static Shape doClassCached(@SuppressWarnings("unused") PythonClass clazz,
                         @Cached("clazz") PythonClass cachedClazz) {
             return cachedClazz.getInstanceShape();

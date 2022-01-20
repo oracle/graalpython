@@ -85,7 +85,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         return (shape.getFlags() & PythonObject.HAS_MATERIALIZED_DICT) == 0;
     }
 
-    @Specialization(guards = {"object == cached", "dictIsConstant(cached)", "dict != null"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "object == cached", "dictIsConstant(cached)", "dict != null"}, limit = "1")
     static PDict getConstant(@SuppressWarnings("unused") PythonObject object,
                     @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonObject cached,
                     @Cached(value = "getDictUncached(object)", weak = true) PDict dict) {

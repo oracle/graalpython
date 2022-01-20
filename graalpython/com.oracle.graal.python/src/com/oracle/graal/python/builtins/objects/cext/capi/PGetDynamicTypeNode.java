@@ -66,19 +66,19 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
 
     public abstract Object execute(PythonNativeWrapper obj);
 
-    @Specialization(guards = "obj.isIntLike()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "obj.isIntLike()"})
     static Object doIntLikeSingleContext(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getLongobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
-    @Specialization(guards = "obj.isBool()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "obj.isBool()"})
     static Object doBoolSingleContext(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getBoolobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
-    @Specialization(guards = "obj.isDouble()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "obj.isDouble()"})
     static Object doDoubleSingleContext(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getFloatobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
@@ -127,14 +127,14 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
 
         public abstract Object execute(Object clazz);
 
-        @Specialization(guards = "clazz == cachedClass", limit = "10", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClass"}, limit = "10")
         static Object doBuiltinCachedResult(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
                         @Cached("getLLVMTypeForBuiltinClass(clazz, getContext())") Object llvmType) {
             return llvmType;
         }
 
-        @Specialization(guards = "clazz == cachedClass", limit = "1")
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClass"}, limit = "1")
         Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass) {
             return getLLVMTypeForBuiltinClass(cachedClass, getContext());
@@ -145,7 +145,7 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
             return getLLVMTypeForBuiltinClass(clazz, getContext());
         }
 
-        @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClass"})
         static Object doManagedClassCached(@SuppressWarnings("unused") PythonManagedClass clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonManagedClass cachedClass,
                         @Cached("getLLVMTypeForClass(clazz)") Object llvmType) {

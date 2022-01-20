@@ -73,7 +73,7 @@ public class StaticmethodBuiltins extends PythonBuiltins {
         /**
          * @see ClassmethodBuiltins.GetNode#getCached
          */
-        @Specialization(guards = {"cachedSelf == self"}, assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "cachedSelf == self"})
         protected static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
                         @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable) {

@@ -145,7 +145,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PBuiltinFunction;
     }
 
-    @Specialization(guards = {"klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1")
     static Object getPythonObjectConstantClass(@SuppressWarnings("unused") PythonObject object,
                     @SuppressWarnings("unused") @Cached("object.getShape()") Shape cachedShape,
                     @Cached(value = "object.getInitialPythonClass()", weak = true) Object klass) {

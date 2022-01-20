@@ -474,7 +474,7 @@ public abstract class CExtNodes {
             return doSingleton(cextContext, object, getContext());
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
@@ -487,7 +487,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
                         @Cached("wrapNativeClassFast(object, getContext())") PythonClassNativeWrapper wrapper) {
@@ -737,7 +737,7 @@ public abstract class CExtNodes {
             return doSingleton(cextContext, object, getContext());
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
@@ -751,7 +751,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
                         @Cached("wrapNativeClassFast(getContext(), object)") PythonClassNativeWrapper wrapper) {
@@ -912,7 +912,7 @@ public abstract class CExtNodes {
             return ToNewRefNode.doSingleton(cextContext, object, getContext());
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
@@ -926,7 +926,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
                         @Cached("wrapNativeClassFast(getContext(), object)") PythonClassNativeWrapper wrapper) {
@@ -1588,7 +1588,7 @@ public abstract class CExtNodes {
     public abstract static class GetNativeClassNode extends PNodeWithContext {
         public abstract Object execute(PythonAbstractNativeObject object);
 
-        @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "1")
         @SuppressWarnings("unused")
         static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
                         @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
@@ -1600,7 +1600,7 @@ public abstract class CExtNodes {
             return cachedClass;
         }
 
-        @Specialization(guards = "isSame(lib, cachedObject, object)", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "isSame(lib, cachedObject, object)"})
         @SuppressWarnings("unused")
         static Object getNativeClassCached(PythonAbstractNativeObject object,
                         @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
