@@ -131,6 +131,7 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -235,30 +236,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private static final NodeFunction<String, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
 
-    private static final IntNodeFunction<Node> COMPARE_OP_FACTORY = (int op) -> {
+    private static final IntNodeFunction<BinaryComparisonNode> COMPARE_OP_FACTORY = (int op) -> {
         switch (op) {
-            case 0:
+            case ExprTy.Compare.Operator.LT.ordinal():
                 return BinaryComparisonNode.LtNode.create();
-            case 1:
+            case ExprTy.Compare.Operator.LTE.ordinal():
                 return BinaryComparisonNode.LeNode.create();
-            case 2:
+            case ExprTy.Compare.Operator.EQ.ordinal():
                 return BinaryComparisonNode.EqNode.create();
-            case 3:
+            case ExprTy.Compare.Operator.NOTEQ.ordinal():
                 return BinaryComparisonNode.NeNode.create();
-            case 4:
+            case ExprTy.Compare.Operator.GT.ordinal():
                 return BinaryComparisonNode.GtNode.create();
-            case 5:
+            case ExprTy.Compare.Operator.GTE.ordinal():
                 return BinaryComparisonNode.GeNode.create();
-            case 6:
-                return ContainsNode.create();
-            case 7:
-                return ContainsNode.create();
-            case 8:
-                return IsNode.create();
-            case 9:
-                return IsNode.create();
-            case 10:
-                return ExceptMatchNode.create();
             default:
                 throw CompilerDirectives.shouldNotReachHere();
         }
@@ -1232,31 +1223,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         Object left = stack[stackTop];
-                        Node opNode = insertChildNode(localNodes[bci - 1], COMPARE_OP_FACTORY, bci, oparg);
-                        if (opNode instanceof BinaryComparisonNode) {
-                            stack[stackTop] = ((BinaryComparisonNode) opNode).executeObject(frame, left, right);
-                        } else if (opNode instanceof ContainsNode) {
-                            Object result = ((ContainsNode) opNode).executeObject(frame, left, right);
-                            if (oparg == 7) {
-                                CoerceToBooleanNode invert = insertChildNode(localNodes[bci], NODE_COERCE_TO_BOOLEAN_IF_FALSE, bci + 1);
-                                stack[stackTop] = invert.execute(frame, result);
-                            } else {
-                                stack[stackTop] = result;
-                            }
-                        } else if (opNode instanceof IsNode) {
-                            Object result = ((IsNode) opNode).execute(left, right);
-                            if (oparg == 9) {
-                                CoerceToBooleanNode invert = insertChildNode(localNodes[bci], NODE_COERCE_TO_BOOLEAN_IF_FALSE, bci + 1);
-                                stack[stackTop] = invert.execute(frame, result);
-                            } else {
-                                stack[stackTop] = result;
-                            }
-                        } else if (opNode instanceof ExceptMatchNode) {
-                            // top of stack (bci.e., right) is the clause, below is the exception
-                            stack[stackTop] = ((ExceptMatchNode) opNode).executeMatch(frame, left, right);
-                        } else {
-                            throw CompilerDirectives.shouldNotReachHere();
-                        }
+                        BinaryComparisonNode opNode = insertChildNode(localNodes[bci - 1], COMPARE_OP_FACTORY, bci, oparg);
+                        stack[stackTop] = opNode.executeObject(frame, left, right);
                         break;
                     }
                     case IMPORT_NAME: {
