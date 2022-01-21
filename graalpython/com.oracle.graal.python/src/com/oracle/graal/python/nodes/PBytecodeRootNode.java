@@ -1099,10 +1099,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         String varname = localNames[oparg];
                         if (locals != null) {
-                            PyObjectDelItem delItemNode = insertChildNode(localNodes[bci - 1], UNCACHED_OBJECT_DEL_ITEM, NODE_OBJECT_DEL_ITEM, bci);
+                            PyObjectDelItem delItemNode = insertChildNode(localNodes[bci - 1], UNCACHED_OBJECT_DEL_ITEM, NODE_OBJECT_DEL_ITEM, bci - 1);
                             delItemNode.execute(frame, locals, varname);
                         } else {
-                            DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes[bci], NODE_DELETE_GLOBAL, bci + 1, varname);
+                            DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes[bci], NODE_DELETE_GLOBAL, bci, varname);
                             deleteGlobalNode.executeWithGlobals(frame, globals);
                         }
                         break;
@@ -1164,16 +1164,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 CompilerDirectives.transferToInterpreterAndInvalidate();
                                 assert helper == null;
                                 if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                                    HashingStorageLibrary lib = insertChildNode(localNodes[bci - 1], UNCACHED_HASHING_STORAGE_LIBRARY, NODE_HASHING_STORAGE_LIBRARY, bci);
+                                    HashingStorageLibrary lib = insertChildNode(localNodes[bci - 1], UNCACHED_HASHING_STORAGE_LIBRARY, NODE_HASHING_STORAGE_LIBRARY, bci - 1);
                                     result = lib.getItem(((PDict) locals).getDictStorage(), varname);
                                 } else {
-                                    GetItemNode newNode = insertChildNode(localNodes[bci - 1], NODE_GET_ITEM, bci);
+                                    GetItemNode newNode = insertChildNode(localNodes[bci - 1], NODE_GET_ITEM, bci - 1);
                                     result = newNode.execute(frame, locals, varname);
                                 }
                             }
                         }
                         if (result == null) {
-                            ReadGlobalOrBuiltinNode read = insertChildNode(localNodes[bci], UNCACHED_READ_GLOBAL_OR_BUILTIN, NODE_READ_GLOBAL_OR_BUILTIN, bci + 1,
+                            ReadGlobalOrBuiltinNode read = insertChildNode(localNodes[bci], UNCACHED_READ_GLOBAL_OR_BUILTIN, NODE_READ_GLOBAL_OR_BUILTIN, bci,
                                             varname);
                             result = read.read(frame, globals, varname);
                         }
@@ -1211,7 +1211,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         Object left = stack[stackTop];
-                        BinaryComparisonNode opNode = insertChildNode(localNodes[bci - 1], COMPARE_OP_FACTORY, bci, oparg);
+                        BinaryComparisonNode opNode = insertChildNode(localNodes[bci - 1], COMPARE_OP_FACTORY, bci - 1, oparg);
                         stack[stackTop] = opNode.executeObject(frame, left, right);
                         break;
                     }
@@ -1427,14 +1427,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             CompilerDirectives.transferToInterpreterAndInvalidate();
             assert helper == null;
             if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes[bci - 1], UNCACHED_SET_ITEM, NODE_SET_ITEM, bci);
+                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes[bci - 1], UNCACHED_SET_ITEM, NODE_SET_ITEM, bci - 1);
                 newNode.execute(frame, (PDict) locals, varname, value);
             } else {
-                PyObjectSetItem newNode = insertChildNode(localNodes[bci - 1], UNCACHED_OBJECT_SET_ITEM, NODE_OBJECT_SET_ITEM, bci);
+                PyObjectSetItem newNode = insertChildNode(localNodes[bci - 1], UNCACHED_OBJECT_SET_ITEM, NODE_OBJECT_SET_ITEM, bci - 1);
                 newNode.execute(frame, locals, varname, value);
             }
         } else {
-            WriteGlobalNode writeGlobalNode = insertChildNode(localNodes[bci], UNCACHED_WRITE_GLOBAL, NODE_WRITE_GLOBAL, bci + 1, varname);
+            WriteGlobalNode writeGlobalNode = insertChildNode(localNodes[bci], UNCACHED_WRITE_GLOBAL, NODE_WRITE_GLOBAL, bci, varname);
             writeGlobalNode.write(frame, globals, varname, value);
         }
         return stackTop;
@@ -1463,7 +1463,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private int bytecodeImportName(VirtualFrame frame, PythonContext context, PythonModule builtins, Object globals, Object[] stack, int stackTop, int bci, int oparg, String[] localNames,
                     Node[] localNodes) {
-        CastToJavaIntExactNode castNode = insertChildNode(localNodes[bci - 1], UNCACHED_CAST_TO_JAVA_INT_EXACT, NODE_CAST_TO_JAVA_INT_EXACT, bci);
+        CastToJavaIntExactNode castNode = insertChildNode(localNodes[bci - 1], UNCACHED_CAST_TO_JAVA_INT_EXACT, NODE_CAST_TO_JAVA_INT_EXACT, bci - 1);
         String modname = localNames[oparg];
         Object fromlist = stack[stackTop];
         stack[stackTop--] = null;
@@ -1479,7 +1479,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             fromlistArg = (String[]) list;
         }
         int level = castNode.execute(stack[stackTop]);
-        ImportName importNode = insertChildNode(localNodes[bci], UNCACHED_IMPORT_NAME, NODE_IMPORT_NAME, bci + 1);
+        ImportName importNode = insertChildNode(localNodes[bci], UNCACHED_IMPORT_NAME, NODE_IMPORT_NAME, bci);
         Object result = importNode.execute(frame, context, builtins, modname, globals, fromlistArg, level);
         stack[stackTop] = result;
         return stackTop;
