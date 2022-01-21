@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -190,7 +190,8 @@ public final class PythonSSTNodeFactory {
         return annotType;
     }
 
-    public FunctionDefSSTNode createFunctionDef(ScopeInfo functionScope, String name, String enclosingClassName, ArgDefListBuilder argBuilder, SSTNode body, SSTNode resultAnnotation, int startOffset, int endOffset) {
+    public FunctionDefSSTNode createFunctionDef(ScopeInfo functionScope, String name, String enclosingClassName, ArgDefListBuilder argBuilder, SSTNode body, SSTNode resultAnnotation, int startOffset,
+                    int endOffset) {
         SSTNode annotation = createAnnotationType(resultAnnotation);
         return new FunctionDefSSTNode(functionScope, name, enclosingClassName, argBuilder, body, annotation, startOffset, endOffset);
     }

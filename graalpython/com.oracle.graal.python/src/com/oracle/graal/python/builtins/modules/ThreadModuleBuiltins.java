@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -271,9 +271,9 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "interrupt_main", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, doc = "interrupt_main()\n" +
-            "\n" +
-            "Raise a KeyboardInterrupt in the main thread.\n" +
-            "A subthread can use this function to interrupt the main thread.")
+                    "\n" +
+                    "Raise a KeyboardInterrupt in the main thread.\n" +
+                    "A subthread can use this function to interrupt the main thread.")
     @GenerateNodeFactory
     abstract static class InterruptMainThreadNode extends PythonUnaryBuiltinNode {
         @Specialization
