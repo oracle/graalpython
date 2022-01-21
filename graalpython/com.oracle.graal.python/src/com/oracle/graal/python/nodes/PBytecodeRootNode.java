@@ -790,9 +790,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case STORE_FAST: {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         Object value = stack[stackTop];
-                        fastlocals[oparg] = value;
                         if (value instanceof Boolean) {
                             localBC[bci] = STORE_FAST_BOOLEAN;
                         } else if (value instanceof Integer) {
@@ -804,6 +802,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         } else {
                             localBC[bci] = STORE_FAST_GENERIC;
                         }
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        fastlocals[oparg] = value;
                         stack[stackTop--] = null;
                         break;
                     }
@@ -819,7 +819,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             }
                         } else {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
-                            localBC[bci] = STORE_FAST_GENERIC;
+                            localBC[bci - 1] = STORE_FAST_GENERIC;
                             fastlocals[oparg] = value;
                         }
                         stack[stackTop--] = null;
@@ -838,9 +838,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         } else {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             if (value instanceof Long) {
-                                localBC[bci] = STORE_FAST_LONG;
+                                localBC[bci - 1] = STORE_FAST_LONG;
                             } else {
-                                localBC[bci] = STORE_FAST_GENERIC;
+                                localBC[bci - 1] = STORE_FAST_GENERIC;
                             }
                             fastlocals[oparg] = value;
                         }
@@ -866,7 +866,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             }
                         } else {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
-                            localBC[bci] = STORE_FAST_GENERIC;
+                            localBC[bci - 1] = STORE_FAST_GENERIC;
                             fastlocals[oparg] = value;
                         }
                         stack[stackTop--] = null;
@@ -884,7 +884,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             }
                         } else {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
-                            localBC[bci] = STORE_FAST_GENERIC;
+                            localBC[bci - 1] = STORE_FAST_GENERIC;
                             fastlocals[oparg] = value;
                         }
                         stack[stackTop--] = null;
