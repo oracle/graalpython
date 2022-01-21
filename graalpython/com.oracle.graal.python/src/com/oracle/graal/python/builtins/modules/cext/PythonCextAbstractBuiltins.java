@@ -185,12 +185,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     abstract static class PyNumberLongNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        int nlong(int i) {
+        static int nlong(int i) {
             return i;
         }
 
         @Specialization
-        long nlong(long i) {
+        static long nlong(long i) {
             return i;
         }
 
@@ -672,7 +672,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySequenceTupleNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isTuple(obj, getClassNode)")
-        public PTuple values(PTuple obj,
+        public static PTuple values(PTuple obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return obj;
         }
@@ -777,7 +777,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     abstract static class PySequenceContainsNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object contains(VirtualFrame frame, Object haystack, Object needle,
+        static Object contains(VirtualFrame frame, Object haystack, Object needle,
                         @Cached ContainsNode containsNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -919,7 +919,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySequenceDelItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object run(VirtualFrame frame, Object o, Object i,
+        static Object run(VirtualFrame frame, Object o, Object i,
                         @Cached PyObjectDelItem delItemNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {

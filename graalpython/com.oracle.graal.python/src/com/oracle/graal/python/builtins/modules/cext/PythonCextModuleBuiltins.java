@@ -110,7 +110,7 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetDocStringNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object run(VirtualFrame frame, PythonModule module, Object doc,
+        static Object run(VirtualFrame frame, PythonModule module, Object doc,
                         @Cached ObjectBuiltins.SetattrNode setattrNode) {
             setattrNode.execute(frame, module, __DOC__, doc);
             return PNone.NONE;
@@ -128,7 +128,7 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(VirtualFrame frame, String name,
+        static Object run(VirtualFrame frame, String name,
                         @Cached CallNode callNode) {
             return callNode.execute(frame, PythonBuiltinClassType.PythonModule, new Object[]{name});
         }
@@ -191,7 +191,7 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyModuleAddObjectNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
-        Object addObject(VirtualFrame frame, Object m, String k, Object o,
+        static Object addObject(VirtualFrame frame, Object m, String k, Object o,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode,
@@ -218,7 +218,7 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
-        public Object pop(VirtualFrame frame, Object m, Object key, Object defaultValue,
+        public static Object pop(VirtualFrame frame, Object m, Object key, Object defaultValue,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {

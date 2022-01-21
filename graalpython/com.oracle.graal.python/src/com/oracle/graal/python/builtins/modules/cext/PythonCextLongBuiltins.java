@@ -115,54 +115,54 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n == 0")
-        int sign(int n) {
+        static int sign(int n) {
             return 0;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n < 0")
-        int signNeg(int n) {
+        static int signNeg(int n) {
             return -1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n > 0")
-        int signPos(int n) {
+        static int signPos(int n) {
             return 1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n == 0")
-        int sign(long n) {
+        static int sign(long n) {
             return 0;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n < 0")
-        int signNeg(long n) {
+        static int signNeg(long n) {
             return -1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n > 0")
-        int signPos(long n) {
+        static int signPos(long n) {
             return 1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "b")
-        int signTrue(boolean b) {
+        static int signTrue(boolean b) {
             return 1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!b")
-        int signFalse(boolean b) {
+        static int signFalse(boolean b) {
             return 0;
         }
 
         @Specialization
-        int sign(PInt n,
+        static int sign(PInt n,
                         @Cached BranchProfile zeroProfile,
                         @Cached BranchProfile negProfile) {
             if (n.isNegative()) {
@@ -178,7 +178,7 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object signNative(VirtualFrame frame, Object obj,
+        public static Object signNative(VirtualFrame frame, Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             // function returns int, but -1 is expected result for 'n < 0'
@@ -186,7 +186,7 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(frame, obj,getClassNode,isSubtypeNode)"})
-        public Object sign(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        public static Object sign(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             // assert(PyLong_Check(v));

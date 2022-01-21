@@ -98,7 +98,7 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyThreadAcquireLockNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public int acquire(VirtualFrame frame, PLock lock, int waitflag,
+        public static int acquire(VirtualFrame frame, PLock lock, int waitflag,
                         @Cached AcquireLockNode acquireNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {

@@ -369,7 +369,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectDelItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object obj, Object k,
+        static Object doGeneric(VirtualFrame frame, Object obj, Object k,
                         @Cached PyObjectDelItem delNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -387,7 +387,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectSetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object obj, Object k, Object v,
+        static Object doGeneric(VirtualFrame frame, Object obj, Object k, Object v,
                         @Cached PyObjectSetItem setItemNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -405,7 +405,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectIsInstanceNode extends PythonBinaryBuiltinNode {
         @Specialization
-        int doGeneric(VirtualFrame frame, Object obj, Object typ,
+        static int doGeneric(VirtualFrame frame, Object obj, Object typ,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             return ((boolean) isInstanceNode.execute(frame, obj, typ)) ? 1 : 0;
@@ -416,7 +416,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectIsSubclassNode extends PythonBinaryBuiltinNode {
         @Specialization
-        int doGeneric(VirtualFrame frame, Object obj, Object typ,
+        static int doGeneric(VirtualFrame frame, Object obj, Object typ,
                         @Cached IsSubClassNode isSubclassNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             return ((boolean) isSubclassNode.execute(frame, obj, typ)) ? 1 : 0;
@@ -428,37 +428,37 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     abstract static class PyObjectRichCompareNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "op == 0")
-        Object op0(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op0(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.LtNode compNode) {
             return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 1")
-        Object op1(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op1(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.LeNode compNode) {
             return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 2")
-        Object op2(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op2(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.EqNode compNode) {
             return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 3")
-        Object op3(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op3(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.NeNode compNode) {
             return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 4")
-        Object op4(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op4(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.GtNode compNode) {
             return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 5")
-        Object op5(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op5(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.GeNode compNode) {
             return compNode.executeObject(frame, a, b);
         }
@@ -468,7 +468,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectAsFileDescriptorNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object asFileDescriptor(VirtualFrame frame, Object obj,
+        static Object asFileDescriptor(VirtualFrame frame, Object obj,
                         @Cached PyObjectAsFileDescriptor asFileDescriptorNode) {
             return asFileDescriptorNode.execute(frame, obj);
         }
@@ -494,7 +494,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectGenericSetAttrNode extends PythonTernaryBuiltinNode {
         @Specialization
-        int setAttr(VirtualFrame frame, Object obj, Object attr, Object value,
+        static int setAttr(VirtualFrame frame, Object obj, Object attr, Object value,
                         @Cached SetattrNode setAttrNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -511,7 +511,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectHasAttrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        int hasAttr(VirtualFrame frame, Object obj, Object attr,
+        static int hasAttr(VirtualFrame frame, Object obj, Object attr,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached BranchProfile exceptioBranchProfile) {
             try {
@@ -527,7 +527,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectHashNotImplementedNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object unhashable(VirtualFrame frame, Object obj,
+        static Object unhashable(VirtualFrame frame, Object obj,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, TypeError, UNHASHABLE_TYPE_P, obj);
         }
@@ -537,7 +537,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectIsTrueNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int isTrue(VirtualFrame frame, Object obj,
+        static int isTrue(VirtualFrame frame, Object obj,
                         @Cached com.oracle.graal.python.lib.PyObjectIsTrueNode isTrueNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -553,12 +553,12 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectBytesNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object bytes(PBytesLike bytes) {
+        static Object bytes(PBytesLike bytes) {
             return bytes;
         }
 
         @Specialization(guards = {"!isBytes(bytes)", "isBytesSubtype(frame, bytes, getClassNode, isSubtypeNode)"})
-        Object bytes(VirtualFrame frame, Object bytes,
+        static Object bytes(VirtualFrame frame, Object bytes,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             return bytes;

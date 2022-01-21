@@ -77,7 +77,7 @@ public final class PythonCextSliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySliceNewNode extends PythonTernaryBuiltinNode {
         @Specialization
-        public Object slice(VirtualFrame frame, long start, long stop, Object step,
+        public static Object slice(VirtualFrame frame, long start, long stop, Object step,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached BranchProfile isIntRangeProfile) {
             if (PInt.isIntRange(start) && PInt.isIntRange(stop)) {
@@ -88,7 +88,7 @@ public final class PythonCextSliceBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isInteger(start) || !isInteger(stop)"})
-        public Object slice(VirtualFrame frame, Object start, Object stop, Object step,
+        public static Object slice(VirtualFrame frame, Object start, Object stop, Object step,
                         @Cached SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, start, stop, step);
         }

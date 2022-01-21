@@ -180,13 +180,13 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyTupleSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int size(PTuple tuple,
+        public static int size(PTuple tuple,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             return tuple.getSequenceStorage().length();
         }
 
         @Specialization(guards = {"!isPTuple(obj)", "isTupleSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        public static Object sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -195,7 +195,7 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isPTuple(obj)", "!isTupleSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object size(VirtualFrame frame, Object obj,
+        public static Object size(VirtualFrame frame, Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
