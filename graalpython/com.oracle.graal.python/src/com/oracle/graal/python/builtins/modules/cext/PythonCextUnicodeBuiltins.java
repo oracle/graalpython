@@ -770,7 +770,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyUnicode_DecodeUTF8Stateful", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyUnicode_DecodeUTF8Stateful extends NativeUnicodeBuiltin {
+    abstract static class PyUnicodeDecodeUTF8StatefulNode extends NativeUnicodeBuiltin {
 
         @Specialization
         Object doUtf8Decode(VirtualFrame frame, Object cByteArray, String errors, @SuppressWarnings("unused") int reportConsumed,
@@ -800,7 +800,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyUnicode_Decode extends NativeBuiltin {
+    abstract static class PyUnicodeDecodeNode extends NativeBuiltin {
 
         @Specialization
         Object doDecode(VirtualFrame frame, PMemoryView mv, String encoding, String errors,

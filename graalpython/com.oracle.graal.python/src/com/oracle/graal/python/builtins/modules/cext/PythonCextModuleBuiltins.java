@@ -173,7 +173,7 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyModule_GetNameObject", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PyModule_GetNameObjectNode extends PythonUnaryBuiltinNode {
+    public abstract static class PyModuleGetNameObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getName(VirtualFrame frame, Object o,
                         @Cached PyObjectLookupAttr lookupAttrNode,

@@ -299,7 +299,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
     @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(CApiGuards.class)
-    abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
+    abstract static class PyBytesFromStringAndSizeNode extends NativeBuiltin {
         // n.b.: the specializations for PIBytesLike are quite common on
         // managed, when the PySequenceArrayWrapper that we used never went
         // native, and during the upcall to here it was simply unwrapped again

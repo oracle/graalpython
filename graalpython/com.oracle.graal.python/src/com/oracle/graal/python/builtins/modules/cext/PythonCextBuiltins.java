@@ -368,7 +368,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
      */
     @Builtin(name = "to_char_pointer", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class TruffleString_AsString extends NativeBuiltin {
+    abstract static class TruffleStringAsStringNode extends NativeBuiltin {
 
         @Specialization(guards = "isString(str)")
         static Object run(Object str,
@@ -471,7 +471,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Type extends NativeBuiltin {
+    abstract static class PyTruffleTypeNode extends NativeBuiltin {
 
         private static final String[] LOOKUP_MODULES = new String[]{
                         PythonCextBuiltins.PYTHON_CEXT,
@@ -773,7 +773,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_SetAttr", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyObject_Setattr extends PythonTernaryBuiltinNode {
+    abstract static class PyObjectSetAttrNode extends PythonTernaryBuiltinNode {
 
         abstract Object execute(Object object, String key, Object value);
 
@@ -863,7 +863,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "Py_NoValue")
     @GenerateNodeFactory
-    abstract static class Py_NoValue extends PythonBuiltinNode {
+    abstract static class PyNoValue extends PythonBuiltinNode {
         @Specialization
         static PNone doNoValue() {
             return PNone.NO_VALUE;
@@ -944,7 +944,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
+    abstract static class PyTruffleUnicodeFromWcharNode extends NativeUnicodeBuiltin {
         @Child private UnicodeFromWcharNode unicodeFromWcharNode;
         @Child private CExtNodes.ToNewRefNode toSulongNode;
 
@@ -997,7 +997,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_FromUTF8", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Unicode_FromUTF8 extends NativeBuiltin {
+    abstract static class PyTruffleUnicodeFromUTF8Node extends NativeBuiltin {
 
         @Specialization
         Object doBytes(VirtualFrame frame, Object o, Object errorMarker,
@@ -1052,23 +1052,23 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_PyTruffle_Unicode_AsLatin1String", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class _PyTruffle_Unicode_AsLatin1String extends NativeEncoderNode {
-        protected _PyTruffle_Unicode_AsLatin1String() {
+    abstract static class PyTruffleUnicodeAsLatin1StringNode extends NativeEncoderNode {
+        protected PyTruffleUnicodeAsLatin1StringNode() {
             super(StandardCharsets.ISO_8859_1);
         }
     }
 
     @Builtin(name = "_PyTruffle_Unicode_AsASCIIString", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class _PyTruffle_Unicode_AsASCIIString extends NativeEncoderNode {
-        protected _PyTruffle_Unicode_AsASCIIString() {
+    abstract static class PyTruffleUnicodeAsASCIIStringNode extends NativeEncoderNode {
+        protected PyTruffleUnicodeAsASCIIStringNode() {
             super(StandardCharsets.US_ASCII);
         }
     }
 
     @Builtin(name = "PyTruffle_Unicode_AsUnicodeAndSize", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Unicode_AsUnicodeAndSize extends NativeBuiltin {
+    abstract static class PyTruffleUnicodeAsUnicodeAndSizeNode extends NativeBuiltin {
         @Specialization
         @TruffleBoundary
         Object doUnicode(PString s) {
@@ -1085,7 +1085,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     // directly called without landing function
     @Builtin(name = "PyTruffle_Unicode_DecodeUTF32", minNumOfPositionalArgs = 5)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Unicode_DecodeUTF32 extends NativeUnicodeBuiltin {
+    abstract static class PyTruffleUnicodeDecodeUTF32Node extends NativeUnicodeBuiltin {
 
         @Specialization
         Object doUnicodeStringErrors(VirtualFrame frame, Object o, long size, String errors, int byteorder, Object errorMarker,
@@ -1127,7 +1127,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Unicode_AsWideChar", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
+    abstract static class PyTruffleUnicodeAsWideCharNode extends NativeUnicodeBuiltin {
         @Specialization
         Object doUnicode(VirtualFrame frame, Object s, long elementSize, Object errorMarker,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
@@ -1148,7 +1148,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Bytes_AsString", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Bytes_AsString extends NativeBuiltin {
+    abstract static class PyTruffleBytesAsStringNode extends NativeBuiltin {
         @Specialization
         static Object doBytes(PBytes bytes, @SuppressWarnings("unused") Object errorMarker) {
             return new PySequenceArrayWrapper(bytes, 1);
@@ -1261,7 +1261,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Set_SulongType", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Set_SulongType extends NativeBuiltin {
+    abstract static class PyTruffleSetSulongTypeNode extends NativeBuiltin {
 
         @Specialization(limit = "1")
         static Object doPythonObject(PythonClassNativeWrapper klass, Object ptr,
@@ -1394,7 +1394,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Bytes_EmptyWithCapacity", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Bytes_EmptyWithCapacity extends PythonUnaryBuiltinNode {
+    abstract static class PyTruffleBytesEmptyWithCapacityNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         PBytes doInt(int size) {
@@ -1707,7 +1707,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Register_NULL", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Register_NULL extends PythonUnaryBuiltinNode {
+    abstract static class PyTruffleRegisterNULLNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doIt(Object object) {
             PythonNativeNull nn = getContext().getNativeNull();
@@ -1746,7 +1746,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyType_IsSubtype", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PythonOptions.class)
-    abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
+    abstract static class PyTypeIsSubtypeNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"a == cachedA", "b == cachedB"}, assumptions = "singleContextAssumption()")
         static int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
@@ -1790,7 +1790,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Compute_Mro", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
-    public abstract static class PyTruffle_Compute_Mro extends PythonBinaryBuiltinNode {
+    public abstract static class PyTruffleComputeMroNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNativeObject(self)")
         Object doIt(Object self, String className) {
@@ -1817,7 +1817,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Type_Modified", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
-    public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {
+    public abstract static class PyTruffleTypeModifiedNode extends PythonTernaryBuiltinNode {
 
         @TruffleBoundary
         @Specialization(guards = {"isNativeClass(clazz)", "isNoValue(mroTuple)"})
@@ -1853,7 +1853,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_FatalError", parameterNames = {"prefix", "msg", "status"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
-    public abstract static class PyTruffle_FatalError extends PythonBuiltinNode {
+    public abstract static class PyTruffleFatalErrorNode extends PythonBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -1873,7 +1873,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_OS_StringToDouble", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyTruffle_OS_StringToDouble extends NativeBuiltin {
+    abstract static class PyTruffleOSStringToDoubleNode extends NativeBuiltin {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, String source, int reportPos) {
@@ -1914,7 +1914,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_OS_DoubleToString", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)
-    abstract static class PyTruffle_OS_DoubleToString extends NativeBuiltin {
+    abstract static class PyTruffleOSDoubleToStringNode extends NativeBuiltin {
 
         /* keep in sync with macro 'TRANSLATE_TYPE' in 'pystrtod.c' */
         private static final int Py_DTST_FINITE = 0;
@@ -2407,7 +2407,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
         static Object doNativeCallable(String name, Object methObj, int flags, int wrapper, Object type,
                         Object doc, PythonObjectFactory factory,
-                        @Cached PyObject_Setattr setattr,
+                        @Cached PyObjectSetAttrNode setattr,
                         @Shared("cf") @Cached CreateFunctionNode createFunctionNode,
                         @Shared("cstr") @Cached CharPtrToJavaObjectNode cstrPtr) {
             Object func = createFunctionNode.execute(name, methObj, wrapper, type, flags, factory);
