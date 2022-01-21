@@ -136,10 +136,19 @@ public final class CompilationUnit {
         currentBlock = b;
     }
 
-    void setQualifiedName(CompilationUnit parent) {
+    private void addImplicitReturn() {
+        Block b = startBlock;
+        while (b.next != null) {
+            b = b.next;
+        }
+        if (!b.isReturn()) {
+            b.instr.add(new Instruction(OpCodes.LOAD_NONE, 0, null, 0));
+            b.instr.add(new Instruction(OpCodes.RETURN_VALUE, 0, null, 0));
+        }
     }
 
     public CodeUnit assemble(String filename, int flags) {
+        addImplicitReturn();
         calculateJumpInstructionArguments();
 
         // Just a list of bytes with deltas of src offsets from bytecode to bytecode. The range is
