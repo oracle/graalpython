@@ -222,6 +222,8 @@ public final class CodeUnit {
                 case LOAD_FAST:
                 case STORE_FAST:
                 case DELETE_FAST:
+                    line[5] = varnames[arg];
+                    break;
                 case LOAD_NAME:
                 case STORE_NAME:
                 case DELETE_NAME:

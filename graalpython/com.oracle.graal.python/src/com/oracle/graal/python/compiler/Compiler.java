@@ -286,7 +286,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 return;
             } else if (uses.contains(Scope.DefUse.Local)) {
                 if (unit.scope.isFunction()) {
-                    addFastVariableOpcode(ctx, addObject(unit.names, mangled));
+                    addFastVariableOpcode(ctx, addObject(unit.varnames, mangled));
                     return;
                 }
             } else if (uses.contains(Scope.DefUse.GlobalImplicit)) {
