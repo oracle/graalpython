@@ -1107,9 +1107,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case UNPACK_SEQUENCE:
-                    case UNPACK_EX:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "unpack bytecodes");
                     case STORE_ATTR: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         PyObjectSetAttr callNode = insertChildNode(localNodes[bci], UNCACHED_OBJECT_SET_ATTR, NODE_OBJECT_SET_ATTR, bci);
@@ -1200,15 +1197,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         fastlocals[oparg] = null;
                         break;
                     }
-                    case DELETE_DEREF:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "DELETE_DEREF");
-                    case LOAD_CLOSURE:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "LOAD_CLOSURE");
-                    case LOAD_CLASSDEREF:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "LOAD_CLASSDEREF");
-                    case LOAD_DEREF:
-                    case STORE_DEREF:
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "deref load/store");
                     case LOAD_ATTR: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         PyObjectGetAttr getAttr = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_ATTR, NODE_OBJECT_GET_ATTR, bci);
