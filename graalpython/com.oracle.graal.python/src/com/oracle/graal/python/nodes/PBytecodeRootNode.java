@@ -728,17 +728,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case LOAD_BIGINT: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        stack[++stackTop] = factory.createInt((BigInteger) consts[oparg]);
+                        stack[++stackTop] = factory.createInt((BigInteger) localConsts[oparg]);
                         break;
                     }
                     case LOAD_STRING: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        stack[++stackTop] = consts[oparg];
+                        stack[++stackTop] = localConsts[oparg];
                         break;
                     }
                     case LOAD_BYTES: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        stack[++stackTop] = factory.createBytes((byte[])consts[oparg]);
+                        stack[++stackTop] = factory.createBytes((byte[])localConsts[oparg]);
                         break;
                     }
                     case MAKE_COMPLEX: {
