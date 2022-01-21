@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -516,6 +516,18 @@ def CPyExtType(name, code, **kwargs):
     """ if sys.version_info.minor >= 6 else "") + """
     }};
 
+    static PySequenceMethods {name}_sequence_methods = {{
+        {sq_length},        /* sq_length */
+        0,                  /* sq_concat */
+        0,                  /* sq_repeat */
+        {sq_item},          /* sq_item */
+    }};
+    
+    static PyMappingMethods {name}_mapping_methods = {{
+        {mp_length},        /* mp_length */
+        {mp_subscript},     /* mp_subscript */
+    }};
+
     static struct PyMethodDef {name}_methods[] = {{
         {tp_methods},
         {{NULL, NULL, 0, NULL}}
@@ -533,8 +545,8 @@ def CPyExtType(name, code, **kwargs):
         0,                          /* tp_reserved */
         {tp_repr},
         &{name}_number_methods,
-        {tp_as_sequence},
-        {tp_as_mapping},
+        &{name}_sequence_methods,
+        &{name}_mapping_methods,
         {tp_hash},
         {tp_call},
         {tp_str},
