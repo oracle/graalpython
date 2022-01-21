@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -186,7 +186,8 @@ class Match():
         self.__indexgroup = indexgroup
 
     def end(self, groupnum=0):
-        return self.__result.getEnd(groupnum)
+        idxarg = self.__groupidx(groupnum)
+        return self.__result.getEnd(idxarg)
 
     def group(self, *args):
         if not args:
