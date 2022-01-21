@@ -71,9 +71,30 @@ public class GenerateEnumConstantsProcessor extends AbstractProcessor {
             for (Element el : annotatedElements) {
                 if (el.getKind() == ElementKind.ENUM) {
                     try {
+                        Element enc = el.getEnclosingElement();
+                        int enclosingTypes = 0;
+                        OUTER: while (enc != null) {
+                            switch (enc.getKind()) {
+                                case CLASS:
+                                case ENUM:
+                                case INTERFACE:
+                                    enclosingTypes++;
+                                    break;
+                                default:
+                                    break OUTER;
+                            }
+                            enc.getEnclosingElement();
+                        }
                         String qualName = ((TypeElement) el).getQualifiedName() + "Constants";
                         String pkgName = qualName.substring(0, qualName.lastIndexOf('.'));
                         String className = qualName.substring(qualName.lastIndexOf('.') + 1);
+
+                        while (enclosingTypes-- > 0) {
+                            className = pkgName.substring(qualName.lastIndexOf('.') + 1) + className;
+                            pkgName = pkgName.substring(0, pkgName.lastIndexOf('.'));
+                            qualName = pkgName + "." + className;
+                        }
+
                         processingEnv.getMessager().printMessage(Kind.NOTE, String.format("Generating '%s'", qualName));
                         JavaFileObject file = processingEnv.getFiler().createSourceFile(qualName);
                         try (CodeWriter w = new CodeWriter(file.openWriter())) {
