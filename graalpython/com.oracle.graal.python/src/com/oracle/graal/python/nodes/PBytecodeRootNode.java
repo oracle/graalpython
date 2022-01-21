@@ -1580,7 +1580,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
                         co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, false,
                         Arrays.copyOf(co.varnames, co.argCount), // parameter names
-                        Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.kwOnlyArgCount));
+                        Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
         PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), signature, co);
         PCode codeobj = factory.createCode(rootNode.getCallTarget(), signature, co.nlocals, co.stacksize, co.flags,
                         co.constants, co.names, co.varnames, co.freevars, co.cellvars, co.filename, co.name,
