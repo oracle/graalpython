@@ -1672,11 +1672,4 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     public int getStartOffset() {
         return co.startOffset;
     }
-
-    // our own quickened bytecodes, counting down towards the generic codes
-    private static final byte STORE_FAST_BOOLEAN = (byte) 255;
-    private static final byte STORE_FAST_INT = (byte) 254;
-    private static final byte STORE_FAST_LONG = (byte) 253;
-    private static final byte STORE_FAST_DOUBLE = (byte) 252;
-    private static final byte STORE_FAST_GENERIC = (byte) 251;
 }

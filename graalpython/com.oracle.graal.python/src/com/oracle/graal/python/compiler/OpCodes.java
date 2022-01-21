@@ -185,7 +185,14 @@ public enum OpCodes {
     // exceptions
     MATCH_EXC_OR_JUMP(         1,   -1),
     MATCH_EXC_OR_JUMP_FAR(     2,   -1),
-    END_FINALLY(               0,   -1);
+    END_FINALLY(               0,   -1),
+
+    // dynamic bytecodes, only emitted at runtime for quickening
+    STORE_FAST_BOOLEAN(        1,   -1),
+    STORE_FAST_INT(            1,   -1),
+    STORE_FAST_LONG(           1,   -1),
+    STORE_FAST_DOUBLE(         1,   -1),
+    STORE_FAST_GENERIC(        1,   -1);
 
     public static final class CollectionBits {
         public static final int MAX_STACK_ELEMENT_COUNT = 0b00011111;
