@@ -1599,13 +1599,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         switch (typ) {
             case OpCodes.CollectionBits.LIST: {
                 PList l = factory.createList(Arrays.copyOfRange(stack, stackTop - cnt, stackTop + 1));
-                unwindBlock(stack, stackTop, stackTop - cnt);
+                stackTop = unwindBlock(stack, stackTop, stackTop - cnt);
                 stack[++stackTop] = l;
                 break;
             }
             case OpCodes.CollectionBits.TUPLE: {
                 PTuple t = factory.createTuple(Arrays.copyOfRange(stack, stackTop - cnt, stackTop + 1));
-                unwindBlock(stack, stackTop, stackTop - cnt);
+                stackTop = unwindBlock(stack, stackTop, stackTop - cnt);
                 stack[++stackTop] = t;
                 break;
             }
@@ -1625,15 +1625,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             case OpCodes.CollectionBits.KWORDS: {
                 PKeyword[] kwds = new PKeyword[cnt];
-                System.arraycopy(stack, stackTop - cnt, kwds, 0, cnt);
-                unwindBlock(stack, stackTop, stackTop - cnt);
+                System.arraycopy(stack, stackTop - cnt + 1, kwds, 0, cnt);
+                stackTop = unwindBlock(stack, stackTop, stackTop - cnt);
                 stack[++stackTop] = kwds;
                 break;
             }
             case OpCodes.CollectionBits.OBJECT: {
                 Object[] objs = new Object[cnt];
-                System.arraycopy(stack, stackTop - cnt, objs, 0, cnt);
-                unwindBlock(stack, stackTop, stackTop - cnt);
+                System.arraycopy(stack, stackTop - cnt + 1, objs, 0, cnt);
+                stackTop = unwindBlock(stack, stackTop, stackTop - cnt);
                 stack[++stackTop] = objs;
                 break;
             }
