@@ -1363,6 +1363,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private int bytecodeCallFunction(VirtualFrame frame, Object[] stack, int stackTop, int bci, int oparg, Node[] localNodes) {
         Object func = stack[stackTop - oparg];
         switch (oparg) {
+            case 0: {
+                CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
+                Object result = callNode.execute(frame, func, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+                stack[stackTop--] = null;
+                stack[stackTop] = result;
+                break;
+            }
             case 1: {
                 CallUnaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_UNARY_METHOD, NODE_CALL_UNARY_METHOD, bci);
                 Object result = callNode.executeObject(frame, func, stack[stackTop]);
