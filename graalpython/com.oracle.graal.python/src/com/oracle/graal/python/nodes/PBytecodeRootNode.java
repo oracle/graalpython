@@ -238,17 +238,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private static final IntNodeFunction<BinaryComparisonNode> COMPARE_OP_FACTORY = (int op) -> {
         switch (op) {
-            case ExprTy.Compare.Operator.LT.ordinal():
-                return BinaryComparisonNode.LtNode.create();
-            case ExprTy.Compare.Operator.LTE.ordinal():
-                return BinaryComparisonNode.LeNode.create();
-            case ExprTy.Compare.Operator.EQ.ordinal():
+            case 0:
                 return BinaryComparisonNode.EqNode.create();
-            case ExprTy.Compare.Operator.NOTEQ.ordinal():
+            case 1:
                 return BinaryComparisonNode.NeNode.create();
-            case ExprTy.Compare.Operator.GT.ordinal():
+            case 2:
+                return BinaryComparisonNode.LtNode.create();
+            case 3:
+                return BinaryComparisonNode.LeNode.create();
+            case 4:
                 return BinaryComparisonNode.GtNode.create();
-            case ExprTy.Compare.Operator.GTE.ordinal():
+            case 5:
                 return BinaryComparisonNode.GeNode.create();
             default:
                 throw CompilerDirectives.shouldNotReachHere();
