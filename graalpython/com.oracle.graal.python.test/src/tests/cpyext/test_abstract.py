@@ -343,6 +343,8 @@ def _default_unarop_args():
 
 def _size_and_check_args():
         return (
+            (42,),
+            (object(),),
             (DummySequence(),),
             (DummyLen(),),
             (DummyListSubclass(),),
@@ -384,7 +386,7 @@ def _size_and_check_args():
             (DummyDequeLen(),),  
             (DummyDequeLen([1,2,3]),),              
         )
-
+        
 class TestAbstractWithNative(object):
     def test_sequence_check(self):
         TestSequenceCheck = CPyExtType("TestSequenceCheck",
@@ -392,15 +394,15 @@ class TestAbstractWithNative(object):
                              PyObject* test_sq_item(PyObject *a, Py_ssize_t i) {
                                  return a;
                              }
-                             int callCheck(PyObject* a) {
-                                 return PySequence_Check(a);
+                             PyObject* callCheck(PyObject* a) {
+                                 return PyLong_FromLong(PySequence_Check(a));
                              }
                              """,
                              tp_methods='{"callCheck", (PyCFunction)callCheck, METH_O, ""}',
                              sq_item="&test_sq_item",
         )
         tester = TestSequenceCheck()
-        assert tester.callCheck("a")
+        assert tester.callCheck(tester)
 
     def test_sequence_size(self):
         TestSequenceSize = CPyExtType("TestSequenceSize",
@@ -416,7 +418,7 @@ class TestAbstractWithNative(object):
                              sq_length="&test_sq_length",
         )
         tester = TestSequenceSize()
-        assert tester.callSize("a") == 10
+        assert tester.callSize(tester) == 10
         
     def test_mapping_check(self):
         TestMappingCheck = CPyExtType("TestMappingCheck",
@@ -424,15 +426,15 @@ class TestAbstractWithNative(object):
                              PyObject* test_mp_subscript(PyObject* a, PyObject* b) {
                                  return a;
                              }
-                             int callCheck(PyObject* a) {
-                                 return PyMapping_Check(a);
+                             PyObject* callCheck(PyObject* a) {
+                                 return PyLong_FromLong(PyMapping_Check(a));
                              }
                              """,
                              tp_methods='{"callCheck", (PyCFunction)callCheck, METH_O, ""}',
                              mp_subscript="&test_mp_subscript",
         )
         tester = TestMappingCheck()
-        assert tester.callCheck("a")
+        assert tester.callCheck(tester)
         
     def test_mapping_size(self):
         TestMappingSize = CPyExtType("TestMappingSize",
@@ -448,7 +450,7 @@ class TestAbstractWithNative(object):
                              mp_length="&test_mp_length",
         )
         tester = TestMappingSize()
-        assert tester.callSize("a") == 11
+        assert tester.callSize(tester) == 11
         
     def test_object_size_sq(self):
         TestObjectSizeSQ = CPyExtType("TestObjectSizeSQ",
@@ -464,7 +466,7 @@ class TestAbstractWithNative(object):
                              sq_length="&test_sq_length",
         )
         tester = TestObjectSizeSQ()
-        assert tester.callSize("a") == 12
+        assert tester.callSize(tester) == 12
         
     def test_object_size_mp(self):
         TestObjectSizeMP = CPyExtType("TestObjectSizeMP",
@@ -480,7 +482,7 @@ class TestAbstractWithNative(object):
                              mp_length="&test_sq_length",
         )
         tester = TestObjectSizeMP()
-        assert tester.callSize("abc") == 13            
+        assert tester.callSize(tester) == 13            
         
 class TestAbstract(CPyExtTestCase):
 
