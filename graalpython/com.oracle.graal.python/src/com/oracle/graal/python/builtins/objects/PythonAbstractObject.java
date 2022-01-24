@@ -120,7 +120,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -160,14 +159,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     // @ImportStatic doesn't work for this for some reason
     protected static final SpecialMethodSlot Iter = SpecialMethodSlot.Iter;
     protected static final SpecialMethodSlot Next = SpecialMethodSlot.Next;
-
-    public static final Assumption singleContextAssumption() {
-        return PythonLanguage.get(null).singleContextAssumption;
-    }
-
-    public static final Assumption singleContextAssumption(Node node) {
-        return PythonLanguage.get(node).singleContextAssumption;
-    }
 
     protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
 

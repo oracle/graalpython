@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -2208,7 +2208,7 @@ public class GraalHPyNodes {
     public abstract static class HPyAttachNFIFunctionTypeNode extends HPyAttachFunctionTypeNode {
         public static final String NFI_LANGUAGE = "nfi";
 
-        @Specialization(guards = "llvmFunctionType == cachedType", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "llvmFunctionType == cachedType"}, limit = "3")
         static Object doCachedSingleContext(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointerObject, @SuppressWarnings("unused") LLVMType llvmFunctionType,
                         @Cached("llvmFunctionType") @SuppressWarnings("unused") LLVMType cachedType,
                         @Cached("getNFISignature(hpyContext, llvmFunctionType)") Object nfiSignature,

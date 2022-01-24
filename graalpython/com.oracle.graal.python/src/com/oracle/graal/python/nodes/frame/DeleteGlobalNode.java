@@ -40,21 +40,18 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class DeleteGlobalNode extends StatementNode implements GlobalNode {
     private final String attributeId;
-    protected final Assumption singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
 
     DeleteGlobalNode(String attributeId) {
         this.attributeId = attributeId;
@@ -71,7 +68,7 @@ public abstract class DeleteGlobalNode extends StatementNode implements GlobalNo
 
     public abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
 
-    @Specialization(guards = {"globals == cachedGlobals"}, assumptions = "singleContextAssumption", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
     Object deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Cached DeleteItemNode deleteNode) {
@@ -86,7 +83,7 @@ public abstract class DeleteGlobalNode extends StatementNode implements GlobalNo
         return PNone.NONE;
     }
 
-    @Specialization(guards = {"globals == cachedGlobals"}, assumptions = "singleContextAssumption", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
     Object deleteModuleCached(VirtualFrame frame, @SuppressWarnings("unused") PythonModule globals,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
                     @Cached DeleteAttributeNode storeNode) {

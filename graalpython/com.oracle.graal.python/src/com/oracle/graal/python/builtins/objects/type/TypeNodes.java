@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1251,7 +1251,7 @@ public abstract class TypeNodes {
             return cachedClassType;
         }
 
-        @Specialization(guards = "isPythonAbstractClass(object)", assumptions = "singleContextAssumption()", rewriteOn = NotSameTypeException.class)
+        @Specialization(guards = {"isSingleContext()", "isPythonAbstractClass(object)"}, rewriteOn = NotSameTypeException.class)
         static Object doPythonAbstractClass(Object object,
                         @Cached(value = "object", weak = true) Object cachedObject,
                         @CachedLibrary(limit = "2") InteropLibrary lib) throws NotSameTypeException {
@@ -1532,13 +1532,13 @@ public abstract class TypeNodes {
             return clazz.getInstanceShape(getLanguage());
         }
 
-        @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
         static Shape doBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass clazz,
                         @Cached("clazz") PythonBuiltinClass cachedClazz) {
             return cachedClazz.getInstanceShape();
         }
 
-        @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
         static Shape doClassCached(@SuppressWarnings("unused") PythonClass clazz,
                         @Cached("clazz") PythonClass cachedClazz) {
             return cachedClazz.getInstanceShape();

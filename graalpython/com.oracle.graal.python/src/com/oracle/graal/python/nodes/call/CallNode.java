@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -173,7 +173,7 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch.executeCall(frame, (PFunction) callable.getFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
-    @Specialization(limit = "1", guards = {"callable == cachedCallable", "isPBuiltinFunction(cachedCallable.getFunction())"}, assumptions = "singleContextAssumption()")
+    @Specialization(limit = "1", guards = {"isSingleContext()", "callable == cachedCallable", "isPBuiltinFunction(cachedCallable.getFunction())"})
     protected Object builtinMethodCallBuiltinDirectCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Cached("callable") PBuiltinMethod cachedCallable,
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,

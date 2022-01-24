@@ -44,7 +44,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
@@ -54,7 +53,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @SuppressWarnings("deprecation")    // new Frame API
 public abstract class PClosureRootNode extends PRootNode {
-    private final Assumption singleContextAssumption;
+    private final boolean isSingleContext;
     private final boolean annotationsAvailable;
     @CompilationFinal(dimensions = 1) protected final com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots;
     @CompilationFinal(dimensions = 1) protected PCell[] closure;
@@ -62,7 +61,7 @@ public abstract class PClosureRootNode extends PRootNode {
 
     protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots, boolean hasAnnotations) {
         super(language, frameDescriptor);
-        this.singleContextAssumption = language.singleContextAssumption;
+        this.isSingleContext = language.isSingleContext();
         this.freeVarSlots = freeVarSlots;
         this.length = freeVarSlots != null ? freeVarSlots.length : 0;
         this.annotationsAvailable = hasAnnotations;
@@ -71,10 +70,10 @@ public abstract class PClosureRootNode extends PRootNode {
     protected final void addClosureCellsToLocals(Frame frame) {
         PCell[] frameClosure = PArguments.getClosure(frame);
         if (frameClosure != null) {
-            if (singleContextAssumption.isValid() && closure == null) {
+            if (isSingleContext && closure == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 closure = frameClosure;
-            } else if (closure != PythonUtils.NO_CLOSURE && ((!singleContextAssumption.isValid() && closure != null) || closure != frameClosure)) {
+            } else if (closure != PythonUtils.NO_CLOSURE && ((!isSingleContext && closure != null) || closure != frameClosure)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 closure = PythonUtils.NO_CLOSURE;
             }

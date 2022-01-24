@@ -106,7 +106,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
             generatorCallTarget = PythonUtils.getOrCreateCallTarget(getGeneratorFunctionRootNode(lang));
         }
         CompilerAsserts.partialEvaluationConstant(lang);
-        if (lang.singleContextAssumption.isValid()) {
+        if (lang.isSingleContext()) {
             if (generatorCode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 generatorCode = factory().createCode(generatorCallTarget);

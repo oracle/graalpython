@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -145,7 +145,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PBuiltinFunction;
     }
 
-    @Specialization(guards = {"klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1")
     static Object getPythonObjectConstantClass(@SuppressWarnings("unused") PythonObject object,
                     @SuppressWarnings("unused") @Cached("object.getShape()") Shape cachedShape,
                     @Cached(value = "object.getInitialPythonClass()", weak = true) Object klass) {

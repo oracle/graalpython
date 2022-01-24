@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -150,7 +150,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return value;
     }
 
-    @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @Cached("findAttr(getContext(), cachedKlass, key)") Object cachedValue) {
@@ -184,7 +184,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return null;
     }
 
-    @Specialization(replaces = "lookupPBCTCached", guards = "klass == cachedKlass", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    @Specialization(replaces = {"lookupPBCTCached", "lookupPBCTCachedMulti"}, guards = "klass == cachedKlass", //
+                    limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected Object lookupPBCTCachedOwner(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @Cached("findOwnerInMro(getContext(), cachedKlass, key)") PythonBuiltinClassType ownerKlass,
@@ -251,9 +252,9 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return new AttributeAssumptionPair(attrAssumption, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
+    @Specialization(guards = {"isSingleContext()", "isSameType(cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
-                    assumptions = {"cachedAttrInMROInfo.assumption", "singleContextAssumption()"})
+                    assumptions = "cachedAttrInMROInfo.assumption")
     protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
                     @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
@@ -268,7 +269,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     // This specialization works well only for multi-context mode
     // Note: MroShape creation and updates are disabled in multi-context mode, see
     // PythonClass#initializeMroShape
-    @Specialization(guards = {"!singleContextAssumption().isValid()", "cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
+    @Specialization(guards = {"!isSingleContext()", "cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected Object lookupConstantMROShape(PythonClass klass,
                     @SuppressWarnings("unused") @Cached("klass.getMroShape()") MroShape cachedMroShape,
@@ -284,10 +285,10 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return nodes;
     }
 
-    @Specialization(guards = {"isSameType(cachedKlass, klass)", "mroLength < 32"}, //
+    @Specialization(guards = {"isSingleContext()", "isSameType(cachedKlass, klass)", "mroLength < 32"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     replaces = "lookupConstantMROShape", //
-                    assumptions = {"lookupStable", "singleContextAssumption()"})
+                    assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") Object klass,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,

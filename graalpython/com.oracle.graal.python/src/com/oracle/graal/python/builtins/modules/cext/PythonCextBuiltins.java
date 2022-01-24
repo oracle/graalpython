@@ -1748,7 +1748,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @ImportStatic(PythonOptions.class)
     abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"a == cachedA", "b == cachedB"}, assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "a == cachedA", "b == cachedB"})
         static int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
                         @Cached(value = "a", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedA,
                         @Cached(value = "b", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedB,
@@ -2127,7 +2127,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleTraceMallocTrack extends PythonBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocTrack.class);
 
-        @Specialization(guards = {"domain == cachedDomain"}, limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
         int doCachedDomainIdx(VirtualFrame frame, @SuppressWarnings("unused") long domain, Object pointerObject, long size,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
@@ -2159,7 +2159,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleTraceMallocUntrack extends PythonBinaryBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocUntrack.class);
 
-        @Specialization(guards = {"domain == cachedDomain"}, limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
         int doCachedDomainIdx(@SuppressWarnings("unused") long domain, Object pointerObject,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(domain)") int cachedDomainIdx) {

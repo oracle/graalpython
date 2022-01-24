@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,7 +105,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
 
     public abstract void executeObjectWithGlobals(VirtualFrame frame, Object globals, Object value);
 
-    @Specialization(guards = {"globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, limit = "1")
     void writeDictObjectCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, Object value,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
@@ -124,7 +124,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
         storeNode.executeWith(frame, globals, attributeId, value);
     }
 
-    @Specialization(guards = {"globals == cachedGlobals"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
     void writeModuleCached(@SuppressWarnings("unused") PythonModule globals, Object value,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
                     @Shared("write") @Cached WriteAttributeToObjectNode write) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -86,9 +86,8 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
 
         public abstract void execute(PCell cell, Object value);
 
-        @Specialization(guards = "cell == cachedCell", limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption")
+        @Specialization(guards = {"isSingleContext()", "cell == cachedCell"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
         void doWriteCached(@SuppressWarnings("unused") PCell cell, Object value,
-                        @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                         @Cached("cell") PCell cachedCell) {
             if (value == NO_VALUE) {
                 cachedCell.clearRef(cachedCell.isEffectivelyFinalAssumption());

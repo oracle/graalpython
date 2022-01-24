@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -223,7 +223,7 @@ public final class PythonClass extends PythonManagedClass {
 
     public void setMRO(PythonAbstractClass[] mro, PythonLanguage language) {
         super.setMRO(mro);
-        if (!language.singleContextAssumption.isValid()) {
+        if (!language.isSingleContext()) {
             mroShape = null;
             invalidateMroShapeSubTypes();
         }
@@ -245,7 +245,7 @@ public final class PythonClass extends PythonManagedClass {
     public void initializeMroShape(PythonLanguage language) {
         assert mroShapeSubTypes == null;
         assert mroShape == null;
-        if (!language.singleContextAssumption.isValid()) {
+        if (!language.isSingleContext()) {
             reinitializeMroShape(language);
         }
     }
