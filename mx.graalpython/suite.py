@@ -246,7 +246,7 @@ suite = {
                 "com.oracle.graal.python.annotations"
             ],
             "jacoco": "exclude",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
             "workingSets": "Truffle,Python",
         },
