@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 
 import java.util.List;
 
@@ -34,10 +35,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -58,7 +60,7 @@ public class PZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isEmpty(self.getIterators())")
         Object doEmpty(@SuppressWarnings("unused") PZip self) {
-            throw raise(PythonErrorType.StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = "!isEmpty(self.getIterators())")
@@ -80,6 +82,18 @@ public class PZipBuiltins extends PythonBuiltins {
         @Specialization
         static Object doPZip(PZip self) {
             return self;
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object reducePos(PZip self,
+                        @Cached GetClassNode getClass) {
+            Object type = getClass.execute(self);
+            PTuple tuple = factory().createTuple(self.getIterators());
+            return factory().createTuple(new Object[]{type, tuple});
         }
     }
 }

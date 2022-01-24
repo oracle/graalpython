@@ -11,6 +11,7 @@
 *graalpython.lib-python.3.test.test_itertools.SizeofTest.test_product_sizeof
 *graalpython.lib-python.3.test.test_itertools.SubclassWithKwargsTest.test_keywords_in_subclass
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_StopIteration
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_accumulate
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_bug_7244
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_chain
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_chain_from_iterable
@@ -31,6 +32,7 @@
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_dropwhile
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_filter
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_filterfalse
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_groupby
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_islice
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_map
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_permutations
@@ -43,7 +45,9 @@
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_product_tuple_reuse
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_repeat
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_repeat_with_negative_times
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_starmap
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_takewhile
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_tee
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_tee_concurrent
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_tee_del_backward
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_tee_reenter
@@ -54,6 +58,8 @@
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_zip_tuple_reuse
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_ziplongest
 *graalpython.lib-python.3.test.test_itertools.TestExamples.test_accumulate
+*graalpython.lib-python.3.test.test_itertools.TestExamples.test_accumulate_reducible
+*graalpython.lib-python.3.test.test_itertools.TestExamples.test_accumulate_reducible_none
 *graalpython.lib-python.3.test.test_itertools.TestExamples.test_chain
 *graalpython.lib-python.3.test.test_itertools.TestExamples.test_chain_from_iterable
 *graalpython.lib-python.3.test.test_itertools.TestExamples.test_combinations
@@ -96,6 +102,7 @@
 *graalpython.lib-python.3.test.test_itertools.TestGC.test_takewhile
 *graalpython.lib-python.3.test.test_itertools.TestGC.test_zip
 *graalpython.lib-python.3.test.test_itertools.TestGC.test_zip_longest
+*graalpython.lib-python.3.test.test_itertools.TestMain.test_main
 *graalpython.lib-python.3.test.test_itertools.TestPurePythonRoughEquivalents.test_islice_recipe
 *graalpython.lib-python.3.test.test_itertools.TestVariousIteratorArgs.test_accumulate
 *graalpython.lib-python.3.test.test_itertools.TestVariousIteratorArgs.test_chain

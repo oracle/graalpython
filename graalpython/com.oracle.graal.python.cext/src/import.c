@@ -66,6 +66,11 @@ PyObject* PyImport_GetModuleDict() {
     return UPCALL_CEXT_O(_jls_PyImport_GetModuleDict);
 }
 
+int _PyImport_SetModule(PyObject *name, PyObject *m) {
+    PyObject *modules = PyImport_GetModuleDict();
+    return PyObject_SetItem(modules, name, m);
+}
+
 PyObject* _PyImport_AddModuleObject(PyObject *name, PyObject *modules) {
     PyObject* m = PyObject_GetItem(modules, name);
     if (PyErr_ExceptionMatches(PyExc_KeyError)) {

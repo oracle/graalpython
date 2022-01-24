@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -86,7 +86,6 @@ import com.oracle.graal.python.lib.PyTupleCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -190,8 +189,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, Object file,
                         @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib) {
             Object buffer = callNode.executeObject(frame, file, 0);
             if (!bufferLib.hasBuffer(buffer)) {
                 throw raise(PythonBuiltinClassType.TypeError, "file.read() returned not bytes but %p", buffer);
@@ -199,9 +197,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             try {
                 return Marshal.loadFile(file);
             } catch (NumberFormatException e) {
-                throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raise.raise(me.type, me.message, me.arguments);
+                throw raise(me.type, me.message, me.arguments);
             }
         }
     }
@@ -210,17 +208,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "bytes", conversion = ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     abstract static class LoadsNode extends PythonUnaryClinicBuiltinNode {
-        @TruffleBoundary
-        @Specialization(limit = "3")
-        static Object doit(Object buffer,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
+
+        @Specialization
+        Object doit(VirtualFrame frame, Object buffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             try {
                 return Marshal.load(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } catch (NumberFormatException e) {
-                throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raise.raise(me.type, me.message, me.arguments);
+                throw raise(me.type, me.message, me.arguments);
+            } finally {
+                bufferLib.release(buffer, frame, this);
             }
         }
 

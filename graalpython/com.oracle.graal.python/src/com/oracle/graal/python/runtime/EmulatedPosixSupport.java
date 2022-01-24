@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
@@ -99,8 +100,13 @@ import static com.oracle.graal.python.runtime.PosixConstants.SHUT_WR;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_STREAM;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_BROADCAST;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_DOMAIN;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_KEEPALIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_RCVBUF;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_REUSEADDR;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_SNDBUF;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFBLK;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFCHR;
@@ -109,6 +115,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.S_IFIFO;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFLNK;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFSOCK;
+import static com.oracle.graal.python.runtime.PosixConstants.TCP_NODELAY;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants.W_OK;
 import static com.oracle.graal.python.runtime.PosixConstants.X_OK;
@@ -144,7 +151,9 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.net.StandardProtocolFamily;
+import java.net.StandardSocketOptions;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -154,6 +163,7 @@ import java.nio.channels.Channel;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.NetworkChannel;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -635,6 +645,19 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
             if (ch instanceof SelectableChannel) {
                 channels[i] = (SelectableChannel) ch;
+            } else if (ch instanceof EmulatedDatagramSocket) {
+                channels[i] = ((EmulatedDatagramSocket) ch).channel;
+            } else if (ch instanceof EmulatedStreamSocket) {
+                EmulatedStreamSocket streamSocket = (EmulatedStreamSocket) ch;
+                synchronized (streamSocket) {
+                    if (streamSocket.clientChannel != null) {
+                        channels[i] = streamSocket.clientChannel;
+                    } else if (streamSocket.serverChannel != null) {
+                        channels[i] = streamSocket.serverChannel;
+                    } else {
+                        throw ChannelNotSelectableException.INSTANCE;
+                    }
+                }
             } else {
                 throw ChannelNotSelectableException.INSTANCE;
             }
@@ -1117,7 +1140,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object[] uname() {
-        return new Object[]{PythonUtils.getPythonOSName(), getHostName(),
+        return new Object[]{getPythonOS().getName(), getHostName(),
                         getOsVersion(), "", PythonUtils.getPythonArch()};
     }
 
@@ -1613,7 +1636,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     @Cached IsNode isNode) throws PosixException {
         // TODO looking up the signal values by name is probably not compatible with CPython
         // (the user might change the value of _signal.SIGKILL, but kill(pid, 9) should still work
-        PythonModule signalModule = context.getCore().lookupBuiltinModule("_signal");
+        PythonModule signalModule = context.lookupBuiltinModule("_signal");
         for (String name : TERMINATION_SIGNALS) {
             Object value = readSignalNode.execute(signalModule, name);
             if (isNode.execute(signal, value)) {
@@ -2574,27 +2597,43 @@ public final class EmulatedPosixSupport extends PosixResources {
     public int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
         assert optval.length >= optlen;
         EmulatedSocket socket = getEmulatedSocket(sockfd);
-        if (level != SOL_SOCKET.value) {
+        try {
+            if (level == SOL_SOCKET.value) {
+                if (optname == SO_TYPE.value) {
+                    return encodeIntOptVal(optval, optlen, socket instanceof EmulatedDatagramSocket ? SOCK_DGRAM.value : SOCK_STREAM.value);
+                }
+                if (SO_DOMAIN.defined && optname == SO_DOMAIN.getValueIfDefined()) {
+                    return encodeIntOptVal(optval, optlen, socket.family);
+                }
+                if (SO_PROTOCOL.defined && optname == SO_PROTOCOL.getValueIfDefined()) {
+                    return encodeIntOptVal(optval, optlen, socket.protocol);
+                }
+                if (optname == SO_KEEPALIVE.value) {
+                    return encodeBooleanOptVal(optval, optlen, socket.getsockopt(StandardSocketOptions.SO_KEEPALIVE));
+                }
+                if (optname == SO_REUSEADDR.value) {
+                    return encodeBooleanOptVal(optval, optlen, socket.getsockopt(StandardSocketOptions.SO_REUSEADDR));
+                }
+                if (optname == SO_SNDBUF.value) {
+                    return encodeIntOptVal(optval, optlen, socket.getsockopt(StandardSocketOptions.SO_SNDBUF));
+                }
+                if (optname == SO_RCVBUF.value) {
+                    return encodeIntOptVal(optval, optlen, socket.getsockopt(StandardSocketOptions.SO_RCVBUF));
+                }
+                if (optname == SO_BROADCAST.value) {
+                    return encodeBooleanOptVal(optval, optlen, socket.getsockopt(StandardSocketOptions.SO_BROADCAST));
+                }
+            } else if (level == IPPROTO_TCP.value) {
+                if (TCP_NODELAY.defined && optname == TCP_NODELAY.getValueIfDefined()) {
+                    return encodeBooleanOptVal(optval, optlen, socket.getsockopt(StandardSocketOptions.TCP_NODELAY));
+                }
+            }
             throw posixException(OSErrorEnum.ENOPROTOOPT);
-        }
-        int value;
-        if (optname == SO_TYPE.value) {
-            value = socket instanceof EmulatedDatagramSocket ? SOCK_DGRAM.value : SOCK_STREAM.value;
-        } else if (SO_DOMAIN.defined && optname == SO_DOMAIN.getValueIfDefined()) {
-            value = socket.family;
-        } else if (SO_PROTOCOL.defined && optname == SO_PROTOCOL.getValueIfDefined()) {
-            value = socket.protocol;
-        } else {
+        } catch (UnsupportedOperationException e) {
             throw posixException(OSErrorEnum.ENOPROTOOPT);
+        } catch (Exception e) {
+            throw posixException(e);
         }
-        if (optlen < 4) {
-            byte[] tmp = new byte[4];
-            nativeByteArraySupport().putInt(tmp, 0, value);
-            PythonUtils.arraycopy(tmp, 0, optval, 0, optlen);
-        } else {
-            nativeByteArraySupport().putInt(optval, 0, value);
-        }
-        return 4;
     }
 
     private static ByteArraySupport nativeByteArraySupport() {
@@ -2604,8 +2643,63 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
-        getEmulatedSocket(sockfd);  // called to check that sockfd is a valid fd for a socket
-        throw posixException(OSErrorEnum.ENOPROTOOPT);
+        EmulatedSocket s = getEmulatedSocket(sockfd);
+        try {
+            if (level == SOL_SOCKET.value) {
+                if (optname == SO_KEEPALIVE.value) {
+                    s.setsockopt(StandardSocketOptions.SO_KEEPALIVE, decodeBooleanOptVal(optval, optlen));
+                } else if (optname == SO_REUSEADDR.value) {
+                    s.setsockopt(StandardSocketOptions.SO_REUSEADDR, decodeBooleanOptVal(optval, optlen));
+                } else if (optname == SO_SNDBUF.value) {
+                    s.setsockopt(StandardSocketOptions.SO_SNDBUF, decodeIntOptVal(optval, optlen));
+                } else if (optname == SO_RCVBUF.value) {
+                    s.setsockopt(StandardSocketOptions.SO_RCVBUF, decodeIntOptVal(optval, optlen));
+                } else if (optname == SO_BROADCAST.value) {
+                    s.setsockopt(StandardSocketOptions.SO_BROADCAST, decodeBooleanOptVal(optval, optlen));
+                } else {
+                    throw posixException(OSErrorEnum.ENOPROTOOPT);
+                }
+            } else if (level == IPPROTO_TCP.value) {
+                if (TCP_NODELAY.defined && optname == TCP_NODELAY.getValueIfDefined()) {
+                    s.setsockopt(StandardSocketOptions.TCP_NODELAY, decodeBooleanOptVal(optval, optlen));
+                } else {
+                    throw posixException(OSErrorEnum.ENOPROTOOPT);
+                }
+            } else {
+                throw posixException(OSErrorEnum.ENOPROTOOPT);
+            }
+        } catch (UnsupportedOperationException e) {
+            throw posixException(OSErrorEnum.ENOPROTOOPT);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
+    }
+
+    private static int encodeIntOptVal(byte[] optval, int optlen, int value) {
+        if (optlen < Integer.BYTES) {
+            byte[] tmp = new byte[Integer.BYTES];
+            nativeByteArraySupport().putInt(tmp, 0, value);
+            PythonUtils.arraycopy(tmp, 0, optval, 0, optlen);
+        } else {
+            nativeByteArraySupport().putInt(optval, 0, value);
+        }
+        return Integer.BYTES;
+    }
+
+    private static int encodeBooleanOptVal(byte[] optval, int optlen, boolean value) {
+        return encodeIntOptVal(optval, optlen, value ? 1 : 0);
+    }
+
+    private static int decodeIntOptVal(byte[] optval, int optlen) throws PosixException {
+        assert optval.length >= optlen;
+        if (optlen != Integer.BYTES) {
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        return nativeByteArraySupport().getInt(optval, 0);
+    }
+
+    private static boolean decodeBooleanOptVal(byte[] optval, int optlen) throws PosixException {
+        return decodeIntOptVal(optval, optlen) != 0;
     }
 
     @ExportMessage
@@ -3074,6 +3168,10 @@ public final class EmulatedPosixSupport extends PosixResources {
         abstract void configureBlocking(boolean block) throws IOException;
 
         abstract boolean isBlocking();
+
+        abstract <T> T getsockopt(SocketOption<T> option) throws IOException;
+
+        abstract <T> void setsockopt(SocketOption<T> option, T value) throws IOException;
     }
 
     private static final class EmulatedDatagramSocket extends EmulatedSocket {
@@ -3203,6 +3301,16 @@ public final class EmulatedPosixSupport extends PosixResources {
             neverPartOfCompilation();
             return channel.isBlocking();
         }
+
+        @Override
+        <T> void setsockopt(SocketOption<T> option, T value) throws IOException {
+            channel.setOption(option, value);
+        }
+
+        @Override
+        <T> T getsockopt(SocketOption<T> option) throws IOException {
+            return channel.getOption(option);
+        }
     }
 
     private static final class EmulatedStreamSocket extends EmulatedSocket {
@@ -3215,14 +3323,26 @@ public final class EmulatedPosixSupport extends PosixResources {
         // 3. clientChannel == null, serverChannel != null - this is a server socket, i.e. listen()
         // has been called
         // The state can change at most once, from 1 to 2 or from 1 to 3.
-        // The fields 'bindAddress' and 'blocking' are valid only in state 1 to temporarily store
-        // the parameters of bind() and setBlocking(). Once the appropriate channel has been created
-        // in connect() or listen(), these two fields are meaningless.
+        // The fields 'bindAddress', 'blocking' and 'options' are valid only in state 1 to
+        // temporarily store the parameters of bind(), setBlocking() and setsockopt(). Once the
+        // appropriate channel has been created in connect() or listen(), these fields are
+        // meaningless.
 
         private SocketChannel clientChannel;
         private ServerSocketChannel serverChannel;
         private SocketAddress bindAddress;
         private boolean blocking;
+        private List<OptionWithValue> options;
+
+        private static class OptionWithValue {
+            final SocketOption<?> option;
+            final Object value;
+
+            OptionWithValue(SocketOption<?> option, Object value) {
+                this.option = option;
+                this.value = value;
+            }
+        }
 
         @TruffleBoundary
         EmulatedStreamSocket(int family, int protocol) {
@@ -3273,6 +3393,9 @@ public final class EmulatedPosixSupport extends PosixResources {
             if (cnt == 0) {
                 throw new OperationWouldBlockException();
             }
+            if (cnt == -1) {
+                return 0;
+            }
             return cnt;
         }
 
@@ -3322,6 +3445,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             SocketChannel c;
             boolean block;
             SocketAddress addr;
+            List<OptionWithValue> opts;
             synchronized (this) {
                 if (clientChannel != null || serverChannel != null) {
                     throw new AlreadyConnectedException();
@@ -3329,11 +3453,14 @@ public final class EmulatedPosixSupport extends PosixResources {
                 c = clientChannel = SocketChannel.open();
                 addr = bindAddress;
                 block = blocking;
+                opts = options;
+                options = null;
             }
             // TODO support for non-blocking connect()
             c.bind(addr);
             c.connect(socketAddress);
             c.configureBlocking(block);
+            replayOptions(opts, c);
         }
 
         @Override
@@ -3342,6 +3469,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             ServerSocketChannel s;
             boolean block;
             SocketAddress addr;
+            List<OptionWithValue> opts;
             synchronized (this) {
                 if (clientChannel != null) {
                     throw new IllegalArgumentException();
@@ -3353,9 +3481,12 @@ public final class EmulatedPosixSupport extends PosixResources {
                 s = serverChannel = ServerSocketChannel.open();
                 addr = bindAddress;
                 block = blocking;
+                opts = options;
+                options = null;
             }
             s.bind(addr, backlog);
             s.configureBlocking(block);
+            replayOptions(opts, s);
         }
 
         @Override
@@ -3386,6 +3517,9 @@ public final class EmulatedPosixSupport extends PosixResources {
             int cnt = getClientChannel().read(bb);
             if (cnt == 0) {
                 throw new OperationWouldBlockException();
+            }
+            if (cnt == -1) {
+                return 0;
             }
             return cnt;
         }
@@ -3451,6 +3585,40 @@ public final class EmulatedPosixSupport extends PosixResources {
                 return serverChannel.isBlocking();
             } else {
                 return blocking;
+            }
+        }
+
+        @Override
+        synchronized <T> void setsockopt(SocketOption<T> option, T value) throws IOException {
+            if (clientChannel != null) {
+                clientChannel.setOption(option, value);
+            } else if (serverChannel != null) {
+                serverChannel.setOption(option, value);
+            } else {
+                if (options == null) {
+                    options = new ArrayList<>();
+                    options.add(new OptionWithValue(option, value));
+                }
+            }
+        }
+
+        @Override
+        synchronized <T> T getsockopt(SocketOption<T> option) throws IOException {
+            if (clientChannel != null) {
+                return clientChannel.getOption(option);
+            }
+            if (serverChannel != null) {
+                return serverChannel.getOption(option);
+            }
+            throw new UnsupportedOperationException();
+        }
+
+        @SuppressWarnings("unchecked")
+        private static void replayOptions(List<OptionWithValue> opts, NetworkChannel channel) throws IOException {
+            if (opts != null) {
+                for (OptionWithValue o : opts) {
+                    channel.setOption((SocketOption<Object>) o.option, o.value);
+                }
             }
         }
     }

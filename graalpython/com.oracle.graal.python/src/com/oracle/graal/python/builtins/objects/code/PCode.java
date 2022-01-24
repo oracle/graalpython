@@ -256,11 +256,13 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("deprecation")    // new Frame API
     private static int extractStackSize(RootNode rootNode) {
         return rootNode.getFrameDescriptor().getSize();
     }
 
     @TruffleBoundary
+    @SuppressWarnings("deprecation")    // new Frame API
     private static Object[] extractVarnames(RootNode rootNode, String[] parameterIds, String[] keywordNames, Object[] freeVars, Object[] cellVars) {
         Set<Object> freeVarsSet = asSet(freeVars);
         Set<Object> cellVarsSet = asSet(cellVars);

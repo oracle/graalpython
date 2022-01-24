@@ -260,8 +260,8 @@ public abstract class TypeNodes {
                 default:
                     // default case; this includes:
                     // PythonObject, PByteArray, PCode, PInstancemethod, PFloat, PNone,
-                    // PNotImplemented, PEllipsis
-                    result = DEFAULT | (clazz.isAcceptableBase() ? BASETYPE : 0) | (PythonBuiltinClassType.isExceptionType(clazz) ? BASE_EXC_SUBCLASS : 0L);
+                    // PNotImplemented, PEllipsis, exceptions
+                    result = DEFAULT | (clazz.isAcceptableBase() ? BASETYPE : 0) | (PythonBuiltinClassType.isExceptionType(clazz) ? BASE_EXC_SUBCLASS | HAVE_GC : 0L);
                     break;
             }
             // we always claim that all types are fully initialized
@@ -378,7 +378,7 @@ public abstract class TypeNodes {
 
         @Specialization
         MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj) {
-            return PythonContext.get(this).getCore().lookupType(obj).getMethodResolutionOrder();
+            return PythonContext.get(this).lookupType(obj).getMethodResolutionOrder();
         }
 
         @Specialization
@@ -419,7 +419,7 @@ public abstract class TypeNodes {
             if (obj instanceof PythonManagedClass) {
                 return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached(), ConditionProfile.getUncached(), PythonLanguage.get(null));
             } else if (obj instanceof PythonBuiltinClassType) {
-                return PythonContext.get(null).getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
+                return PythonContext.get(null).lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {
                 GetTypeMemberNode getTypeMemeberNode = GetTypeMemberNode.getUncached();
                 Object tupleObj = getTypeMemeberNode.execute(obj, NativeMember.TP_MRO);
@@ -537,7 +537,7 @@ public abstract class TypeNodes {
 
         @Specialization
         Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj) {
-            return PythonContext.get(this).getCore().lookupType(obj).getSubClasses();
+            return PythonContext.get(this).lookupType(obj).getSubClasses();
         }
 
         @Specialization
@@ -686,7 +686,7 @@ public abstract class TypeNodes {
 
         @Specialization
         PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj) {
-            return PythonContext.get(this).getCore().lookupType(obj).getBaseClasses();
+            return PythonContext.get(this).lookupType(obj).getBaseClasses();
         }
 
         @Specialization
@@ -739,7 +739,7 @@ public abstract class TypeNodes {
         @Specialization
         Object doPythonClass(PythonBuiltinClassType obj,
                         @Cached GetBestBaseClassNode getBestBaseClassNode) {
-            PythonAbstractClass[] baseClasses = PythonContext.get(this).getCore().lookupType(obj).getBaseClasses();
+            PythonAbstractClass[] baseClasses = PythonContext.get(this).lookupType(obj).getBaseClasses();
             if (baseClasses.length == 0) {
                 return null;
             }
@@ -1129,7 +1129,7 @@ public abstract class TypeNodes {
                 }
             } else {
                 hasNoBase.enter();
-                base = context.getCore().lookupType(PythonBuiltinClassType.PythonObject);
+                base = context.lookupType(PythonBuiltinClassType.PythonObject);
             }
 
             if (type == base) {

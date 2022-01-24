@@ -112,7 +112,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     @Override
     public SSTNode parseExpression(ParserErrorCallback errorCallback, String text, PythonSSTNodeFactory nodeFactory, boolean fromInteractiveSource) {
         Source source = Source.newBuilder(PythonLanguage.ID, text, "<fstring-expr>").interactive(fromInteractiveSource).build();
-        return parseWithANTLR(ParserMode.FStringExpression, 0, errorCallback.getContext().getCore(), nodeFactory, source, null,
+        return parseWithANTLR(ParserMode.FStringExpression, 0, errorCallback.getContext(), nodeFactory, source, null,
                         null).antlrResult;
     }
 
@@ -418,19 +418,23 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         // this wrapper tracks the warnings in a list instead of raising them immediately
         ParserErrorCallback collectWarnings = new ParserErrorCallback() {
 
+            @Override
             public RuntimeException raiseInvalidSyntax(ErrorType type, Source src, SourceSection section, String message, Object... arguments) {
                 return errors.raiseInvalidSyntax(type, src, section, message, arguments);
             }
 
+            @Override
             public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments) {
                 return errors.raiseInvalidSyntax(type, location, message, arguments);
             }
 
+            @Override
             public void warn(PythonBuiltinClassType type, String format, Object... args) {
                 assert type == PythonBuiltinClassType.DeprecationWarning;
                 warnings.add(String.format(format, args));
             }
 
+            @Override
             public PythonContext getContext() {
                 return errors.getContext();
             }

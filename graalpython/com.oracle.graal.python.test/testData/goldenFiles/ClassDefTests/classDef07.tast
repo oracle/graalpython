@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                               GetAttributeNode SourceSection: [52,68]`dict.__setitem__`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: __setitem__
-                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                 ReadClassAttributeNodeGen SourceSection: [52,56]`dict`
                                   Identifier: dict

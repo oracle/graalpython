@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -117,11 +116,11 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
         // This is preferably prepared using 'IndirectCallContext.enter'.
         if (profileIsNullFrame(frame == null)) {
             PythonThreadState threadState = PythonContext.get(this).getThreadState(PythonLanguage.get(this));
-            PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, ct);
+            Object state = IndirectCalleeContext.enter(threadState, arguments, ct);
             try {
                 return callNode.call(arguments);
             } finally {
-                IndirectCalleeContext.exit(threadState, frameInfo);
+                IndirectCalleeContext.exit(threadState, state);
             }
         } else {
             callContext.prepareCall(frame, arguments, ct, this);

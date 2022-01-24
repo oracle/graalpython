@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativeComplexNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
@@ -79,6 +78,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -416,7 +416,6 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached AsCharPointerNode asCharPointerNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached StringLenNode stringLenNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode toNativeNode,
@@ -436,7 +435,7 @@ public abstract class CExtParseArgumentsNode {
                 // 's#' or 'z#'
                 if (!skipOptionalArg(arg, state.restOptional)) {
                     if (z && PGuards.isPNone(arg)) {
-                        writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(getNativeNullNode.execute()));
+                        writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(PythonContext.get(toNativeNode).getNativeNull()));
                         state = state.incrementOutIndex();
                         writeOutVarNode.writeInt32(varargs, state.outIndex, 0);
                     } else if (PGuards.isString(arg)) {
@@ -452,7 +451,7 @@ public abstract class CExtParseArgumentsNode {
                 // 's' or 'z'
                 if (!skipOptionalArg(arg, state.restOptional)) {
                     if (z && PGuards.isPNone(arg)) {
-                        writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(getNativeNullNode.execute()));
+                        writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(PythonContext.get(toNativeNode).getNativeNull()));
                     } else if (PGuards.isString(arg)) {
                         // TODO(fa) we could use CStringWrapper to do the copying lazily
                         writeOutVarNode.writePyObject(varargs, state.outIndex, asCharPointerNode.execute(arg));

@@ -47,7 +47,9 @@ import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -61,7 +63,6 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -103,6 +104,7 @@ public final class PythonUtils {
     }
 
     public static final String EMPTY_STRING = "";
+    public static final String NEW_LINE = "\n";
     public static final String[] EMPTY_STRING_ARRAY = new String[0];
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
@@ -178,6 +180,19 @@ public final class PythonUtils {
     }
 
     /**
+     * Executes {@link Arrays#copyOf(boolean[], int)} and puts all exceptions on the slow path.
+     */
+    public static boolean[] arrayCopyOf(boolean[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
+        } catch (Throwable t) {
+            // Break exception edges
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
      * Executes {@link Arrays#copyOf(byte[], int)} and puts all exceptions on the slow path.
      */
     public static byte[] arrayCopyOf(byte[] original, int newLength) {
@@ -194,6 +209,19 @@ public final class PythonUtils {
      * Executes {@link Arrays#copyOf(int[], int)} and puts all exceptions on the slow path.
      */
     public static int[] arrayCopyOf(int[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
+        } catch (Throwable t) {
+            // Break exception edges
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
+     * Executes {@link Arrays#copyOf(double[], int)} and puts all exceptions on the slow path.
+     */
+    public static double[] arrayCopyOf(double[] original, int newLength) {
         try {
             return Arrays.copyOf(original, newLength);
         } catch (Throwable t) {
@@ -413,13 +441,56 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String substring(String s, int start, int end) {
+        return s.substring(start, end);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String substring(String s, int start) {
+        return s.substring(start);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int indexOf(String s, char chr) {
+        return s.indexOf(chr);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int indexOf(String s, String sep) {
+        return s.indexOf(sep);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int lastIndexOf(String s, char chr) {
+        return s.lastIndexOf(chr);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int lastIndexOf(String s, String sep) {
+        return s.lastIndexOf(sep);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static StringBuilder append(StringBuilder sb, char c) {
         return sb.append(c);
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, Object... args) {
+        for (Object arg : args) {
+            sb.append(arg);
+        }
+        return sb;
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static StringBuilder append(StringBuilder sb, String s) {
         return sb.append(s);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, int i) {
+        return sb.append(i);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -438,6 +509,44 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String toString(CharSequence sequence) {
+        return sequence.toString();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String trim(String s) {
+        return s.trim();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String trim(CharSequence sequence) {
+        return sequence.toString().trim();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String trimLeft(CharSequence sequence) {
+        int len = sequence.length();
+        int st = 0;
+
+        while ((st < len) && (sequence.charAt(st) <= ' ')) {
+            st++;
+        }
+
+        final String s = sequence.toString();
+        return (st > 0) ? substring(s, st, len) : s;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toLowerCase(String s) {
+        return s.toLowerCase();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toUpperCase(String s) {
+        return s.toUpperCase();
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static int sbLength(StringBuilder sb) {
         return sb.length();
     }
@@ -450,28 +559,6 @@ public final class PythonUtils {
             arch = "x86_64";
         }
         return arch;
-    }
-
-    @TruffleBoundary
-    public static String getPythonOSName() {
-        String property = System.getProperty("os.name");
-        String os = "java";
-        if (property != null) {
-            if (property.toLowerCase().contains("cygwin")) {
-                os = "cygwin";
-            } else if (property.toLowerCase().contains("linux")) {
-                os = "linux";
-            } else if (property.toLowerCase().contains("mac")) {
-                os = SysModuleBuiltins.PLATFORM_DARWIN;
-            } else if (property.toLowerCase().contains("windows")) {
-                os = SysModuleBuiltins.PLATFORM_WIN32;
-            } else if (property.toLowerCase().contains("sunos")) {
-                os = "sunos";
-            } else if (property.toLowerCase().contains("freebsd")) {
-                os = "freebsd";
-            }
-        }
-        return os;
     }
 
     @TruffleBoundary
@@ -520,6 +607,11 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
+    public static boolean equals(Object a, Object b) {
+        return a.equals(b);
+    }
+
+    @TruffleBoundary
     public static <E> ArrayDeque<E> newDeque() {
         return new ArrayDeque<>();
     }
@@ -532,6 +624,26 @@ public final class PythonUtils {
     @TruffleBoundary
     public static <E> E pop(ArrayDeque<E> q) {
         return q.pop();
+    }
+
+    @TruffleBoundary
+    public static <E> List<E> newList() {
+        return new ArrayList<E>();
+    }
+
+    @TruffleBoundary
+    public static <E> void add(List<E> list, E e) {
+        list.add(e);
+    }
+
+    @TruffleBoundary
+    public static <E> E get(List<E> list, int index) {
+        return list.get(index);
+    }
+
+    @TruffleBoundary
+    public static <E> Object[] toArray(List<E> list) {
+        return list.toArray();
     }
 
     /**
@@ -556,13 +668,13 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static void createMethod(PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults, Supplier<PythonBuiltinBaseNode> nodeSupplier,
+    public static PBuiltinFunction createMethod(PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults, Supplier<PythonBuiltinBaseNode> nodeSupplier,
                     Object... callTargetCacheKeys) {
-        createMethod(PythonObjectFactory.getUncached(), language, klass, nodeClass, type, numDefaults, nodeSupplier, callTargetCacheKeys);
+        return createMethod(PythonObjectFactory.getUncached(), language, klass, nodeClass, type, numDefaults, nodeSupplier, callTargetCacheKeys);
     }
 
     @TruffleBoundary
-    public static void createMethod(PythonObjectFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults,
+    public static PBuiltinFunction createMethod(PythonObjectFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults,
                     Supplier<PythonBuiltinBaseNode> nodeSupplier,
                     Object... callTargetCacheKeys) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
@@ -572,7 +684,10 @@ public final class PythonUtils {
         }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), type, numDefaults, flags, callTarget);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+        if (klass != null) {
+            WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+        }
+        return function;
     }
 
     @TruffleBoundary

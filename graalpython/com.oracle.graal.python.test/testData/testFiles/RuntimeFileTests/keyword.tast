@@ -58,7 +58,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
         GetAttributeNode SourceSection: [966,996]`frozenset(kwlist).__...`
           GetFixedAttributeNodeGen SourceSection: None
             Key: __contains__
-            LookupAndCallBinaryNodeGen SourceSection: None
+            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
               Op: __getattribute__
           PythonCallUnary SourceSection: [966,983]`frozenset(kwlist)`
             CallUnaryMethodNodeGen SourceSection: None
@@ -114,7 +114,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         GetAttributeNode SourceSection: None
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: argv
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadLocalVariableNodeGen SourceSection: [1041,1044]`sys`
                             Frame: [0,sys,Illegal]
@@ -247,7 +247,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                               IfNode SourceSection: [1594,1764]`if '{1, "' in line:↵...`
                                 YesNodeGen SourceSection: None
                                   ContainsNodeGen SourceSection: [1597,1612]`'{1, "' in line`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                       Op: __contains__
                                     YesNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [1597,1604]`'{1, "'`
@@ -366,7 +366,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                   GetAttributeNode SourceSection: [2019,2029]`sys.stderr`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: stderr
-                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                     ReadLocalVariableNodeGen SourceSection: [2019,2022]`sys`
                                       Frame: [0,sys,Illegal]

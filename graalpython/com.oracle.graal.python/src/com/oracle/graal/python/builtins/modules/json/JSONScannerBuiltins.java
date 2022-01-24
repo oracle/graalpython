@@ -534,7 +534,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
 
     private static RuntimeException stopIteration(Node raisingNode, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        Object exception = CallNode.getUncached().execute(PythonContext.get(raisingNode).getCore().lookupType(PythonBuiltinClassType.StopIteration), value);
+        Object exception = CallNode.getUncached().execute(PythonContext.get(raisingNode).lookupType(PythonBuiltinClassType.StopIteration), value);
         throw PRaiseNode.raise(raisingNode, (PBaseException) exception, false);
     }
 }

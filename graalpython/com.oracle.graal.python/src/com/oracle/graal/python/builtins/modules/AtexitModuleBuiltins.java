@@ -119,11 +119,11 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
                 PBaseException pythonException = e.getEscapedException();
                 if (!IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
                     PyObjectCallMethodObjArgs callWrite = PyObjectCallMethodObjArgs.getUncached();
-                    callWrite.execute(null, context.getCore().getStderr(), "write", "Error in atexit._run_exitfuncs:\n");
+                    callWrite.execute(null, context.getStderr(), "write", "Error in atexit._run_exitfuncs:\n");
                     try {
                         ExceptionUtils.printExceptionTraceback(context, pythonException);
                     } catch (PException pe) {
-                        callWrite.execute(null, context.getCore().getStderr(), "write", "Failed to print traceback\n");
+                        callWrite.execute(null, context.getStderr(), "write", "Failed to print traceback\n");
                     }
                 }
             }

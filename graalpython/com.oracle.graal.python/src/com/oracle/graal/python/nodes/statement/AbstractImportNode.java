@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
 import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -89,6 +88,8 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class AbstractImportNode extends StatementNode {
+
+    @CompilationFinal(dimensions = 1) public static final String[] IMPORT_ALL = new String[]{"*"};
 
     @Child ImportName importNameNode;
 
@@ -135,9 +136,8 @@ public abstract class AbstractImportNode extends StatementNode {
     protected final Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         PythonContext context = getContext();
-        Python3Core core = context.getCore();
         if (!context.isInitialized()) {
-            PythonModule builtinModule = core.lookupBuiltinModule(name);
+            PythonModule builtinModule = context.lookupBuiltinModule(name);
             if (builtinModule != null) {
                 return builtinModule;
             }
@@ -154,7 +154,7 @@ public abstract class AbstractImportNode extends StatementNode {
             }
         }
         try {
-            return importNameNode.execute(frame, context, core.getBuiltins(), name, globals, fromList, level);
+            return importNameNode.execute(frame, context, context.getBuiltins(), name, globals, fromList, level);
         } finally {
             if (emulateJython()) {
                 context.popCurrentImport();
@@ -177,7 +177,7 @@ public abstract class AbstractImportNode extends StatementNode {
                         @Cached CallNode importCallNode,
                         @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached ImportModuleLevelObject importModuleLevel) {
+                        @Cached PyImportImportModuleLevelObject importModuleLevel) {
             Object importFunc = builtinsDylib.getOrDefault(builtins, __IMPORT__, null);
             if (importFunc == null) {
                 throw raiseNode.raiseImportError(frame, IMPORT_NOT_FOUND);
@@ -207,8 +207,8 @@ public abstract class AbstractImportNode extends StatementNode {
      * Equivalent of PyImport_ImportModuleLevelObject
      */
     @GenerateUncached
-    abstract static class ImportModuleLevelObject extends Node {
-        protected abstract Object execute(Frame frame, PythonContext context, String name, Object globals, String[] fromList, int level);
+    public abstract static class PyImportImportModuleLevelObject extends Node {
+        public abstract Object execute(Frame frame, PythonContext context, String name, Object globals, String[] fromList, int level);
 
         @SuppressWarnings("unused")
         @Specialization(guards = "level < 0")
@@ -221,7 +221,7 @@ public abstract class AbstractImportNode extends StatementNode {
         }
 
         @Specialization(guards = {"level == 0", "fromList.length == 0", "dotIndex < 0"})
-        static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, String name, @SuppressWarnings("unused") Object globals, @SuppressWarnings("unused") String[] fromList,
+        public static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, String name, @SuppressWarnings("unused") Object globals, @SuppressWarnings("unused") String[] fromList,
                         @SuppressWarnings("unused") int level,
                         @SuppressWarnings("unused") @Bind("indexOfDot(name)") int dotIndex,
                         @Cached PRaiseNode raiseNode,

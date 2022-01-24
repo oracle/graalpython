@@ -99,15 +99,15 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public boolean isBoolean(@CachedLibrary("this") InteropLibrary self) {
         PythonContext context = PythonContext.get(self);
-        return this == context.getCore().getTrue() || this == context.getCore().getFalse();
+        return this == context.getTrue() || this == context.getFalse();
     }
 
     @ExportMessage
     public boolean asBoolean(@CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
         PythonContext context = PythonContext.get(self);
-        if (this == context.getCore().getTrue()) {
+        if (this == context.getTrue()) {
             return true;
-        } else if (this == context.getCore().getFalse()) {
+        } else if (this == context.getFalse()) {
             return false;
         }
         throw UnsupportedMessageException.create();
@@ -118,7 +118,7 @@ public final class PInt extends PythonBuiltinObject {
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         PythonContext context = PythonContext.get(self);
-        if (isBoolean.profile(this == context.getCore().getTrue() || this == context.getCore().getFalse())) {
+        if (isBoolean.profile(this == context.getTrue() || this == context.getFalse())) {
             return false;
         }
         return true;

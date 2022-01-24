@@ -625,7 +625,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         IfNode SourceSection: [2085,2340]`if key not in (↵    ...`
                                           NotNodeGen SourceSection: [2088,2249]`key not in (↵       ...`
                                             ContainsNodeGen SourceSection: None
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [2088,2091]`key`
@@ -723,7 +723,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNode SourceSection: [2716,2734]`self._member_names`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _member_names
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                       ReadLocalVariableNodeGen SourceSection: [2716,2720]`self`
                                                         Frame: [0,self,Illegal]
@@ -767,7 +767,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         IfNode SourceSection: [2969,3691]`elif key in self._me...`
                                           YesNodeGen SourceSection: None
                                             ContainsNodeGen SourceSection: [2974,2999]`key in self._member_...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [2974,2977]`key`
@@ -775,7 +775,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: [2981,2999]`self._member_names`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_names
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [2981,2985]`self`
                                                   Frame: [0,self,Illegal]
@@ -792,7 +792,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           IfNode SourceSection: [3119,3691]`elif key in self._ig...`
                                             YesNodeGen SourceSection: None
                                               ContainsNodeGen SourceSection: [3124,3143]`key in self._ignore`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [3124,3127]`key`
@@ -800,7 +800,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetAttributeNode SourceSection: [3131,3143]`self._ignore`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _ignore
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [3131,3135]`self`
                                                     Frame: [0,self,Illegal]
@@ -818,7 +818,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 IfNode SourceSection: [3214,3371]`if key in self:↵    ...`
                                                   YesNodeGen SourceSection: None
                                                     ContainsNodeGen SourceSection: [3217,3228]`key in self`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __contains__
                                                       YesNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [3217,3220]`key`
@@ -860,7 +860,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           GetAttributeNode SourceSection: [3418,3429]`value.value`
                                                             GetFixedAttributeNodeGen SourceSection: None
                                                               Key: value
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
                                                             ReadLocalVariableNodeGen SourceSection: [3418,3423]`value`
                                                               Frame: [2,value,Illegal]
@@ -886,7 +886,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             GetAttributeNode SourceSection: [3517,3535]`self._member_names`
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: _member_names
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                               ReadLocalVariableNodeGen SourceSection: [3517,3521]`self`
                                                                 Frame: [0,self,Illegal]
@@ -894,7 +894,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             GetAttributeNode SourceSection: None
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: _last_values
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                               ReadLocalVariableNodeGen SourceSection: [3538,3542]`self`
                                                                 Frame: [0,self,Illegal]
@@ -910,7 +910,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNode SourceSection: [3584,3595]`value.value`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: value
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalVariableNodeGen SourceSection: [3584,3589]`value`
                                                           Frame: [2,value,Illegal]
@@ -922,7 +922,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNode SourceSection: [3608,3626]`self._member_names`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _member_names
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalVariableNodeGen SourceSection: [3608,3612]`self`
                                                           Frame: [0,self,Illegal]
@@ -935,7 +935,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNode SourceSection: [3651,3668]`self._last_values`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _last_values
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalVariableNodeGen SourceSection: [3651,3655]`self`
                                                           Frame: [0,self,Illegal]
@@ -1339,7 +1339,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [5329,5352]`classdict._member_na...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _member_names
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalCellNodeGen SourceSection: [5329,5338]`classdict`
                                                 ReadLocalVariableNodeGen SourceSection: None
@@ -1364,7 +1364,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [5374,5397]`classdict._member_na...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_names
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalCellNodeGen SourceSection: [5374,5383]`classdict`
                                               ReadLocalVariableNodeGen SourceSection: None
@@ -1420,7 +1420,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [5830,5958]`if '__doc__' not in ...`
                                       NotNodeGen SourceSection: [5833,5859]`'__doc__' not in cla...`
                                         ContainsNodeGen SourceSection: None
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [5833,5842]`'__doc__'`
@@ -1522,7 +1522,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNode SourceSection: [6414,6424]`b.__dict__`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __dict__
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [6414,6415]`b`
                                                           Frame: [1,b,Illegal]
@@ -1565,7 +1565,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [7184,7769]`if '__reduce_ex__' n...`
                                       NotNodeGen SourceSection: [7187,7219]`'__reduce_ex__' not ...`
                                         ContainsNodeGen SourceSection: None
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [7187,7202]`'__reduce_ex__'`
@@ -1625,7 +1625,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             YieldNode SourceSection: [7411,7436]`m in member_type.__d...`
                                                               flagSlot: 0
                                                               ContainsNodeGen SourceSection: [7411,7436]`m in member_type.__d...`
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                   Op: __contains__
                                                                 YesNodeGen SourceSection: None
                                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [7411,7412]`m`
@@ -1633,7 +1633,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 GetAttributeNode SourceSection: [7416,7436]`member_type.__dict__...`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: __dict__
-                                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                   ReadLocalCellNodeGen SourceSection: [7416,7427]`member_type`
                                                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
@@ -1815,7 +1815,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: [8637,8656]`enum_member._value_`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _value_
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [8637,8648]`enum_member`
                                                   Frame: [20,enum_member,Illegal]
@@ -1868,14 +1868,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GetAttributeNode SourceSection: [9026,9050]`canonical_member._va...`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: _value_
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [9026,9042]`canonical_member`
                                                             Frame: [21,canonical_member,Illegal]
                                                         GetAttributeNode SourceSection: [9054,9073]`enum_member._value_`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: _value_
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [9054,9065]`enum_member`
                                                             Frame: [20,enum_member,Illegal]
@@ -1894,7 +1894,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNode SourceSection: [8974,8997]`enum_class._member_m...`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _member_map_
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalVariableNodeGen SourceSection: [8974,8984]`enum_class`
                                                           Frame: [15,enum_class,Illegal]
@@ -1905,7 +1905,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNode SourceSection: [9264,9289]`enum_class._member_n...`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _member_names_
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                       ReadLocalVariableNodeGen SourceSection: [9264,9274]`enum_class`
                                                         Frame: [15,enum_class,Illegal]
@@ -1914,7 +1914,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             IfNode SourceSection: [9429,9580]`if member_name not i...`
                                               NotNodeGen SourceSection: [9432,9466]`member_name not in b...`
                                                 ContainsNodeGen SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __contains__
                                                   YesNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [9432,9443]`member_name`
@@ -1937,7 +1937,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_map_
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [9580,9590]`enum_class`
                                                   Frame: [15,enum_class,Illegal]
@@ -1951,7 +1951,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   GetAttributeNode SourceSection: None
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: _value2member_map_
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [9845,9855]`enum_class`
                                                       Frame: [15,enum_class,Illegal]
@@ -1969,7 +1969,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [7788,7811]`classdict._member_na...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_names
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalCellNodeGen SourceSection: [7788,7797]`classdict`
                                               ReadLocalVariableNodeGen SourceSection: None
@@ -2080,7 +2080,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [10835,10847]`Enum.__new__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __new__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10835,10839]`Enum`
                                               Identifier: Enum
@@ -2124,7 +2124,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: [11085,11110]`enum_class._member_n...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_names_
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [11085,11095]`enum_class`
                                                   Frame: [15,enum_class,Illegal]
@@ -2382,20 +2382,20 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           ReadLocalVariableNodeGen SourceSection: [13070,13073]`cls`
                                             Frame: [0,cls,Illegal]
                                         ContainsNodeGen SourceSection: [13079,13112]`member._name_ in cls...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [13079,13092]`member._name_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [13079,13085]`member`
                                               Frame: [1,member,Illegal]
                                           GetAttributeNode SourceSection: [13096,13112]`cls._member_map_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_map_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [13096,13099]`cls`
                                               Frame: [0,cls,Illegal]
@@ -2443,7 +2443,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [13254,13394]`if attr in cls._memb...`
                                       YesNodeGen SourceSection: None
                                         ContainsNodeGen SourceSection: [13257,13281]`attr in cls._member_...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [13257,13261]`attr`
@@ -2451,7 +2451,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [13265,13281]`cls._member_map_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_map_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [13265,13268]`cls`
                                               Frame: [0,cls,Illegal]
@@ -2465,7 +2465,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [13372,13384]`cls.__name__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [13372,13375]`cls`
                                                 Frame: [0,cls,Illegal]
@@ -2525,7 +2525,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [13532,13551]`self._member_names_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _member_names_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [13532,13536]`self`
                                             Frame: [0,self,Illegal]
@@ -2593,7 +2593,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _member_map_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [14010,14013]`cls`
                                                 Frame: [0,cls,Illegal]
@@ -2656,7 +2656,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: None
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _member_map_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [14155,14158]`cls`
                                             Frame: [0,cls,Illegal]
@@ -2727,7 +2727,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNode SourceSection: None
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _member_map_
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalCellNodeGen SourceSection: [14218,14221]`cls`
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
@@ -2757,7 +2757,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [14253,14271]`cls._member_names_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_names_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalCellNodeGen SourceSection: [14253,14256]`cls`
                                               ReadLocalVariableNodeGen SourceSection: None
@@ -2805,7 +2805,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [14315,14333]`cls._member_names_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _member_names_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [14315,14318]`cls`
                                             Frame: [0,cls,Illegal]
@@ -2854,7 +2854,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [14606,14622]`cls._member_map_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_map_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [14606,14609]`cls`
                                               Frame: [0,cls,Illegal]
@@ -2897,7 +2897,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [14677,14689]`cls.__name__`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __name__
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [14677,14680]`cls`
                                             Frame: [0,cls,Illegal]
@@ -2966,7 +2966,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNode SourceSection: None
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _member_map_
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalCellNodeGen SourceSection: [14734,14737]`cls`
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
@@ -3000,7 +3000,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [14778,14796]`cls._member_names_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _member_names_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalCellNodeGen SourceSection: [14778,14781]`cls`
                                                 ReadLocalVariableNodeGen SourceSection: None
@@ -3062,7 +3062,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [15124,15136]`cls.__dict__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __dict__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [15124,15127]`cls`
                                               Frame: [0,cls,Illegal]
@@ -3072,7 +3072,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [15169,15261]`if name in member_ma...`
                                       YesNodeGen SourceSection: None
                                         ContainsNodeGen SourceSection: [15172,15190]`name in member_map`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [15172,15176]`name`
@@ -3189,7 +3189,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       GetAttributeNode SourceSection: [15826,15839]`cls.__class__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __class__
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [15826,15829]`cls`
                                           Frame: [0,cls,Illegal]
@@ -3510,7 +3510,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: f_globals
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 PythonCallUnary SourceSection: [17113,17129]`sys._getframe(2)`
                                                   CallUnaryMethodNodeGen SourceSection: None
@@ -3526,6 +3526,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: exc
                                               Frame: [22,exc,Illegal]
+                                            WriteLocalVariableNodeGen SourceSection: None
+                                              Identifier: exc
+                                              Frame: [22,exc,Illegal]
+                                              ObjectLiteralNode SourceSection: None
                                             TupleLiteralNode SourceSection: [17171,17199]`(AttributeError, Val...`
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [17172,17186]`AttributeError`
                                                 Identifier: AttributeError
@@ -3662,7 +3666,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   GetAttributeNode SourceSection: [18128,18147]`base._member_names_`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: _member_names_
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [18128,18132]`base`
                                                       Frame: [3,base,Illegal]
@@ -3772,7 +3776,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: [18728,18744]`bases[0].__mro__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __mro__
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 GetItemNodeGen SourceSection: [18728,18736]`bases[0]`
                                                   ReadLocalVariableNodeGen SourceSection: None
@@ -3892,7 +3896,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         IfNode SourceSection: [20284,20583]`if target not in {↵ ...`
                                                           NotNodeGen SourceSection: [20287,20494]`target not in {↵    ...`
                                                             ContainsNodeGen SourceSection: None
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                 Op: __contains__
                                                               YesNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [20287,20293]`target`
@@ -3903,20 +3907,20 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 GetAttributeNode SourceSection: [20365,20377]`None.__new__`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: __new__
-                                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                   ObjectLiteralNode SourceSection: [20365,20369]`None`
                                                                 GetAttributeNode SourceSection: [20407,20421]`object.__new__`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: __new__
-                                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20407,20413]`object`
                                                                     Identifier: object
                                                                 GetAttributeNode SourceSection: [20451,20463]`Enum.__new__`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: __new__
-                                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20451,20455]`Enum`
                                                                     Identifier: Enum
@@ -3955,7 +3959,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [20677,20691]`object.__new__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __new__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [20677,20683]`object`
                                                 Identifier: object
@@ -3968,7 +3972,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [20904,20918]`object.__new__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __new__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [20904,20910]`object`
                                                 Identifier: object
@@ -4096,7 +4100,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         IfNode SourceSection: [21646,21743]`if value in cls._val...`
                                           YesNodeGen SourceSection: None
                                             ContainsNodeGen SourceSection: [21649,21680]`value in cls._value2...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [21649,21654]`value`
@@ -4104,7 +4108,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: [21658,21680]`cls._value2member_ma...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _value2member_map_
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [21658,21661]`cls`
                                                   Frame: [0,cls,Illegal]
@@ -4113,7 +4117,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _value2member_map_
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [21705,21708]`cls`
                                                   Frame: [0,cls,Illegal]
@@ -4134,7 +4138,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNode SourceSection: [21894,21908]`member._value_`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _value_
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalVariableNodeGen SourceSection: [21894,21900]`member`
                                                           Frame: [2,member,Illegal]
@@ -4151,7 +4155,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNode SourceSection: [21848,21864]`cls._member_map_`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _member_map_
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                       ReadLocalVariableNodeGen SourceSection: [21848,21851]`cls`
                                                         Frame: [0,cls,Illegal]
@@ -4307,7 +4311,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: [22403,22415]`cls.__name__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __name__
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [22403,22406]`cls`
                                                   Frame: [0,cls,Illegal]
@@ -4353,26 +4357,26 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [22492,22515]`self.__class__.__nam...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __name__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             GetAttributeNode SourceSection: [22492,22506]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [22492,22496]`self`
                                                 Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [22517,22528]`self._name_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [22517,22521]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [22530,22542]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [22530,22534]`self`
                                               Frame: [0,self,Illegal]
@@ -4417,19 +4421,19 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [22594,22617]`self.__class__.__nam...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __name__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             GetAttributeNode SourceSection: [22594,22608]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [22594,22598]`self`
                                                 Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [22619,22630]`self._name_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [22619,22623]`self`
                                               Frame: [0,self,Illegal]
@@ -4512,7 +4516,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             StringLiteralNode SourceSection: [22814,22817]`'_'`
                                                           NotNodeGen SourceSection: [22822,22848]`m not in self._membe...`
                                                             ContainsNodeGen SourceSection: None
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                 Op: __contains__
                                                               YesNodeGen SourceSection: None
                                                               ReadGeneratorFrameVariableNodeGen SourceSection: [22822,22823]`m`
@@ -4520,7 +4524,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               GetAttributeNode SourceSection: [22831,22848]`self._member_map_`
                                                                 GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: _member_map_
-                                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                 ReadLocalCellNodeGen SourceSection: [22831,22835]`self`
                                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
@@ -4541,7 +4545,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNode SourceSection: [22774,22786]`cls.__dict__`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __dict__
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [22774,22777]`cls`
                                                           Frame: [1,cls,Illegal]
@@ -4575,7 +4579,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetAttributeNode SourceSection: [22728,22742]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalCellNodeGen SourceSection: [22728,22732]`self`
                                                     ReadLocalVariableNodeGen SourceSection: None
@@ -4637,7 +4641,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [23195,23213]`self._member_type_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_type_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [23195,23199]`self`
                                               Frame: [0,self,Illegal]
@@ -4665,7 +4669,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [23331,23349]`self._member_type_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_type_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [23331,23335]`self`
                                               Frame: [0,self,Illegal]
@@ -4675,7 +4679,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [23368,23380]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [23368,23372]`self`
                                               Frame: [0,self,Illegal]
@@ -4730,7 +4734,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [23474,23485]`self._name_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _name_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [23474,23478]`self`
                                             Frame: [0,self,Illegal]
@@ -4779,7 +4783,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [23539,23553]`self.__class__`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __class__
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [23539,23543]`self`
                                             Frame: [0,self,Illegal]
@@ -4787,7 +4791,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [23556,23568]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [23556,23560]`self`
                                               Frame: [0,self,Illegal]
@@ -4834,7 +4838,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [24077,24088]`self._name_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _name_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [24077,24081]`self`
                                             Frame: [0,self,Illegal]
@@ -4879,7 +4883,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [24197,24209]`self._value_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _value_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [24197,24201]`self`
                                             Frame: [0,self,Illegal]
@@ -4959,7 +4963,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: modules
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [24703,24706]`sys`
                                                 Identifier: sys
@@ -5211,7 +5215,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [25680,25695]`cls.__members__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __members__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [25680,25683]`cls`
                                               Frame: [0,cls,Illegal]
@@ -5330,7 +5334,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       GetAttributeNode SourceSection: [25886,25895]`self.name`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: name
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                         ReadLocalVariableNodeGen SourceSection: [25886,25890]`self`
                           Frame: [0,self,Illegal]
@@ -5635,7 +5639,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [27095,27117]`cls._value2member_ma...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value2member_map_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [27095,27098]`cls`
                                                 Frame: [0,cls,Illegal]
@@ -5691,7 +5695,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNode SourceSection: [27363,27375]`cls.__name__`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __name__
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                       ReadLocalVariableNodeGen SourceSection: [27363,27366]`cls`
                                                         Frame: [0,cls,Illegal]
@@ -5728,7 +5732,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetAttributeNode SourceSection: [27701,27723]`cls._value2member_ma...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _value2member_map_
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [27701,27704]`cls`
                                                     Frame: [0,cls,Illegal]
@@ -5791,7 +5795,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [27855,27869]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [27855,27859]`self`
                                               Frame: [0,self,Illegal]
@@ -5822,21 +5826,21 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [28129,28142]`other._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [28129,28134]`other`
                                               Frame: [1,other,Illegal]
                                           GetAttributeNode SourceSection: [28145,28157]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [28145,28149]`self`
                                               Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [28161,28174]`other._value_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _value_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [28161,28166]`other`
                                             Frame: [1,other,Illegal]
@@ -5879,7 +5883,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       GetAttributeNode SourceSection: [28214,28228]`self.__class__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __class__
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [28214,28218]`self`
                                           Frame: [0,self,Illegal]
@@ -5889,7 +5893,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [28240,28251]`self._name_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [28240,28244]`self`
                                               Frame: [0,self,Illegal]
@@ -5901,21 +5905,21 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [28301,28313]`cls.__name__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [28301,28304]`cls`
                                                 Frame: [1,cls,Illegal]
                                             GetAttributeNode SourceSection: [28315,28326]`self._name_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _name_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [28315,28319]`self`
                                                 Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [28328,28340]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [28328,28332]`self`
                                                 Frame: [0,self,Illegal]
@@ -5931,7 +5935,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [28387,28399]`self._value_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _value_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [28387,28391]`self`
                                             Frame: [0,self,Illegal]
@@ -5958,7 +5962,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [28450,28462]`cls.__name__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __name__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [28450,28453]`cls`
                                               Frame: [1,cls,Illegal]
@@ -6004,14 +6008,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 GetAttributeNode SourceSection: [28494,28502]`m._name_`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: _name_
-                                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                   ReadGeneratorFrameVariableNodeGen SourceSection: [28494,28495]`m`
                                                                     Frame: [0,m,Illegal]
                                                                 GetAttributeNode SourceSection: [28506,28515]`m._value_`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: _value_
-                                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                   ReadGeneratorFrameVariableNodeGen SourceSection: [28506,28507]`m`
                                                                     Frame: [0,m,Illegal]
@@ -6041,7 +6045,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [28553,28565]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [28553,28557]`self`
                                               Frame: [0,self,Illegal]
@@ -6085,7 +6089,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       GetAttributeNode SourceSection: [28623,28637]`self.__class__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __class__
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [28623,28627]`self`
                                           Frame: [0,self,Illegal]
@@ -6095,7 +6099,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [28649,28660]`self._name_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [28649,28653]`self`
                                               Frame: [0,self,Illegal]
@@ -6107,14 +6111,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [28704,28716]`cls.__name__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [28704,28707]`cls`
                                                 Frame: [1,cls,Illegal]
                                             GetAttributeNode SourceSection: [28718,28729]`self._name_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _name_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [28718,28722]`self`
                                                 Frame: [0,self,Illegal]
@@ -6130,7 +6134,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [28776,28788]`self._value_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _value_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [28776,28780]`self`
                                             Frame: [0,self,Illegal]
@@ -6166,7 +6170,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [28823,28840]`members[0]._name_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _name_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               GetItemNodeGen SourceSection: [28823,28833]`members[0]`
                                                 ReadLocalVariableNodeGen SourceSection: None
@@ -6182,14 +6186,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [28880,28892]`cls.__name__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [28880,28883]`cls`
                                                 Frame: [1,cls,Illegal]
                                             GetAttributeNode SourceSection: [28894,28912]`members[0]._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               GetItemNodeGen SourceSection: [28894,28904]`members[0]`
                                                 ReadLocalVariableNodeGen SourceSection: None
@@ -6204,7 +6208,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [28979,28991]`cls.__name__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [28979,28982]`cls`
                                                 Frame: [1,cls,Illegal]
@@ -6250,14 +6254,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   GetAttributeNode SourceSection: [29027,29035]`m._name_`
                                                                     GetFixedAttributeNodeGen SourceSection: None
                                                                       Key: _name_
-                                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
                                                                     ReadGeneratorFrameVariableNodeGen SourceSection: [29027,29028]`m`
                                                                       Frame: [0,m,Illegal]
                                                                   GetAttributeNode SourceSection: [29039,29048]`m._value_`
                                                                     GetFixedAttributeNodeGen SourceSection: None
                                                                       Key: _value_
-                                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
                                                                     ReadGeneratorFrameVariableNodeGen SourceSection: [29039,29040]`m`
                                                                       Frame: [0,m,Illegal]
@@ -6326,7 +6330,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [29137,29149]`self._value_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _value_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [29137,29141]`self`
                                             Frame: [0,self,Illegal]
@@ -6381,7 +6385,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [29214,29228]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29214,29218]`self`
                                               Frame: [0,self,Illegal]
@@ -6399,14 +6403,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [29295,29307]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29295,29299]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [29310,29323]`other._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29310,29315]`other`
                                               Frame: [1,other,Illegal]
@@ -6461,7 +6465,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [29389,29403]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29389,29393]`self`
                                               Frame: [0,self,Illegal]
@@ -6479,14 +6483,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [29470,29482]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29470,29474]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [29485,29498]`other._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29485,29490]`other`
                                               Frame: [1,other,Illegal]
@@ -6541,7 +6545,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [29564,29578]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29564,29568]`self`
                                               Frame: [0,self,Illegal]
@@ -6559,14 +6563,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [29645,29657]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29645,29649]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [29660,29673]`other._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29660,29665]`other`
                                               Frame: [1,other,Illegal]
@@ -6611,14 +6615,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNode SourceSection: [29742,29756]`self.__class__`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __class__
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [29742,29746]`self`
                                             Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [29758,29770]`self._value_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _value_
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [29758,29762]`self`
                                             Frame: [0,self,Illegal]
@@ -6660,7 +6664,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               AndNode SourceSection: [29857,29908]`m not in members and...`
                                                 NotNodeGen SourceSection: [29857,29873]`m not in members`
                                                   ContainsNodeGen SourceSection: None
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __contains__
                                                     YesNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [29857,29858]`m`
@@ -6672,14 +6676,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNode SourceSection: [29883,29892]`m._value_`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _value_
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                       ReadLocalVariableNodeGen SourceSection: [29883,29884]`m`
                                                         Frame: [4,m,Illegal]
                                                     GetAttributeNode SourceSection: [29895,29907]`self._value_`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _value_
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                       ReadLocalVariableNodeGen SourceSection: [29895,29899]`self`
                                                         Frame: [0,self,Illegal]
@@ -6697,7 +6701,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [29826,29840]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [29826,29830]`self`
                                               Frame: [0,self,Illegal]
@@ -6822,7 +6826,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetAttributeNode SourceSection: [30210,30222]`cls.__name__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __name__
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [30210,30213]`cls`
                                                     Frame: [0,cls,Illegal]
@@ -6895,7 +6899,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [30392,30414]`cls._value2member_ma...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value2member_map_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [30392,30395]`cls`
                                                 Frame: [0,cls,Illegal]
@@ -6970,7 +6974,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       AndNode SourceSection: [30782,30883]`flag_value not in cl...`
                                                         NotNodeGen SourceSection: [30782,30822]`flag_value not in cl...`
                                                           ContainsNodeGen SourceSection: None
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __contains__
                                                             YesNodeGen SourceSection: None
                                                             ReadLocalVariableNodeGen SourceSection: [30782,30792]`flag_value`
@@ -6978,13 +6982,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             GetAttributeNode SourceSection: [30800,30822]`cls._value2member_ma...`
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: _value2member_map_
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                               ReadLocalVariableNodeGen SourceSection: [30800,30803]`cls`
                                                                 Frame: [0,cls,Illegal]
                                                         NotNodeGen SourceSection: [30851,30883]`flag_value not in ne...`
                                                           ContainsNodeGen SourceSection: None
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __contains__
                                                             YesNodeGen SourceSection: None
                                                             ReadLocalVariableNodeGen SourceSection: [30851,30861]`flag_value`
@@ -7064,7 +7068,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GetAttributeNode SourceSection: [31516,31538]`cls._value2member_ma...`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: _value2member_map_
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [31516,31519]`cls`
                                                             Frame: [0,cls,Illegal]
@@ -7136,7 +7140,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [31665,31679]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [31665,31669]`self`
                                                 Frame: [0,self,Illegal]
@@ -7159,14 +7163,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [31754,31766]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [31754,31758]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [31769,31798]`self.__class__(other...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             PythonCallUnary SourceSection: [31769,31790]`self.__class__(other...`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -7230,7 +7234,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [31887,31901]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [31887,31891]`self`
                                                 Frame: [0,self,Illegal]
@@ -7251,14 +7255,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [31974,31986]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [31974,31978]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [31989,32018]`self.__class__(other...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             PythonCallUnary SourceSection: [31989,32010]`self.__class__(other...`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -7319,7 +7323,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [32085,32099]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [32085,32089]`self`
                                                 Frame: [0,self,Illegal]
@@ -7340,14 +7344,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [32172,32184]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [32172,32176]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [32187,32216]`self.__class__(other...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             PythonCallUnary SourceSection: [32187,32208]`self.__class__(other...`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -7413,7 +7417,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNode SourceSection: [32346,32358]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [32346,32350]`self`
                                               Frame: [0,self,Illegal]
@@ -7539,7 +7543,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 GetAttributeNode SourceSection: [32711,32722]`member.name`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: name
-                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                   ReadLocalVariableNodeGen SourceSection: [32711,32717]`member`
                                     Frame: [3,member,Illegal]
@@ -7555,7 +7559,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   GetAttributeNode SourceSection: [32761,32772]`member.name`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: name
-                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                     ReadLocalVariableNodeGen SourceSection: [32761,32767]`member`
                                       Frame: [3,member,Illegal]
@@ -7568,7 +7572,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               GetAttributeNode SourceSection: [32659,32682]`enumeration.__member...`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: __members__
-                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                 ReadLocalVariableNodeGen SourceSection: [32659,32670]`enumeration`
                                   Frame: [0,enumeration,Illegal]
@@ -7772,7 +7776,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [33605,33611]`m.name`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: name
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [33605,33606]`m`
                                                 Frame: [1,m,Illegal]
@@ -7830,7 +7834,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     GetAttributeNode SourceSection: [33553,33576]`flag._value2member_m...`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: _value2member_map_
-                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                       ReadLocalVariableNodeGen SourceSection: [33553,33557]`flag`
                                         Frame: [0,flag,Illegal]
@@ -7874,7 +7878,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNode SourceSection: [33843,33849]`m.name`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: name
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [33843,33844]`m`
                                                   Frame: [1,m,Illegal]
@@ -7939,7 +7943,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     GetAttributeNode SourceSection: [33791,33814]`flag._value2member_m...`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: _value2member_map_
-                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                       ReadLocalVariableNodeGen SourceSection: [33791,33795]`flag`
                                         Frame: [0,flag,Illegal]
@@ -8015,7 +8019,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             ReadLocalVariableNodeGen SourceSection: [34118,34125]`members`
                               Frame: [5,members,Illegal]
                           ContainsNodeGen SourceSection: [34130,34162]`value in flag._value...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __contains__
                             YesNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [34130,34135]`value`
@@ -8023,7 +8027,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             GetAttributeNode SourceSection: [34139,34162]`flag._value2member_m...`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: _value2member_map_
-                                LookupAndCallBinaryNodeGen SourceSection: None
+                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               ReadLocalVariableNodeGen SourceSection: [34139,34143]`flag`
                                 Frame: [0,flag,Illegal]
@@ -8038,7 +8042,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             GetAttributeNode SourceSection: None
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: _value2member_map_
-                                LookupAndCallBinaryNodeGen SourceSection: None
+                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               ReadLocalVariableNodeGen SourceSection: [34187,34191]`flag`
                                 Frame: [0,flag,Illegal]
@@ -8084,7 +8088,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNode SourceSection: [34250,34259]`m._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [34250,34251]`m`
                                                 Frame: [0,m,Illegal]
@@ -8112,7 +8116,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             GetAttributeNode SourceSection: [34303,34319]`members[0].value`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: value
-                                LookupAndCallBinaryNodeGen SourceSection: None
+                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               GetItemNodeGen SourceSection: [34303,34313]`members[0]`
                                 ReadLocalVariableNodeGen SourceSection: None

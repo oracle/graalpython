@@ -1501,7 +1501,7 @@ public abstract class HPyExternalFunctionNodes {
         public static PBuiltinFunction createFunction(PythonContext context, Object enclosingType, String propertyName) {
             PythonLanguage lang = context.getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorNotWritableRootNode(l, propertyName), HPyGetSetDescriptorNotWritableRootNode.class, propertyName);
-            PythonObjectFactory factory = context.getCore().factory();
+            PythonObjectFactory factory = context.factory();
             return factory.createGetSetBuiltinFunction(propertyName, enclosingType, 0, callTarget);
         }
     }

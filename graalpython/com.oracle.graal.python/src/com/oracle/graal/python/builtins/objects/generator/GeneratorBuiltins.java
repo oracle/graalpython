@@ -131,7 +131,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
     private static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
         if (self.isFinished()) {
-            throw node.raise(StopIteration);
+            throw node.raiseStopIteration();
         }
         if (self.isRunning()) {
             throw node.raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);

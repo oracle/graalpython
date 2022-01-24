@@ -101,7 +101,7 @@ public final class InteropMap implements TruffleObject {
 
     @ExportMessage(name = "getMembers")
     @TruffleBoundary
-    TruffleObject getKeys(@SuppressWarnings("unused") boolean includeInternal,
+    Object getKeys(@SuppressWarnings("unused") boolean includeInternal,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {

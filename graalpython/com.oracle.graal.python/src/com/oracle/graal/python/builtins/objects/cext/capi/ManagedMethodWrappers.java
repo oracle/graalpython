@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -127,7 +126,7 @@ public abstract class ManagedMethodWrappers {
         public Object execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached ToSulongNode toSulongNode,
+                        @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ExecutePositionalStarargsInteropNode posStarargsNode,
                         @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
@@ -172,7 +171,7 @@ public abstract class ManagedMethodWrappers {
         public Object execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached ToSulongNode toSulongNode,
+                        @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
                         @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedMessageException {
             boolean mustRelease = gil.acquire();

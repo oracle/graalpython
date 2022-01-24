@@ -27,8 +27,6 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -50,7 +48,6 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
@@ -81,24 +78,6 @@ public final class PByteArray extends PBytesLike {
         } else {
             return String.format("%s(%s)", typeName, getSequenceStorage());
         }
-    }
-
-    @Ignore
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof PByteArray)) {
-            return false;
-        }
-        if (this == obj) {
-            return true;
-        }
-        PByteArray other = (PByteArray) obj;
-        return Arrays.equals(store.getInternalArray(), other.store.getInternalArray());
-    }
-
-    @Override
-    public final int hashCode() {
-        return Arrays.hashCode(store.getInternalArray());
     }
 
     public final void reverse() {

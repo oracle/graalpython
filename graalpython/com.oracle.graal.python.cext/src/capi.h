@@ -66,15 +66,6 @@ typedef struct {
     PyObject *md_name;  /* for logging purposes after md_dict is cleared */
 } PyModuleObject;
 
-// taken from CPython "Objects/capsule.c"
-typedef struct {
-    PyObject_HEAD
-    void *pointer;
-    const char *name;
-    void *context;
-    PyCapsule_Destructor destructor;
-} PyCapsule;
-
 typedef struct {
     PyObject_VAR_HEAD
     int readonly;
@@ -95,6 +86,7 @@ typedef struct {
 
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
+PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
 
 typedef void (*init_upcall)();
 
@@ -340,6 +332,7 @@ void initialize_hashes();
 #define JWRAPPER_OBJOBJPROC                  39
 #define JWRAPPER_OBJOBJARGPROC               40
 #define JWRAPPER_NEW                         41
+#define JWRAPPER_MP_DELITEM                  42
 
 #define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                                  \

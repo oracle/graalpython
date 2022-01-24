@@ -59,7 +59,7 @@ public abstract class FormatNodeBase extends PythonBinaryClinicBuiltinNode {
     // applies to all types: empty format string => use __str__
     @Specialization(guards = "formatString.isEmpty()")
     public static Object formatEmptyString(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                    @Cached("create(__STR__)") LookupAndCallUnaryNode lookupAndCallNode) {
+                    @Cached("create(Str)") LookupAndCallUnaryNode lookupAndCallNode) {
         return lookupAndCallNode.executeObject(frame, self);
     }
 }

@@ -126,7 +126,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                         GetAttributeNode SourceSection: None
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: modules
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadLocalVariableNodeGen SourceSection: [2313,2316]`sys`
                             Frame: [2,sys,Illegal]
@@ -149,7 +149,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                           GetAttributeNode SourceSection: [2402,2427]`__graalpython__.core...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: core_home
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2402,2417]`__graalpython__`
                               Identifier: __graalpython__
@@ -167,7 +167,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                         GetAttributeNode SourceSection: [2458,2472]`posix.O_RDONLY`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: O_RDONLY
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadLocalVariableNodeGen SourceSection: [2458,2463]`posix`
                             Frame: [3,posix,Illegal]
@@ -184,7 +184,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                         GetAttributeNode SourceSection: [2503,2514]`sys.maxsize`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: maxsize
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadLocalVariableNodeGen SourceSection: [2503,2506]`sys`
                             Frame: [2,sys,Illegal]
@@ -218,7 +218,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                         GetAttributeNode SourceSection: [2597,2612]`module.__dict__`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: __dict__
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadLocalVariableNodeGen SourceSection: [2597,2603]`module`
                             Frame: [4,module,Illegal]

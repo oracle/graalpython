@@ -101,7 +101,6 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
 
 public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
@@ -136,7 +135,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     }
 
     @Override
-    protected StatementNode createFrameReturn(ExpressionNode value, FrameSlot slot) {
+    @SuppressWarnings("deprecation")    // new Frame API
+    protected StatementNode createFrameReturn(ExpressionNode value, com.oracle.truffle.api.frame.FrameSlot slot) {
         return new GeneratorFrameReturnNode(value, slot);
     }
 
@@ -351,8 +351,14 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             ExceptSSTNode exceptNode = node.exceptNodes[i];
             ExpressionNode exceptTest = exceptNode.test != null ? (ExpressionNode) exceptNode.test.accept(this) : null;
             StatementNode exceptBody = (StatementNode) exceptNode.body.accept(this);
-            WriteNode exceptName = exceptNode.asName != null ? (WriteNode) scopeEnvironment.findVariable(exceptNode.asName).makeWriteNode(null) : null;
-            exceptNodes[i] = new ExceptNode(exceptBody, exceptTest, exceptName);
+            WriteNode exceptName = null;
+            StatementNode exceptNameDelete = null;
+            if (exceptNode.asName != null) {
+                ReadNode readAsNode = scopeEnvironment.findVariable(exceptNode.asName);
+                exceptName = (WriteNode) readAsNode.makeWriteNode(null);
+                exceptNameDelete = unbindVariable(readAsNode);
+            }
+            exceptNodes[i] = new ExceptNode(exceptBody, exceptTest, exceptName, exceptNameDelete);
         }
 
         StatementNode result;

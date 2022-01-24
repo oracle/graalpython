@@ -17,7 +17,6 @@ This is just a snapshot as of 2021-07-29.
  * **nis**:  We should just use the C module
  * **syslog**:  Access to syslog. We should probably just use this from the C module.
  * **termios**:  Posix terminal module IO. Use from C
- * **pyexpat**: We only have a stub in Java. Should use from C.
 
 #### These are not strictly needed for now
  * **_abc**:  Just a performance optimization, not necessary.

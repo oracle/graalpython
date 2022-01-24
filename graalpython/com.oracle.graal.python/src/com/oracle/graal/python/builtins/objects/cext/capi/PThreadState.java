@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
@@ -101,6 +100,7 @@ public class PThreadState extends PythonNativeWrapper {
     public static final String OVERFLOWED = "overflowed";
     public static final String INTERP = "interp";
     public static final String USE_TRACING = "use_tracing";
+    public static final String GILSTATE_COUNTER = "gilstate_counter";
 
     private final PythonThreadState threadState;
 
@@ -141,6 +141,7 @@ public class PThreadState extends PythonNativeWrapper {
             case OVERFLOWED:
             case INTERP:
             case USE_TRACING:
+            case GILSTATE_COUNTER:
                 return true;
             default:
                 return false;
@@ -150,7 +151,8 @@ public class PThreadState extends PythonNativeWrapper {
     @ExportMessage
     protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
         return new PythonAbstractObject.Keys(
-                        new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED, INTERP, USE_TRACING});
+                        new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED, INTERP, USE_TRACING,
+                                        GILSTATE_COUNTER});
     }
 
     @ImportStatic(PThreadState.class)
@@ -244,8 +246,8 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, PREV)")
         @SuppressWarnings("unused")
         static Object doPrev(PThreadState receiver, String key,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return getNativeNullNode.execute();
+                        @CachedLibrary("receiver") InteropLibrary receiverLib) {
+            return PythonContext.get(receiverLib).getNativeNull();
         }
 
         @Specialization(guards = "eq(key, EXC_INFO)")
@@ -288,14 +290,21 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, INTERP)")
         @SuppressWarnings("unused")
-        static Object doInterpreterState(PThreadState receiver, String key) {
-            return 0xDEADBEEF;
+        static Object doInterpreterState(PThreadState receiver, String key,
+                        @CachedLibrary("receiver") InteropLibrary receiverLib) {
+            return PythonContext.get(receiverLib).getNativeNull();
         }
 
         @Specialization(guards = "eq(key, USE_TRACING)")
         @SuppressWarnings("unused")
         static long doUseTracing(PThreadState receiver, String key) {
             return 0;
+        }
+
+        @Specialization(guards = "eq(key, GILSTATE_COUNTER)")
+        @SuppressWarnings("unused")
+        static long doGilstateCounter(PThreadState receiver, String key) {
+            return 1;
         }
 
         protected static boolean eq(String key, String expected) {
@@ -315,6 +324,7 @@ public class PThreadState extends PythonNativeWrapper {
             case EXC_TRACEBACK:
             case RECURSION_DEPTH:
             case OVERFLOWED:
+            case GILSTATE_COUNTER:
                 return true;
             default:
                 return false;
@@ -416,6 +426,13 @@ public class PThreadState extends PythonNativeWrapper {
         @SuppressWarnings("unused")
         static Object doOverflowed(PythonThreadState threadState, String key, int value) {
             // TODO: (tfel) Can we not ignore this?
+            return null;
+        }
+
+        @Specialization(guards = "eq(key, GILSTATE_COUNTER)")
+        @SuppressWarnings("unused")
+        static Object doGilstateCounter(PythonThreadState threadState, String key, int value) {
+            // Ignoring reference counting, always reporting 1
             return null;
         }
 

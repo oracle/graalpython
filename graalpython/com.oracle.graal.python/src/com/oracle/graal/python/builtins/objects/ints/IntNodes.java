@@ -48,8 +48,10 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import java.math.BigInteger;
 
 /**
  * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from
@@ -111,17 +113,43 @@ public final class IntNodes {
     public abstract static class PyLongAsByteArray extends Node {
         public abstract byte[] execute(Object value, int size, boolean bigEndian);
 
-        @Specialization
-        static byte[] doLong(long value, int size, boolean bigEndian) {
+        protected static int asWellSizedData(int len) {
+            switch (len) {
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                    return len;
+                default:
+                    return -1;
+            }
+        }
+
+        @Specialization(guards = "size == cachedDataLen", limit = "4")
+        static byte[] doPrimitive(long value, int size, boolean bigEndian,
+                        @Cached("asWellSizedData(size)") int cachedDataLen) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
-            support.putLong(bytes, 0, value);
+            support.putLong(bytes, 0, value, cachedDataLen);
+            return bytes;
+        }
+
+        @Specialization
+        static byte[] doArbitraryBytesLong(long value, int size, boolean bigEndian,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            final byte[] bytes = new byte[size];
+            NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
+            try {
+                support.putBigInteger(bytes, 0, PInt.longToBigInteger(value), size);
+            } catch (OverflowException oe) {
+                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT, "int");
+            }
             return bytes;
         }
 
         @Specialization
         static byte[] doPInt(PInt value, int size, boolean bigEndian,
-                        @Cached PRaiseNode raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             try {
@@ -140,14 +168,35 @@ public final class IntNodes {
     public abstract static class PyLongFromByteArray extends Node {
         public abstract Object execute(byte[] data, boolean bigEndian);
 
-        protected boolean fitsInLong(byte[] data) {
+        protected static boolean fitsInLong(byte[] data) {
             return data.length <= Long.BYTES;
         }
 
-        @Specialization(guards = "fitsInLong(data)")
-        static Object doLong(byte[] data, boolean bigEndian) {
+        protected static int asWellSizedData(int len) {
+            switch (len) {
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                    return len;
+                default:
+                    return -1;
+            }
+        }
+
+        @Specialization(guards = "data.length == cachedDataLen", limit = "4")
+        static Object doLong(byte[] data, boolean bigEndian,
+                        @Cached("asWellSizedData(data.length)") int cachedDataLen) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
-            return support.getLong(data, 0);
+            return support.getLong(data, 0, cachedDataLen);
+        }
+
+        @Specialization(guards = "fitsInLong(data)")
+        static long doArbitraryBytesLong(byte[] data, boolean bigEndian,
+                        @Cached PythonObjectFactory factory) {
+            NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
+            BigInteger integer = support.getBigInteger(data, 0);
+            return PInt.longValue(integer);
         }
 
         @Specialization(guards = "!fitsInLong(data)")

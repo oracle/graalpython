@@ -45,8 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -79,18 +78,22 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetMethod extends Node {
-    private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
 
     public abstract Object execute(Frame frame, Object receiver, String name);
 
     protected static boolean isObjectGetAttribute(Object lazyClass) {
-        Object slotValue = null;
+        Object getattributeSlot = null;
+        Object getattrSlot = null;
         if (lazyClass instanceof PythonBuiltinClassType) {
-            slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonBuiltinClassType) lazyClass);
+            PythonBuiltinClassType type = (PythonBuiltinClassType) lazyClass;
+            getattributeSlot = SpecialMethodSlot.GetAttribute.getValue(type);
+            getattrSlot = SpecialMethodSlot.GetAttr.getValue(type);
         } else if (lazyClass instanceof PythonManagedClass) {
-            slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonManagedClass) lazyClass);
+            PythonManagedClass type = (PythonManagedClass) lazyClass;
+            getattributeSlot = SpecialMethodSlot.GetAttribute.getValue(type);
+            getattrSlot = SpecialMethodSlot.GetAttr.getValue(type);
         }
-        return slotValue == OBJ_GET_ATTRIBUTE;
+        return getattributeSlot == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE && getattrSlot == PNone.NO_VALUE;
     }
 
     @Specialization(guards = "!isObjectGetAttribute(lazyClass)", limit = "1")

@@ -57,6 +57,44 @@ def _reference_contains(args):
     except TypeError:
         return raise_Py6_SystemError()
 
+
+def _reference_clear(args):
+    args[0].clear()
+    return args[0]
+
+
+def _reference_next(args):
+    try:
+        s = args[0]
+        i = 0
+        for k in s:
+            if i == args[1]:
+                return (1, k, hash(k))
+            i = i + 1
+        return (0, None, 0)
+    except:
+        return (0, None, 0)
+
+def _reference_pop(args):
+    try:
+        s = args[0]    
+        return s.pop()
+    except AttributeError:
+        return raise_Py6_SystemError()
+    
+def _reference_discard(args):
+    try:
+        s = args[0]
+        if not (isinstance(s, set)):
+            raise SystemError
+        
+        if args[1] in s:
+            s.discard(args[1])
+            return 1
+        return 0
+    except AttributeError:
+        return raise_Py6_SystemError()
+    
 class FrozenSetSubclass(frozenset):
     pass
 
@@ -202,3 +240,92 @@ class TestPySet(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PySet_Clear = CPyExtFunction(
+        _reference_clear,
+        lambda: (
+            ({1, 2, 3},),
+            ({1, "a", 0.1},),
+        ),
+        code='''PyObject* wrap_PySet_Clear(PyObject* set) {
+            if (PySet_Clear(set)) {
+                return NULL;
+            }
+            Py_INCREF(set);
+            return set;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* set"],
+        callfunction="wrap_PySet_Clear",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySet_NextEntry = CPyExtFunctionOutVars(
+        _reference_next,
+        lambda: ((set(),1),
+            (set([1, 2, 3]),1),
+            (set({'a', 'b'}),1),
+            (frozenset([1, 2, 3]),1),
+            (frozenset({'a', 'b'}),1),
+            (frozenset([None]),1),
+            (FrozenSetSubclass(),1),
+            (SetSubclass([None]),1),),
+        code='''int wrap_PySet_NextEntry(PyObject* set, Py_ssize_t* ppos, PyObject **key, Py_hash_t* hash) {
+            int res = 0;
+            Py_ssize_t iterations = *ppos;
+            Py_ssize_t i;
+            *ppos = 0;
+            for(i=0; i < iterations; i++) {
+                _PySet_NextEntry(set, ppos, key, hash);
+            }
+            res = _PySet_NextEntry(set, ppos, key, hash);
+            if (!res) {
+                // avoid problems when building the result value
+                *key = set;
+                *hash = 0;     
+                Py_INCREF(set);
+            }
+            return res;
+        }
+        ''',
+        resultspec="iOn",
+        argspec='On',
+        arguments=("PyObject* set", "Py_ssize_t ppos"),
+        resulttype="int",
+        argumentnames=("set, &ppos"),
+        resultvars=("PyObject* key", "Py_hash_t hash"),
+        callfunction="wrap_PySet_NextEntry",
+        cmpfunc=lambda x, y: type(x) == tuple and type(y) == tuple and len(x) == 3 and len(y) == 3 and (x[0] == 0 and y[0] == 0 or x == y)
+    )
+
+    # PySet_Pop
+    test_PySet_Pop = CPyExtFunction(
+        _reference_pop,
+        lambda: ((set(),),
+            (set([1, 2, 3]),),
+            (set({'a', 'b'}),),
+            (frozenset([1, 2, 3]),),
+            (FrozenSetSubclass(),),
+            (SetSubclass([None]),),),
+        resultspec="O",
+        argspec='O',
+        cmpfunc=unhandled_error_compare
+    )
+    
+    # PySet_Discard
+    test_PySet_Discard = CPyExtFunction(
+        _reference_discard,
+        lambda: ((set(),1),
+            (set([1, 2, 3]),1),
+            (set([1, 2, 3]),None),
+            (set({'a', 'b'}),1),
+            (frozenset([1, 2, 3]),1),
+            (FrozenSetSubclass(),1),
+            (SetSubclass([None]),1)),
+        resultspec="i",
+        argspec='OO',
+        arguments=("PyObject* set", "PyObject* key"),
+        argumentnames=("set, key"),
+        cmpfunc=unhandled_error_compare
+    )

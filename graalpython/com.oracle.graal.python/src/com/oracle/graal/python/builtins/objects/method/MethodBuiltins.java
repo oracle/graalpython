@@ -93,7 +93,7 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(VirtualFrame frame, PMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
+                        @Cached("create(GetAttribute)") LookupAndCallBinaryNode getCode) {
             return getCode.executeObject(frame, self.getFunction(), __CODE__);
         }
     }

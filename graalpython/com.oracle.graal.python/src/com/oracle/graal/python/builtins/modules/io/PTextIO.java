@@ -57,7 +57,7 @@ import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class PTextIO extends PTextIOBase {
+public final class PTextIO extends PTextIOBase {
 
     private boolean detached;
     private int chunkSize;

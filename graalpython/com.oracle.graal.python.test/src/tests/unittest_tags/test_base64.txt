@@ -10,6 +10,8 @@
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b32decode_error
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b32encode
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b64decode
+*graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b64decode_invalid_chars
+*graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b64decode_padding_error
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b64encode
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b85_padding
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_b85decode

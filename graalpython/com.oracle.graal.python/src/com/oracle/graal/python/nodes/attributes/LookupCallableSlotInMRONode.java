@@ -119,7 +119,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
                         assumptions = {"singleContextAssumption()"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
         static Object doBuiltinTypeCachedSingleCtx(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
                         @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                        @Cached("slot.getValue(getContext().getCore().lookupType(cachedKlassType))") Object value) {
+                        @Cached("slot.getValue(getContext().lookupType(cachedKlassType))") Object value) {
             return value;
         }
 
@@ -164,7 +164,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
         static Object doBuiltinTypeMultiContext(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
                         @Exclusive @Cached SlotValueProfile slotValueProfile,
                         @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                        @Bind("slot.getValue(getContext().getCore().lookupType(cachedKlassType))") Object value) {
+                        @Bind("slot.getValue(getContext().lookupType(cachedKlassType))") Object value) {
             return slotValueProfile.profile(value);
         }
 
@@ -175,7 +175,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
                         @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile) {
             Object result = slot.getValue(klass);
             if (result == null) {
-                result = slot.getValue(PythonContext.get(this).getCore().lookupType(klass));
+                result = slot.getValue(PythonContext.get(this).lookupType(klass));
             }
             return slotValueProfile.profile(result);
         }
@@ -208,7 +208,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
             if (klass instanceof PythonBuiltinClassType) {
                 Object result = slot.getValue((PythonBuiltinClassType) klass);
                 if (result == null) {
-                    result = slot.getValue(PythonContext.get(null).getCore().lookupType((PythonBuiltinClassType) klass));
+                    result = slot.getValue(PythonContext.get(null).lookupType((PythonBuiltinClassType) klass));
                 }
                 return result;
             } else if (klass instanceof PythonManagedClass) {

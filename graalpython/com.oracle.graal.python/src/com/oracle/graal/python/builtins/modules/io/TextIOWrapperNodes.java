@@ -101,7 +101,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class TextIOWrapperNodes {
+public abstract class TextIOWrapperNodes {
 
     /**
      * corresponds to textio.c:textiowrapper_set_decodedChars(textio *self, Object chars)

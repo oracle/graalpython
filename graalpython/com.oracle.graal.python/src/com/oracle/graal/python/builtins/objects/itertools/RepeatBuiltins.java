@@ -40,34 +40,27 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -85,50 +78,11 @@ public final class RepeatBuiltins extends PythonBuiltins {
         return RepeatBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "object", "times"})
-    @ArgumentClinic(name = "times", defaultValue = "PNone.NONE", useDefaultForNone = true)
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonTernaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return RepeatBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object initNone(PRepeat self, Object object, @SuppressWarnings("unused") PNone times) {
-            self.setElement(object);
-            self.setCnt(-1);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "times < 0")
-        Object initNeg(PRepeat self, Object object, @SuppressWarnings("unused") int times) {
-            self.setElement(object);
-            self.setCnt(0);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "times >= 0")
-        Object init(PRepeat self, Object object, int times) {
-            self.setElement(object);
-            self.setCnt(times);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isNone(times)", "!isInt(times)"})
-        Object init(PRepeat self, Object object, Object times) {
-            throw raise(TypeError, S_EXPECTED_GOT_P, "integer", times);
-        }
-
-    }
-
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PRepeat self) {
+        static Object iter(PRepeat self) {
             return self;
         }
     }
@@ -137,7 +91,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() > 0")
-        Object nextPos(PRepeat self) {
+        static Object nextPos(PRepeat self) {
             self.setCnt(self.getCnt() - 1);
             return self.getElement();
         }
@@ -145,11 +99,11 @@ public final class RepeatBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() == 0")
         Object nextZero(PRepeat self) {
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = "self.getCnt() < 0")
-        Object nextNeg(PRepeat self) {
+        static Object nextNeg(PRepeat self) {
             return self.getElement();
         }
     }
@@ -158,7 +112,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
-        Object hintPos(PRepeat self) {
+        static Object hintPos(PRepeat self) {
             return self.getCnt();
         }
 
@@ -193,7 +147,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
-        Object reprPos(VirtualFrame frame, PRepeat self,
+        static Object reprPos(VirtualFrame frame, PRepeat self,
                         @Cached GetClassNode getClass,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectReprAsObjectNode reprNode,
@@ -210,7 +164,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.getCnt() < 0")
-        Object reprNeg(VirtualFrame frame, PRepeat self,
+        static Object reprNeg(VirtualFrame frame, PRepeat self,
                         @Cached GetClassNode getClass,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectReprAsObjectNode reprNode,

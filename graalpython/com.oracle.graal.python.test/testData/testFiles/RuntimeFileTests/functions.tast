@@ -645,7 +645,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                           GetAttributeNode SourceSection: [3344,3360]`self.__iterators`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _map__iterators
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [3344,3348]`self`
                                               Frame: [0,self,Illegal]
@@ -760,14 +760,14 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                               GetAttributeNode SourceSection: [3528,3539]`self.__func`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _map__func
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [3528,3532]`self`
                                                   Frame: [0,self,Illegal]
                                               GetAttributeNode SourceSection: [3542,3558]`self.__iterators`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _map__iterators
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [3542,3546]`self`
                                                   Frame: [0,self,Illegal]
@@ -848,7 +848,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           GetAttributeNode SourceSection: [4021,4045]`__getframe__(1).f_lo...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: f_locals
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             PythonCallUnary SourceSection: [4021,4036]`__getframe__(1)`
                               CallUnaryMethodNodeGen SourceSection: None
@@ -881,7 +881,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             GetAttributeNode SourceSection: [4154,4169]`obj[0].__dict__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __dict__
-                                LookupAndCallBinaryNodeGen SourceSection: None
+                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               GetItemNodeGen SourceSection: [4154,4160]`obj[0]`
                                 ReadLocalVariableNodeGen SourceSection: None

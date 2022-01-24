@@ -40,19 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENTS_MUST_BE_ITERATORS;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -65,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -89,23 +86,11 @@ public final class ChainBuiltins extends PythonBuiltins {
         return ChainBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
-        @Specialization
-        Object init(VirtualFrame frame, PChain self, Object[] iterables,
-                        @Cached PyObjectGetIter getIter) {
-            self.setSource(getIter.execute(frame, factory().createList(iterables)));
-            self.setActive(PNone.NONE);
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PChain self) {
+        static Object iter(PChain self) {
             return self;
         }
     }
@@ -139,7 +124,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                     self.setActive(PNone.NONE);
                 }
             }
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
     }
 
@@ -149,7 +134,7 @@ public final class ChainBuiltins extends PythonBuiltins {
         @Specialization
         Object fromIter(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object arg,
                         @Cached PyObjectGetIter getIter) {
-            PChain instance = factory().createChain();
+            PChain instance = factory().createChain(PythonBuiltinClassType.PChain);
             instance.setSource(getIter.execute(frame, arg));
             instance.setActive(PNone.NONE);
             return instance;
@@ -190,35 +175,28 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached PyObjectLookupAttr getAttrNode,
-                        @Cached BranchProfile isNotTupleProfile,
-                        @Cached BranchProfile wrongLenProfile,
-                        @Cached BranchProfile len2Profile,
-                        @Cached BranchProfile sourceIteratorProfile,
-                        @Cached BranchProfile activeIteratorProfile) {
+                        @Cached BranchProfile len2Profile) {
             if (!(state instanceof PTuple)) {
-                isNotTupleProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             int len = (int) lenNode.execute(frame, state);
             if (len < 1 || len > 2) {
-                wrongLenProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             Object source = getItemNode.execute(frame, state, 0);
-            checkIterator(getAttrNode, frame, source, sourceIteratorProfile);
+            checkIterator(frame, getAttrNode, source);
             self.setSource(source);
             if (len == 2) {
                 len2Profile.enter();
                 Object active = getItemNode.execute(frame, state, 1);
-                checkIterator(getAttrNode, frame, active, activeIteratorProfile);
+                checkIterator(frame, getAttrNode, active);
                 self.setActive(active);
             }
             return PNone.NONE;
         }
 
-        private void checkIterator(PyObjectLookupAttr getAttrNode, VirtualFrame frame, Object active, BranchProfile profile) throws PException {
-            if (getAttrNode.execute(frame, active, __NEXT__) == PNone.NO_VALUE) {
-                profile.enter();
+        private void checkIterator(VirtualFrame frame, PyObjectLookupAttr getAttrNode, Object obj) throws PException {
+            if (getAttrNode.execute(frame, obj, __NEXT__) == PNone.NO_VALUE) {
                 throw raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
             }
         }

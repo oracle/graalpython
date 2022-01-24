@@ -186,7 +186,7 @@ public class StgDictBuiltins extends PythonBuiltins {
                 Object[] array = getArray.execute(pair.getSequenceStorage());
                 Object fname = array[0];
                 CFieldObject fdescr = (CFieldObject) getAttributeNode.executeObject(frame, descr.proto, fname);
-                if (getClassNode.execute(fdescr) != context.getCore().lookupType(CField)) {
+                if (getClassNode.execute(fdescr) != context.lookupType(CField)) {
                     throw raise(TypeError, UNEXPECTED_TYPE);
                 }
                 if (fdescr.anonymous != 0) {

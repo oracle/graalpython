@@ -42,11 +42,11 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -74,6 +75,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -95,6 +97,12 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
     public static final String ML_METH = "ml_meth";
     public static final String ML_FLAGS = "ml_flags";
     public static final String ML_DOC = "ml_doc";
+
+    /**
+     * Extensions that write to {@code __doc__} expect to be able to deallocate the string, so we
+     * need to keep the C pointer around in a separate hidden field.
+     */
+    public static final HiddenKey __C_DOC__ = new HiddenKey("__c_doc__");
 
     public PyMethodDefWrapper(PythonObject delegate) {
         super(delegate);
@@ -150,8 +158,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
         static Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode) {
             Object name = getAttrNode.execute(object, SpecialAttributeNames.__NAME__);
             if (!PGuards.isPNone(name)) {
                 try {
@@ -160,16 +167,19 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
                     // fall through
                 }
             }
-            return toSulongNode.execute(getNativeNullNode.execute());
+            return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
         }
 
         @Specialization(guards = {"eq(ML_DOC, key)"})
         static Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
-            Object doc = getAttrNode.execute(object, __DOC__);
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode) {
+            Object doc = getAttrNode.execute(object, __C_DOC__);
+            if (doc != PNone.NO_VALUE) {
+                return doc;
+            }
+            doc = getAttrNode.execute(object, __DOC__);
             if (!PGuards.isPNone(doc)) {
                 try {
                     return new CStringWrapper(castToJavaStringNode.execute(doc));
@@ -177,7 +187,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
                     // fall through
                 }
             }
-            return toSulongNode.execute(getNativeNullNode.execute());
+            return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
         }
 
         @Specialization(guards = {"eq(ML_METH, key)"})
@@ -267,19 +277,22 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
         static void doPythonObject(PythonObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
+                        @Shared("writeAttrDynamic") @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
                         @Shared("fromCharPointerNode") @Cached FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
             setAttrNode.execute(object, __DOC__, fromCharPointerNode.execute(value));
+            writeAttrToDynamicObjectNode.execute(object, __C_DOC__, value);
         }
 
         @Specialization(guards = {"isBuiltinMethod(object) || isBuiltinFunction(object)", "eq(ML_DOC, key)"})
         static void doBuiltinFunctionOrMethod(PythonBuiltinObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                        @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
+                        @Shared("writeAttrDynamic") @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
                         @Shared("fromCharPointerNode") @Cached FromCharPointerNode fromCharPointerNode) {
             // Since CPython does directly write to `ml_doc`, writing the __doc__ attribute
             // circumvents any checks if the attribute may be written according to the common Python
             // rules. So, directly write to the Python object's storage.
-            writeAttrToDynamicObjectNode.execute(object.getStorage(), __DOC__, fromCharPointerNode.execute(value));
+            writeAttrToDynamicObjectNode.execute(object, __DOC__, fromCharPointerNode.execute(value));
+            writeAttrToDynamicObjectNode.execute(object, __C_DOC__, value);
         }
     }
 

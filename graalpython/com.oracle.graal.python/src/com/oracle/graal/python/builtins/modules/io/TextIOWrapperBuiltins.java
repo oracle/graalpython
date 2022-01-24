@@ -105,7 +105,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode.chainExceptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -155,7 +154,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PTextIOWrapper)
-public class TextIOWrapperBuiltins extends PythonBuiltins {
+public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -183,7 +182,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     }
 
     abstract static class ClosedCheckPythonUnaryBuiltinNode extends AttachedCheckPythonUnaryBuiltinNode {
-        @Child TextIOWrapperNodes.CheckClosedNode checkClosedNode = TextIOWrapperNodesFactory.CheckClosedNodeGen.create();
+        @Child private TextIOWrapperNodes.CheckClosedNode checkClosedNode = TextIOWrapperNodesFactory.CheckClosedNodeGen.create();
 
         protected boolean isOpen(VirtualFrame frame, PTextIO self) {
             checkClosedNode.execute(frame, self);
@@ -218,7 +217,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     }
 
     abstract static class ClosedCheckPythonBinaryClinicBuiltinNode extends AttachedCheckPythonBinaryClinicBuiltinNode {
-        @Child TextIOWrapperNodes.CheckClosedNode checkClosedNode = TextIOWrapperNodesFactory.CheckClosedNodeGen.create();
+        @Child private TextIOWrapperNodes.CheckClosedNode checkClosedNode = TextIOWrapperNodesFactory.CheckClosedNodeGen.create();
 
         protected boolean isOpen(VirtualFrame frame, PTextIO self) {
             checkClosedNode.execute(frame, self);
@@ -1147,7 +1146,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             if (PString.length(line) == 0) {
                 self.clearSnapshot();
                 self.setTelling(self.isSeekable());
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return line;
         }
@@ -1159,7 +1158,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isOK()")
         Object doit(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
+                        @Cached("create(Repr)") LookupAndCallUnaryNode repr,
                         @Cached IONodes.ToStringNode toString,
                         @Cached IsBuiltinClassProfile isValueError) {
             if (!getContext().reprEnter(self)) {

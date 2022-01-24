@@ -113,8 +113,8 @@ public abstract class HashingCollectionNodes {
     }
 
     @ImportStatic({PGuards.class})
-    public abstract static class SetValueHashingStorageNode extends PNodeWithContext {
-        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage iterator, Object value);
+    abstract static class SetValueHashingStorageNode extends PNodeWithContext {
+        abstract HashingStorage execute(VirtualFrame frame, HashingStorage iterator, Object value);
 
         @Specialization
         static HashingStorage doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
@@ -145,6 +145,10 @@ public abstract class HashingCollectionNodes {
         }
     }
 
+    /**
+     * Gets clone of the keys of the storage with all values either set to given value or with no
+     * guarantees about the values if {@link PNone#NO_VALUE} is passed as {@code value}.
+     */
     @ImportStatic({PGuards.class, PythonOptions.class})
     public abstract static class GetClonedHashingStorageNode extends PNodeWithContext {
         @Child private PRaiseNode raise;
@@ -235,6 +239,10 @@ public abstract class HashingCollectionNodes {
         }
     }
 
+    /**
+     * Returns {@link HashingStorage} with the same keys as the given iterator. There is no
+     * guarantee about the values!
+     */
     @ImportStatic({SpecialMethodNames.class, PGuards.class})
     public abstract static class GetHashingStorageNode extends PNodeWithContext {
 

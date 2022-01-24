@@ -13,25 +13,34 @@ implementation is made available for experimentation and curious end-users.
 
 The easiest option to try GraalPython is
 [Pyenv](https://github.com/pyenv/pyenv/), the Python version manager. It allows
-you to easily install different GraalPython releases. To get version 20.2, for
-example, just run `pyenv install graalpython-20.2`.
+you to easily install different GraalPython releases. To get version 21.2.0, for
+example, just run `pyenv install graalpython-21.2.0`.
 
 To try GraalPython with a full GraalVM, including the support for Java embedding
 and interop with other languages, you can use the bundled releases from
 [www.graalvm.org](https://www.graalvm.org/downloads/).
 
-If you want to build GraalPython from source, checkout this repository and the
-[mx](https://github.com/graalvm/mx) build tool, and run `mx --dy /compiler
-python-gvm` in the `graalpython` repository root. If the build is fine, it will
-print the full path to the `graalpython` executable as the last line of output.
+### Building from source
+#### Requirements
+
+* [mx](https://github.com/graalvm/mx) - a separate Python tool co-developed for GraalVM development. This tool must be
+  downloaded and put onto your PATH:
+```
+git clone https://github.com/graalvm/mx.git
+export PATH=$PWD/mx:$PATH
+```
+
+#### Building
+
+Run `mx --dy /compiler python-gvm` in the `graalpython` repository root. If the build is fine, it will print the full
+path to the `graalpython` executable as the last line of output.
 
 For more information and some examples of what you can do with GraalPython,
 check out the [reference](https://www.graalvm.org/reference-manual/python/).
 
 ### Create a virtual environment
-
-The best way of using the GraalVM implementation of Python is out of a virtual
-environment. To create the venv, run the following:
+The best way of using the GraalVM implementation of Python is out of a virtual environment. To do so
+execute the following command in the project directory:
 
 ```
 graalpython -m venv <dir-to-venv>
@@ -43,12 +52,11 @@ To activate the environment in your shell session call:
 source <dir-to-venv>/bin/activate
 ```
 
-In the venv multiple executables are available, like `python`, `python3` and `graalpython`.
-
+In the venv, multiple executables are available, like `python`, `python3` and `graalpython`. 
 
 ### Installing packages
 
-At the moment not enough of the standard library is implemented to run the
+Currently, not enough of the standard library is implemented to run the
 standard package installers for many packages. As a convenience, we provide a
 simple module to install packages that we know to be working (including
 potential patches required for those packages). Try the following to find out
@@ -89,7 +97,7 @@ Python 3.8+. We describe the current status of the compatibility mode
 
 ### Contributing
 
-I you're thinking about contributing something to this repository, you will need
+If you're thinking about contributing something to this repository, you will need
 to sign the [Oracle Contributor
 Agreement](http://www.graalvm.org/community/contributors/) for us to able to
 merge your work. Please also take note of our [code of
@@ -108,3 +116,4 @@ Permissive License v 1.0 as shown at
 implementation is in part derived from and contains additional code from 3rd
 parties, the copyrights and licensing of which is detailed in the
 [LICENSE](LICENSE) and [THIRD_PARTY_LICENSE](THIRD_PARTY_LICENSE.txt) files.
+

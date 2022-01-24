@@ -41,6 +41,8 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
@@ -66,6 +68,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.PythonOS;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -107,6 +110,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 import sun.misc.Unsafe;
@@ -328,8 +332,8 @@ public final class NFIPosixSupport extends PosixSupport {
         private static String getLibPath(PythonContext context) {
             CompilerAsserts.neverPartOfCompilation();
 
-            String os = PythonUtils.getPythonOSName();
-            String multiArch = PythonUtils.getPythonArch() + "-" + os;
+            PythonOS os = getPythonOS();
+            String multiArch = PythonUtils.getPythonArch() + "-" + os.getName();
             String cacheTag = "graalpython-38";
             Env env = context.getEnv();
             LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
@@ -338,7 +342,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
             // only use '.dylib' if we are on 'Darwin-native'
             String soExt;
-            if ("darwin".equals(os) && "native".equals(toolchainId)) {
+            if (os == PLATFORM_DARWIN && "native".equals(toolchainId)) {
                 soExt = ".dylib";
             } else {
                 soExt = ".so";
@@ -372,9 +376,15 @@ public final class NFIPosixSupport extends PosixSupport {
             Object unbound;
             try {
                 InteropLibrary interop = InteropLibrary.getUncached();
+                SignatureLibrary sigs = SignatureLibrary.getUncached();
+
+                String sig = String.format("with %s %s", posix.nfiBackend, function.signature);
+                Source sigSrc = Source.newBuilder("nfi", sig, "posix-nfi-signature").internal(true).build();
+                Object signature = posix.context.getEnv().parseInternal(sigSrc).call();
+
                 unbound = interop.readMember(library, function.name());
-                posix.cachedFunctions.set(function.ordinal(), interop.invokeMember(unbound, "bind", function.signature));
-            } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException e) {
+                posix.cachedFunctions.set(function.ordinal(), sigs.bind(signature, unbound));
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 throw CompilerDirectives.shouldNotReachHere(function.name(), e);
             }
         }

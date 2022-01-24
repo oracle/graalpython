@@ -45,7 +45,6 @@ import java.util.Comparator;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -289,11 +288,11 @@ public abstract class SortNodes {
             final RootCallTarget callTarget = getComparatorCallTarget(language);
             if (frame == null) {
                 PythonThreadState threadState = PythonContext.get(this).getThreadState(language);
-                PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+                Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
                 try {
                     callSortWithoutKey(array, len, callTarget, arguments);
                 } finally {
-                    IndirectCalleeContext.exit(threadState, frameInfo);
+                    IndirectCalleeContext.exit(threadState, state);
                 }
             } else {
                 callContext.prepareCall(frame, arguments, callTarget, this);
@@ -386,11 +385,11 @@ public abstract class SortNodes {
                 final RootCallTarget callTarget = getComparatorCallTarget(language);
                 if (frame == null) {
                     PythonThreadState threadState = PythonContext.get(this).getThreadState(language);
-                    PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+                    Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
                     try {
                         callSortWithKey(pairArray, len, callTarget, arguments);
                     } finally {
-                        IndirectCalleeContext.exit(threadState, frameInfo);
+                        IndirectCalleeContext.exit(threadState, state);
                     }
                 } else {
                     callContext.prepareCall(frame, arguments, callTarget, this);

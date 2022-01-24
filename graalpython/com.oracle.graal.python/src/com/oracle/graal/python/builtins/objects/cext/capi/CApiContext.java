@@ -52,6 +52,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 
 import org.graalvm.collections.EconomicMap;
@@ -59,7 +61,6 @@ import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
@@ -86,9 +87,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -111,7 +110,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -124,7 +122,6 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 public final class CApiContext extends CExtContext {
-    protected static final String INITIALIZE_CAPI = "initialize_capi";
     protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiContext.class);
 
@@ -169,7 +166,7 @@ public final class CApiContext extends CExtContext {
     @CompilationFinal private int pyLongBitsInDigit = -1;
 
     /** Cache for polyglot types of primitive and pointer types. */
-    @CompilationFinal(dimensions = 1) private final TruffleObject[] llvmTypeCache;
+    @CompilationFinal(dimensions = 1) private final Object[] llvmTypeCache;
 
     /** same as {@code moduleobject.c: max_module_number} */
     private long maxModuleNumber;
@@ -178,6 +175,15 @@ public final class CApiContext extends CExtContext {
     private final HashMap<Pair<String, String>, Object> extensions = new HashMap<>(4);
 
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
+
+    /**
+     * Thread local storage for PyThread_tss_* APIs
+     */
+    private final ConcurrentHashMap<Long, ThreadLocal<Object>> tssStorage = new ConcurrentHashMap<>();
+    /**
+     * Next key that will be allocated byt PyThread_tss_create
+     */
+    private AtomicLong nextTssKey = new AtomicLong();
 
     /**
      * Private dummy constructor just for {@link #LAZY_CONTEXT}.
@@ -200,7 +206,7 @@ public final class CApiContext extends CExtContext {
         assert nullID == 0;
 
         // initialize primitive and pointer type cache
-        llvmTypeCache = new TruffleObject[LLVMType.values().length];
+        llvmTypeCache = new Object[LLVMType.values().length];
 
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
@@ -243,11 +249,11 @@ public final class CApiContext extends CExtContext {
         return pyLongBitsInDigit;
     }
 
-    public TruffleObject getLLVMTypeID(LLVMType llvmType) {
+    public Object getLLVMTypeID(LLVMType llvmType) {
         return llvmTypeCache[llvmType.ordinal()];
     }
 
-    public void setLLVMTypeID(LLVMType llvmType, TruffleObject llvmTypeId) {
+    public void setLLVMTypeID(LLVMType llvmType, Object llvmTypeId) {
         llvmTypeCache[llvmType.ordinal()] = llvmTypeId;
     }
 
@@ -309,6 +315,29 @@ public final class CApiContext extends CExtContext {
         }
         traceMallocDomains[oldLength] = new TraceMallocDomain(id);
         return oldLength;
+    }
+
+    public long nextTssKey() {
+        return nextTssKey.incrementAndGet();
+    }
+
+    @TruffleBoundary
+    public Object tssGet(long key) {
+        ThreadLocal<Object> local = tssStorage.get(key);
+        if (local != null) {
+            return local.get();
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    public void tssSet(long key, Object object) {
+        tssStorage.computeIfAbsent(key, (k) -> new ThreadLocal<>()).set(object);
+    }
+
+    @TruffleBoundary
+    public void tssDelete(long key) {
+        tssStorage.remove(key);
     }
 
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(int i) {
@@ -512,12 +541,12 @@ public final class CApiContext extends CExtContext {
         return nativeObjectWrapperList.get(idx);
     }
 
-    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
+    public PythonAbstractNativeObject getPythonNativeObject(Object nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
                     GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, AttachLLVMTypeNode attachLLVMTypeNode) {
         return getPythonNativeObject(nativePtr, newRefProfile, validRefProfile, resurrectProfile, getObRefCntNode, addRefCntNode, false, attachLLVMTypeNode);
     }
 
-    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
+    public PythonAbstractNativeObject getPythonNativeObject(Object nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
                     GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
         CompilerAsserts.partialEvaluationConstant(addRefCntNode);
         CompilerAsserts.partialEvaluationConstant(steal);
@@ -557,7 +586,7 @@ public final class CApiContext extends CExtContext {
         return new PythonAbstractNativeObject(nativePtr);
     }
 
-    PythonAbstractNativeObject createPythonAbstractNativeObject(TruffleObject nativePtr, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
+    PythonAbstractNativeObject createPythonAbstractNativeObject(Object nativePtr, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
         PythonAbstractNativeObject nativeObject = new PythonAbstractNativeObject(attachLLVMTypeNode.execute(nativePtr));
         int nativeRefID = nativeObjectWrapperList.reserve();
         assert nativeRefID != -1;
@@ -923,15 +952,8 @@ public final class CApiContext extends CExtContext {
                 context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
                 capiLibrary = capiLibraryCallTarget.call();
 
-                // call into Python to initialize python_cext module globals
-                ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
-                PythonModule builtinModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
-
-                CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
-                callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capiLibrary);
                 CApiContext cApiContext = new CApiContext(context, capiLibrary);
                 context.setCapiWasLoaded(cApiContext);
-                callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capiLibrary);
                 return cApiContext;
             } catch (PException e) {
                 /*

@@ -33,7 +33,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -524,13 +523,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone close(VirtualFrame frame, int fd,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil) {
             try {
                 PythonContext ctx = getContext();
                 if (ctx.getSharedMultiprocessingData().decrementFDRefCount(fd)) {
                     return PNone.NONE;
                 }
-                posixLib.close(getPosixSupport(), fd);
+                gil.release(true);
+                try {
+                    posixLib.close(getPosixSupport(), fd);
+                } finally {
+                    gil.acquire();
+                }
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -817,11 +822,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone ftruncate(VirtualFrame frame, int fd, long length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil,
                         @Cached BranchProfile errorProfile) {
             auditNode.audit("os.truncate", fd, length);
             while (true) {
                 try {
-                    posixLib.ftruncate(getPosixSupport(), fd, length);
+                    gil.release(true);
+                    try {
+                        posixLib.ftruncate(getPosixSupport(), fd, length);
+                    } finally {
+                        gil.acquire();
+                    }
                     return PNone.NONE;
                 } catch (PosixException e) {
                     errorProfile.enter();
@@ -1998,25 +2009,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
-        private static SecureRandom secureRandom;
-
-        private static SecureRandom createRandomInstance() {
-            try {
-                return SecureRandom.getInstance("NativePRNGNonBlocking");
-            } catch (NoSuchAlgorithmException e) {
-                throw new IllegalStateException(e);
-            }
+        @Specialization
+        PBytes urandom(int size) {
+            byte[] bytes = new byte[size];
+            nextBytes(getContext().getSecureRandom(), bytes);
+            return factory().createBytes(bytes);
         }
 
-        @Specialization
-        @TruffleBoundary(allowInlining = true)
-        PBytes urandom(int size) {
-            if (secureRandom == null) {
-                secureRandom = createRandomInstance();
-            }
-            byte[] bytes = new byte[size];
+        @TruffleBoundary
+        private static void nextBytes(SecureRandom secureRandom, byte[] bytes) {
             secureRandom.nextBytes(bytes);
-            return factory().createBytes(bytes);
         }
 
         @Override
@@ -2140,6 +2142,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         protected static boolean isPath(Object obj) {
             return PGuards.isString(obj) || obj instanceof PBytes;
+        }
+    }
+
+    @Builtin(name = "register_at_fork", keywordOnlyNames = {"before", "after_in_child", "after_in_parent"})
+    @GenerateNodeFactory
+    abstract static class RegisterAtForkNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object register(Object before, Object afterInChild, Object afterInParent) {
+            // TODO should we at least call multiprocessing.util.register_after_fork?
+            return PNone.NONE;
         }
     }
 

@@ -44,7 +44,7 @@ The java backend is the default when GraalVM Python is run via the `Context` API
 ### Limitations of the emulated backend
 
 GraalVM Python can log info about known incompatibility of functions executed at runtime, which includes the OS interface related functions.
-To turn on this logging, use `--log.python.compatibility=FINE` or other desired logging level.
+To turn on this logging, use `--log.python.compatibility.level=FINE` or other desired logging level.
 
 Known limitations of the emulated layer are:
 

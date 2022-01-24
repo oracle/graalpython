@@ -81,7 +81,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         GetAttributeNode SourceSection: [68,79]`self.__root`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _OrderedDict__root
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [68,72]`self`
                                             Frame: [0,self,Illegal]
@@ -91,7 +91,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         GetAttributeNode SourceSection: [95,104]`root.prev`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: prev
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [95,99]`root`
                                             Frame: [1,root,Illegal]
@@ -104,7 +104,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                 GetAttributeNode SourceSection: [155,163]`curr.key`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: key
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: [155,159]`curr`
                                                     Frame: [2,curr,Illegal]
@@ -115,7 +115,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                               GetAttributeNode SourceSection: [183,192]`curr.prev`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: prev
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [183,187]`curr`
                                                   Frame: [2,curr,Illegal]

@@ -4700,6 +4700,7 @@ class TestWait(unittest.TestCase):
         sem.release()
         time.sleep(period)
 
+    @support.impl_detail("timing", graalvm=False)
     def test_wait_integer(self):
         from multiprocessing.connection import wait
 

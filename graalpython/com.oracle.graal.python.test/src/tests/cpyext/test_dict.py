@@ -48,7 +48,18 @@ def _reference_get_item(args):
         return d.get(args[1])
     except Exception:
         return None
-
+    
+def _reference_values(args):
+    d = args[0]
+    return list(d.values())
+    
+def _reference_pop(args):
+    d = args[0]
+    if(len(args) == 2):
+        return d.pop(args[1])
+    else:
+        return d.pop(args[1], args[2])
+        
 
 def _reference_get_item_with_error(args):
     d = args[0]
@@ -119,14 +130,20 @@ def _reference_clear(args):
 
 
 def _reference_merge(args):
-    a, b, override = args
-    if override:
-        a.update(b)
-    else:
-        for k in b:
-            if not k in a:
-                a[k] = b[k]
-    return 0
+    try:
+        a, b, override = args
+        if override:
+            a.update(b)
+        else:
+            for k in b.keys():
+                if not k in a:
+                    a[k] = b[k]
+        return 0
+    except:        
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            return -1
 
 class SubDict(dict):
     pass
@@ -151,13 +168,28 @@ class BadEq:
     def __hash__(self):
         return hash(self.s)
 
-
+class MappingObj:
+    def keys(self):
+        return "ab"
+    def __getitem__(self, key):
+        return key
+        
 class TestPyDict(CPyExtTestCase):
 
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyDict, self).compile_module(name)
 
+    # PyDict_Pop
+    test__PyDict_Pop = CPyExtFunction(
+        _reference_pop,
+        lambda: (({}, "a", "42"), ({'a': "hello"}, "a", "42"), ({'a': "hello"}, "b", "42"), ({BadEq('a'): "hello"}, "a", "42" )),
+        resultspec="O",
+        argspec='OOO',
+        arguments=("PyObject* dict", "PyObject* key", "PyObject* deflt"),
+        cmpfunc=unhandled_error_compare
+    )
+    
     # PyDict_SetItem
     test_PyDict_SetItem = CPyExtFunction(
         _reference_set_item,
@@ -191,7 +223,7 @@ class TestPyDict(CPyExtTestCase):
         callfunction="wrap_PyDict_GetItem",
         cmpfunc=unhandled_error_compare
     )
-
+    
     # PyDict_GetItemWithError
     test_PyDict_GetItemWithError = CPyExtFunction(
         _reference_get_item_with_error,
@@ -291,8 +323,7 @@ class TestPyDict(CPyExtTestCase):
     # PyDict_Next
     test_PyDict_Next = CPyExtFunctionOutVars(
         _reference_next,
-        # lambda: (({'a': "hello"}, 0), ({'a': "hello", 'b': 'world'}, 1), ({'a': "hello"}, 1)),
-        lambda: (({'a': "hello"}, 1),),
+        lambda: (({'a': "hello"}, 1), ({'a': "hello"}, 0), ({'a': "hello", 'b': 'world'}, 1), ({'a': "hello"}, 1)),
         code='''int wrap_PyDict_Next(PyObject* dict, Py_ssize_t* ppos, PyObject** key, PyObject** value) {
             int res = 0;
             Py_ssize_t iterations = *ppos;
@@ -332,12 +363,10 @@ class TestPyDict(CPyExtTestCase):
             Py_ssize_t ppos = 0;
             PyObject* key;
             PyObject* value;
-            Py_hash_t phash;
+            Py_hash_t phash;            
             
-            int res = 0;
-            
-           _PyDict_Next(dict, &ppos, &key, &value, &phash);
-            res = _PyDict_SetItem_KnownHash(result, key, value, phash);
+            _PyDict_Next(dict, &ppos, &key, &value, &phash);
+            _PyDict_SetItem_KnownHash(result, key, value, phash);
             return result;
         }
         ''',
@@ -466,9 +495,22 @@ class TestPyDict(CPyExtTestCase):
             (dict(), {"b": 2}, 0),
             (dict({"a": 1}), {"a": 2}, 0),
             (dict({"a": 1}), {"a": 2}, 1),
+            (dict({"a": 1}), MappingObj(), 0),
+            (dict({"a": 1}), MappingObj(), 1),
+            (dict({"a": 1}), 1, 1),
+            (dict({"a": 1}), 1, 1),
         ),
         resultspec="i",
         argspec="OOi",
         arguments=["PyObject* a", "PyObject* b", "int override"],
+        cmpfunc=unhandled_error_compare
+    )
+    
+    # PyDict_Values
+    test_PyDict_Values = CPyExtFunction(
+        _reference_values,
+        lambda: (({},), ({'a': "hello"},)),
+        resultspec="O",
+        argspec="O",
         cmpfunc=unhandled_error_compare
     )

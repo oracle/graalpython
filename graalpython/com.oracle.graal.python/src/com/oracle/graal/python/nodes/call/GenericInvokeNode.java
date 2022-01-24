@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -119,11 +118,11 @@ public abstract class GenericInvokeNode extends InvokeNode {
         optionallySetGeneratorFunction(arguments, callTarget, isGeneratorFunctionProfile, callee);
         if (isNullFrameProfile.profile(frame == null)) {
             PythonThreadState threadState = context.getThreadState(language);
-            PFrame.Reference frameInfo = IndirectCalleeContext.enterIndirect(threadState, arguments);
+            Object state = IndirectCalleeContext.enterIndirect(threadState, arguments);
             try {
                 return callNode.call(callTarget, arguments);
             } finally {
-                IndirectCalleeContext.exit(threadState, frameInfo);
+                IndirectCalleeContext.exit(threadState, state);
             }
         } else {
             assert frame instanceof VirtualFrame : "GenericInvokeNode should not be executed with non-virtual frames";

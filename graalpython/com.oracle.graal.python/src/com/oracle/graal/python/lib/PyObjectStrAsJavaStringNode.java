@@ -62,17 +62,21 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
     public abstract String execute(Frame frame, Object object);
 
+    public final String execute(Object object) {
+        return execute(null, object);
+    }
+
     @Specialization
-    static String str(String obj) {
+    static String doString(String obj) {
         return obj;
     }
 
     @Specialization
-    static String str(VirtualFrame frame, Object obj,
+    static String doGeneric(VirtualFrame frame, Object obj,
                     @Cached PyObjectStrAsObjectNode strNode,
-                    @Cached CastToJavaStringNode cast) {
+                    @Cached CastToJavaStringNode castToString) {
         try {
-            return cast.execute(strNode.execute(frame, obj));
+            return castToString.execute(strNode.execute(frame, obj));
         } catch (CannotCastException e) {
             throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
         }

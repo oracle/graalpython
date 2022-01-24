@@ -44,7 +44,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -52,8 +51,9 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@SuppressWarnings("deprecation")    // new Frame API
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
-    @CompilationFinal FrameSlot iteratorSlot;
+    @CompilationFinal com.oracle.truffle.api.frame.FrameSlot iteratorSlot;
     @Child ForNextElementNode nextElement;
     @Child StatementNode body;
 
@@ -153,9 +153,10 @@ abstract class ForNextElementNode extends PNodeWithContext {
 }
 
 @NodeInfo(shortName = "for")
+@SuppressWarnings("deprecation")    // new Frame API
 public final class ForNode extends LoopNode {
 
-    @CompilationFinal private FrameSlot iteratorSlot;
+    @CompilationFinal private com.oracle.truffle.api.frame.FrameSlot iteratorSlot;
 
     @Child private com.oracle.truffle.api.nodes.LoopNode loopNode;
     @Child private ExpressionNode iterator;
@@ -179,6 +180,7 @@ public final class ForNode extends LoopNode {
     }
 
     @Override
+    @SuppressWarnings("deprecation")    // new Frame API
     public void executeVoid(VirtualFrame frame) {
         if (iteratorSlot == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();

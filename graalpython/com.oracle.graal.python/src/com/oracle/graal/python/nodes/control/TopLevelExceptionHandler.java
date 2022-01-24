@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -135,7 +134,7 @@ public final class TopLevelExceptionHandler extends RootNode {
                 } catch (StackOverflowError e) {
                     PythonContext context = getContext();
                     context.reacquireGilAfterStackOverflow();
-                    PBaseException newException = context.getCore().factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
+                    PBaseException newException = context.factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
                     PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
                     throw handlePythonException(pe.getEscapedException());
                 } catch (ThreadDeath e) {
@@ -153,8 +152,8 @@ public final class TopLevelExceptionHandler extends RootNode {
 
     @TruffleBoundary
     private void checkInitialized() {
-        Python3Core core = getContext().getCore();
-        if (core.isInitialized() && PythonLanguage.MIME_TYPE.equals(source.getMimeType())) {
+        Python3Core core = getContext();
+        if (core.isCoreInitialized() && PythonLanguage.MIME_TYPE.equals(source.getMimeType())) {
             getContext().initializeMainModule(source.getPath());
         }
     }
@@ -169,7 +168,7 @@ public final class TopLevelExceptionHandler extends RootNode {
             PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
             Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
 
-            PythonModule sys = getContext().getCore().lookupBuiltinModule("sys");
+            PythonModule sys = getContext().lookupBuiltinModule("sys");
             sys.setAttribute(BuiltinNames.LAST_TYPE, type);
             sys.setAttribute(BuiltinNames.LAST_VALUE, pythonException);
             sys.setAttribute(BuiltinNames.LAST_TRACEBACK, tb);
@@ -249,12 +248,13 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     private static int getExitCode(PBaseException pythonException) throws CannotCastException {
-        Object attribute = pythonException.getAttribute("code");
+        final Object[] exceptionAttributes = pythonException.getExceptionAttributes();
         int exitcode = 0;
-        if (attribute != PNone.NONE) {
-            // CPython checks if the object is subclass of PyLong and only then calls
-            // PyLong_AsLong, so it always skips __index__/__int__
-            exitcode = (int) CastToJavaLongLossyNode.getUncached().execute(attribute);
+        if (exceptionAttributes != null) {
+            final Object code = exceptionAttributes[0];
+            if (code != PNone.NONE) {
+                exitcode = (int) CastToJavaLongLossyNode.getUncached().execute(code);
+            }
         }
         return exitcode;
     }
@@ -263,7 +263,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     private static boolean handleAlwaysRunExceptHook(PythonContext theContext, PBaseException pythonException) {
         if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
-            Object stderr = theContext.getCore().getStderr();
+            Object stderr = theContext.getStderr();
             Object message = PyObjectStrAsObjectNode.getUncached().execute(null, pythonException);
             PyObjectCallMethodObjArgs.getUncached().execute(null, stderr, "write", message);
             return true;
@@ -279,7 +279,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         PythonContext pythonContext = getContext();
         if (getSourceSection().getSource().isInternal()) {
             // internal sources are not run in the main module
-            PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
+            PArguments.setGlobals(arguments, pythonContext.factory().createDict());
         } else {
             PythonModule mainModule = pythonContext.getMainModule();
             PDict mainDict = GetDictIfExistsNode.getUncached().execute(mainModule);
@@ -287,11 +287,11 @@ public final class TopLevelExceptionHandler extends RootNode {
             PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
-        PFrame.Reference frameInfo = IndirectCalleeContext.enter(getPythonLanguage(), pythonContext, arguments, innerCallTarget);
+        Object state = IndirectCalleeContext.enterIndirect(getPythonLanguage(), pythonContext, arguments);
         try {
             return innerCallTarget.call(arguments);
         } finally {
-            IndirectCalleeContext.exit(getPythonLanguage(), pythonContext, frameInfo);
+            IndirectCalleeContext.exit(getPythonLanguage(), pythonContext, state);
         }
     }
 

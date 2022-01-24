@@ -93,7 +93,7 @@ public class BufferBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object repr(VirtualFrame frame, PBuffer self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
+                        @Cached("create(Repr)") LookupAndCallUnaryNode repr) {
             return createReprString(repr.executeObject(frame, self.getDelegate()));
         }
 
@@ -110,25 +110,25 @@ public class BufferBuiltins extends PythonBuiltins {
 
         @Specialization
         public static Object iter(VirtualFrame frame, PBuffer self, boolean key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
         public static Object iter(VirtualFrame frame, PBuffer self, int key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
         public static Object iter(VirtualFrame frame, PBuffer self, long key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
         public static Object iter(VirtualFrame frame, PBuffer self, PInt key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
@@ -147,7 +147,7 @@ public class BufferBuiltins extends PythonBuiltins {
 
         @Specialization
         public static Object len(VirtualFrame frame, PBuffer self,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
+                        @Cached("create(Len)") LookupAndCallUnaryNode callLenNode) {
             return callLenNode.executeObject(frame, self.getDelegate());
         }
     }
@@ -158,7 +158,7 @@ public class BufferBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doPBuffer(VirtualFrame frame, PBuffer self,
-                        @Cached("create(__ITER__)") LookupAndCallUnaryNode callIterNode) {
+                        @Cached("create(Iter)") LookupAndCallUnaryNode callIterNode) {
             return callIterNode.executeObject(frame, self.getDelegate());
         }
 

@@ -98,7 +98,7 @@ PyTypeObject PyType_Type = {
     0,                                          /* tp_is_gc */
 };
 
-PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), 0, object_dealloc, PyObject_Del);
+PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), PyType_GenericAlloc, object_dealloc, PyObject_Del);
 PyTypeObject PySuper_Type = PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
 
 typedef int (*type_issubtype_fun_t)(PyTypeObject*, PyTypeObject*);
@@ -342,6 +342,10 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
             type->tp_flags |= _Py_TPFLAGS_HAVE_VECTORCALL;
         }
         /* COPYSLOT(tp_call); */
+    }
+    {
+        COPYSLOT(tp_iter);
+        COPYSLOT(tp_iternext);
     }
 
     if ((type->tp_flags & Py_TPFLAGS_HAVE_FINALIZE) &&
@@ -680,6 +684,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__len__", mappings->mp_length, -1, JWRAPPER_LENFUNC);
         ADD_SLOT_CONV("__getitem__", mappings->mp_subscript, -2, JWRAPPER_BINARYFUNC);
         ADD_SLOT_CONV("__setitem__", mappings->mp_ass_subscript, -3, JWRAPPER_OBJOBJARGPROC);
+        ADD_SLOT_CONV("__delitem__", mappings->mp_ass_subscript, -3, JWRAPPER_MP_DELITEM);
     }
 
     PyAsyncMethods* async = cls->tp_as_async;

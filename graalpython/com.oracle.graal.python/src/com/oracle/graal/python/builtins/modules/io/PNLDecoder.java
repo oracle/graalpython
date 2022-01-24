@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public class PNLDecoder extends PythonBuiltinObject {
+public final class PNLDecoder extends PythonBuiltinObject {
 
     private Object decoder;
     private String errors;

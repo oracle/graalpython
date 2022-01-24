@@ -71,12 +71,14 @@ import static com.oracle.graal.python.runtime.PosixConstants.SO_ACCEPTCONN;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_DOMAIN;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
+import static com.oracle.graal.python.runtime.PosixConstants.TCP_NODELAY;
 import static com.oracle.graal.python.runtime.PosixConstants.TCP_USER_TIMEOUT;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -90,6 +92,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
@@ -532,6 +536,16 @@ public class SocketTests {
     }
 
     @Test
+    public void setSocketOptionsTcpNodelay() throws PosixException {
+        assumeTrue(TCP_NODELAY.defined);
+        TcpClient cli = new TcpClient(AF_INET.value);
+        setIntSockOpt(cli.fd, IPPROTO_TCP.value, TCP_NODELAY.getValueIfDefined(), 1);
+        TcpServer srv = new TcpServer(AF_INET.value);
+        cli.connect(srv.usa());
+        assertNotEquals(0, getIntSockOpt(cli.fd, IPPROTO_TCP.value, TCP_NODELAY.getValueIfDefined()));
+    }
+
+    @Test
     public void nonBlockingDgramRecv() throws PosixException {
         expectErrno(OSErrorEnum.EWOULDBLOCK);
         UdpClient cli = new UdpClient(AF_INET.value);
@@ -553,6 +567,55 @@ public class SocketTests {
         }
         cli.connect(srv.usa());
         srv.accept(cli.address());
+    }
+
+    @Test
+    public void dgramSelect() throws PosixException {
+        UdpServer srv = new UdpServer(AF_INET.value);
+        UdpClient cli = new UdpClient(AF_INET.value);
+
+        SelectResult res = lib.select(posixSupport, new int[]{srv.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        assertFalse(res.getReadFds()[0]);
+
+        cli.sendto(DATA, 0, srv.usa());
+
+        res = lib.select(posixSupport, new int[]{srv.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        assertTrue(res.getReadFds()[0]);
+
+        checkUsa(cli.address(), srv.recvfrom(DATA, 0));
+    }
+
+    @Test
+    public void streamSelect() throws PosixException {
+        TcpServer srv = new TcpServer(AF_INET.value);
+        TcpClient cli = new TcpClient(AF_INET.value);
+
+        SelectResult res = lib.select(posixSupport, new int[]{srv.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        assertFalse(res.getReadFds()[0]);
+
+        cli.connect(srv.usa());
+
+        res = lib.select(posixSupport, new int[]{srv.fd, cli.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        assertTrue(res.getReadFds()[0]);
+        assertFalse(res.getReadFds()[1]);
+
+        TcpClient c = srv.accept(cli.address());
+
+        checkUsa(c.address(), cli.getpeername());
+        checkUsa(cli.address(), c.getpeername());
+
+        c.shutdown(SHUT_RD.value);
+
+        c.send(DATA, 0);
+
+        res = lib.select(posixSupport, new int[]{srv.fd, cli.fd, c.fd}, new int[0], new int[0], new Timeval(0, 100000));
+        assertFalse(res.getReadFds()[0]);
+        assertTrue(res.getReadFds()[1]);
+        assertTrue(res.getReadFds()[2]);
+
+        assertEquals(0, lib.recv(posixSupport, c.fd, new byte[10], 0, 10, 0));
+
+        cli.recv(DATA, 0);
     }
 
     @Test

@@ -46,7 +46,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.List;
 
@@ -89,20 +88,10 @@ public class RandomBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SeedNode extends PythonBuiltinNode {
-
-        private static SecureRandom secureRandom;
-
         @Specialization
         @TruffleBoundary
         PNone seedNone(PRandom random, @SuppressWarnings("unused") PNone none) {
-            if (secureRandom == null) {
-                try {
-                    secureRandom = SecureRandom.getInstance("NativePRNGNonBlocking");
-                } catch (NoSuchAlgorithmException e) {
-                    seedLong(random, System.currentTimeMillis());
-                    return PNone.NONE;
-                }
-            }
+            SecureRandom secureRandom = getContext().getSecureRandom();
             int[] seed = new int[PRandom.N];
             for (int i = 0; i < seed.length; ++i) {
                 seed[i] = secureRandom.nextInt();

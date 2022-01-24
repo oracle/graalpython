@@ -51,6 +51,9 @@ import java.util.List;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.CheckIsClosedNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.EnterBufferedNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.FlushAndRewindUnlockedNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -65,7 +68,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = {PBufferedWriter, PBufferedRandom})
-public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
+public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedWriterMixinBuiltinsFactory.getFactories();
@@ -90,8 +93,8 @@ public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
         @Specialization(guards = "self.isOK()")
         Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached("create(WRITE)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
+                        @Cached EnterBufferedNode lock,
+                        @Cached("create(WRITE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedWriterNodes.WriteNode writeNode) {
             try {
                 lock.enter(self);
@@ -99,7 +102,7 @@ public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
                 return writeNode.execute(frame, self, buffer);
             } finally {
                 bufferLib.release(buffer, frame, this);
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
         }
 
@@ -116,15 +119,15 @@ public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached("create(FLUSH)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
-                        @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
+                        @Cached EnterBufferedNode lock,
+                        @Cached("create(FLUSH)") CheckIsClosedNode checkIsClosedNode,
+                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(self);
                 flushAndRewindUnlockedNode.execute(frame, self);
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
             return PNone.NONE;
         }

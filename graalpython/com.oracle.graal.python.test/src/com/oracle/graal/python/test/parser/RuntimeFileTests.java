@@ -147,11 +147,6 @@ public class RuntimeFileTests extends ParserTestBase {
     }
 
     @Test
-    public void sys() throws Exception {
-        checkScopeAndTree();
-    }
-
-    @Test
     public void traceback() throws Exception {
         checkScopeAndTree();
     }

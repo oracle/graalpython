@@ -62,7 +62,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
             if (isAdoptable()) {
                 objectFactory = insert(PythonObjectFactory.create());
             } else {
-                objectFactory = getCore().factory();
+                objectFactory = factory();
             }
         }
         return objectFactory;
@@ -77,7 +77,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
     }
 
     public final Python3Core getCore() {
-        return getContext().getCore();
+        return getContext();
     }
 
     public final Object getPythonClass(Object lazyClass, ConditionProfile profile) {

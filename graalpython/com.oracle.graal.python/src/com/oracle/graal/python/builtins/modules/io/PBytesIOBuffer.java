@@ -49,7 +49,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(value = PythonBufferAcquireLibrary.class)
-public class PBytesIOBuffer extends PythonBuiltinObject {
+public final class PBytesIOBuffer extends PythonBuiltinObject {
 
     private final PBytesIO source;
     protected final PBytes delegate;

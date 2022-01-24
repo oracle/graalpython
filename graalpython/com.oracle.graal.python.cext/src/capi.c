@@ -172,7 +172,6 @@ declare_type(PyList_Type, list, PyListObject);
 declare_type(PyComplex_Type, complex, PyComplexObject);
 declare_type(PyModule_Type, module, PyModuleObject);
 declare_type(PyModuleDef_Type, moduledef, PyModuleDef);
-declare_type(PyCapsule_Type, PyCapsule, PyCapsule);
 declare_type(PyMemoryView_Type, memoryview, PyMemoryViewObject);
 declare_type(PySet_Type, set, PySetObject);
 declare_type(PyFloat_Type, float, PyFloatObject);
@@ -188,6 +187,7 @@ declare_type(PyMethodDescr_Type, method_descriptor, PyMethodDescrObject);
 declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject);
 declare_type(PyMemberDescr_Type, member_descriptor, PyMemberDescrObject);
 declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
+declare_type(_PyExc_StopIteration, StopIteration, PyStopIterationObject);
 declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
 declare_type(PyFunction_Type, function, PyFunctionObject);
 declare_type(PyMethod_Type, method, PyMethodObject);
@@ -890,6 +890,13 @@ void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, Py
     if (getsets || members) {
         polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Native_Slots", native_type_to_java(managed_class), native_pointer_to_java(getsets), native_pointer_to_java(members));
     }
+}
+
+PyObject* truffle_create_datetime_capsule(void *object) {
+    if (PyType_Ready(&PyCapsule_Type) < 0) {
+        return NULL;
+    }
+    return PyCapsule_New(object, "datetime.datetime_CAPI", NULL);
 }
 
 int truffle_subclass_check(PyObject* type) {

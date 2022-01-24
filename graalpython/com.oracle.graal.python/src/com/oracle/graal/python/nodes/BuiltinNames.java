@@ -56,13 +56,27 @@ public abstract class BuiltinNames {
     public static final String __DEBUG__ = "__debug__";
 
     // sys
+    public static final String TRACEBACKLIMIT = "tracebacklimit";
     public static final String DISPLAYHOOK = "displayhook";
+    public static final String __DISPLAYHOOK__ = "__displayhook__";
     public static final String BREAKPOINTHOOK = "breakpointhook";
+    public static final String __BREAKPOINTHOOK__ = "__breakpointhook__";
     public static final String EXCEPTHOOK = "excepthook";
+    public static final String __EXCEPTHOOK__ = "__excepthook__";
     public static final String UNRAISABLEHOOK = "unraisablehook";
+    public static final String __UNRAISABLEHOOK__ = "__unraisablehook__";
     public static final String LAST_TYPE = "last_type";
     public static final String LAST_VALUE = "last_value";
     public static final String LAST_TRACEBACK = "last_traceback";
+    public static final String __STDERR__ = "__stderr__";
+    public static final String STDERR = "stderr";
+    public static final String __STDIN__ = "__stdin__";
+    public static final String STDIN = "stdin";
+    public static final String __STDOUT__ = "__stdout__";
+    public static final String STDOUT = "stdout";
+    public static final String PYTHONBREAKPOINT = "PYTHONBREAKPOINT";
+    public static final String EXIT = "exit";
+    public static final String MODULES = "modules";
 
     // builtin functions
     public static final String ABS = "abs";

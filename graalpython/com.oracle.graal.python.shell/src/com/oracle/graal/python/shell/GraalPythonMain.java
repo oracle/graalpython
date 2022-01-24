@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -61,6 +62,10 @@ import org.graalvm.polyglot.Value;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
+
+    public static final String SHORT_HELP = "usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
+                    "Try `python -h' for more information.";
+
     public static void main(String[] args) {
         GraalPythonMain.setStartupTime();
         new GraalPythonMain().launch(args);
@@ -117,197 +122,198 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         List<String> subprocessArgs = new ArrayList<>();
         programArgs = new ArrayList<>();
         boolean posixBackendSpecified = false;
-        for (int i = 0; i < arguments.size(); i++) {
-            String arg = arguments.get(i);
-            switch (arg) {
-                case "-B":
-                    dontWriteBytecode = true;
-                    break;
-                case "-c":
-                    i += 1;
-                    programArgs.add(arg);
-                    if (i < arguments.size()) {
-                        commandString = arguments.get(i);
-                    } else {
-                        print("Argument expected for the -c option");
-                        printShortHelp();
+        for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
+            String arg = argumentIterator.next();
+            if (arg.startsWith("-")) {
+                if (arg.length() == 1) {
+                    // Lone dash should just be skipped
+                    continue;
+                }
+                /*
+                 * Our internal options with single-dash `-long-option` format should be tried first
+                 * to resolve ambiguity with short options taking arguments
+                 */
+                if (wantsExperimental) {
+                    switch (arg) {
+                        case "-debug-java":
+                            if (!isAOT()) {
+                                subprocessArgs.add("agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=y");
+                                inputArgs.remove("-debug-java");
+                            }
+                            continue;
+                        case "-debug-perf":
+                            unrecognized.add("--engine.TraceCompilation");
+                            unrecognized.add("--engine.TraceCompilationDetails");
+                            unrecognized.add("--engine.TraceInlining");
+                            unrecognized.add("--engine.TraceSplitting");
+                            unrecognized.add("--engine.TraceCompilationPolymorphism");
+                            unrecognized.add("--engine.TraceAssumptions");
+                            unrecognized.add("--engine.TraceTransferToInterpreter");
+                            unrecognized.add("--engine.TracePerformanceWarnings=all");
+                            unrecognized.add("--engine.CompilationFailureAction=Print");
+                            inputArgs.remove("-debug-perf");
+                            continue;
+                        case "-multi-context":
+                            multiContext = true;
+                            continue;
+                        case "-dump":
+                            subprocessArgs.add("Dgraal.Dump=");
+                            inputArgs.add("--engine.BackgroundCompilation=false");
+                            inputArgs.remove("-dump");
+                            continue;
+                        case "-snapshot-startup":
+                            snaptshotStartup = true;
+                            continue;
                     }
-                    break;
-                case "-E":
-                    ignoreEnv = true;
-                    break;
-                case "-h":
-                    unrecognized.add("--help");
-                    break;
-                case "-i":
-                    inspectFlag = true;
-                    break;
-                case "-m":
-                    programArgs.add(arg);
-                    i++;
-                    if (i < arguments.size()) {
-                        String module = arguments.get(i);
-                        commandString = "import runpy; runpy._run_module_as_main('" + module + "')";
-                    } else {
-                        print("Argument expected for the -m option");
-                        printShortHelp();
-                    }
-                    break;
-                case "-O":
-                case "-OO":
-                case "-R":
-                case "-d":
-                    break;
-                case "-q":
-                    quietFlag = true;
-                    break;
-                case "-I":
-                    noUserSite = true;
-                    ignoreEnv = true;
-                    isolateFlag = true;
-                    break;
-                case "-s":
-                    noUserSite = true;
-                    break;
-                case "-S":
-                    noSite = true;
-                    break;
-                case "-W":
-                    i += 1;
-                    if (warnOptions == null) {
-                        warnOptions = "";
-                    } else {
-                        warnOptions += ",";
-                    }
-                    if (i < arguments.size()) {
-                        warnOptions += arguments.get(i);
-                    } else {
-                        print("Argument expected for the -W option");
-                        printShortHelp();
-                    }
-                    break;
-                case "-X":
-                    i++;
-                    if (i < arguments.size()) {
-                        // CPython ignores unknown/unsupported -X options, so we can do that too
-                    } else {
-                        print("Argument expected for the -X option");
-                        printShortHelp();
-                    }
-                    break;
-                case "-v":
-                    verboseFlag = true;
-                    break;
-                case "-V":
-                case "--version":
-                    versionAction = VersionAction.PrintAndExit;
-                    break;
-                case "--show-version":
-                    versionAction = VersionAction.PrintAndContinue;
-                    break;
-                case "-debug-java":
-                    if (wantsExperimental) {
-                        if (!isAOT()) {
-                            subprocessArgs.add("agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=y");
-                            inputArgs.remove("-debug-java");
-                        }
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
-                case "-debug-perf":
-                    unrecognized.add("--engine.TraceCompilation");
-                    unrecognized.add("--engine.TraceCompilationDetails");
-                    unrecognized.add("--engine.TraceInlining");
-                    unrecognized.add("--engine.TraceSplitting");
-                    unrecognized.add("--engine.TraceCompilationPolymorphism");
-                    unrecognized.add("--engine.TraceAssumptions");
-                    unrecognized.add("--engine.TraceTransferToInterpreter");
-                    unrecognized.add("--engine.TracePerformanceWarnings=all");
-                    unrecognized.add("--engine.CompilationFailureAction=Print");
-                    inputArgs.remove("-debug-perf");
-                    break;
-                case "-multi-context":
-                    if (wantsExperimental) {
-                        multiContext = true;
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
-                case "-dump":
-                    if (wantsExperimental) {
-                        subprocessArgs.add("Dgraal.Dump=");
-                        inputArgs.add("--engine.BackgroundCompilation=false");
-                        inputArgs.remove("-dump");
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
-                case "-u":
-                    unbufferedIO = true;
-                    break;
-                case "--experimental-options":
-                case "--experimental-options=true":
-                    // this is the default Truffle experimental option flag. We also use it for
-                    // our custom launcher options
-                    wantsExperimental = true;
-                    addRelaunchArg(arg);
-                    unrecognized.add(arg);
-                    break;
-                case "--check-hash-based-pycs":
-                    i += 1;
-                    checkHashPycsMode = arguments.get(i);
-                    break;
-                case "-snapshot-startup":
-                    if (wantsExperimental) {
-                        snaptshotStartup = true;
-                    } else {
-                        unrecognized.add(arg);
-                    }
-                    break;
-                case "-":
-                    programArgs.add(arg);
-                    break;
-                default:
-                    if (!arg.startsWith("-")) {
-                        inputFile = arg;
-                        programArgs.add(inputFile);
-                        break;
-                    } else if (arg.startsWith("-W")) {
-                        // alternate allowed form
-                        if (warnOptions == null) {
-                            warnOptions = "";
-                        } else {
-                            warnOptions += ",";
-                        }
-                        warnOptions += arg.substring(2);
-                    } else if (!arg.startsWith("--") && arg.length() > 2) {
-                        // short arguments can be given together
-                        String[] split = arg.substring(1).split("");
-                        for (int j = 0; j < split.length; j++) {
-                            String optionChar = split[j];
-                            arguments.add(i + 1 + j, "-" + optionChar);
-                        }
-                    } else {
-                        if (arg.startsWith("--llvm.") ||
-                                        matchesPythonOption(arg, "CoreHome") ||
-                                        matchesPythonOption(arg, "StdLibHome") ||
-                                        matchesPythonOption(arg, "CAPI") ||
-                                        matchesPythonOption(arg, "PosixModuleBackend")) {
+                }
+                if (arg.startsWith("--")) {
+                    // Long options
+                    switch (arg) {
+                        // --help gets passed through as unrecognized
+                        case "--version":
+                            versionAction = VersionAction.PrintAndExit;
+                            continue;
+                        case "--show-version":
+                            versionAction = VersionAction.PrintAndContinue;
+                            continue;
+                        case "--experimental-options":
+                        case "--experimental-options=true":
+                            /*
+                             * This is the default Truffle experimental option flag. We also use it
+                             * for our custom launcher options
+                             */
+                            wantsExperimental = true;
                             addRelaunchArg(arg);
-                        }
-                        if (matchesPythonOption(arg, "PosixModuleBackend")) {
-                            posixBackendSpecified = true;
-                        }
-                        // possibly a polyglot argument
-                        unrecognized.add(arg);
+                            unrecognized.add(arg);
+                            continue;
+                        case "--check-hash-based-pycs":
+                            if (!argumentIterator.hasNext()) {
+                                throw abort("Argument expected for the --check-hash-based-pycs option\n" + SHORT_HELP, 2);
+                            }
+                            checkHashPycsMode = argumentIterator.next();
+                            continue;
+                        default:
+                            if (arg.startsWith("--llvm.") ||
+                                            matchesPythonOption(arg, "CoreHome") ||
+                                            matchesPythonOption(arg, "StdLibHome") ||
+                                            matchesPythonOption(arg, "CAPI") ||
+                                            matchesPythonOption(arg, "PosixModuleBackend")) {
+                                addRelaunchArg(arg);
+                            }
+                            if (matchesPythonOption(arg, "PosixModuleBackend")) {
+                                posixBackendSpecified = true;
+                            }
+                            // possibly a polyglot argument
+                            unrecognized.add(arg);
+                            continue;
                     }
+                }
+                // Short options
+                /*
+                 * Multiple options can be clustered together (`-vE`). They can also be repeated
+                 * (`-OO`). And some of them can take a parameter that may be in the next argument
+                 * (`-m some_module`) or follow immediately (`-msome_module`).
+                 */
+                String remainder = arg.substring(1);
+                shortOptionLoop: while (!remainder.isEmpty()) {
+                    char option = remainder.charAt(0);
+                    remainder = remainder.substring(1);
+                    switch (option) {
+                        case 'b':
+                            // TODO implement
+                            /*
+                             * Issue warnings about str(bytes_instance), str(bytearray_instance) and
+                             * comparing bytes/bytearray with str. (-bb: issue errors)
+                             */
+                            break;
+                        case 'B':
+                            dontWriteBytecode = true;
+                            break;
+                        case 'c':
+                            programArgs.add("-c");
+                            commandString = getShortOptionParameter(argumentIterator, remainder, 'c');
+                            break shortOptionLoop;
+                        case 'd':
+                            // TODO implement
+                            /* Turn on parser debugging output */
+                            break;
+                        case 'E':
+                            ignoreEnv = true;
+                            break;
+                        case '?':
+                        case 'h':
+                            unrecognized.add("--help");
+                            break;
+                        case 'i':
+                            inspectFlag = true;
+                            break;
+                        case 'I':
+                            noUserSite = true;
+                            ignoreEnv = true;
+                            isolateFlag = true;
+                            break;
+                        case 'm':
+                            programArgs.add("-m");
+                            String module = getShortOptionParameter(argumentIterator, remainder, 'm');
+                            commandString = "import runpy; runpy._run_module_as_main('" + module + "')";
+                            break shortOptionLoop;
+                        case 'O':
+                            // TODO implement
+                            /*
+                             * Remove assert statements and any code conditional on the value of
+                             * __debug__; augment the filename for compiled (bytecode) files by
+                             * adding .opt-1 before the .pyc extension.
+                             */
+                            break;
+                        case 'R':
+                            // TODO implement
+                            break;
+                        case 'q':
+                            quietFlag = true;
+                            break;
+                        case 's':
+                            noUserSite = true;
+                            break;
+                        case 'S':
+                            noSite = true;
+                            break;
+                        case 't':
+                            // Ignored even in CPython, for backwards compatibility
+                            break;
+                        case 'W':
+                            if (warnOptions == null) {
+                                warnOptions = "";
+                            } else {
+                                warnOptions += ",";
+                            }
+                            warnOptions += getShortOptionParameter(argumentIterator, remainder, 'W');
+                            break shortOptionLoop;
+                        case 'u':
+                            unbufferedIO = true;
+                            break;
+                        case 'v':
+                            verboseFlag = true;
+                            break;
+                        case 'V':
+                            versionAction = VersionAction.PrintAndExit;
+                            break;
+                        case 'X':
+                            // CPython ignores unknown/unsupported -X options, so we can do that too
+                            getShortOptionParameter(argumentIterator, remainder, 'X');
+                            break shortOptionLoop;
+                        default:
+                            throw abort(String.format("Unknown option -%c\n", option) + SHORT_HELP, 2);
+                    }
+                }
+            } else {
+                // Not an option, has to be a file name
+                inputFile = arg;
+                programArgs.add(arg);
             }
 
             if (inputFile != null || commandString != null) {
-                i += 1;
-                if (i < arguments.size()) {
-                    programArgs.addAll(arguments.subList(i, arguments.size()));
+                while (argumentIterator.hasNext()) {
+                    programArgs.add(argumentIterator.next());
                 }
                 break;
             }
@@ -327,6 +333,22 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         // Never emit warnings that mess up the output
         unrecognized.add("--engine.WarnInterpreterOnly=false");
         return unrecognized;
+    }
+
+    private String getShortOptionParameter(Iterator<String> argumentIterator, String remainder, char option) {
+        if (remainder.isEmpty()) {
+            if (!argumentIterator.hasNext()) {
+                throw abort(String.format("Argument expected for the -%c option\n", option) + SHORT_HELP, 2);
+            }
+            return argumentIterator.next();
+        } else {
+            return remainder;
+        }
+    }
+
+    @Override
+    protected AbortException abortUnrecognizedArgument(String argument) {
+        throw abort(String.format("Unknown option %s\n", argument) + SHORT_HELP, 2);
     }
 
     @Override
@@ -355,11 +377,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             execList.addAll(relaunchArgs);
             return execList.toArray(new String[execList.size()]);
         }
-    }
-
-    private static void printShortHelp() {
-        print("usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
-                        "Try `python -h' for more information.");
     }
 
     private static void print(String string) {
@@ -514,6 +531,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
             unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
             dontWriteBytecode = dontWriteBytecode || System.getenv("PYTHONDONTWRITEBYTECODE") != null;
+
+            String hashSeed = System.getenv("PYTHONHASHSEED");
+            if (hashSeed != null) {
+                contextBuilder.option("python.HashSeed", hashSeed);
+            }
 
             String envWarnOptions = System.getenv("PYTHONWARNINGS");
             if (envWarnOptions != null && !envWarnOptions.isEmpty()) {

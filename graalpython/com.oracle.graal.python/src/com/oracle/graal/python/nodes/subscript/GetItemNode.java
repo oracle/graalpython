@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -126,7 +127,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     }
 
     public static LookupAndCallBinaryNode createGetItemLookupAndCall() {
-        return LookupAndCallBinaryNode.create(__GETITEM__, GetItemNodeNotImplementedHandler::new);
+        return LookupAndCallBinaryNode.create(SpecialMethodSlot.GetItem, GetItemNodeNotImplementedHandler::new);
     }
 
     private static final class GetItemNodeNotImplementedHandler extends NotImplementedHandler {

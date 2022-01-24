@@ -3,9 +3,19 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 22.1.0
+* String conversion (`__str__`) now calls `toString` for Java objects and `toDisplayString` interop message for foreign objects.
+* Improved compatibility with PyPI package `lxml`
+
+## Version 22.0.0
+* Added support for `pyexpat` module.
+* Added partial support for `PYTHONHASHSEED` environment variable (also available via `HashSeed` context option), currently only affecting hashing in `pyexpat` module.
+* Implement `_csv` module.
+* Improved compatibility with PyPI packages `wheel` and `click`
+
 ## Version 21.3.0
 
-* Remove PYPY_VERSION from our C extension emulation, enabling PyGame 2.0 and other extensions to work out of the box.
+* Remove `PYPY_VERSION` from our C extension emulation, enabling PyGame 2.0 and other extensions to work out of the box.
 * Intrinsify and optimize more of the core language for better startup and reduced footprint.
 * Implement a new binary compatible backend for HPy 0.0.3, which allows binary HPy wheels to run unmodified on CPython and GraalPython
 * Support the `multiprocessing` module via in-process nested contexts, allowing execution on multiple cores within the same process using the Python multiprocessing API
@@ -42,7 +52,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Implement name mangling for private attributes
 * Correctly raise an AttributeError when a class defines slots, but not dict
 * Fix infinite continuation prompt in REPL when pasting snippets
-* Add jarray module for compatiblity with Jython
+* Add jarray module for compatibility with Jython
 * Fix multiple memory leaks and crashes when running NumPy in a shared engine
 * Improved support for Pandas
 * Initial support for Matplotlib

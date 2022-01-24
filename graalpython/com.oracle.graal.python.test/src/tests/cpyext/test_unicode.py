@@ -93,6 +93,59 @@ def _reference_readchar(args):
     return ord(s[i])
 
 
+def _reference_contains(args):
+    if not isinstance(args[0], str) or not isinstance(args[1], str):
+        raise TypeError
+    return args[1] in args[0]
+
+def _reference_compare(args):
+    if not isinstance(args[0], str) or not isinstance(args[1], str):
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            raise TypeError  
+
+    if args[0] == args[1]:
+        return 0
+    elif args[0] < args[1]:
+        return -1
+    else:
+        return 1
+
+def _reference_as_encoded_string(args):
+    if not isinstance(args[0], str):
+        raise TypeError  
+
+    s = args[0]
+    encoding = args[1]
+    errors = args[2]
+    return s.encode(encoding, errors)
+
+_codecs_module = None
+def _reference_as_unicode_escape_string(args):
+    if not isinstance(args[0], str):
+        raise TypeError  
+    global _codecs_module
+    if not _codecs_module:
+        import _codecs as _codecs_module
+    return _codecs_module.unicode_escape_encode(args[0])[0]
+
+def _reference_tailmatch(args):
+    if not isinstance(args[0], str) or not isinstance(args[1], str):
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            raise TypeError
+
+    s = args[0]
+    substr = args[1]
+    start = args[2]
+    end = args[3]
+    direction = args[4]
+    if direction > 0:
+        return 1 if s[start:end].endswith(substr) else 0
+    return 1 if s[start:end].startswith(substr) else 0
+
 class CustomString(str):
     pass
 
@@ -158,6 +211,19 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='s',
         arguments=["char* fmt"],
         callfunction="wrap_PyUnicode_FromFormat0",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_FromFormat_c = CPyExtFunction(
+        _reference_fromformat,
+        lambda: (
+            ("char %c\n", ord('x')),
+            ("char %c\n", ord('あ')),
+        ),
+        resultspec="O",
+        argspec='si',
+        arguments=["char* fmt", "int c"],
+        callfunction="PyUnicode_FromFormat",
         cmpfunc=unhandled_error_compare
     )
 
@@ -503,6 +569,37 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* str", "PyObject* seq"],
         cmpfunc=unhandled_error_compare
     )
+    
+    test_PyUnicode_Compare = CPyExtFunction(
+        _reference_compare,
+        lambda: (
+            ("a", "a"),
+            ("a", "b"),
+            ("a", None),
+            ("a", 1),
+        ),
+        resultspec="i",
+        argspec='OO',
+        arguments=["PyObject* left", "PyObject* right"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_Tailmatch = CPyExtFunction(
+        _reference_tailmatch,
+        lambda: (
+            ("abc", "a", 0, 1, 0),
+            ("abc", "a", 0, 1, 1),
+            ("abc", "a", 0, 0, 1),
+            ("abc", "c", 0, 1, 0),
+            ("abc", "c", 0, 1, 1),
+            ("abc", None, 0, 1, 1),
+            ("abc", 1, 1, 0, 1),
+        ),
+        resultspec="i",
+        argspec='OOnni',
+        arguments=["PyObject* left", "PyObject* right", "Py_ssize_t start", "Py_ssize_t end", "int direction"],
+        cmpfunc=unhandled_error_compare
+    )
 
     test_PyUnicode_FromOrdinal = CPyExtFunction(
         lambda args: chr(args[0]),
@@ -539,7 +636,7 @@ class TestPyUnicode(CPyExtTestCase):
 
 
     test_PyUnicode_AsEncodedString = CPyExtFunction(
-        lambda args: args[0].encode(args[1], args[2]),
+        _reference_as_encoded_string,
         lambda: (
             ("abcd", "ascii", "report"),
             ("abcd", "utf8", "report"),
@@ -547,6 +644,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("öüä", "utf8", "report"),
             ("öüä", "ascii", "ignore"),
             ("öüä", "ascii", "replace"),
+            (1, "ascii", "replace"),
         ),
         resultspec="O",
         argspec='Oss',
@@ -554,6 +652,18 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyUnicode_AsUnicodeEscapeString = CPyExtFunction(
+        _reference_as_unicode_escape_string,
+        lambda: (
+            ("abcd",),
+            ("öüä",),            
+            (1,),
+        ),
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* s"],
+        cmpfunc=unhandled_error_compare
+    )
 
     # NOTE: this test assumes that Python uses UTF-8 encoding for source files
     test_PyUnicode_FromWideChar = CPyExtFunction(
@@ -632,6 +742,31 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='On',
         arguments=["PyObject* str", "Py_ssize_t index"],
         callfunction="wrap_PyUnicode_ReadChar",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_Contains = CPyExtFunction(
+        _reference_contains,
+        lambda: (
+            ("aaa", "bbb"),
+            ("aaa", "a"),
+        ),
+        resultspec="i",
+        argspec='OO',
+        arguments=["PyObject* haystack", "PyObject* needle"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_Split = CPyExtFunction(
+        lambda args: args[0].split(args[1], args[2]),
+        lambda: (
+            ("foo.bar.baz", ".", 0),
+            ("foo.bar.baz", ".", 1),
+            ("foo.bar.baz", 7, 0),
+        ),
+        resultspec="O",
+        argspec='OOi',
+        arguments=["PyObject* string", "PyObject* sep", "Py_ssize_t maxsplit"],
         cmpfunc=unhandled_error_compare
     )
 

@@ -89,6 +89,50 @@ public final class PBaseException extends PythonObject {
     private PBaseException context;
     private PBaseException cause;
     private boolean suppressContext = false;
+    // the data instance is used to store additional information for some of the builtin exceptions
+    // not unlike subclassing
+    private Object[] exceptionAttributes;
+
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, PTuple args) {
+        super(cls, instanceShape);
+        this.exceptionAttributes = exceptionAttributes;
+        this.args = args;
+        this.hasMessageFormat = false;
+        this.messageFormat = null;
+        this.messageArgs = null;
+    }
+
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes) {
+        super(cls, instanceShape);
+        this.exceptionAttributes = exceptionAttributes;
+        this.args = null;
+        this.hasMessageFormat = false;
+        this.messageFormat = null;
+        this.messageArgs = null;
+    }
+
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, String format, Object[] formatArgs) {
+        super(cls, instanceShape);
+        this.exceptionAttributes = exceptionAttributes;
+        this.args = null;
+        this.hasMessageFormat = true;
+        this.messageFormat = format;
+        this.messageArgs = formatArgs;
+    }
+
+    public Object getExceptionAttribute(int idx) {
+        assert exceptionAttributes != null : "PBaseException internal attributes are null";
+        assert idx >= 0 && idx < exceptionAttributes.length : "index to access PBaseException internal attributes is out of range";
+        return exceptionAttributes[idx];
+    }
+
+    public Object[] getExceptionAttributes() {
+        return exceptionAttributes;
+    }
+
+    public void setExceptionAttributes(Object[] exceptionAttributes) {
+        this.exceptionAttributes = exceptionAttributes;
+    }
 
     public PBaseException getContext() {
         return context;
@@ -113,30 +157,6 @@ public final class PBaseException extends PythonObject {
 
     public void setSuppressContext(boolean suppressContext) {
         this.suppressContext = suppressContext;
-    }
-
-    public PBaseException(Object cls, Shape instanceShape, PTuple args) {
-        super(cls, instanceShape);
-        this.args = args;
-        this.hasMessageFormat = false;
-        this.messageFormat = null;
-        this.messageArgs = null;
-    }
-
-    public PBaseException(Object cls, Shape instanceShape) {
-        super(cls, instanceShape);
-        this.args = null;
-        this.hasMessageFormat = false;
-        this.messageFormat = null;
-        this.messageArgs = null;
-    }
-
-    public PBaseException(Object cls, Shape instanceShape, String format, Object[] args) {
-        super(cls, instanceShape);
-        this.args = null;
-        this.hasMessageFormat = true;
-        this.messageFormat = format;
-        this.messageArgs = args;
     }
 
     public PException getException() {

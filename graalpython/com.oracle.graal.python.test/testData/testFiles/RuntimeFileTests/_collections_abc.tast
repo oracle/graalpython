@@ -358,7 +358,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           GetAttributeNode SourceSection: [1999,2012]`type.__dict__`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __dict__
-              LookupAndCallBinaryNodeGen SourceSection: None
+              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [1999,2003]`type`
               Identifier: type
@@ -569,7 +569,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       GetAttributeNode SourceSection: [2374,2383]`C.__mro__`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: __mro__
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                         ReadLocalVariableNodeGen SourceSection: [2374,2375]`C`
                           Frame: [0,C,Illegal]
@@ -590,7 +590,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                 IfNode SourceSection: [2445,2589]`if method in B.__dic...`
                                   YesNodeGen SourceSection: None
                                     ContainsNodeGen SourceSection: [2448,2468]`method in B.__dict__...`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                         Op: __contains__
                                       YesNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [2448,2454]`method`
@@ -598,7 +598,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       GetAttributeNode SourceSection: [2458,2468]`B.__dict__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __dict__
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [2458,2459]`B`
                                           Frame: [3,B,Illegal]
@@ -610,7 +610,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             GetAttributeNode SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __dict__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [2489,2490]`B`
                                                 Frame: [3,B,Illegal]
@@ -3777,7 +3777,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           IfNode SourceSection: [11123,11182]`if elem not in other...`
                                             NotNodeGen SourceSection: [11126,11143]`elem not in other`
                                               ContainsNodeGen SourceSection: None
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [11126,11130]`elem`
@@ -4029,7 +4029,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           IfNode SourceSection: [11724,11782]`if elem not in self:...`
                                             NotNodeGen SourceSection: [11727,11743]`elem not in self`
                                               ContainsNodeGen SourceSection: None
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [11727,11731]`elem`
@@ -4263,7 +4263,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     GeneratorAccessNode SourceSection: None
                                                     YesNodeGen SourceSection: None
                                                       ContainsNodeGen SourceSection: [12408,12421]`value in self`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __contains__
                                                         YesNodeGen SourceSection: None
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [12408,12413]`value`
@@ -4354,7 +4354,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           IfNode SourceSection: [12581,12636]`if value in self:↵  ...`
                                             YesNodeGen SourceSection: None
                                               ContainsNodeGen SourceSection: [12584,12597]`value in self`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [12584,12589]`value`
@@ -4624,7 +4624,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     YesNodeGen SourceSection: None
                                                       NotNodeGen SourceSection: [13174,13192]`value not in other`
                                                         ContainsNodeGen SourceSection: None
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __contains__
                                                           YesNodeGen SourceSection: None
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: [13174,13179]`value`
@@ -4776,7 +4776,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     YesNodeGen SourceSection: None
                                                       NotNodeGen SourceSection: [13496,13513]`value not in self`
                                                         ContainsNodeGen SourceSection: None
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __contains__
                                                           YesNodeGen SourceSection: None
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: [13496,13501]`value`
@@ -4944,7 +4944,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       GetAttributeNode SourceSection: [14395,14406]`sys.maxsize`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: maxsize
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14395,14398]`sys`
                                           Identifier: sys
@@ -5295,7 +5295,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     IfNode SourceSection: [15643,15707]`if value not in self...`
                                       NotNodeGen SourceSection: [15646,15663]`value not in self`
                                         ContainsNodeGen SourceSection: None
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [15646,15651]`value`
@@ -5656,7 +5656,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               IfNode SourceSection: [16628,16752]`if value in self:↵  ...`
                                                 YesNodeGen SourceSection: None
                                                   ContainsNodeGen SourceSection: [16631,16644]`value in self`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __contains__
                                                     YesNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [16631,16636]`value`
@@ -6329,7 +6329,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         GetAttributeNode SourceSection: [18433,18446]`self._mapping`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _mapping
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [18433,18437]`self`
                                             Frame: [0,self,Illegal]
@@ -6512,7 +6512,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [18715,18742]`return key in self._...`
                                     FrameReturnNode SourceSection: [18715,18742]`return key in self._...`
                                       ContainsNodeGen SourceSection: [18722,18742]`key in self._mapping...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                           Op: __contains__
                                         YesNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [18722,18725]`key`
@@ -6520,7 +6520,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         GetAttributeNode SourceSection: [18729,18742]`self._mapping`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _mapping
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [18729,18733]`self`
                                             Frame: [0,self,Illegal]
@@ -6577,7 +6577,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       GetAttributeNode SourceSection: [18787,18800]`self._mapping`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: _mapping
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [18787,18791]`self`
                                           Frame: [0,self,Illegal]
@@ -6770,7 +6770,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             GetAttributeNode SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _mapping
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [19053,19057]`self`
                                                 Frame: [0,self,Illegal]
@@ -6837,7 +6837,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               GetAttributeNode SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _mapping
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [19263,19267]`self`
                                                   Frame: [0,self,Illegal]
@@ -6852,7 +6852,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         GetAttributeNode SourceSection: [19224,19237]`self._mapping`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _mapping
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19224,19228]`self`
                                             Frame: [0,self,Illegal]
@@ -6988,7 +6988,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 GetAttributeNode SourceSection: None
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _mapping
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [19466,19470]`self`
                                                     Frame: [0,self,Illegal]
@@ -7015,7 +7015,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           GetAttributeNode SourceSection: [19435,19448]`self._mapping`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _mapping
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [19435,19439]`self`
                                               Frame: [0,self,Illegal]
@@ -7062,7 +7062,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             GetAttributeNode SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _mapping
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [19652,19656]`self`
                                                 Frame: [0,self,Illegal]
@@ -7076,7 +7076,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         GetAttributeNode SourceSection: [19619,19632]`self._mapping`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _mapping
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19619,19623]`self`
                                             Frame: [0,self,Illegal]
@@ -7335,7 +7335,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   GetAttributeNode SourceSection: [20511,20524]`self.__marker`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: _MutableMapping__marker
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [20511,20515]`self`
                                                       Frame: [0,self,Illegal]

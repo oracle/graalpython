@@ -46,6 +46,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -58,9 +59,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public enum InplaceArithmetic {
-    IAdd(SpecialMethodNames.__IADD__, "+=", BinaryArithmetic.Add),
+    IAdd(SpecialMethodSlot.IAdd, "+=", BinaryArithmetic.Add),
     ISub(SpecialMethodNames.__ISUB__, "-=", BinaryArithmetic.Sub),
-    IMul(SpecialMethodNames.__IMUL__, "*=", BinaryArithmetic.Mul),
+    IMul(SpecialMethodSlot.IMul, "*=", BinaryArithmetic.Mul),
     ITrueDiv(SpecialMethodNames.__ITRUEDIV__, "/=", BinaryArithmetic.TrueDiv),
     IFloorDiv(SpecialMethodNames.__IFLOORDIV__, "//=", BinaryArithmetic.FloorDiv),
     IMod(SpecialMethodNames.__IMOD__, "%=", BinaryArithmetic.Mod),
@@ -73,24 +74,32 @@ public enum InplaceArithmetic {
     IMatMul(SpecialMethodNames.__IMATMUL__, "@", BinaryArithmetic.MatMul);
 
     final String methodName;
+    final SpecialMethodSlot slot;
     final String operator;
     final boolean isTernary;
     final Supplier<LookupAndCallInplaceNode.NotImplementedHandler> notImplementedHandler;
     final BinaryArithmetic binary;
     final String binaryOpName;
-    final String reverseBinaryOpName;
 
     InplaceArithmetic(String methodName, String operator, BinaryArithmetic binary) {
         this(methodName, operator, binary, false);
     }
 
+    InplaceArithmetic(SpecialMethodSlot slot, String operator, BinaryArithmetic binary) {
+        this(slot.getName(), operator, binary, false, slot);
+    }
+
     InplaceArithmetic(String methodName, String operator, BinaryArithmetic binary, boolean isTernary) {
+        this(methodName, operator, binary, isTernary, null);
+    }
+
+    InplaceArithmetic(String methodName, String operator, BinaryArithmetic binary, boolean isTernary, SpecialMethodSlot slot) {
         this.methodName = methodName;
         this.operator = operator;
         this.binary = binary;
         this.isTernary = isTernary;
         this.binaryOpName = methodName.replaceFirst("__i", "__");
-        this.reverseBinaryOpName = methodName.replaceFirst("__i", "__r");
+        this.slot = slot;
 
         this.notImplementedHandler = () -> new LookupAndCallInplaceNode.NotImplementedHandler() {
             @Child private PRaiseNode raiseNode = PRaiseNode.create();

@@ -69,7 +69,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @Override
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        if (name instanceof HiddenKey || !PythonContext.get(null).getCore().isInitialized()) {
+        if (name instanceof HiddenKey || !PythonContext.get(null).isCoreInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
             throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
@@ -90,7 +90,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @TruffleBoundary
     @Override
     public void onAttributeUpdate(String key, Object newValue) {
-        assert !PythonContext.get(null).getCore().isInitialized();
+        assert !PythonContext.get(null).isCoreInitialized();
         // Ideally, startup code should not create ASTs that rely on assumptions of props of
         // builtins. So there should be no assumptions to invalidate yet
         assert !getMethodResolutionOrder().invalidateAttributeInMROFinalAssumptions(key);

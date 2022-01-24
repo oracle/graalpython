@@ -37,20 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# Package context -- the full module name for package imports
-_py_package_context = None
-
-@__graalpython__.builtin
-def create_dynamic(module_spec, filename=None):
-    global _py_package_context
-    old_package_context = _py_package_context
-    _py_package_context = str(module_spec.name)
-    try:
-        return __create_dynamic__(module_spec, filename)
-    finally:
-        _py_package_context = old_package_context
-
-
 @__graalpython__.builtin
 def init_frozen(name):
     return None

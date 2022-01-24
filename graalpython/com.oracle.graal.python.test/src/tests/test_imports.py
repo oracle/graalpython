@@ -154,6 +154,10 @@ def test_circular_import():
         else:
             assert False
 
+def test_circular_import_valid():
+    from circularimport_valid.mod1 import getvalue
+    assert getvalue() == 5
+
 import time as package25274  #has to be in global space for the next test
 def test_local_property_25274():
     

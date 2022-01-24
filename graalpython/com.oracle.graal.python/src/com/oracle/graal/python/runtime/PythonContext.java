@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
@@ -37,6 +39,8 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.nio.file.LinkOption;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -46,6 +50,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -63,6 +68,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -72,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
@@ -95,6 +102,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
@@ -135,16 +143,19 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
 
-public final class PythonContext {
+public final class PythonContext extends Python3Core {
+    private static final String INITIALIZE_DATETIME_CAPI = "initialize_datetime_capi";
+
     private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
     private static final Source FORCE_IMPORTS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build();
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
     private static String getJniSoExt() {
-        if ("darwin".equals(PythonUtils.getPythonOSName())) {
+        if (getPythonOS() == PLATFORM_DARWIN) {
             return ".dylib";
         }
         return ".so";
@@ -170,7 +181,7 @@ public final class PythonContext {
         PException currentException;
 
         /* corresponds to 'PyThreadState.exc_*' */
-        PException caughtException;
+        PException caughtException = PException.NO_EXCEPTION;
 
         /* set to emulate Py_ReprEnter/Leave */
         HashSet<Object> reprObjectSet;
@@ -407,14 +418,18 @@ public final class PythonContext {
     static final String NO_CAPI = "could not determine Graal.Python's C API library path. You need to pass --python.CAPI if you want to use the C extension modules.";
     static final String NO_JNI = "could not determine Graal.Python's JNI library. You need to pass --python.JNILibrary if you want to run, for example, binary HPy extension modules.";
 
-    private final PythonLanguage language;
     private PythonModule mainModule;
-    private final Python3Core core;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final List<AtExitHook> atExitHooks = new ArrayList<>();
+    private final List<Runnable> capiHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final IDUtils idUtils = new IDUtils();
+
+    @CompilationFinal private SecureRandom secureRandom;
+
+    // Equivalent of _Py_HashSecret
+    @CompilationFinal(dimensions = 1) private byte[] hashSecret = new byte[24];
 
     // ctypes' used native libraries/functions.
     private final ConcurrentHashMap<Long, Object> ptrAdrMap = new ConcurrentHashMap<>();
@@ -501,6 +516,19 @@ public final class PythonContext {
     private final Map<String, PTuple> codecSearchCache = new HashMap<>();
     private final Map<String, Object> codecErrorRegistry = new HashMap<>();
 
+    // the full module name for package imports
+    private String pyPackageContext;
+
+    private final PythonNativeNull nativeNull = new PythonNativeNull();
+
+    public String getPyPackageContext() {
+        return pyPackageContext;
+    }
+
+    public void setPyPackageContext(String pyPackageContext) {
+        this.pyPackageContext = pyPackageContext;
+    }
+
     public List<Object> getCodecSearchPath() {
         return codecSearchPath;
     }
@@ -516,11 +544,15 @@ public final class PythonContext {
     public static final class ChildContextData {
         private int exitCode = 0;
         private boolean signaled;
-        @CompilationFinal private TruffleContext ctx;
-        @CompilationFinal private PythonContext parentCtx;
+        private final PythonContext parentCtx;
+        private TruffleWeakReference<TruffleContext> ctx;
 
         private final AtomicBoolean exiting = new AtomicBoolean(false);
         private final CountDownLatch running = new CountDownLatch(1);
+
+        public ChildContextData(PythonContext parentCtx) {
+            this.parentCtx = parentCtx;
+        }
 
         public void setExitCode(int exitCode) {
             this.exitCode = exitCode;
@@ -541,16 +573,12 @@ public final class PythonContext {
 
         private void setTruffleContext(TruffleContext ctx) {
             assert this.ctx == null;
-            this.ctx = ctx;
+            assert ctx != null;
+            this.ctx = new TruffleWeakReference<>(ctx);
         }
 
         public TruffleContext getTruffleContext() {
-            return ctx;
-        }
-
-        private void setParentContext(PythonContext parentCtx) {
-            assert this.parentCtx == null;
-            this.parentCtx = parentCtx;
+            return ctx.get();
         }
 
         public void awaitRunning() throws InterruptedException {
@@ -764,9 +792,15 @@ public final class PythonContext {
             return namedSemaphores.remove(name);
         }
 
-        private final Map<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
 
-        private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
+        /**
+         * {@code ChildContextData} outlives its own context, because the parent needs to be able to
+         * access the exit code even after the child context was closed and thread disposed. We
+         * dispose the mapping to {@code ChildContextData} when the Python code (our internal Python
+         * code) asks for the exit code for the first time after the child exited.
+         */
+        private final ConcurrentHashMap<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
 
         @TruffleBoundary
         public Thread getChildContextThread(long tid) {
@@ -789,14 +823,18 @@ public final class PythonContext {
         }
 
         @TruffleBoundary
+        public void removeChildContextData(long tid) {
+            childContextData.remove(tid);
+        }
+
+        @TruffleBoundary
         public void putChildContextData(long id, ChildContextData data) {
             childContextData.put(id, data);
         }
     }
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
-        this.language = language;
-        this.core = core;
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonParser parser) {
+        super(language, parser, env.isNativeAccessAllowed());
         this.env = env;
         this.allocationReporter = env.lookup(AllocationReporter.class);
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
@@ -813,6 +851,10 @@ public final class PythonContext {
 
     public static PythonContext get(Node node) {
         return REFERENCE.get(node);
+    }
+
+    public PythonNativeNull getNativeNull() {
+        return nativeNull;
     }
 
     public AllocationReporter getAllocationReporter() {
@@ -832,12 +874,7 @@ public final class PythonContext {
     }
 
     public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
-        ChildContextData data = new ChildContextData();
-        if (!isChildContext()) {
-            data.setParentContext(this);
-        } else {
-            data.setParentContext(childContextData.parentCtx);
-        }
+        ChildContextData data = new ChildContextData(isChildContext() ? childContextData.parentCtx : this);
 
         Builder builder = data.parentCtx.env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
         Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, builder));
@@ -950,32 +987,12 @@ public final class PythonContext {
         }
     }
 
-    public PythonLanguage getLanguage() {
-        return language;
-    }
-
     public ReentrantLock getImportLock() {
         return importLock;
     }
 
     public PMethod importFunc() {
-        return core.getImportFunc();
-    }
-
-    public PythonModule getImportlib() {
-        return core.getImportlib();
-    }
-
-    public PythonModule getSysModule() {
-        return core.getSysModule();
-    }
-
-    public PDict getSysModules() {
-        return core.getSysModules();
-    }
-
-    public PythonModule getBuiltins() {
-        return core.getBuiltins();
+        return getImportFunc();
     }
 
     public Object getPosixSupport() {
@@ -1035,7 +1052,7 @@ public final class PythonContext {
     }
 
     public Python3Core getCore() {
-        return core;
+        return this;
     }
 
     public InputStream getStandardIn() {
@@ -1080,16 +1097,37 @@ public final class PythonContext {
 
     @TruffleBoundary
     public boolean reprEnter(Object item) {
-        return getThreadState(language).reprEnter(item);
+        return getThreadState(getLanguage()).reprEnter(item);
     }
 
     @TruffleBoundary
     public void reprLeave(Object item) {
-        getThreadState(language).reprLeave(item);
+        getThreadState(getLanguage()).reprLeave(item);
     }
 
     public long getPerfCounterStart() {
         return perfCounterStart;
+    }
+
+    /**
+     * Get a SecureRandom instance using a non-blocking source.
+     */
+    public SecureRandom getSecureRandom() {
+        assert !ImageInfo.inImageBuildtimeCode();
+        if (secureRandom == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            try {
+                secureRandom = SecureRandom.getInstance("NativePRNGNonBlocking");
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e);
+            }
+        }
+        return secureRandom;
+    }
+
+    public byte[] getHashSecret() {
+        assert !ImageInfo.inImageBuildtimeCode();
+        return hashSecret;
     }
 
     public boolean isInitialized() {
@@ -1110,9 +1148,9 @@ public final class PythonContext {
         try {
             mainThread = new WeakReference<>(Thread.currentThread());
             initializePosixSupport();
-            core.initialize(this);
+            initialize(this);
             setupRuntimeInformation(false);
-            core.postInitialize();
+            postInitialize();
             if (!ImageInfo.inImageBuildtimeCode()) {
                 importSiteIfForced();
             } else if (posixSupport instanceof ImageBuildtimePosixSupport) {
@@ -1136,7 +1174,7 @@ public final class PythonContext {
             mainThread = new WeakReference<>(Thread.currentThread());
             setEnv(newEnv);
             setupRuntimeInformation(true);
-            core.postInitialize();
+            postInitialize();
             importSiteIfForced();
         } finally {
             releaseGil();
@@ -1163,7 +1201,7 @@ public final class PythonContext {
         if (!getOption(PythonOptions.IsolateFlag)) {
             String path0 = computeSysPath0();
             if (path0 != null) {
-                PythonModule sys = core.lookupBuiltinModule("sys");
+                PythonModule sys = lookupBuiltinModule("sys");
                 Object path = sys.getAttribute("path");
                 PyObjectCallMethodObjArgs.getUncached().execute(null, path, "insert", 0, path0);
             }
@@ -1228,7 +1266,7 @@ public final class PythonContext {
                             paths[i] = strPath.replace(from, to);
                         }
                     }
-                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__PATH__, core.factory().createList(paths));
+                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__PATH__, factory().createList(paths));
                 }
 
                 // Update module.__file__
@@ -1247,14 +1285,17 @@ public final class PythonContext {
     }
 
     private void setupRuntimeInformation(boolean isPatching) {
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            initializeHashSecret();
+        }
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
 
-        mainModule = core.factory().createPythonModule(__MAIN__);
+        mainModule = factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, getBuiltins());
-        mainModule.setAttribute(__ANNOTATIONS__, core.factory().createDict());
-        SetDictNode.getUncached().execute(mainModule, core.factory().createDictFixedStorage(mainModule));
+        mainModule.setAttribute(__ANNOTATIONS__, factory().createDict());
+        SetDictNode.getUncached().execute(mainModule, factory().createDictFixedStorage(mainModule));
         getSysModules().setItem(__MAIN__, mainModule);
 
         final String stdLibPlaceholder = "!stdLibHome!";
@@ -1271,6 +1312,30 @@ public final class PythonContext {
         applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
         isInitializedNonCompilationFinal = true;
+    }
+
+    private void initializeHashSecret() {
+        assert !ImageInfo.inImageBuildtimeCode();
+        Optional<Integer> hashSeed = getOption(PythonOptions.HashSeed);
+        if (hashSeed.isPresent()) {
+            int hashSeedValue = hashSeed.get();
+            // 0 disables the option, leaving the secret at 0
+            if (hashSeedValue != 0) {
+                // Generate the whole secret from the seed number the same way as CPython
+                // Taken from bootstrap_hash.c:lcg_urandom
+                // hashSeedValue was parsed as unsigned integer
+                int x = hashSeedValue;
+                for (int i = 0; i < hashSecret.length; i++) {
+                    x *= 214013;
+                    x += 2531011;
+                    /* modulo 2 ^ (8 * sizeof(int)) */
+                    hashSecret[i] = (byte) ((x >>> 16) & 0xff);
+                }
+            }
+        } else {
+            // Generate random seed
+            getSecureRandom().nextBytes(hashSecret);
+        }
     }
 
     private void initializePosixSupport() {
@@ -1434,7 +1499,7 @@ public final class PythonContext {
     @TruffleBoundary
     public String getSysBasePrefix() {
         if (basePrefix.isEmpty()) {
-            String homePrefix = language.getHome();
+            String homePrefix = getLanguage().getHome();
             if (homePrefix == null || homePrefix.isEmpty()) {
                 homePrefix = PREFIX;
             }
@@ -1487,10 +1552,6 @@ public final class PythonContext {
         return jniHome;
     }
 
-    public Object getTopScopeObject() {
-        return core.getTopScopeObject();
-    }
-
     private static void writeWarning(String warning) {
         LOGGER.warning(warning);
     }
@@ -1513,6 +1574,14 @@ public final class PythonContext {
     @TruffleBoundary
     public void clearAtexitHooks() {
         atExitHooks.clear();
+    }
+
+    public void registerCApiHook(Runnable hook) {
+        if (hasCApiContext()) {
+            hook.run();
+        } else {
+            capiHooks.add(hook);
+        }
     }
 
     @TruffleBoundary
@@ -1877,7 +1946,7 @@ public final class PythonContext {
     @TruffleBoundary
     public boolean isPyFileInLanguageHome(TruffleFile path) {
         assert !ImageInfo.inImageBuildtimeCode() : "language home won't be available during image build time";
-        String languageHome = language.getHome();
+        String languageHome = getLanguage().getHome();
 
         // The language home may be 'null' if an embedder uses Python. In this case, IO must just be
         // allowed.
@@ -1942,7 +2011,7 @@ public final class PythonContext {
     }
 
     private void applyToAllThreadStates(Consumer<PythonThreadState> action) {
-        if (language.singleThreadedAssumption.isValid()) {
+        if (getLanguage().singleThreadedAssumption.isValid()) {
             action.accept(getLanguage().getThreadStateLocal().get());
         } else {
             synchronized (this) {
@@ -2004,6 +2073,16 @@ public final class PythonContext {
     public void setCapiWasLoaded(CApiContext capiContext) {
         assert this.cApiContext == null : "tried to create new C API context but it was already created";
         this.cApiContext = capiContext;
+
+        ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
+        PythonModule builtinModule = lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+        CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
+        callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_DATETIME_CAPI), capiContext.getLLVMLibrary());
+
+        for (Runnable capiHook : capiHooks) {
+            capiHook.run();
+        }
+        capiHooks.clear();
     }
 
     public boolean hasHPyContext() {
@@ -2077,7 +2156,7 @@ public final class PythonContext {
     @TruffleBoundary
     public String getSoAbi() {
         if (soABI == null) {
-            PythonModule sysModule = getCore().lookupBuiltinModule("sys");
+            PythonModule sysModule = this.lookupBuiltinModule("sys");
             Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
             // sys.implementation.cache_tag
             String cacheTag = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "cache_tag");
@@ -2090,7 +2169,7 @@ public final class PythonContext {
 
             // only use '.dylib' if we are on 'Darwin-native'
             String soExt;
-            if ("darwin".equals(PythonUtils.getPythonOSName()) && "native".equals(toolchainId)) {
+            if (getPythonOS() == PLATFORM_DARWIN && "native".equals(toolchainId)) {
                 soExt = ".dylib";
             } else {
                 soExt = ".so";

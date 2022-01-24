@@ -85,18 +85,28 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return isSameTypeNode.execute(cls, cachedCls);
     }
 
-    protected boolean isSubMro(Object base, MroSequenceStorage derivedMro, int baseMroLen, IsSameTypeNode isSameTypeNode) {
-        CompilerAsserts.partialEvaluationConstant(baseMroLen);
-        PythonAbstractClass[] derivedMroAry = derivedMro.getInternalClassArray();
-        int derivedMroLen = derivedMroAry.length;
-        int offset = derivedMroLen - baseMroLen;
-        if (offset >= 0) {
-            return isSameType(isSameTypeNode, derivedMroAry[offset], base);
-        } else {
-            return false;
+    /**
+     * This method is used to search for a constant base type in the mro of non-constant potential
+     * subtypes when all subtypes' MROs have the same length. Since the entire base mro must
+     * strictly be behind the base, we only need to search from the beginning of the mro to the
+     * length difference.
+     */
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    protected boolean isSubMro(Object base, PythonAbstractClass[] derivedMroAry, int mroDiff, IsSameTypeNode isSameTypeNode) {
+        CompilerAsserts.partialEvaluationConstant(base);
+        CompilerAsserts.partialEvaluationConstant(mroDiff);
+        for (int i = 0; i <= mroDiff; i++) {
+            if (isSameType(isSameTypeNode, derivedMroAry[i], base)) {
+                return true;
+            }
         }
+        return false;
     }
 
+    /**
+     * This method is used to search in a constant length subtype mro for a (non-constant) base
+     * type. It has to loop over the entire mro to do this.
+     */
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     protected boolean isInMro(Object cls, MroSequenceStorage mro, int sz, IsSameTypeNode isSameTypeNode) {
         PythonAbstractClass[] mroAry = mro.getInternalClassArray();
@@ -147,19 +157,27 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return isInMro;
     }
 
+    protected static int sub(int a, int b) {
+        return a - b;
+    }
+
     @Specialization(guards = {
                     "cachedCls != null",
                     "getType(cls, builtinTypeProfile, builtinClassProfile) == cachedCls",
-                    "isKindOfBuiltinClass(derived)" // see assertion in isSubMro
+                    "isKindOfBuiltinClass(derived)", // see assertion in isSubMro
+                    "mroAry.length == derivedMroLen",
+                    "mroDiff < 16",
     }, replaces = "isSubtypeOfCachedMultiContext", limit = "getVariableArgumentInlineCacheLimit()")
     boolean isVariableSubtypeOfConstantTypeCachedMultiContext(Object derived, @SuppressWarnings("unused") Object cls,
                     @SuppressWarnings("unused") @Cached ConditionProfile builtinTypeProfile,
                     @SuppressWarnings("unused") @Cached ConditionProfile builtinClassProfile,
                     @Cached IsSameTypeNode isSameTypeNode,
                     @Cached GetMroStorageNode getMro,
+                    @Bind("getMro.execute(derived).getInternalClassArray()") PythonAbstractClass[] mroAry,
+                    @Cached("mroAry.length") int derivedMroLen,
                     @Cached("getType(cls, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedCls,
-                    @Cached("getMro.execute(cachedCls).getInternalClassArray().length") int baseMroLen) {
-        return isSubMro(cachedCls, getMro.execute(derived), baseMroLen, isSameTypeNode);
+                    @Cached("sub(derivedMroLen, getMro.execute(cachedCls).getInternalClassArray().length)") int mroDiff) {
+        return isSubMro(cachedCls, mroAry, mroDiff, isSameTypeNode);
     }
 
     @Specialization(guards = {
@@ -215,6 +233,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @Specialization(guards = {
                     "isKindOfBuiltinClass(derived)", // see assertion in isSubMro
                     "isKindOfBuiltinClass(cls)", // see assertion in isSubMro
+                    "mroAry.length == derivedMroLen",
+                    "mroDiff < 16",
                     "isSameType(isSameClsNode, cls, cachedCls)",
     }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
                     "isSubtypeOfCachedMultiContext",
@@ -229,10 +249,12 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     @Cached("cls") @SuppressWarnings("unused") Object cachedCls,
                     @Cached GetMroStorageNode getMro,
                     @SuppressWarnings("unused") @Cached("getMro.execute(cachedCls)") MroSequenceStorage baseMro,
-                    @Cached("baseMro.getInternalClassArray().length") int baseMroLen,
                     @Cached IsSameTypeNode isSameTypeInLoopNode,
+                    @Bind("getMro.execute(derived).getInternalClassArray()") PythonAbstractClass[] mroAry,
+                    @Cached("mroAry.length") int derivedMroLen,
+                    @Cached("sub(derivedMroLen, baseMro.getInternalClassArray().length)") int mroDiff,
                     @Cached @SuppressWarnings("unused") IsSameTypeNode isSameClsNode) {
-        return isSubMro(cachedCls, getMro.execute(derived), baseMroLen, isSameTypeInLoopNode);
+        return isSubMro(cachedCls, mroAry, mroDiff, isSameTypeInLoopNode);
     }
 
     @Specialization(guards = {

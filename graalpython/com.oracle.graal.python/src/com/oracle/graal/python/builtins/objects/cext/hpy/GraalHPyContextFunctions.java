@@ -442,7 +442,7 @@ public abstract class GraalHPyContextFunctions {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             long left = castToJavaLongNode.execute(arguments[1]);
-            Python3Core core = context.getContext().getCore();
+            Python3Core core = context.getContext();
             return asHandleNode.execute(context, left != 0 ? core.getTrue() : core.getFalse());
         }
     }

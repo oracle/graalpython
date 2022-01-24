@@ -38,6 +38,10 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
+import com.oracle.graal.python.builtins.modules.csv.CSVDialect;
+import com.oracle.graal.python.builtins.modules.csv.CSVReader;
+import com.oracle.graal.python.builtins.modules.csv.CSVWriter;
+import com.oracle.graal.python.builtins.modules.csv.QuoteStyle;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataObject;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldObject;
 import com.oracle.graal.python.builtins.modules.ctypes.CThunkObject;
@@ -112,11 +116,27 @@ import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
-import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
+import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
+import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
+import com.oracle.graal.python.builtins.objects.itertools.PCombinationsWithReplacement;
+import com.oracle.graal.python.builtins.objects.itertools.PCompress;
+import com.oracle.graal.python.builtins.objects.itertools.PCount;
+import com.oracle.graal.python.builtins.objects.itertools.PCycle;
+import com.oracle.graal.python.builtins.objects.itertools.PDropwhile;
+import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
+import com.oracle.graal.python.builtins.objects.itertools.PGroupBy;
+import com.oracle.graal.python.builtins.objects.itertools.PGrouper;
+import com.oracle.graal.python.builtins.objects.itertools.PIslice;
+import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
+import com.oracle.graal.python.builtins.objects.itertools.PProduct;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
+import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
+import com.oracle.graal.python.builtins.objects.itertools.PTakewhile;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
+import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
+import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -199,7 +219,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
@@ -225,6 +244,7 @@ import com.oracle.truffle.api.object.Shape;
  * </li>
  * </ul>
  */
+
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
 public abstract class PythonObjectFactory extends Node {
@@ -310,7 +330,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonNativeVoidPtr(obj));
     }
 
-    public final PythonNativeVoidPtr createNativeVoidPtr(TruffleObject obj, long nativePtr) {
+    public final PythonNativeVoidPtr createNativeVoidPtr(Object obj, long nativePtr) {
         return trace(new PythonNativeVoidPtr(obj, nativePtr));
     }
 
@@ -491,6 +511,9 @@ public abstract class PythonObjectFactory extends Node {
      * Classes, methods and functions
      */
 
+    /**
+     * Only to be used during context creation
+     */
     public final PythonModule createPythonModule(String name) {
         return trace(PythonModule.createInternal(name));
     }
@@ -632,7 +655,16 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PDecoratedMethod createStaticmethodFromCallableObj(Object callable) {
-        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.getInstanceShape(getLanguage()), callable));
+        Object func = callable;
+        if (func instanceof PBuiltinFunction) {
+            /*
+             * CPython's C static methods contain an object of type `builtin_function_or_method`
+             * (our PBuiltinMethod). Their self points to their type, but when called they get NULL
+             * as the first argument instead.
+             */
+            func = createBuiltinMethod(((PBuiltinFunction) func).getEnclosingType(), (PBuiltinFunction) func);
+        }
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.getInstanceShape(getLanguage()), func));
     }
 
     /*
@@ -852,16 +884,28 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBaseException createBaseException(Object cls, PTuple args) {
-        return trace(new PBaseException(cls, getShape(cls), args));
+        return createBaseException(cls, null, args);
+    }
+
+    public final PBaseException createBaseException(Object cls, Object[] data, PTuple args) {
+        return trace(new PBaseException(cls, getShape(cls), data, args));
     }
 
     public final PBaseException createBaseException(Object cls, String format, Object[] args) {
+        return createBaseException(cls, null, format, args);
+    }
+
+    public final PBaseException createBaseException(Object cls, Object[] data, String format, Object[] args) {
         assert format != null;
-        return trace(new PBaseException(cls, getShape(cls), format, args));
+        return trace(new PBaseException(cls, getShape(cls), data, format, args));
     }
 
     public final PBaseException createBaseException(Object cls) {
-        return trace(new PBaseException(cls, getShape(cls)));
+        return trace(new PBaseException(cls, getShape(cls), null));
+    }
+
+    public final PBaseException createBaseException(Object cls, Object[] data) {
+        return trace(new PBaseException(cls, getShape(cls), data));
     }
 
     /*
@@ -1137,20 +1181,108 @@ public abstract class PythonObjectFactory extends Node {
         return trace(LZMAObject.createCompressor(clazz, getShape(clazz), isNative));
     }
 
+    public final CSVReader createCSVReader(Object clazz) {
+        return trace(new CSVReader(clazz, getShape(clazz)));
+    }
+
+    public final CSVWriter createCSVWriter(Object clazz) {
+        return trace(new CSVWriter(clazz, getShape(clazz)));
+    }
+
+    public final CSVDialect createCSVDialect(Object clazz) {
+        return trace(new CSVDialect(clazz, getShape(clazz)));
+    }
+
+    public final CSVDialect createCSVDialect(Object clazz, String delimiter, boolean doublequote, String escapechar,
+                    String lineterminator, String quotechar, QuoteStyle quoting, boolean skipinitialspace,
+                    boolean strict) {
+        return trace(new CSVDialect(clazz, getShape(clazz), delimiter, doublequote, escapechar,
+                        lineterminator, quotechar, quoting, skipinitialspace,
+                        strict));
+    }
+
     public final PFileIO createFileIO(Object clazz) {
         return trace(new PFileIO(clazz, getShape(clazz)));
     }
 
-    public final PChain createChain() {
-        return trace(new PChain(PythonBuiltinClassType.PChain, PythonBuiltinClassType.PChain.getInstanceShape(getLanguage())));
+    public final PChain createChain(Object cls) {
+        return trace(new PChain(cls, getShape(cls)));
     }
 
-    public final PRepeat createRepeat() {
-        return trace(new PRepeat(PythonBuiltinClassType.PRepeat, PythonBuiltinClassType.PRepeat.getInstanceShape(getLanguage())));
+    public final PCount createCount(Object cls) {
+        return trace(new PCount(cls, getShape(cls)));
+    }
+
+    public final PIslice createIslice(Object cls) {
+        return trace(new PIslice(cls, getShape(cls)));
+    }
+
+    public final PPermutations createPermutations(Object cls) {
+        return trace(new PPermutations(cls, getShape(cls)));
+    }
+
+    public final PProduct createProduct(Object cls) {
+        return trace(new PProduct(cls, getShape(cls)));
+    }
+
+    public final PRepeat createRepeat(Object cls) {
+        return trace(new PRepeat(cls, getShape(cls)));
+    }
+
+    public final PAccumulate createAccumulate(Object cls) {
+        return trace(new PAccumulate(cls, getShape(cls)));
+    }
+
+    public final PDropwhile createDropwhile(Object cls) {
+        return trace(new PDropwhile(cls, getShape(cls)));
+    }
+
+    public final PCombinations createCombinations(Object cls) {
+        return trace(new PCombinations(cls, getShape(cls)));
+    }
+
+    public final PCombinationsWithReplacement createCombinationsWithReplacement(Object cls) {
+        return trace(new PCombinationsWithReplacement(cls, getShape(cls)));
+    }
+
+    public final PCompress createCompress(Object cls) {
+        return trace(new PCompress(cls, getShape(cls)));
+    }
+
+    public final PCycle createCycle(Object cls) {
+        return trace(new PCycle(cls, getShape(cls)));
+    }
+
+    public final PFilterfalse createFilterfalse(Object cls) {
+        return trace(new PFilterfalse(cls, getShape(cls)));
+    }
+
+    public final PGroupBy createGroupBy(Object cls) {
+        return trace(new PGroupBy(cls, getShape(cls)));
+    }
+
+    public final PGrouper createGrouper(Object cls) {
+        return trace(new PGrouper(cls, getShape(cls)));
+    }
+
+    public final PGrouper createGrouper(PGroupBy parent, Object tgtKey) {
+        return trace(new PGrouper(parent, tgtKey, PythonBuiltinClassType.PGrouper, PythonBuiltinClassType.PGrouper.getInstanceShape(getLanguage())));
+    }
+
+    public final PTee createTee() {
+        return trace(new PTee(PythonBuiltinClassType.PTee, PythonBuiltinClassType.PTee.getInstanceShape(getLanguage())));
     }
 
     public final PTee createTee(PTeeDataObject dataObj, int index) {
         return trace(new PTee(dataObj, index, PythonBuiltinClassType.PTee, PythonBuiltinClassType.PTee.getInstanceShape(getLanguage())));
+    }
+
+    public final PStarmap createStarmap(Object cls) {
+        return trace(new PStarmap(cls, getShape(cls)));
+    }
+
+    public final PTakewhile createTakewhile(Object cls) {
+        return trace(new PTakewhile(cls, getShape(cls)));
     }
 
     public final PTeeDataObject createTeeDataObject() {
@@ -1159,6 +1291,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PTeeDataObject createTeeDataObject(Object it) {
         return trace(new PTeeDataObject(it, PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(getLanguage())));
+    }
+
+    public final PZipLongest createZipLongest(Object cls) {
+        return trace(new PZipLongest(cls, getShape(cls)));
     }
 
     public final PTextIO createTextIO(Object clazz) {

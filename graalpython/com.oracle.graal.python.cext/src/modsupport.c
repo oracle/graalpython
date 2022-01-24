@@ -383,17 +383,17 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
                 }
             }
 
-            if (void_arg == NULL) {
+            if (converter != NULL) {
+               PyList_Append(list, converter(void_arg));
+               converter = NULL;
+               format_idx++;
+            } else if (void_arg == NULL) {
                 if (!PyErr_Occurred()) {
                     /* If a NULL was passed because a call that should have constructed a value failed, that's OK,
                      * and we pass the error on; but if no error occurred it's not clear that the caller knew what she was doing. */
                     PyErr_SetString(PyExc_SystemError, "NULL object passed to Py_BuildValue");
                 }
                 return NULL;
-            } else if (converter != NULL) {
-                PyList_Append(list, converter(void_arg));
-                converter = NULL;
-                format_idx++;
             } else {
                 if (c != 'N') {
                     Py_INCREF((PyObject*)void_arg);

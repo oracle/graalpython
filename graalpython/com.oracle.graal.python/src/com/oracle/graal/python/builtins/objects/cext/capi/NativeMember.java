@@ -96,6 +96,7 @@ public enum NativeMember {
     TP_SETATTR("tp_setattr"),
     TP_GETATTRO("tp_getattro"),
     TP_SETATTRO("tp_setattro"),
+    TP_ITER("tp_iter"),
     TP_ITERNEXT("tp_iternext"),
     TP_NEW("tp_new"),
     TP_INIT("tp_init"),
@@ -111,6 +112,7 @@ public enum NativeMember {
     // PySequenceMethods
     SQ_ITEM("sq_item"),
     SQ_REPEAT("sq_repeat"),
+    SQ_CONCAT("sq_concat"),
 
     // PyDictObject
     MA_USED("ma_used", PRIMITIVE),
@@ -280,7 +282,10 @@ public enum NativeMember {
     CO_NAMES("co_names", OBJECT),
     CO_VARNAMES("co_varnames", OBJECT),
     CO_FREEVARS("co_freevars", OBJECT),
-    CO_CELLVARS("co_cellvars", OBJECT);
+    CO_CELLVARS("co_cellvars", OBJECT),
+
+    // PyStopIterationObject
+    VALUE("value", OBJECT);
 
     private final String memberName;
     private final NativeMemberType type;

@@ -112,12 +112,12 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
     @Override
     public Object[] getCopyOfInternalArray() {
-        return Arrays.copyOf(values, length);
+        return PythonUtils.arrayCopyOf(values, length);
     }
 
     @Override
     public void increaseCapacityExactWithCopy(int newCapacity) {
-        values = Arrays.copyOf(values, newCapacity);
+        values = PythonUtils.arrayCopyOf(values, newCapacity);
         capacity = values.length;
     }
 

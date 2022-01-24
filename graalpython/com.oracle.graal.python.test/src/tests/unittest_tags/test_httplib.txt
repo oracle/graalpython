@@ -68,6 +68,7 @@
 *graalpython.lib-python.3.test.test_httplib.HTTPSTest.test_host_port
 *graalpython.lib-python.3.test.test_httplib.HTTPSTest.test_local_bad_hostname
 *graalpython.lib-python.3.test.test_httplib.HTTPSTest.test_local_good_hostname
+*graalpython.lib-python.3.test.test_httplib.HTTPSTest.test_local_unknown_cert
 *graalpython.lib-python.3.test.test_httplib.HTTPSTest.test_networked
 *graalpython.lib-python.3.test.test_httplib.HTTPSTest.test_networked_bad_cert
 *graalpython.lib-python.3.test.test_httplib.HTTPSTest.test_networked_good_cert

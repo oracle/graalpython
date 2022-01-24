@@ -7,6 +7,8 @@
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_large_PYTHONPATH
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_non_ascii
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_output_newline
+*graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_run_code
+*graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_run_module
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_run_module_bug1764407
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_stdin_readline
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_unbuffered_input

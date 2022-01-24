@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -136,6 +136,7 @@ public class CDataObject extends PythonBuiltinObject {
                     @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
         if (b_ptr.ptr != null) {
             bufferLib.writeByte(b_ptr.ptr, b_ptr.offset + byteIndex, value);
+            return;
         }
         throw CompilerDirectives.shouldNotReachHere("buffer write to empty CDataObject");
     }

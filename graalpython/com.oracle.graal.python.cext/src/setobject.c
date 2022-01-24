@@ -92,3 +92,8 @@ UPCALL_ID(PySet_Discard);
 int PySet_Discard(PyObject *set, PyObject *key) {
     return UPCALL_CEXT_I(_jls_PySet_Discard, native_to_java(set), native_to_java(key));
 }
+
+UPCALL_ID(PySet_Clear);
+int PySet_Clear(PyObject *set) {
+    return UPCALL_CEXT_I(_jls_PySet_Clear, native_to_java(set));
+}

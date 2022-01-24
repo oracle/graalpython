@@ -66,11 +66,11 @@ public final class HandleCache implements TruffleObject {
     public static final int CACHE_SIZE = 3;
 
     final long[] keys;
-    private final TruffleObject ptrToResolveHandle;
+    private final Object ptrToResolveHandle;
 
     int pos = 0;
 
-    public HandleCache(TruffleObject ptrToResolveHandle) {
+    public HandleCache(Object ptrToResolveHandle) {
         keys = new long[CACHE_SIZE];
         this.ptrToResolveHandle = ptrToResolveHandle;
     }
@@ -79,7 +79,7 @@ public final class HandleCache implements TruffleObject {
         return keys.length;
     }
 
-    protected TruffleObject getPtrToResolveHandle() {
+    protected Object getPtrToResolveHandle() {
         return ptrToResolveHandle;
     }
 
@@ -124,7 +124,7 @@ public final class HandleCache implements TruffleObject {
 
         @Specialization(replaces = "doCachedSingleContext", assumptions = "singleContextAssumption()")
         static Object doGenericSingleContext(@SuppressWarnings("unused") HandleCache cache, long handle,
-                        @Cached(value = "cache.getPtrToResolveHandle()", allowUncached = true) TruffleObject resolveHandleFunction,
+                        @Cached(value = "cache.getPtrToResolveHandle()", allowUncached = true) Object resolveHandleFunction,
                         @CachedLibrary("resolveHandleFunction") InteropLibrary interopLibrary) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
             return resolveHandle(handle, resolveHandleFunction, interopLibrary);
         }
@@ -138,7 +138,7 @@ public final class HandleCache implements TruffleObject {
         static PythonNativeWrapper resolveHandleUncached(HandleCache cache, long handle)
                         throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
             CompilerAsserts.neverPartOfCompilation();
-            TruffleObject ptrToResolveHandle = cache.getPtrToResolveHandle();
+            Object ptrToResolveHandle = cache.getPtrToResolveHandle();
             Object resolved = resolveHandle(handle, ptrToResolveHandle, InteropLibrary.getFactory().getUncached(ptrToResolveHandle));
             if (resolved instanceof PythonNativeWrapper) {
                 return (PythonNativeWrapper) resolved;
@@ -146,7 +146,7 @@ public final class HandleCache implements TruffleObject {
             return null;
         }
 
-        static Object resolveHandle(long handle, TruffleObject ptrToResolveHandle, InteropLibrary interopLibrary)
+        static Object resolveHandle(long handle, Object ptrToResolveHandle, InteropLibrary interopLibrary)
                         throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
             return interopLibrary.execute(ptrToResolveHandle, handle);
         }

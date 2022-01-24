@@ -61,7 +61,6 @@ import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
@@ -86,7 +85,6 @@ public class SSTSerializationTests extends ParserTestBase {
         checkFileSerialization("RuntimeFileTests/sre_compile.py");
         checkFileSerialization("RuntimeFileTests/sre_constants.py");
         checkFileSerialization("RuntimeFileTests/sre_parse.py");
-        checkFileSerialization("RuntimeFileTests/sys.py");
         checkFileSerialization("RuntimeFileTests/traceback.py");
         checkFileSerialization("RuntimeFileTests/types.py");
         // TODO test of these two files are disabled because the comparing framedescriptors
@@ -1260,7 +1258,7 @@ public class SSTSerializationTests extends ParserTestBase {
     }
 
     public void checkSerialization(Source source) throws Exception {
-        PythonCodeSerializer serializer = context.getCore().getSerializer();
+        PythonCodeSerializer serializer = context.getSerializer();
 
         // at first parse the source and obtain the parse result
         RootNode parserResult = (RootNode) parse(source, PythonParser.ParserMode.File);
@@ -1268,10 +1266,10 @@ public class SSTSerializationTests extends ParserTestBase {
         checkScopeSerialization(parserScope);
         Assert.assertNotNull("Parser result is null", parserResult);
         // serialize the source
-        byte[] serializeResult = serializer.serialize(context.getCore(), parserResult);
+        byte[] serializeResult = serializer.serialize(context, parserResult);
         Assert.assertNotNull("Serialized data are null", serializeResult);
         // and get the tree from serialized data
-        RootNode deserialize = serializer.deserialize(context.getCore(), serializeResult);
+        RootNode deserialize = serializer.deserialize(context, serializeResult);
 
         Assert.assertNotNull("Deserialized result is null", parserResult);
         // compare the tree from parser with the tree from serializer
@@ -1348,13 +1346,14 @@ public class SSTSerializationTests extends ParserTestBase {
         }
     }
 
-    private static void printFrameSlots(StringBuilder sb, FrameSlot[] slots) {
+    @SuppressWarnings("deprecation")    // new Frame API
+    private static void printFrameSlots(StringBuilder sb, com.oracle.truffle.api.frame.FrameSlot[] slots) {
         if (slots.length == 0) {
             sb.append("Empty");
         } else {
             sb.append("[");
             boolean first = true;
-            for (FrameSlot slot : slots) {
+            for (com.oracle.truffle.api.frame.FrameSlot slot : slots) {
                 if (first) {
                     sb.append(slot.getIdentifier());
                     first = false;
@@ -1367,6 +1366,7 @@ public class SSTSerializationTests extends ParserTestBase {
 
     // here we can not use the ScopeInfo.debugPrint(), because we need exclude the temporary
     // variables.
+    @SuppressWarnings("deprecation")    // new Frame API
     private static void printScope(ScopeInfo scope, StringBuilder sb, int indent) {
         indent(sb, indent);
         sb.append("Scope: ").append(scope.getScopeId()).append("\n");
@@ -1533,9 +1533,9 @@ public class SSTSerializationTests extends ParserTestBase {
         result[0] = end - startMemory;
         result[3] = end - startFile;
 
-        PythonCodeSerializer serializer = context.getCore().getSerializer();
+        PythonCodeSerializer serializer = context.getSerializer();
         startFile = System.nanoTime();
-        byte[] serializeResult = serializer.serialize(context.getCore(), parserResult);
+        byte[] serializeResult = serializer.serialize(context, parserResult);
         end = System.nanoTime();
         result[1] = end - startFile;
         TruffleFile serFile = context.getEnv().getInternalTruffleFile(file.getAbsolutePath() + ".pyc");
@@ -1550,7 +1550,7 @@ public class SSTSerializationTests extends ParserTestBase {
         TruffleFile tFile = context.getEnv().getInternalTruffleFile(file.getAbsolutePath() + ".pyc");
         byte[] desbytes = tFile.readAllBytes();
         startMemory = System.nanoTime();
-        serializer.deserialize(context.getCore(), desbytes);
+        serializer.deserialize(context, desbytes);
         end = System.nanoTime();
         result[2] = end - startMemory;
         result[5] = end - startFile;

@@ -56,7 +56,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -70,16 +69,17 @@ import com.oracle.truffle.api.source.SourceSection;
  * represents the inner local scope, which relies on the frame to retrieve variables values
  */
 @ExportLibrary(InteropLibrary.class)
+@SuppressWarnings("deprecation")    // new Frame API
 public final class PythonLocalScope implements TruffleObject {
 
     static final int LIMIT = 3;
 
-    final Map<String, ? extends FrameSlot> slots;
+    final Map<String, ? extends com.oracle.truffle.api.frame.FrameSlot> slots;
     final RootNode root;
     final Frame frame;
     final SourceSection sourceSection;
 
-    PythonLocalScope(Map<String, ? extends FrameSlot> slotsMap, RootNode root, Frame frame) {
+    PythonLocalScope(Map<String, ? extends com.oracle.truffle.api.frame.FrameSlot> slotsMap, RootNode root, Frame frame) {
         assert root != null;
         this.slots = slotsMap;
         this.root = root;
@@ -88,57 +88,57 @@ public final class PythonLocalScope implements TruffleObject {
     }
 
     @TruffleBoundary
-    static FrameSlot getSlot(List<? extends FrameSlot> slots, int idx) {
+    static com.oracle.truffle.api.frame.FrameSlot getSlot(List<? extends com.oracle.truffle.api.frame.FrameSlot> slots, int idx) {
         return slots.get(idx);
     }
 
     @TruffleBoundary
-    static List<? extends FrameSlot> getSlotsList(FrameDescriptor frameDescriptor) {
+    static List<? extends com.oracle.truffle.api.frame.FrameSlot> getSlotsList(FrameDescriptor frameDescriptor) {
         return frameDescriptor.getSlots();
     }
 
     @TruffleBoundary
-    static int getListSize(List<? extends FrameSlot> slots) {
+    static int getListSize(List<? extends com.oracle.truffle.api.frame.FrameSlot> slots) {
         return slots.size();
     }
 
     @TruffleBoundary
-    static void add(Map<String, FrameSlot> slotsMap, FrameSlot slot) {
+    static void add(Map<String, com.oracle.truffle.api.frame.FrameSlot> slotsMap, com.oracle.truffle.api.frame.FrameSlot slot) {
         slotsMap.put(Objects.toString(slot.getIdentifier()), slot);
     }
 
     @TruffleBoundary
-    static Map<String, FrameSlot> createMap(List<? extends FrameSlot> slots, int size) {
-        Map<String, FrameSlot> slotsMap = new LinkedHashMap<>(size);
-        for (FrameSlot slot : slots) {
+    static Map<String, com.oracle.truffle.api.frame.FrameSlot> createMap(List<? extends com.oracle.truffle.api.frame.FrameSlot> slots, int size) {
+        Map<String, com.oracle.truffle.api.frame.FrameSlot> slotsMap = new LinkedHashMap<>(size);
+        for (com.oracle.truffle.api.frame.FrameSlot slot : slots) {
             add(slotsMap, slot);
         }
         return slotsMap;
     }
 
     @TruffleBoundary
-    static Map<String, FrameSlot> createEmptyMap() {
+    static Map<String, com.oracle.truffle.api.frame.FrameSlot> createEmptyMap() {
         return Collections.emptyMap();
     }
 
     @TruffleBoundary
-    static Map<String, FrameSlot> createSingletonMap(FrameSlot slot) {
+    static Map<String, com.oracle.truffle.api.frame.FrameSlot> createSingletonMap(com.oracle.truffle.api.frame.FrameSlot slot) {
         return Collections.singletonMap(Objects.toString(slot.getIdentifier()), slot);
     }
 
     @TruffleBoundary
-    static Map<String, FrameSlot> createMap(FrameSlot slot1, FrameSlot slot2, int size) {
-        Map<String, FrameSlot> slotsMap = new LinkedHashMap<>(size);
+    static Map<String, com.oracle.truffle.api.frame.FrameSlot> createMap(com.oracle.truffle.api.frame.FrameSlot slot1, com.oracle.truffle.api.frame.FrameSlot slot2, int size) {
+        Map<String, com.oracle.truffle.api.frame.FrameSlot> slotsMap = new LinkedHashMap<>(size);
         slotsMap.put(Objects.toString(slot1.getIdentifier()), slot1);
         slotsMap.put(Objects.toString(slot2.getIdentifier()), slot2);
         return slotsMap;
     }
 
     static PythonLocalScope createLocalScope(RootNode root, Frame frame) {
-        Map<String, FrameSlot> slotsMap = null;
-        FrameSlot singleSlot = null;
+        Map<String, com.oracle.truffle.api.frame.FrameSlot> slotsMap = null;
+        com.oracle.truffle.api.frame.FrameSlot singleSlot = null;
         FrameDescriptor frameDescriptor = frame == null ? root.getFrameDescriptor() : frame.getFrameDescriptor();
-        List<? extends FrameSlot> slots = getSlotsList(frameDescriptor);
+        List<? extends com.oracle.truffle.api.frame.FrameSlot> slots = getSlotsList(frameDescriptor);
         int size = getListSize(slots);
         if (frame == null) {
             if (size > 1) {
@@ -149,7 +149,7 @@ public final class PythonLocalScope implements TruffleObject {
         } else {
             for (int i = 0; i < size; i++) {
                 // Filter out slots with null values, e.g. <return_val>.
-                FrameSlot slot = getSlot(slots, i);
+                com.oracle.truffle.api.frame.FrameSlot slot = getSlot(slots, i);
                 if (!FrameSlotIDs.isUserFrameSlot(slot.getIdentifier()) || frame.getValue(slot) == null) {
                     continue;
                 }
@@ -185,7 +185,7 @@ public final class PythonLocalScope implements TruffleObject {
     }
 
     @TruffleBoundary
-    static FrameSlot findFrameSlot(PythonLocalScope scope, String member) {
+    static com.oracle.truffle.api.frame.FrameSlot findFrameSlot(PythonLocalScope scope, String member) {
         return scope.slots.get(member);
     }
 
@@ -200,13 +200,13 @@ public final class PythonLocalScope implements TruffleObject {
         static Object doCached(PythonLocalScope receiver, @SuppressWarnings("unused") String member,
                         @Cached("member") String cachedMember,
                         // We cache the member's slot for fast-path access
-                        @Cached(value = "findFrameSlot(receiver, member)") FrameSlot slot) throws UnknownIdentifierException {
+                        @Cached(value = "findFrameSlot(receiver, member)") com.oracle.truffle.api.frame.FrameSlot slot) throws UnknownIdentifierException {
             return doRead(receiver, cachedMember, slot);
         }
 
         @Specialization(guards = "hasFrame(receiver)", replaces = "doCached")
         static Object doGeneric(PythonLocalScope receiver, String member) throws UnknownIdentifierException {
-            FrameSlot slot = findFrameSlot(receiver, member);
+            com.oracle.truffle.api.frame.FrameSlot slot = findFrameSlot(receiver, member);
             return doRead(receiver, member, slot);
         }
 
@@ -215,7 +215,7 @@ public final class PythonLocalScope implements TruffleObject {
             throw UnsupportedMessageException.create();
         }
 
-        private static Object doRead(PythonLocalScope receiver, String member, FrameSlot slot) throws UnknownIdentifierException {
+        private static Object doRead(PythonLocalScope receiver, String member, com.oracle.truffle.api.frame.FrameSlot slot) throws UnknownIdentifierException {
             if (slot == null) {
                 throw UnknownIdentifierException.create(member);
             } else {
@@ -247,19 +247,20 @@ public final class PythonLocalScope implements TruffleObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("deprecation")    // new Frame API
     static class WriteMember {
 
         @Specialization(guards = {"hasFrame(receiver)", "cachedMember.equals(member)"}, limit = "LIMIT")
         static void doCached(PythonLocalScope receiver, @SuppressWarnings("unused") String member, Object value,
                         @Cached("member") String cachedMember,
                         // We cache the member's slot for fast-path access
-                        @Cached(value = "findFrameSlot(receiver, member)") FrameSlot slot) throws UnknownIdentifierException {
+                        @Cached(value = "findFrameSlot(receiver, member)") com.oracle.truffle.api.frame.FrameSlot slot) throws UnknownIdentifierException {
             doWrite(receiver, cachedMember, value, slot);
         }
 
         @Specialization(guards = "hasFrame(receiver)", replaces = "doCached")
         static void doGeneric(PythonLocalScope receiver, String member, Object value) throws UnknownIdentifierException {
-            FrameSlot slot = findFrameSlot(receiver, member);
+            com.oracle.truffle.api.frame.FrameSlot slot = findFrameSlot(receiver, member);
             doWrite(receiver, member, value, slot);
         }
 
@@ -269,7 +270,7 @@ public final class PythonLocalScope implements TruffleObject {
             throw UnsupportedMessageException.create();
         }
 
-        private static void doWrite(PythonLocalScope receiver, String member, Object value, FrameSlot slot) throws UnknownIdentifierException {
+        private static void doWrite(PythonLocalScope receiver, String member, Object value, com.oracle.truffle.api.frame.FrameSlot slot) throws UnknownIdentifierException {
             if (slot == null) {
                 throw UnknownIdentifierException.create(member);
             } else {

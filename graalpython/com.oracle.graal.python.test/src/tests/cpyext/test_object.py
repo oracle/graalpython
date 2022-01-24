@@ -326,13 +326,13 @@ class TestObject(object):
         TestFloatSubclass = CPyExtType("TestFloatSubclass",
                                        """
                                        static PyTypeObject* testFloatSubclassPtr = NULL;
- 
+
                                        static PyObject* new_fp(double val) {
                                            PyFloatObject* fp = PyObject_New(PyFloatObject, testFloatSubclassPtr);
                                            fp->ob_fval = val;
                                            return (PyObject*)fp;
                                        }
- 
+
                                        static PyObject* fp_tpnew(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
                                             double dval = 0.0;
                                             Py_XINCREF(args);
@@ -341,7 +341,7 @@ class TestObject(object):
                                             }}
                                             return new_fp(dval);
                                        }
-                                        
+
                                        static PyObject* fp_add(PyObject* l, PyObject* r) {
                                            if (PyFloat_Check(l)) {
                                                if (PyFloat_Check(r)) {
@@ -360,7 +360,7 @@ class TestObject(object):
                                        }
                                        """,
                                        cmembers="PyFloatObject base;",
-                                       tp_base="&PyFloat_Type", 
+                                       tp_base="&PyFloat_Type",
                                        nb_add="fp_add",
                                        tp_new="fp_tpnew",
                                        post_ready_code="testFloatSubclassPtr = &TestFloatSubclassType; Py_INCREF(testFloatSubclassPtr);"
@@ -368,7 +368,8 @@ class TestObject(object):
         tester = TestFloatSubclass(41.0)
         res = tester + 1
         assert res == 42.0, "expected 42.0 but was %s" % res
-        
+        assert hash(tester) != 0
+
     def test_custom_basicsize(self):
         TestCustomBasicsize = CPyExtType("TestCustomBasicsize", 
                                       '''
@@ -400,6 +401,35 @@ class TestObject(object):
         actual_basicsize = TestCustomBasicsizeSubclass.__basicsize__
         assert expected_basicsize == actual_basicsize, "expected = %s, actual = %s" % (expected_basicsize, actual_basicsize)
 
+    def test_descrget(self):
+        TestDescrGet = CPyExtType(
+            "TestDescrGet",
+            '''
+            PyObject* testdescr_get(PyObject* self, PyObject* obj, PyObject* type) {
+                if (obj == NULL) {
+                    obj = Py_Ellipsis;
+                }
+                if (type == NULL) {
+                    type = Py_Ellipsis;
+                }
+                return Py_BuildValue("OOO", self, obj, type);
+            }
+            ''',
+            tp_descr_get="(descrgetfunc) testdescr_get",
+        )
+
+        descr = TestDescrGet()
+
+        class Test:
+            getter = descr
+
+        obj = Test()
+        # Using Ellipsis as a placeholder for C NULL
+        assert obj.getter == (descr, obj, Test)
+        assert Test.getter == (descr, ..., Test)
+        assert descr.__get__(1, int) == (descr, 1, int)
+        assert descr.__get__(1, None) == (descr, 1, ...)
+        assert descr.__get__(None, int) == (descr, ..., int)
 
     def test_descrset(self):
         TestDescrSet = CPyExtType("TestDescrSet",

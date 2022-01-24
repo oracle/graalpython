@@ -41,7 +41,10 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
+import static com.oracle.graal.python.nodes.ErrorMessages.SSL_CANT_OPEN_FILE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.SSL_ERR_DECODING_PEM_FILE;
+import static com.oracle.graal.python.nodes.ErrorMessages.SSL_ERR_DECODING_PEM_FILE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -77,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.ssl.SSLOptions;
 import com.oracle.graal.python.builtins.objects.ssl.SSLProtocol;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -370,20 +374,20 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             try (BufferedReader r = file.newBufferedReader()) {
                 CertUtils.LoadCertError result = CertUtils.getCertificates(r, l);
                 if (result != CertUtils.LoadCertError.NO_ERROR) {
-                    throw raise(SSLError, "Error decoding PEM-encoded file: " + result);
+                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_S, result);
                 }
                 if (l.isEmpty()) {
-                    throw raise(SSLError, "Error decoding PEM-encoded file");
+                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE);
                 }
                 Object cert = l.get(0);
                 if (!(cert instanceof X509Certificate)) {
-                    throw raise(SSLError, "Error decoding PEM-encoded file: unexpected type " + cert.getClass().getName());
+                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
                 }
-                return CertUtils.decodeCertificate(this, getContext().getCore().factory(), (X509Certificate) l.get(0));
+                return CertUtils.decodeCertificate(getContext().factory(), (X509Certificate) l.get(0));
             } catch (IOException ex) {
-                throw raise(SSLError, "Can't open file: " + ex.toString());
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_CANT_OPEN_FILE_S, ex.toString());
             } catch (CertificateException | CRLException ex) {
-                throw raise(SSLError, "Error decoding PEM-encoded file: " + ex.toString());
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_S, ex.toString());
             }
         }
 

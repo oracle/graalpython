@@ -56,7 +56,7 @@ public abstract class PyFrameGetBuiltins extends Node {
 
     @Specialization
     PythonModule getBuiltins() {
-        return PythonContext.get(this).getCore().getBuiltins();
+        return PythonContext.get(this).getBuiltins();
     }
 
     public static PyFrameGetBuiltins getUncached() {

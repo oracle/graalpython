@@ -98,7 +98,7 @@ public abstract class IsNode extends Node {
 
     @Specialization
     boolean doBP(boolean left, PInt right) {
-        Python3Core core = PythonContext.get(this).getCore();
+        Python3Core core = PythonContext.get(this);
         if (left) {
             return right == core.getTrue();
         } else {

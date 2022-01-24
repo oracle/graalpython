@@ -220,7 +220,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"!isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
-        boolean check(Object object, TruffleObject klass,
+        boolean check(Object object, Object klass,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
             Env env = getContext().getEnv();
@@ -236,7 +236,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
-        boolean checkForeign(Object object, TruffleObject klass,
+        boolean checkForeign(Object object, Object klass,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
             Env env = getContext().getEnv();

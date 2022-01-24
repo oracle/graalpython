@@ -76,6 +76,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class PyNumberFloatNode extends PNodeWithContext {
     public abstract double execute(Frame frame, Object object);
 
+    public final double execute(Object object) {
+        return execute(null, object);
+    }
+
     @Specialization
     static double doDouble(double object) {
         return object;
@@ -134,4 +138,9 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
     public static PyNumberFloatNode create() {
         return PyNumberFloatNodeGen.create();
     }
+
+    public static PyNumberFloatNode getUncached() {
+        return PyNumberFloatNodeGen.getUncached();
+    }
+
 }

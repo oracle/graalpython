@@ -71,7 +71,6 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
@@ -148,6 +147,10 @@ public abstract class CExtContext {
 
     public static boolean isMethFastcallWithKeywords(int flags) {
         return (flags & METH_FASTCALL) != 0 && (flags & METH_KEYWORDS) != 0;
+    }
+
+    public static boolean isMethStatic(int flags) {
+        return (flags & METH_STATIC) != 0;
     }
 
     public static boolean isClassOrStaticMethod(int flags) {
@@ -290,12 +293,12 @@ public abstract class CExtContext {
         }
     }
 
-    protected static TruffleObject loadLLVMLibrary(Node location, PythonContext context, String name, String path) throws ImportException, IOException {
+    protected static Object loadLLVMLibrary(Node location, PythonContext context, String name, String path) throws ImportException, IOException {
         Env env = context.getEnv();
         try {
             String extSuffix = context.getSoAbi();
             CallTarget callTarget = env.parseInternal(Source.newBuilder(PythonLanguage.LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
-            return (TruffleObject) callTarget.call();
+            return callTarget.call();
         } catch (SecurityException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
         } catch (RuntimeException e) {

@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
@@ -52,10 +51,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
@@ -64,6 +65,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
@@ -72,20 +75,44 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RLSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET_NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -112,6 +139,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -149,7 +177,6 @@ public enum SpecialMethodSlot {
     SetAttr(__SETATTR__),
     DelAttr(__DELATTR__),
 
-    Class(__CLASS__),
     Dict(__DICT__),
 
     Get(__GET__),
@@ -196,7 +223,36 @@ public enum SpecialMethodSlot {
 
     And(__AND__),
     RAnd(__RAND__),
+    Or(__OR__),
+    ROr(__ROR__),
+    Xor(__XOR__),
+    RXor(__RXOR__),
     Add(__ADD__),
+    RAdd(__RADD__),
+    Sub(__SUB__),
+    RSub(__RSUB__),
+    Mul(__MUL__),
+    RMul(__RMUL__),
+    MatMul(__MATMUL__),
+    RMatMul(__RMATMUL__),
+    Mod(__MOD__),
+    RMod(__RMOD__),
+    DivMod(__DIVMOD__),
+    RDivMod(__RDIVMOD__),
+    Pow(__POW__),
+    RPow(__RPOW__),
+    TrueDiv(__TRUEDIV__),
+    RTrueDiv(__RTRUEDIV__),
+    FloorDiv(__FLOORDIV__),
+    RFloorDiv(__RFLOORDIV__),
+    LShift(__LSHIFT__),
+    RLShift(__RLSHIFT__),
+    RShift(__RSHIFT__),
+    RRShift(__RRSHIFT__),
+    Round(__ROUND__),
+
+    IAdd(__IADD__),
+    IMul(__IMUL__),
 
     Reversed(__REVERSED__),
     Bytes(__BYTES__);
@@ -207,6 +263,7 @@ public enum SpecialMethodSlot {
 
     public static final SpecialMethodSlot[] VALUES = values();
     private final String name;
+    @CompilationFinal private SpecialMethodSlot reverse;
     /**
      * Indicates if given slot may or must not store context independent (AST cacheable)
      * {@link BuiltinMethodDescriptor} objects.
@@ -235,8 +292,31 @@ public enum SpecialMethodSlot {
         this.allowsBuiltinDescriptors = allowsBuiltinDescriptors;
     }
 
+    static {
+        And.reverse = RAnd;
+        Or.reverse = ROr;
+        Add.reverse = RAdd;
+        Sub.reverse = RSub;
+        Mul.reverse = RMul;
+        DivMod.reverse = RDivMod;
+        TrueDiv.reverse = RTrueDiv;
+        FloorDiv.reverse = RFloorDiv;
+        LShift.reverse = RLShift;
+        RShift.reverse = RRShift;
+        Xor.reverse = RXor;
+        MatMul.reverse = RMatMul;
+        Pow.reverse = RPow;
+        Mod.reverse = RMod;
+        assert checkFind();
+        assert checkReverseSlots();
+    }
+
     public String getName() {
         return name;
+    }
+
+    public SpecialMethodSlot getReverse() {
+        return reverse;
     }
 
     public Object getValue(PythonManagedClass klass) {
@@ -575,9 +655,15 @@ public enum SpecialMethodSlot {
 
     private static Object asSlotValue(SpecialMethodSlot slot, Object value, PythonLanguage language) {
         if (value instanceof PBuiltinFunction && slot.allowsBuiltinDescriptors) {
-            BuiltinMethodDescriptor info = BuiltinMethodDescriptor.get((PBuiltinFunction) value);
+            PBuiltinFunction builtinFun = (PBuiltinFunction) value;
+            BuiltinMethodDescriptor info = BuiltinMethodDescriptor.get(builtinFun);
             if (info != null) {
-                language.registerBuiltinDescriptorCallTarget(info, ((PBuiltinFunction) value).getCallTarget());
+                if (builtinFun.getDescriptor() == null) {
+                    // Note: number of all builtins >> number of builtins used in slots, so it is
+                    // better to do this lazily
+                    language.registerBuiltinDescriptorCallTarget(info, builtinFun.getCallTarget());
+                    builtinFun.setDescriptor(info);
+                }
                 return info;
             }
         }
@@ -607,64 +693,74 @@ public enum SpecialMethodSlot {
                 return GetAttr;
             case __SETATTR__:
                 return SetAttr;
-            case __STR__:
-                return Str;
-            case __FORMAT__:
-                return Format;
             case __DELATTR__:
                 return DelAttr;
+            case __DICT__:
+                return Dict;
+            case __GET__:
+                return Get;
+            case __SET__:
+                return Set;
+            case __DELETE__:
+                return Delete;
             case __ITER__:
                 return Iter;
             case __NEXT__:
                 return Next;
-            case __GET__:
-                return Get;
-            case __EQ__:
-                return Eq;
             case __NEW__:
                 return New;
             case __INIT__:
                 return Init;
+            case __SET_NAME__:
+                return SetName;
+            case __INSTANCECHECK__:
+                return InstanceCheck;
+            case __SUBCLASSCHECK__:
+                return Subclasscheck;
             case __CALL__:
                 return Call;
-            case __SET__:
-                return Set;
             case __GETITEM__:
                 return GetItem;
             case __SETITEM__:
                 return SetItem;
-            case __LEN__:
-                return Len;
-            case __LENGTH_HINT__:
-                return LengthHint;
+            case __DELITEM__:
+                return DelItem;
             case __EXIT__:
                 return Exit;
             case __ENTER__:
                 return Enter;
+            case __LEN__:
+                return Len;
+            case __LENGTH_HINT__:
+                return LengthHint;
             case __CONTAINS__:
                 return Contains;
-            case __DELITEM__:
-                return DelItem;
-            case __CLASS__:
-                return Class;
-            case __INSTANCECHECK__:
-                return InstanceCheck;
+            case __BOOL__:
+                return Bool;
+            case __HASH__:
+                return Hash;
+            case __INDEX__:
+                return Index;
+            case __FLOAT__:
+                return Float;
+            case __INT__:
+                return Int;
+            case __STR__:
+                return Str;
+            case __REPR__:
+                return Repr;
+            case __FORMAT__:
+                return Format;
+            case __MISSING__:
+                return Missing;
+            case __EQ__:
+                return Eq;
             case __NE__:
                 return Ne;
             case __LT__:
                 return Lt;
             case __LE__:
                 return Le;
-            case __MISSING__:
-                return Missing;
-            case __BOOL__:
-                return Bool;
-            case __HASH__:
-                return Hash;
-            case __DELETE__:
-                return Delete;
-            case __DICT__:
-                return Dict;
             case __GT__:
                 return Gt;
             case __GE__:
@@ -673,20 +769,64 @@ public enum SpecialMethodSlot {
                 return And;
             case __RAND__:
                 return RAnd;
-            case __SET_NAME__:
-                return SetName;
-            case __REPR__:
-                return Repr;
-            case __SUBCLASSCHECK__:
-                return Subclasscheck;
+            case __OR__:
+                return Or;
+            case __ROR__:
+                return ROr;
+            case __XOR__:
+                return Xor;
+            case __RXOR__:
+                return RXor;
             case __ADD__:
                 return Add;
-            case __INDEX__:
-                return Index;
-            case __INT__:
-                return Int;
-            case __FLOAT__:
-                return Float;
+            case __RADD__:
+                return RAdd;
+            case __SUB__:
+                return Sub;
+            case __RSUB__:
+                return RSub;
+            case __MUL__:
+                return Mul;
+            case __RMUL__:
+                return RMul;
+            case __MATMUL__:
+                return MatMul;
+            case __RMATMUL__:
+                return RMatMul;
+            case __MOD__:
+                return Mod;
+            case __RMOD__:
+                return RMod;
+            case __DIVMOD__:
+                return DivMod;
+            case __RDIVMOD__:
+                return RDivMod;
+            case __POW__:
+                return Pow;
+            case __RPOW__:
+                return RPow;
+            case __TRUEDIV__:
+                return TrueDiv;
+            case __RTRUEDIV__:
+                return RTrueDiv;
+            case __FLOORDIV__:
+                return FloorDiv;
+            case __RFLOORDIV__:
+                return RFloorDiv;
+            case __LSHIFT__:
+                return LShift;
+            case __RLSHIFT__:
+                return RLShift;
+            case __RSHIFT__:
+                return RShift;
+            case __RRSHIFT__:
+                return RRShift;
+            case __ROUND__:
+                return Round;
+            case __IADD__:
+                return IAdd;
+            case __IMUL__:
+                return IMul;
             case __REVERSED__:
                 return Reversed;
             case __BYTES__:
@@ -696,13 +836,32 @@ public enum SpecialMethodSlot {
         }
     }
 
-    static {
-        assert checkFind();
+    private static boolean checkReverseSlots() {
+        for (SpecialMethodSlot slot : VALUES) {
+            String slotName = slot.getName();
+            if (slotName.startsWith("__r")) {
+                String rname = slotName.replace("__r", "__");
+                SpecialMethodSlot rslot = findSpecialSlot(rname);
+                if (rslot != null && rslot.reverse != slot) {
+                    assert false : slotName;
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private static boolean checkFind() {
         for (SpecialMethodSlot slot : VALUES) {
             if (findSpecialSlot(slot.getName()) != slot) {
+                /*-
+                // Uncomment following to print the code for the switch:
+                String code = Arrays.stream(VALUES).//
+                                map(x -> String.format("case %s: return %s;", x.name.toUpperCase(Locale.ROOT), x.name())).//
+                                collect(Collectors.joining("\n"));
+                System.err.println(code);
+                 */
+                assert false : slot;
                 return false;
             }
         }
@@ -731,7 +890,7 @@ public enum SpecialMethodSlot {
                         continue;
                     }
                     if (typeValue instanceof BuiltinMethodDescriptor && klassValue instanceof PBuiltinFunction &&
-                                    ((BuiltinMethodDescriptor) typeValue).getFactory() == ((PBuiltinFunction) klassValue).getBuiltinNodeFactory()) {
+                                    ((BuiltinMethodDescriptor) typeValue).isDescriptorOf((PBuiltinFunction) klassValue)) {
                         // BuiltinMethodDescriptor and matching PBuiltinFunction: OK
                         continue;
                     }
@@ -783,7 +942,7 @@ public enum SpecialMethodSlot {
             return true;
         }
         ReadAttributeFromDynamicObjectNode uncachedReadAttrNode = ReadAttributeFromDynamicObjectNode.getUncached();
-        final Python3Core core = PythonContext.get(uncachedReadAttrNode).getCore();
+        final Python3Core core = PythonContext.get(uncachedReadAttrNode);
         Object klass = klassIn;
         if (klass instanceof PythonBuiltinClassType) {
             PythonBuiltinClassType type = (PythonBuiltinClassType) klass;
@@ -799,7 +958,7 @@ public enum SpecialMethodSlot {
                 Object expected = slot.getValue(type);
                 if (expected instanceof BuiltinMethodDescriptor) {
                     assert actual instanceof PBuiltinFunction;
-                    assert ((PBuiltinFunction) actual).getBuiltinNodeFactory() == ((BuiltinMethodDescriptor) expected).getFactory();
+                    assert ((BuiltinMethodDescriptor) expected).isDescriptorOf((PBuiltinFunction) actual);
                 } else if (expected != null) {
                     assert PythonLanguage.canCache(expected);
                     assert actual == expected;

@@ -57,7 +57,7 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                   IfNode SourceSection: [88,142]`if candidate in s2[1...`
                                     YesNodeGen SourceSection: None
                                       ContainsNodeGen SourceSection: [91,110]`candidate in s2[1:]`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                           Op: __contains__
                                         YesNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [91,100]`candidate`

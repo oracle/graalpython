@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -45,14 +45,17 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSHOOK__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -68,6 +71,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -76,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMembe
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -84,7 +89,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes.AbstractSetattrNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
@@ -98,8 +105,10 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -263,9 +272,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "isBuiltin.profileIsAnyBuiltinClass(self)"})
         Object doc(Object self, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
-                        @Cached GetNameNode getName) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_S_S, getName.execute(self), __DOC__);
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_N_S, self, __DOC__);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
@@ -364,7 +372,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @ReportPolymorphism
-    protected abstract static class BindNew extends PNodeWithContext {
+    public abstract static class BindNew extends PNodeWithContext {
         public abstract Object execute(VirtualFrame frame, Object descriptor, Object type);
 
         @Specialization
@@ -706,6 +714,21 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class SetattrNode extends AbstractSetattrNode {
+        @Child WriteAttributeToObjectNode writeNode;
+
+        @Override
+        protected boolean writeAttribute(Object object, String key, Object value) {
+            if (writeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeNode = insert(WriteAttributeToObjectNode.createForceType());
+            }
+            return writeNode.execute(object, key, value);
+        }
+    }
+
     @Builtin(name = __PREPARE__, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class PrepareNode extends PythonBuiltinNode {
@@ -845,7 +868,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __INSTANCECHECK__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
-        @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+        @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(SpecialMethodSlot.GetAttribute);
         @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
         @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
 
@@ -949,6 +972,16 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __SUBCLASSHOOK__, minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    abstract static class SubclassHookNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        Object hook(VirtualFrame frame, Object cls, Object subclass) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
     @Builtin(name = __SUBCLASSES__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SubclassesNode extends PythonUnaryBuiltinNode {
@@ -995,15 +1028,16 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object setName(PythonClass cls, Object value,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+        Object setName(VirtualFrame frame, PythonClass cls, Object value,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             try {
                 String string = castToJavaStringNode.execute(value);
                 if (containsNullCharacter(string)) {
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
                 }
                 if (!canEncodeUTF8(string)) {
-                    throw raise(PythonBuiltinClassType.UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_CLASSNAME, string);
+                    throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", string, 0, string.length(), "can't encode classname");
                 }
                 cls.setName(string);
                 return PNone.NONE;
@@ -1070,16 +1104,29 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
                         @Cached GetTypeMemberNode getTpNameNode,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = castToJavaStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
-            return getModuleName(tpName);
+            Object module = readAttr.execute(cls, __MODULE__);
+            if (module != PNone.NO_VALUE) {
+                return module;
+            } else {
+                // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+                String tpName = castToJavaStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
+                return getModuleName(tpName);
+            }
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setNative(@SuppressWarnings("unused") PythonNativeClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
+        Object setNative(PythonNativeClass cls, Object value,
+                        @Cached GetTypeFlagsNode getFlags,
+                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttr) {
+            long flags = getFlags.execute(cls);
+            if ((flags & TypeFlags.HEAPTYPE) == 0) {
+                throw raise(TypeError, ErrorMessages.CANT_SET_N_S, cls, __MODULE__);
+            }
+            writeAttr.execute(cls, __MODULE__, value);
+            return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -1360,4 +1407,45 @@ public class TypeBuiltins extends PythonBuiltins {
             throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));
         }
     }
+
+    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1, doc = "__dir__ for type objects\n\n\tThis includes all attributes of klass and all of the base\n\tclasses recursively.")
+    @GenerateNodeFactory
+    public abstract static class DirNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object dir(VirtualFrame frame, Object klass,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode,
+                        @Cached DirNode dirNode) {
+            PSet names = dir(frame, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode, dirNode);
+            return names;
+        }
+
+        private PSet dir(VirtualFrame frame, Object klass, PyObjectLookupAttr lookupAttrNode, com.oracle.graal.python.nodes.call.CallNode callNode, GetFixedAttributeNode getBasesNode,
+                        ToArrayNode toArrayNode, DirNode dirNode) {
+            PSet names = factory().createSet();
+            Object updateCallable = lookupAttrNode.execute(frame, names, "update");
+            Object ns = lookupAttrNode.execute(frame, klass, __DICT__);
+            if (ns != PNone.NO_VALUE) {
+                callNode.execute(frame, updateCallable, ns);
+            }
+            Object basesAttr = getBasesNode.execute(frame, klass);
+            if (basesAttr instanceof PTuple) {
+                Object[] bases = toArrayNode.execute(((PTuple) basesAttr).getSequenceStorage());
+                for (Object cls : bases) {
+                    // Note that since we are only interested in the keys, the order
+                    // we merge classes is unimportant
+                    Object baseNames = dir(frame, cls, lookupAttrNode, callNode, getBasesNode, toArrayNode, dirNode);
+                    callNode.execute(frame, updateCallable, baseNames);
+                }
+            }
+            return names;
+        }
+
+        protected GetFixedAttributeNode createGetAttrNode() {
+            return GetFixedAttributeNode.create(__BASES__);
+        }
+    }
+
 }

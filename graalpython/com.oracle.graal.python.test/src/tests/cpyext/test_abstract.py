@@ -51,8 +51,26 @@ def _safe_check(v, type_check):
 
 def _reference_checknumber(args):
     v = args[0]
+    if isinstance(v, str):
+        return False
     return _safe_check(v, lambda x: isinstance(int(x), int)) or _safe_check(v, lambda x: isinstance(float(x), float))
 
+def _reference_tobase(args):
+    n = args[0]
+    base = args[1]
+    if base not in (2, 8, 10, 16):
+        raise SystemError("PyNumber_ToBase: base must be 2, 8, 10 or 16")
+    if not hasattr(n, "__index__"):
+        raise TypeError
+    b_index = n.__index__()
+    if base == 2:
+        return bin(b_index)
+    elif base == 8:
+        return oct(b_index)
+    elif base == 10:
+        return str(b_index)
+    elif base == 16:
+        return hex(b_index)
 
 def _reference_index(args):
     v = args[0]
@@ -121,6 +139,15 @@ def _reference_fast(args):
         return obj
     return list(obj)
 
+def _wrap_slice_fun(fun, since=0, default=None):
+    def wrapped_fun(args):
+        if not isinstance(args[0], list) and not isinstance(args[0], set) and not isinstance(args[0], tuple) and not isinstance(args[0], str):
+            if sys.version_info.minor >= since:
+                raise SystemError("expected list type")
+            else:
+                return default
+        return fun(args)
+    return wrapped_fun
 
 class NoNumber():
     pass
@@ -205,6 +232,7 @@ def _default_unarop_args():
         (False,),
         (True,),
         ("hello",),
+        ("1",),
         ((1, 2, 3),),
         (0x7fffffff,),
         (0xffffffffffffffffffffffffffffffff,),
@@ -256,6 +284,55 @@ class TestAbstract(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyNumber_ToBase = CPyExtFunction(
+        _reference_tobase,
+        lambda: (
+            (2, 0),
+            ("hello", 0),
+            (1.1, 0),
+            (NoNumber(), 0),
+            (2, 0),
+            (2, 0),
+            (2, 2),
+            (2, 8),
+            (2, 10),
+            (2, 16),
+            ("1", 2),
+            ("1", 8),
+            ("1", 10),
+            ("1", 16),
+            (1.1, 2),
+            (1.1, 8),
+            (1.1, 10),
+            (1.1, 16),
+            (False, 2),
+            (False, 8),
+            (False, 10),
+            (False, 16),
+            (True, 16),
+            ("hello, ", 2),
+            ("hello, ", 8),
+            ("hello, ", 10),
+            ("hello, ", 16),
+            (DummyIntable(), 2),
+            (DummyIntable(), 8),
+            (DummyIntable(), 10),
+            (DummyIntable(), 16),
+            (DummyIntSubclass(), 2),
+            (DummyIntSubclass(), 8),
+            (DummyIntSubclass(), 10),
+            (DummyIntSubclass(), 16),
+            (NoNumber(), 2),
+            (NoNumber(), 8),
+            (NoNumber(), 10),
+            (NoNumber(), 16),
+        ),
+        resultspec="O",
+        argspec='Oi',
+        arguments=["PyObject* n", "int base"],
         cmpfunc=unhandled_error_compare
     )
 
@@ -482,6 +559,7 @@ class TestAbstract(CPyExtTestCase):
             (1,),
             (-1,),
             (1.0,),
+            ("1",),
             (0x7FFFFFFF,),
             (0x7FFFFFFFFFFFFFFF,),
             (DummyIntable(),),
@@ -522,6 +600,7 @@ class TestAbstract(CPyExtTestCase):
             (1,),
             (-1,),
             (1.0,),
+            ("1",),
             (0x7FFFFFFF,),
             (0x7FFFFFFFFFFFFFFF,),
             (DummyIntable(),),
@@ -663,6 +742,7 @@ class TestAbstract(CPyExtTestCase):
             ({'a':0, 'b':1},),
             (DummySequence(),),
             (DummyListSubclass(),),
+            ('hello',),
         ),
         resultspec="i",
         argspec='O',
@@ -680,6 +760,7 @@ class TestAbstract(CPyExtTestCase):
             ([None],),
             (set(),),
             (DummyListSubclass(),),
+            ('hello',),
         ),
         resultspec="n",
         argspec='O',
@@ -702,13 +783,58 @@ class TestAbstract(CPyExtTestCase):
             (set(), 0),
             ({'a', 'b'}, 0),
             (DummyListSubclass(), 1),
+            ('hello', 1),
         ),
         resultspec="O",
         argspec='On',
         arguments=["PyObject* sequence", "Py_ssize_t idx"],
         cmpfunc=unhandled_error_compare
     )
-
+    
+    test_PySequence_GetSlice = CPyExtFunction(
+        _wrap_slice_fun(lambda args: args[0][args[1]:args[2]]),
+        lambda: (
+            (tuple(), 0, 1),
+            ((1, 2, 3), 1, 2),
+            ((None,), 1, 2),
+            ([], 0, 1),
+            (['a', 'b', 'c'], 1, 2),
+            ([None], 0, 1),
+            (set(), 0, 1),
+            ({'a', 'b'}, 1, 2),
+            (DummyListSubclass(), 0, 1),
+            ('hello', 0, 1),
+        ),
+        resultspec="O",
+        argspec='Onn',
+        arguments=["PyObject* sequence", "Py_ssize_t ilow", "Py_ssize_t ihigh"],
+        cmpfunc=unhandled_error_compare
+    )
+    
+    test_PySequence_Contains = CPyExtFunction(
+        lambda args: args[1] in args[0],
+        lambda: (
+            (tuple(), 1),
+            ((1, 2, 3), 1),
+            ((1, 2, 3), 4),
+            ((None,), 1),
+            ([], 1),
+            (['a', 'b', 'c'], 'a'),
+            (['a', 'b', 'c'], 'd'),
+            ([None], 1),
+            (set(), 1),
+            ({'a', 'b'}, 'a'),
+            ({'a', 'b'}, 'c'),
+            (DummyListSubclass(), 1),
+            ('hello', 'e'),
+            ('hello', 'x'),
+        ),
+        resultspec="i",
+        argspec='OO',
+        arguments=["PyObject* haystack", "PyObject* needle"],
+        cmpfunc=unhandled_error_compare
+    )
+    
     test_PySequence_ITEM = CPyExtFunction(
         _reference_getitem,
         lambda: (
@@ -718,6 +844,7 @@ class TestAbstract(CPyExtTestCase):
             ([], 10),
             (['a', 'b', 'c'], 2),
             ([None], 0),
+            ('hello', 0),
         ),
         resultspec="O",
         argspec='On',
@@ -733,6 +860,7 @@ class TestAbstract(CPyExtTestCase):
             ((None,), 1, None),
             ([], 10, 1),
             (['a', 'b', 'c'], 2, 'z'),
+            ('hello', 2, 'z'),
         ),
         code=''' PyObject* wrap_PySequence_SetItem(PyObject* sequence, Py_ssize_t idx, PyObject* value) {
             if (PySequence_SetItem(sequence, idx, value) < 0) {
@@ -760,6 +888,27 @@ class TestAbstract(CPyExtTestCase):
             ({'a': 0, 'b': 1, 'c': 2},),
             (None,),
             (0,),
+            ('hello',),
+        ),
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* sequence"],
+        cmpfunc=unhandled_error_compare
+    )
+    
+    test_PySequence_List = CPyExtFunction(
+        lambda args: list(args[0]),
+        lambda: (
+            (list(),),
+            ((1, 2, 3),),
+            ((None,),),
+            ([],),
+            (['a', 'b', 'c'],),
+            ({'a', 'b', 'c'},),
+            ({'a': 0, 'b': 1, 'c': 2},),
+            (None,),
+            (0,),
+            ('hello',),
         ),
         resultspec="O",
         argspec='O',

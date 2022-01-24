@@ -121,7 +121,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                       GetAttributeNode SourceSection: [95,108]`cls.__bases__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __bases__
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [95,98]`cls`
                                           Frame: [0,cls,Illegal]

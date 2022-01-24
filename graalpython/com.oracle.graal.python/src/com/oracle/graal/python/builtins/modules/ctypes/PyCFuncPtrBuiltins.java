@@ -85,8 +85,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PyLongAsVoidPtr;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLongAsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.KeepRefNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CallProcNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesDlSymNode;
@@ -494,7 +494,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 }
             }
             CtypesThreadState state = CtypesThreadState.get(getContext(), PythonLanguage.get(this));
-            CtypesModuleBuiltins ctypesModuleBuiltins = (CtypesModuleBuiltins) getContext().getCore().lookupBuiltinModule("_ctypes").getBuiltins();
+            CtypesModuleBuiltins ctypesModuleBuiltins = (CtypesModuleBuiltins) getContext().lookupBuiltinModule("_ctypes").getBuiltins();
             Object result = callProcNode.execute(frame, pProc,
                             callargs,
                             dict.flags,

@@ -78,7 +78,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -123,7 +122,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PStringIO)
-public class StringIOBuiltins extends PythonBuiltins {
+public final class StringIOBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -731,7 +730,7 @@ public class StringIOBuiltins extends PythonBuiltins {
             self.realize();
             String line = stringioReadline(self, -1);
             if (PString.length(line) == 0) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return line;
         }
@@ -751,7 +750,7 @@ public class StringIOBuiltins extends PythonBuiltins {
             }
             String line = toString.execute(res);
             if (PString.length(line) == 0) {
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return line;
         }

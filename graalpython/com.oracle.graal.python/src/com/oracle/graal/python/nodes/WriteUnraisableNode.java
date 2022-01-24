@@ -82,7 +82,7 @@ public abstract class WriteUnraisableNode extends Node {
                     @Cached GetExceptionTracebackNode getExceptionTracebackNode) {
         PythonContext context = PythonContext.get(getClassNode);
         try {
-            PythonModule sysModule = context.getCore().lookupBuiltinModule("sys");
+            PythonModule sysModule = context.lookupBuiltinModule("sys");
             Object unraisablehook = lookup.execute(frame, sysModule, BuiltinNames.UNRAISABLEHOOK);
             Object exceptionType = getClassNode.execute(exception);
             Object traceback = getExceptionTracebackNode.execute(exception);
@@ -93,7 +93,7 @@ public abstract class WriteUnraisableNode extends Node {
             if (message != null) {
                 messageObj = formatMessage(message);
             }
-            Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLE_HOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
+            Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLEHOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
             callNode.execute(frame, unraisablehook, hookArguments);
         } catch (PException e) {
             ignoreException(context, message);

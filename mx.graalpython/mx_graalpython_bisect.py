@@ -185,6 +185,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         args.benchmark_command = sec['benchmark_command']
         args.benchmark_criterion = sec.get('benchmark_criterion', 'BEST')
         args.enterprise = sec.getboolean('enterprise', False)
+        args.no_clean = sec.getboolean('no_clean', False)
     else:
         parser = argparse.ArgumentParser()
         parser.add_argument('bad', help="Bad commit for bisection")
@@ -195,6 +196,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         parser.add_argument('--benchmark-criterion', default='BEST',
                             help="Which result parameter should be used for comparisons")
         parser.add_argument('--enterprise', action='store_true', help="Whether to checkout graal-enterprise")
+        parser.add_argument('--no-clean', action='store_true', help="Do not run 'mx clean' between runs")
         args = parser.parse_args(argv)
 
     primary_suite = mx.primary_suite()
@@ -221,14 +223,20 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         if args.enterprise:
             debug_str += " graal-enterprise={}".format(get_commit(get_suite('/vm-enterprise')))
         print(debug_str)
-        env = os.environ.copy()
-        env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
-        retcode = mx.run(shlex.split(args.build_command), env=env, nonZeroIsFatal=False)
+        build_command = shlex.split(args.build_command)
+        if not args.no_clean:
+            try:
+                clean_command = build_command[:build_command.index('build')] + ['clean']
+                retcode = mx.run(clean_command, nonZeroIsFatal=False)
+                if retcode:
+                    print("Warning: clean command failed")
+            except ValueError:
+                pass
+        retcode = mx.run(build_command, nonZeroIsFatal=False)
         if retcode:
             raise RuntimeError("Failed to execute the build command for {}".format(commit))
         output = mx.OutputCapture()
-        retcode = mx.run(shlex.split(args.benchmark_command), env=env, out=mx.TeeOutputCapture(output),
-                         nonZeroIsFatal=False)
+        retcode = mx.run(shlex.split(args.benchmark_command), out=mx.TeeOutputCapture(output), nonZeroIsFatal=False)
         if retcode:
             raise RuntimeError("Failed to execute benchmark for {}".format(commit))
         match = re.search(r'{}.*duration: ([\d.]+)'.format(re.escape(args.benchmark_criterion)), output.data)
@@ -246,10 +254,6 @@ def _bisect_benchmark(argv, bisect_id, email_to):
     print(visualization)
     print()
     print(summary)
-
-    if 'CI' not in os.environ:
-        print("You can rerun a benchmark for a particular commit using:\nMX_ALT_OUTPUT_ROOT=mxbuild-$commit {}".format(
-            args.benchmark_command))
 
     send_email(
         bisect_id,

@@ -27,6 +27,8 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY;
+import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
@@ -44,7 +46,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -83,8 +84,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
@@ -109,6 +109,31 @@ import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextImportBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextMemoryViewBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextIterBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextNamespaceBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextSysBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins;
@@ -156,7 +181,6 @@ import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
@@ -176,7 +200,17 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.KeyErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
@@ -196,10 +230,25 @@ import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CompressBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CycleBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.DropwhileBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.FilterfalseBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GroupByBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GrouperBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.IsliceBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ProductBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.StarmapBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
 import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
@@ -265,6 +314,7 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
@@ -282,9 +332,12 @@ import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
- * types.
+ * types. The core is embedded, using inheritance, into {@link PythonContext} to avoid indirection
+ * through an extra field in the context.
  */
-public final class Python3Core implements ParserErrorCallback {
+public abstract class Python3Core extends ParserErrorCallback {
+    private static final int REC_LIM = 1000;
+    private static final int NATIVE_REC_LIM = 8000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
@@ -294,7 +347,6 @@ public final class Python3Core implements ParserErrorCallback {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
                         "object",
-                        "sys",
                         "type",
                         "_imp",
                         "function",
@@ -302,11 +354,8 @@ public final class Python3Core implements ParserErrorCallback {
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
-                        "itertools",
                         "faulthandler",
-                        "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
-                        "bytes",
                         "bytearray",
                         "unicodedata",
                         "_locale",
@@ -315,7 +364,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "_sysconfig",
                         "termios",
                         "zipimport",
-                        "mmap",
                         "java",
                         "_contextvars",
                         "pip_hook",
@@ -324,9 +372,11 @@ public final class Python3Core implements ParserErrorCallback {
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
+            PythonOS currentOs = PythonOS.getPythonOS();
             for (PythonBuiltins builtin : providers) {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (!annotation.pythonFile().isEmpty()) {
+                if (!annotation.pythonFile().isEmpty() &&
+                                (annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs)) {
                     coreFiles.add(annotation.pythonFile());
                 }
             }
@@ -356,9 +406,18 @@ public final class Python3Core implements ParserErrorCallback {
         c = null;
     }
 
+    private static void filterBuiltins(List<PythonBuiltins> builtins) {
+        PythonOS currentOs = PythonOS.getPythonOS();
+        for (PythonBuiltins builtin : builtins) {
+            CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+            if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
+                builtins.remove(builtin);
+            }
+        }
+    }
+
     private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
-        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
-                        new BuiltinConstructors(),
+        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
@@ -429,9 +488,41 @@ public final class Python3Core implements ParserErrorCallback {
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),
                         new PythonCextBuiltins(),
+                        new PythonCextAbstractBuiltins(),
+                        new PythonCextBytesBuiltins(),
+                        new PythonCextCEvalBuiltins(),
+                        new PythonCextCodeBuiltins(),
+                        new PythonCextComplexBuiltins(),
+                        new PythonCextDictBuiltins(),
+                        new PythonCextFileBuiltins(),
+                        new PythonCextFloatBuiltins(),
+                        new PythonCextImportBuiltins(),
+                        new PythonCextIterBuiltins(),
+                        new PythonCextListBuiltins(),
+                        new PythonCextLongBuiltins(),
+                        new PythonCextMemoryViewBuiltins(),
+                        new PythonCextModuleBuiltins(),
+                        new PythonCextPythonRunBuiltins(),
+                        new PythonCextNamespaceBuiltins(),
+                        new PythonCextSetBuiltins(),
+                        new PythonCextSliceBuiltins(),
+                        new PythonCextSysBuiltins(),
+                        new PythonCextTupleBuiltins(),
+                        new PythonCextUnicodeBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
+                        // exceptions
+                        new SystemExitBuiltins(),
+                        new ImportErrorBuiltins(),
+                        new StopIterationBuiltins(),
+                        new KeyErrorBuiltins(),
+                        new SyntaxErrorBuiltins(),
+                        new OsErrorBuiltins(),
+                        new UnicodeErrorBuiltins(),
+                        new UnicodeEncodeErrorBuiltins(),
+                        new UnicodeDecodeErrorBuiltins(),
+                        new UnicodeTranslateErrorBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),
@@ -466,6 +557,7 @@ public final class Python3Core implements ParserErrorCallback {
                         new TupleGetterBuiltins(),
                         new JavaModuleBuiltins(),
                         new JArrayModuleBuiltins(),
+                        new CSVModuleBuiltins(),
                         new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
@@ -492,17 +584,31 @@ public final class Python3Core implements ParserErrorCallback {
                         new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
-                        new PyExpatModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
                         new OperatorModuleBuiltins(),
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
 
                         // itertools
+                        new AccumulateBuiltins(),
+                        new CombinationsBuiltins(),
+                        new CompressBuiltins(),
+                        new DropwhileBuiltins(),
                         new ChainBuiltins(),
+                        new CountBuiltins(),
+                        new CycleBuiltins(),
+                        new FilterfalseBuiltins(),
+                        new GroupByBuiltins(),
+                        new GrouperBuiltins(),
+                        new IsliceBuiltins(),
+                        new PermutationsBuiltins(),
+                        new ProductBuiltins(),
                         new RepeatBuiltins(),
+                        new StarmapBuiltins(),
+                        new TakewhileBuiltins(),
                         new TeeBuiltins(),
                         new TeeDataObjectBuiltins(),
+                        new ZipLongestBuiltins(),
 
                         // zlib
                         new ZLibModuleBuiltins(),
@@ -536,6 +642,11 @@ public final class Python3Core implements ParserErrorCallback {
                         // json
                         new JSONScannerBuiltins(),
                         new JSONEncoderBuiltins(),
+
+                        // csv
+                        new CSVDialectBuiltins(),
+                        new CSVReaderBuiltins(),
+                        new CSVWriterBuiltins(),
 
                         // _ast
                         new AstBuiltins(),
@@ -585,6 +696,7 @@ public final class Python3Core implements ParserErrorCallback {
                 builtins.add(builtin);
             }
         }
+        filterBuiltins(builtins);
         return builtins.toArray(new PythonBuiltins[builtins.size()]);
     }
 
@@ -603,8 +715,8 @@ public final class Python3Core implements ParserErrorCallback {
     @CompilationFinal private PFloat pyNaN;
 
     private final PythonParser parser;
+    private final SysModuleState sysModuleState = new SysModuleState();
 
-    @CompilationFinal private PythonContext singletonContext;
     @CompilationFinal private Object globalScopeObject;
 
     /*
@@ -613,43 +725,81 @@ public final class Python3Core implements ParserErrorCallback {
      */
     private volatile boolean initialized;
 
-    private PythonObjectSlowPathFactory objectFactory;
+    private final PythonLanguage language;
+    @CompilationFinal private PythonObjectSlowPathFactory objectFactory;
 
-    public Python3Core(PythonParser parser, boolean isNativeSupportAllowed) {
+    public Python3Core(PythonLanguage language, PythonParser parser, boolean isNativeSupportAllowed) {
+        this.language = language;
         this.parser = parser;
         this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
     }
 
-    public PythonLanguage getLanguage() {
-        return singletonContext.getLanguage();
+    @CompilerDirectives.ValueType
+    public static class SysModuleState {
+        private int recursionLimit = ImageInfo.inImageCode() ? NATIVE_REC_LIM : REC_LIM;
+        private int checkInterval = 100;
+        private double switchInterval = 0.005;
+
+        public int getRecursionLimit() {
+            return recursionLimit;
+        }
+
+        public void setRecursionLimit(int recursionLimit) {
+            this.recursionLimit = recursionLimit;
+        }
+
+        public int getCheckInterval() {
+            return checkInterval;
+        }
+
+        public void setCheckInterval(int checkInterval) {
+            this.checkInterval = checkInterval;
+        }
+
+        public double getSwitchInterval() {
+            return switchInterval;
+        }
+
+        public void setSwitchInterval(double switchInterval) {
+            this.switchInterval = switchInterval;
+        }
+    }
+
+    public SysModuleState getSysModuleState() {
+        return sysModuleState;
     }
 
     @Override
-    public PythonContext getContext() {
-        return singletonContext;
+    public final PythonContext getContext() {
+        // Small hack: we know that this is the only implementation of Python3Core, this should be
+        // removed once and if Python3Core is fully merged into PythonContext
+        return (PythonContext) this;
     }
 
-    public PythonParser getParser() {
+    public final PythonLanguage getLanguage() {
+        return language;
+    }
+
+    public final PythonParser getParser() {
         return parser;
     }
 
-    public PythonCodeSerializer getSerializer() {
+    public final PythonCodeSerializer getSerializer() {
         return (PythonCodeSerializer) parser;
     }
 
     /**
      * Checks whether the core is initialized.
      */
-    public boolean isInitialized() {
+    public final boolean isCoreInitialized() {
         return initialized;
     }
 
     /**
      * Load the core library and prepare all builtin classes and modules.
      */
-    public void initialize(PythonContext context) {
-        singletonContext = context;
+    public final void initialize(PythonContext context) {
         objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter());
         initializeJavaCore();
         initializePython3Core(context.getCoreHomeOrFail());
@@ -678,13 +828,13 @@ public final class Python3Core implements ParserErrorCallback {
      * eagerly when the context is initialized on the JVM or a new context is created on SVM, but is
      * omitted when the native image is generated.
      */
-    public void postInitialize() {
+    public final void postInitialize() {
         if (!ImageInfo.inImageBuildtimeCode() || ImageInfo.inImageRuntimeCode()) {
             initialized = false;
 
             for (PythonBuiltins builtin : builtins) {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (annotation.isEager()) {
+                if (annotation.isEager() || annotation.extendClasses().length != 0) {
                     builtin.postInitialize(this);
                 }
             }
@@ -696,48 +846,53 @@ public final class Python3Core implements ParserErrorCallback {
     }
 
     @TruffleBoundary
-    public PythonModule lookupBuiltinModule(String name) {
+    public final PythonModule lookupBuiltinModule(String name) {
         return builtinModules.get(name);
     }
 
-    public PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
+    public final PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
         assert builtinTypes[type.ordinal()] != null;
         return builtinTypes[type.ordinal()];
     }
 
     @TruffleBoundary
-    public String[] builtinModuleNames() {
+    public final String[] builtinModuleNames() {
         return builtinModules.keySet().toArray(PythonUtils.EMPTY_STRING_ARRAY);
     }
 
-    public PythonModule getBuiltins() {
+    public final PythonModule getBuiltins() {
         return builtinsModule;
     }
 
-    public PythonModule getSysModule() {
+    public final void registerTypeInBuiltins(String name, PythonBuiltinClassType type) {
+        assert builtinsModule != null : "builtins module was not yet initialized: cannot register type";
+        builtinsModule.setAttribute(name, lookupType(type));
+    }
+
+    public final PythonModule getSysModule() {
         return sysModule;
     }
 
-    public PDict getSysModules() {
+    public final PDict getSysModules() {
         return sysModules;
     }
 
-    public PythonModule getImportlib() {
+    public final PythonModule getImportlib() {
         return importlib;
     }
 
-    public void registerImportlib(PythonModule mod) {
+    public final void registerImportlib(PythonModule mod) {
         if (importlib != null) {
             throw new IllegalStateException("importlib cannot be registered more than once");
         }
         importlib = mod;
     }
 
-    public PMethod getImportFunc() {
+    public final PMethod getImportFunc() {
         return importFunc;
     }
 
-    public void registerImportFunc(PMethod func) {
+    public final void registerImportFunc(PMethod func) {
         if (importFunc != null) {
             throw new IllegalStateException("__import__ func cannot be registered more than once");
         }
@@ -746,14 +901,14 @@ public final class Python3Core implements ParserErrorCallback {
 
     @Override
     @TruffleBoundary
-    public void warn(PythonBuiltinClassType type, String format, Object... args) {
+    public final void warn(PythonBuiltinClassType type, String format, Object... args) {
         WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
     }
 
     /**
      * Returns the stderr object or signals error when stderr is "lost".
      */
-    public Object getStderr() {
+    public final Object getStderr() {
         try {
             return PyObjectLookupAttr.getUncached().execute(null, sysModule, "stderr");
         } catch (PException e) {
@@ -830,6 +985,9 @@ public final class Python3Core implements ParserErrorCallback {
             if (annotation.defineModule().length() > 0) {
                 addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin);
             }
+            if (annotation.extendsModule().length() > 0) {
+                addBuiltinsTo(builtinModules.get(annotation.extendsModule()), builtin);
+            }
             for (PythonBuiltinClassType klass : annotation.extendClasses()) {
                 addBuiltinsTo(lookupType(klass), builtin);
             }
@@ -837,7 +995,7 @@ public final class Python3Core implements ParserErrorCallback {
 
         // core machinery
         sysModule = builtinModules.get("sys");
-        sysModules = (PDict) sysModule.getAttribute("modules");
+        sysModules = (PDict) sysModule.getAttribute(MODULES);
 
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
@@ -933,29 +1091,24 @@ public final class Python3Core implements ParserErrorCallback {
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 
-    public PythonObjectSlowPathFactory factory() {
+    public final PythonObjectSlowPathFactory factory() {
         return objectFactory;
     }
 
-    public void setContext(PythonContext context) {
-        assert singletonContext == null;
-        singletonContext = context;
-    }
-
-    public PInt getTrue() {
+    public final PInt getTrue() {
         return pyTrue;
     }
 
-    public PInt getFalse() {
+    public final PInt getFalse() {
         return pyFalse;
     }
 
-    public PFloat getNaN() {
+    public final PFloat getNaN() {
         return pyNaN;
     }
 
     @Override
-    public RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
         CompilerDirectives.transferToInterpreter();
         Node location = new Node() {
             @Override
@@ -968,7 +1121,7 @@ public final class Python3Core implements ParserErrorCallback {
 
     @Override
     @TruffleBoundary
-    public RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
         PBaseException instance;
         Object cls;
         switch (type) {
@@ -983,16 +1136,13 @@ public final class Python3Core implements ParserErrorCallback {
                 break;
         }
         instance = factory().createBaseException(cls, message, arguments);
+        final Object[] excAttrs = SYNTAX_ERROR_ATTR_FACTORY.create();
         SourceSection section = location.getSourceSection();
         Source source = section.getSource();
         String path = source.getPath();
-        instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
-        // Not very nice. This counts on the implementation in traceback.py where if the value of
-        // text attribute
-        // is NONE, then the line is not printed
-        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : PNone.NONE);
-        instance.setAttribute("lineno", section.getStartLine());
-        instance.setAttribute("offset", section.getStartColumn());
+        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? source.getName() : "<string>";
+        excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
+        excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
         String msg = "invalid syntax";
         if (type == PythonParser.ErrorType.Print) {
             CharSequence line = source.getCharacters(section.getStartLine());
@@ -1013,19 +1163,24 @@ public final class Python3Core implements ParserErrorCallback {
         } else if (message != null) {
             msg = (new ErrorMessageFormatter()).format(message, arguments);
         }
-        instance.setAttribute("msg", msg);
+        // Not very nice. This counts on the implementation in traceback.py where if the value of
+        // text attribute is NONE, then the line is not printed
+        final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
+        excAttrs[SyntaxErrorBuiltins.IDX_MSG] = msg;
+        excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
+        instance.setExceptionAttributes(excAttrs);
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 
-    public Object getTopScopeObject() {
+    public final Object getTopScopeObject() {
         return globalScopeObject;
     }
 
-    public static final void writeInfo(String message) {
+    public static void writeInfo(String message) {
         PythonLanguage.getLogger(Python3Core.class).fine(message);
     }
 
-    public static final void writeInfo(Supplier<String> messageSupplier) {
+    public static void writeInfo(Supplier<String> messageSupplier) {
         PythonLanguage.getLogger(Python3Core.class).fine(messageSupplier);
     }
 }

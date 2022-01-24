@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIOError;
+import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.OS_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.nodes.ErrorMessages.BUF_SIZE_POS;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_DETACHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
@@ -49,8 +50,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodesFactory.RawTellNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -63,6 +67,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -78,7 +83,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
     public abstract static class BufferedInitNode extends PNodeWithRaise {
 
-        @Child BufferedIONodes.RawTellNode rawTellNode = BufferedIONodesFactory.RawTellNodeGen.create(true);
+        @Child private RawTellNode rawTellNode = RawTellNodeGen.create(true);
 
         public abstract void execute(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory);
 
@@ -94,7 +99,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             throw raise(ValueError, BUF_SIZE_POS);
         }
 
-        public static void init(PBuffered self, int bufferSize, PythonObjectFactory factory) {
+        private static void init(PBuffered self, int bufferSize, PythonObjectFactory factory) {
             self.initBuffer(bufferSize);
             self.setLock(factory.createLock());
             self.setOwner(0);
@@ -111,7 +116,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             init(self, bufferSize, factory);
             try {
                 FileIOBuiltins.TellNode.internalTell(self.getFileIORaw(), posixSupport, posixLib);
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixException e) {
                 // ignore.. it's ok if it's not seekable
             }
         }
@@ -223,9 +228,11 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
                             written
             };
             PBaseException exception = factory.createBaseException(BlockingIOError, factory.createTuple(args));
-            writeAttribute.execute(exception, "errno", errno);
-            writeAttribute.execute(exception, "strerror", message);
-            writeAttribute.execute(exception, "characters_written", written);
+            final Object[] attrs = OS_ERROR_ATTR_FACTORY.create();
+            attrs[OsErrorBuiltins.IDX_ERRNO] = errno;
+            attrs[OsErrorBuiltins.IDX_STRERROR] = message;
+            attrs[OsErrorBuiltins.IDX_WRITTEN] = written;
+            exception.setExceptionAttributes(attrs);
             return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(node)));
         }
 

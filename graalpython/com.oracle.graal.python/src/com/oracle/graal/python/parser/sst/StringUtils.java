@@ -47,7 +47,8 @@ import java.util.Map;
 
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.source.Source;
 
@@ -165,7 +167,7 @@ public class StringUtils {
                         if (Character.isValidCodePoint(code)) {
                             sb.append(Character.toChars(code));
                         } else {
-                            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + ILLEGAl_CHARACTER, i, i + 9);
+                            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", st, i, i + 9, ILLEGAl_CHARACTER);
                         }
                         i += 9;
                         continue;
@@ -201,9 +203,8 @@ public class StringUtils {
             return unescapeJavaString(errors, text);
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
-            String message = e.getUnreifiedException().getFormattedMessage();
-            message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
-            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), message);
+            String message = PyObjectStrAsJavaStringNode.getUncached().execute(e.getUnreifiedException());
+            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), PythonUtils.format("(unicode error) %s", message));
         }
     }
 
@@ -212,11 +213,11 @@ public class StringUtils {
     }
 
     private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";
-    private static final String MALFORMED_ERROR = " malformed \\N character escape";
+    private static final String MALFORMED_ERROR = "malformed \\N character escape";
     private static final String TRUNCATED_XXX_ERROR = "truncated \\xXX escape";
     private static final String TRUNCATED_UXXXX_ERROR = "truncated \\uXXXX escape";
     private static final String TRUNCATED_UXXXXXXXX_ERROR = "truncated \\UXXXXXXXX escape";
-    private static final String UNKNOWN_UNICODE_ERROR = " unknown Unicode character name";
+    private static final String UNKNOWN_UNICODE_ERROR = "unknown Unicode character name";
     private static final String ILLEGAl_CHARACTER = "illegal Unicode character";
 
     private static int getHexValue(String text, int start, int len) {
@@ -228,17 +229,17 @@ public class StringUtils {
                 if (digit == -1) {
                     // Like cpython, raise error with the wrong character first,
                     // even if there are not enough characters
-                    throw createTruncatedError(start - 2, index - 1, len);
+                    throw createTruncatedError(text, start - 2, index - 1, len);
                 }
                 result = result * 16 + digit;
             } else {
-                throw createTruncatedError(start - 2, index - 1, len);
+                throw createTruncatedError(text, start - 2, index - 1, len);
             }
         }
         return result;
     }
 
-    private static PException createTruncatedError(int startIndex, int endIndex, int len) {
+    private static PException createTruncatedError(String text, int startIndex, int endIndex, int len) {
         String truncatedMessage = null;
         switch (len) {
             case 2:
@@ -251,7 +252,7 @@ public class StringUtils {
                 truncatedMessage = TRUNCATED_UXXXXXXXX_ERROR;
                 break;
         }
-        return PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
+        return PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, startIndex, endIndex, truncatedMessage);
     }
 
     /**
@@ -265,15 +266,15 @@ public class StringUtils {
     @CompilerDirectives.TruffleBoundary
     private static int doCharacterName(String text, StringBuilder sb, int offset) {
         if (offset >= text.length()) {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset, MALFORMED_ERROR);
         }
         char ch = text.charAt(offset);
         if (ch != '{') {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset, MALFORMED_ERROR);
         }
         int closeIndex = text.indexOf("}", offset + 1);
         if (closeIndex == -1) {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, text.length() - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, text.length(), MALFORMED_ERROR);
         }
         String charName = text.substring(offset + 1, closeIndex).toUpperCase();
         // When JDK 1.8 will not be supported, we can replace with Character.codePointOf(String
@@ -282,7 +283,7 @@ public class StringUtils {
         if (cp >= 0) {
             sb.append(Character.toChars(cp));
         } else {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, text.length(), UNKNOWN_UNICODE_ERROR);
         }
         return closeIndex;
     }

@@ -78,7 +78,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                             GetAttributeNode SourceSection: [202,209]`os.path`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: path
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [202,204]`os`
                                                 Identifier: os
@@ -198,7 +198,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                   GetAttributeNode SourceSection: [544,551]`os.path`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: path
-                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [544,546]`os`
                                       Identifier: os

@@ -93,7 +93,7 @@ public abstract class PNode extends PNodeWithContext implements InstrumentableNo
     @ExportMessage
     final Object getScope(Frame frame, @SuppressWarnings("unused") boolean nodeEnter) throws UnsupportedMessageException {
         if (hasScope(frame)) {
-            return PythonScopes.create(this, frame.materialize());
+            return PythonScopes.create(this, frame != null ? frame.materialize() : null);
         } else {
             throw UnsupportedMessageException.create();
         }

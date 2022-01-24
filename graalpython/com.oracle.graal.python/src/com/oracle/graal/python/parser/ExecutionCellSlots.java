@@ -28,11 +28,11 @@ package com.oracle.graal.python.parser;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.frame.FrameSlot;
 
+@SuppressWarnings("deprecation")    // new Frame API
 public final class ExecutionCellSlots implements CellSlots {
-    @CompilationFinal(dimensions = 1) private final FrameSlot[] cellVarSlots;
-    @CompilationFinal(dimensions = 1) private final FrameSlot[] freeVarSlots;
+    @CompilationFinal(dimensions = 1) private final com.oracle.truffle.api.frame.FrameSlot[] cellVarSlots;
+    @CompilationFinal(dimensions = 1) private final com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots;
     @CompilationFinal(dimensions = 1) private final Assumption[] cellVarAssumptions;
 
     ExecutionCellSlots(CellFrameSlotSupplier supplier) {
@@ -45,12 +45,12 @@ public final class ExecutionCellSlots implements CellSlots {
     }
 
     @Override
-    public FrameSlot[] getCellVarSlots() {
+    public com.oracle.truffle.api.frame.FrameSlot[] getCellVarSlots() {
         return cellVarSlots;
     }
 
     @Override
-    public FrameSlot[] getFreeVarSlots() {
+    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarSlots() {
         return freeVarSlots;
     }
 

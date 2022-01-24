@@ -69,7 +69,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new DoubleSequenceStorage(Arrays.copyOf(values, length));
+        return new DoubleSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override

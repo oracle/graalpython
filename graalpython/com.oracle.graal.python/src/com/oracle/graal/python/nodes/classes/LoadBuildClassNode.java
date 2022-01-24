@@ -58,7 +58,7 @@ public final class LoadBuildClassNode extends ExpressionNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        PythonModule builtins = getContext().getCore().getBuiltins();
+        PythonModule builtins = getContext().getBuiltins();
         Object result = read.execute(builtins, BuiltinNames.__BUILD_CLASS__);
         if (result == PNone.NO_VALUE) {
             CompilerDirectives.transferToInterpreterAndInvalidate();

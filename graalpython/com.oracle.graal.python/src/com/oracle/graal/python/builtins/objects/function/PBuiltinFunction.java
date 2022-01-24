@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.memory.MemoryFence;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 
@@ -62,6 +63,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final RootCallTarget callTarget;
     private final Signature signature;
     private final int flags;
+    private BuiltinMethodDescriptor descriptor;
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
@@ -134,6 +136,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return flags;
     }
 
+    public boolean isStatic() {
+        return (flags & CExtContext.METH_STATIC) != 0;
+    }
+
     @TruffleBoundary
     public static int getFlags(Builtin builtin, RootCallTarget callTarget) {
         return getFlags(builtin, ((PRootNode) callTarget.getRootNode()).getSignature());
@@ -162,7 +168,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         } else if (signature.takesVarArgs()) {
             flags |= CExtContext.METH_VARARGS;
         }
-        return flags | CExtContext.METH_FASTCALL;
+        return flags;
     }
 
     public Class<? extends PythonBuiltinBaseNode> getNodeClass() {
@@ -223,5 +229,24 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @ExportMessage
     String getExecutableName() {
         return getName();
+    }
+
+    public void setDescriptor(BuiltinMethodDescriptor value) {
+        assert value.getName().equals(getName()) && getBuiltinNodeFactory() == value.getFactory() : getName() + " vs " + value;
+        // Only make sure that info is fully initialized, otherwise it is fine if it is set multiple
+        // times from different threads, all of them should set the same value
+        MemoryFence.storeStore();
+        BuiltinMethodDescriptor local = descriptor;
+        assert local == null || local == value : value;
+        this.descriptor = value;
+    }
+
+    /**
+     * The descriptor is set lazily once this builtin function is stored in any special method slot.
+     * I.e., one can assume that any builtin function looked up via special method slots has its
+     * descriptor set.
+     */
+    public BuiltinMethodDescriptor getDescriptor() {
+        return descriptor;
     }
 }

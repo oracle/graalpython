@@ -246,6 +246,6 @@ abstract class CallSpecialMethodNode extends Node {
 
     @TruffleBoundary
     private void raiseInvalidArgsNumUncached(BuiltinMethodDescriptor descr) {
-        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, EXPECTED_D_ARGS, descr.getBuiltinAnnotation().minNumOfPositionalArgs());
+        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, EXPECTED_D_ARGS, descr.minNumOfPositionalArgs());
     }
 }

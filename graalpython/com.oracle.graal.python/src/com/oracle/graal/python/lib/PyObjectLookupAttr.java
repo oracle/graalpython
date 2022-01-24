@@ -43,13 +43,11 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -85,14 +83,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ImportStatic({SpecialMethodSlot.class, SpecialMethodNames.class, PGuards.class})
 
 public abstract class PyObjectLookupAttr extends Node {
-    private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
-    private static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(),
-                    PythonBuiltinClassType.PythonModule);
-    private static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
 
     public abstract Object execute(Frame frame, Object receiver, Object name);
 
-    protected static boolean hasNoGetattr(Object lazyClass) {
+    protected static boolean hasNoGetAttr(Object lazyClass) {
         Object slotValue = null;
         if (lazyClass instanceof PythonBuiltinClassType) {
             slotValue = SpecialMethodSlot.GetAttr.getValue((PythonBuiltinClassType) lazyClass);
@@ -113,20 +107,28 @@ public abstract class PyObjectLookupAttr extends Node {
     }
 
     protected static boolean isObjectGetAttribute(Object lazyClass) {
-        return getAttributeIs(lazyClass, OBJ_GET_ATTRIBUTE);
+        return getAttributeIs(lazyClass, BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE);
     }
 
     protected static boolean isModuleGetAttribute(Object lazyClass) {
-        return getAttributeIs(lazyClass, MODULE_GET_ATTRIBUTE);
+        return getAttributeIs(lazyClass, BuiltinMethodDescriptors.MODULE_GET_ATTRIBUTE);
     }
 
     protected static boolean isTypeGetAttribute(Object lazyClass) {
-        return getAttributeIs(lazyClass, TYPE_GET_ATTRIBUTE);
+        return getAttributeIs(lazyClass, BuiltinMethodDescriptors.TYPE_GET_ATTRIBUTE);
+    }
+
+    protected static final boolean isBuiltinTypeType(Object type) {
+        return type == PythonBuiltinClassType.PythonClass;
+    }
+
+    protected static final boolean isTypeSlot(String name) {
+        return SpecialMethodSlot.canBeSpecial(name) || name.equals("mro");
     }
 
     // simple version that needs no calls and only reads from the object directly
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isObjectGetAttribute(type)", "hasNoGetattr(type)", "name == cachedName", "isNoValue(descr)"})
+    @Specialization(guards = {"isObjectGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"})
     static final Object doBuiltinObject(VirtualFrame frame, Object object, String name,
                     @Cached("name") String cachedName,
                     @Cached GetClassNode getClass,
@@ -141,7 +143,7 @@ public abstract class PyObjectLookupAttr extends Node {
     // difference for module.__getattribute__ over object.__getattribute__ is that it looks for a
     // module-level __getattr__ as well
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isModuleGetAttribute(type)", "hasNoGetattr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
+    @Specialization(guards = {"isModuleGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
     static final Object doBuiltinModule(VirtualFrame frame, Object object, String name,
                     @Cached("name") String cachedName,
                     @Cached GetClassNode getClass,
@@ -172,24 +174,56 @@ public abstract class PyObjectLookupAttr extends Node {
         }
     }
 
-    // simple version that needs no calls and only reads from the object directly. the only
-    // difference for type.__getattribute__ over object.__getattribute__ is that it looks for a
-    // __get__ method on the value and invokes it if it is callable.
+    // If the class of an object is "type", the object must be a class and as "type" is the base
+    // metaclass, which defines only certain type slots, it can not have inherited other
+    // attributes via metaclass inheritance. For all non-type-slot attributes it therefore
+    // suffices to only check for inheritance via super classes.
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetattr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
-    static final Object doBuiltinType(VirtualFrame frame, Object object, String name,
-                    @Cached("name") String cachedName,
+    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "!isTypeSlot(name)"}, limit = "1")
+    static final Object doBuiltinTypeType(VirtualFrame frame, Object object, String name,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
-                    @Cached("create(name)") LookupAttributeInMRONode lookupName,
-                    @Bind("lookupName.execute(type)") Object descr,
-                    @Cached ReadAttributeFromObjectNode readNode,
+                    @Cached LookupAttributeInMRONode.Dynamic readNode,
                     @Cached ConditionProfile valueFound,
                     @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
                     @Cached ConditionProfile noGetMethod,
                     @Cached CallTernaryMethodNode invokeValueGet,
                     @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
-        Object value = readNode.execute(object, cachedName);
+        Object value = readNode.execute(object, name);
+        if (valueFound.profile(value != PNone.NO_VALUE)) {
+            Object valueGet = lookupValueGet.execute(value);
+            if (noGetMethod.profile(valueGet == PNone.NO_VALUE)) {
+                return value;
+            } else if (PGuards.isCallableOrDescriptor(valueGet)) {
+                try {
+                    return invokeValueGet.execute(frame, valueGet, value, PNone.NONE, object);
+                } catch (PException e) {
+                    e.expect(PythonBuiltinClassType.AttributeError, errorProfile);
+                    return PNone.NO_VALUE;
+                }
+            }
+        }
+        return PNone.NO_VALUE;
+    }
+
+    // simple version that only reads attributes from (super) class inheritance and the object
+    // itself. the only difference for type.__getattribute__ over object.__getattribute__
+    // is that it looks for a __get__ method on the value and invokes it if it is callable.
+    @SuppressWarnings("unused")
+    @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(metaClassDescr)"}, replaces = "doBuiltinTypeType", limit = "1")
+    static final Object doBuiltinType(VirtualFrame frame, Object object, String name,
+                    @Cached("name") String cachedName,
+                    @Cached GetClassNode getClass,
+                    @Bind("getClass.execute(object)") Object type,
+                    @Cached("create(name)") LookupAttributeInMRONode lookupInMetaclassHierachy,
+                    @Bind("lookupInMetaclassHierachy.execute(type)") Object metaClassDescr,
+                    @Cached("create(name)") LookupAttributeInMRONode readNode,
+                    @Cached ConditionProfile valueFound,
+                    @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
+                    @Cached ConditionProfile noGetMethod,
+                    @Cached CallTernaryMethodNode invokeValueGet,
+                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
+        Object value = readNode.execute(object);
         if (valueFound.profile(value != PNone.NO_VALUE)) {
             Object valueGet = lookupValueGet.execute(value);
             if (noGetMethod.profile(valueGet == PNone.NO_VALUE)) {
@@ -266,7 +300,7 @@ public abstract class PyObjectLookupAttr extends Node {
      */
     static final Object readAttributeQuickly(Object type, Object getattribute, Object receiver, Object name) {
         if (name instanceof String) {
-            if (getattribute == OBJ_GET_ATTRIBUTE && type instanceof PythonManagedClass) {
+            if (getattribute == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE && type instanceof PythonManagedClass) {
                 String stringName = (String) name;
                 PythonAbstractClass[] bases = ((PythonManagedClass) type).getBaseClasses();
                 if (bases.length == 1) {
@@ -285,12 +319,12 @@ public abstract class PyObjectLookupAttr extends Node {
                         }
                     }
                 }
-            } else if (getattribute == MODULE_GET_ATTRIBUTE && type == PythonBuiltinClassType.PythonModule) {
+            } else if (getattribute == BuiltinMethodDescriptors.MODULE_GET_ATTRIBUTE && type == PythonBuiltinClassType.PythonModule) {
                 // this is slightly simpler than the previous case, since we don't need to check
                 // the type. There may be a module-level __getattr__, however. Since that would be
                 // a call anyway, we return to the generic code in that case
                 String stringName = (String) name;
-                if (!(stringName.charAt(0) == '_' && stringName.charAt(1) == '_')) {
+                if (!SpecialMethodSlot.canBeSpecial(stringName)) {
                     // not a special name, so this attribute cannot be on the module class
                     ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
                     Object result = readUncached.execute(receiver, stringName);

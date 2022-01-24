@@ -65,20 +65,23 @@ import com.oracle.truffle.api.nodes.Node;
 public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private StatementNode body;
     @Child private WriteNode exceptName;
+    @Child private StatementNode exceptNameDelete;
     @Child private ExpressionNode exceptType;
 
     @Child private ExceptMatchNode matchNode;
 
-    public ExceptNode(StatementNode body, ExpressionNode exceptType, WriteNode exceptName) {
+    public ExceptNode(StatementNode body, ExpressionNode exceptType, WriteNode exceptName, StatementNode exceptNameDelete) {
         this.body = body;
         this.exceptName = exceptName;
         this.exceptType = exceptType;
+        this.exceptNameDelete = exceptNameDelete;
     }
 
     public ExceptNode(ExceptNode original) {
         this.body = original.body;
         this.exceptName = original.exceptName;
         this.exceptType = original.exceptType;
+        this.exceptNameDelete = original.exceptNameDelete;
     }
 
     public void executeExcept(VirtualFrame frame, Throwable e) {
@@ -91,7 +94,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         }
         body.executeVoid(frame);
         if (exceptName != null) {
-            exceptName.executeObject(frame, null);
+            exceptNameDelete.executeVoid(frame);
         }
         throw ExceptionHandledException.INSTANCE;
     }

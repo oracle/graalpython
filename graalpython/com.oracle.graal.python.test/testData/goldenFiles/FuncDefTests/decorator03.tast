@@ -17,12 +17,12 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
               GetAttributeNode SourceSection: None
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: to
-                  LookupAndCallBinaryNodeGen SourceSection: None
+                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                 GetAttributeNode SourceSection: None
                   GetFixedAttributeNodeGen SourceSection: None
                     Key: path
-                    LookupAndCallBinaryNodeGen SourceSection: None
+                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                       Op: __getattribute__
                   ReadNameNodeGen SourceSection: None
                     Identifier: some

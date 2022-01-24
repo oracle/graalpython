@@ -264,7 +264,7 @@ public final class FormatStringParser {
                                     // Missing the closing brace. The escape sequence is malformed,
                                     // which will be reported by the String escaping code later,
                                     // here we just end the parsing
-                                    index = len - 1;
+                                    index = len;
                                     break parserLoop;
                                 }
                             }

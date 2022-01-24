@@ -176,13 +176,14 @@ FLAG_NAMES = [
 
 
 class Match():
-    def __init__(self, pattern, pos, endpos, result, input_str, compiled_regex):
+    def __init__(self, pattern, pos, endpos, result, input_str, compiled_regex, indexgroup):
         self.__result = result
         self.__compiled_regex = compiled_regex
         self.__re = pattern
         self.__pos = pos
         self.__endpos = endpos
         self.__input_str = input_str
+        self.__indexgroup = indexgroup
 
     def end(self, groupnum=0):
         return self.__result.getEnd(groupnum)
@@ -270,16 +271,16 @@ class Match():
     @property
     def lastgroup(self):
         lastindex = self.lastindex
-        if lastindex is not None:
-            return self.__group(lastindex)
+        if lastindex is not None and self.__indexgroup is not None and lastindex in self.__indexgroup:
+            return self.__indexgroup[lastindex]
 
     @property
     def lastindex(self):
-        lastindex = None
-        for index in range(1, self.__compiled_regex.groupCount):
-            if self.__result.getStart(index) >= 0:
-                lastindex = index
-        return lastindex
+        lastindex = self.__result.lastGroup
+        if lastindex == -1:
+            return None
+        else:
+            return lastindex
 
     def __repr__(self):
         return "<%s object; span=%r, match=%r>" % (type(self).__name__, self.span(), self.group())
@@ -315,14 +316,17 @@ class Pattern():
         groups = compiled_regex.groups
         if groups is None:
             self.groupindex = {}
+            self.__indexgroup = {}
         else:
             group_names = dir(groups)
             if isinstance(groups, __graalpython__.ForeignType):
                 # tregex groups object
                 self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
+                self.__indexgroup = {getattr(groups, name): name for name in group_names}
             else:
                 # _sre._NamedCaptureGroups
                 self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
+                self.__indexgroup = {groups[name]: name for name in group_names}
 
     @property
     def flags(self):
@@ -408,7 +412,7 @@ class Pattern():
         pattern = self.__tregex_compile(pattern, self.__flags_str + ("y" if sticky else ""))
         result = tregex_call_exec(pattern.exec, substring, pos)
         if result.isMatch:
-            return Match(self, pos, endpos, result, string, pattern)
+            return Match(self, pos, endpos, result, string, pattern, self.__indexgroup)
         else:
             return None
 
@@ -444,7 +448,7 @@ class Pattern():
             if not result.isMatch:
                 break
             else:
-                yield Match(self, pos, endpos, result, string, compiled_regex)
+                yield Match(self, pos, endpos, result, string, compiled_regex, self.__indexgroup)
             no_progress = (result.getStart(0) == result.getEnd(0))
             pos = result.getEnd(0) + no_progress
         return
@@ -465,7 +469,7 @@ class Pattern():
             elif group_count == 2:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
             else:
-                matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, compiled_regex).groups())))
+                matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, compiled_regex, self.__indexgroup).groups())))
             no_progress = (result.getStart(0) == result.getEnd(0))
             pos = result.getEnd(0) + no_progress
         return matchlist
@@ -503,7 +507,7 @@ class Pattern():
             if literal:
                 result.append(repl)
             else:
-                _srematch = Match(self, pos, -1, match_result, string, pattern)
+                _srematch = Match(self, pos, -1, match_result, string, pattern, self.__indexgroup)
                 _repl = repl(_srematch)
                 result.append(_repl)
             pos = end

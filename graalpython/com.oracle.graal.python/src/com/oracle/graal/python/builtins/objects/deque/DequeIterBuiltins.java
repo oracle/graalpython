@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.deque;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 
 import java.util.ConcurrentModificationException;
 import java.util.List;
@@ -98,7 +97,7 @@ public class DequeIterBuiltins extends PythonBuiltins {
                 if (self.startState == self.deque.getState()) {
                     if (!self.hasNext()) {
                         assert self.lengthHint() == 0;
-                        throw raise(StopIteration);
+                        throw raiseStopIteration();
                     }
                     return self.next();
                 }

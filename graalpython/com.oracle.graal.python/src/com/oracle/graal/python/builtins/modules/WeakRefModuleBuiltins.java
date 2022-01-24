@@ -200,7 +200,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                 ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
                 return queue;
             } else {
-                if (getContext().getCore().isInitialized()) {
+                if (getContext().isCoreInitialized()) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("the weak reference queue was modified!");
                 } else {

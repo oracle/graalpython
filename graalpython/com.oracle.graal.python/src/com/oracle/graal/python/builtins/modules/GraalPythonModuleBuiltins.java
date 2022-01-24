@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.PythonLanguage;
+import static com.oracle.graal.python.PythonLanguage.GRAALPYTHON_ID;
 import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -818,7 +818,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             TruffleFile tempFile;
             try {
                 PythonContext context = getContext();
-                tempFile = context.getEnv().createTempFile(context.getEnv().getCurrentWorkingDirectory(), "graalpython", ".hprof");
+                tempFile = context.getEnv().createTempFile(context.getEnv().getCurrentWorkingDirectory(), GRAALPYTHON_ID, ".hprof");
                 tempFile.delete();
             } catch (IOException e) {
                 throw raiseOSError(frame, e);
@@ -833,7 +833,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class RegisterImportFunc extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(PMethod func) {
-            getContext().getCore().registerImportFunc(func);
+            getContext().registerImportFunc(func);
             return PNone.NONE;
         }
     }
@@ -843,7 +843,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class RegisterImportlib extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(PythonModule lib) {
-            getContext().getCore().registerImportlib(lib);
+            getContext().registerImportlib(lib);
             return PNone.NONE;
         }
     }

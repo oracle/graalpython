@@ -47,6 +47,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -62,6 +63,12 @@ public class EllipsisBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return EllipsisBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        core.getBuiltins().setAttribute("Ellipsis", PEllipsis.INSTANCE);
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)

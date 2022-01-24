@@ -104,13 +104,13 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         PDirEntry next(VirtualFrame frame, PScandirIterator self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             if (self.ref.isReleased()) {
-                throw raise(PythonBuiltinClassType.StopIteration);
+                throw raiseStopIteration();
             }
             try {
                 Object dirEntryData = posixLib.readdir(getPosixSupport(), self.ref.getReference());
                 if (dirEntryData == null) {
                     self.ref.rewindAndClose(posixLib, getPosixSupport());
-                    throw raise(PythonBuiltinClassType.StopIteration);
+                    throw raiseStopIteration();
                 }
                 return factory().createDirEntry(dirEntryData, self.path);
             } catch (PosixException e) {

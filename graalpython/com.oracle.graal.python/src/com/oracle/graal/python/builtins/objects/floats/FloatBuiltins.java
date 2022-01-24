@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -486,7 +487,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
-                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
             if (doSpecialCases(left, right, negativeRaise) == 1) {
                 return 1.0;
@@ -501,7 +502,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doDD")
         Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
-                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
             if (doSpecialCases(left, right, negativeRaise) == 1) {
                 return 1.0;
@@ -515,28 +516,28 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double doDL(VirtualFrame frame, long left, double right, PNone none,
-                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
             return doDD(frame, left, right, none, callPow, negativeRaise);
         }
 
         @Specialization(replaces = "doDL")
         Object doDLComplex(VirtualFrame frame, long left, double right, PNone none,
-                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
             return doDDToComplex(frame, left, right, none, callPow, negativeRaise);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double doDPi(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
-                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
             return doDD(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow, negativeRaise);
         }
 
         @Specialization(replaces = "doDPi")
         Object doDPiToComplex(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
-                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
             return doDDToComplex(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow, negativeRaise);
         }
@@ -545,7 +546,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
                         @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
             if (!(mod instanceof PNone)) {
                 throw raise(PythonBuiltinClassType.TypeError, "pow() 3rd argument not allowed unless all arguments are integers");
@@ -654,8 +655,15 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static long hashDouble(double self) {
+        static long doDouble(double self) {
             return PyObjectHashNode.hash(self);
+        }
+
+        @Specialization(guards = "dval != null")
+        static long doNativeFloat(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeObject object,
+                        @SuppressWarnings("unused") @Cached FromNativeSubclassNode getFloat,
+                        @Bind("getFloat.execute(frame, object)") Double dval) {
+            return PyObjectHashNode.hash(dval);
         }
     }
 

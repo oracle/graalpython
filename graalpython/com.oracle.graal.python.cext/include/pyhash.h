@@ -55,6 +55,16 @@ extern long _PyHASH_NAN;
 extern long _PyHASH_IMAG;
 #define _PyHASH_MULTIPLIER _PyHASH_IMAG;
 
+typedef union {
+    /* ensure 24 bytes */
+    unsigned char uc[24];
+    struct {
+        unsigned char padding[16];
+        Py_hash_t hashsalt;
+    } expat;
+} _Py_HashSecret_t;
+PyAPI_DATA(_Py_HashSecret_t) _Py_HashSecret;
+
 #ifdef __cplusplus
 }
 #endif

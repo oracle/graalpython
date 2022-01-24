@@ -622,6 +622,10 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(VirtualFrame frame, Object source, Object encoding, Object errors);
 
+        public final byte[] execute(VirtualFrame frame, Object source) {
+            return execute(frame, source, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+
         @Specialization
         static byte[] none(@SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return PythonUtils.EMPTY_BYTE_ARRAY;
@@ -856,6 +860,49 @@ public abstract class BytesNodes {
          */
         private static String encodeFSDefault(byte[] path) {
             return createUTF8String(path);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HashBufferNode extends PNodeWithContext {
+        public abstract long execute(Object buffer);
+
+        @Specialization(guards = "bufferLib.hasInternalByteArray(buffer)", limit = "2")
+        static long hashDirect(Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            PythonBufferAccessLibrary.assertIsBuffer(buffer);
+            int len = bufferLib.getBufferLength(buffer);
+            byte[] array = bufferLib.getInternalByteArray(buffer);
+            return computeHash(len, array);
+        }
+
+        @TruffleBoundary
+        private static int computeHash(int len, byte[] array) {
+            int result = 1;
+            for (int i = 0; i < len; i++) {
+                result = 31 * result + array[i];
+            }
+            return result;
+        }
+
+        @Specialization(guards = "!bufferLib.hasInternalByteArray(buffer)", limit = "2")
+        static long hashIndirect(Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            PythonBufferAccessLibrary.assertIsBuffer(buffer);
+            int len = bufferLib.getBufferLength(buffer);
+            int result = 1;
+            for (int i = 0; i < len; i++) {
+                result = 31 * result + bufferLib.readByte(buffer, i);
+            }
+            return result;
+        }
+
+        public static HashBufferNode create() {
+            return BytesNodesFactory.HashBufferNodeGen.create();
+        }
+
+        public static HashBufferNode getUncached() {
+            return BytesNodesFactory.HashBufferNodeGen.getUncached();
         }
     }
 }

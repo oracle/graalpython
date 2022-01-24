@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.IDX_STRERROR;
+import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.IDX_WRITTEN;
+import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode.ERROR_CERT_VERIFICATION;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import java.util.List;
@@ -48,12 +52,18 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.BaseExceptionAttrNode;
+import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -63,9 +73,96 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.SSLError)
 public class SSLErrorBuiltins extends PythonBuiltins {
 
+    static final int IDX_REASON = IDX_WRITTEN + 1;
+    static final int IDX_LIB = IDX_WRITTEN + 2;
+    static final int IDX_VERIFY_CODE = IDX_WRITTEN + 3;
+    static final int IDX_VERIFY_MESSAGE = IDX_WRITTEN + 4;
+    static final int SSL_ERR_NUM_ATTRS = IDX_VERIFY_MESSAGE + 1;
+
+    public static final BaseExceptionAttrNode.StorageFactory SSL_ERROR_ATTR_FACTORY = (args, factory) -> new Object[SSL_ERR_NUM_ATTRS];
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SSLErrorBuiltinsFactory.getFactories();
+    }
+
+    public static void setSSLErrorAttributes(PException exception, SSLErrorCode errorCode, String message) {
+        setSSLErrorAttributes(exception.getUnreifiedException(), errorCode, message);
+    }
+
+    public static void setSSLErrorAttributes(PBaseException self, SSLErrorCode errorCode, String message) {
+        Object[] data = new Object[SSL_ERR_NUM_ATTRS];
+        final Object[] attrs = self.getExceptionAttributes();
+        if (attrs != null) {
+            PythonUtils.arraycopy(attrs, 0, data, 0, attrs.length);
+        }
+        String mnemonic = errorCode.getMnemonic();
+        data[IDX_REASON] = mnemonic != null ? mnemonic : message;
+        data[IDX_LIB] = "[SSL]";
+        if (errorCode == ERROR_CERT_VERIFICATION) {
+            // not trying to be 100% correct,
+            // use code = 1 (X509_V_ERR_UNSPECIFIED) and msg from jdk exception instead
+            // see openssl x509_txt.c#X509_verify_cert_error_string
+            data[IDX_VERIFY_CODE] = 1;
+            data[IDX_VERIFY_MESSAGE] = message;
+        }
+        self.setExceptionAttributes(data);
+    }
+
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class SSLErrorInitNode extends PythonBuiltinNode {
+        public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds);
+
+        @Specialization
+        Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds,
+                        @Cached OsErrorBuiltins.OSErrorInitNode initNode) {
+            initNode.execute(frame, self, args, kwds);
+            Object[] sslAttrs = SSL_ERROR_ATTR_FACTORY.create(args, factory());
+            PythonUtils.arraycopy(self.getExceptionAttributes(), 0, sslAttrs, 0, self.getExceptionAttributes().length);
+            self.setExceptionAttributes(sslAttrs);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "reason", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @GenerateNodeFactory
+    public abstract static class SSLErrorReasonNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_REASON, SSL_ERROR_ATTR_FACTORY);
+        }
+    }
+
+    @Builtin(name = "library", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @GenerateNodeFactory
+    public abstract static class SSLErrorLibNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_LIB, SSL_ERROR_ATTR_FACTORY);
+        }
+    }
+
+    @Builtin(name = "verify_code", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @GenerateNodeFactory
+    public abstract static class SSLErrorVerifyCodeNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_VERIFY_CODE, SSL_ERROR_ATTR_FACTORY);
+        }
+    }
+
+    @Builtin(name = "verify_message", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception strerror")
+    @GenerateNodeFactory
+    public abstract static class SSLErrorVerifyMsgNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_VERIFY_MESSAGE, SSL_ERROR_ATTR_FACTORY);
+        }
     }
 
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
@@ -73,22 +170,12 @@ public class SSLErrorBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, PBaseException self,
-                        @Cached PyObjectStrAsObjectNode strNode,
-                        @Cached("createGetStrerror()") GetAttributeNode getStrerror,
-                        @Cached("createLookupArgs()") GetAttributeNode getArgs) {
-            Object strerror = getStrerror.executeObject(frame, self);
+                        @Cached PyObjectStrAsObjectNode strNode) {
+            Object strerror = self.getExceptionAttribute(IDX_STRERROR);
             if (PGuards.isString(strerror)) {
                 return strerror;
             }
-            return strNode.execute(frame, getArgs.executeObject(frame, self));
-        }
-
-        protected static GetAttributeNode createGetStrerror() {
-            return GetAttributeNode.create("strerror");
-        }
-
-        protected static GetAttributeNode createLookupArgs() {
-            return GetAttributeNode.create("args");
+            return strNode.execute(frame, self.getArgs());
         }
     }
 

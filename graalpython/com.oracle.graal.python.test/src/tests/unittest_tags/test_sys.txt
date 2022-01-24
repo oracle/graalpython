@@ -37,6 +37,7 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_posix_locale_surrogateescape
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_recursionlimit
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_recursionlimit_fatalerror
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_recursionlimit_recovery
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_refcount
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_setcheckinterval
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_setrecursionlimit_recursion_depth

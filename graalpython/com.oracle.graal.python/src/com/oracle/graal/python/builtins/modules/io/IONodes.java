@@ -132,7 +132,7 @@ public class IONodes {
     public static final String _CHUNK_SIZE = "_CHUNK_SIZE";
 
     @CompilerDirectives.ValueType
-    public static class IOMode {
+    public static final class IOMode {
         boolean creating;
         boolean reading;
         boolean writing;
@@ -155,7 +155,7 @@ public class IONodes {
             this.mode = mode;
         }
 
-        protected static IOMode create(String mode) {
+        static IOMode create(String mode) {
             IOMode m = new IOMode(mode);
             return m.decode();
         }

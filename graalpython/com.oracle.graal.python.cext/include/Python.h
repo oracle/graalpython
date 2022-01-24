@@ -55,6 +55,8 @@
  * supporting this in many cases, it still involves overhead. */
 #define CYTHON_USE_TYPE_SLOTS 0
 #define CYTHON_USE_PYTYPE_LOOKUP 0
+#define CYTHON_UNPACK_METHODS 0
+#define CYTHON_FAST_PYCALL 0
 #define CYTHON_FAST_PYCCALL 0
 #define CYTHON_USE_DICT_VERSIONS 0
 #define CYTHON_AVOID_BORROWED_REFS 1

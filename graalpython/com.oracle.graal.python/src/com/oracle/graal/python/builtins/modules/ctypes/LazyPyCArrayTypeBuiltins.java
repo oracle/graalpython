@@ -126,7 +126,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         l -> new BuiltinFunctionRootNode(l, builtin, factory, true),
                         factory.getNodeClass(),
                         builtin.name());
-        PythonObjectSlowPathFactory f = PythonContext.get(null).getCore().factory();
+        PythonObjectSlowPathFactory f = PythonContext.get(null).factory();
         int flags = PBuiltinFunction.getFlags(builtin, rawCallTarget);
         PBuiltinFunction getter = f.createBuiltinFunction(name, type, 1, flags, rawCallTarget);
         GetSetDescriptor callable = f.createGetSetDescriptor(getter, getter, name, type, false);

@@ -304,7 +304,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         // class apply_encoding:
         //     def __call__(self, *args, **kwargs):
         //         return self.fn(self.encoding, *args, **kwargs)
-        codecsTruffleBuiltins.applyEncodingClass = initClass(APPLY_ENCODING, context.getCore().lookupType(PythonBuiltinClassType.PythonObject),
+        codecsTruffleBuiltins.applyEncodingClass = initClass(APPLY_ENCODING, context.lookupType(PythonBuiltinClassType.PythonObject),
                         new BuiltinDescr[]{new BuiltinDescr(() -> CallApplyNodeGen.create(), CallApplyNode.class, false)},
                         codecsTruffleModule, language, factory);
     }

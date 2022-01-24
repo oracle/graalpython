@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -72,7 +73,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     ForeignObject(FOREIGN, Flags.PRIVATE_DERIVED_WODICT),
     Boolean("bool", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
-    GetSetDescriptor("get_set_desc", Flags.PRIVATE_DERIVED_WODICT),
+    GetSetDescriptor("getset_descriptor", Flags.PRIVATE_DERIVED_WODICT),
     MemberDescriptor(MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     WrapperDescriptor(WRAPPER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     PArray("array", "array"),
@@ -103,7 +104,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PDictValueIterator(DICT_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
     PDictReverseValueIterator(DICT_REVERSE_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
     PDictValuesView(DICT_VALUES, Flags.PRIVATE_DERIVED_WODICT),
-    PEllipsis("ellipsis", Flags.PRIVATE_DERIVED_WODICT),
+    PEllipsis("ellipsis", BUILTINS, Flags.PRIVATE_DERIVED_WODICT),
     PEnumerate("enumerate", BUILTINS),
     PMap("map", BUILTINS),
     PFloat("float", BUILTINS),
@@ -202,7 +203,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PIntInfo("int_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PHashInfo("hash_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PThreadInfo("thread_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
-    PUnraisableHookArgs("UnraisableHookArgs", Flags.PUBLIC_DERIVED_WODICT),
+    PUnraisableHookArgs("UnraisableHookArgs", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PSSLSession("SSLSession", "_ssl"),
     PSSLContext("_SSLContext", "_ssl"),
     PSSLSocket("_SSLSocket", "_ssl"),
@@ -211,12 +212,33 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // itertools
     PTee("_tee", "itertools", Flags.PUBLIC_DERIVED_WODICT),
     PTeeDataObject("_tee_dataobject", "itertools", Flags.PUBLIC_DERIVED_WODICT),
+    PAccumulate("accumulate", "itertools"),
+    PCombinations("combinations", "itertools"),
+    PCombinationsWithReplacement("combinations_with_replacement", "itertools"),
+    PCompress("compress", "itertools"),
+    PCycle("cycle", "itertools"),
+    PDropwhile("dropwhile", "itertools"),
+    PFilterfalse("filterfalse", "itertools"),
+    PGroupBy("groupby", "itertools"),
+    PGrouper("grouper", "itertools", Flags.PUBLIC_DERIVED_WODICT),
+    PPermutations("permutations", "itertools"),
+    PProduct("product", "itertools"),
     PRepeat("repeat", "itertools"),
     PChain("chain", "itertools"),
+    PCount("count", "itertools"),
+    PIslice("islice", "itertools"),
+    PStarmap("starmap", "itertools"),
+    PTakewhile("takewhile", "itertools"),
+    PZipLongest("zip_longest", "itertools"),
 
     // json
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
     JSONEncoder("Encoder", "_json", Flags.PUBLIC_BASE_WODICT),
+
+    // csv
+    CSVDialect("Dialect", "_csv", Flags.PUBLIC_BASE_WODICT),
+    CSVReader("Reader", "_csv", Flags.PUBLIC_BASE_WODICT),
+    CSVWriter("Writer", "_csv", Flags.PUBLIC_BASE_WODICT),
 
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
     AST("AST", "_ast", Flags.PUBLIC_BASE_WDICT),
@@ -290,6 +312,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     TimeoutError("TimeoutError", BUILTINS, Flags.EXCEPTION),
     ZipImportError("ZipImportError", "zipimport", Flags.EXCEPTION),
     ZLibError("error", "zlib", Flags.EXCEPTION),
+    CSVError("Error", "_csv", Flags.EXCEPTION),
     LZMAError("LZMAError", "_lzma", Flags.EXCEPTION),
     StructError("StructError", "_struct", Flags.EXCEPTION),
     PickleError("PickleError", "_pickle", Flags.EXCEPTION),
@@ -511,8 +534,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SpecialMethodSlot[] reprAndNew = new SpecialMethodSlot[]{SpecialMethodSlot.Repr, SpecialMethodSlot.New};
 
         Boolean.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.And};
-        PBaseException.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str, SpecialMethodSlot.Repr};
         PythonModule.redefinedSlots = Super.redefinedSlots = repr;
+        SyntaxError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        UnicodeEncodeError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        UnicodeDecodeError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        UnicodeTranslateError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        OSError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
 
         // These slots actually contain context independent values, but they are initialized in
         // StructSequence to artificial PBuiltinFunctions with artificial builtin node factories,
@@ -581,6 +608,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         TimeoutError.base = OSError;
         ZipImportError.base = ImportError;
         ZLibError.base = Exception;
+        CSVError.base = Exception;
         LZMAError.base = Exception;
         SocketGAIError.base = OSError;
         SocketHError.base = OSError;
@@ -689,9 +717,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         Empty.base = Exception;
 
-        HashSet<String> set = new HashSet<>();
+        HashSet<String> set = PythonUtils.ASSERTIONS_ENABLED ? new HashSet<>() : null;
         for (PythonBuiltinClassType type : VALUES) {
-            assert set.add(type.name) : type.name(); // check uniqueness
+            // check uniqueness
+            assert set.add("" + type.moduleName + "." + type.name) : type.name();
 
             /* Initialize type.base (defaults to PythonObject unless that's us) */
             if (type.base == null && type != PythonObject) {
@@ -718,7 +747,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     public Object send(Message message, Object[] args,
                     @CachedLibrary(limit = "1") ReflectionLibrary lib) throws Exception {
-        return lib.send(PythonContext.get(lib).getCore().lookupType(this), message, args);
+        return lib.send(PythonContext.get(lib).lookupType(this), message, args);
     }
 
     public static boolean isExceptionType(PythonBuiltinClassType type) {

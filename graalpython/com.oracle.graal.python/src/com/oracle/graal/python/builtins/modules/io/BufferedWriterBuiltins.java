@@ -47,6 +47,8 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltinsFactory.BufferedWriterInitNodeGen;
+import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.CheckWritableNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -59,7 +61,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PBufferedWriter)
-public class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
+public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedWriterBuiltinsFactory.getFactories();
@@ -71,7 +73,7 @@ public class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization
         static void doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
-                        @Cached IOBaseBuiltins.CheckWritableNode checkWritableNode,
+                        @Cached CheckWritableNode checkWritableNode,
                         @Cached BufferedInitNode bufferedInitNode,
                         @Cached GetClassNode getSelfClass,
                         @Cached GetClassNode getRawClass) {
@@ -103,7 +105,7 @@ public class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends BaseInitNode {
 
-        @Child BufferedWriterInit init = BufferedWriterBuiltinsFactory.BufferedWriterInitNodeGen.create();
+        @Child private BufferedWriterInit init = BufferedWriterInitNodeGen.create();
 
         @Override
         protected final void init(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {

@@ -146,7 +146,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                       GetAttributeNode SourceSection: [197,210]`C.a_local_var`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: a_local_var
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [197,198]`C`
                                           Frame: [0,C,Illegal]

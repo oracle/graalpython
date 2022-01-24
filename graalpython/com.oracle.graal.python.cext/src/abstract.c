@@ -58,11 +58,7 @@ static PyObject* null_error(void) {
 
 UPCALL_ID(PyNumber_Check);
 int PyNumber_Check(PyObject *o) {
-    PyObject *result = UPCALL_CEXT_O(_jls_PyNumber_Check, native_to_java(o));
-    if(result == Py_True) {
-    	return 1;
-    }
-    return 0;
+    return UPCALL_CEXT_I(_jls_PyNumber_Check, native_to_java(o));
 }
 
 typedef PyObject *(*unaryop_fun_t)(PyObject *, int32_t);
@@ -553,7 +549,7 @@ PyObject* PySequence_Concat(PyObject *s, PyObject *o) {
 
 UPCALL_ID(PySequence_InPlaceRepeat);
 PyObject* PySequence_InPlaceRepeat(PyObject *o, Py_ssize_t count) {
-	return UPCALL_CEXT_O(_jls_PySequence_Repeat, native_to_java(o), count);
+	return UPCALL_CEXT_O(_jls_PySequence_InPlaceRepeat, native_to_java(o), count);
 }
 
 UPCALL_ID(PySequence_InPlaceConcat);

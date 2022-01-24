@@ -297,7 +297,7 @@ public class PythonTests {
             PythonContext ctx = PythonContext.get(null);
             ctx.setOut(out);
             ctx.setErr(err);
-            return (RootNode) ctx.getCore().getParser().parse(ParserMode.File, 0, ctx.getCore(), source, null, null);
+            return (RootNode) ctx.getParser().parse(ParserMode.File, 0, ctx, source, null, null);
         } finally {
             closeContext();
         }

@@ -150,7 +150,6 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.source.Source;
@@ -280,7 +279,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return BlockNode.create(statements);
     }
 
-    protected StatementNode createFrameReturn(ExpressionNode right, FrameSlot slot) {
+    @SuppressWarnings("deprecation")    // new Frame API
+    protected StatementNode createFrameReturn(ExpressionNode right, com.oracle.truffle.api.frame.FrameSlot slot) {
         assert slot != null;
         return new FrameReturnNode(right, slot);
     }
@@ -416,6 +416,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     @Override
+    @SuppressWarnings("deprecation")    // new Frame API
     public PNode visit(ClassSSTNode node) {
         ScopeInfo classScope = node.scope;
         scopeEnvironment.setCurrentScope(classScope);
@@ -709,6 +710,17 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         } else {
             throw errors.raiseInvalidSyntax(target.getSourceSection().getSource(), target.getSourceSection(), ErrorMessages.CANT_DELETE, target.getSourceSection().getCharacters());
         }
+    }
+
+    protected StatementNode unbindVariable(ReadNode target) {
+        if (target instanceof ReadLocalNode) {
+            return ((ReadLocalNode) target).makeDeleteNode();
+        } else if (target instanceof ReadGlobalOrBuiltinNode) {
+            return DeleteGlobalNode.create(((ReadGlobalOrBuiltinNode) target).getAttributeId());
+        } else if (target instanceof ReadNameNode) {
+            return DeleteNameNode.create(((ReadNameNode) target).getAttributeId());
+        }
+        throw new IllegalStateException("invalid target for unbind");
     }
 
     @Override
@@ -1253,8 +1265,14 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             }
             ExpressionNode exceptTest = exceptNode.test != null ? (ExpressionNode) exceptNode.test.accept(this) : null;
             StatementNode exceptBody = (StatementNode) exceptNode.body.accept(this);
-            WriteNode exceptName = exceptNode.asName != null ? (WriteNode) scopeEnvironment.findVariable(exceptNode.asName).makeWriteNode(null) : null;
-            exceptNodes[i] = new ExceptNode(exceptBody, exceptTest, exceptName);
+            WriteNode exceptName = null;
+            StatementNode exceptNameDelete = null;
+            if (exceptNode.asName != null) {
+                ReadNode readAsNode = scopeEnvironment.findVariable(exceptNode.asName);
+                exceptName = (WriteNode) readAsNode.makeWriteNode(null);
+                exceptNameDelete = unbindVariable(readAsNode);
+            }
+            exceptNodes[i] = new ExceptNode(exceptBody, exceptTest, exceptName, exceptNameDelete);
         }
         PNode result = new TryFinallyNode(new TryExceptNode(body, exceptNodes, elseStatement), finalyStatement);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
@@ -1330,9 +1348,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
     }
 
+    @SuppressWarnings("deprecation")    // new Frame API
     public ReadNode makeTempLocalVariable() {
         Object tempName = FrameSlotIDs.getTempLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().getSize());
-        FrameSlot tempSlot = scopeEnvironment.createAndReturnLocal(tempName);
+        com.oracle.truffle.api.frame.FrameSlot tempSlot = scopeEnvironment.createAndReturnLocal(tempName);
         return !scopeEnvironment.isInGeneratorScope()
                         ? ReadLocalVariableNode.create(tempSlot)
                         : ReadGeneratorFrameVariableNode.create(tempSlot);

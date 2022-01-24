@@ -121,6 +121,8 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
+
 @CoreFunctions(defineModule = "_warnings")
 public class WarningsModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey FILTERS_VERSION = new HiddenKey("filters_version");
@@ -364,7 +366,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 reportPolymorphicSpecialize();
                 getDictNode = insert(GetOrCreateDictNode.create());
             }
-            return getDictNode.execute(getContext().getCore().lookupBuiltinModule("sys"));
+            return getDictNode.execute(getContext().lookupBuiltinModule("sys"));
         }
 
         private PDict getGlobalsDict(Object globals) {
@@ -468,8 +470,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     return null;
                 }
             } else {
-                Object sys = context.getCore().lookupBuiltinModule("sys");
-                Object modules = lookup.execute(frame, sys, "modules");
+                Object sys = context.lookupBuiltinModule("sys");
+                Object modules = lookup.execute(frame, sys, MODULES);
                 try {
                     warningsModule = callMethod.execute(frame, modules, "get", WARNINGS, PNone.NONE);
                 } catch (PException e) {
@@ -649,7 +651,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             } else {
                 name = PyObjectLookupAttr.getUncached().execute(null, category, SpecialAttributeNames.__NAME__);
             }
-            Object stderr = PythonContext.get(null).getCore().getStderr();
+            Object stderr = PythonContext.get(null).getStderr();
 
             // tfel: I've inlined PyFile_WriteObject, which just calls the "write" method and
             // decides if we should use "repr" or "str" - in this case its always "str" for objects
@@ -797,13 +799,13 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 if (PString.equals("once", action)) {
                     if (registry == null) {
                         PDict currentRegistry = getOnceRegistry(node, context, warnings);
-                        alreadyWarned = updateRegistry(context.getCore().factory(), warnings, currentRegistry, text, category, false);
+                        alreadyWarned = updateRegistry(context.factory(), warnings, currentRegistry, text, category, false);
                     } else {
-                        alreadyWarned = updateRegistry(context.getCore().factory(), warnings, registry, text, category, false);
+                        alreadyWarned = updateRegistry(context.factory(), warnings, registry, text, category, false);
                     }
                 } else if (PString.equals("module", action)) {
                     if (registry != null) {
-                        alreadyWarned = updateRegistry(context.getCore().factory(), warnings, registry, text, category, false);
+                        alreadyWarned = updateRegistry(context.factory(), warnings, registry, text, category, false);
                     }
                 } else if (!PString.equals("default", action)) {
                     PRaiseNode.raiseUncached(node, PythonBuiltinClassType.RuntimeError, "Unrecognized action (%s) in warnings.filters:\n %s", action,
@@ -1045,6 +1047,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             execute(frame, source, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel);
         }
 
+        public final void warnFormat(Frame frame, Object category, String message, Object... formatArgs) {
+            warnFormat(frame, null, category, 1, message, formatArgs);
+        }
+
         public final void warnFormat(Frame frame, Object source, Object category, int stackLevel, String message, Object... formatArgs) {
             execute(frame, source, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel, formatArgs);
         }
@@ -1075,7 +1081,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     return;
                 }
                 assert frame instanceof VirtualFrame;
-                PythonModule _warnings = PythonContext.get(this).getCore().lookupBuiltinModule("_warnings");
+                PythonModule _warnings = PythonContext.get(this).lookupBuiltinModule("_warnings");
                 String message = formatMessage(format, formatArgs);
                 if (moduleFunctionsNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1114,7 +1120,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             @TruffleBoundary
             @Override
             protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
-                PythonModule _warnings = PythonContext.get(this).getCore().lookupBuiltinModule("_warnings");
+                PythonModule _warnings = PythonContext.get(this).lookupBuiltinModule("_warnings");
                 Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, "warn", PNone.NONE);
                 String message;
                 try {

@@ -31,7 +31,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -80,12 +79,12 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isExhausted()")
         public Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = "!self.isExhausted()")
         Object next(VirtualFrame frame, PSequenceReverseIterator self,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItem,
                         @Cached IsBuiltinClassProfile profile) {
             if (self.index >= 0) {
                 try {
@@ -95,7 +94,7 @@ public class ReversedBuiltins extends PythonBuiltins {
                 }
             }
             self.setExhausted();
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -104,7 +103,7 @@ public class ReversedBuiltins extends PythonBuiltins {
                 return Character.toString(self.value.charAt(self.index--));
             }
             self.setExhausted();
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
     }
 

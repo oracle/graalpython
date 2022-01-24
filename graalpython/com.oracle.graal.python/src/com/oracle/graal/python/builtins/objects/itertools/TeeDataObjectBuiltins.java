@@ -124,22 +124,16 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
                         @Cached LenNode lenNode,
                         @Cached GetSequenceStorageNode getStorageNode,
-                        @Cached BranchProfile numreadLCProfile,
-                        @Cached BranchProfile numreadTooHighProfile,
-                        @Cached BranchProfile nxtNotDOProfile,
-                        @Cached BranchProfile nxtNotNoneProfile) {
+                        @Cached BranchProfile numreadLCProfile) {
             int numread = (int) lenNode.execute(frame, values);
             if (numread == LINKCELLS) {
                 numreadLCProfile.enter();
                 if (!(nxt instanceof PTeeDataObject)) {
-                    nxtNotDOProfile.enter();
                     throw raise(ValueError, S_MUST_BE_S, "_tee_dataobject next link", "_tee_dataobject");
                 }
             } else if (numread > LINKCELLS) {
-                numreadTooHighProfile.enter();
                 throw raise(ValueError, TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS, LINKCELLS);
             } else if (!(nxt instanceof PNone)) {
-                nxtNotNoneProfile.enter();
                 throw raise(ValueError, TDATAOBJECT_SHOULDNT_HAVE_NEXT);
             }
             self.setIt(it);

@@ -107,8 +107,8 @@ public class ParserBenchRunner {
         context.enter();
 
         this.pyContext = PythonContext.get(null);
-        this.parser = (PythonParserImpl) pyContext.getCore().getParser();
-        this.core = pyContext.getCore();
+        this.parser = (PythonParserImpl) pyContext.getParser();
+        this.core = pyContext;
     }
 
     public static void main(String[] args) throws RunnerException {

@@ -1,6 +1,7 @@
 *ctypes.test.test_anon.AnonTest.test_anon_nonmember
 *ctypes.test.test_anon.AnonTest.test_anon_nonseq
 *ctypes.test.test_anon.AnonTest.test_issue31490
+*ctypes.test.test_array_in_pointer.Test.test_2
 *ctypes.test.test_arrays.ArrayTestCase.test_bpo36504_signed_int_overflow
 *ctypes.test.test_arrays.ArrayTestCase.test_cache
 *ctypes.test.test_arrays.ArrayTestCase.test_classcache
@@ -11,9 +12,7 @@
 *ctypes.test.test_arrays.ArrayTestCase.test_subclass
 *ctypes.test.test_arrays.ArrayTestCase.test_zero_length
 *ctypes.test.test_as_parameter.AsParamPropertyWrapperTestCase.test_recursive_as_param
-*ctypes.test.test_as_parameter.AsParamPropertyWrapperTestCase.test_wchar_parm
 *ctypes.test.test_as_parameter.AsParamWrapperTestCase.test_recursive_as_param
-*ctypes.test.test_as_parameter.AsParamWrapperTestCase.test_wchar_parm
 *ctypes.test.test_as_parameter.BasicWrapTestCase.test_pointers
 *ctypes.test.test_as_parameter.BasicWrapTestCase.test_recursive_as_param
 *ctypes.test.test_as_parameter.BasicWrapTestCase.test_wchar_parm
@@ -26,6 +25,7 @@
 *ctypes.test.test_bitfields.BitFieldTest.test_single_bitfield_size
 *ctypes.test.test_bitfields.BitFieldTest.test_uint32
 *ctypes.test.test_buffers.StringBufferTestCase.test_buffer
+*ctypes.test.test_buffers.StringBufferTestCase.test_buffer_interface
 *ctypes.test.test_buffers.StringBufferTestCase.test_create_unicode_buffer_non_bmp
 *ctypes.test.test_bytes.BytesTest.test_BSTR
 *ctypes.test.test_bytes.BytesTest.test_c_char_p
@@ -36,6 +36,9 @@
 *ctypes.test.test_byteswap.Test.test_endian_other
 *ctypes.test.test_byteswap.Test.test_slots
 *ctypes.test.test_byteswap.Test.test_struct_fields_1
+*ctypes.test.test_byteswap.Test.test_struct_fields_2
+*ctypes.test.test_byteswap.Test.test_unaligned_native_struct_fields
+*ctypes.test.test_byteswap.Test.test_unaligned_nonnative_struct_fields
 *ctypes.test.test_callbacks.Callbacks.test_char_p
 *ctypes.test.test_callbacks.SampleCallbacksTestCase.test_issue_8959_b
 *ctypes.test.test_callbacks.StdcallCallbacks.test_byte
@@ -107,14 +110,12 @@
 *ctypes.test.test_funcptr.CFuncPtrTestCase.test_abstract
 *ctypes.test.test_functions.FunctionTestCase.test_doubleresult
 *ctypes.test.test_functions.FunctionTestCase.test_errors
-*ctypes.test.test_functions.FunctionTestCase.test_floatresult
 *ctypes.test.test_functions.FunctionTestCase.test_longlongresult
 *ctypes.test.test_functions.FunctionTestCase.test_mro
 *ctypes.test.test_functions.FunctionTestCase.test_stringresult
 *ctypes.test.test_functions.FunctionTestCase.test_struct_return_2H_stdcall
 *ctypes.test.test_functions.FunctionTestCase.test_struct_return_8H_stdcall
 *ctypes.test.test_functions.FunctionTestCase.test_wchar_parm
-*ctypes.test.test_functions.FunctionTestCase.test_wchar_result
 *ctypes.test.test_internals.ObjectsTestCase.test_embedded_structs
 *ctypes.test.test_internals.ObjectsTestCase.test_ptr_struct
 *ctypes.test.test_internals.ObjectsTestCase.test_simple_struct
@@ -166,8 +167,6 @@
 *ctypes.test.test_pointers.PointersTestCase.test_basics
 *ctypes.test.test_pointers.PointersTestCase.test_from_address
 *ctypes.test.test_pointers.PointersTestCase.test_pointer_crash
-*ctypes.test.test_prototypes.CharPointersTestCase.test_c_void_p_arg_with_c_wchar_p
-*ctypes.test.test_prototypes.WCharPointersTestCase.test_c_wchar_p_arg
 *ctypes.test.test_python_api.PythonAPITestCase.test_PyLong_Long
 *ctypes.test.test_python_api.PythonAPITestCase.test_PyObj_FromPtr
 *ctypes.test.test_python_api.PythonAPITestCase.test_PyString_FromString

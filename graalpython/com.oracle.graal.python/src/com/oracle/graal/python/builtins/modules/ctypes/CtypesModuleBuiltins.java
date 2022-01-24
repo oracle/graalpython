@@ -92,8 +92,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PyLongAsVoidPtr;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLongAsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
@@ -500,7 +500,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object unpickle(VirtualFrame frame, Object typ, PTuple state,
                         @Cached CallNode callNode,
-                        @Cached("create(__NEW__)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
+                        @Cached("create(New)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
                         @Cached("create(__SETSTATE__)") GetAttributeNode setStateAttr) {
             Object obj = lookupAndCallUnaryNode.executeObject(frame, typ);
             Object meth = setStateAttr.executeObject(frame, obj);

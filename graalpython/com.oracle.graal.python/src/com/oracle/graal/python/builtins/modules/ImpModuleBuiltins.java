@@ -49,6 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -56,8 +57,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExecModuleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
@@ -72,16 +73,18 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -190,7 +193,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__create_dynamic__", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class CreateDynamic extends PythonBuiltinNode {
+    public abstract static class CreateDynamic extends PythonBinaryBuiltinNode {
 
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private HPyCheckFunctionResultNode checkHPyResultNode;
@@ -378,30 +381,31 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "source_hash", minNumOfPositionalArgs = 2)
+    @Builtin(name = "source_hash", minNumOfPositionalArgs = 2, parameterNames = {"key", "source"})
+    @ArgumentClinic(name = "key", conversion = ArgumentClinic.ClinicConversion.Long)
+    @ArgumentClinic(name = "source", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    public abstract static class SourceHashNode extends PythonBinaryBuiltinNode {
+    public abstract static class SourceHashNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
+        PBytes run(long magicNumber, Object sourceBuffer,
+                        @Cached BytesNodes.HashBufferNode hashBufferNode) {
+            long sourceHash = hashBufferNode.execute(sourceBuffer);
+            return factory().createBytes(computeHash(magicNumber, sourceHash));
+        }
+
         @TruffleBoundary
-        PBytes run(long magicNumber, PBytesLike source) {
+        private static byte[] computeHash(long magicNumber, long sourceHash) {
             byte[] hash = new byte[Long.BYTES];
-            long hashCode = magicNumber ^ source.hashCode();
+            long hashCode = magicNumber ^ sourceHash;
             for (int i = 0; i < hash.length; i++) {
                 hash[i] = (byte) (hashCode << (8 * i));
             }
-            return factory().createBytes(hash);
+            return hash;
         }
 
-        @Specialization
-        @TruffleBoundary
-        PBytes run(PInt magicNumber, PBytesLike source) {
-            return run(magicNumber.longValue(), source);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        PBytes run(int magicNumber, PBytesLike source) {
-            return run((long) magicNumber, source);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.SourceHashNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -430,6 +434,31 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run() {
             return factory().createList(new Object[]{PythonContext.get(this).getSoAbi(), HPY_SUFFIX, ".so", ".dylib", ".su"});
+        }
+    }
+
+    @Builtin(name = "create_dynamic", minNumOfPositionalArgs = 1, parameterNames = {"moduleSpec", "fileName"})
+    @GenerateNodeFactory
+    public abstract static class CreateDynamicNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(fileName)")
+        Object runNoFileName(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") PNone fileName,
+                        @Cached PyObjectStrAsJavaStringNode asStrignNode,
+                        @Cached CreateDynamic createDynamicNode) {
+            return run(frame, moduleSpec, PNone.NONE, asStrignNode, createDynamicNode);
+        }
+
+        @Specialization(guards = "!isNoValue(fileName)")
+        Object run(VirtualFrame frame, PythonObject moduleSpec, Object fileName,
+                        @Cached PyObjectStrAsJavaStringNode asStrignNode,
+                        @Cached CreateDynamic createDynamicNode) {
+            PythonContext ctx = getContext();
+            String oldPackageContext = ctx.getPyPackageContext();
+            ctx.setPyPackageContext(asStrignNode.execute(frame, PyObjectLookupAttr.getUncached().execute(frame, moduleSpec, "name")));
+            try {
+                return createDynamicNode.execute(frame, moduleSpec, fileName);
+            } finally {
+                ctx.setPyPackageContext(oldPackageContext);
+            }
         }
     }
 

@@ -63,6 +63,7 @@
 *graalpython.lib-python.3.test.test_csv.TestDictFields.test_write_multiple_dict_rows
 *graalpython.lib-python.3.test.test_csv.TestDictFields.test_write_no_fields
 *graalpython.lib-python.3.test.test_csv.TestDictFields.test_write_simple_dict
+*graalpython.lib-python.3.test.test_csv.TestDictFields.test_writeheader_return_value
 *graalpython.lib-python.3.test.test_csv.TestEscapedExcel.test_escape_fieldsep
 *graalpython.lib-python.3.test.test_csv.TestEscapedExcel.test_read_escape_fieldsep
 *graalpython.lib-python.3.test.test_csv.TestLeaks.test_create_read
@@ -80,6 +81,7 @@
 *graalpython.lib-python.3.test.test_csv.TestUnicode.test_unicode_read
 *graalpython.lib-python.3.test.test_csv.TestUnicode.test_unicode_write
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_bigfield
+*graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_eof
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_eol
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_escape
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_linenum
@@ -89,6 +91,7 @@
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_reader_attrs
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_reader_dialect_attrs
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_reader_kw_attrs
+*graalpython.lib-python.3.test.test_csv.Test_Csv.test_roundtrip_escaped_unquoted_newlines
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_roundtrip_quoteed_newlines
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_write_arg_valid
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_write_bigfield

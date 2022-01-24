@@ -309,7 +309,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             IfNode SourceSection: [2713,2824]`if value not in (Non...`
                               NotNodeGen SourceSection: [2716,2744]`value not in (None, ...`
                                 ContainsNodeGen SourceSection: None
-                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                     Op: __contains__
                                   YesNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [2716,2721]`value`
@@ -339,7 +339,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
       IfNode SourceSection: [2901,2955]`if 'strxfrm' not in ...`
         NotNodeGen SourceSection: [2904,2930]`'strxfrm' not in glo...`
           ContainsNodeGen SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
+            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
               Op: __contains__
             YesNodeGen SourceSection: None
             StringLiteralNode SourceSection: [2904,2913]`'strxfrm'`
@@ -359,7 +359,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
       IfNode SourceSection: [2955,3011]`if 'strcoll' not in ...`
         NotNodeGen SourceSection: [2958,2984]`'strcoll' not in glo...`
           ContainsNodeGen SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
+            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
               Op: __contains__
             YesNodeGen SourceSection: None
             StringLiteralNode SourceSection: [2958,2967]`'strcoll'`
@@ -722,7 +722,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Frame: [0,s,Illegal]
                                   NotNodeGen SourceSection: [4448,4473]`s[-1] not in "012345...`
                                     ContainsNodeGen SourceSection: None
-                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                         Op: __contains__
                                       YesNodeGen SourceSection: None
                                       GetItemNodeGen SourceSection: [4448,4453]`s[-1]`
@@ -1071,7 +1071,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [5538,6174]`if percent[-1] in 'e...`
                       YesNodeGen SourceSection: None
                         ContainsNodeGen SourceSection: [5541,5564]`percent[-1] in 'eEfF...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
                           GetItemNodeGen SourceSection: [5541,5552]`percent[-1]`
@@ -1179,7 +1179,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       IfNode SourceSection: [5965,6174]`elif percent[-1] in ...`
                         YesNodeGen SourceSection: None
                           ContainsNodeGen SourceSection: [5970,5990]`percent[-1] in 'diu'...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __contains__
                             YesNodeGen SourceSection: None
                             GetItemNodeGen SourceSection: [5970,5981]`percent[-1]`
@@ -1338,7 +1338,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           GetAttributeNode SourceSection: [6648,6672]`_collections_abc.Map...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: Mapping
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadGlobalOrBuiltinNodeGen SourceSection: [6648,6664]`_collections_abc`
                               Identifier: _collections_abc
@@ -2404,7 +2404,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [10959,11120]`if '.' in code:↵    ...`
                       YesNodeGen SourceSection: None
                         ContainsNodeGen SourceSection: [10962,10973]`'.' in code`
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [10962,10965]`'.'`
@@ -2450,12 +2450,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           GetAttributeNode SourceSection: [11243,11268]`encodings.aliases.al...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: aliases
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             GetAttributeNode SourceSection: [11243,11260]`encodings.aliases`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: aliases
-                                LookupAndCallBinaryNodeGen SourceSection: None
+                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               ReadGlobalOrBuiltinNodeGen SourceSection: [11243,11252]`encodings`
                                 Identifier: encodings
@@ -2482,7 +2482,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [11487,11864]`if norm_encoding in ...`
                       YesNodeGen SourceSection: None
                         ContainsNodeGen SourceSection: [11490,11528]`norm_encoding in loc...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [11490,11503]`norm_encoding`
@@ -2521,7 +2521,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         IfNode SourceSection: [11714,11864]`if norm_encoding in ...`
                           YesNodeGen SourceSection: None
                             ContainsNodeGen SourceSection: [11717,11755]`norm_encoding in loc...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __contains__
                               YesNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [11717,11730]`norm_encoding`
@@ -2595,7 +2595,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         IfNode SourceSection: [11971,12039]`if '.' not in code:↵...`
                           NotNodeGen SourceSection: [11974,11989]`'.' not in code`
                             ContainsNodeGen SourceSection: None
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __contains__
                               YesNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [11974,11977]`'.'`
@@ -2641,7 +2641,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         IfNode SourceSection: [12084,12156]`if encoding in ('ISO...`
                           YesNodeGen SourceSection: None
                             ContainsNodeGen SourceSection: [12087,12122]`encoding in ('ISO885...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __contains__
                               YesNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [12087,12095]`encoding`
@@ -2722,7 +2722,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [12810,12923]`if ':' in code:↵    ...`
                       YesNodeGen SourceSection: None
                         ContainsNodeGen SourceSection: [12813,12824]`':' in code`
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [12813,12816]`':'`
@@ -2742,7 +2742,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [12923,13019]`if '@' in code:↵    ...`
                       YesNodeGen SourceSection: None
                         ContainsNodeGen SourceSection: [12926,12937]`'@' in code`
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [12926,12929]`'@'`
@@ -2780,7 +2780,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [13019,13212]`if '.' in code:↵    ...`
                       YesNodeGen SourceSection: None
                         ContainsNodeGen SourceSection: [13022,13033]`'.' in code`
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [13022,13025]`'.'`
@@ -2936,7 +2936,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             IfNode SourceSection: [13838,13926]`if '@' not in code:↵...`
                               NotNodeGen SourceSection: [13841,13856]`'@' not in code`
                                 ContainsNodeGen SourceSection: None
-                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                     Op: __contains__
                                   YesNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [13841,13844]`'@'`
@@ -3024,7 +3024,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             IfNode SourceSection: [14372,14461]`if '@' not in code:↵...`
                               NotNodeGen SourceSection: [14375,14390]`'@' not in code`
                                 ContainsNodeGen SourceSection: None
-                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                     Op: __contains__
                                   YesNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [14375,14378]`'@'`
@@ -3106,7 +3106,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 IfNode SourceSection: [14830,14987]`if '@' not in code:↵...`
                                   NotNodeGen SourceSection: [14833,14848]`'@' not in code`
                                     ContainsNodeGen SourceSection: None
-                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                         Op: __contains__
                                       YesNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [14833,14836]`'@'`
@@ -3235,7 +3235,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [15704,16082]`if '@' in code:↵    ...`
                       YesNodeGen SourceSection: None
                         ContainsNodeGen SourceSection: [15707,15718]`'@' in code`
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [15707,15710]`'@'`
@@ -3276,7 +3276,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 StringLiteralNode SourceSection: [15824,15830]`'euro'`
                               NotNodeGen SourceSection: [15835,15850]`'.' not in code`
                                 ContainsNodeGen SourceSection: None
-                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                     Op: __contains__
                                   YesNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [15835,15838]`'.'`
@@ -3294,7 +3294,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [16082,16192]`if '.' in code:↵    ...`
                       YesNodeGen SourceSection: None
                         ContainsNodeGen SourceSection: [16085,16096]`'.' in code`
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [16085,16088]`'.'`
@@ -3526,7 +3526,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     GetAttributeNode SourceSection: [18179,18191]`sys.platform`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: platform
-                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [18179,18182]`sys`
                                         Identifier: sys
@@ -3582,12 +3582,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       GetAttributeNode SourceSection: [18526,18540]`os.environ.get`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: get
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                         GetAttributeNode SourceSection: [18526,18536]`os.environ`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: environ
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadLocalVariableNodeGen SourceSection: [18526,18528]`os`
                             Frame: [4,os,Illegal]
@@ -3704,7 +3704,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19296,19302]`LC_ALL`
                               Identifier: LC_ALL
                           ContainsNodeGen SourceSection: [19307,19324]`';' in localename`
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __contains__
                             YesNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [19307,19310]`';'`
@@ -3867,7 +3867,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
               GetAttributeNode SourceSection: [20291,20303]`sys.platform`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: platform
-                  LookupAndCallBinaryNodeGen SourceSection: None
+                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                 ReadNameNodeGen SourceSection: [20291,20294]`sys`
                   Identifier: sys
@@ -3911,12 +3911,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           GetAttributeNode SourceSection: [20501,20520]`sys.flags.utf8_mode`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: utf8_mode
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             GetAttributeNode SourceSection: [20501,20510]`sys.flags`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: flags
-                                LookupAndCallBinaryNodeGen SourceSection: None
+                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               ReadGlobalOrBuiltinNodeGen SourceSection: [20501,20504]`sys`
                                 Identifier: sys
@@ -4032,12 +4032,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   GetAttributeNode SourceSection: [21279,21298]`sys.flags.utf8_mode`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: utf8_mode
-                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                     GetAttributeNode SourceSection: [21279,21288]`sys.flags`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: flags
-                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [21279,21282]`sys`
                                         Identifier: sys
@@ -4111,12 +4111,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               GetAttributeNode SourceSection: [21739,21758]`sys.flags.utf8_mode`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: utf8_mode
-                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                 GetAttributeNode SourceSection: [21739,21748]`sys.flags`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: flags
-                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21739,21742]`sys`
                                     Identifier: sys

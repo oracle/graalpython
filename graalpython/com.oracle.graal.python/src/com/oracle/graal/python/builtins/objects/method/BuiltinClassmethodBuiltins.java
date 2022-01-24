@@ -150,7 +150,7 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
         @Specialization
         Object reduce(VirtualFrame frame, PDecoratedMethod self,
                         @Cached PyObjectGetAttr getAttr) {
-            PythonModule builtins = getContext().getCore().getBuiltins();
+            PythonModule builtins = getContext().getBuiltins();
             Object gettattr = getAttr.execute(frame, builtins, GETATTR);
             Object type = getAttr.execute(frame, self, __OBJCLASS__);
             Object name = getAttr.execute(frame, self, __NAME__);
