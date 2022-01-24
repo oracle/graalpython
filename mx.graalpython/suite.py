@@ -206,7 +206,8 @@ suite = {
             "sourceDirs": ["src/main/java"],
             "javaCompliance": "8+",
             "dependencies": [
-                "ICU4J-69.1",
+                "truffle:ICU4J",
+                "truffle:ICU4J-CHARSET",
             ],
         },
 

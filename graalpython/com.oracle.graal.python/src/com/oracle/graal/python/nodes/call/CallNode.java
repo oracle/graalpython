@@ -242,7 +242,7 @@ public abstract class CallNode extends PNodeWithContext {
         } else if (callableObject instanceof BoundDescriptor) {
             return doGeneric(frame, ((BoundDescriptor) callableObject).descriptor,
                             PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length), keywords,
-                            dispatch, createArgs, raise, callAttrGetterNode, callCallNode);
+                            dispatch, createArgs, raise, callAttrGetterNode, getClassNode, callCallNode);
         }
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, callAttrGetterNode.execute(getClassNode.execute(callableObject)));
     }
