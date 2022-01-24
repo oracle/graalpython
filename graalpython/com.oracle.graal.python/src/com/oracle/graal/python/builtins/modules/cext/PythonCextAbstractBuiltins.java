@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
@@ -1198,7 +1197,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     abstract static class PyMappingCheckNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "!isNativeObject(object)")
-        static boolean doPythonObject(PythonObject object,
+        static boolean doPythonObject(Object object,
                         @Cached com.oracle.graal.python.lib.PyMappingCheckNode checkNode) {
             return checkNode.execute(object);
         }
