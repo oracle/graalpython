@@ -34,5 +34,4 @@ public final class PythonFrozenModule {
     public void setSize(int size) {
         this.size = size;
     }
-
 }
