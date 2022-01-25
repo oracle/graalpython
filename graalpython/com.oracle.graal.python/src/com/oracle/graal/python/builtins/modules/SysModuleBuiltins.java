@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsFactory.ExcInfoNodeFactory;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
@@ -647,9 +648,21 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return (PDict) getBuiltinConstants().get(MODULES);
     }
 
+    @TruffleBoundary
+    public Object getStdErr() {
+        return getBuiltinConstants().get(STDERR);
+    }
+
+    @TruffleBoundary
+    public Object getStdOut() {
+        return getBuiltinConstants().get(STDOUT);
+    }
+
     @Builtin(name = "exc_info", needsFrame = true)
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
+
+        public abstract PTuple execute(VirtualFrame frame);
 
         public static Object fast(VirtualFrame frame, GetClassNode getClassNode, GetCaughtExceptionNode getCaughtExceptionNode, PythonObjectFactory factory) {
             final PException currentException = getCaughtExceptionNode.execute(frame);
@@ -660,7 +673,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object run(VirtualFrame frame,
+        public PTuple run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetTracebackNode getTracebackNode) {
@@ -677,6 +690,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 }
                 return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
             }
+        }
+
+        public static ExcInfoNode create() {
+            return ExcInfoNodeFactory.create(null);
         }
 
     }

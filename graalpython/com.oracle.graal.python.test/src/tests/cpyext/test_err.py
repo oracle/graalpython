@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,16 @@ __dir__ = __file__.rpartition("/")[0]
 def _reference_setstring(args):
     raise args[0](args[1])
 
+def _new_ex_result_check(x, y):
+    name = y[0]
+    base = y[1]
+    return name in str(x) and issubclass(x, base)
+   
+def _new_ex_with_doc_result_check(x, y):
+    name = y[0]
+    doc = y[1]
+    base = y[2]
+    return name in str(x) and issubclass(x, base) and x.__doc__ == doc
 
 def _reference_setnone(args):
     raise args[0]()
@@ -154,7 +164,29 @@ class TestPyErr(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
-
+    
+    test_PyErr_NewException = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            ("main.TestException", TypeError, {}),
+        ),
+        resultspec="O",
+        argspec='sOO',
+        arguments=["char* name", "PyObject* base", "PyObject* dict"],
+        cmpfunc=_new_ex_result_check
+    )
+    
+    test_PyErr_NewExceptionWithDoc = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            ("main.TestException", "new exception doc", TypeError, {}),
+        ),
+        resultspec="O",
+        argspec='ssOO',
+        arguments=["char* name", "char* doc", "PyObject* base", "PyObject* dict"],
+        cmpfunc=_new_ex_with_doc_result_check
+    )
+    
     test_PyErr_SetObject = CPyExtFunctionVoid(
         _reference_setstring,
         lambda: (

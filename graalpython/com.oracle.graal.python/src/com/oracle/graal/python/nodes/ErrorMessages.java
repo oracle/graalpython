@@ -245,6 +245,7 @@ public abstract class ErrorMessages {
     public static final String ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED = "'e*' format specifiers are not supported";
     public static final String EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = "exception cause must be None or derive from BaseException";
     public static final String EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = "exception causes must derive from BaseException";
+    public static final String EXCEPTION_NOT_BASEEXCEPTION = "exception %s not a BaseException subclass";
     public static final String EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX = "exceptions must be classes or instances deriving from BaseException, not %p";
     public static final String EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX = "exceptions must derive from BaseException";
     public static final String EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY = "execv() arg 2 first element cannot be empty";
@@ -451,6 +452,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_INTEGER = "%s must be an integer";
     public static final String MUST_BE_INTEGER_QUOTED_ATTR = "\"%s\" must be an integer";
     public static final String MUST_BE_INTEGER_NOT_P = "%s must be an integer, not %p";
+    public static final String MUST_BE_MODULE_CLASS = "%s: %s must be module.class";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
     public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
     public static final String MUST_BE_NUMERIC = "must be numeric, not %p";
