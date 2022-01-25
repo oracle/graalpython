@@ -1,6 +1,6 @@
 Module[0, 26]
     If[0, 26]
-        Test: OBJECT[3, 8] Value: false
+        Test: BOOLEAN[3, 8] Value: false
         Then:
             LONG[13, 15] Value: 10
         Else:

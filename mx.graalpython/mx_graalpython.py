@@ -763,6 +763,7 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
+            mx.run_maven(["test"], cwd=mx.dependency("com.oracle.graal.python.pegparser").dir)
             punittest(['--verbose'])
 
     # Unittests on JVM

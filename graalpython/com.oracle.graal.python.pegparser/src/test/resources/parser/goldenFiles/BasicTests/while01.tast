@@ -1,5 +1,5 @@
 Module[0, 18]
     While[0, 18]
-        Condition: OBJECT[6, 10] Value: true
+        Condition: BOOLEAN[6, 10] Value: true
         Body:
             Pass[14, 18]

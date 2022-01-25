@@ -15,7 +15,7 @@ Module[0, 147]
                     RHS: LONG[46, 48] Value: 10
                 Body:
                     If[58, 85]
-                        Test: OBJECT[61, 66] Value: false
+                        Test: BOOLEAN[61, 66] Value: false
                         Then:
                             Break[80, 85]
                     AugAssign[94, 104]
@@ -24,7 +24,7 @@ Module[0, 147]
                         RHS: LONG[103, 104] Value: 1
                 Else:
                     If[58, 85]
-                        Test: OBJECT[61, 66] Value: false
+                        Test: BOOLEAN[61, 66] Value: false
                         Then:
                             Break[80, 85]
                     AugAssign[94, 104]
