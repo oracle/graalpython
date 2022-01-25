@@ -55,7 +55,6 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins.PyUnicodeFromStringNode;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.nativeimage.ImageInfo;
@@ -503,14 +502,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return ImpModuleBuiltinsClinicProviders.GetFrozenObjectClinicProviderGen.INSTANCE;
         }
 
-        // TODO: Specialization for dataObj == NO_VALUE
-
         @Specialization
         public Object run(VirtualFrame frame, String name, Object dataObj,
                           @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                           @Cached PRaiseNode raiseNode,
                           @Cached PyCodeCheckNode pyCodeCheckNode,
-                          @Cached PyObjectReprAsJavaStringNode reprNode,
                           @Cached ConditionProfile isStringProfile) {
 
             FrozenInfo info = new FrozenInfo();
@@ -531,21 +527,21 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            if (info.name == null) {
-                info.name = name;
+            if (info.size == 0) {
+                /* Does not contain executable code. */
+                raiseFrozenError(FROZEN_INVALID, name, raiseNode);
             }
 
             Object code = null;
+
             try {
                 code = MarshalModuleBuiltins.Marshal.load(info.data, info.size);
-            } catch (MarshalError | NumberFormatException e) { // TODO: Should NumberFormatException
-                // be caught here?
+            } catch (MarshalError | NumberFormatException e) {
                 raiseFrozenError(FROZEN_INVALID, name, raiseNode);
             }
 
             if (!pyCodeCheckNode.execute(code)) {
-                throw raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, reprNode.execute(frame, info.name));
-                // TODO: A bit wasteful to use reprNode if we could also just use name ? Could we?
+                throw raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
             }
 
             return code;
@@ -558,7 +554,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     "\n" +
                     "Return info about the corresponding frozen module (if there is one) or None.\n" +
                     "\n" +
-                    "The returned info (a 2-tuple):\n" +
+                    "The returned info (a 3-tuple):\n" +
                     "\n" +
                     " * data         the raw marshalled bytes\n" +
                     " * is_package   whether or not it is a package\n" +
@@ -614,26 +610,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static void raiseFrozenError(FrozenStatus status, String moduleName, PRaiseNode raiseNode) {
-        switch (status) {
-            case FROZEN_BAD_NAME:
-                throw raiseNode.raise(ImportError, ErrorMessages.NO_SUCH_FROZEN_OBJECT, moduleName);
-            case FROZEN_NOT_FOUND:
-                throw raiseNode.raise(ImportError, ErrorMessages.NO_SUCH_FROZEN_OBJECT, moduleName);
-            case FROZEN_DISABLED:
-                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_DISABLED, moduleName);
-            case FROZEN_EXCLUDED:
-                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_EXCLUDED, moduleName);
-            case FROZEN_INVALID:
-                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_INVALID, moduleName);
-            case FROZEN_OKAY:
-                // There was no error.
-                break;
-            default:
-                CompilerDirectives.shouldNotReachHere("Unknown FrozenStatus " + status);
-        }
-    }
-
     private static FrozenResult findFrozen(Object nameobj, ConditionProfile isStringProfile, Node contextNode) {
 
         String name;
@@ -685,6 +661,26 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         result.status = FROZEN_OKAY;
         return result;
 
+    }
+
+    private static void raiseFrozenError(FrozenStatus status, String moduleName, PRaiseNode raiseNode) {
+        switch (status) {
+            case FROZEN_BAD_NAME:
+                throw raiseNode.raise(ImportError, ErrorMessages.NO_SUCH_FROZEN_OBJECT, moduleName);
+            case FROZEN_NOT_FOUND:
+                throw raiseNode.raise(ImportError, ErrorMessages.NO_SUCH_FROZEN_OBJECT, moduleName);
+            case FROZEN_DISABLED:
+                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_DISABLED, moduleName);
+            case FROZEN_EXCLUDED:
+                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_EXCLUDED, moduleName);
+            case FROZEN_INVALID:
+                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_INVALID, moduleName);
+            case FROZEN_OKAY:
+                // There was no error.
+                break;
+            default:
+                CompilerDirectives.shouldNotReachHere("Unknown FrozenStatus " + status);
+        }
     }
 
     @Builtin(name = "source_hash", minNumOfPositionalArgs = 2, parameterNames = {"key", "source"})
