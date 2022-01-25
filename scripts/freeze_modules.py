@@ -62,6 +62,15 @@ FROZEN = [
         'site',
         'stat',
         ]),
+        (TESTS_SECTION, [
+                '__hello__',
+#                 TODO: enable further tests.
+#                 '__hello__ : __hello_alias__',
+#                 '__hello__ : <__phello_alias__>',
+#                 '__hello__ : __phello_alias__.spam',
+#                 '<__phello__.**.*>',
+#                 f'frozen_only : __hello_only__ = {FROZEN_ONLY}',
+                ]),
 ]
 BOOTSTRAP = {
     'importlib._bootstrap',

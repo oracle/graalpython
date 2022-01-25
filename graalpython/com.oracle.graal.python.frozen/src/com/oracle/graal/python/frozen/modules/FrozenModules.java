@@ -62,12 +62,15 @@ public final class FrozenModules {
 		frozenModules.put("os", new PythonFrozenModule("Os", FrozenOs.osByteCode, FrozenOs.osByteCodeSize));
 		frozenModules.put("site", new PythonFrozenModule("Site", FrozenSite.siteByteCode, FrozenSite.siteByteCodeSize));
 		frozenModules.put("stat", new PythonFrozenModule("Stat", FrozenStat.statByteCode, FrozenStat.statByteCodeSize));
+		frozenModules.put("__hello__", new PythonFrozenModule("Hello", FrozenHello.helloByteCode, FrozenHello.helloByteCodeSize));
+		frozenModules.put("__hello__", new PythonFrozenModule("Hello", FrozenHello.helloByteCode, FrozenHello.helloByteCodeSize));
 	    return frozenModules;
 	}
 
 	private static Map<String, String> createFrozenAliasesMap() {
 	    // alias, originalName
 	    Map<String, String> frozenAliases = new HashMap<String, String>();
+		frozenAliases.put("__hello_alias__", "__hello__");
         return frozenAliases;
     }
 }
