@@ -663,7 +663,7 @@ primary[expr_ty]:
     | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
     | a=primary '(' b=[arguments] ')' {
         factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) }
-    | a=primary '[' b=slices ']' { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
+    | a=primary '[' b=slices ']' { factory.createSubscript(a, b, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | atom
 
 slices[expr_ty]:
@@ -757,7 +757,7 @@ kwarg_or_double_starred[KeywordOrStarred*]:
 star_targets[expr_ty]:
     | a=star_target !',' { a }
     | a=star_target b=(',' c=star_target { c })* [','] {
-        factory.createTuple(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset); // Store }
+        factory.createTuple(this.insertInFront(a,b),ExprContext.Store,startToken.startOffset,endToken.endOffset); }
 star_targets_list_seq[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_target+ [','] { a }
 star_targets_tuple_seq[asdl_expr_seq*]:
     | a=star_target b=(',' c=star_target { c })+ [','] { this.insertInFront(a, b) }
