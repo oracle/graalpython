@@ -1055,7 +1055,7 @@ public abstract class ErrorMessages {
     public static final String FROZEN_EXCLUDED = "Excluded frozen object named %s";
     public static final String FROZEN_INVALID = "Frozen object named %s is invalid";
     public static final String NOT_A_CODE_OBJECT = "frozen object %s is not a code object";
-
+    public static final String MODULE_NOT_FOUND = "Loaded module %s not found in sys.modules";
 
     // warnings
     public static final String WARN_P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +

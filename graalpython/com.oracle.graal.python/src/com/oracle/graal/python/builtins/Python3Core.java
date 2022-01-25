@@ -1023,7 +1023,7 @@ public abstract class Python3Core extends ParserErrorCallback {
         addBuiltinModule("_frozen_importlib", bootstrap);
     }
 
-    private PythonModule createModule(String name) {
+    public PythonModule createModule(String name) {
         return createModule(name, null);
     }
 
