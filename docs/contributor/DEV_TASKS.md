@@ -25,3 +25,17 @@ our imported sources from CPython and PyPy:
 It prints a fairly long help. Note that you'll need to make sure you also pushed
 your `python-import` branch after doing the update, so that any conflicts you
 resolved don't have to be resolved again by the next person.
+
+### Updating pegparser
+
+The Python PEG parser is tracked as a separate repository as well and merged
+with git-subtree. This is irrelevant for external contributors, but just for
+reference, this is how we merge back and forth:
+
+    git subtree pull --prefix graalpython/com.oracle.graal.python.pegparser [pegparser-git-url] master
+    git subtree push --prefix graalpython/com.oracle.graal.python.pegparser [pegparser-git-url] master
+
+Generally this work, it can happen that the two repos become a bit inconsistent
+and git-subtree gives up, but then we can fix the trees manually with a `git
+subtree pull` and then `git subtree split` and pushing the split commit to the
+pegparser repo.
