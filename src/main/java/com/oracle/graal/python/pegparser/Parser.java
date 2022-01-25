@@ -8021,7 +8021,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
-                _res = factory.createSubscript(a,b,startToken.startOffset,startToken.endOffset);
+                _res = factory.createSubscript(a,b,ExprContext.Load,startToken.startOffset,startToken.endOffset);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9384,7 +9384,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset); // Store;
+                _res = factory.createTuple(this.insertInFront(a,b),ExprContext.Store,startToken.startOffset,endToken.endOffset);;
                 cache.putResult(_mark, STAR_TARGETS_ID, _res);
                 return (ExprTy)_res;
             }
