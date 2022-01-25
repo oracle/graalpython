@@ -6,9 +6,9 @@ ScopeEnvironment
         Flags: [HasVarArgs]
         Varnames: a, b, k1, k2, arg
         Symbols:
-            a: [DefParam, Local]
-            arg: [DefParam, Local]
-            b: [DefParam, Local]
-            k1: [DefParam, Local]
-            k2: [DefParam, Local]
+            a: [DefParam, Use, Local]
+            arg: [DefParam, Use, Local]
+            b: [DefParam, Use, Local]
+            k1: [DefParam, Use, Local]
+            k2: [DefParam, Use, Local]
             sum: [Use, GlobalImplicit]

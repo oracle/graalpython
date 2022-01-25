@@ -2,7 +2,7 @@ ScopeEnvironment
   Scope null Module
     Symbols:
       print: [Use, GlobalImplicit]
-      test: [DefLocal, Local]
+      test: [DefLocal, Use, Local]
     Scope test Function
         Symbols:
             a: [DefLocal, Local]

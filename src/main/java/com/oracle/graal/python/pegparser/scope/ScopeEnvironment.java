@@ -317,6 +317,7 @@ public class ScopeEnvironment {
                     // TODO: raises SyntaxError:
                     // "duplicate argument '%s' in function definition", name
                 }
+                flags.add(flag);
             } else {
                 flags = EnumSet.of(flag);
             }

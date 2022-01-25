@@ -6,10 +6,10 @@ ScopeEnvironment
     Scope outer Function
         Flags: [HasChildWithFreeVars]
         Symbols:
-            recursionInner: [DefLocal, Cell]
+            recursionInner: [DefLocal, Use, Cell]
       Scope recursionInner Function
             Flags: [HasFreeVars]
             Varnames: arg
             Symbols:
-                  arg: [DefParam, Local]
+                  arg: [DefParam, Use, Local]
                   recursionInner: [Use, Free]

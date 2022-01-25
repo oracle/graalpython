@@ -7,5 +7,5 @@ ScopeEnvironment
         Symbols:
             candidate: [Use, GlobalImplicit]
             s1: [DefLocal, Local]
-            s2: [DefLocal, Local]
-            sequences: [DefParam, Local]
+            s2: [DefLocal, Use, Local]
+            sequences: [DefParam, Use, Local]

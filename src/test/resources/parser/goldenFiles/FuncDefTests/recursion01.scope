@@ -5,7 +5,7 @@ ScopeEnvironment
     Scope test Function
         Varnames: self, msg, offset
         Symbols:
-            msg: [DefParam, Local]
+            msg: [DefParam, Use, Local]
             offset: [DefParam, Local]
-            self: [DefParam, Local]
+            self: [DefParam, Use, Local]
             test: [Use, GlobalImplicit]
