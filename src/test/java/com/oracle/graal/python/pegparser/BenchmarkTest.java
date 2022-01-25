@@ -51,7 +51,7 @@ public class BenchmarkTest extends ParserTestBase {
 
     @Test
     public void arithBinop() throws Exception {
-        ModTy node = parse("def docompute(num):\n" +
+        String source = "def docompute(num):\n" +
                         "    for i in range(num):\n" +
                         "        sum_ = 0.0\n" +
                         "        j = 0\n" +
@@ -69,11 +69,7 @@ public class BenchmarkTest extends ParserTestBase {
                         "\n" +
                         "\n" +
                         "def __benchmark__(num=5):\n" +
-                        "    measure(num)\n",
-                        "arith_binop", 0);
-        SSTTreePrinterVisitor visitor = new SSTTreePrinterVisitor();
-        System.err.println(node.accept(visitor));
-        ScopeEnvironment env = new ScopeEnvironment(node);
-        System.err.println(env);
+                        "    measure(num)\n";
+        checkScopeAndTree(source);
     }
 }

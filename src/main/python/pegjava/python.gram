@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2021 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -10,7 +10,7 @@
 #   default rule is renamed to default_param
 
 @license '''/*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -689,13 +689,13 @@ atom[expr_ty]:
 
 strings[expr_ty] (memo): a=STRING+ { this.concatenateStrings(a) }
 list[expr_ty]:
-    | '[' a=[star_named_expressions] ']' { factory.createList(a, startToken.startOffset, endToken.endOffset) }
+    | '[' a=[star_named_expressions] ']' { factory.createList(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 listcomp[expr_ty]:
     | '[' a=named_expression b=for_if_clauses ']' { factory.createListComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
 tuple[expr_ty]:
     | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, z) } ] ')' {
-        factory.createTuple((ExprTy[])a, startToken.startOffset, endToken.endOffset) }
+        factory.createTuple((ExprTy[])a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 group[expr_ty]:
     | '(' a=(yield_expr | named_expression) ')' { a }
     | invalid_group

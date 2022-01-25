@@ -563,6 +563,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         license = self.grammar.metas.get("license")
         if license:
             self.print(license)
+        self.print("// Checkstyle: stop")
+        self.print("// JaCoCo Exclude")
+        self.print("//@formatter:off")
+        self.print(f"// Generated from {filename} by pegen")
         package = self.grammar.metas.get("package")
         if package:
             self.print("package %s;" % package.strip("\n"))
@@ -570,7 +574,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         if imports:
             self.print(imports)
         className = os.path.splitext(os.path.basename(self.file.name))[0]
-        self.print('@SuppressWarnings("all")')
+        self.print('@SuppressWarnings({"all", "cast"})')
         self.print("public final class %s extends AbstractParser {" % className)
         # Java needs a few fields declarations. Also, we're now in a class
         self.level += 1
@@ -721,8 +725,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.visit(
                 rhs, is_loop=False, is_gather=node.is_gather(), rulename=node.name,
             )
-            if self.debug:
-                self.print(f'debugMessageln("Fail at %d: {node.name}", _mark);')
+            self.printDebug(f'debugMessageln("Fail at %d: {node.name}", _mark);')
             self.print("_res = null;")
         with self.indent():
             # insert and pop the goto target
@@ -845,10 +848,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             )
             self.print(f"_res = null;")
 
-        if self.debug:
-            self.print(
-                f'''debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "{str(node).replace('"', "'")}");'''
-            )
+        self.printDebug(
+            f'''debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "{str(node).replace('"', "'")}");'''
+        )
 
     def emit_default_action(self, is_gather: bool, node: Alt) -> None:
         if len(self.local_variable_names) > 1:
@@ -859,18 +861,16 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     f"{self.local_variable_names[0]}, {self.local_variable_names[1]});"
                 )
             else:
-                if self.debug:
-                    self.print(
-                        f'debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "{node}");'
-                    )
+                self.printDebug(
+                    f'debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "{node}");'
+                )
                 self.print(
                     f"_res = dummyName({', '.join(self.local_variable_names)});"
                 )
         else:
-            if self.debug:
-                self.print(
-                    f'debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "{node}");'
-                )
+            self.printDebug(
+                f'debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "{node}");'
+            )
             self.print(f"_res = {self.local_variable_names[0]};")
 
     def emit_dummy_action(self) -> None:
@@ -882,7 +882,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         # We have parsed successfully all the conditions for the option.
         with self.indent():
             node_str = str(node).replace('"', '\\"')
-            self.print(
+            self.printDebug(
                 f'debugMessageln("%d {rulename}[%d-%d]: %s succeeded!", level, _mark, mark(), "{node_str}");'
             )
             # Prepare to emmit the rule action and do so
@@ -936,7 +936,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             self._check_for_errors()
             node_str = str(node).replace('"', '\\"')
-            self.print(
+            self.printDebug(
                 f'debugMessageln("%d> {rulename}[%d-%d]: %s", level, _mark, mark(), "{node_str}");'
             )
             # Prepare variable declarations for the alternative
@@ -958,7 +958,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
             self.print("reset(_mark);")
             node_str = str(node).replace('"', '\\"')
-            self.print(
+            self.printDebug(
                 f"debugMessageln(\"%d%s {rulename}[%d-%d]: %s failed!\", level,\n"
                 f'                  "-", _mark, mark(), "{node_str}");'
             )
@@ -1014,3 +1014,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print(f"return (result != null) == match;")
             self.print("}")
             self.print()
+
+    def printDebug(self, *args):
+        if self.debug:
+            self.print(*args)

@@ -86,7 +86,7 @@ public class NodeFactoryImp implements NodeFactory{
 
     @Override
     public ExprTy createBooleanLiteral(boolean value, int startOffset, int endOffset) {
-        return new ExprTy.Constant(value, null, startOffset, endOffset);
+        return new ExprTy.Constant(value, ExprTy.Constant.Kind.BOOLEAN, startOffset, endOffset);
     }
 
     @Override

@@ -65,7 +65,7 @@ class RuleResultCache <T> {
     }
 
     // HashMap<start pos, HashMap<rule id, (result, end pos)>>
-    private final HashMap<Integer, HashMap<Integer, CachedItem>> mainCache;
+    private final HashMap<Integer, HashMap<Integer, CachedItem<T>>> mainCache;
 
     public RuleResultCache(AbstractParser parser) {
         this.parser = parser;
@@ -77,18 +77,18 @@ class RuleResultCache <T> {
     }
 
     public T getResult(int pos, int ruleId) {
-        CachedItem item = mainCache.get(pos).get(ruleId);
+        CachedItem<T> item = mainCache.get(pos).get(ruleId);
         parser.reset(item.endPos);
-        return (T)item.node;
+        return item.node;
     }
 
     public T putResult(int pos, int ruleId, T node) {
-        HashMap posCache = mainCache.get(pos);
+        HashMap<Integer, CachedItem<T>> posCache = mainCache.get(pos);
         if (posCache == null) {
-            posCache = new HashMap();
+            posCache = new HashMap<>();
             mainCache.put(pos, posCache);
         }
-        posCache.put(ruleId, new CachedItem(node, parser.mark()));
+        posCache.put(ruleId, new CachedItem<T>(node, parser.mark()));
         return node;
     }
 }

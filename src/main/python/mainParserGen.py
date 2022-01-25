@@ -77,7 +77,7 @@ def main():
 #    print(non_exact_tok)
     output_file = path.join(__dir__, "..", "java", "com", "oracle", "graal", "python", "pegparser", "Parser.java")
     with open(output_file, "w") as file:
-        gen: ParserGenerator = JavaParserGenerator(grammar, all_tokens, exact_tokens, non_exact_tokens, file)
+        gen: ParserGenerator = JavaParserGenerator(grammar, all_tokens, exact_tokens, non_exact_tokens, file, debug=False)
         gen.generate(grammar_file)
 #    print("[")
 #    for rule in rules:

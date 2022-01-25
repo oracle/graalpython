@@ -70,7 +70,7 @@ abstract class AbstractParser {
     protected boolean callInvalidRules = false;
     private ExprTy.Name cachedDummyName;
 
-    protected final RuleResultCache<Object> cache = new RuleResultCache(this);
+    protected final RuleResultCache<Object> cache = new RuleResultCache<>(this);
     protected final Map<Integer, String> comments = new LinkedHashMap<>();
 
     private final Object[][][] reservedKeywords;
@@ -422,40 +422,7 @@ abstract class AbstractParser {
      * it doesn't really work with the pegen generator.
      */
     protected ExprTy setExprContext(ExprTy node, ExprContext context) {
-        if (node instanceof ExprTy.Name) {
-            return factory.createVariable(((ExprTy.Name) node).id, node.getStartOffset(), node.getEndOffset(), context);
-        } else if (node instanceof ExprTy.Tuple) {
-            ExprTy[] values = ((ExprTy.Tuple) node).elements;
-            for (int i = 0; i < values.length; i++) {
-                values[i] = setExprContext(values[i], context);
-            }
-            int start = node.getStartOffset();
-            int end = node.getEndOffset();
-            return factory.createTuple(values, context, start, end);
-        } else if (node instanceof ExprTy.List) {
-            ExprTy[] values = ((ExprTy.Tuple) node).elements;
-            for (int i = 0; i < values.length; i++) {
-                values[i] = setExprContext(values[i], context);
-            }
-            int start = node.getStartOffset();
-            int end = node.getEndOffset();
-            return factory.createList(values, context, start, end);
-        } else if (node instanceof ExprTy.Subscript) {
-            return factory.createSubscript(setExprContext(((ExprTy.Subscript) node).value, context),
-                            setExprContext(((ExprTy.Subscript) node).slice, context),
-                            context,
-                            node.getStartOffset(), node.getEndOffset());
-        } else if (node instanceof ExprTy.Attribute) {
-            return factory.createGetAttribute(setExprContext(((ExprTy.Attribute) node).value, context),
-                            ((ExprTy.Attribute) node).attr,
-                            context,
-                            node.getStartOffset(), node.getEndOffset());
-        } else if (node instanceof ExprTy.Starred) {
-            return factory.createStarred(((ExprTy.Starred) node).value,
-                            context,
-                            node.getStartOffset(), node.getEndOffset());
-        }
-        return node;
+        return node.copyWithContext(context);
     }
 
     // debug methods
@@ -579,14 +546,14 @@ abstract class AbstractParser {
      * _PyPegen_seq_extract_starred_exprs
      */
     static ExprTy[] extractStarredExpressions(KeywordOrStarred[] kwds) {
-        return Arrays.stream(kwds).filter(n -> !n.isKeyword).map(n -> (ExprTy)n.element).toList().toArray(EMPTY_EXPR);
+        return Arrays.stream(kwds).filter(n -> !n.isKeyword).map(n -> (ExprTy)n.element).toArray(ExprTy[]::new);
     }
 
     /**
      * _PyPegen_seq_delete_starred_exprs
      */
     static KeywordTy[] deleteStarredExpressions(KeywordOrStarred[] kwds) {
-        return Arrays.stream(kwds).filter(n -> n.isKeyword).map(n -> (KeywordTy)n.element).toList().toArray(EMPTY_KWDS);
+        return Arrays.stream(kwds).filter(n -> n.isKeyword).map(n -> (KeywordTy)n.element).toArray(KeywordTy[]::new);
     }
 
     /**
