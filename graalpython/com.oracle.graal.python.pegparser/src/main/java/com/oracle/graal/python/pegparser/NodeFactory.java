@@ -153,4 +153,8 @@ public interface NodeFactory {
     public ExprTy createIfExpression(ExprTy condition, ExprTy then, ExprTy orElse, int startOffset, int endOffset);
 
     public ExprTy createLambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset);
+
+    public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, int startOffset, int endOffset);
+
+    public StmtTy createClassDef(StmtTy classDef, ExprTy[] decorators, int startOffset, int endOffset);
 }

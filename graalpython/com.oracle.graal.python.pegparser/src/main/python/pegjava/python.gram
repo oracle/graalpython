@@ -482,14 +482,11 @@ default_param[expr_ty]: '=' a=expression { a }
 decorators[asdl_expr_seq*]: a[asdl_expr_seq*]=('@' f=named_expression NEWLINE { f })+ { a }
 
 class_def[stmt_ty]:
-    | a=decorators b=class_def_raw { _PyPegen_class_def_decorators(p, a, b) }
+    | a=decorators b=class_def_raw { factory.createClassDef(b, a, startToken.startOffset, endToken.endOffset) }
     | class_def_raw
 class_def_raw[stmt_ty]:
     | 'class' a=NAME b=['(' z=[arguments] ')' { z }] &&':' c=block {
-        _PyAST_ClassDef(a->v.Name.id,
-                     (b) ? ((expr_ty) b)->v.Call.args : NULL,
-                     (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
-                     c, NULL, EXTRA) }
+        factory.createClassDef(a, b, c, startToken.startOffset, endToken.endOffset) }
 
 block[asdl_stmt_seq*] (memo):
     | NEWLINE INDENT a=statements DEDENT { a }
