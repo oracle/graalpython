@@ -257,15 +257,6 @@ def _PyErr_NormalizeExceptionEx(exc, val, tb, recursion_depth):
 def PyErr_NormalizeException(exc, val, tb):
     return _PyErr_NormalizeExceptionEx(exc, val, tb, 0)
 
-
-@may_raise
-def _PyErr_Warn(message, category, stack_level, source):
-    import warnings
-    # TODO: pass source again once we update to newer lib-python
-    warnings.warn(message, category, stack_level)
-    return None
-
-
 @may_raise
 def PyException_SetCause(exc, cause):
     exc.__cause__ = cause
