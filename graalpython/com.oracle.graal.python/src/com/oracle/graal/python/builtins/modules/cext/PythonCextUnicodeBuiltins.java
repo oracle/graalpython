@@ -715,7 +715,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyUnicode_FromString", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyUnicodeFromStringNode extends PythonBuiltinNode {
+    public abstract static class PyUnicodeFromStringNode extends PythonUnaryBuiltinNode {
         @Specialization
         PString run(String str) {
             return factory().createString(str);
