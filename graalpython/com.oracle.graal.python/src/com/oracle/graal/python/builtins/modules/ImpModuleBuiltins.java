@@ -55,6 +55,9 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins.PyUnicodeFromStringNode;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -139,7 +142,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     }
 
     private static class FrozenInfo {
-        Object nameObj;
+        String name;
         byte[] data;
         int size;
         boolean isPackage;
@@ -476,8 +479,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean run(String name,
-                           @Cached PRaiseNode raiseNode) {
-            FrozenResult result = findFrozen(name);
+                           @Cached PRaiseNode raiseNode,
+                           @Cached ConditionProfile isStringProfile) {
+            FrozenResult result = findFrozen(name, isStringProfile, this);
             if (result.status != FROZEN_OKAY && result.status != FROZEN_EXCLUDED) {
                 raiseFrozenError(result.status, name, raiseNode);
             }
@@ -506,7 +510,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                           @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                           @Cached PRaiseNode raiseNode,
                           @Cached PyCodeCheckNode pyCodeCheckNode,
-                          @Cached PyObjectReprAsJavaStringNode reprNode) {
+                          @Cached PyObjectReprAsJavaStringNode reprNode,
+                          @Cached ConditionProfile isStringProfile) {
 
             FrozenInfo info = new FrozenInfo();
 
@@ -518,7 +523,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     bufferLib.release(dataObj, frame, this);
                 }
             } else {
-                FrozenResult result = findFrozen(name);
+                FrozenResult result = findFrozen(name, isStringProfile, this);
                 FrozenStatus status = result.status;
                 info = result.info;
                 if (status != FROZEN_OKAY) {
@@ -526,8 +531,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            if (info.nameObj == null) {
-                info.nameObj = name;
+            if (info.name == null) {
+                info.name = name;
             }
 
             Object code = null;
@@ -539,7 +544,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
 
             if (!pyCodeCheckNode.execute(code)) {
-                throw raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, reprNode.execute(frame, info.nameObj));
+                throw raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, reprNode.execute(frame, info.name));
                 // TODO: A bit wasteful to use reprNode if we could also just use name ? Could we?
             }
 
@@ -574,8 +579,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         public Object run(VirtualFrame frame, String name, boolean withData,
                         @Cached MemoryViewNode memoryViewNode,
                         @Cached PyUnicodeFromStringNode pyUnicodeFromStringNode,
-                        @Cached PRaiseNode raiseNode) {
-            FrozenResult result = findFrozen(name);
+                        @Cached PRaiseNode raiseNode,
+                        @Cached ConditionProfile isStringProfile) {
+            FrozenResult result = findFrozen(name, isStringProfile, this);
             FrozenStatus status = result.status;
             FrozenInfo info = result.info;
 
@@ -628,25 +634,28 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static FrozenResult findFrozen(Object nameobj) {
-
-        // TODO: Add isStringProfile
-
-        FrozenResult result = new FrozenResult();
-        if (nameobj == null || nameobj == PNone.NONE) {
-            result.status = FROZEN_BAD_NAME;
-            return result;
-        }
+    private static FrozenResult findFrozen(Object nameobj, ConditionProfile isStringProfile, Node contextNode) {
 
         String name;
-        try {
-            name = CastToJavaStringNode.getUncached().execute(nameobj);
-        } catch (CannotCastException e) {
-            result.status = FROZEN_BAD_NAME;
-            return result;
+        FrozenResult result = new FrozenResult();
+
+        if (!isStringProfile.profile(nameobj instanceof String)) {
+            if (nameobj == null || nameobj == PNone.NONE) {
+                result.status = FROZEN_BAD_NAME;
+                return result;
+            }
+
+            try {
+                name = CastToJavaStringNode.getUncached().execute(nameobj);
+            } catch (CannotCastException e) {
+                result.status = FROZEN_BAD_NAME;
+                return result;
+            }
+        } else {
+            name = (String) nameobj;
         }
 
-        PythonContext ctx = PythonContext.get(null);
+        PythonContext ctx = PythonContext.get(contextNode);
         PythonFrozenModule module = ctx.lookupFrozenModule(name);
 
         if (module == null) {
@@ -654,14 +663,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        result.info.nameObj = nameobj;  // borrowed
+        result.info.name = name;
         result.info.data = module.getCode();
         result.info.size = module.getSize() < 0 ? -(module.getSize()) : module.getSize();
-        result.info.isPackage = module.getSize() < 0 ? true : false;
+        result.info.isPackage = module.getSize() < 0;
         result.info.isAlias = ctx.isFrozenModuleAlias(name);
         result.info.origName = result.info.isAlias ? ctx.getFrozenModuleOriginalName(name) : name;
 
-        // TODO: Can this be moved ahead of result.info value assignment?
         if (module.getCode() == null) {
             /* It is frozen but marked as un-importable. */
             result.status = FROZEN_EXCLUDED;

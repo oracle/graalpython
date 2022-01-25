@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.frozen.modules;
 
-import java.io.IOException;public final class FrozenNtpath {
+import java.io.IOException;
+
+public final class FrozenNtpath {
     public static final byte[] ntpathByteCode = getByteCode();
     public static final int ntpathByteCodeSize = ntpathByteCode.length;
 

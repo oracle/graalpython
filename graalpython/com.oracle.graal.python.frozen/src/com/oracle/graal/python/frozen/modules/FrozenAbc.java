@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.frozen.modules;
 
-import java.io.IOException;public final class FrozenAbc {
+import java.io.IOException;
+
+public final class FrozenAbc {
     public static final byte[] abcByteCode = getByteCode();
     public static final int abcByteCodeSize = abcByteCode.length;
 

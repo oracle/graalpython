@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.frozen.modules;
 
-import java.io.IOException;public final class FrozenGenericpath {
+import java.io.IOException;
+
+public final class FrozenGenericpath {
     public static final byte[] genericpathByteCode = getByteCode();
     public static final int genericpathByteCodeSize = genericpathByteCode.length;
 
