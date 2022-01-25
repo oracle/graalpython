@@ -163,13 +163,13 @@ public class Scope {
             for (int i = 0; i < indent; i++) {
                 sb.append("    ");
             }
-            sb.append("Symbols: ");
-            for (Map.Entry<String, EnumSet<DefUse>> k : symbols.entrySet()) {
+            sb.append("Symbols:");
+            for (String k : getSortedSymbols()) {
                 sb.append('\n');
                 for (int i = 0; i < indent; i++) {
                     sb.append("      ");
                 }
-                sb.append(k.getKey()).append(": ").append(k.getValue());
+                sb.append(k).append(": ").append(symbols.get(k));
             }
         }
         for (Scope child : children) {
