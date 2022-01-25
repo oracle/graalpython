@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.frozen.modules;
 
-import java.io.IOException;public final class FrozenPosixpath {
+import java.io.IOException;
+
+public final class FrozenPosixpath {
     public static final byte[] posixpathByteCode = getByteCode();
     public static final int posixpathByteCodeSize = posixpathByteCode.length;
 

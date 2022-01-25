@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.frozen.modules;
 
-import java.io.IOException;public final class FrozenCodecs {
+import java.io.IOException;
+
+public final class FrozenCodecs {
     public static final byte[] codecsByteCode = getByteCode();
     public static final int codecsByteCodeSize = codecsByteCode.length;
 

@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.frozen.modules;
 
-import java.io.IOException;public final class FrozenSite {
+import java.io.IOException;
+
+public final class FrozenSite {
     public static final byte[] siteByteCode = getByteCode();
     public static final int siteByteCodeSize = siteByteCode.length;
 
