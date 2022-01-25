@@ -2,17 +2,17 @@ ScopeEnvironment
   Scope null Module
     Flags: [HasChildWithFreeVars]
     Symbols:
-      test: [DefLocal, Local]
+      test: [DefLocal, Use, Local]
     Scope test Function
         Flags: [HasChildWithFreeVars]
         Symbols:
-            inner: [DefLocal, Local]
+            inner: [DefLocal, Use, Local]
       Scope inner Function
             Flags: [HasChildWithFreeVars]
             Varnames: end
             Symbols:
                   end: [DefParam, Cell]
-                  inner_inner: [DefLocal, Local]
+                  inner_inner: [DefLocal, Use, Local]
         Scope inner_inner Function
                 Flags: [HasFreeVars]
                 Symbols:
