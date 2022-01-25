@@ -169,9 +169,13 @@ PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
     return NULL;
 }
 
-UPCALL_ID(PyErr_WriteUnraisable);
 void PyErr_WriteUnraisable(PyObject *obj) {
-    UPCALL_CEXT_VOID(_jls_PyErr_WriteUnraisable, native_to_java(obj));
+    _PyErr_WriteUnraisableMsg(NULL, obj);
+}
+
+UPCALL_ID(_PyErr_WriteUnraisableMsg);
+void _PyErr_WriteUnraisableMsg(const char *err_msg_str, PyObject *obj) {
+    UPCALL_CEXT_VOID(_jls__PyErr_WriteUnraisableMsg, err_msg_str != NULL ? polyglot_from_string(err_msg_str, SRC_CS) : NULL, native_to_java(obj));
 }
 
 UPCALL_ID(PyErr_Display);
