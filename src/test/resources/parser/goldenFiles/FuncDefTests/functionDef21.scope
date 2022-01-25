@@ -1,11 +1,11 @@
 ScopeEnvironment
   Scope null Module
-    Symbols: 
+    Symbols:
       c: [DefLocal, Local]
       foo: [DefLocal, Local]
     Scope foo Function
         Varnames: a, b
-        Symbols: 
+        Symbols:
             a: [DefParam, Local]
             b: [DefParam, Local]
             c: [Use, GlobalImplicit]

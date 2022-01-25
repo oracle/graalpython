@@ -655,7 +655,41 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(StmtTy.ClassDef node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append(" ").append(node.name);
+        level++;
+        if (node.decoratorList != null) {
+            sb.append("\n").append(indent()).append("Decorators:");
+            level++;
+            for (ExprTy e : node.decoratorList) {
+                sb.append("\n").append(indent()).append(e.accept(this));
+            }
+            level--;
+        }
+        if (node.bases.length > 0) {
+            sb.append("\n").append(indent()).append("Bases:");
+            level++;
+            for (ExprTy e : node.bases) {
+                sb.append("\n").append(indent()).append(e.accept(this));
+            }
+            level--;
+        }
+        if (node.keywords.length > 0) {
+            sb.append("\n").append(indent()).append("Keywords:");
+            level++;
+            for (KeywordTy e : node.keywords) {
+                sb.append("\n").append(indent()).append(e.accept(this));
+            }
+            level--;
+        }
+        sb.append('\n').append(indent()).append("---- Class body of ").append(node.name).append(" ----");
+        for(SSTNode stm : node.body) {
+            sb.append('\n').append(indent()).append(stm.accept(this));
+        }
+        if (sb.lastIndexOf("\n") != sb.length() - 1) {
+            sb.append('\n');
+        }
+        sb.append(indent()).append("---- End of ").append(node.name).append(" class ----");
+        level--;
         return sb.toString();
 
     }

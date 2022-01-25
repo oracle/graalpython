@@ -1,16 +1,14 @@
 ScopeEnvironment
   Scope null Module
-    Varnames: arg
-    Symbols: 
-      arg: [DefParam, Local]
+    Symbols:
       fn: [DefLocal, Local]
     Scope fn Function
         Flags: [HasVarArgs]
         Varnames: a, b, k1, k2, arg
-        Symbols: 
+        Symbols:
             a: [DefParam, Local]
+            arg: [DefParam, Local]
             b: [DefParam, Local]
             k1: [DefParam, Local]
             k2: [DefParam, Local]
-            arg: [DefParam, Local]
             sum: [Use, GlobalImplicit]
