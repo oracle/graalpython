@@ -90,10 +90,6 @@ public interface NodeFactory {
 
     public ExprTy createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
 
-    default ExprTy createSubscript(ExprTy receiver, ExprTy slice, int startOffset, int endOffset) {
-        return createSubscript(receiver, slice, null, startOffset, endOffset);
-    }
-
     public ExprTy createSubscript(ExprTy receiver, ExprTy slice, ExprContext context, int startOffset, int endOffset);
 
     public ExprTy createUnaryOp(ExprTy.UnaryOp.Operator op, ExprTy value, int startOffset, int endOffset);
@@ -104,15 +100,7 @@ public interface NodeFactory {
 
     public ExprTy.Name createVariable(String name, int startOffset, int endOffset, ExprContext context);
 
-    default ExprTy createTuple(ExprTy[] values, int startOffset, int endOffset) {
-        return createTuple(values, null, startOffset, endOffset);
-    }
-
     public ExprTy createTuple(ExprTy[] values, ExprContext context, int startOffset, int endOffset);
-
-    default ExprTy createList(ExprTy[] values, int startOffset, int endOffset) {
-        return createList(values, null, startOffset, endOffset);
-    }
 
     public ExprTy createList(ExprTy[] values, ExprContext context, int startOffset, int endOffset);
 
