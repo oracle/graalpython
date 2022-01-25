@@ -55,6 +55,10 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins.PyUnicodeFromStringNode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.nativeimage.ImageInfo;
@@ -608,6 +612,90 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
             return factory().createTuple(returnValues);
         }
+    }
+
+    @Builtin(name = "init_frozen", parameterNames = {"name"}, minNumOfPositionalArgs = 1, doc = "init_frozen($module, name, /)\n" +
+            "--\n" +
+            "\n" +
+            "Initializes a frozen module.")
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    public abstract static class InitFrozen extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.InitFrozenClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object run(String name,
+                          @Cached ConditionProfile isStringProfile,
+                          @Cached PRaiseNode raiseNode) {
+            int ret = importFrozenModuleObject(getCore(), name, isStringProfile, raiseNode);
+
+            if (ret == 0) {
+                return PNone.NONE;
+            }
+            // TODO: import
+            return importGetModule(getCore(), name);
+        }
+    }
+
+    /*
+     * Equivalent to CPythons PyImport_FrozenModuleObject. Initialize a frozen module. Return 1
+     * for success, 0 if the module is not found, and raises an exception if the initialization
+     * failed.
+     */
+    static int importFrozenModuleObject(Python3Core core, String name, ConditionProfile isStringProfile, PRaiseNode raiseNode) {
+
+        FrozenResult result = findFrozen(name, isStringProfile, raiseNode);
+        FrozenStatus status = result.status;
+        FrozenInfo info = result.info;
+
+        if (status == FROZEN_NOT_FOUND || status == FROZEN_DISABLED) {
+            return 0;
+        } else if (status == FROZEN_BAD_NAME) {
+            return 0;
+        } else if (status != FROZEN_OKAY) {
+            raiseFrozenError(status, name, raiseNode);
+        }
+
+        PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(info.data, info.size);
+
+        PythonModule module = importAddModule(core, name);
+
+        if (info.isPackage) {
+            /* Set __path__ to the empty list */
+            module.setAttribute("__path", PythonObjectFactory.getUncached().createList());
+        }
+
+        RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
+        GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(module));
+
+        PythonModule importedModule = importGetModule(core, name);
+
+        if (importedModule == null) {
+            raiseNode.raise(ImportError, ErrorMessages.MODULE_NOT_FOUND, name);
+        }
+
+        /* Set __origname__ (consumed in FrozenImporter._setup_module()). */
+        Object origName = info.origName == null ? PNone.NONE : info.origName;
+
+        importedModule.setAttribute("__origname__", origName);
+
+        return 1;
+    }
+
+    private static PythonModule importGetModule(Python3Core core, String name) {
+        return core.lookupBuiltinModule(name);
+    }
+
+    /*
+     * Get the module object corresponding to a module name. First check the modules dictionary if
+     * there's one there, if not, create a new one and insert it in the modules dictionary.
+     */
+    private static PythonModule importAddModule(Python3Core core, String name) {
+        return core.createModule(name);
     }
 
     private static FrozenResult findFrozen(Object nameobj, ConditionProfile isStringProfile, Node contextNode) {

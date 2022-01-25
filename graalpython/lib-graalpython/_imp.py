@@ -38,10 +38,6 @@
 # SOFTWARE.
 
 @__graalpython__.builtin
-def init_frozen(name):
-    return None
-
-@__graalpython__.builtin
 def cache_all_file_modules():
     """
     Caches all modules loaded during initialization through the normal import
