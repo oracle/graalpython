@@ -1,5 +1,5 @@
 ScopeEnvironment
   Scope null Module
-    Symbols: 
+    Symbols:
       fn: [DefLocal, Local]
     Scope fn Function

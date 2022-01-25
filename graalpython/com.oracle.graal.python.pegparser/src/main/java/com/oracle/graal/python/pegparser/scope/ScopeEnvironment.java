@@ -406,11 +406,11 @@ public class ScopeEnvironment {
                 try {
                     visitAnnotations(args.posOnlyArgs);
                     visitAnnotations(args.args);
-                    if (args.varArg != null) {
-                        args.varArg.accept(this);
+                    if (args.varArg != null && args.varArg.annotation != null) {
+                        args.varArg.annotation.accept(this);
                     }
-                    if (args.kwArg != null) {
-                        args.kwArg.accept(this);
+                    if (args.kwArg != null && args.kwArg.annotation != null) {
+                        args.kwArg.annotation.accept(this);
                     }
                     visitAnnotations(args.kwOnlyArgs);
                 } finally {
