@@ -5,9 +5,9 @@ ScopeEnvironment
     Scope __new__ Function
         Varnames: _cls, hits, misses, maxsize, currsize
         Symbols:
-            _cls: [DefParam, Local]
+            _cls: [DefParam, Use, Local]
             _tuple_new: [Use, GlobalImplicit]
-            currsize: [DefParam, Local]
-            hits: [DefParam, Local]
-            maxsize: [DefParam, Local]
-            misses: [DefParam, Local]
+            currsize: [DefParam, Use, Local]
+            hits: [DefParam, Use, Local]
+            maxsize: [DefParam, Use, Local]
+            misses: [DefParam, Use, Local]
