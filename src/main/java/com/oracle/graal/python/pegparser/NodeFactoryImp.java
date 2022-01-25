@@ -58,7 +58,6 @@ import java.util.Arrays;
 
 
 public class NodeFactoryImp implements NodeFactory{
-
     @Override
     public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, int startOffset, int endOffset) {
         return new StmtTy.AnnAssign(target, annotation, rhs, isSimple, startOffset, endOffset);
@@ -428,5 +427,19 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public ExprTy createLambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset) {
         return new ExprTy.Lambda(args, body, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, int startOffset, int endOffset) {
+        return new StmtTy.ClassDef(((ExprTy.Name) name).id,
+                        call == null ? AbstractParser.EMPTY_EXPR : ((ExprTy.Call) call).args,
+                        call == null ? AbstractParser.EMPTY_KWDS : ((ExprTy.Call) call).keywords,
+                        body, null, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createClassDef(StmtTy proto, ExprTy[] decorators, int startOffset, int endOffset) {
+        StmtTy.ClassDef classdef = (StmtTy.ClassDef) proto;
+        return new StmtTy.ClassDef(classdef.name, classdef.bases, classdef.keywords, classdef.body, decorators, startOffset, endOffset);
     }
 }

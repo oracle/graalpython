@@ -42,7 +42,7 @@
 // Checkstyle: stop
 // JaCoCo Exclude
 //@formatter:off
-// Generated from graalpython/com.oracle.graal.python.pegparser/src/main/python/pegjava/python.gram by pegen
+// Generated from src/main/python/pegjava/python.gram by pegen
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.*;
@@ -5369,6 +5369,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, CLASS_DEF_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // decorators class_def_raw
             ExprTy[] a;
             StmtTy b;
@@ -5378,9 +5379,11 @@ public final class Parser extends AbstractParser {
                 (b = class_def_raw_rule()) != null  // class_def_raw
             )
             {
-                // TODO: node.action: _PyPegen_class_def_decorators ( p , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_class_def_decorators ( p , a , b ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createClassDef(b,a,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, CLASS_DEF_ID, _res);
                 return (StmtTy)_res;
             }
@@ -5412,6 +5415,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, CLASS_DEF_RAW_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'class' NAME ['(' arguments? ')'] &&':' block
             Token _keyword;
             Token _literal;
@@ -5430,9 +5434,11 @@ public final class Parser extends AbstractParser {
                 (c = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: _PyAST_ClassDef ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , c , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ClassDef ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , c , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createClassDef(a,b,c,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, CLASS_DEF_RAW_ID, _res);
                 return (StmtTy)_res;
             }
