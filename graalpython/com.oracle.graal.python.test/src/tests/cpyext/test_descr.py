@@ -46,6 +46,9 @@ def _reference_classmethod(args):
         return classmethod(args[0])()
     raise TypeError
 
+def _reference_method_descr(args):
+    return 1 if isinstance(args[0], type(list.append)) else 0
+
 class TestDescrObject(object):
 
     def test_new_classmethod(self):
@@ -338,5 +341,18 @@ class TestDescr(CPyExtTestCase):
         argspec="O",
         arguments=["PyObject* method"],
         callfunction="wrap_PyDescr_NewClassMethod",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyMethodDescr_Check = CPyExtFunction(
+        _reference_method_descr,
+        lambda: (
+            (tuple.__add__,),
+            (lambda x: x,),
+            (_reference_method_descr,),
+        ),        
+        resultspec="i",
+        argspec="O",
+        arguments=["PyObject* func"],
         cmpfunc=unhandled_error_compare
     )

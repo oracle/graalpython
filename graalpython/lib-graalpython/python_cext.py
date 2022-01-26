@@ -53,14 +53,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-def METH_UNSUPPORTED():
-    raise NotImplementedError("unsupported message type")
-
-
-def PyMethodDescr_Check(func):
-    return 1 if isinstance(func, type(list.append)) else 0
-
-
 # corresponds to PyInstanceMethod_Type
 class instancemethod:
     def __init__(self, func):
