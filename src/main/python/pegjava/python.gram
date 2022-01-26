@@ -580,16 +580,14 @@ lambda_param_maybe_default[NameDefaultPair*]:
 lambda_param[arg_ty]: a=NAME { factory.createArgument(((ExprTy.Name)a).id, null, null, startToken.startOffset, endToken.endOffset) }
 
 disjunction[expr_ty] (memo):
-    | a=conjunction b=('or' c=conjunction { c })+ { _PyAST_BoolOp(
-        Or,
-        CHECK(asdl_expr_seq*, this.insertInFront(a, b)),
-        EXTRA) }
+    | a=conjunction b=('or' c=conjunction { c })+ { factory.createOr(
+        this.insertInFront(a, b),
+        startToken.startOffset, endToken.endOffset) }
     | conjunction
 conjunction[expr_ty] (memo):
-    | a=inversion b=('and' c=inversion { c })+ { _PyAST_BoolOp(
-        And,
-        CHECK(asdl_expr_seq*, this.insertInFront(a, b)),
-        EXTRA) }
+    | a=inversion b=('and' c=inversion { c })+ { factory.createAnd(
+        this.insertInFront(a, b),
+        startToken.startOffset, endToken.endOffset) }
     | inversion
 inversion[expr_ty] (memo):
     | 'not' a=inversion { factory.createUnaryOp(ExprTy.UnaryOp.Operator.NOT, a, startToken.startOffset, endToken.endOffset) }

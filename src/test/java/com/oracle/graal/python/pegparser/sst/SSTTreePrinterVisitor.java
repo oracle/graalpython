@@ -176,9 +176,13 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.BoolOp node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append(": ").append(node.op);
+        level++;
+        for (ExprTy e : node.values) {
+            sb.append('\n').append(indent()).append(e.accept(this));
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -902,7 +906,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
             sb.append(id).append(' ');
         }
         return sb.toString();
-
     }
 
     @Override

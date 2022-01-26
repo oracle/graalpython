@@ -6604,6 +6604,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, DISJUNCTION_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // conjunction (('or' conjunction))+
             ExprTy a;
             ExprTy[] b;
@@ -6613,9 +6614,11 @@ public final class Parser extends AbstractParser {
                 (b = _loop1_141_rule()) != null  // (('or' conjunction))+
             )
             {
-                // TODO: node.action: _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createOr(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, DISJUNCTION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -6647,6 +6650,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, CONJUNCTION_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // inversion (('and' inversion))+
             ExprTy a;
             ExprTy[] b;
@@ -6656,9 +6660,11 @@ public final class Parser extends AbstractParser {
                 (b = _loop1_142_rule()) != null  // (('and' inversion))+
             )
             {
-                // TODO: node.action: _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createAnd(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, CONJUNCTION_ID, _res);
                 return (ExprTy)_res;
             }
