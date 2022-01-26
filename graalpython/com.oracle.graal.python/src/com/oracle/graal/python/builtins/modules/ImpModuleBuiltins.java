@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_BAD_NAME;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_DISABLED;
@@ -49,7 +47,6 @@ import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenS
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_INVALID;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_NOT_FOUND;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_OKAY;
-import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
@@ -57,11 +54,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.CreateDynamic;
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus;
-import com.oracle.graal.python.lib.PyDictSetItem;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.truffle.api.RootCallTarget;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -74,7 +70,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MemoryViewNode;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins.Marshal.MarshalError;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PyDictGetItemNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PyUnicodeFromStringNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -93,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -101,12 +95,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.frozen.PythonFrozenModule;
 import com.oracle.graal.python.lib.PyCodeCheckNode;
-import com.oracle.graal.python.lib.PyDictCheckExactNode;
-import com.oracle.graal.python.lib.PyModuleCheckNode;
-import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
-import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -118,7 +108,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
@@ -126,7 +115,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -567,30 +555,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object run(VirtualFrame frame, String name,
-                          @Cached PRaiseNode raiseNode,
-                          @Cached PyDictCheckExactNode checkPyDictNode,
-                          @Cached PyDictGetItemNode getPyDictItemNode,
-                          @Cached PyObjectGetItem pyObjectGetItemNode,
-                          @Cached PyModuleCheckNode checkPyModuleNode,
-                          @Cached IsBuiltinClassProfile keyErrorProfile,
-                          @Cached SetAttributeNode.Dynamic setAttr,
-                          @Cached PyObjectCallMethodObjArgs callNode) {
-            int ret = importFrozenModuleObject(frame, getCore(), name, raiseNode, checkPyDictNode, getPyDictItemNode, pyObjectGetItemNode, checkPyModuleNode, keyErrorProfile, setAttr, callNode);
-
-            if (ret < 0 ) {
-                return null; // TODO: Probably not valid?
-            } else if (ret == 0) {
-                return PNone.NONE;
-            }
-
-            return importAddModule(frame, name, checkPyDictNode, getPyDictItemNode, pyObjectGetItemNode, checkPyModuleNode, keyErrorProfile, raiseNode);
+                          @Cached InitFrozenHelper initFrozen) {
+            return initFrozen.execute(getCore(), name);
         }
-
-//        public static InitFrozen getUncached() {
-//            return ImpModuleBuiltinsFactory.InitFrozenNodeFactory.getUncached();
-//        }
     }
-
 
     // Will be public part of CPython from 3.11 (already merged into main)
     @Builtin(name = "find_frozen", parameterNames = {"name", "withData"}, minNumOfPositionalArgs = 1, isPublic = false, doc = "find_frozen($module, name, /, *, withdata=False)\n" +
@@ -729,8 +697,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
      * for success, 0 if the module is not found, and raises an exception if the initialization
      * failed. This function is also used from frozenmain.c
      */
-    private static int importFrozenModuleObject(VirtualFrame frame, Python3Core core, String name, PRaiseNode raiseNode, PyDictCheckExactNode checkPyDictNode, PyDictGetItemNode getPyDictItemNode,
-                                                PyObjectGetItem pyObjectGetItemNode, PyModuleCheckNode checkPyModuleNode, IsBuiltinClassProfile keyErrorProfile, SetAttributeNode.Dynamic setAttr, PyObjectCallMethodObjArgs callNode) {
+    static int importFrozenModuleObject(Python3Core core, String name, PRaiseNode raiseNode) {
 
         FrozenResult result = findFrozen(name);
         FrozenStatus status = result.status;
@@ -744,22 +711,22 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             raiseFrozenError(status, name, raiseNode);
         }
 
-        Object code = MarshalModuleBuiltins.Marshal.load(info.data, info.size);
+        PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(info.data, info.size);
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */
-            Object m = importAddModule(frame, name, checkPyDictNode, getPyDictItemNode, pyObjectGetItemNode, checkPyModuleNode, keyErrorProfile, raiseNode);
-            setAttr.execute(frame, m, "__path__", PythonObjectFactory.getUncached().createList());
+            PythonModule module = (PythonModule) importAddModule(core, name);
+            module.setAttribute("__path", PythonObjectFactory.getUncached().createList());
         }
 
-        // TODO: Why different behaviour for packages?
 
-        PythonModule m = (PythonModule) importAddModule(frame, name, checkPyDictNode, getPyDictItemNode, pyObjectGetItemNode, checkPyModuleNode, keyErrorProfile, raiseNode);
+        PythonModule m = (PythonModule) importAddModule(core, name);
 
-        PDict moduleDict = GetOrCreateDictNode.getUncached().execute(m);
-        callNode.execute(frame, core.getBuiltins(), EXEC, code, moduleDict);
+        RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
 
-        Object module = importGetModule(frame, name, checkPyDictNode, getPyDictItemNode, pyObjectGetItemNode, checkPyModuleNode, keyErrorProfile, raiseNode);
+        GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(m));
+
+        Object module = importGetModule(core, name);
 
         if (module == null) {
             return -1;
@@ -778,7 +745,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         try {
-            PyDictSetItem.getUncached().execute(frame, moduleDict, "__origname__", origName);
+            m.setAttribute("__origname__", origName);
         } catch (Exception e){
             return -1;
         }
@@ -786,75 +753,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         return 1;
     }
 
-    public static Object importGetModule(VirtualFrame frame, String name, PyDictCheckExactNode checkPyDictNode, PyDictGetItemNode getPyDictItemNode, PyObjectGetItem pyObjectGetItemNode,
-                                               PyModuleCheckNode checkPyModuleNode, IsBuiltinClassProfile keyErrorProfile, PRaiseNode raiseNode) {
-        PDict modules = PythonContext.get(null).getSysModules();
-
-        if (modules == null) {
-            throw raiseNode.raise(RuntimeError, "unable to get sys.modules");
-        }
-
-        Object module = null;
-        // Todo: should we do a PyDict_CheckExact?
-        if (checkPyDictNode.execute(modules)) {
-            module = getPyDictItemNode.execute(frame, modules, name);
-        } else {
-            try {
-                module = pyObjectGetItemNode.execute(frame, modules, name);
-            } catch (PException e) {
-                e.expect(KeyError, keyErrorProfile);
-                // "For backward-compatibility we copy the behavior
-                // of PyDict_GetItemWithError()."
-                // Clear error state.
-            }
-        }
-
-        if (checkPyModuleNode.execute(module)) {
-            return module;
-        }
-
-        return null;
+    public static Object importGetModule(Python3Core core, String name) {
+        return core.lookupBuiltinModule(name);
     }
 
     /*
      * Get the module object corresponding to a module name. First check the modules dictionary if
      * there's one there, if not, create a new one and insert it in the modules dictionary.
      */
-    private static Object importAddModule(VirtualFrame frame, String name, PyDictCheckExactNode checkPyDictNode, PyDictGetItemNode getPyDictItemNode, PyObjectGetItem pyObjectGetItemNode,
-                    PyModuleCheckNode checkPyModuleNode, IsBuiltinClassProfile keyErrorProfile, PRaiseNode raiseNode) {
-
-        // TODO: Do LookUp with Node
-        PDict modules = PythonContext.get(null).getSysModules();
-
-        if (modules == null) {
-            throw raiseNode.raise(RuntimeError, "no import module dictionary");
-        }
-
-        Object module = null;
-        // Todo: should we do a PyDict_CheckExact?
-        if (checkPyDictNode.execute(modules)) {
-            module = getPyDictItemNode.execute(frame, modules, name);
-        } else {
-            try {
-                module = pyObjectGetItemNode.execute(frame, modules, name);
-            } catch (PException e) {
-                e.expect(KeyError, keyErrorProfile);
-                // "For backward-compatibility we copy the behavior
-                // of PyDict_GetItemWithError()."
-                // Clear error state.
-            }
-        }
-
-        if (module != null && checkPyModuleNode.execute(module)) {
-            return module;
-        }
-
-        module = PythonObjectFactory.create().createPythonModule(name); // TODO: Only to be used
-                                                                        // during ContextCreation?
-
-        PyObjectSetItem.getUncached().execute(frame, modules, name, module);
-
-        return module;
+     static Object importAddModule(Python3Core core, String name) {
+        return core.createModule(name);
     }
 
     @Builtin(name = "source_hash", minNumOfPositionalArgs = 2, parameterNames = {"key", "source"})
