@@ -1,0 +1,21 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      X: [DefLocal, Local]
+    Scope X Class
+        Flags: [HasChildWithFreeVars, NeedsClassClosure]
+        Symbols:
+            run: [DefLocal, Local]
+      Scope run Function
+            Flags: [HasChildWithFreeVars]
+            Varnames: self
+            Symbols:
+                  __class__: [Free]
+                  f: [DefLocal, Local]
+                  self: [DefParam, Local]
+        Scope f Function
+                Flags: [HasFreeVars]
+                Symbols:
+                        __class__: [Use, Free]
+                        super: [Use, GlobalImplicit]

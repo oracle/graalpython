@@ -1,0 +1,8 @@
+Module[0, 36]
+    ClassDef[0, 36] Enum
+        Keywords:
+            KeywordTy[11, 29]
+                metaclass: Name[21, 29] Value: "EnumMeta"
+        ---- Class body of Enum ----
+        Pass[32, 36]
+        ---- End of Enum class ----

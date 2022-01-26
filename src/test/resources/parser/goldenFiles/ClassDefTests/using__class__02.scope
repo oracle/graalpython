@@ -1,0 +1,37 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      X: [DefLocal, Local]
+    Scope X Class
+        Flags: [HasChildWithFreeVars, NeedsClassClosure]
+        Symbols:
+            createY: [DefLocal, Local]
+            methodX: [DefLocal, Local]
+      Scope createY Function
+            Flags: [HasChildWithFreeVars]
+            Varnames: this
+            Symbols:
+                  Y: [DefLocal, Use, Local]
+                  __class__: [Free]
+                  this: [DefParam, Local]
+        Scope Y Class
+                Flags: [HasFreeVars, HasChildWithFreeVars, NeedsClassClosure]
+                Symbols:
+                        __class__: [Use, Free]
+                        methodY: [DefLocal, Local]
+                        z: [DefLocal, Local]
+          Scope methodY Function
+                    Flags: [HasFreeVars]
+                    Varnames: this
+                    Symbols:
+                              __class__: [Use, Free]
+                              this: [DefParam, Local]
+                              y: [DefLocal, Local]
+      Scope methodX Function
+            Flags: [HasFreeVars]
+            Varnames: this
+            Symbols:
+                  __class__: [Use, Free]
+                  this: [DefParam, Local]
+                  yy: [DefLocal, Local]
