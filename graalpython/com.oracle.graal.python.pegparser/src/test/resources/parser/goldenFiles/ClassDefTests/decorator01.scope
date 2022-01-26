@@ -1,0 +1,6 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      class_decorator: [Use, GlobalImplicit]
+      foo: [DefLocal, Local]
+    Scope foo Class

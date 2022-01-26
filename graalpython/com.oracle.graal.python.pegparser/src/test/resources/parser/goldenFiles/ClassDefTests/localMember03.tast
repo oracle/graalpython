@@ -1,0 +1,29 @@
+Module[0, 210]
+    FunctionDef[0, 210]
+        Name:fn
+        ---- Function body of fn ----
+        Assign[14, 41]
+            LHS: Name[14, 25] Value: "a_local_var" Store
+            RHS: RAW[28, 41] Value: a local var
+        FunctionDef[47, 210]
+            Name:f
+            ---- Function body of f ----
+            ClassDef[64, 181] C
+                Bases:
+                    Name[72, 78] Value: "object"
+                ---- Class body of C ----
+                Assign[93, 118]
+                    LHS: Name[93, 104] Value: "a_local_var" Store
+                    RHS: Name[107, 118] Value: "a_local_var"
+                FunctionDef[131, 181]
+                    Name:method01
+                    ---- Function body of method01 ----
+                    Return[163, 181] Name[170, 181] Value: "a_local_var"
+                    ---- End of method01 function ----
+                ---- End of C class ----
+            Return[190, 210] 
+                Attribute[197, 198] 
+                    Receiver: Name[197, 198] Value: "C"
+                    Attr: a_local_var
+            ---- End of f function ----
+        ---- End of fn function ----
