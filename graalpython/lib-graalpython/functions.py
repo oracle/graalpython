@@ -37,12 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-@__graalpython__.builtin
-def hasattr(obj, key):
-    default = object()
-    return getattr(obj, key, default) is not default
-
-
 from sys import _getframe as __getframe__
 
 

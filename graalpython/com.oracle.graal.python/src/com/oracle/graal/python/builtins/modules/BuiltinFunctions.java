@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.EVAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
 import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.GETATTR;
+import static com.oracle.graal.python.nodes.BuiltinNames.HASATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.HASH;
 import static com.oracle.graal.python.nodes.BuiltinNames.HEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.ID;
@@ -1958,6 +1959,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached SetAttributeNode.Dynamic setAttrNode) {
             setAttrNode.execute(frame, object, key, value);
             return PNone.NONE;
+        }
+    }
+
+    // hasattr(object, name)
+    @Builtin(name = HASATTR, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class HasAttrNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean hasAttr(VirtualFrame frame, Object object, Object key,
+                        @Cached PyObjectLookupAttr pyObjectLookupAttr) {
+            return pyObjectLookupAttr.execute(frame, object, key) != PNone.NO_VALUE;
         }
     }
 

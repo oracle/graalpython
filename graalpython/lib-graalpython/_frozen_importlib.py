@@ -41,21 +41,6 @@ import _imp
 import posix
 import sys
 
-
-def load(suffix=""):
-    module_name = "_frozen_importlib%s" % suffix
-    filename = __graalpython__.stdlib_home + ("/importlib/_bootstrap%s.py" % suffix)
-    return __import__(filename, module_name)
-
-
-load("_external")
-importlib = load()
-importlib._install(sys, _imp)
-importlib._install_external_importers()
-sys.modules["builtins"].__import__ = __graalpython__.builtin(importlib.__import__)
-__graalpython__.register_import_func(sys.modules["builtins"].__import__)
-__graalpython__.register_importlib(importlib)
-
 # Insert our meta finder for caching
 _imp.CachedImportFinder.ModuleSpec = importlib.ModuleSpec
 sys.meta_path.insert(0, _imp.CachedImportFinder)

@@ -44,7 +44,7 @@
 def __gr__(self, name, mode='r', closefd=True, opener=None):
     pass
 
-def __import__(filename, module_name):
+def __bootstrap_import__(filename, module_name):
     import sys, _imp, posix
     module = sys.modules[module_name]
     if filename.startswith("%s"):
@@ -69,13 +69,13 @@ def __import__(filename, module_name):
     return module
 
 
-# TODO(fa): This was formerly located in 'property.py' which has been intrinsified but seemingly other modules rely
-#  on 'descriptor'. We should revisit that.
-def _f(): pass
-FunctionType = type(_f)
-descriptor = type(FunctionType.__code__)
+# # TODO(fa): This was formerly located in 'property.py' which has been intrinsified but seemingly other modules rely
+# #  on 'descriptor'. We should revisit that.
+# def _f(): pass
+# FunctionType = type(_f)
+# descriptor = type(FunctionType.__code__)
 
-__import__("%s/functions.py", "builtins")
-__import__("%s/exceptions.py", "builtins")
-__import__("%s/super.py", "builtins")
-__import__("%s/ellipsis.py", "builtins")
+__bootstrap_import__("%s/functions.py", "builtins")
+__bootstrap_import__("%s/exceptions.py", "builtins")
+__bootstrap_import__("%s/super.py", "builtins")
+__bootstrap_import__("%s/ellipsis.py", "builtins")

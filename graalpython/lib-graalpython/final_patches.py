@@ -51,11 +51,3 @@ finally:
     sys.path.pop()
     
 _imp.cache_all_file_modules()
-
-from importlib._bootstrap import BuiltinImporter
-for name in ['importlib._bootstrap', 'importlib._bootstrap_external', '_descriptor']:
-    mod = sys.modules.get(name, None)
-    if mod:
-        spec = BuiltinImporter.find_spec(name)
-        setattr(mod, '__spec__', spec)
-        setattr(mod, '__loader__', spec.loader)
