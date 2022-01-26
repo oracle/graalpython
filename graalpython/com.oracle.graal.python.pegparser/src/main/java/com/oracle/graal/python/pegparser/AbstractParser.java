@@ -557,6 +557,13 @@ abstract class AbstractParser {
     }
 
     /**
+     * _PyPegen_map_names_to_ids
+     */
+    static String[] extractNames(ExprTy[] seq) {
+        return Arrays.stream(seq).map((e) -> ((ExprTy.Name) e).id).toArray(String[]::new);
+    }
+
+    /**
      * _PyPegen_collect_call_seqs
      */
     final ExprTy collectCallSequences(ExprTy[] a, KeywordOrStarred[] b, int startOffset, int endOffset) {

@@ -1796,6 +1796,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, NONLOCAL_STMT_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'nonlocal' ','.NAME+
             Token _keyword;
             ExprTy[] a;
@@ -1805,9 +1806,11 @@ public final class Parser extends AbstractParser {
                 (a = (ExprTy[])_gather_31_rule()) != null  // ','.NAME+
             )
             {
-                // TODO: node.action: _PyAST_Nonlocal ( CHECK ( String * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Nonlocal ( CHECK ( String * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createNonLocal(extractNames(a),startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, NONLOCAL_STMT_ID, _res);
                 return (StmtTy)_res;
             }
