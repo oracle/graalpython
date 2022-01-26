@@ -452,4 +452,14 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy createNonLocal(String[] names, int startOffset, int endOffset) {
         return new StmtTy.NonLocal(names, startOffset, endOffset);
     }
+
+    @Override
+    public ExprTy createAnd(ExprTy[] values, int startOffset, int endOffset) {
+        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.And, values, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createOr(ExprTy[] values, int startOffset, int endOffset) {
+        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.Or, values, startOffset, endOffset);
+    }
 }

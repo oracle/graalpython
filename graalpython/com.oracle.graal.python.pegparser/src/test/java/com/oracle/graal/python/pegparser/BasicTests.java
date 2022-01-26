@@ -553,16 +553,16 @@ public class BasicTests extends ParserTestBase {
 //        checkScopeAndTree();
 //    }
 
-//    @Test
-//    public void or01() throws Exception {
-//        checkTreeResult("a or b");
-//    }
-//
-//    @Test
-//    public void and01() throws Exception {
-//        checkTreeResult("a and b");
-//    }
-//
+   @Test
+   public void or01() throws Exception {
+       checkTreeResult("a or b");
+   }
+
+   @Test
+   public void and01() throws Exception {
+       checkTreeResult("a and b");
+   }
+
 //    @Test
 //    public void not01() throws Exception {
 //        checkTreeResult("not a");
