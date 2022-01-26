@@ -442,4 +442,9 @@ public class NodeFactoryImp implements NodeFactory{
         StmtTy.ClassDef classdef = (StmtTy.ClassDef) proto;
         return new StmtTy.ClassDef(classdef.name, classdef.bases, classdef.keywords, classdef.body, decorators, startOffset, endOffset);
     }
+
+    @Override
+    public StmtTy createNonLocal(String[] names, int startOffset, int endOffset) {
+        return new StmtTy.NonLocal(names, startOffset, endOffset);
+    }
 }
