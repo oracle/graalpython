@@ -773,9 +773,11 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(StmtTy.Global node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append(": ");
+        for (String id : node.names) {
+            sb.append(id).append(' ');
+        }
         return sb.toString();
-
     }
 
     @Override
