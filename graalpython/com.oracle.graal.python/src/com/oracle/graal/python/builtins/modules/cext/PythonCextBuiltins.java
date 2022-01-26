@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -76,7 +75,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -426,16 +424,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     }
 
     ///////////// mappingproxy /////////////
-
-    @Builtin(name = "PyDictProxy_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyDictProxyNewNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public static Object values(VirtualFrame frame, Object obj,
-                        @Cached MappingproxyNode mappingNode) {
-            return mappingNode.execute(frame, PythonBuiltinClassType.PMappingproxy, obj);
-        }
-    }
 
     @Builtin(name = "Py_DECREF", minNumOfPositionalArgs = 1)
     @Builtin(name = "Py_INCREF", minNumOfPositionalArgs = 1)
@@ -2407,34 +2395,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyDescr_NewClassMethod", minNumOfPositionalArgs = 6, parameterNames = {"name", "doc", "flags", "wrapper", "cfunc", "primary"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
-    @GenerateNodeFactory
-    abstract static class PyDescrNewClassMethod extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyDescrNewClassMethodClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object doNativeCallable(String name, Object doc, int flags, Object wrapper, Object methObj, Object primary,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached NewClassMethodNode newClassMethodNode,
-                        @Cached ToNewRefNode newRefNode) {
-            Object type = asPythonObjectNode.execute(primary);
-            Object func = newClassMethodNode.execute(name, methObj, flags, wrapper, type, doc, factory());
-            if (!isClassOrStaticMethod(flags)) {
-                /*
-                 * NewClassMethodNode only wraps method with METH_CLASS and METH_STATIC set but we
-                 * need to do so here.
-                 */
-                func = factory().createClassmethodFromCallableObj(func);
-            }
-            return newRefNode.execute(func);
-        }
-    }
-
     abstract static class CFunctionNewExMethodNode extends Node {
 
         abstract Object execute(String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
@@ -2655,26 +2615,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         private static RootCallTarget setterCallTarget(String name, PythonLanguage lang) {
             Function<PythonLanguage, RootNode> rootNodeFunction = l -> new SetterRoot(l, name, PExternalFunctionWrapper.SETTER);
             return lang.createCachedCallTarget(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true);
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyDescr_NewGetSet", minNumOfPositionalArgs = 6, parameterNames = {"name", "cls", "getter", "setter", "doc", "closure"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
-    @GenerateNodeFactory
-    abstract static class PyDescrNewGetSetNode extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyDescrNewGetSetNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object doNativeCallable(String name, Object cls, Object getter, Object setter, Object doc, Object closure,
-                        @Cached CreateGetSetNode createGetSetNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure,
-                            getLanguage(), factory());
-            return toSulongNode.execute(descr);
         }
     }
 
