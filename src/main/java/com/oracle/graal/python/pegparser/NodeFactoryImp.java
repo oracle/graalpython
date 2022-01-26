@@ -390,8 +390,13 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decorators, ExprTy returns, String typeComment, int startOffset, int endOffset) {
-        return new StmtTy.FunctionDef(name, args, body, decorators, returns, typeComment, startOffset, endOffset);
+    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, int startOffset, int endOffset) {
+        return new StmtTy.FunctionDef(name, args, body, null, returns, typeComment, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createFunctionDef(StmtTy funcDef, ExprTy[] decorators) {
+        return ((StmtTy.FunctionDef) funcDef).copyWithDecorators(decorators);
     }
 
     @Override

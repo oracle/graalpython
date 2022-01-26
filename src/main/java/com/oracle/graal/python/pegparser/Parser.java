@@ -4545,9 +4545,7 @@ public final class Parser extends AbstractParser {
                 (f = function_def_raw_rule()) != null  // function_def_raw
             )
             {
-                // TODO: node.action: _PyPegen_function_def_decorators ( p , d , f )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_function_def_decorators ( p , d , f ) to Java !!![0m");
-                _res = null;
+                _res = factory.createFunctionDef(f,d);
                 cache.putResult(_mark, FUNCTION_DEF_ID, _res);
                 return (StmtTy)_res;
             }
@@ -4616,7 +4614,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createFunctionDef(((ExprTy.Name)n).id,params,b,null,(ExprTy)a,newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset);
+                _res = factory.createFunctionDef(((ExprTy.Name)n).id,params,b,(ExprTy)a,newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
                 return (StmtTy)_res;
             }
