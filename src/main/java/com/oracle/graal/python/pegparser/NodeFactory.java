@@ -150,6 +150,8 @@ public interface NodeFactory {
 
     public StmtTy createNonLocal(String[] names, int startOffset, int endOffset);
 
+    public StmtTy createGlobal(String[] names, int startOffset, int endOffset);
+
     public ExprTy createAnd(ExprTy[] values, int startOffset, int endOffset);
 
     public ExprTy createOr(ExprTy[] values, int startOffset, int endOffset);
