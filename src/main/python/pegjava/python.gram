@@ -191,7 +191,7 @@ augassign[AugOperator*]:
 global_stmt[stmt_ty]: 'global' a[asdl_expr_seq*]=','.NAME+ {
     _PyAST_Global(CHECK(String*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
 nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
-    _PyAST_Nonlocal(CHECK(String*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
+    factory.createNonLocal(extractNames(a), startToken.startOffset, endToken.endOffset) }
 
 yield_stmt[stmt_ty]: y=yield_expr { factory.createExpression(y) }
 

@@ -145,4 +145,6 @@ public interface NodeFactory {
     public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, int startOffset, int endOffset);
 
     public StmtTy createClassDef(StmtTy classDef, ExprTy[] decorators, int startOffset, int endOffset);
+
+    public StmtTy createNonLocal(String[] names, int startOffset, int endOffset);
 }
