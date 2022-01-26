@@ -7,8 +7,9 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.importAddModule;
+import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.importGetModule;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.importFrozenModuleObject;
 
 @GenerateUncached
@@ -18,8 +19,9 @@ public abstract class InitFrozenHelper extends PNodeWithContext {
 
     @Specialization
     public Object run(Python3Core core, String name,
+                      @Cached ConditionProfile isStringProfile,
                       @Cached PRaiseNode raiseNode) {
-        int ret = importFrozenModuleObject(core, name, raiseNode);
+        int ret = importFrozenModuleObject(core, name, isStringProfile, raiseNode);
 
         if (ret < 0 ) {
             return null; // TODO: refactor importFrozenModuleObject
@@ -27,7 +29,7 @@ public abstract class InitFrozenHelper extends PNodeWithContext {
             return PNone.NONE;
         }
 
-        return importAddModule(core, name);
+        return importGetModule(core, name);
     }
 
     public static InitFrozenHelper getUncached() {

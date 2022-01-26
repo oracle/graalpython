@@ -104,7 +104,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PDictValueIterator(DICT_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
     PDictReverseValueIterator(DICT_REVERSE_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
     PDictValuesView(DICT_VALUES, Flags.PRIVATE_DERIVED_WODICT),
-    PEllipsis("ellipsis", Flags.PRIVATE_DERIVED_WODICT),
+    PEllipsis("ellipsis", BUILTINS, Flags.PRIVATE_DERIVED_WODICT),
     PEnumerate("enumerate", BUILTINS),
     PMap("map", BUILTINS),
     PFloat("float", BUILTINS),

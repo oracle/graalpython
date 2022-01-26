@@ -71,11 +71,8 @@ def __bootstrap_import__(filename, module_name):
 
 # # TODO(fa): This was formerly located in 'property.py' which has been intrinsified but seemingly other modules rely
 # #  on 'descriptor'. We should revisit that.
-# def _f(): pass
-# FunctionType = type(_f)
-# descriptor = type(FunctionType.__code__)
+def _f(): pass
+FunctionType = type(_f)
+descriptor = type(FunctionType.__code__)
 
 __bootstrap_import__("%s/functions.py", "builtins")
-__bootstrap_import__("%s/exceptions.py", "builtins")
-__bootstrap_import__("%s/super.py", "builtins")
-__bootstrap_import__("%s/ellipsis.py", "builtins")

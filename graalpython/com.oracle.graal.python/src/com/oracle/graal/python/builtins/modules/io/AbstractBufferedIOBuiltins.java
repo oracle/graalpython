@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIOError;
+import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.OS_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.nodes.ErrorMessages.BUF_SIZE_POS;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_DETACHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
@@ -53,6 +54,7 @@ import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellNode;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodesFactory.RawTellNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -226,9 +228,11 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
                             written
             };
             PBaseException exception = factory.createBaseException(BlockingIOError, factory.createTuple(args));
-            writeAttribute.execute(exception, "errno", errno);
-            writeAttribute.execute(exception, "strerror", message);
-            writeAttribute.execute(exception, "characters_written", written);
+            final Object[] attrs = OS_ERROR_ATTR_FACTORY.create();
+            attrs[OsErrorBuiltins.IDX_ERRNO] = errno;
+            attrs[OsErrorBuiltins.IDX_STRERROR] = message;
+            attrs[OsErrorBuiltins.IDX_WRITTEN] = written;
+            exception.setExceptionAttributes(attrs);
             return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(node)));
         }
 

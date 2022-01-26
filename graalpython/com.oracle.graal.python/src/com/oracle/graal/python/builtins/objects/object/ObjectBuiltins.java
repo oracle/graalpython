@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
@@ -66,7 +65,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -79,7 +77,9 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuilt
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
@@ -90,6 +90,8 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -99,6 +101,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -234,7 +237,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
 
-                if (overridesInit.profile(!overridesBuiltinMethod(type, profileInit, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class))) {
+                if (overridesInit.profile(!overridesBuiltinMethod(type, profileNew, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class))) {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
             }
@@ -682,7 +685,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return null;
         }
 
-        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)", "!isDeleteMarker(mapping)"})
         Object dict(@SuppressWarnings("unused") Object self, Object mapping) {
             throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
@@ -838,4 +841,29 @@ public class ObjectBuiltins extends PythonBuiltins {
             return commonReduceNode.execute(frame, obj, proto);
         }
     }
+
+    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1, doc = "__dir__ for generic objects\n\n\tReturns __dict__, __class__ and recursively up the\n\t__class__.__bases__ chain.")
+    @GenerateNodeFactory
+    public abstract static class DirNode extends PythonBuiltinNode {
+        @Specialization
+        Object dir(VirtualFrame frame, Object obj,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached CallNode callNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode dirNode) {
+            PSet names = factory().createSet();
+            Object updateCallable = lookupAttrNode.execute(frame, names, "update");
+            Object ns = lookupAttrNode.execute(frame, obj, __DICT__);
+            if (isSubtypeNode.execute(frame, getClassNode.execute(ns), PythonBuiltinClassType.PDict)) {
+                callNode.execute(frame, updateCallable, ns);
+            }
+            Object klass = lookupAttrNode.execute(frame, obj, __CLASS__);
+            if (klass != PNone.NO_VALUE) {
+                callNode.execute(frame, updateCallable, dirNode.execute(frame, klass));
+            }
+            return names;
+        }
+    }
+
 }

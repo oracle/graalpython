@@ -46,7 +46,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -68,7 +67,7 @@ public abstract class PRaiseNode extends Node {
         return execute(raisingNode, type, null, cause, format, arguments);
     }
 
-    public abstract PException execute(Node raisingNode, PythonBuiltinClassType type, PBaseException.Data data, Object cause, Object format, Object[] arguments);
+    public abstract PException execute(Node raisingNode, PythonBuiltinClassType type, Object[] data, Object cause, Object format, Object[] arguments);
 
     public final PException raise(PythonBuiltinClassType type) {
         throw execute(this, type, null, PNone.NO_VALUE, PNone.NO_VALUE, PythonUtils.EMPTY_OBJECT_ARRAY);
@@ -86,7 +85,7 @@ public abstract class PRaiseNode extends Node {
         throw execute(this, type, null, PNone.NO_VALUE, PNone.NO_VALUE, arguments);
     }
 
-    public final PException raiseWithData(PythonBuiltinClassType type, PBaseException.Data data, Object... arguments) {
+    public final PException raiseWithData(PythonBuiltinClassType type, Object[] data, Object... arguments) {
         throw execute(this, type, data, PNone.NO_VALUE, PNone.NO_VALUE, arguments);
     }
 
@@ -131,7 +130,17 @@ public abstract class PRaiseNode extends Node {
     }
 
     public final PException raiseSystemExit(Object code) {
-        return raiseWithData(PythonBuiltinClassType.SystemExit, SystemExitBuiltins.SystemExitData.create(code), code);
+        return raiseWithData(PythonBuiltinClassType.SystemExit, new Object[]{code}, code);
+    }
+
+    public final PException raiseStopIteration() {
+        return raise(PythonBuiltinClassType.StopIteration);
+    }
+
+    public final PException raiseStopIteration(Object value) {
+        final Object retVal = value != null ? value : PNone.NONE;
+        final Object[] args = {retVal};
+        return raiseWithData(PythonBuiltinClassType.StopIteration, args, retVal);
     }
 
     public final PException raiseHasNoLength(Object result) {
@@ -168,7 +177,7 @@ public abstract class PRaiseNode extends Node {
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0", "exceptionType == cachedType"}, limit = "8")
-    static PException doPythonBuiltinTypeCached(Node raisingNode, @SuppressWarnings("unused") PythonBuiltinClassType exceptionType, PBaseException.Data data, @SuppressWarnings("unused") PNone cause,
+    static PException doPythonBuiltinTypeCached(Node raisingNode, @SuppressWarnings("unused") PythonBuiltinClassType exceptionType, Object[] data, @SuppressWarnings("unused") PNone cause,
                     @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType") PythonBuiltinClassType cachedType,
@@ -177,7 +186,7 @@ public abstract class PRaiseNode extends Node {
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"}, replaces = "doPythonBuiltinTypeCached")
-    static PException doPythonBuiltinType(Node raisingNode, PythonBuiltinClassType exceptionType, PBaseException.Data data, @SuppressWarnings("unused") PNone cause,
+    static PException doPythonBuiltinType(Node raisingNode, PythonBuiltinClassType exceptionType, Object[] data, @SuppressWarnings("unused") PNone cause,
                     @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
@@ -185,21 +194,21 @@ public abstract class PRaiseNode extends Node {
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length > 0"})
-    static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, PBaseException.Data data, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
+    static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, Object[] data, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
                     Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         throw raiseExceptionObject(raisingNode, factory.createBaseException(type, data, factory.createTuple(arguments)));
     }
 
     @Specialization(guards = {"isNoValue(cause)"})
-    static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, PBaseException.Data data, @SuppressWarnings("unused") PNone cause, String format, Object[] arguments,
+    static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, Object[] data, @SuppressWarnings("unused") PNone cause, String format, Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         assert format != null;
         throw raiseExceptionObject(raisingNode, factory.createBaseException(type, data, format, arguments));
     }
 
     @Specialization(guards = {"!isNoValue(cause)"})
-    static PException doBuiltinTypeWithCause(Node raisingNode, PythonBuiltinClassType type, PBaseException.Data data, PBaseException cause, String format, Object[] arguments,
+    static PException doBuiltinTypeWithCause(Node raisingNode, PythonBuiltinClassType type, Object[] data, PBaseException cause, String format, Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         assert format != null;
         PBaseException baseException = factory.createBaseException(type, data, format, arguments);

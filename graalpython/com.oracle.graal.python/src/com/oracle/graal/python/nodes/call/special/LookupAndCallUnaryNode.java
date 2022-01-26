@@ -87,6 +87,10 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return LookupAndCallUnaryNodeGen.create(name, handlerFactory);
     }
 
+    public static LookupAndCallUnaryNode create(SpecialMethodSlot slot, Supplier<NoAttributeHandler> handlerFactory) {
+        return LookupAndCallUnaryNodeGen.create(slot, handlerFactory);
+    }
+
     LookupAndCallUnaryNode(SpecialMethodSlot slot, Supplier<NoAttributeHandler> handlerFactory) {
         this.slot = slot;
         this.name = slot.getName();

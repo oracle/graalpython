@@ -26,7 +26,6 @@
 package com.oracle.graal.python.nodes.generator;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -99,7 +98,7 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
                 throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
             }
             fallthroughProfile.enter();
-            throw raise.raise(StopIteration);
+            throw raise.raiseStopIteration();
         } catch (YieldException eye) {
             yieldProfile.enter();
             return eye.getValue();
@@ -112,9 +111,9 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     factory = insert(PythonObjectFactory.create());
                 }
-                throw raise.raiseExceptionObject(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})));
+                throw raise.raiseStopIteration(retVal);
             } else {
-                throw raise.raise(StopIteration);
+                throw raise.raiseStopIteration();
             }
         }
     }

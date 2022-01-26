@@ -79,7 +79,7 @@ public abstract class GetNextNode extends PNodeWithContext {
     @NodeInfo(cost = NONE)
     private static final class GetNextCached extends GetNextNode {
 
-        @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(__NEXT__, () -> new NoAttributeHandler() {
+        @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next, () -> new NoAttributeHandler() {
             @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
             @Override

@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
@@ -56,6 +55,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.util.PythonUtils;
@@ -188,7 +188,6 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
                     @Shared("lookupAttrNode") @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached ToSulongNode toSulongNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                    @Cached GetNativeNullNode getNativeNullNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
@@ -199,7 +198,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
                     return toSulongNode.execute(callNode.execute(null, attr, convertedArgs, PKeyword.EMPTY_KEYWORDS));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(null, e);
-                    return toSulongNode.execute(getNativeNullNode.execute());
+                    return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
                 }
             }
             throw UnknownIdentifierException.create(member);

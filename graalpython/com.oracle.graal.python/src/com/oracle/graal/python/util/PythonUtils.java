@@ -47,7 +47,9 @@ import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -61,7 +63,6 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -450,8 +451,23 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static int indexOf(String s, char chr) {
+        return s.indexOf(chr);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int indexOf(String s, String sep) {
+        return s.indexOf(sep);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static int lastIndexOf(String s, char chr) {
         return s.lastIndexOf(chr);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int lastIndexOf(String s, String sep) {
+        return s.lastIndexOf(sep);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -546,28 +562,6 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static String getPythonOSName() {
-        String property = System.getProperty("os.name");
-        String os = "java";
-        if (property != null) {
-            if (property.toLowerCase().contains("cygwin")) {
-                os = "cygwin";
-            } else if (property.toLowerCase().contains("linux")) {
-                os = "linux";
-            } else if (property.toLowerCase().contains("mac")) {
-                os = SysModuleBuiltins.PLATFORM_DARWIN;
-            } else if (property.toLowerCase().contains("windows")) {
-                os = SysModuleBuiltins.PLATFORM_WIN32;
-            } else if (property.toLowerCase().contains("sunos")) {
-                os = "sunos";
-            } else if (property.toLowerCase().contains("freebsd")) {
-                os = "freebsd";
-            }
-        }
-        return os;
-    }
-
-    @TruffleBoundary
     public static ByteBuffer allocateByteBuffer(int capacity) {
         return ByteBuffer.allocate(capacity);
     }
@@ -630,6 +624,26 @@ public final class PythonUtils {
     @TruffleBoundary
     public static <E> E pop(ArrayDeque<E> q) {
         return q.pop();
+    }
+
+    @TruffleBoundary
+    public static <E> List<E> newList() {
+        return new ArrayList<E>();
+    }
+
+    @TruffleBoundary
+    public static <E> void add(List<E> list, E e) {
+        list.add(e);
+    }
+
+    @TruffleBoundary
+    public static <E> E get(List<E> list, int index) {
+        return list.get(index);
+    }
+
+    @TruffleBoundary
+    public static <E> Object[] toArray(List<E> list) {
+        return list.toArray();
     }
 
     /**

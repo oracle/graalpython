@@ -42,6 +42,11 @@
 
 PyTypeObject PyCode_Type = PY_TRUFFLE_TYPE("code", &PyType_Type, Py_TPFLAGS_DEFAULT, sizeof(PyTypeObject));
 
+UPCALL_ID(PyCode_NewEmpty)
+PyCodeObject* PyCode_NewEmpty(const char *filename, const char *funcname, int firstlineno) {
+    return (PyCodeObject*)UPCALL_CEXT_O(_jls_PyCode_NewEmpty, polyglot_from_string(filename, SRC_CS), polyglot_from_string(funcname, SRC_CS), firstlineno);
+}
+
 UPCALL_ID(PyCode_New);
 PyCodeObject* PyCode_New(int argcount, int kwonlyargcount,
                          int nlocals, int stacksize, int flags,
@@ -63,7 +68,7 @@ PyCodeObject* PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int k
                          PyObject *varnames, PyObject *freevars, PyObject *cellvars,
                          PyObject *filename, PyObject *name, int firstlineno,
                          PyObject *lnotab) {
-    return (PyCodeObject*)(UPCALL_CEXT_O(_jls_PyCode_NewWithPosOnlyArgs, argcount, kwonlyargcount,
+    return (PyCodeObject*)(UPCALL_CEXT_O(_jls_PyCode_NewWithPosOnlyArgs, argcount, posonlyargcount, kwonlyargcount,
                                          nlocals, stacksize, flags,
                                          native_to_java(code), native_to_java(consts), native_to_java(names),
                                          native_to_java(varnames), native_to_java(filename), native_to_java(name), firstlineno,

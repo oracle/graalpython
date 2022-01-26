@@ -51,8 +51,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -66,43 +64,20 @@ public final class SystemExitBuiltins extends PythonBuiltins {
         return SystemExitBuiltinsFactory.getFactories();
     }
 
-    @CompilerDirectives.ValueType
-    public static final class SystemExitData extends PBaseException.Data {
-        private Object code;
-
-        private SystemExitData() {
-
+    public static final BaseExceptionAttrNode.StorageFactory SYSTEM_EXIT_ATTR_FACTORY = (args, factory) -> {
+        Object code;
+        switch (args.length) {
+            case 0:
+                code = PNone.NONE;
+                break;
+            case 1:
+                code = args[0];
+                break;
+            default:
+                code = factory.createTuple(args);
         }
-
-        public Object getCode() {
-            return code;
-        }
-
-        public void setCode(Object code) {
-            this.code = code;
-        }
-
-        public static SystemExitData create(Object code) {
-            final SystemExitData data = new SystemExitData();
-            data.setCode(code);
-            return data;
-        }
-
-        public static SystemExitData create(PythonObjectFactory factory, Object[] args) {
-            final SystemExitData data = new SystemExitData();
-            switch (args.length) {
-                case 0:
-                    data.setCode(PNone.NONE);
-                    break;
-                case 1:
-                    data.setCode(args[0]);
-                    break;
-                default:
-                    data.setCode(factory.createTuple(args));
-            }
-            return data;
-        }
-    }
+        return new Object[]{code};
+    };
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
@@ -111,27 +86,18 @@ public final class SystemExitBuiltins extends PythonBuiltins {
         Object initNoArgs(PBaseException self, Object[] args,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            self.setData(SystemExitData.create(factory(), args));
+            self.setExceptionAttributes(SYSTEM_EXIT_ATTR_FACTORY.create(args, factory()));
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "code", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception code")
+    @Builtin(name = "code", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception code")
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(none)")
-        public Object code(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            final Object data = self.getData();
-            assert data instanceof SystemExitData;
-            return ((SystemExitData) data).getCode();
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        public Object code(PBaseException self, Object value) {
-            final Object data = self.getData();
-            assert data instanceof SystemExitData;
-            ((SystemExitData) data).setCode(value);
-            return PNone.NONE;
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, 0, SYSTEM_EXIT_ATTR_FACTORY);
         }
     }
 }

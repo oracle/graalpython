@@ -105,11 +105,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.frame.Frame;
 
 public final class CertUtils {
 
@@ -133,6 +134,16 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
+    public static boolean[] getKeyUsage(X509Certificate cert) {
+        return cert.getKeyUsage();
+    }
+
+    @TruffleBoundary
+    public static byte[] getEncoded(X509Certificate cert) throws CertificateEncodingException {
+        return cert.getEncoded();
+    }
+
+    @TruffleBoundary
     static boolean isSelfSigned(X509Certificate cert) {
         try {
             cert.verify(cert.getPublicKey());
@@ -151,7 +162,7 @@ public final class CertUtils {
      * _ssl.c#_decode_certificate
      */
     @TruffleBoundary
-    public static PDict decodeCertificate(Node node, PythonObjectSlowPathFactory factory, X509Certificate cert) throws CertificateParsingException {
+    public static PDict decodeCertificate(PythonObjectSlowPathFactory factory, X509Certificate cert) throws CertificateParsingException {
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
         HashingStorageLibrary hlib = HashingStorageLibrary.getUncached();
@@ -167,7 +178,7 @@ public final class CertUtils {
             storage = setItem(hlib, storage, JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
             storage = setItem(hlib, storage, JAVA_X509_VERSION, getVersion(cert));
         } catch (RuntimeException re) {
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, re);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, re);
         }
         dict.setDictStorage(storage);
         return dict;
@@ -670,7 +681,7 @@ public final class CertUtils {
      * Returns the first private key found
      */
     @TruffleBoundary
-    static byte[] getEncodedPrivateKey(Node node, BufferedReader r) throws IOException {
+    static byte[] getEncodedPrivateKey(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, BufferedReader r) throws IOException {
         boolean begin = false;
         StringBuilder sb = new StringBuilder();
         String line;
@@ -687,56 +698,56 @@ public final class CertUtils {
             }
         }
         if (begin || sb.length() == 0) {
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
 
         try {
             return Base64.getDecoder().decode(sb.toString());
         } catch (IllegalArgumentException e) {
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
     }
 
     @TruffleBoundary
-    static PrivateKey createPrivateKey(Node node, byte[] bytes, X509Certificate cert) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    static PrivateKey createPrivateKey(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, byte[] bytes, X509Certificate cert) throws NoSuchAlgorithmException, InvalidKeySpecException {
         PublicKey publicKey = cert.getPublicKey();
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
         KeyFactory factory = KeyFactory.getInstance(publicKey.getAlgorithm());
         PrivateKey privateKey = factory.generatePrivate(spec);
-        checkPrivateKey(node, privateKey, publicKey);
+        checkPrivateKey(frame, constructAndRaiseNode, privateKey, publicKey);
         return privateKey;
     }
 
-    private static void checkPrivateKey(Node node, PrivateKey privateKey, PublicKey publicKey) {
+    private static void checkPrivateKey(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PrivateKey privateKey, PublicKey publicKey) {
         if (privateKey instanceof RSAPrivateKey) {
             RSAPrivateKey privKey = (RSAPrivateKey) privateKey;
             RSAPublicKey pubKey = (RSAPublicKey) publicKey;
             if (!privKey.getModulus().equals(pubKey.getModulus())) {
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
             }
         } else if (privateKey instanceof DSAPrivateKey) {
             DSAPrivateKey privKey = (DSAPrivateKey) privateKey;
             DSAPublicKey pubKey = (DSAPublicKey) publicKey;
             if (!privKey.getParams().equals(pubKey.getParams())) {
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
             }
         } else if (privateKey instanceof ECPrivateKey) {
             ECPrivateKey privKey = (ECPrivateKey) privateKey;
             ECPublicKey pubKey = (ECPublicKey) publicKey;
             if (!privKey.getParams().equals(pubKey.getParams())) {
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
             }
         } else if (privateKey instanceof DHPrivateKey) {
             DHPrivateKey privKey = (DHPrivateKey) privateKey;
             DHPublicKey pubKey = (DHPublicKey) publicKey;
             if (!privKey.getParams().equals(pubKey.getParams())) {
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
             }
         }
     }
 
     @TruffleBoundary
-    static DHParameterSpec getDHParameters(Node node, File file) throws IOException, NoSuchAlgorithmException, InvalidParameterSpecException {
+    static DHParameterSpec getDHParameters(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, File file) throws IOException, NoSuchAlgorithmException, InvalidParameterSpecException {
         try (BufferedReader r = new BufferedReader(new FileReader(file))) {
             String line;
             boolean begin = false;
@@ -752,7 +763,7 @@ public final class CertUtils {
                 }
             }
             if (!begin) {
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
+                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
             }
             AlgorithmParameters ap = AlgorithmParameters.getInstance("DH");
             ap.init(Base64.getDecoder().decode(sb.toString()));

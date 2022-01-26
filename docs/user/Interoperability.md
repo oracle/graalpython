@@ -137,11 +137,11 @@ Finally, to interoperate with Java (only when running on the JVM), you can use t
 ```python
 import java
 BigInteger = java.type("java.math.BigInteger")
-myBigInt = BigInteger(42)
-myBigInt.shiftLeft(128)
+myBigInt = BigInteger.valueOf(42)
 # public Java methods can just be called
-myBigInt["not"]()
-# Java method names that are keywords in Python can be accessed using "[]"
+myBigInt.shiftLeft(128)
+# Java method names that are keywords in Python can be accessed using `getattr`
+getattr(myBigInt, "not")()
 byteArray = myBigInt.toByteArray()
 # Java arrays can act like Python lists
 print(list(byteArray))

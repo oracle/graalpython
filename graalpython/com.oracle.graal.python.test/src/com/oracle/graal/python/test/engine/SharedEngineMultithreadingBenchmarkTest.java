@@ -49,13 +49,11 @@ import java.nio.file.Paths;
 
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
 
 public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultithreadingTestBase {
-    @Ignore
     @Test
     public void testRichardsInParallelInMultipleContexts() throws Throwable {
         try (Engine engine = Engine.newBuilder().build()) {

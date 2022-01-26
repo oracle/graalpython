@@ -47,6 +47,22 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
+def test_reduce_ex_with_slots():
+    # Adapted from test_desc.test_issue24097
+    class A:
+        __slotnames__ = ['spam']
+
+        def __getattr__(self, attr):
+            if attr == 'spam':
+                return 42
+            else:
+                raise AttributeError
+
+    import copyreg
+    expected = (copyreg.__newobj__, (A,), (None, {'spam': 42}), None, None)
+    assert A().__reduce_ex__(2) == expected
+
+
 def test_set_dict_attr_builtin_extension():
     class MyList(list):
         pass

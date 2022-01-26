@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "fa8db34069fcf2525c435b729c15b870110462dc",
+                "version": "b79445b15014fa064862a0b5435846004212cc8f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "fa8db34069fcf2525c435b729c15b870110462dc",
+                "version": "b79445b15014fa064862a0b5435846004212cc8f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "fa8db34069fcf2525c435b729c15b870110462dc",
+                "version": "b79445b15014fa064862a0b5435846004212cc8f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -207,8 +207,11 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
             ],
+            "requires": [
+                "java.management",
+            ],
             "jacoco": "include",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -216,7 +219,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "jacoco": "include",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -227,8 +230,11 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.annotations"
             ],
+            "requires": [
+                "java.compiler",
+            ],
             "jacoco": "exclude",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -240,9 +246,8 @@ suite = {
                 "com.oracle.graal.python.annotations"
             ],
             "jacoco": "exclude",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
-            "workingSets": "Truffle,Python",
         },
 
         # GRAALPYTHON
@@ -265,9 +270,15 @@ suite = {
                 "truffle:ICU4J-CHARSET",
                 "sdk:JLINE3",
             ],
+            "requires": [
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+                "jdk.security.auth",
+            ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "checkstyleVersion": "8.8",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
@@ -288,9 +299,14 @@ suite = {
                 "mx:JUNIT",
                 "NETBEANS-LIB-PROFILER",
             ],
+            "requires": [
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+            ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
                 "truffle:TRUFFLE_DSL_PROCESSOR"
@@ -312,9 +328,12 @@ suite = {
                 "sdk:LAUNCHER_COMMON",
                 "mx:JMH_1_21"
             ],
+            "requires": [
+                "java.logging",
+            ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "annotationProcessors" : ["mx:JMH_1_21"],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated" : True,
@@ -329,7 +348,7 @@ suite = {
                 "mx:JUNIT"
             ],
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "workingSets": "Truffle,Python",
             "testProject": True,
         },

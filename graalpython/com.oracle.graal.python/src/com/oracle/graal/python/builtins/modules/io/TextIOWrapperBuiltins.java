@@ -105,7 +105,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode.chainExceptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -1147,7 +1146,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             if (PString.length(line) == 0) {
                 self.clearSnapshot();
                 self.setTelling(self.isSeekable());
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return line;
         }

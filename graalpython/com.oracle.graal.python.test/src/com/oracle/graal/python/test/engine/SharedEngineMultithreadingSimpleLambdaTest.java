@@ -47,13 +47,11 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMultithreadingTestBase {
     private static final int RUNS_COUNT = 2 * RUNS_COUNT_FACTOR;
 
-    @Ignore
     @Test
     public void testLambdaInParallelCtxCreatedInMainThread() throws InterruptedException, ExecutionException {
         ExecutorService executorService = createExecutorService();
@@ -85,7 +83,6 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
         }
     }
 
-    @Ignore
     @Test
     public void testLambdaInParallelCtxCreatedInWorkerThread() throws InterruptedException, ExecutionException {
         ExecutorService executorService = createExecutorService();
@@ -112,7 +109,6 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
         }
     }
 
-    @Ignore
     @Test
     public void testLambdaInParallelSharedContexts() throws InterruptedException, ExecutionException {
         ExecutorService executorService = createExecutorService();

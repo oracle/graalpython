@@ -207,15 +207,15 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final Object readArrayElement(long index,
+        final byte readArrayElement(long index,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws InvalidArrayIndexException {
             try {
                 int idx = PInt.intValueExact(index);
                 String s = (String) lib.getDelegate(this);
                 if (idx >= 0 && idx < s.length()) {
-                    return s.charAt(idx);
+                    return (byte) s.charAt(idx);
                 } else if (idx == s.length()) {
-                    return '\0';
+                    return 0;
                 }
             } catch (OverflowException e) {
                 // fall through

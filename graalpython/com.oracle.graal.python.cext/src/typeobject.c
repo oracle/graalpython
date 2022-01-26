@@ -343,6 +343,10 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
         }
         /* COPYSLOT(tp_call); */
     }
+    {
+        COPYSLOT(tp_iter);
+        COPYSLOT(tp_iternext);
+    }
 
     if ((type->tp_flags & Py_TPFLAGS_HAVE_FINALIZE) &&
         (base->tp_flags & Py_TPFLAGS_HAVE_FINALIZE)) {

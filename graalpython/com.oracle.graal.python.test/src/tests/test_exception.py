@@ -154,7 +154,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(e.filename, "file1")
         self.assertEqual(e.filename2, None)
 
-    def test_oserror_four_attribute(self):
+    def test_oserror_four_attribute_2(self):
         e = OSError(errno.EISDIR, "message", "file1", None, "file2")
         self.assertEqual(e.errno, 21)
         self.assertEqual(e.strerror, "message")

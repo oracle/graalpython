@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,8 @@ package com.oracle.graal.python.nodes;
 public abstract class ErrorMessages {
 
     public static final String ABSOLUTE_VALUE_TOO_LARGE = "absolute value too large";
+    public static final String S_EXPECTED_SD_ARGS_GOT_D = "%s expected %s%d argument%s, got %d";
+    public static final String UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS = "unpacked tuple should have %s%d element%s, but has %d";
     public static final String ARG_AFTER_MUST_BE_ITERABLE = "argument after * must be an iterable, not %p";
     public static final String ARG_AFTER_MUST_BE_MAPPING = "%s() argument after ** must be a mapping, not %p";
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
@@ -174,7 +176,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
     public static final String CANT_CONCAT_P_TO_S = "can't concat %p to %s";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
-    public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
+    public static final String CANT_CONVERT_TO_STR_IMPLICITLY = "Can't convert '%p' object to str implicitly";
     public static final String CANT_COMPARE = "Can't compare %p and %p";
     public static final String CANT_DELETE = "can't delete '%s'";
     public static final String CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE = "can't delete numeric/char attribute";
@@ -437,6 +439,7 @@ public abstract class ErrorMessages {
     public static final String MISSING_S = "Missing %s";
     public static final String MMAP_INDEX_OUT_OF_RANGE = "mmap index out of range";
     public static final String MODULE_HAS_NO_ATTR_S = "module has no attribute '%s'";
+    public static final String MODULE_S_HAS_NO = "module '%s' has no %s";
     public static final String MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S = "partially initialized module '%s' has no attribute '%s' (most likely due to a circular import)";
     public static final String MODULE_S_HAS_NO_ATTR_S = "module '%s' has no attribute '%s'";
     public static final String MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED = "multi-dimensional sub-views are not implemented";
@@ -446,6 +449,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
     public static final String MUST_BE_INTEGER = "%s must be an integer";
+    public static final String MUST_BE_INTEGER_QUOTED_ATTR = "\"%s\" must be an integer";
     public static final String MUST_BE_INTEGER_NOT_P = "%s must be an integer, not %p";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
     public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
@@ -474,6 +478,7 @@ public abstract class ErrorMessages {
     public static final String NATIVE_S_SUBTYPES_NOT_IMPLEMENTED = "native %s subtypes not implemented";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
     public static final String DECODING_STR_NOT_SUPPORTED = "decoding str is not supported";
+    public static final String S_NEEDS_S_AS_FIRST_ARG = "%s() needs %s as first arg";
     public static final String NEG_INF_PLUS_INF_IN = "-inf + inf in fsum";
     public static final String NEGATIVE_COUNT = "negative count";
     public static final String NEGATIVE_DATA_SIZE = "negative data size";
@@ -504,8 +509,11 @@ public abstract class ErrorMessages {
     public static final String OBJ_DOES_NOT_SUPPORT_INDEXING = "'%p' object does not support indexing";
     public static final String OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%s' object does not support item assignment";
     public static final String P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%p' object does not support item assignment";
+    public static final String OBJ_CANT_BE_REPEATED = "'%p' object can't be repeated";
+    public static final String OBJ_CANT_BE_CONCATENATED = "'%p' object can't be concatenated";
     public static final String OBJ_DOESNT_SUPPORT_DELETION = "'%p' object doesn't support item deletion";
     public static final String OBJ_HAS_NO_LEN = "object of type '%p' has no len()";
+    public static final String OBJ_IS_UNSLICEABLE = "'%p' object is unsliceable";
     public static final String OBJ_ISNT_CALLABLE = "'%p' object is not callable";
     public static final String OBJ_ISNT_ITERATOR = "'%p' object is not an iterator";
     public static final String OBJ_ISNT_MAPPING = "'%p' object is not a mapping";
@@ -604,6 +612,7 @@ public abstract class ErrorMessages {
     public static final String TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING = "Too many decimal digits in format string";
     public static final String SLOTS_MUST_BE_IDENTIFIERS = "__slots__ must be identifiers";
     public static final String STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE = "starred assignment target must be in a list or tuple";
+    public static final String STATE_IS_NOT_A_DICT = "state is not a dictionary";
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
     public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
@@ -630,7 +639,8 @@ public abstract class ErrorMessages {
     public static final String TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S = "%s() takes from %d to %d positional argument%s but %d %s given%s";
     public static final String TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN = "%s() takes exactly %d arguments (%d given)";
     public static final String TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN = "%s() takes exactly %s arguments (%d given)";
-    public static final String TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
+    public static final String S_TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
+    public static final String P_TAKES_NO_KEYWORD_ARGS = "%p takes no keyword arguments";
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = "_tee_dataobject should not have more than %s links";
     public static final String TDATAOBJECT_SHOULDNT_HAVE_NEXT = "_tee_dataobject shouldn't have a next if not full";
@@ -695,8 +705,11 @@ public abstract class ErrorMessages {
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL_P = "Was not possible to marshal %p";
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
+    public static final String WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS = "writable contiguous buffer requested for a non-contiguous object";
+    public static final String WRITEOBJ_WITH_NULL_FILE = "writeobject with NULL file";
     public static final String X_NOT_IN_LIST = "x not in list";
     public static final String X_NOT_IN_TUPLE = "tuple.index(x): x not in tuple";
+    public static final String S_IS_AN_INVALID_ARG_FOR_S = "'%s' is an invalid keyword argument for %s";
     public static final String YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH = "%s: you may specify either '%s' or '%s' but not both";
     public static final String ZIPIMPORT_CANNOT_REWAD_ARCH_MEMBERS = "zipimport: cannot read archive members large than 2GB";
     public static final String ZIPIMPORT_CANT_READ_DATA = "zipimport: can't read data";
@@ -1005,6 +1018,17 @@ public abstract class ErrorMessages {
     public static final String INVALID_PARTIAL_STATE = "invalid partial state";
     public static final String LOST_S = "lost %s";
 
+    // ssl error messages
+    public static final String SSL_ERR_DECODING_PEM_FILE_S = "Error decoding PEM-encoded file: %s";
+    public static final String SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S = "Error decoding PEM-encoded file: unexpected type %s";
+    public static final String SSL_ERR_DECODING_PEM_FILE = "Error decoding PEM-encoded file";
+    public static final String SSL_CANT_OPEN_FILE_S = "Can't open file: %s";
+    public static final String SSL_CANNOT_WRITE_AFTER_EOF = "cannot write() after write_eof()";
+
+    // syntax errors
+    public static final String MISSING_PARENTHESES_IN_CALL_TO_EXEC = "Missing parentheses in call to 'exec'";
+    public static final String MISSING_PARENTHESES_IN_CALL_TO_PRINT = "Missing parentheses in call to 'print'. Did you mean print(%s%s)?";
+
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
 
@@ -1032,6 +1056,7 @@ public abstract class ErrorMessages {
     public static final String FROZEN_INVALID = "Frozen object named %s is invalid";
     public static final String NOT_A_CODE_OBJECT = "frozen object %s is not a code object";
 
+    public static final String MODULE_NOT_FOUND = "Loaded module %s not found in sys.modules";
 
     // warnings
     public static final String WARN_P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +

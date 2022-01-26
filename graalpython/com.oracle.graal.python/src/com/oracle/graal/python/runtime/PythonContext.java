@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
@@ -67,7 +69,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -77,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
@@ -153,7 +156,7 @@ public final class PythonContext extends Python3Core {
     private volatile boolean finalizing;
 
     private static String getJniSoExt() {
-        if ("darwin".equals(PythonUtils.getPythonOSName())) {
+        if (getPythonOS() == PLATFORM_DARWIN) {
             return ".dylib";
         }
         return ".so";
@@ -517,6 +520,8 @@ public final class PythonContext extends Python3Core {
     // the full module name for package imports
     private String pyPackageContext;
 
+    private final PythonNativeNull nativeNull = new PythonNativeNull();
+
     public String getPyPackageContext() {
         return pyPackageContext;
     }
@@ -847,6 +852,10 @@ public final class PythonContext extends Python3Core {
 
     public static PythonContext get(Node node) {
         return REFERENCE.get(node);
+    }
+
+    public PythonNativeNull getNativeNull() {
+        return nativeNull;
     }
 
     public AllocationReporter getAllocationReporter() {
@@ -2161,7 +2170,7 @@ public final class PythonContext extends Python3Core {
 
             // only use '.dylib' if we are on 'Darwin-native'
             String soExt;
-            if ("darwin".equals(PythonUtils.getPythonOSName()) && "native".equals(toolchainId)) {
+            if (getPythonOS() == PLATFORM_DARWIN && "native".equals(toolchainId)) {
                 soExt = ".dylib";
             } else {
                 soExt = ".so";

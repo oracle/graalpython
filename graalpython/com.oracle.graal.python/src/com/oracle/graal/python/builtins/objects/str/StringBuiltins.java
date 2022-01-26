@@ -95,6 +95,10 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.EndsWithNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.EqNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.LtNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StartsWithNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
@@ -148,7 +152,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -421,6 +424,10 @@ public final class StringBuiltins extends PythonBuiltins {
         boolean operator(String self, String other) {
             return self.equals(other);
         }
+
+        public static EqNode create() {
+            return EqNodeFactory.create();
+        }
     }
 
     @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
@@ -438,6 +445,10 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         boolean operator(String self, String other) {
             return StringUtils.compareToUnicodeAware(self, other) < 0;
+        }
+
+        public static LtNode create() {
+            return LtNodeFactory.create();
         }
     }
 
@@ -801,6 +812,11 @@ public final class StringBuiltins extends PythonBuiltins {
         protected String getErrorMessage() {
             return INVALID_ELEMENT_TYPE;
         }
+
+        public static StartsWithNode create() {
+            return StartsWithNodeFactory.create();
+        }
+
     }
 
     // str.endswith(suffix[, start[, end]])
@@ -826,6 +842,10 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         protected String getErrorMessage() {
             return INVALID_ELEMENT_TYPE;
+        }
+
+        public static EndsWithNode create() {
+            return EndsWithNodeFactory.create();
         }
     }
 
@@ -1565,7 +1585,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.replace
     @Builtin(name = "replace", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    public abstract static class ReplaceNode extends PythonBuiltinNode {
+    public abstract static class ReplaceNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -2480,22 +2500,22 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StrGetItemNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isString(primary)")
-        public String doString(VirtualFrame frame, Object primary, PSlice slice,
+        @Specialization
+        public String doString(VirtualFrame frame, Object self, PSlice slice,
                         @Cached CastToJavaStringNode castToJavaString,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached StrGetItemNodeWithSlice getItemNodeWithSlice) {
-            String str = castToJavaString.execute(primary);
+            String str = castToString(self, castToJavaString);
             SliceInfo info = compute.execute(frame, sliceCast.execute(slice), str.length());
             return getItemNodeWithSlice.execute(str, info);
         }
 
-        @Specialization(guards = {"!isPSlice(idx)", "isString(primary)"})
-        public String doString(VirtualFrame frame, Object primary, Object idx,
+        @Specialization(guards = "!isPSlice(idx)")
+        public String doString(VirtualFrame frame, Object self, Object idx,
                         @Cached CastToJavaStringNode castToJavaString,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            String str = castToJavaString.execute(primary);
+            String str = castToString(self, castToJavaString);
             int index = asSizeNode.executeExact(frame, idx);
             if (index < 0) {
                 index += str.length();
@@ -2506,16 +2526,18 @@ public final class StringBuiltins extends PythonBuiltins {
             return charAtToString(str, index);
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doGeneric(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
         @TruffleBoundary
         private static String charAtToString(String primary, int index) {
             char character = primary.charAt(index);
-            return new String(new char[]{character});
+            return String.valueOf(character);
+        }
+
+        private String castToString(Object self, CastToJavaStringNode castToJavaString) {
+            try {
+                return castToJavaString.execute(self);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __GETITEM__, "str", self);
+            }
         }
     }
 

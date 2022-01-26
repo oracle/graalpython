@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.util;
 
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -57,6 +58,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
  * Utility class for mapping Python encodings to Java charsets
  */
 public class CharsetMapping {
+    private static final Charset UTF_32 = Charset.forName("UTF_32");
     private static final ConcurrentMap<String, Charset> JAVA_CHARSETS = new ConcurrentHashMap<>();
     // Name maps are populated by static initializer and are immutable afterwards
     private static final Map<String, String> CHARSET_NAME_MAP = new HashMap<>();
@@ -69,6 +71,46 @@ public class CharsetMapping {
             return getJavaCharset(name);
         }
         return null;
+    }
+
+    @TruffleBoundary
+    public static Charset getCharsetForDecoding(String encoding, byte[] bytes, int len) {
+        String normalized = normalize(encoding);
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            /*
+             * JDK's charsets for UTF-16 and UTF-32 default to big endian irrespective of the
+             * platform if there is no BOM. The UTF-16-LE and UTF-32-LE charsets reject big endian
+             * BOM. CPython defaults to platform endian and accepts both BOMs. So, in order to get
+             * the behavior we need, we have to take a peek at the possible BOM and if it has a BOM
+             * use the UTF-16/32 encoding and let it detect, otherwise default to UTF-16/32-LE.
+             */
+            if ("utf_16".equals(normalized) && hasUTF16BOM(bytes, len)) {
+                return StandardCharsets.UTF_16;
+            } else if ("utf_32".equals(normalized) && hasUTF32BOM(bytes, len)) {
+                return UTF_32;
+            }
+        }
+        String name = CHARSET_NAME_MAP.get(normalized);
+        if (name != null) {
+            return getJavaCharset(name);
+        }
+        return null;
+    }
+
+    private static boolean hasUTF16BOM(byte[] bytes, int len) {
+        if (len < 2) {
+            return false;
+        }
+        short head = PythonUtils.arrayAccessor.getShort(bytes, 0);
+        return head == (short) 0xFFFE || head == (short) 0xFEFF;
+    }
+
+    private static boolean hasUTF32BOM(byte[] bytes, int len) {
+        if (len < 4) {
+            return false;
+        }
+        int head = PythonUtils.arrayAccessor.getInt(bytes, 0);
+        return head == 0xFFFE0000 || head == 0x0000FEFF;
     }
 
     @TruffleBoundary
@@ -138,11 +180,13 @@ public class CharsetMapping {
         JAVA_CHARSETS.put("UTF-8", StandardCharsets.UTF_8);
         JAVA_CHARSETS.put("UTF-16BE", StandardCharsets.UTF_16BE);
         JAVA_CHARSETS.put("UTF-16LE", StandardCharsets.UTF_16LE);
-        JAVA_CHARSETS.put("UTF-16", StandardCharsets.UTF_16);
+        JAVA_CHARSETS.put("UTF-16", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Charset.forName("UnicodeLittle") : StandardCharsets.UTF_16);
+        JAVA_CHARSETS.put("UTF-32", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Charset.forName("UTF-32LE-BOM") : Charset.forName("UTF-32BE-BOM"));
 
         // Add our custom charsets
         addMapping("raw_unicode_escape", "x-python-raw-unicode-escape");
         addMapping("unicode-escape", "x-python-unicode-escape");
+        addMapping("unicodeescape", "x-python-unicode-escape");
         JAVA_CHARSETS.put("x-python-raw-unicode-escape", new PythonRawUnicodeEscapeCharset());
         JAVA_CHARSETS.put("x-python-unicode-escape", new PythonUnicodeEscapeCharset());
 

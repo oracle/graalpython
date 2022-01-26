@@ -64,7 +64,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -75,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.BinaryFirstToSulongNodeGen;
@@ -85,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Direc
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNativeNullNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ObjectUpcallNodeGen;
@@ -97,7 +94,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJav
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
@@ -108,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -444,11 +441,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doDeleteMarker(@SuppressWarnings("unused") CExtContext cextContext, DescriptorDeleteMarker marker,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+        Object doDeleteMarker(@SuppressWarnings("unused") CExtContext cextContext, DescriptorDeleteMarker marker) {
             assert marker == DescriptorDeleteMarker.INSTANCE;
-            PythonNativeNull nativeNull = (PythonNativeNull) getNativeNullNode.execute();
-            return nativeNull.getPtr();
+            return getNativeNullPtr(this);
         }
 
         static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
@@ -548,6 +543,10 @@ public abstract class CExtNodes {
 
         protected static boolean isNaN(double d) {
             return Double.isNaN(d);
+        }
+
+        static Object getNativeNullPtr(Node node) {
+            return PythonContext.get(node).getNativeNull().getPtr();
         }
 
         public static ToSulongNode create() {
@@ -706,10 +705,10 @@ public abstract class CExtNodes {
             return ToSulongNode.doNativeNull(cextContext, object);
         }
 
+        @SuppressWarnings("unused")
         @Specialization
-        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
+        Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker) {
+            return ToSulongNode.getNativeNullPtr(this);
         }
 
         static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
@@ -896,10 +895,10 @@ public abstract class CExtNodes {
             return ToSulongNode.doNativeNull(cextContext, object);
         }
 
+        @SuppressWarnings("unused")
         @Specialization
-        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
+        Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker) {
+            return ToSulongNode.getNativeNullPtr(this);
         }
 
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
@@ -1405,6 +1404,10 @@ public abstract class CExtNodes {
             }
             return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), false));
         }
+
+        public static ToJavaNode create() {
+            return ToJavaNodeGen.create();
+        }
     }
 
     /**
@@ -1739,7 +1742,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public abstract static class AllToJavaNode extends PNodeWithContext {
+    public abstract static class AllToPythonNode extends PNodeWithContext {
 
         final Object[] execute(Object[] args) {
             return execute(args, 0);
@@ -1788,8 +1791,63 @@ public abstract class CExtNodes {
             return nodes;
         }
 
+        public static AllToPythonNode create() {
+            return CExtNodesFactory.AllToPythonNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class AllToJavaNode extends PNodeWithContext {
+
+        final Object[] execute(Object[] args) {
+            return execute(args, 0);
+        }
+
+        abstract Object[] execute(Object[] args, int offset);
+
+        @Specialization(guards = { //
+                        "args.length == cachedLength", //
+                        "offset == cachedOffset", //
+                        "effectiveLen(cachedLength, cachedOffset) < 5"}, //
+                        limit = "5")
+        @ExplodeLoop
+        static Object[] cached(Object[] args, @SuppressWarnings("unused") int offset,
+                        @Cached("args.length") int cachedLength,
+                        @Cached("offset") int cachedOffset,
+                        @Cached("createNodes(args.length)") ToJavaNode[] toJavaNodes) {
+            int n = cachedLength - cachedOffset;
+            Object[] output = new Object[n];
+            for (int i = 0; i < n; i++) {
+                output[i] = toJavaNodes[i].execute(args[i + cachedOffset]);
+            }
+            return output;
+        }
+
+        @Specialization(replaces = "cached")
+        static Object[] uncached(Object[] args, int offset,
+                        @Exclusive @Cached ToJavaNode toJavaNode) {
+            int len = args.length - offset;
+            Object[] output = new Object[len];
+            for (int i = 0; i < len; i++) {
+                output[i] = toJavaNode.execute(args[i + offset]);
+            }
+            return output;
+        }
+
+        static int effectiveLen(int len, int offset) {
+            return len - offset;
+        }
+
+        static ToJavaNode[] createNodes(int n) {
+            ToJavaNode[] nodes = new ToJavaNode[n];
+            for (int i = 0; i < n; i++) {
+                nodes[i] = ToJavaNode.create();
+            }
+            return nodes;
+        }
+
         public static AllToJavaNode create() {
-            return AllToJavaNodeGen.create();
+            return CExtNodesFactory.AllToJavaNodeGen.create();
         }
     }
 
@@ -1887,24 +1945,24 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 3")
         Object upcall2(VirtualFrame frame, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
+            Object[] converted = allToPythonNode.execute(args, 1);
             return callNode.executeObject(frame, args[0], converted[0], converted[1]);
         }
 
         @Specialization(guards = "args.length == 4")
         Object upcall3(VirtualFrame frame, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
+            Object[] converted = allToPythonNode.execute(args, 1);
             return callNode.execute(frame, args[0], converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
         Object upcall(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
+            Object[] converted = allToPythonNode.execute(args, 1);
             return callNode.execute(frame, args[0], converted, new PKeyword[0]);
         }
 
@@ -2115,9 +2173,9 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 3")
         Object upcall2(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+            Object[] converted = allToPythonNode.execute(args, 1);
             assert args[0] instanceof String;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.executeObject(frame, callable, converted[0], converted[1]);
@@ -2126,9 +2184,9 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 4")
         Object upcall3(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+            Object[] converted = allToPythonNode.execute(args, 1);
             assert args[0] instanceof String;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
@@ -2137,9 +2195,9 @@ public abstract class CExtNodes {
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
         Object upcall(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+            Object[] converted = allToPythonNode.execute(args, 1);
             assert args[0] instanceof String;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
@@ -2191,9 +2249,9 @@ public abstract class CExtNodes {
         Object upcall2(VirtualFrame frame, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 2);
+            Object[] converted = allToPythonNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
             Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
@@ -2204,9 +2262,9 @@ public abstract class CExtNodes {
         Object upcall3(VirtualFrame frame, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 2);
+            Object[] converted = allToPythonNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
             Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
@@ -2217,11 +2275,11 @@ public abstract class CExtNodes {
         Object upcall(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             // we needs at least a receiver and a member name
             assert args.length >= 2;
-            Object[] converted = allToJavaNode.execute(args, 2);
+            Object[] converted = allToPythonNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
             Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
@@ -2528,8 +2586,6 @@ public abstract class CExtNodes {
         @Child private ExpressionNode wrappedBody;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
 
-        @Child private GetNativeNullNode getNativeNullNode;
-
         private final MayRaiseErrorResult errorResult;
 
         MayRaiseNode(ExpressionNode wrappedBody, MayRaiseErrorResult errorResult) {
@@ -2569,11 +2625,7 @@ public abstract class CExtNodes {
                 case NONE:
                     return PNone.NONE;
                 case NATIVE_NULL:
-                    if (getNativeNullNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getNativeNullNode = insert(GetNativeNullNodeGen.create());
-                    }
-                    return getNativeNullNode.execute();
+                    return getContext().getNativeNull();
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -2743,34 +2795,6 @@ public abstract class CExtNodes {
         public static GetTypeMemberNode getUncached() {
             return GetTypeMemberNodeGen.getUncached();
         }
-    }
-
-    @GenerateUncached
-    public abstract static class GetNativeNullNode extends Node {
-
-        public abstract Object execute(Object module);
-
-        public final Object execute() {
-            return execute(null);
-        }
-
-        @Specialization(guards = "module != null")
-        static Object getNativeNullWithModule(Object module,
-                        @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode) {
-            Object wrapper = readAttrNode.execute(module, PythonCextBuiltins.NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
-        @Specialization(guards = "module == null")
-        static Object getNativeNullWithoutModule(@SuppressWarnings("unused") Object module,
-                        @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode) {
-            PythonModule pythonCextModule = PythonContext.get(readAttrNode).lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
-            Object wrapper = readAttrNode.execute(pythonCextModule, PythonCextBuiltins.NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
     }
 
     /**
@@ -3309,6 +3333,8 @@ public abstract class CExtNodes {
                                 throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "character argument not in range(0x110000)");
                             }
                             result.append((char) ordinal);
+                            vaArgIdx++;
+                            valid = true;
                             break;
                         case 'd':
                         case 'i':

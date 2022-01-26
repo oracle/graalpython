@@ -47,13 +47,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -105,7 +105,6 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
                     @Cached ToSulongNode toSulongNode,
                     @Cached BranchProfile errorProfile,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                    @Cached GetNativeNullNode getNativeNullNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
@@ -124,7 +123,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
             } catch (PException e) {
                 errorProfile.enter();
                 transformExceptionToNativeNode.execute(null, e);
-                result = getNativeNullNode.execute(null);
+                result = PythonContext.get(gil).getNativeNull();
             }
             return result;
         } finally {

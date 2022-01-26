@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -763,7 +762,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 try {
                     return lib.getIteratorNextElement(iterator);
                 } catch (StopIterationException e) {
-                    throw raiseNode.raise(StopIteration);
+                    throw raiseNode.raiseStopIteration();
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
                 } finally {
@@ -1030,7 +1029,6 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Child private LookupAndCallUnaryNode callStrNode;
         @Child private CastToListNode castToListNode;
-        @Child private ObjectNodes.DefaultObjectReprNode defaultReprNode;
 
         @Specialization
         Object str(VirtualFrame frame, Object object,
@@ -1042,7 +1040,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached BranchProfile isLong,
                         @Cached BranchProfile isDouble,
                         @Cached BranchProfile isArray,
-                        @Cached BranchProfile isHostObject) {
+                        @Cached BranchProfile defaultCase) {
             try {
                 if (lib.isNull(object)) {
                     isNull.enter();
@@ -1100,31 +1098,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         PForeignArrayIterator iterable = factory().createForeignArrayIterator(object);
                         return getCallStrNode().executeObject(frame, getCastToListNode().execute(frame, iterable));
                     }
-                } else if (getContext().getEnv().isHostObject(object)) {
-                    isHostObject.enter();
-                    boolean isMetaObject = lib.isMetaObject(object);
-                    Object metaObject = isMetaObject
-                                    ? object
-                                    : lib.hasMetaObject(object) ? lib.getMetaObject(object) : null;
-                    if (metaObject != null) {
-                        Object displayName = lib.toDisplayString(metaObject);
-                        String text = createDisplayName(isMetaObject, displayName);
-                        return PythonUtils.format("<%s at 0x%x>", text, PythonAbstractObject.systemHashCode(object));
-                    }
                 }
             } catch (UnsupportedMessageException e) {
                 // Fall back to the generic impl
             }
-            return defaultRepr(frame, object);
-        }
-
-        @TruffleBoundary
-        private static String createDisplayName(boolean isMetaObject, Object object) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(isMetaObject ? "JavaClass[" : "JavaObject[");
-            sb.append(object.toString());
-            sb.append("]");
-            return sb.toString();
+            defaultCase.enter();
+            return defaultConversion(frame, lib, object);
         }
 
         private LookupAndCallUnaryNode getCallStrNode() {
@@ -1143,19 +1122,50 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             return castToListNode;
         }
 
-        protected String defaultRepr(VirtualFrame frame, Object object) {
-            if (defaultReprNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                defaultReprNode = insert(ObjectNodes.DefaultObjectReprNode.create());
+        protected String defaultConversion(@SuppressWarnings("unused") VirtualFrame frame, InteropLibrary lib, Object object) {
+            try {
+                return lib.asString(lib.toDisplayString(object));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
             }
-            return defaultReprNode.execute(frame, object);
         }
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
-        protected final String method = __REPR__;
+        @Child private ObjectNodes.DefaultObjectReprNode defaultReprNode;
+
+        protected String defaultConversion(VirtualFrame frame, @SuppressWarnings("unused") InteropLibrary lib, Object object) {
+            try {
+                if (getContext().getEnv().isHostObject(object)) {
+                    boolean isMetaObject = lib.isMetaObject(object);
+                    Object metaObject = null;
+                    if (isMetaObject) {
+                        metaObject = object;
+                    } else if (lib.hasMetaObject(object)) {
+                        metaObject = lib.getMetaObject(object);
+                    }
+                    if (metaObject != null) {
+                        Object displayName = lib.toDisplayString(metaObject);
+                        String text = createDisplayName(isMetaObject, displayName);
+                        return PythonUtils.format("<%s at 0x%x>", text, PythonAbstractObject.systemHashCode(object));
+                    }
+                }
+            } catch (UnsupportedMessageException e) {
+                // fallthrough to default
+            }
+            if (defaultReprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                defaultReprNode = insert(ObjectNodes.DefaultObjectReprNode.create());
+            }
+            return defaultReprNode.execute(frame, object);
+        }
+
+        @TruffleBoundary
+        private static String createDisplayName(boolean isMetaObject, Object object) {
+            return (isMetaObject ? "JavaClass[" : "JavaObject[") + object + "]";
+        }
     }
 
     @Builtin(name = __BASES__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)

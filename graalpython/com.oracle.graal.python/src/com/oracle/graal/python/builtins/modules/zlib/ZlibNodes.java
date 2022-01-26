@@ -85,6 +85,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -508,7 +509,7 @@ public class ZlibNodes {
 
         public abstract PBytes execute(ZLibCompObject.JavaZlibCompObject self, int mode, PythonObjectFactory factory);
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         @Specialization
         PBytes doit(ZLibCompObject.JavaZlibCompObject self, int mode, PythonObjectFactory factory) {
             byte[] result = new byte[DEF_BUF_SIZE];
@@ -538,7 +539,7 @@ public class ZlibNodes {
 
         public abstract byte[] execute(ZLibCompObject.JavaZlibCompObject self, Object data, int maxLength, int bufSize, PythonObjectFactory factory);
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         @Specialization
         byte[] doit(ZLibCompObject.JavaZlibCompObject self, byte[] bytes, int maxLength, int bufSize, PythonObjectFactory factory,
                         @Cached PRaiseNode raise,
@@ -549,7 +550,7 @@ public class ZlibNodes {
             boolean zdictIsSet = false;
 
             Inflater inflater = (Inflater) self.stream;
-            self.setInflaterInput(bytes);
+            self.setInflaterInput(bytes, raise);
 
             int bytesWritten = result.length;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -579,7 +580,7 @@ public class ZlibNodes {
             return baos.toByteArray();
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private static void saveUnconsumedInput(ZLibCompObject.JavaZlibCompObject self, byte[] data,
                         byte[] unusedDataBytes, int unconsumedTailLen, PythonObjectFactory factory) {
             Inflater inflater = (Inflater) self.stream;
@@ -602,17 +603,17 @@ public class ZlibNodes {
             }
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         public static boolean needsInput(Inflater inflater) {
             return inflater.needsInput();
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         public static int getRemaining(Inflater inflater) {
             return inflater.getRemaining();
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         public static int getBytesRead(Inflater inflater) {
             try {
                 return PInt.intValueExact(inflater.getBytesRead());
@@ -621,7 +622,7 @@ public class ZlibNodes {
             }
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         public static boolean isFinished(Inflater inflater) {
             return inflater.finished();
         }

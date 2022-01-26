@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -92,6 +93,11 @@ import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_csv")
 public final class CSVModuleBuiltins extends PythonBuiltins {
+
+    static {
+        // See comment about Python 3.10 in #getChar() and graalpython/test/test_csv.py
+        assert PythonLanguage.MINOR <= 10;
+    }
 
     static final String WRITE = "write";
     static final String NOT_SET = "NOT_SET";
@@ -531,8 +537,13 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.S_MUST_BE_STRING_NOT_S, name, getType.execute(valueObj));
             }
 
-            if (charValue.length() != 1 && charValue.codePointCount(0, charValue.length()) != 1) {
+            if (charValue.length() > 1 && charValue.codePointCount(0, charValue.length()) > 1) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_ONE_CHARACTER_STRING, name);
+            }
+
+            // CPython supports empty quotechars and escapechars until inclusive 3.10.
+            if (charValue.length() == 0) {
+                return NOT_SET;
             }
 
             return charValue;
@@ -592,7 +603,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             }
 
             if (!pyLongCheckExactNode.execute(valueObj)) {
-                throw raise(TypeError, ErrorMessages.MUST_BE_INTEGER, name);
+                throw raise(TypeError, ErrorMessages.MUST_BE_INTEGER_QUOTED_ATTR, name);
             }
 
             int value = pyLongAsIntNode.execute(frame, valueObj);

@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
@@ -54,6 +53,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -130,11 +130,10 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
                         @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode) {
             Object name = getAttrNode.execute(object, __NAME__);
             if (PGuards.isPNone(name)) {
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(PythonContext.get(this).getNativeNull());
             } else {
                 return asCharPointerNode.execute(name);
             }
@@ -145,11 +144,10 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
                         @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode) {
             Object doc = getAttrNode.execute(object, __DOC__);
             if (PGuards.isPNone(doc)) {
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(PythonContext.get(this).getNativeNull());
             } else {
                 return asCharPointerNode.execute(doc);
             }

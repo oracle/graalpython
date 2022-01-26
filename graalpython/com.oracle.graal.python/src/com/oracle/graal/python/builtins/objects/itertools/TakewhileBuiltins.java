@@ -40,14 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -95,7 +94,7 @@ public final class TakewhileBuiltins extends PythonBuiltins {
             Object value = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
             if (!isTrue.execute(frame, callNode.execute(self.getPredicate(), value))) {
                 self.setIterable(factory().createSequenceIterator(factory().createList(PythonUtils.EMPTY_OBJECT_ARRAY)));
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             return value;
         }

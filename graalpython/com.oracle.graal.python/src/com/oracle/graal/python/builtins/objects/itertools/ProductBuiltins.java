@@ -40,15 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -130,7 +129,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
             if (self.isStopped()) {
                 wasStoppedProfile.enter();
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
 
             // the existing lst array can be changed in a following next call
@@ -142,7 +141,7 @@ public final class ProductBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
         Object nextStopped(PProduct self) {
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         private static void rotatePreviousGear(PProduct self, LoopConditionProfile loopProfile, BranchProfile doneProfile) {

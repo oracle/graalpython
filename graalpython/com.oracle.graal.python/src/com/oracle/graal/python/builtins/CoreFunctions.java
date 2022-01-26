@@ -32,6 +32,14 @@ import java.lang.annotation.RetentionPolicy;
 public @interface CoreFunctions {
     String defineModule() default "";
 
+    String extendsModule() default "";
+
+    /**
+     * Most builtins are not OS specific. If specified, the builtin is included only if the os
+     * matches
+     */
+    PythonOS os() default PythonOS.PLATFORM_ANY;
+
     String publicName() default "";
 
     PythonBuiltinClassType[] extendClasses() default {};

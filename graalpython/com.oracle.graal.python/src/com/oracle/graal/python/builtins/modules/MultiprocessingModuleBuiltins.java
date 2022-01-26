@@ -160,10 +160,11 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "sem_unlink", parameterNames = {"name"})
     abstract static class SemUnlink extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone doit(String name) {
+        PNone doit(VirtualFrame frame, String name,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             Semaphore prev = getContext().getSharedMultiprocessingData().removeNamedSemaphore(name);
             if (prev == null) {
-                throw raise(PythonBuiltinClassType.FileNotFoundError, ErrorMessages.NO_SUCH_FILE_OR_DIR, "semaphores", name);
+                throw constructAndRaiseNode.raiseFileNotFoundError(frame, ErrorMessages.NO_SUCH_FILE_OR_DIR, "semaphores", name);
             }
             return PNone.NONE;
         }

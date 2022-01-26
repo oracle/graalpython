@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.List
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -101,15 +102,22 @@ public abstract class ListNodes {
             return factory.createList(cls, StringUtils.toCharacterArray(arg));
         }
 
+        @Specialization
+        static PList listString(Object cls, PString arg,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return listString(cls, arg.getValue(), factory);
+        }
+
         @Specialization(guards = "isNoValue(none)")
         static PList none(Object cls, @SuppressWarnings("unused") PNone none,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createList(cls);
         }
 
-        @Specialization
+        @Specialization(guards = "cannotBeOverridden(list, getClassNode)", limit = "1")
         // Don't use PSequence, that might copy storages that we don't allow for lists
         static PList fromList(Object cls, PList list,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {

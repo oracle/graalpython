@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_D_MUST_BE_A_S;
@@ -49,9 +48,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 
-import com.oracle.graal.python.builtins.Builtin;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -80,8 +81,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCycle})
 public final class CycleBuiltins extends PythonBuiltins {
@@ -126,7 +125,7 @@ public final class CycleBuiltins extends PythonBuiltins {
             }
             if (isEmpty(self.getSaved())) {
                 savedProfile.enter();
-                throw raise(StopIteration);
+                throw raiseStopIteration();
             }
             Object item = get(self.getSaved(), self.getIndex());
             self.setIndex(self.getIndex() + 1);

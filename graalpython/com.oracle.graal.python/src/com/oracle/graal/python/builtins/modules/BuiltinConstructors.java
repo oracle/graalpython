@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
@@ -174,8 +173,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
@@ -200,6 +199,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -1626,10 +1626,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             if (toSulongNodes == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNodes = new CExtNodes.ToSulongNode[4];
-                for (int i = 0; i < toSulongNodes.length; i++) {
-                    toSulongNodes[i] = insert(CExtNodesFactory.ToSulongNodeGen.create());
+                CExtNodes.ToSulongNode[] newToSulongNodes = new CExtNodes.ToSulongNode[4];
+                for (int i = 0; i < newToSulongNodes.length; i++) {
+                    newToSulongNodes[i] = CExtNodesFactory.ToSulongNodeGen.create();
                 }
+                toSulongNodes = insert(newToSulongNodes);
             }
             if (asPythonObjectNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2157,7 +2158,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached IsIdentifierNode isIdentifier,
                         @Cached HashingStorage.InitNode initNode,
-                        @Cached GetMroStorageNode getMroStorageNode) {
+                        @Cached GetMroStorageNode getMroStorageNode,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
             Object metaclass = cls;
@@ -2179,7 +2181,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 PythonLanguage language = PythonLanguage.get(this);
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, hashingStoragelib,
-                                getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier);
+                                getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier, constructAndRaiseNode);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
@@ -2284,7 +2286,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private PythonClass typeMetaclass(VirtualFrame frame, PythonLanguage language, String name, PTuple bases, PDict namespace, Object metaclass,
                         HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
                         LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize,
-                        IsIdentifierNode isIdentifier) {
+                        IsIdentifierNode isIdentifier, PConstructAndRaiseNode constructAndRaiseNode) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
@@ -2310,7 +2312,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             assert metaclass != null;
 
             if (!canEncodeUTF8(name)) {
-                throw raise(UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_CLASSNAME, name);
+                throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", name, 0, name.length(), "can't encode class name");
             }
             if (containsNullCharacter(name)) {
                 throw raise(ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
@@ -2324,7 +2326,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(pythonClass, namespace, hashingStorageLib, slots, qualnameSet);
+            copyDictSlots(frame, pythonClass, namespace, hashingStorageLib, slots, qualnameSet, constructAndRaiseNode);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
@@ -2503,7 +2505,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return false;
         }
 
-        private void copyDictSlots(PythonClass pythonClass, PDict namespace, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
+        private void copyDictSlots(VirtualFrame frame, PythonClass pythonClass, PDict namespace, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet,
+                        PConstructAndRaiseNode constructAndRaiseNode) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
@@ -2541,7 +2544,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     if (doc != null) {
                         if (!canEncodeUTF8(doc)) {
-                            throw raise(UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
+                            throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", doc, 0, doc.length(), "can't encode docstring");
                         }
                     }
                     pythonClass.setAttribute(key, value);
@@ -3154,9 +3157,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, isPublic = true, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class BaseExceptionNode extends PythonBuiltinNode {
+    public abstract static class BaseExceptionNode extends PythonVarargsBuiltinNode {
+        @Override
+        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (arguments.length == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new VarargsBuiltinDirectInvocationNotSupported();
+            }
+            if (arguments.length == 1) {
+                return initNoArgs(arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
+            }
+            Object[] argsWithoutSelf = PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length);
+            return execute(frame, arguments[0], argsWithoutSelf, keywords);
+        }
+
         @Specialization(guards = "args.length == 0")
         Object initNoArgs(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return factory().createBaseException(cls);

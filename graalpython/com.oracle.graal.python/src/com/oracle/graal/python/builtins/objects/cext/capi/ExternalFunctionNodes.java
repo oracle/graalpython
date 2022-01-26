@@ -262,7 +262,6 @@ public abstract class ExternalFunctionNodes {
                     rootNodeFunction = doArgAndResultConversion ? l -> new AllocFuncRootNode(l, name, sig) : l -> new AllocFuncRootNode(l, name);
                     break;
                 case DIRECT:
-                case DESCR_GET:
                 case DESCR_SET:
                 case LENFUNC:
                 case HASHFUNC:
@@ -317,6 +316,10 @@ public abstract class ExternalFunctionNodes {
                 case SETATTR:
                     nodeKlass = SetAttrFuncRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new SetAttrFuncRootNode(l, name, sig) : l -> new SetAttrFuncRootNode(l, name);
+                    break;
+                case DESCR_GET:
+                    nodeKlass = DescrGetRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? l -> new DescrGetRootNode(l, name, sig) : l -> new DescrGetRootNode(l, name);
                     break;
                 case RICHCMP:
                     nodeKlass = RichCmpFuncRootNode.class;
@@ -1358,6 +1361,46 @@ public abstract class ExternalFunctionNodes {
     }
 
     /**
+     * Implements semantics of {@code typeobject.c:wrap_descr_get}
+     */
+    public static final class DescrGetRootNode extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "obj", "type"}, KEYWORDS_HIDDEN_CALLABLE, true);
+        @Child private ReadIndexedArgumentNode readObj;
+        @Child private ReadIndexedArgumentNode readType;
+
+        public DescrGetRootNode(PythonLanguage language, String name) {
+            super(language, name, false);
+        }
+
+        public DescrGetRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
+            this.readObj = ReadIndexedArgumentNode.create(1);
+            this.readType = ReadIndexedArgumentNode.create(2);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            Object obj = readObj.execute(frame);
+            Object type = readType.execute(frame);
+            return new Object[]{self, obj == PNone.NONE ? PNone.NO_VALUE : obj, type == PNone.NONE ? PNone.NO_VALUE : type};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
+            releaseNativeWrapperNode.execute(cArguments[2]);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
      * Implement mapping of {@code __delitem__} to {@code mp_ass_subscript}. It handles adding the
      * NULL 3rd argument.
      */
@@ -1948,7 +1991,7 @@ public abstract class ExternalFunctionNodes {
                 PException currentException = getThreadStateNode.getCurrentException(context);
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
                 if (currentException == null) {
-                    throw raiseNode.raise(PythonBuiltinClassType.StopIteration);
+                    throw raiseNode.raiseStopIteration();
                 } else {
                     // consume exception
                     getThreadStateNode.setCurrentException(context, null);

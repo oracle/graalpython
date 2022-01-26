@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -1878,7 +1878,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // repr(object)
     @Builtin(name = REPR, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         static Object repr(VirtualFrame frame, Object obj,
@@ -1979,6 +1979,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SortedNode extends PythonClinicBuiltinNode {
 
+        public abstract Object executeInternal(VirtualFrame frame, Object iterable, Object keyfunc, boolean reverse);
+
         @Specialization
         Object sorted(VirtualFrame frame, Object iterable, Object keyfunc, boolean reverse,
                         @Cached ConstructListNode constructListNode,
@@ -1992,6 +1994,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected ArgumentClinicProvider getArgumentClinic() {
             return BuiltinFunctionsClinicProviders.SortedNodeClinicProviderGen.INSTANCE;
         }
+
+        public static SortedNode create() {
+            return BuiltinFunctionsFactory.SortedNodeFactory.create(null);
+        }
+
     }
 
     @Builtin(name = BREAKPOINT, takesVarArgs = true, takesVarKeywordArgs = true)

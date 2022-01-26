@@ -1820,7 +1820,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached PyFloatAsDoubleNode xAsDouble,
                         @Cached PyFloatAsDoubleNode yAsDouble) {
             if (keywords.length != 0) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_NO_KEYWORD_ARGS, "hypot()");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "hypot()");
             }
             double x = xAsDouble.execute(frame, arguments[0]);
             double y = yAsDouble.execute(frame, arguments[1]);
@@ -1831,7 +1831,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public double hypotGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             if (keywords.length != 0) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_NO_KEYWORD_ARGS, "hypot()");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "hypot()");
             }
             double max = 0.0;
             boolean foundNan = false;
