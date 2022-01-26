@@ -45,8 +45,11 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.modules.InitFrozenHelper;
 import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.frozen.FrozenModules;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -232,7 +235,6 @@ import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
@@ -324,7 +326,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "_imp",
                         "function",
                         "method",
-                        "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
                         "faulthandler",
@@ -640,7 +641,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     @CompilationFinal private PythonModule builtinsModule;
     @CompilationFinal private PythonModule sysModule;
     @CompilationFinal private PDict sysModules;
-    @CompilationFinal private PMethod importFunc;
+    @CompilationFinal private PFunction importFunc;
     @CompilationFinal private PythonModule importlib;
 
     @CompilationFinal private PInt pyTrue;
@@ -735,6 +736,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     public final void initialize(PythonContext context) {
         objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter());
         initializeJavaCore();
+        initializeImportlib();
         initializePython3Core(context.getCoreHomeOrFail());
         assert SpecialMethodSlot.checkSlotOverrides(this);
         initialized = true;
@@ -746,6 +748,21 @@ public abstract class Python3Core extends ParserErrorCallback {
         SpecialMethodSlot.initializeBuiltinsSpecialMethodSlots(this);
         publishBuiltinModules();
         builtinsModule = builtinModules.get(BuiltinNames.BUILTINS);
+    }
+
+    private void initializeImportlib() {
+        PythonModule bootstrap = (PythonModule) InitFrozenHelper.getUncached().execute( this,"_frozen_importlib");
+        PyObjectCallMethodObjArgs.getUncached().execute(null, bootstrap, "_install", getSysModule(), lookupBuiltinModule("_imp"));
+
+        getBuiltins().setAttribute("__import__", bootstrap.getAttribute("__import__"));
+        PyObjectCallMethodObjArgs.getUncached().execute(null, bootstrap, "_install_external_importers");
+        registerImportFunc((PFunction) bootstrap.getAttribute("__import__"));
+        registerImportlib(bootstrap);
+
+        // __package__ needs to be set and doesn't get set by _bootstrap setup
+        bootstrap.setAttribute(__PACKAGE__, "importlib");
+        PythonModule bootstrapExternal = (PythonModule) getSysModules().getItem("_frozen_importlib_external");
+        bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
     }
 
     private void initializePython3Core(String coreHome) {
@@ -785,6 +802,9 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     @TruffleBoundary
     public final PythonFrozenModule lookupFrozenModule(String name) {
+        if (isFrozenModuleAlias(name)) {
+            return frozenModules.get(getFrozenModuleOriginalName(name));
+        }
         return frozenModules.get(name);
     }
 
@@ -829,11 +849,11 @@ public abstract class Python3Core extends ParserErrorCallback {
         importlib = mod;
     }
 
-    public final PMethod getImportFunc() {
+    public final PFunction getImportFunc() {
         return importFunc;
     }
 
-    public final void registerImportFunc(PMethod func) {
+    public final void registerImportFunc(PFunction func) {
         if (importFunc != null) {
             throw new IllegalStateException("__import__ func cannot be registered more than once");
         }
@@ -934,16 +954,9 @@ public abstract class Python3Core extends ParserErrorCallback {
         // core machinery
         sysModule = builtinModules.get("sys");
         sysModules = (PDict) sysModule.getAttribute(MODULES);
-
-        PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
-        bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
-        addBuiltinModule("_frozen_importlib_external", bootstrapExternal);
-        PythonModule bootstrap = createModule("importlib._bootstrap");
-        bootstrap.setAttribute(__PACKAGE__, "importlib");
-        addBuiltinModule("_frozen_importlib", bootstrap);
     }
 
-    private PythonModule createModule(String name) {
+    public PythonModule createModule(String name) {
         return createModule(name, null);
     }
 

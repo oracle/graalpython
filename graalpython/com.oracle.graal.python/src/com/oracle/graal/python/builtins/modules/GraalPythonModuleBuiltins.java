@@ -817,7 +817,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RegisterImportFunc extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(PMethod func) {
+        Object doit(PFunction func) {
             getContext().registerImportFunc(func);
             return PNone.NONE;
         }
