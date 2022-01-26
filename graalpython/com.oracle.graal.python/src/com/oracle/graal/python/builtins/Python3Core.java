@@ -798,7 +798,7 @@ public abstract class Python3Core extends ParserErrorCallback {
      * Load the core library and prepare all builtin classes and modules.
      */
     public final void initialize(PythonContext context) {
-        objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter());
+        objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter(), context.getLanguage());
         initializeJavaCore();
         initializePython3Core(context.getCoreHomeOrFail());
         assert SpecialMethodSlot.checkSlotOverrides(this);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,64 +40,25 @@
  */
 package com.oracle.graal.python.runtime.object;
 
-import java.util.Objects;
-
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.instrumentation.AllocationReporter;
-import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory;
 import com.oracle.truffle.api.object.Shape;
 
-/**
- * A subclass of {@link PythonObjectFactory} which is basically an uncached version of it but
- * directly stores a reference to the {@link AllocationReporter} instead of doing a context lookup
- * and getting it from the context. This class is meant to be used on slow path where the context is
- * explicitly available.
- * 
- * Objects of this class should not be created directly, but retrieved from
- * {@link com.oracle.graal.python.builtins.Python3Core}. Note that
- * {@link PythonObjectSlowPathFactory} is context dependent object. It must not be stored in AST or
- * in {@link com.oracle.graal.python.PythonLanguage}, for example.
- */
-public final class PythonObjectSlowPathFactory extends PythonObjectFactory {
-
-    private final AllocationReporter reporter;
+final class SlowPathGetInstanceShapeNode extends TypeNodes.GetInstanceShape {
     private final PythonLanguage language;
-    private final SlowPathGetInstanceShapeNode getInstanceShapeNode;
 
-    public PythonObjectSlowPathFactory(AllocationReporter reporter, PythonLanguage language) {
-        this.reporter = Objects.requireNonNull(reporter);
+    SlowPathGetInstanceShapeNode(PythonLanguage language) {
         this.language = language;
-        this.getInstanceShapeNode = new SlowPathGetInstanceShapeNode(language);
     }
 
     @Override
-    public PythonLanguage getLanguage() {
-        return language;
+    public Shape execute(Object clazz) {
+        if (clazz instanceof PythonBuiltinClassType) {
+            // fast-path for PBCT which avoids the language lookup
+            return ((PythonBuiltinClassType) clazz).getInstanceShape(language);
+        }
+        return TypeNodesFactory.GetInstanceShapeNodeGen.getUncached().execute(clazz);
     }
-
-    @TruffleBoundary
-    @Override
-    protected AllocationReporter executeTrace(Object arg0Value, long arg1Value) {
-        assert PythonContext.get(null).getAllocationReporter() == reporter;
-        return PythonObjectFactory.doTrace(arg0Value, arg1Value, reporter);
-    }
-
-    @TruffleBoundary
-    @Override
-    protected Shape executeGetShape(Object arg0Value, boolean arg1Value) {
-        return PythonObjectFactory.getShape(arg0Value, arg1Value, getInstanceShapeNode);
-    }
-
-    @Override
-    public NodeCost getCost() {
-        return NodeCost.MEGAMORPHIC;
-    }
-
-    @Override
-    public boolean isAdoptable() {
-        return false;
-    }
-
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -281,12 +281,12 @@ public abstract class PythonObjectFactory extends Node {
         return PythonContext.get(this).getAllocationReporter();
     }
 
-    public final PythonLanguage getLanguage() {
+    public PythonLanguage getLanguage() {
         return PythonLanguage.get(this);
     }
 
     public final Shape getShape(PythonBuiltinClassType cls) {
-        return cls.getInstanceShape(PythonLanguage.get(this));
+        return cls.getInstanceShape(getLanguage());
     }
 
     public final Shape getShape(Object cls) {
