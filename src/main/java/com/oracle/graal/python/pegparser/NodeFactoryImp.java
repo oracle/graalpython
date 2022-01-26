@@ -454,6 +454,11 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
+    public StmtTy createGlobal(String[] names, int startOffset, int endOffset) {
+        return new StmtTy.Global(names, startOffset, endOffset);
+    }
+
+    @Override
     public ExprTy createAnd(ExprTy[] values, int startOffset, int endOffset) {
         return new ExprTy.BoolOp(ExprTy.BoolOp.Type.And, values, startOffset, endOffset);
     }

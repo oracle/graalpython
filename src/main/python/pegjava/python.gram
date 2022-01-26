@@ -189,7 +189,7 @@ augassign[AugOperator*]:
     | '//=' { ExprTy.BinOp.Operator.FLOORDIV }
 
 global_stmt[stmt_ty]: 'global' a[asdl_expr_seq*]=','.NAME+ {
-    _PyAST_Global(CHECK(String*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
+    factory.createGlobal(extractNames(a), startToken.startOffset, endToken.endOffset) }
 nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
     factory.createNonLocal(extractNames(a), startToken.startOffset, endToken.endOffset) }
 

@@ -42,7 +42,7 @@
 // Checkstyle: stop
 // JaCoCo Exclude
 //@formatter:off
-// Generated from src/main/python/pegjava/python.gram by pegen
+// Generated from graalpython/com.oracle.graal.python.pegparser/src/main/python/pegjava/python.gram by pegen
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.*;
@@ -1765,6 +1765,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, GLOBAL_STMT_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'global' ','.NAME+
             Token _keyword;
             ExprTy[] a;
@@ -1774,9 +1775,11 @@ public final class Parser extends AbstractParser {
                 (a = (ExprTy[])_gather_29_rule()) != null  // ','.NAME+
             )
             {
-                // TODO: node.action: _PyAST_Global ( CHECK ( String * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Global ( CHECK ( String * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createGlobal(extractNames(a),startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, GLOBAL_STMT_ID, _res);
                 return (StmtTy)_res;
             }
