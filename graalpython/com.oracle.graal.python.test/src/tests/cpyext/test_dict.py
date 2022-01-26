@@ -48,11 +48,18 @@ def _reference_get_item(args):
         return d.get(args[1])
     except Exception:
         return None
-    
+
+
+def _reference_keys(args):
+    d = args[0]
+    return list(d.keys())
+
+
 def _reference_values(args):
     d = args[0]
     return list(d.values())
-    
+
+
 def _reference_pop(args):
     d = args[0]
     if(len(args) == 2):
@@ -503,6 +510,15 @@ class TestPyDict(CPyExtTestCase):
         resultspec="i",
         argspec="OOi",
         arguments=["PyObject* a", "PyObject* b", "int override"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    # PyDict_Keys
+    test_PyDict_Keys = CPyExtFunction(
+        _reference_keys,
+        lambda: (({},), ({'a': "hello"},)),
+        resultspec="O",
+        argspec="O",
         cmpfunc=unhandled_error_compare
     )
     
