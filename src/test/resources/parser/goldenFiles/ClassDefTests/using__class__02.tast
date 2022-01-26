@@ -1,0 +1,38 @@
+Module[0, 262]
+    ClassDef[0, 262] X
+        ---- Class body of X ----
+        FunctionDef[21, 200]
+            Name:createY
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[33, 37] this
+            ---- Function body of createY ----
+            ClassDef[56, 175] Y
+                ---- Class body of Y ----
+                Assign[85, 98]
+                    LHS: Name[85, 86] Value: "z" Store
+                    RHS: Name[89, 98] Value: "__class__"
+                FunctionDef[119, 175]
+                    Name:methodY
+                    ArgumentsTy[0, 0]
+                        Args:
+                            ArgTy[131, 135] this
+                    ---- Function body of methodY ----
+                    Assign[162, 175]
+                        LHS: Name[162, 163] Value: "y" Store
+                        RHS: Name[166, 175] Value: "__class__"
+                    ---- End of methodY function ----
+                ---- End of Y class ----
+            Return[192, 200] Name[199, 200] Value: "Y"
+            ---- End of createY function ----
+        FunctionDef[213, 262]
+            Name:methodX
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[225, 229] this
+            ---- Function body of methodX ----
+            Assign[248, 262]
+                LHS: Name[248, 250] Value: "yy" Store
+                RHS: Name[253, 262] Value: "__class__"
+            ---- End of methodX function ----
+        ---- End of X class ----

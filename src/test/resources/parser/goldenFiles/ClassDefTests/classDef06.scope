@@ -1,0 +1,8 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      Base1: [Use, GlobalImplicit]
+      Base2: [Use, GlobalImplicit]
+      Base3: [Use, GlobalImplicit]
+      DerivedClassName: [DefLocal, Local]
+    Scope DerivedClassName Class

@@ -1,0 +1,20 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      Test: [DefLocal, Local]
+    Scope Test Class
+        Symbols:
+            fn1: [DefLocal, Local]
+            fn2: [DefLocal, Local]
+      Scope fn1 Function
+            Varnames: format
+            Symbols:
+                  args: [Use, GlobalImplicit]
+                  format: [DefParam, Use, Local]
+      Scope fn2 Function
+            Flags: [HasVarArgs, HasVarKeywords]
+            Varnames: args, kwds
+            Symbols:
+                  args: [DefParam, Use, Local]
+                  kwds: [DefParam, Use, Local]
+                  self: [Use, GlobalImplicit]
