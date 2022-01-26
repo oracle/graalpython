@@ -190,7 +190,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         Object shutdown(VirtualFrame frame, PSSLSocket self,
                         @Cached SSLOperationNode sslOperationNode) {
             sslOperationNode.shutdown(frame, self);
-            return PNone.NONE;
+            return self.getSocket() != null ? self.getSocket() : PNone.NONE;
         }
     }
 
