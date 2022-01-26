@@ -396,14 +396,14 @@ raise_stmt[stmt_ty]:
     | 'raise' { _PyAST_Raise(NULL, NULL, EXTRA) }
 
 function_def[stmt_ty]:
-    | d=decorators f=function_def_raw { _PyPegen_function_def_decorators(p, d, f) }
+    | d=decorators f=function_def_raw { factory.createFunctionDef(f, d) }
     | function_def_raw
 
 function_def_raw[stmt_ty]:
     | 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
         factory.createFunctionDef(((ExprTy.Name)n).id,
                         params,
-                        b, null, (ExprTy)a, newTypeComment((Token)tc),
+                        b, (ExprTy)a, newTypeComment((Token)tc),
                         startToken.startOffset, endToken.endOffset) }
     | ASYNC 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
         CHECK_VERSION(
