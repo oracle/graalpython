@@ -392,8 +392,8 @@ return_stmt[stmt_ty]:
     | 'return' a=[star_expressions] { factory.createReturn(a, startToken.startOffset, endToken.endOffset) }
 
 raise_stmt[stmt_ty]:
-    | 'raise' a=expression b=['from' z=expression { z }] { _PyAST_Raise(a, b, EXTRA) }
-    | 'raise' { _PyAST_Raise(NULL, NULL, EXTRA) }
+    | 'raise' a=expression b=['from' z=expression { z }] { factory.createRaise(a, b, startToken.startOffset, endToken.endOffset) }
+    | 'raise' { factory.createRaise(null, null, startToken.startOffset, endToken.endOffset) }
 
 function_def[stmt_ty]:
     | d=decorators f=function_def_raw { factory.createFunctionDef(f, d) }

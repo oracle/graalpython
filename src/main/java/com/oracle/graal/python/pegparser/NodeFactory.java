@@ -155,4 +155,6 @@ public interface NodeFactory {
     public ExprTy createAnd(ExprTy[] values, int startOffset, int endOffset);
 
     public ExprTy createOr(ExprTy[] values, int startOffset, int endOffset);
+
+    public StmtTy createRaise(ExprTy object, ExprTy from, int startOffset, int endOffset);
 }
