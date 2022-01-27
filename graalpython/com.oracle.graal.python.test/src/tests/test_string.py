@@ -719,6 +719,7 @@ class UnicodeTest(unittest.TestCase):
         self.assertTrue("b_".isidentifier())
         self.assertTrue("µ".isidentifier())
         self.assertTrue("𝔘𝔫𝔦𝔠𝔬𝔡𝔢".isidentifier())
+        self.assertTrue("\u1885".isidentifier())
 
         self.assertFalse(" ".isidentifier())
         self.assertFalse("[".isidentifier())
