@@ -1082,6 +1082,12 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         makeClosure(code, hasDefaults > 0 ? 1 : 0, hasKwDefaults > 0 ? 1 : 0);
 
+        if (node.decoratorList != null) {
+            for (int i = 0; i < node.decoratorList.length; i++) {
+                addOp(CALL_FUNCTION, 1);
+            }
+        }
+
         addNameOp(node.name, ExprContext.Store);
         return null;
     }
