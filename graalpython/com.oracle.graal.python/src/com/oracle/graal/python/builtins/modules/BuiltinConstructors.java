@@ -2356,8 +2356,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 SequenceStorage slotsStorage;
                 Object slotsObject;
                 if (slots[0] instanceof String) {
-                    slotsObject = factory().createList(slots);
-                    slotsStorage = ((PList) slotsObject).getSequenceStorage();
+                    slotsObject = slots[0];
+                    slotsStorage = new ObjectSequenceStorage(slots);
                 } else if (slots[0] instanceof PTuple) {
                     slotsObject = slots[0];
                     slotsStorage = ((PTuple) slots[0]).getSequenceStorage();
