@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -78,3 +78,20 @@ def test_list_init_call():
     assert l == [20]
     l = MyList(10, b=30)
     assert l == [30]
+
+
+def test_list_custom_getitem():
+    class MyList(list):
+        def __init__(self, it, mapping):
+            list.__init__(self, it)
+            self.mapping = mapping
+
+        def __getitem__(self, key):
+            idx = key
+            if key in self.mapping:
+                idx = self.mapping[idx]
+            return list.__getitem__(self, idx)
+
+    l = MyList([1, 2, 3, 4], {"a": 1, "b": 2})
+    assert l[1] == 2
+    assert l["a"] == 2
