@@ -592,26 +592,26 @@ public class BasicTests extends ParserTestBase {
 //        checkSyntaxError("nonlocal x");
 //    }
 //
-//    @Test
-//    public void raise01() throws Exception {
-//        checkTreeResult("raise");
-//    }
-//
-//    @Test
-//    public void raise02() throws Exception {
-//        checkTreeResult("raise NameError");
-//    }
-//
-//    @Test
-//    public void raise03() throws Exception {
-//        checkTreeResult("raise NameError('Pavel')");
-//    }
-//
-//    @Test
-//    public void raise04() throws Exception {
-//        checkTreeResult("raise NameError('Pavel') from exc");
-//    }
-//
+   @Test
+   public void raise01() throws Exception {
+       checkTreeResult("raise");
+   }
+
+   @Test
+   public void raise02() throws Exception {
+       checkTreeResult("raise NameError");
+   }
+
+   @Test
+   public void raise03() throws Exception {
+       checkTreeResult("raise NameError('Pavel')");
+   }
+
+   @Test
+   public void raise04() throws Exception {
+       checkTreeResult("raise NameError('Pavel') from exc");
+   }
+
 //    @Test
 //    public void try01() throws Exception {
 //        checkScopeAndTree(

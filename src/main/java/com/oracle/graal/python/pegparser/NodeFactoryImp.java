@@ -467,4 +467,9 @@ public class NodeFactoryImp implements NodeFactory{
     public ExprTy createOr(ExprTy[] values, int startOffset, int endOffset) {
         return new ExprTy.BoolOp(ExprTy.BoolOp.Type.Or, values, startOffset, endOffset);
     }
+
+    @Override
+    public StmtTy createRaise(ExprTy object, ExprTy from, int startOffset, int endOffset) {
+        return new StmtTy.Raise(object, from, startOffset, endOffset);
+    }
 }

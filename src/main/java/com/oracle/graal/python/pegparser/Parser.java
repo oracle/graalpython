@@ -4491,6 +4491,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, RAISE_STMT_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'raise' expression ['from' expression]
             Token _keyword;
             ExprTy a;
@@ -4503,9 +4504,11 @@ public final class Parser extends AbstractParser {
                 ((b = _tmp_83_rule()) != null || true)  // ['from' expression]
             )
             {
-                // TODO: node.action: _PyAST_Raise ( a , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Raise ( a , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createRaise(a,b,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, RAISE_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -4517,9 +4520,11 @@ public final class Parser extends AbstractParser {
                 (_keyword = expect(503)) != null  // token='raise'
             )
             {
-                // TODO: node.action: _PyAST_Raise ( NULL , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Raise ( NULL , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createRaise(null,null,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, RAISE_STMT_ID, _res);
                 return (StmtTy)_res;
             }
