@@ -93,9 +93,13 @@ public final class CompilationUnit {
         this.endOffset = endOffset;
 
         if (parent != null) {
-            privateName = parent.privateName;
+            if (scopeType == Class) {
+                privateName = name;
+            } else {
+                privateName = parent.privateName;
+            }
             if (!(EnumSet.of(Function, AsyncFunction, Class).contains(scopeType) &&
-                  parent.scope.getUseOfName(ScopeEnvironment.mangle(privateName, name)).
+                  parent.scope.getUseOfName(ScopeEnvironment.mangle(parent.privateName, name)).
                                             contains(Scope.DefUse.GlobalExplicit))) {
                 String base;
                 if (EnumSet.of(Function, AsyncFunction, Lambda).contains(parent.scopeType)) {

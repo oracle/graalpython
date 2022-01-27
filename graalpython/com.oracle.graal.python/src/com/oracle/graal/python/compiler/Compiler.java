@@ -952,7 +952,54 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.ClassDef node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        visitSequence(node.decoratorList);
+
+        enterScope(node.name, CompilationScope.Class, node, 1, 0, 0, false, false);
+        addNameOp("__name__", ExprContext.Load);
+        addNameOp("__module__", ExprContext.Store);
+        addOp(LOAD_CONST, addObject(unit.constants, unit.qualName));
+        addNameOp("__qualname__", ExprContext.Store);
+
+        visitBody(node.body);
+
+        if (unit.scope.needsClassClosure()) {
+            int idx = unit.cellvars.get("__class__");
+            addOp(LOAD_CLOSURE, idx);
+            addOp(DUP_TOP);
+            addNameOp("__classcell__", ExprContext.Store);
+        } else {
+            addOp(LOAD_NONE);
+        }
+        addOp(RETURN_VALUE);
+        CodeUnit co = unit.assemble(filename, 0);
+        exitScope();
+
+        addOp(LOAD_BUILD_CLASS);
+        makeClosure(co, 0, 0);
+        addOp(LOAD_CONST, addObject(unit.constants, node.name));
+
+        // for class creation we expect to end up in varargs calls anyway, so just do args array
+        // calls
+        if (node.bases == null && node.keywords == null) {
+            addOp(CALL_FUNCTION, 0);
+        } else if (node.keywords == null) {
+            collectIntoArray(node.bases, CollectionBits.OBJECT);
+            addOp(CALL_FUNCTION_VARARGS);
+        } else {
+            collectIntoArray(node.bases == null ? new ExprTy[0] : node.bases, CollectionBits.OBJECT);
+            collectIntoArray(node.keywords, CollectionBits.KWORDS);
+            addOp(CALL_FUNCTION_KW);
+        }
+
+        if (node.decoratorList != null) {
+            for (int i = 0; i < node.decoratorList.length; i++) {
+                addOp(CALL_FUNCTION, 1);
+            }
+        }
+
+        addNameOp(node.name, ExprContext.Store);
+
+        return null;
     }
 
     @Override
@@ -1094,7 +1141,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Global node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return null;
     }
 
     @Override
@@ -1164,12 +1211,23 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.NonLocal node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return null;
     }
 
     @Override
     public Void visit(StmtTy.Raise node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int argc = 0;
+        if (node.exc != null) {
+            argc++;
+            node.exc.accept(this);
+            if (node.cause != null) {
+                argc++;
+                node.cause.accept(this);
+            }
+        }
+        addOp(RAISE_VARARGS, argc);
+        unit.useNextBlock(new Block());
+        return null;
     }
 
     @Override

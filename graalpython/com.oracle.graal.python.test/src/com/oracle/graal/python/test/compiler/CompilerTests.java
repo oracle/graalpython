@@ -150,6 +150,21 @@ public class CompilerTests extends PythonTests {
         doTest(source, "<module>");
     }
 
+    @Test
+    public void testBenchmark2() {
+        String source = "" +
+            "class HandlerTask(Task):\n" +
+            "    def __init__(self,i,p,w,s,r):\n" +
+            "        global Task\n" +
+            "        x = 0\n" +
+            "        raise ValueError\n" +
+            // "        def f():\n" +
+            // "          nonlocal x\n" +
+            // "          x = 1\n" +
+            "        Task.__init__(self,i,p,w,s,r)\n";
+        doTest(source, "<module>");
+    }
+
     private void doTest(String src, String moduleName) {
         ParserTokenizer tokenizer = new ParserTokenizer(src);
         NodeFactory factory = new NodeFactoryImp();
