@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -31,10 +31,13 @@ import com.oracle.graal.python.nodes.frame.FrameSlotGuards;
 import com.oracle.graal.python.nodes.frame.FrameSlotNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -43,6 +46,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public abstract class WriteGeneratorFrameVariableNode extends StatementNode implements WriteIdentifierNode, FrameSlotNode {
 
     protected final int frameSlot;
+    @CompilationFinal private FrameDescriptor descriptor;
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
 
     public WriteGeneratorFrameVariableNode(int frameSlot) {
@@ -74,30 +78,41 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
         return frameProfile.profile(PArguments.getGeneratorFrame(frame));
     }
 
-    @Specialization(guards = "isBooleanKind(getGeneratorFrame(frame), frameSlot)")
+    /**
+     * The descriptor is kept in a compilation-final field (as opposed to getting it from the frame
+     * every time) to ensure that it is a compilation constant.
+     */
+    protected final FrameDescriptor getFrameDescriptor(VirtualFrame frame) {
+        if (descriptor == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            descriptor = getGeneratorFrame(frame).getFrameDescriptor();
+        }
+        return descriptor;
+    }
+
+    @Specialization(guards = "isBooleanKind(getFrameDescriptor(frame), frameSlot)")
     void writeBoolean(VirtualFrame frame, boolean value) {
         getGeneratorFrame(frame).setBoolean(frameSlot, value);
     }
 
-    @Specialization(guards = "isIntegerKind(getGeneratorFrame(frame), frameSlot)")
+    @Specialization(guards = "isIntegerKind(getFrameDescriptor(frame), frameSlot)")
     void writeInt(VirtualFrame frame, int value) {
         getGeneratorFrame(frame).setInt(frameSlot, value);
     }
 
-    @Specialization(guards = "isLongKind(getGeneratorFrame(frame), frameSlot)")
+    @Specialization(guards = "isLongKind(getFrameDescriptor(frame), frameSlot)")
     void writeLong(VirtualFrame frame, long value) {
         getGeneratorFrame(frame).setLong(frameSlot, value);
     }
 
-    @Specialization(guards = "isDoubleKind(getGeneratorFrame(frame), frameSlot)")
+    @Specialization(guards = "isDoubleKind(getFrameDescriptor(frame), frameSlot)")
     void writeDouble(VirtualFrame frame, double value) {
         getGeneratorFrame(frame).setDouble(frameSlot, value);
     }
 
     @Specialization(replaces = {"writeBoolean", "writeInt", "writeLong", "writeDouble"})
     void writeObject(VirtualFrame frame, Object value) {
-        Frame generatorFrame = getGeneratorFrame(frame);
-        FrameSlotGuards.ensureObjectKind(generatorFrame, frameSlot);
-        generatorFrame.setObject(frameSlot, value);
+        FrameSlotGuards.ensureObjectKind(getFrameDescriptor(frame), frameSlot);
+        getGeneratorFrame(frame).setObject(frameSlot, value);
     }
 }
