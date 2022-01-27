@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor:  Empty
+  FrameDescriptor: 2 slots [<>temp0, <>temp1]
   Documentation: None
   InnerRootNode SourceSection: [0,100]`for num in range(10,...`
     ExpressionWithSideEffect SourceSection: [0,100]`for num in range(10,...`

@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: <genexpr>
         Kind: ListComp
-        FrameDescriptor: [s, c, <return_val>]
+        FrameDescriptor: [<return_val>, c, s]
         CellVars: Empty
         FreeVars: Empty

@@ -25,8 +25,18 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-@SuppressWarnings("deprecation")    // new Frame API
+import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlotKind;
+
 public interface FrameSlotNode {
 
-    com.oracle.truffle.api.frame.FrameSlot getSlot();
+    int getSlotIndex();
+
+    default Object getSlotIdentifier(FrameDescriptor descriptor) {
+        return descriptor.getSlotName(getSlotIndex());
+    }
+
+    default FrameSlotKind getSlotKind(FrameDescriptor descriptor) {
+        return descriptor.getSlotKind(getSlotIndex());
+    }
 }

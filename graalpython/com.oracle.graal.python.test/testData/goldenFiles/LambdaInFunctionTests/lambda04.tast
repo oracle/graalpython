@@ -50,7 +50,7 @@ ModuleRootNode Name: <module 'lambda04'> SourceSection: [0,29]`def fn():↵  lam
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [y, z, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, y, z]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None

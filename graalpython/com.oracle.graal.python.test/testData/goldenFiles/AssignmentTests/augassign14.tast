@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'augassign14'> SourceSection: [0,61]`def _method(*a
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 7 slots [args, keywords, cls_or_self, rest, <>temp4, <>temp5, <return_val>]
+              FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, args, cls_or_self, keywords, rest]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

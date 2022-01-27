@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
         Identifier: dict
       GeneratorExpressionNode SourceSection: [1,25]`x:x*x for x in range...`
         Name: <genexpr>
-        FrameDescriptor: 2 slots [x, <return_val>]
+        FrameDescriptor: 2 slots [<return_val>, x]
         Enclosing
           FrameDescriptor:  Empty
         Active Flags: 2
@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
           CelVars: None
           FreeVars: None
           NeedsCellFrame: False
-          FrameDescriptor: 2 slots [x, <return_val>]
+          FrameDescriptor: 2 slots [<return_val>, x]
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None

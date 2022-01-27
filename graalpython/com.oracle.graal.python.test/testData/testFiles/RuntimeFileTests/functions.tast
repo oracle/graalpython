@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [obj, key, default, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, default, key, obj]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -99,7 +99,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [iterable, i, <return_val>]
+              FrameDescriptor: 4 slots [<>temp2, <return_val>, i, iterable]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -134,7 +134,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       FrameReturnNode SourceSection: [2234,2246]`return False`
                         BooleanLiteralNode SourceSection: [2241,2246]`False`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Object]
+                    Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [2249,2377]`@__graalpython__.bui...`
         Identifier: all
         PythonCallUnary SourceSection: [2249,2273]`@__graalpython__.bui...`
@@ -159,7 +159,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [iterable, i, <return_val>]
+              FrameDescriptor: 4 slots [<>temp2, <return_val>, i, iterable]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -194,7 +194,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       FrameReturnNode SourceSection: [2363,2374]`return True`
                         BooleanLiteralNode SourceSection: [2370,2374]`True`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Object]
+                    Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [2377,2666]`@__graalpython__.bui...`
         Identifier: filter
         PythonCallUnary SourceSection: [2377,2401]`@__graalpython__.bui...`
@@ -219,7 +219,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [func, iterable, result, predicate, i, <return_val>]
+              FrameDescriptor: 7 slots [<>temp5, <return_val>, func, i, iterable, predicate, result]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -271,7 +271,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [a, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, a]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -326,7 +326,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           ReadLocalVariableNodeGen SourceSection: [2598,2604]`result`
                             Frame: [2,result,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [5,<return_val>,Object]
+                    Frame: [6,<return_val>,Object]
       WriteNameNodeGen SourceSection: [2666,3055]`def __build_class__(...`
         Identifier: __build_class__
         FunctionDefinitionNode Name: __build_class__ SourceSection: None
@@ -348,7 +348,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [func, name, bases, metaclass, kwargs, _posix, ns, <return_val>]
+            FrameDescriptor: 8 slots [<return_val>, _posix, bases, func, kwargs, metaclass, name, ns]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -472,7 +472,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__init__, __next__, __iter__, __contains__]
+              FrameDescriptor: 4 slots [__contains__, __init__, __iter__, __next__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -505,7 +505,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, func, iterable, args, iterators, i, <return_val>]
+                            FrameDescriptor: 8 slots [<>temp6, <return_val>, args, func, i, iterable, iterators, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -585,7 +585,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       ReadLocalVariableNodeGen SourceSection: [3273,3282]`iterators`
                                         Frame: [4,iterators,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [6,<return_val>,Object]
+                                  Frame: [7,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [3288,3435]`def __next__(self):↵...`
                         Identifier: __next__
                         FunctionDefinitionNode Name: __next__ SourceSection: None
@@ -603,7 +603,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, args, it, <return_val>]
+                            FrameDescriptor: 5 slots [<>temp3, <return_val>, args, it, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -661,7 +661,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                           ReadLocalVariableNodeGen SourceSection: [3411,3415]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Object]
+                                  Frame: [4,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [3435,3480]`def __iter__(self):↵...`
                         Identifier: __iter__
                         FunctionDefinitionNode Name: __iter__ SourceSection: None
@@ -679,7 +679,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -715,7 +715,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, x, i, <return_val>]
+                            FrameDescriptor: 5 slots [<>temp3, <return_val>, i, self, x]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -778,7 +778,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                     FrameReturnNode SourceSection: [3620,3632]`return False`
                                       BooleanLiteralNode SourceSection: [3627,3632]`False`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Object]
+                                  Frame: [4,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [3065,3071]`object`
@@ -819,7 +819,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [obj, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, obj]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -926,7 +926,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [value, format_spec, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, format_spec, value]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -993,7 +993,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 5 slots [iterable, key, reverse, result, <return_val>]
+                  FrameDescriptor: 5 slots [<return_val>, iterable, key, result, reverse]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 package com.oracle.graal.python.parser;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -33,19 +34,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
+import com.oracle.graal.python.nodes.frame.PythonFrame;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameDescriptor.Builder;
 import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.memory.MemoryFence;
 
-@SuppressWarnings("deprecation")    // new Frame API
 public final class ScopeInfo {
 
     public enum ScopeKind {
@@ -54,7 +56,7 @@ public final class ScopeInfo {
         Class,
         // Generator Function
         Generator,
-        // Generatro Expression
+        // Generator Expression
         GenExp,
         // List Comprehension
         ListComp,
@@ -67,8 +69,10 @@ public final class ScopeInfo {
     }
 
     private final String scopeId;
-    private FrameDescriptor frameDescriptor;
-    private final ArrayList<Object> identifierToIndex;
+    private final LinkedHashMap<Object, Integer> frameContents;
+    private final ArrayList<Object> identifiers = new ArrayList<>();
+    private final ArrayList<Integer> scopedTemps = new ArrayList<>();
+    private int scopedTempIndex;
     private ScopeKind scopeKind;
     private final ScopeInfo parent;
 
@@ -107,7 +111,7 @@ public final class ScopeInfo {
     private TreeSet<String> seenVars;
 
     private boolean annotationsField;
-    // Used for serialization and deseraialization
+    // Used for serialization and deserialization
     private final int serializationId;
 
     // Qualified name for this scope
@@ -120,10 +124,15 @@ public final class ScopeInfo {
     private ScopeInfo(String scopeId, int serializationId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
         this.scopeKind = kind;
-        this.frameDescriptor = frameDescriptor == null ? new FrameDescriptor() : frameDescriptor;
+        this.frameContents = new LinkedHashMap<>();
+        if (frameDescriptor != null) {
+            for (Object identifier : PythonFrame.getIdentifiers(frameDescriptor)) {
+                this.frameContents.put(identifier, identifiers.size());
+                this.identifiers.add(identifier);
+            }
+        }
         this.parent = parent;
         this.annotationsField = false;
-        this.identifierToIndex = new ArrayList<>();
         // register current scope as child to parent scope
         if (this.parent != null) {
             this.nextChildScope = this.parent.firstChildScope;
@@ -200,8 +209,28 @@ public final class ScopeInfo {
         scopeKind = ScopeKind.Generator;
     }
 
-    public FrameDescriptor getFrameDescriptor() {
-        return frameDescriptor;
+    public Set<Object> getFrameIdentifiers() {
+        return frameContents.keySet();
+    }
+
+    public void replaceFrameIdentifier(Object identifier, Object newIdentifier) {
+        Integer index = frameContents.get(identifier);
+        assert index != null;
+        identifiers.set(index, newIdentifier);
+        frameContents.remove(identifier);
+        frameContents.put(newIdentifier, index);
+    }
+
+    public FrameDescriptor createFrameDescriptor() {
+        Builder frameBuilder = FrameDescriptor.newBuilder();
+        int i = 0;
+        for (Object id : identifiers) {
+            FrameSlotKind kind = id == RETURN_SLOT_ID ? FrameSlotKind.Object : FrameSlotKind.Illegal;
+            int idx = frameBuilder.addSlot(kind, id, null);
+            assert idx == i;
+            i++;
+        }
+        return frameBuilder.build();
     }
 
     public boolean hasAnnotations() {
@@ -212,43 +241,43 @@ public final class ScopeInfo {
         this.annotationsField = hasAnnotations;
     }
 
-    public void setFrameDescriptor(FrameDescriptor frameDescriptor) {
-        this.frameDescriptor = frameDescriptor;
-    }
-
     public ScopeInfo getParent() {
         return parent;
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot findFrameSlot(Object identifier) {
-        assert identifier != null : "identifier is null!";
-        return this.getFrameDescriptor().findFrameSlot(identifier);
+    public Integer findFrameSlot(Object identifier) {
+        return frameContents.get(identifier);
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot createSlotIfNotPresent(Object identifier) {
-        return createSlotIfNotPresent(identifier, FrameSlotKind.Illegal);
+    private int createSlotIfNotPresent(Object identifier) {
+        return frameContents.computeIfAbsent(identifier, id -> {
+            identifiers.add(id);
+            return identifiers.size() - 1;
+        });
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot createSlotIfNotPresent(Object identifier, FrameSlotKind kind) {
-        assert identifier != null : "identifier is null!";
-        com.oracle.truffle.api.frame.FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
-        if (frameSlot == null) {
-            return createSlot(identifier, kind);
-        } else {
-            return frameSlot;
+    public void defineSlot(Object identifier) {
+        createSlotIfNotPresent(identifier);
+    }
+
+    public int getReturnSlot() {
+        return createSlotIfNotPresent(RETURN_SLOT_ID);
+    }
+
+    public int createTemp() {
+        return createSlotIfNotPresent(FrameSlotIDs.getTempLocal(identifiers.size()));
+    }
+
+    public int acquireScopedTemp() {
+        if (scopedTempIndex == scopedTemps.size()) {
+            scopedTemps.add(createTemp());
         }
+        return scopedTemps.get(scopedTempIndex++);
     }
 
-    private synchronized com.oracle.truffle.api.frame.FrameSlot createSlot(Object identifier, FrameSlotKind kind) {
-        com.oracle.truffle.api.frame.FrameSlot existing = this.getFrameDescriptor().findFrameSlot(identifier);
-        if (existing != null) {
-            return existing;
-        }
-        identifierToIndex.add(identifier);
-        // Just to be sure that when other thread sees the new frame slot on the non-synchronized
-        // fast-path check, the identifierToIndex list will already contain it too
-        MemoryFence.storeStore();
-        return getFrameDescriptor().addFrameSlot(identifier, kind);
+    public void releaseScopedTemp() {
+        assert scopedTempIndex > 0;
+        scopedTempIndex--;
     }
 
     public void addSeenVar(String name) {
@@ -307,7 +336,7 @@ public final class ScopeInfo {
         }
         cellVars.add(identifier);
         if (createFrameSlot) {
-            this.createSlotIfNotPresent(identifier);
+            defineSlot(identifier);
         }
     }
 
@@ -319,7 +348,7 @@ public final class ScopeInfo {
         }
         for (String identifier : identifiers) {
             cellVars.add(identifier);
-            createSlotIfNotPresent(identifier);
+            defineSlot(identifier);
         }
     }
 
@@ -331,14 +360,14 @@ public final class ScopeInfo {
         if (createFrameSlot) {
             if (scopeKind == ScopeKind.Class && __CLASS__.equals(identifier)) {
                 // This is preventing corner situation, when body of class has two variables with
-                // the same name __class__. The first one is __class__ freevar comming from outer
+                // the same name __class__. The first one is __class__ freevar coming from outer
                 // scope
                 // and the second one is __class__ (implicit) closure for inner methods,
                 // where __class__ or super is used. Both of them can have different values.
                 // So the first one is stored in slot with different identifier.
-                this.createSlotIfNotPresent(FrameSlotIDs.FREEVAR__CLASS__);
+                defineSlot(FrameSlotIDs.FREEVAR__CLASS__);
             } else {
-                this.createSlotIfNotPresent(identifier);
+                defineSlot(identifier);
             }
         }
     }
@@ -351,7 +380,7 @@ public final class ScopeInfo {
         }
         for (String identifier : identifiers) {
             freeVars.add(identifier);
-            createSlotIfNotPresent(identifier);
+            defineSlot(identifier);
         }
     }
 
@@ -363,52 +392,65 @@ public final class ScopeInfo {
         return freeVars != null && freeVars.contains(identifier);
     }
 
-    private static final com.oracle.truffle.api.frame.FrameSlot[] EMPTY = new com.oracle.truffle.api.frame.FrameSlot[0];
+    private static final int[] EMPTY = new int[0];
 
-    private static com.oracle.truffle.api.frame.FrameSlot[] getFrameSlots(Collection<String> identifiers, ScopeInfo scope) {
-        if (identifiers == null) {
+    private int[] getFrameSlots(Collection<String> ids) {
+        if (ids == null) {
             return EMPTY;
         }
-        assert scope != null : "getting frame slots: scope cannot be null!";
-        com.oracle.truffle.api.frame.FrameSlot[] slots = new com.oracle.truffle.api.frame.FrameSlot[identifiers.size()];
+        int[] slots = new int[ids.size()];
         int i = 0;
-        for (String identifier : identifiers) {
-            slots[i++] = scope.findFrameSlot(identifier);
+        for (String identifier : ids) {
+            /*
+             * When replacing code.co_freevars, we might see non-existing identifiers here. Those
+             * should never be accessed, so use a value that will trip.
+             */
+            Integer slot = findFrameSlot(identifier);
+            slots[i++] = slot == null ? Integer.MAX_VALUE : slot;
         }
         return slots;
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot[] getCellVarSlots() {
-        return getFrameSlots(cellVars, this);
+    public TreeSet<String> getCellVars() {
+        return cellVars;
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarSlots() {
-        com.oracle.truffle.api.frame.FrameSlot[] result = getFrameSlots(freeVars, this);
-        if (freeVars != null && scopeKind == ScopeKind.Class && freeVars.contains(__CLASS__)) {
-            for (int i = 0; i < result.length; i++) {
-                com.oracle.truffle.api.frame.FrameSlot slot = result[i];
-                if (slot == null || __CLASS__.equals(slot.getIdentifier())) {
-                    // If __class__ is freevar in the class scope, then is stored in frameslot with
-                    // different name.
-                    // This is preventing corner situation, when body of class has two variables
-                    // with
-                    // the same name __class__. The first one is __class__ freevar comming from
-                    // outer scope
-                    // and the second one is __class__ (implicit) closure for inner methods,
-                    // where __class__ or super is used. Both of them can have different values.
-                    // slot can be null, when there is not used __class__ / super in a method, so
-                    // __class__ is defined only as freevar not cellvar
-                    result[i] = findFrameSlot(FrameSlotIDs.FREEVAR__CLASS__);
-                    break;
-                }
-            }
+    public TreeSet<String> getFreeVars() {
+        return freeVars;
+    }
+
+    public int[] getCellVarSlots() {
+        return getFrameSlots(cellVars);
+    }
+
+    public int[] getFreeVarSlots() {
+        if (freeVars == null) {
+            return EMPTY;
         }
-        return result;
+        int[] slots = new int[freeVars.size()];
+        int i = 0;
+        for (String identifier : freeVars) {
+            slots[i] = findFrameSlot(identifier);
+            if (scopeKind == ScopeKind.Class && __CLASS__.equals(identifier)) {
+                /*
+                 * If __class__ is freevar in the class scope, then is stored in frameslot with
+                 * different name. This is preventing corner situation, when body of class has two
+                 * variables with the same name __class__. The first one is __class__ freevar
+                 * comming from outer scope and the second one is __class__ (implicit) closure for
+                 * inner methods, where __class__ or super is used. Both of them can have different
+                 * values. slot can be null, when there is not used __class__ / super in a method,
+                 * so __class__ is defined only as freevar not cellvar
+                 */
+                slots[i] = findFrameSlot(FrameSlotIDs.FREEVAR__CLASS__);
+            }
+            i++;
+        }
+        return slots;
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarSlotsInParentScope() {
+    public int[] getFreeVarSlotsInParentScope() {
         assert parent != null : "cannot get current freeVars in parent scope, parent scope cannot be null!";
-        return getFrameSlots(freeVars, parent);
+        return parent.getFrameSlots(freeVars);
     }
 
     public void setDefaultArgumentNodes(List<ExpressionNode> defaultArgumentNodes) {
@@ -438,27 +480,18 @@ public final class ScopeInfo {
         return scopeKind.toString() + " " + scopeId;
     }
 
-    public Integer getVariableIndex(String name) {
-        for (int i = 0; i < identifierToIndex.size(); i++) {
-            if (identifierToIndex.get(i).equals(name)) {
-                return i;
-            }
-        }
-        throw new IllegalStateException("Cannot find argument for name " + name + " in scope " + getScopeId());
-    }
-
     public void debugPrint(StringBuilder sb, int indent) {
         indent(sb, indent);
         sb.append("Scope: ").append(scopeId).append("\n");
         indent(sb, indent + 1);
         sb.append("Kind: ").append(scopeKind).append("\n");
         Set<String> names = new HashSet<>();
-        frameDescriptor.getIdentifiers().forEach((id) -> {
+        for (Object id : getFrameIdentifiers()) {
             names.add(id.toString());
-        });
+        }
         indent(sb, indent + 1);
         sb.append("FrameDescriptor: ");
-        printSet(sb, names);
+        printSet(sb, new TreeSet<>(names));
         sb.append("\n");
         indent(sb, indent + 1);
         sb.append("CellVars: ");
@@ -527,7 +560,7 @@ public final class ScopeInfo {
         out.writeInt(scope.getSerializetionId());
         out.writeBoolean(scope.hasAnnotations());
         // for recreating frame descriptor
-        writeIdentifiers(out, scope.getFrameDescriptor().getIdentifiers());
+        writeIdentifiers(out, scope.identifiers);
 
         if (scope.explicitGlobalVariables == null) {
             out.writeInt(0);
@@ -581,7 +614,7 @@ public final class ScopeInfo {
         }
     }
 
-    private static void writeIdentifiers(DataOutput out, Set<Object> identifiers) throws IOException {
+    private static void writeIdentifiers(DataOutput out, Collection<Object> identifiers) throws IOException {
         for (Object identifier : identifiers) {
             if (identifier instanceof String) {
                 out.writeByte(1);
@@ -600,20 +633,16 @@ public final class ScopeInfo {
     private static void readIdentifiersAndCreateSlots(DataInput input, ScopeInfo scope) throws IOException {
         byte kind = input.readByte();
         while (kind != 0) {
-            Object identifier = null;
             switch (kind) {
                 case 1:
-                    identifier = input.readUTF();
+                    scope.defineSlot(input.readUTF());
                     break;
                 case 2:
-                    identifier = FrameSlotIDs.RETURN_SLOT_ID;
+                    scope.defineSlot(FrameSlotIDs.RETURN_SLOT_ID);
                     break;
                 case 3:
-                    identifier = FrameSlotIDs.FREEVAR__CLASS__;
+                    scope.defineSlot(FrameSlotIDs.FREEVAR__CLASS__);
                     break;
-            }
-            if (identifier != null) {
-                scope.createSlotIfNotPresent(identifier);
             }
             kind = input.readByte();
         }
@@ -662,5 +691,4 @@ public final class ScopeInfo {
 
         return scope;
     }
-
 }

@@ -62,7 +62,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, nonpositive, elem, <return_val>]
+                              FrameDescriptor: 5 slots [<>temp3, <return_val>, elem, nonpositive, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -85,9 +85,9 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                             Identifier: list
                                           GeneratorExpressionNode SourceSection: [74,127]`elem for elem, count...`
                                             Name: <genexpr>
-                                            FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
+                                            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, count, elem]
                                             Enclosing
-                                              FrameDescriptor: 4 slots [self, nonpositive, elem, <return_val>]
+                                              FrameDescriptor: 5 slots [<>temp3, <return_val>, elem, nonpositive, self]
                                             Active Flags: 4
                                             For Nodes: 1
                                             Block Nodes: 0
@@ -98,7 +98,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                               CelVars: None
                                               FreeVars: None
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
+                                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, count, elem]
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
                                                 CellVarsSlots: None
@@ -180,7 +180,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                         ReadLocalVariableNodeGen SourceSection: [204,208]`self`
                                           Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [3,<return_val>,Object]
+                                    Frame: [4,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [14,18]`dict`

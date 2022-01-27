@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'using__class__01'> SourceSection: [0,52]`class X:â
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               ClassBodyRootNode SourceSection: [0,52]`class X:â†µ     def fn...`
                 Name: X
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
@@ -32,7 +32,7 @@ ModuleRootNode Name: <module 'using__class__01'> SourceSection: [0,52]`class X:â
                 FrameDescriptor: 2 slots [__class__, fn]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: __class__
                 InnerRootNode SourceSection: [0,52]`class X:â†µ     def fn...`
                   ReturnTargetNode SourceSection: [0,52]`class X:â†µ     def fn...`
                     Body: BlockNode SourceSection: None
@@ -51,9 +51,9 @@ ModuleRootNode Name: <module 'using__class__01'> SourceSection: [0,52]`class X:â
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: __class__
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [14,52]`def fn(self):â†µ      ...`
                               Name: fn
@@ -62,9 +62,9 @@ ModuleRootNode Name: <module 'using__class__01'> SourceSection: [0,52]`class X:â
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, __class__, self]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: __class__
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [14,52]`def fn(self):â†µ      ...`
                                 ReturnTargetNode SourceSection: [14,52]`def fn(self):â†µ      ...`
@@ -80,12 +80,11 @@ ModuleRootNode Name: <module 'using__class__01'> SourceSection: [0,52]`class X:â
                                         ReadLocalCellNodeGen SourceSection: [42,51]`__class__`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,__class__,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                       WriteNameNodeGen SourceSection: None
                         Identifier: __classcell__
                         ReadLocalVariableNodeGen SourceSection: None
-                          Frame: [0,__class__,Illegal]
+                          Frame: [1,__class__,Illegal]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

@@ -197,15 +197,15 @@ public final class ArgDefListBuilder {
             for (Parameter param : args) {
                 if (param.name != null) {
                     // don't put splat marker
-                    functionScope.createSlotIfNotPresent(param.name);
+                    functionScope.defineSlot(param.name);
                 } else {
-                    functionScope.createSlotIfNotPresent(SPLAT_MARKER_NAME);
+                    functionScope.defineSlot(SPLAT_MARKER_NAME);
                 }
             }
         }
         if (kwargs != null) {
             for (Parameter param : kwargs) {
-                functionScope.createSlotIfNotPresent(param.name);
+                functionScope.defineSlot(param.name);
             }
         }
     }

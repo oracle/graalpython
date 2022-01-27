@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: outer
         Kind: Function
-        FrameDescriptor: [toInternal, var, <return_val>]
+        FrameDescriptor: [<return_val>, toInternal, var]
         CellVars: [var]
         FreeVars: Empty
         Scope: toInternal
             Kind: Function
-            FrameDescriptor: [obj, var, x, <return_val>]
+            FrameDescriptor: [<return_val>, obj, var, x]
             CellVars: Empty
             FreeVars: [var]

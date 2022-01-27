@@ -23,17 +23,17 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: x, 
+              CellVarsSlots: x
             FunctionRootNode SourceSection: [0,161]`def outer():â†µ    x =...`
               Name: outer
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: x
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [x, inner, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, inner, x]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: x, 
+                CellVarsSlots: x
               InnerRootNode SourceSection: [0,161]`def outer():â†µ    x =...`
                 ReturnTargetNode SourceSection: [0,161]`def outer():â†µ    x =...`
                   Body: BlockNode SourceSection: None
@@ -51,9 +51,9 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: x, 
+                          FreeVarSlots: x
                           ExecutionSlots:
-                            FreeVarsSlots: x, 
+                            FreeVarsSlots: x
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [38,129]`def inner():â†µ       ...`
                             Name: inner
@@ -61,9 +61,9 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                             CelVars: None
                             FreeVars: x
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [x, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, x]
                             ExecutionSlots:
-                              FreeVarsSlots: x, 
+                              FreeVarsSlots: x
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [38,129]`def inner():â†µ       ...`
                               ReturnTargetNode SourceSection: [38,129]`def inner():â†µ       ...`
@@ -86,7 +86,6 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                                         ReadLocalCellNodeGen SourceSection: [117,118]`x`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [0,x,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
                       ExpressionStatementNode SourceSection: [129,136]`inner()`
@@ -103,6 +102,5 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                           ReadLocalCellNodeGen SourceSection: [157,158]`x`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [0,x,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Object]

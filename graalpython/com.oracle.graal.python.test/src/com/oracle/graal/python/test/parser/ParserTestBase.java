@@ -65,12 +65,15 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
 public class ParserTestBase {
@@ -113,10 +116,28 @@ public class ParserTestBase {
 
     public Node parse(String src, String moduleName, PythonParser.ParserMode mode, Frame fd) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
+        Node result = parseInternal(source, mode, fd);
+        return result;
+    }
+
+    private Node parseInternal(Source source, PythonParser.ParserMode mode, Frame fd) {
         PythonParser parser = context.getParser();
         Node result = ((PythonParserImpl) parser).parseN(mode, 0, context, source, fd, null);
         lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
         lastSST = ((PythonParserImpl) parser).getLastSST();
+        // ensure that node parent pointers are set:
+        if (result instanceof RootNode) {
+            ((RootNode) result).getCallTarget();
+        } else {
+            new RootNode(null, fd.getFrameDescriptor()) {
+                @Child private Node adopted = result;
+
+                @Override
+                public Object execute(VirtualFrame frame) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }.getCallTarget();
+        }
         return result;
     }
 
@@ -125,11 +146,7 @@ public class ParserTestBase {
     }
 
     public Node parse(Source source, PythonParser.ParserMode mode) {
-        PythonParser parser = context.getParser();
-        Node result = ((PythonParserImpl) parser).parseN(mode, 0, context, source, null, null);
-        lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
-        lastSST = ((PythonParserImpl) parser).getLastSST();
-        return result;
+        return parseInternal(source, mode, null);
     }
 
     protected ScopeInfo getLastGlobalScope() {
@@ -334,7 +351,7 @@ public class ParserTestBase {
                 return; // Only difference is in line separation --> Test passed
             }
 
-            // There are some diffrerences between expected and actual content --> Test failed
+            // There are some differences between expected and actual content --> Test failed
 
             assertTrue("Not matching results: " + (someName == null ? "" : someName) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified), false);
         }

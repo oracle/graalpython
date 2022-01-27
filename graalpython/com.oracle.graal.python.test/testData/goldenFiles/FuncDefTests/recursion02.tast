@@ -18,17 +18,17 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: recursionInner, 
+              CellVarsSlots: recursionInner
             FunctionRootNode SourceSection: [0,94]`def outer():â†µ  def r...`
               Name: outer
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: recursionInner
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [recursionInner, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, recursionInner]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: recursionInner, 
+                CellVarsSlots: recursionInner
               InnerRootNode SourceSection: [0,94]`def outer():â†µ  def r...`
                 ReturnTargetNode SourceSection: [0,94]`def outer():â†µ  def r...`
                   Body: BlockNode SourceSection: None
@@ -42,9 +42,9 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: recursionInner, 
+                          FreeVarSlots: recursionInner
                           ExecutionSlots:
-                            FreeVarsSlots: recursionInner, 
+                            FreeVarsSlots: recursionInner
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [15,77]`def recursionInner(a...`
                             Name: recursionInner
@@ -53,9 +53,9 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                             CelVars: None
                             FreeVars: recursionInner
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [arg, recursionInner, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, arg, recursionInner]
                             ExecutionSlots:
-                              FreeVarsSlots: recursionInner, 
+                              FreeVarsSlots: recursionInner
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [15,77]`def recursionInner(a...`
                               ReturnTargetNode SourceSection: [15,77]`def recursionInner(a...`
@@ -73,7 +73,6 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                         ReadLocalCellNodeGen SourceSection: [51,65]`recursionInner`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,recursionInner,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         AddNodeGen SourceSection: [66,73]`arg + 1`
                                           ReadLocalVariableNodeGen SourceSection: [66,69]`arg`
                                             Frame: [0,arg,Illegal]
@@ -87,7 +86,6 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                           ReadLocalCellNodeGen SourceSection: [77,91]`recursionInner`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [0,recursionInner,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [92,93]`0`
                             Value: 0
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None

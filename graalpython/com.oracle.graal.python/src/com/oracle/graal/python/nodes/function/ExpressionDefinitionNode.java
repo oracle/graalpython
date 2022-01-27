@@ -28,29 +28,30 @@ package com.oracle.graal.python.nodes.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.PythonFrame;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@SuppressWarnings("deprecation")    // new Frame API
 abstract class ExpressionDefinitionNode extends ExpressionNode {
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
     private final ConditionProfile isGeneratorProfile = ConditionProfile.createBinaryProfile();
 
-    final ExecutionCellSlots executionCellSlots;
-    @CompilerDirectives.CompilationFinal(dimensions = 1) private final com.oracle.truffle.api.frame.FrameSlot[] freeVarDefinitionSlots;
+    @CompilationFinal(dimensions = 1) private final int[] freeVarDefinitionSlots;
+    protected final RootCallTarget callTarget;
 
-    ExpressionDefinitionNode(DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
-        this.executionCellSlots = executionCellSlots;
+    ExpressionDefinitionNode(DefinitionCellSlots definitionCellSlots, RootCallTarget callTarget) {
         this.freeVarDefinitionSlots = definitionCellSlots.getFreeVarSlots();
+        this.callTarget = callTarget;
     }
 
     @ExplodeLoop
-    PCell[] getClosureFromLocals(Frame frame) {
+    final PCell[] getClosureFromLocals(Frame frame) {
         if (freeVarDefinitionSlots.length == 0) {
             return null;
         }
@@ -58,8 +59,8 @@ abstract class ExpressionDefinitionNode extends ExpressionNode {
         PCell[] closure = new PCell[freeVarDefinitionSlots.length];
 
         for (int i = 0; i < freeVarDefinitionSlots.length; i++) {
-            com.oracle.truffle.api.frame.FrameSlot defFrameSlot = freeVarDefinitionSlots[i];
-            Object cell = com.oracle.truffle.api.frame.FrameUtil.getObjectSafe(frame, defFrameSlot);
+            int defFrameSlot = freeVarDefinitionSlots[i];
+            Object cell = frame.getObject(defFrameSlot);
             assert cell instanceof PCell : "getting closure from locals: expected a cell";
             closure[i] = (PCell) cell;
         }
@@ -67,7 +68,7 @@ abstract class ExpressionDefinitionNode extends ExpressionNode {
         return closure;
     }
 
-    PCell[] getClosureFromGeneratorOrFunctionLocals(Frame frame) {
+    final PCell[] getClosureFromGeneratorOrFunctionLocals(Frame frame) {
         PCell[] closure;
         Frame generatorFrame = PArguments.getGeneratorFrame(frame);
         if (isGeneratorProfile.profile(generatorFrame != null)) {
@@ -78,12 +79,19 @@ abstract class ExpressionDefinitionNode extends ExpressionNode {
         return closure;
     }
 
-    public ExecutionCellSlots getExecutionCellSlots() {
-        return executionCellSlots;
+    public final RootCallTarget getCallTarget() {
+        return callTarget;
     }
 
-    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarDefinitionSlots() {
+    public final ExecutionCellSlots getExecutionCellSlots() {
+        return ((FunctionRootNode) callTarget.getRootNode()).getExecutionCellSlots();
+    }
+
+    public final int[] getFreeVarDefinitionSlots() {
         return freeVarDefinitionSlots;
     }
 
+    public final String[] getFreeVarDefinitions() {
+        return PythonFrame.extractSlotNames(getRootNode().getFrameDescriptor(), freeVarDefinitionSlots);
+    }
 }

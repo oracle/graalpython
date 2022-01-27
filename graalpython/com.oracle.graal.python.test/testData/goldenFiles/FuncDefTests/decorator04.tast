@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [inner, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, inner]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

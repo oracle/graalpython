@@ -36,17 +36,15 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeInfo(shortName = "write_local")
 @NodeChild(value = "rightNode", type = ExpressionNode.class)
 @ImportStatic(FrameSlotGuards.class)
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class WriteLocalVariableNode extends StatementNode implements WriteIdentifierNode, FrameSlotNode {
 
-    protected final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    protected final int frameSlot;
 
-    public WriteLocalVariableNode(com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    public WriteLocalVariableNode(int frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static WriteLocalVariableNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode right) {
-        assert frameSlot != null;
+    public static WriteLocalVariableNode create(int frameSlot, ExpressionNode right) {
         return WriteLocalVariableNodeGen.create(frameSlot, right);
     }
 
@@ -58,13 +56,13 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
     }
 
     @Override
-    public final com.oracle.truffle.api.frame.FrameSlot getSlot() {
+    public final int getSlotIndex() {
         return frameSlot;
     }
 
     @Override
     public final Object getIdentifier() {
-        return frameSlot.getIdentifier();
+        return getRootNode().getFrameDescriptor().getSlotName(frameSlot);
     }
 
     @Specialization(guards = "isBooleanKind(frame, frameSlot)")

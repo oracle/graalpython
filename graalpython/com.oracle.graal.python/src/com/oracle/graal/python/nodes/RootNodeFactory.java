@@ -62,7 +62,7 @@ public final class RootNodeFactory {
     }
 
     public ModuleRootNode createModuleRoot(String name, String doc, ExpressionNode file, FrameDescriptor fd, boolean hasAnnotations) {
-        return new ModuleRootNode(language, name, doc, file, fd, null, hasAnnotations);
+        return new ModuleRootNode(language, name, doc, file, fd, hasAnnotations);
     }
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,

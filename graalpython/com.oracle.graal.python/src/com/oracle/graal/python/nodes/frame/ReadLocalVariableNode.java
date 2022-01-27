@@ -43,62 +43,57 @@ import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "read_local")
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class ReadLocalVariableNode extends ExpressionNode implements ReadLocalNode, FrameSlotNode {
 
-    protected final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    protected final int frameSlot;
 
-    protected ReadLocalVariableNode(com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    protected ReadLocalVariableNode(int frameSlot) {
         this.frameSlot = frameSlot;
     }
 
-    public static ReadLocalVariableNode create(com.oracle.truffle.api.frame.FrameSlot slot) {
-        assert slot != null;
+    public static ReadLocalVariableNode create(int slot) {
         return ReadLocalVariableNodeGen.create(slot);
     }
 
     @Override
-    public final com.oracle.truffle.api.frame.FrameSlot getSlot() {
+    public final int getSlotIndex() {
         return frameSlot;
     }
 
     @Specialization(guards = "frame.isBoolean(frameSlot)")
     boolean readLocalBoolean(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getBooleanSafe(frame, frameSlot);
+        return frame.getBoolean(frameSlot);
     }
 
     @Specialization(guards = "frame.isInt(frameSlot)")
     int readLocalInt(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getIntSafe(frame, frameSlot);
+        return frame.getInt(frameSlot);
     }
 
     @Specialization(guards = "frame.isLong(frameSlot)")
     long readLocalLong(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getLongSafe(frame, frameSlot);
+        return frame.getLong(frameSlot);
     }
 
     @Specialization(guards = "frame.isDouble(frameSlot)")
     double readLocalDouble(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getDoubleSafe(frame, frameSlot);
-    }
-
-    protected final Object getObjectResult(VirtualFrame frame) {
-        return com.oracle.truffle.api.frame.FrameUtil.getObjectSafe(frame, frameSlot);
+        return frame.getDouble(frameSlot);
     }
 
     @Specialization(guards = {"frame.isObject(frameSlot)", "result != null"})
     static Object readLocalObject(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Bind("getObjectResult(frame)") Object result) {
+                    @Bind("frame.getObject(frameSlot)") Object result) {
         return result;
     }
 
-    @Specialization(guards = {"frame.isObject(frameSlot)", "getObjectResult(frame) == null"})
+    @Specialization(guards = {"frame.isObject(frameSlot)", "frame.getObject(frameSlot) == null"})
     Object readLocalObjectNull(@SuppressWarnings("unused") VirtualFrame frame,
                     @Cached PRaiseNode raise) {
-        if (frameSlot.getIdentifier() == RETURN_SLOT_ID) {
+        Object identifier = frame.getFrameDescriptor().getSlotName(frameSlot);
+        if (identifier == RETURN_SLOT_ID) {
             return PNone.NONE;
         } else {
-            throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, frameSlot.getIdentifier());
+            throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, identifier);
         }
     }
 
@@ -114,6 +109,6 @@ public abstract class ReadLocalVariableNode extends ExpressionNode implements Re
 
     @Override
     public Object getNodeObject() {
-        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, frameSlot.getIdentifier());
+        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, getRootNode().getFrameDescriptor().getSlotName(frameSlot));
     }
 }

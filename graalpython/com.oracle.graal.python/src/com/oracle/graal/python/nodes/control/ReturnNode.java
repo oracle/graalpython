@@ -46,12 +46,11 @@ public class ReturnNode extends StatementNode {
         return PNone.NONE;
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
     public static final class FrameReturnNode extends ReturnNode {
-        protected final com.oracle.truffle.api.frame.FrameSlot slot;
+        protected final int slot;
         @Child private ExpressionNode right;
 
-        public FrameReturnNode(ExpressionNode right, com.oracle.truffle.api.frame.FrameSlot slot) {
+        public FrameReturnNode(ExpressionNode right, int slot) {
             this.right = right;
             this.slot = slot;
         }
@@ -68,13 +67,12 @@ public class ReturnNode extends StatementNode {
         }
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
     public static final class GeneratorFrameReturnNode extends ReturnNode {
         private final ValueProfile frameProfile = ValueProfile.createClassProfile();
-        protected final com.oracle.truffle.api.frame.FrameSlot slot;
+        protected final int slot;
         @Child private ExpressionNode right;
 
-        public GeneratorFrameReturnNode(ExpressionNode right, com.oracle.truffle.api.frame.FrameSlot slot) {
+        public GeneratorFrameReturnNode(ExpressionNode right, int slot) {
             this.right = right;
             this.slot = slot;
         }

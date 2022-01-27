@@ -38,25 +38,23 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@SuppressWarnings("deprecation")    // new Frame API
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
-    @CompilationFinal com.oracle.truffle.api.frame.FrameSlot iteratorSlot;
+    private final int iteratorSlot;
     @Child ForNextElementNode nextElement;
     @Child StatementNode body;
 
-    public ForRepeatingNode(StatementNode target, StatementNode body) {
+    public ForRepeatingNode(StatementNode target, StatementNode body, int iteratorSlot) {
+        this.iteratorSlot = iteratorSlot;
         this.nextElement = ForNextElementNodeGen.create(target);
         this.body = body;
     }
@@ -151,17 +149,17 @@ abstract class ForNextElementNode extends PNodeWithContext {
 }
 
 @NodeInfo(shortName = "for")
-@SuppressWarnings("deprecation")    // new Frame API
 public final class ForNode extends LoopNode {
 
-    @CompilationFinal private com.oracle.truffle.api.frame.FrameSlot iteratorSlot;
+    private final int iteratorSlot;
 
     @Child private com.oracle.truffle.api.nodes.LoopNode loopNode;
     @Child private ExpressionNode iterator;
 
-    public ForNode(StatementNode body, StatementNode target, ExpressionNode iterator) {
+    public ForNode(StatementNode body, StatementNode target, ExpressionNode iterator, int iteratorSlot) {
         this.iterator = iterator;
-        this.loopNode = Truffle.getRuntime().createLoopNode(new ForRepeatingNode(target, body));
+        this.iteratorSlot = iteratorSlot;
+        this.loopNode = Truffle.getRuntime().createLoopNode(new ForRepeatingNode(target, body, iteratorSlot));
     }
 
     public StatementNode getTarget() {
@@ -178,25 +176,12 @@ public final class ForNode extends LoopNode {
     }
 
     @Override
-    @SuppressWarnings("deprecation")    // new Frame API
     public void executeVoid(VirtualFrame frame) {
-        if (iteratorSlot == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getLock().lock();
-            try {
-                if (iteratorSlot == null) {
-                    iteratorSlot = frame.getFrameDescriptor().addFrameSlot(new Object(), FrameSlotKind.Object);
-                    ((ForRepeatingNode) loopNode.getRepeatingNode()).iteratorSlot = iteratorSlot;
-                }
-            } finally {
-                getLock().unlock();
-            }
-        }
         frame.setObject(iteratorSlot, iterator.execute(frame));
         try {
             loopNode.execute(frame);
         } finally {
-            frame.setObject(iteratorSlot, null);
+            frame.clear(iteratorSlot);
         }
     }
 }

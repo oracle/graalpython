@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'fromImportInFn04'> SourceSection: [0,66]`def fn():
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [my_dirname, basename, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, basename, my_dirname]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

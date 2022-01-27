@@ -62,7 +62,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [format, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, format]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -101,7 +101,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [args, kwds, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, args, kwds]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None

@@ -46,18 +46,17 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "write_cell")
 @NodeChild(value = "rhs", type = ExpressionNode.class)
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class WriteLocalCellNode extends StatementNode implements WriteIdentifierNode {
     @Child private ExpressionNode readLocal;
 
-    private final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    private final int frameSlot;
 
-    WriteLocalCellNode(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode readLocalNode) {
+    WriteLocalCellNode(int frameSlot, ExpressionNode readLocalNode) {
         this.frameSlot = frameSlot;
         this.readLocal = readLocalNode;
     }
 
-    public static WriteLocalCellNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode readLocal, ExpressionNode right) {
+    public static WriteLocalCellNode create(int frameSlot, ExpressionNode readLocal, ExpressionNode right) {
         return WriteLocalCellNodeGen.create(frameSlot, readLocal, right);
     }
 
@@ -78,7 +77,7 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
 
     @Override
     public Object getIdentifier() {
-        return frameSlot.getIdentifier();
+        return getRootNode().getFrameDescriptor().getSlotName(frameSlot);
     }
 
     @ImportStatic(PythonOptions.class)

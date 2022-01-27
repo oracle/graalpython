@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: format_exception_only
         Kind: Generator
-        FrameDescriptor: [caretspace, self, <return_val>]
+        FrameDescriptor: [<return_val>, caretspace, self]
         CellVars: Empty
         FreeVars: Empty
         Scope: <genexpr>
             Kind: GenExp
-            FrameDescriptor: [c, <return_val>]
+            FrameDescriptor: [<return_val>, c]
             CellVars: Empty
             FreeVars: Empty

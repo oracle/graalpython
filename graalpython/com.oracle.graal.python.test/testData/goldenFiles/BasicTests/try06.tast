@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'try06'> SourceSection: [0,124]`for cls in (B, C, D
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor:  Empty
+  FrameDescriptor: 1 slots [<>temp0]
   Documentation: None
   InnerRootNode SourceSection: [0,124]`for cls in (B, C, D)...`
     ExpressionWithSideEffect SourceSection: [0,124]`for cls in (B, C, D)...`

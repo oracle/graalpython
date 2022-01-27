@@ -44,57 +44,52 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class FrameSlotGuards {
 
     private FrameSlotGuards() {
         // no instances
     }
 
-    public static boolean isNotIllegal(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot) {
-        return frame.getFrameDescriptor().getFrameSlotKind(frameSlot) != FrameSlotKind.Illegal;
+    public static boolean isNotIllegal(Frame frame, int frameSlot) {
+        return frame.getFrameDescriptor().getSlotKind(frameSlot) != FrameSlotKind.Illegal;
     }
 
-    public static boolean isBooleanKind(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    public static boolean isBooleanKind(Frame frame, int frameSlot) {
         return isKind(frame, frameSlot, FrameSlotKind.Boolean);
     }
 
-    public static boolean isIntegerKind(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    public static boolean isIntegerKind(Frame frame, int frameSlot) {
         return isKind(frame, frameSlot, FrameSlotKind.Int);
     }
 
-    public static boolean isLongKind(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    public static boolean isLongKind(Frame frame, int frameSlot) {
         return isKind(frame, frameSlot, FrameSlotKind.Long);
     }
 
-    public static boolean isDoubleKind(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    public static boolean isDoubleKind(Frame frame, int frameSlot) {
         return isKind(frame, frameSlot, FrameSlotKind.Double);
     }
 
-    public static boolean isIntOrObjectKind(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    public static boolean isIntOrObjectKind(Frame frame, int frameSlot) {
         return isKind(frame, frameSlot, FrameSlotKind.Int) || isKind(frame, frameSlot, FrameSlotKind.Object);
     }
 
-    public static boolean isLongOrObjectKind(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot) {
+    public static boolean isLongOrObjectKind(Frame frame, int frameSlot) {
         return isKind(frame, frameSlot, FrameSlotKind.Long) || isKind(frame, frameSlot, FrameSlotKind.Object);
     }
 
-    public static boolean ensureObjectKind(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot) {
-        if (frame.getFrameDescriptor().getFrameSlotKind(frameSlot) != FrameSlotKind.Object) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            frame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Object);
-        }
-        return true;
+    public static void ensureObjectKind(Frame frame, int frameSlot) {
+        frame.getFrameDescriptor().setSlotKind(frameSlot, FrameSlotKind.Object);
     }
 
-    private static boolean isKind(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot, FrameSlotKind kind) {
-        return frame.getFrameDescriptor().getFrameSlotKind(frameSlot) == kind || initialSetKind(frame, frameSlot, kind);
+    private static boolean isKind(Frame frame, int frameSlot, FrameSlotKind kind) {
+        return frame.getFrameDescriptor().getSlotKind(frameSlot) == kind || initialSetKind(frame, frameSlot, kind);
     }
 
-    private static boolean initialSetKind(Frame frame, com.oracle.truffle.api.frame.FrameSlot frameSlot, FrameSlotKind kind) {
-        if (frame.getFrameDescriptor().getFrameSlotKind(frameSlot) == FrameSlotKind.Illegal) {
+    private static boolean initialSetKind(Frame frame, int frameSlot, FrameSlotKind kind) {
+        if (frame.getFrameDescriptor().getSlotKind(frameSlot) == FrameSlotKind.Illegal) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            frame.getFrameDescriptor().setFrameSlotKind(frameSlot, kind);
+            frame.getFrameDescriptor().setSlotKind(frameSlot, kind);
             return true;
         }
         return false;

@@ -5,361 +5,361 @@ Scope: []
     FreeVars: Empty
     Scope: ixor
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: itruediv
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: isub
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: irshift
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: ipow
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: ior
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: imatmul
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: imul
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: imod
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: ilshift
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: ifloordiv
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: iconcat
         Kind: Function
-        FrameDescriptor: [msg, a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b, msg]
         CellVars: Empty
         FreeVars: Empty
     Scope: iand
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: iadd
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: methodcaller
         Kind: Class
-        FrameDescriptor: [__reduce__, __call__, __repr__, __doc__, __slots__, __init__]
+        FrameDescriptor: [__call__, __doc__, __init__, __reduce__, __repr__, __slots__]
         CellVars: Empty
         FreeVars: Empty
         Scope: __reduce__
             Kind: Function
-            FrameDescriptor: [self, partial, <return_val>]
+            FrameDescriptor: [<return_val>, partial, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [args, self, <return_val>]
+            FrameDescriptor: [<return_val>, args, self]
             CellVars: Empty
             FreeVars: Empty
             Scope: <genexpr>
                 Kind: GenExp
-                FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
+                FrameDescriptor: [<>temp2, <>temp3, <return_val>, k, v]
                 CellVars: Empty
                 FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [obj, self, <return_val>]
+            FrameDescriptor: [<return_val>, obj, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [args, msg, kwargs, self, <return_val>]
+            FrameDescriptor: [<return_val>, args, kwargs, msg, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: itemgetter
         Kind: Class
-        FrameDescriptor: [__reduce__, __call__, __repr__, __doc__, __slots__, __init__]
+        FrameDescriptor: [__call__, __doc__, __init__, __reduce__, __repr__, __slots__]
         CellVars: Empty
         FreeVars: Empty
         Scope: __reduce__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [obj, self, <return_val>]
+            FrameDescriptor: [<return_val>, obj, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [item, func, self, <>temp4, items, <return_val>]
+            FrameDescriptor: [<>temp4, <return_val>, func, item, items, self]
             CellVars: [item, items]
             FreeVars: Empty
             Scope: func
                 Kind: Function
-                FrameDescriptor: [obj, items, <return_val>]
+                FrameDescriptor: [<return_val>, items, obj]
                 CellVars: [obj]
                 FreeVars: [items]
                 Scope: <genexpr>
                     Kind: GenExp
-                    FrameDescriptor: [obj, i, <return_val>]
+                    FrameDescriptor: [<return_val>, i, obj]
                     CellVars: Empty
                     FreeVars: [obj]
             Scope: func
                 Kind: Function
-                FrameDescriptor: [item, obj, <return_val>]
+                FrameDescriptor: [<return_val>, item, obj]
                 CellVars: Empty
                 FreeVars: [item]
     Scope: attrgetter
         Kind: Class
-        FrameDescriptor: [__reduce__, __call__, __repr__, __doc__, __slots__, __init__]
+        FrameDescriptor: [__call__, __doc__, __init__, __reduce__, __repr__, __slots__]
         CellVars: Empty
         FreeVars: Empty
         Scope: __reduce__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [obj, self, <return_val>]
+            FrameDescriptor: [<return_val>, obj, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [names, func, self, attr, getters, <return_val>, attrs]
+            FrameDescriptor: [<return_val>, attr, attrs, func, getters, names, self]
             CellVars: [getters, names]
             FreeVars: Empty
             Scope: func
                 Kind: Function
-                FrameDescriptor: [obj, getters, <return_val>]
+                FrameDescriptor: [<return_val>, getters, obj]
                 CellVars: [obj]
                 FreeVars: [getters]
                 Scope: <genexpr>
                     Kind: GenExp
-                    FrameDescriptor: [getter, obj, <return_val>]
+                    FrameDescriptor: [<return_val>, getter, obj]
                     CellVars: Empty
                     FreeVars: [obj]
             Scope: func
                 Kind: Function
-                FrameDescriptor: [names, obj, name, <return_val>]
+                FrameDescriptor: [<>temp3, <return_val>, name, names, obj]
                 CellVars: Empty
                 FreeVars: [names]
     Scope: length_hint
         Kind: Function
-        FrameDescriptor: [msg, val, default, obj, hint, <return_val>]
+        FrameDescriptor: [<return_val>, default, hint, msg, obj, val]
         CellVars: Empty
         FreeVars: Empty
     Scope: setitem
         Kind: Function
-        FrameDescriptor: [a, b, c, <return_val>]
+        FrameDescriptor: [<return_val>, a, b, c]
         CellVars: Empty
         FreeVars: Empty
     Scope: indexOf
         Kind: Function
-        FrameDescriptor: [a, b, <>temp6, i, j, <>temp5, <return_val>]
+        FrameDescriptor: [<>temp4, <>temp6, <>temp7, <return_val>, a, b, i, j]
         CellVars: Empty
         FreeVars: Empty
     Scope: getitem
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: delitem
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: countOf
         Kind: Function
-        FrameDescriptor: [a, b, count, i, <return_val>]
+        FrameDescriptor: [<>temp4, <return_val>, a, b, count, i]
         CellVars: Empty
         FreeVars: Empty
     Scope: contains
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: concat
         Kind: Function
-        FrameDescriptor: [msg, a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b, msg]
         CellVars: Empty
         FreeVars: Empty
     Scope: xor
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: truediv
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: sub
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: rshift
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: pow
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: pos
         Kind: Function
-        FrameDescriptor: [a, <return_val>]
+        FrameDescriptor: [<return_val>, a]
         CellVars: Empty
         FreeVars: Empty
     Scope: or_
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: neg
         Kind: Function
-        FrameDescriptor: [a, <return_val>]
+        FrameDescriptor: [<return_val>, a]
         CellVars: Empty
         FreeVars: Empty
     Scope: matmul
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: mul
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: mod
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: lshift
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: inv
         Kind: Function
-        FrameDescriptor: [a, <return_val>]
+        FrameDescriptor: [<return_val>, a]
         CellVars: Empty
         FreeVars: Empty
     Scope: index
         Kind: Function
-        FrameDescriptor: [a, <return_val>]
+        FrameDescriptor: [<return_val>, a]
         CellVars: Empty
         FreeVars: Empty
     Scope: floordiv
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: and_
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: add
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: abs
         Kind: Function
-        FrameDescriptor: [a, <return_val>]
+        FrameDescriptor: [<return_val>, a]
         CellVars: Empty
         FreeVars: Empty
     Scope: is_not
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: is_
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: truth
         Kind: Function
-        FrameDescriptor: [a, <return_val>]
+        FrameDescriptor: [<return_val>, a]
         CellVars: Empty
         FreeVars: Empty
     Scope: not_
         Kind: Function
-        FrameDescriptor: [a, <return_val>]
+        FrameDescriptor: [<return_val>, a]
         CellVars: Empty
         FreeVars: Empty
     Scope: gt
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: ge
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: ne
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: eq
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: le
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty
     Scope: lt
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [<return_val>, a, b]
         CellVars: Empty
         FreeVars: Empty

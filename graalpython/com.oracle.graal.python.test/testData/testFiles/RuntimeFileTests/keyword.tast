@@ -86,7 +86,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 15 slots [sys, re, args, iptfile, optfile, format, fp, nl, strprog, lines, match, line, start, end, <return_val>]
+            FrameDescriptor: 16 slots [<>temp14, <return_val>, args, end, format, fp, iptfile, line, lines, match, nl, optfile, re, start, strprog, sys]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -413,7 +413,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       YesNodeGen SourceSection: None
                       GetClassNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [14,<return_val>,Object]
+                  Frame: [15,<return_val>,Object]
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
