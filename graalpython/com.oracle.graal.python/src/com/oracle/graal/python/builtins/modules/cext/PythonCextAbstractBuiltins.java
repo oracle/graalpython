@@ -714,9 +714,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_SetItem", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class PySequenceSetItemNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = "checkNode.execute(obj)")
+        @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         public Object setItem(VirtualFrame frame, Object obj, Object key, Object value,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached ConditionProfile hasSetItem,
                         @Cached CallNode callNode,
@@ -735,9 +735,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)")
+        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         Object setItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
         }
@@ -748,9 +748,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PySequenceGetSliceNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "checkNode.execute(obj)")
+        @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         Object getSlice(VirtualFrame frame, Object obj, long iLow, long iHigh,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached CallNode callNode,
@@ -764,9 +764,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)")
+        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
         }
@@ -792,9 +792,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_Repeat", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PySequenceRepeatNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "checkNode.execute(obj)")
+        @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         Object repeat(VirtualFrame frame, Object obj, long n,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached("createMul()") MulNode mulNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -805,9 +805,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)")
+        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
@@ -820,12 +820,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_InPlaceRepeat", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PySequenceInPlaceRepeatNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"checkNode.execute(obj)"})
+        @Specialization(guards = {"checkNode.execute(obj)"}, limit = "1")
         Object repeat(VirtualFrame frame, Object obj, long n,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
                         @Cached("createMul()") MulNode mulNode,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object imulCallable = lookupNode.execute(frame, obj, __IMUL__);
@@ -840,9 +840,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)")
+        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
@@ -855,9 +855,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_Concat", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PySequenceConcatNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"})
+        @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"}, limit = "1")
         Object concat(VirtualFrame frame, Object s1, Object s2,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -868,9 +868,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"})
+        @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"}, limit = "1")
         protected Object cantConcat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
@@ -884,12 +884,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PySequenceInPlaceConcatNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"checkNode.execute(s1)"})
+        @Specialization(guards = {"checkNode.execute(s1)"}, limit = "1")
         Object concat(VirtualFrame frame, Object s1, Object s2,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object iaddCallable = lookupNode.execute(frame, s1, __IADD__);
@@ -903,9 +903,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(s1)")
+        @Specialization(guards = "!checkNode.execute(s1)", limit = "1")
         protected Object concat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
-                        @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
@@ -1270,8 +1270,8 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         protected static boolean isSetOrDeque(Object obj, IsSameTypeNode isSameType, GetClassNode getClassNode) {
             Object cls = getClassNode.execute(obj);
             return isSameType.execute(cls, PythonBuiltinClassType.PSet) ||
-                    isSameType.execute(cls, PythonBuiltinClassType.PFrozenSet) ||
-                    isSameType.execute(cls, PythonBuiltinClassType.PDeque);
+                            isSameType.execute(cls, PythonBuiltinClassType.PFrozenSet) ||
+                            isSameType.execute(cls, PythonBuiltinClassType.PDeque);
         }
     }
 
