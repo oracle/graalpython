@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextImportBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextMemoryViewBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextIterBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextNamespaceBuiltins;
@@ -131,6 +132,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSysBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextWarnBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
@@ -491,6 +493,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextCodeBuiltins(),
                         new PythonCextComplexBuiltins(),
                         new PythonCextDictBuiltins(),
+                        new PythonCextErrBuiltins(),
                         new PythonCextFileBuiltins(),
                         new PythonCextFloatBuiltins(),
                         new PythonCextImportBuiltins(),
@@ -507,6 +510,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextSysBuiltins(),
                         new PythonCextTupleBuiltins(),
                         new PythonCextUnicodeBuiltins(),
+                        new PythonCextWarnBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),

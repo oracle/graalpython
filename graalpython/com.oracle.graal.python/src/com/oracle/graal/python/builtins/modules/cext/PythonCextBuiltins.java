@@ -189,7 +189,6 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
@@ -249,7 +248,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -637,129 +635,9 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyErr_Restore", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyErrRestoreNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        Object run(PNone typ, PNone val, PNone tb) {
-            getContext().setCurrentException(getLanguage(), null);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
-            context.setCurrentException(language, PException.fromExceptionInfo(val, (LazyTraceback) null, PythonOptions.isPExceptionWithJavaStacktrace(language)));
-            return PNone.NONE;
-        }
-
-        @Specialization
-        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
-            context.setCurrentException(language, PException.fromExceptionInfo(val, tb, PythonOptions.isPExceptionWithJavaStacktrace(language)));
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "PyErr_Fetch")
-    @GenerateNodeFactory
-    abstract static class PyErrFetchNode extends NativeBuiltin {
-        @Specialization
-        public Object run(@Cached GetThreadStateNode getThreadStateNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetTracebackNode getTracebackNode) {
-            PException currentException = getThreadStateNode.getCurrentException();
-            Object result;
-            if (currentException == null) {
-                result = getContext().getNativeNull();
-            } else {
-                PBaseException exception = currentException.getEscapedException();
-                Object traceback = null;
-                if (currentException.getTraceback() != null) {
-                    traceback = getTracebackNode.execute(currentException.getTraceback());
-                }
-                if (traceback == null) {
-                    traceback = getContext().getNativeNull();
-                }
-                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback});
-                getThreadStateNode.setCurrentException(null);
-            }
-            return result;
-        }
-    }
-
-    @Builtin(name = "PyErr_Occurred", maxNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object run(Object errorMarker,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached GetClassNode getClassNode) {
-            PException currentException = getThreadStateNode.getCurrentException();
-            if (currentException != null) {
-                // getClassNode acts as a branch profile
-                return getClassNode.execute(currentException.getUnreifiedException());
-            }
-            return errorMarker;
-        }
-    }
-
-    @Builtin(name = "PyErr_SetExcInfo", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyErrSetExcInfo extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        Object doClear(PNone typ, PNone val, PNone tb) {
-            getContext().setCaughtException(getLanguage(), PException.NO_EXCEPTION);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
-            context.setCaughtException(language, PException.fromExceptionInfo(val, tb, PythonOptions.isPExceptionWithJavaStacktrace(language)));
-            return PNone.NONE;
-        }
-
-        @Specialization
-        Object doWithoutTraceback(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
-            return doFull(typ, val, null);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static Object doFallback(Object typ, Object val, Object tb) {
-            // TODO we should still store the values to return them with 'PyErr_GetExcInfo' (or
-            // 'sys.exc_info')
-            return PNone.NONE;
-        }
-    }
-
-    /**
-     * Exceptions are usually printed using the traceback module or the hook function
-     * {@code sys.excepthook}. This is the last resort if the hook function itself failed.
-     */
-    @Builtin(name = "PyErr_Display", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyErrDisplay extends PythonBuiltinNode {
-
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object run(Object typ, PBaseException val, Object tb) {
-            if (val.getException() != null) {
-                ExceptionUtils.printPythonLikeStackTrace(val.getException());
-            }
-            return PNone.NO_VALUE;
-        }
-    }
-
     @Builtin(name = "PyTruffle_WriteUnraisable", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyTruffleWriteUnraisable extends PythonBuiltinNode {
+    abstract static class PyTruffleWriteUnraisable extends PythonBinaryBuiltinNode {
 
         @Specialization
         static Object run(PBaseException exception, Object object,

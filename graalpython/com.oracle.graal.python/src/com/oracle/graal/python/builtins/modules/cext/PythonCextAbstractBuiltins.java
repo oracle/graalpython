@@ -73,7 +73,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.NextNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyErrRestoreNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins.PyErrRestoreNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
