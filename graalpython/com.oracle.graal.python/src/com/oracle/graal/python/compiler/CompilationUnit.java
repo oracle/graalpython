@@ -267,18 +267,17 @@ public final class CompilationUnit {
         if (srcDelta > 127) {
             while (srcDelta > 127) {
                 srcOffsets.write((byte)0x80);
-                srcDelta -= 128;
+                srcDelta -= 0x80;
             }
             assert srcDelta >= 0;
             if (!negative) {
                 srcOffsets.write((byte)srcDelta);
             } else {
-                srcDelta = -srcDelta - 1;
-                if (srcDelta == -128) {
+                if (srcDelta == 127) {
                     srcOffsets.write((byte)0x80);
                     srcOffsets.write((byte)-1);
                 } else {
-                    assert srcDelta > -128;
+                    srcDelta = -srcDelta - 1;
                     srcOffsets.write((byte)srcDelta);
                 }
             }

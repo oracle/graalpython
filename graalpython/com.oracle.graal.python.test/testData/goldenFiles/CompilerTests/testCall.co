@@ -1,7 +1,7 @@
 Disassembly of <module>:
 000000         0 LOAD_NAME                         0    (range)
-000009         2 LOAD_NAME                         1    (num)
-000009         4 CALL_FUNCTION                     1
-000009         6 POP_TOP
-000009         7 LOAD_NONE
-000009         8 RETURN_VALUE
+000006         2 LOAD_NAME                         1    (num)
+000010         4 CALL_FUNCTION                     1
+000010         6 POP_TOP
+000010         7 LOAD_NONE
+000010         8 RETURN_VALUE

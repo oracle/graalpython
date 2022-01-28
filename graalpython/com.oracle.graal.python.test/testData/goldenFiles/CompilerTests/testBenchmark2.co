@@ -2,38 +2,38 @@ Disassembly of <module>:
 000000         0 LOAD_BUILD_CLASS
 000000         1 LOAD_CONST                        0    (<module>.HandlerTask from <module>)
 000000         3 MAKE_FUNCTION                     1
-000018         5 LOAD_CONST                        1    (HandlerTask)
+000000         5 LOAD_CONST                        1    (HandlerTask)
 000018         7 LOAD_GLOBAL                       0    (Task)
 000018         9 CALL_FUNCTION                     2
-000018        11 STORE_NAME                        1    (HandlerTask)
-000018        13 LOAD_NONE
-000018        14 RETURN_VALUE
+000000        11 STORE_NAME                        1    (HandlerTask)
+000283        13 LOAD_NONE
+000283        14 RETURN_VALUE
 
 Disassembly of <module>.HandlerTask:
-000000         0 LOAD_NAME                         0    (__name__)
-000000         2 STORE_NAME                        1    (__module__)
-000000         4 LOAD_CONST                        0    (<module>.HandlerTask)
-000000         6 STORE_NAME                        2    (__qualname__)
-000000         8 LOAD_CONST                        1    (<module>.HandlerTask.__init__ from <module>)
-000000        10 MAKE_FUNCTION                     1
-000000        12 STORE_NAME                        3    (__init__)
-000000        14 LOAD_NONE
-000000        15 RETURN_VALUE
+000029         0 LOAD_NAME                         0    (__name__)
+000029         2 STORE_NAME                        1    (__module__)
+000029         4 LOAD_CONST                        0    (<module>.HandlerTask)
+000029         6 STORE_NAME                        2    (__qualname__)
+000029         8 LOAD_CONST                        1    (<module>.HandlerTask.__init__ from <module>)
+000029        10 MAKE_FUNCTION                     1
+000029        12 STORE_NAME                        3    (__init__)
+000155        14 LOAD_NONE
+000155        15 RETURN_VALUE
 
 Disassembly of <module>.HandlerTask.__init__:
 000091         0 LOAD_BYTE                         0
-000107         2 STORE_FAST                        6    (x)
-000126         4 LOAD_GLOBAL                       0    (ValueError)
-000145         6 RAISE_VARARGS                     1
-000149         8 LOAD_GLOBAL                       1    (Task)
-000153        10 LOAD_FAST                         0    (self)
-000154        12 LOAD_FAST                         1    (i)
--00128        14 LOAD_FAST                         2    (p)
--00128        16 LOAD_FAST                         3    (w)
--00128        18 LOAD_FAST                         4    (s)
--00128        20 LOAD_FAST                         5    (r)
--00128        22 COLLECTION_FROM_STACK             6    (Object[])
--00128        24 CALL_METHOD_VARARGS               2    (__init__)
--00128        26 POP_TOP
+000087         2 STORE_FAST                        6    (x)
+000107         4 LOAD_GLOBAL                       0    (ValueError)
+000101         6 RAISE_VARARGS                     1
+000126         8 LOAD_GLOBAL                       1    (Task)
+000140        10 LOAD_FAST                         0    (self)
+000145        12 LOAD_FAST                         1    (i)
+000147        14 LOAD_FAST                         2    (p)
+000149        16 LOAD_FAST                         3    (w)
+000151        18 LOAD_FAST                         4    (s)
+000153        20 LOAD_FAST                         5    (r)
+000154        22 COLLECTION_FROM_STACK             6    (Object[])
+000155        24 CALL_METHOD_VARARGS               2    (__init__)
+000155        26 POP_TOP
 -00128        27 LOAD_NONE
 -00128        28 RETURN_VALUE

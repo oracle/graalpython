@@ -112,30 +112,31 @@ public final class CodeUnit {
     }
 
     int bciToSrcOffset(int bci) {
-        int offIdx = 0;
-        int overallOffset = 0;
+        int diffIdx = 0;
+        int currentOffset = 0;
         for (int i = 0; i < srcOffsetTable.length; i++) {
-            byte offset = srcOffsetTable[i];
-            int srcOffset = offset;
-            if (offset != (byte)0x80) {
-                overallOffset += offset;
+            byte diff = srcOffsetTable[i];
+            int intDiff = diff;
+            if (diff != (byte)0x80) {
+                currentOffset += diff;
             } else {
-                while (offset == (byte)0x80) {
-                    srcOffset += offset;
-                    offset = srcOffsetTable[++i];
+                while (diff == (byte)0x80) {
+                    intDiff -= 0x80;
+                    diff = srcOffsetTable[++i];
                 }
-                if (offset >= 0) {
-                    overallOffset += -srcOffset + offset;
+                assert intDiff < 0;
+                if (diff >= 0) {
+                    currentOffset += -intDiff + diff;
                 } else {
-                    overallOffset += srcOffset + offset + 1;
+                    currentOffset += intDiff + diff + 1;
                 }
             }
-            if (offIdx == bci) {
+            if (diffIdx == bci) {
                 break;
             }
-            offIdx++;
+            diffIdx++;
         }
-        return overallOffset;
+        return currentOffset;
     }
 
     public boolean takesVarKeywordArgs() {
@@ -165,6 +166,7 @@ public final class CodeUnit {
         int offset = -1;
 
         int bci = 0;
+        int bytecodeCount = 0;
         while (bci < code.length) {
             int bcBCI = bci;
             int bc = Byte.toUnsignedInt(code[bci++]);
@@ -172,7 +174,7 @@ public final class CodeUnit {
 
             String[] line = lines.computeIfAbsent(bcBCI, k -> new String[6]);
 
-            int srcOffset = bciToSrcOffset(bcBCI);
+            int srcOffset = bciToSrcOffset(bytecodeCount++);
             offset = srcOffset;
             line[0] = String.format("%06d", offset);
             if (line[1] == null) {

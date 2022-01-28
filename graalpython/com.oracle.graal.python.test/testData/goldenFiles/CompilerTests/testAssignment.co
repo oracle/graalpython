@@ -1,5 +1,5 @@
 Disassembly of <module>:
 000004         0 LOAD_BYTE                         12
 000000         2 STORE_NAME                        0    (a)
-000000         4 LOAD_NONE
-000000         5 RETURN_VALUE
+000006         4 LOAD_NONE
+000006         5 RETURN_VALUE

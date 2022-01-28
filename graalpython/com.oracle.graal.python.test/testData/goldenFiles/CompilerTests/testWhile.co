@@ -1,6 +1,6 @@
 Disassembly of <module>:
 000006   >>    0 LOAD_FALSE
 000006         1 POP_AND_JUMP_IF_FALSE             4    (to 5)
-000006         3 JUMP_BACKWARD                     3    (to 0)
-000006   >>    5 LOAD_NONE
-000006         6 RETURN_VALUE
+000017         3 JUMP_BACKWARD                     3    (to 0)
+000017   >>    5 LOAD_NONE
+000017         6 RETURN_VALUE

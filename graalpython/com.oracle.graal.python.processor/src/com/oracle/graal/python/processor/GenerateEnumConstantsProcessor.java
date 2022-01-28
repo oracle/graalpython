@@ -95,7 +95,6 @@ public class GenerateEnumConstantsProcessor extends AbstractProcessor {
                             qualName = pkgName + "." + className;
                         }
 
-                        processingEnv.getMessager().printMessage(Kind.NOTE, String.format("Generating '%s'", qualName));
                         JavaFileObject file = processingEnv.getFiler().createSourceFile(qualName);
                         try (CodeWriter w = new CodeWriter(file.openWriter())) {
                             w.writeLn("// CheckStyle: start generated");

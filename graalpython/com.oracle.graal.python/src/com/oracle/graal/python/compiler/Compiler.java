@@ -83,6 +83,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         mod.accept(this);
         CompilationUnit topUnit = unit;
         if (!unit.currentBlock.isReturn()) {
+            setOffset(mod.getEndOffset());
             if (!(mod instanceof ModTy.Expression)) {
                 // add a none return at the end
                 addOp(LOAD_NONE);
@@ -329,7 +330,11 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void setOffset(SSTNode node) {
-        unit.startOffset = node.getStartOffset();
+        setOffset(node.getStartOffset());
+    }
+
+    private void setOffset(int offset) {
+        unit.startOffset = offset;
     }
 
     private void collectIntoArray(SSTNode[] nodes, int bits, int alreadyOnStack) {
@@ -342,15 +347,18 @@ public class Compiler implements SSTreeVisitor<Void> {
                 if (!collectionOnStack && cnt > 0) {
                     addOp(COLLECTION_FROM_STACK, bits | cnt);
                     e.accept(this);
+                    setOffset(e.getEndOffset());
                     addOp(COLLECTION_ADD_COLLECTION, bits);
                 } else {
                     e.accept(this);
+                    setOffset(e.getEndOffset());
                     addOp(COLLECTION_FROM_COLLECTION, bits);
                 }
                 collectionOnStack = true;
                 cnt = 0;
             } else {
                 e.accept(this);
+                setOffset(e.getEndOffset());
             }
             if (cnt > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
                 if (!collectionOnStack) {
@@ -456,7 +464,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ArgumentsTy node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        throw new IllegalStateException("Should not be visited");
     }
 
     @Override
@@ -466,7 +474,18 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Attribute node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        setOffset(node);
+        node.value.accept(this);
+        int idx = addObject(unit.names, node.attr);
+        switch (node.context) {
+            case Store:
+                return addOp(STORE_ATTR, idx);
+            case Delete:
+                return addOp(DELETE_ATTR, idx);
+            case Load:
+            default:
+                return addOp(LOAD_ATTR, idx);
+        }
     }
 
     @Override
@@ -478,7 +497,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.BinOp node) {
         node.left.accept(this);
         node.right.accept(this);
-        unit.startOffset = node.left.getEndOffset();
+        setOffset(node.left.getEndOffset());
         switch (node.op) {
             case ADD:
                 return addOp(BINARY_ADD);
@@ -545,7 +564,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         } else {
             func.accept(this);
         }
-        unit.startOffset = func.getEndOffset();
+        setOffset(func.getEndOffset());
         if (hasOnlyPlainArgs(node) && node.args.length <= 4) {
             if (op == CALL_METHOD_VARARGS) {
                 oparg = (node.args.length << 8) | oparg;
@@ -556,21 +575,17 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
             // fast calls without extra arguments array
             visitSequence(node.args);
-            if (node.args.length > 0) {
-                unit.startOffset = node.args[node.args.length - 1].getEndOffset();
-            }
+            setOffset(node.getEndOffset());
             return addOp(op, oparg);
         } else {
             collectIntoArray(node.args, CollectionBits.OBJECT);
-            if (node.args.length > 0) {
-                unit.startOffset = node.args[node.args.length - 1].getEndOffset();
-            }
             if (node.keywords.length > 0) {
                 assert op == CALL_FUNCTION_VARARGS;
                 collectIntoArray(node.keywords, CollectionBits.KWORDS);
-                unit.startOffset = node.args[node.keywords.length - 1].getEndOffset();
+                setOffset(node.getEndOffset());
                 return addOp(CALL_FUNCTION_KW);
             } else {
+                setOffset(node.getEndOffset());
                 return addOp(op, oparg);
             }
         }
@@ -744,6 +759,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.List node) {
+        setOffset(node);
         if (node.context == ExprContext.Store) {
             return unpackInto(node.elements);
         } else if (node.context == ExprContext.Load) {
@@ -773,6 +789,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Set node) {
+        setOffset(node);
         collectIntoArray(node.elements, CollectionBits.SET);
         return null;
     }
@@ -799,6 +816,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Tuple node) {
+        setOffset(node);
         if (node.context == ExprContext.Store) {
             return unpackInto(node.elements);
         } else if (node.context == ExprContext.Load) {
@@ -827,6 +845,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(KeywordTy node) {
         node.value.accept(this);
+        setOffset(node);
         return addOp(MAKE_KEYWORD, addObject(unit.constants, node.arg));
     }
 
@@ -866,12 +885,14 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.Assert node) {
         Block end = new Block();
         node.test.accept(this);
+        setOffset(node);
         addOp(JUMP_IF_FALSE_OR_POP, end);
         addOp(LOAD_ASSERTION_ERROR);
         if (node.msg != null) {
             node.msg.accept(this);
             addOp(CALL_FUNCTION, 1);
         }
+        setOffset(node.getEndOffset());
         addOp(RAISE_VARARGS, 1);
         unit.useNextBlock(end);
         return null;
@@ -908,7 +929,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.AugAssign node) {
         node.target.copyWithContext(ExprContext.Load).accept(this);
         node.value.accept(this);
-        unit.startOffset = node.target.getEndOffset();
+        setOffset(node.target.getEndOffset());
         switch (node.op) {
             case ADD:
                 addOp(INPLACE_ADD);
@@ -960,6 +981,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         visitSequence(node.decoratorList);
 
         enterScope(node.name, CompilationScope.Class, node, 1, 0, 0, false, false);
+        setOffset(node.body[0]);
         addNameOp("__name__", ExprContext.Load);
         addNameOp("__module__", ExprContext.Store);
         addOp(LOAD_CONST, addObject(unit.constants, unit.qualName));
@@ -967,6 +989,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         visitBody(node.body);
 
+        setOffset(node.getEndOffset());
         if (unit.scope.needsClassClosure()) {
             int idx = unit.cellvars.get("__class__");
             addOp(LOAD_CLOSURE, idx);
@@ -979,6 +1002,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         CodeUnit co = unit.assemble(filename, 0);
         exitScope();
 
+        setOffset(node);
         addOp(LOAD_BUILD_CLASS);
         makeClosure(co, 0, 0);
         addOp(LOAD_CONST, addObject(unit.constants, node.name));
@@ -996,11 +1020,13 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
 
         if (node.decoratorList != null) {
-            for (int i = 0; i < node.decoratorList.length; i++) {
+            for (ExprTy decorator : node.decoratorList) {
+                setOffset(decorator.getEndOffset());
                 addOp(CALL_FUNCTION, 1);
             }
         }
 
+        setOffset(node);
         addNameOp(node.name, ExprContext.Store);
 
         return null;
@@ -1015,6 +1041,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.Expr node) {
         if (!(node.value instanceof ExprTy.Constant)) {
             node.value.accept(this);
+            setOffset(node.value.getEndOffset());
             addOp(POP_TOP);
         }
         return null;
@@ -1031,6 +1058,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         addOp(GET_ITER);
 
         unit.useNextBlock(head);
+        setOffset(node);
         addOp(FOR_ITER, orelse);
 
         unit.useNextBlock(body);
@@ -1038,6 +1066,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         try {
             node.target.accept(this);
             visitSequence(node.body);
+            setOffset(node.body[node.body.length - 1].getEndOffset());
             addOp(JUMP_BACKWARD, head);
         } finally {
             unit.blockInfoStack.pop();
@@ -1131,10 +1160,12 @@ public class Compiler implements SSTreeVisitor<Void> {
             exitScope();
         }
 
+        setOffset(node);
         makeClosure(code, hasDefaults > 0 ? 1 : 0, hasKwDefaults > 0 ? 1 : 0);
 
         if (node.decoratorList != null) {
-            for (int i = 0; i < node.decoratorList.length; i++) {
+            for (ExprTy decorator : node.decoratorList) {
+                setOffset(decorator.getEndOffset());
                 addOp(CALL_FUNCTION, 1);
             }
         }
@@ -1229,6 +1260,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 node.cause.accept(this);
             }
         }
+        setOffset(node);
         addOp(RAISE_VARARGS, argc);
         unit.useNextBlock(new Block());
         return null;
@@ -1237,6 +1269,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Return node) {
         node.value.accept(this);
+        setOffset(node);
         return addOp(RETURN_VALUE);
     }
 
@@ -1263,6 +1296,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (elseBlock != null) {
             addOp(JUMP_FORWARD, elseBlock);
         } else {
+            setOffset(node.body[node.body.length - 1].getEndOffset());
             jumpToFinally(finalBlock, end);
         }
 
@@ -1286,12 +1320,14 @@ public class Compiler implements SSTreeVisitor<Void> {
                 node.handlers[i].type.accept(this);
                 addOp(MATCH_EXC_OR_JUMP, nextHandler);
                 if (node.handlers[i].name != null) {
+                    setOffset(node.handlers[i].type.getEndOffset() + 1);
                     addNameOp(node.handlers[i].name, ExprContext.Store);
                 } else {
                     addOp(POP_TOP);
                 }
                 visitSequence(node.handlers[i].body);
 
+                setOffset(node.handlers[i].getEndOffset());
                 jumpToFinally(finalBlock, end);
             }
             if (nextHandler != finalBlock) {
@@ -1304,6 +1340,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         if (elseBlock != null) {
             visitSequence(node.orElse);
+            setOffset(node.orElse[node.orElse.length - 1].getEndOffset());
             jumpToFinally(finalBlock, end);
         }
 
@@ -1311,6 +1348,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             addStartOfFinallyMarker();
             unit.useNextBlock(finalBlock);
             visitSequence(node.finalBody);
+            setOffset(node.finalBody[node.finalBody.length - 1].getEndOffset());
             addOp(END_FINALLY);
             addEndOfFinallyMarker();
         }
@@ -1338,6 +1376,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.blockInfoStack.push(new BlockInfo(test, end, BlockInfo.Type.WHILE_LOOP));
         try {
             visitSequence(node.body);
+            setOffset(node.body[node.body.length - 1].getEndOffset());
             addOp(JUMP_BACKWARD, test);
         } finally {
             unit.blockInfoStack.pop();

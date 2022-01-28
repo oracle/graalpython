@@ -1,10 +1,10 @@
 Disassembly of <module>:
 000010         0 LOAD_BYTE                         1
 000012         2 LOAD_BYTE                         2
-000012         4 COLLECTION_FROM_STACK             2    (list)
-000004         6 GET_ITER
-000004   >>    7 FOR_ITER                          6    (to 13)
+000013         4 COLLECTION_FROM_STACK             2    (list)
+000013         6 GET_ITER
+000000   >>    7 FOR_ITER                          6    (to 13)
 000004         9 STORE_NAME                        0    (i)
-000004        11 JUMP_BACKWARD                     4    (to 7)
-000004   >>   13 LOAD_NONE
-000004        14 RETURN_VALUE
+000021        11 JUMP_BACKWARD                     4    (to 7)
+000021   >>   13 LOAD_NONE
+000021        14 RETURN_VALUE
