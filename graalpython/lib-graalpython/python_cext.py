@@ -85,11 +85,6 @@ class instancemethod:
 def PyInstanceMethod_New(func):
     return instancemethod(func)
 
-
-@may_raise
-def PyStaticMethod_New(func):
-    return staticmethod(func)
-
 @may_raise
 def dict_from_list(lst):
     if len(lst) % 2 != 0:
