@@ -760,13 +760,15 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.List node) {
         setOffset(node);
-        if (node.context == ExprContext.Store) {
-            return unpackInto(node.elements);
-        } else if (node.context == ExprContext.Load) {
-            collectIntoArray(node.elements, CollectionBits.LIST);
-            return null;
-        } else {
-            return visitSequence(node.elements);
+        switch (node.context) {
+            case Store:
+                return unpackInto(node.elements);
+            case Load:
+                collectIntoArray(node.elements, CollectionBits.LIST);
+                return null;
+            case Delete:
+            default:
+                return visitSequence(node.elements);
         }
     }
 
@@ -817,13 +819,15 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Tuple node) {
         setOffset(node);
-        if (node.context == ExprContext.Store) {
-            return unpackInto(node.elements);
-        } else if (node.context == ExprContext.Load) {
-            collectIntoArray(node.elements, CollectionBits.TUPLE);
-            return null;
-        } else {
-            return visitSequence(node.elements);
+        switch (node.context) {
+            case Store:
+                return unpackInto(node.elements);
+            case Load:
+                collectIntoArray(node.elements, CollectionBits.TUPLE);
+                return null;
+            case Delete:
+            default:
+                return visitSequence(node.elements);
         }
     }
 
