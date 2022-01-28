@@ -116,6 +116,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1000,11 +1001,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNativeObject(obj)")
-        static Object doNative(VirtualFrame frame, Object obj,
+        Object doNative(VirtualFrame frame, Object obj,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            Object state = IndirectCallContext.enter(frame, this);
             try {
                 Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(obj));
                 checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE.getName(), result);
@@ -1012,6 +1014,8 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
+            } finally {
+                IndirectCallContext.exit(frame, this, state);
             }
         }
 
@@ -1071,12 +1075,13 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNativeObject(obj)"})
-        static Object size(VirtualFrame frame, Object obj,
+        Object size(VirtualFrame frame, Object obj,
                         @Cached ToSulongNode toSulongNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            Object state = IndirectCallContext.enter(frame, this);
             try {
                 Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_OBJECT_SIZE, toSulongNode.execute(obj));
                 checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_OBJECT_SIZE.getName(), result);
@@ -1084,6 +1089,8 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
+            } finally {
+                IndirectCallContext.exit(frame, this, state);
             }
         }
     }
