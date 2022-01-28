@@ -85,13 +85,13 @@ public final class PythonCextFileBuiltins extends PythonBuiltins {
     public abstract static class PyFileWriteObjectNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        public Object writeNone(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") PNone f, @SuppressWarnings("unused") int flags,
+        public static Object writeNone(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") PNone f, @SuppressWarnings("unused") int flags,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, TypeError, WRITEOBJ_WITH_NULL_FILE);
         }
 
         @Specialization(guards = {"!isPNone(f)", "isWriteStr(flags)"})
-        public Object writeStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
+        public static Object writeStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
                         @Cached StrNode strNode,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttr,
                         @Shared("call") @Cached CallNode callNode,
@@ -108,7 +108,7 @@ public final class PythonCextFileBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(f)", "!isWriteStr(flags)"})
-        public Object getStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
+        public static Object getStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
                         @Cached ReprNode reprNode,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttr,
                         @Shared("call") @Cached CallNode callNode,

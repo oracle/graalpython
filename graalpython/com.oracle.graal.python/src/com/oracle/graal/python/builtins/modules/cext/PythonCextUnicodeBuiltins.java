@@ -135,12 +135,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyUnicodeFromObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public String fromObject(String s) {
+        public static String fromObject(String s) {
             return s;
         }
 
         @Specialization(guards = "isPStringType(s, getClassNode)")
-        public PString fromObject(PString s,
+        public static PString fromObject(PString s,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return s;
         }
@@ -185,7 +185,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isJavaString(obj)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object getLength(VirtualFrame frame, Object obj,
+        public static Object getLength(VirtualFrame frame, Object obj,
                         @Cached com.oracle.graal.python.builtins.objects.str.StringBuiltins.LenNode lenNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -199,7 +199,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isJavaString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object getLength(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        public static Object getLength(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -356,7 +356,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyUnicodeFindCharNode extends PythonBuiltinNode {
         @Specialization(guards = {"isString(string) || isStringSubtype(frame, string, getClassNode, isSubtypeNode)", "direction > 0"})
-        public Object find(VirtualFrame frame, Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
+        public static Object find(VirtualFrame frame, Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached ChrNode chrNode,
                         @Cached FindNode findNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -371,7 +371,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isString(string) || isStringSubtype(frame, string, getClassNode, isSubtypeNode)", "direction <= 0"})
-        public Object find(VirtualFrame frame, Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
+        public static Object find(VirtualFrame frame, Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached ChrNode chrNode,
                         @Cached RFindNode rFindNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -386,7 +386,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isJavaString(string)", "isStringSubtype(frame, string, getClassNode, isSubtypeNode)"})
-        public Object find(VirtualFrame frame, Object string, @SuppressWarnings("unused") Object c, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
+        public static Object find(VirtualFrame frame, Object string, @SuppressWarnings("unused") Object c, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
                         @SuppressWarnings("unused") Object direction,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -470,7 +470,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     public abstract static class PyUnicodeCompareNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"isAnyString(frame, left, getClassNode, isSubtypeNode)", "isAnyString(frame, right, getClassNode, isSubtypeNode)"})
-        public Object compare(VirtualFrame frame, Object left, Object right,
+        public static Object compare(VirtualFrame frame, Object left, Object right,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached EqNode eqNode,
@@ -484,7 +484,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isAnyString(frame, left, getClassNode, isSubtypeNode) || !isAnyString(frame, right, getClassNode, isSubtypeNode)"})
-        public Object compare(VirtualFrame frame, Object left, Object right,
+        public static Object compare(VirtualFrame frame, Object left, Object right,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -505,7 +505,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyUnicodeTailmatchNode extends PythonBuiltinNode {
         @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction > 0"})
-        public int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
+        public static int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached CallNode callNode,
@@ -524,7 +524,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
-        public int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
+        public static int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached CallNode callNode,
@@ -544,7 +544,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isAnyString(frame, string, getClassNode, isSubtypeNode) || !isAnyString(frame, substring, getClassNode, isSubtypeNode)"})
-        public Object find(VirtualFrame frame, Object string, Object substring, Object start, Object end, Object direction,
+        public static Object find(VirtualFrame frame, Object string, Object substring, Object start, Object end, Object direction,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -722,7 +722,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PString run(PString str) {
+        static PString run(PString str) {
             return str;
         }
     }
@@ -731,7 +731,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyUnicodeContains extends PythonBinaryBuiltinNode {
         @Specialization
-        int contains(VirtualFrame frame, Object haystack, Object needle,
+        static int contains(VirtualFrame frame, Object haystack, Object needle,
                         @Cached StringBuiltins.ContainsNode containsNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -770,7 +770,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyUnicode_DecodeUTF8Stateful", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyUnicode_DecodeUTF8Stateful extends NativeUnicodeBuiltin {
+    abstract static class PyUnicodeDecodeUTF8StatefulNode extends NativeUnicodeBuiltin {
 
         @Specialization
         Object doUtf8Decode(VirtualFrame frame, Object cByteArray, String errors, @SuppressWarnings("unused") int reportConsumed,
@@ -800,7 +800,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyUnicode_Decode extends NativeBuiltin {
+    abstract static class PyUnicodeDecodeNode extends NativeBuiltin {
 
         @Specialization
         Object doDecode(VirtualFrame frame, PMemoryView mv, String encoding, String errors,

@@ -109,12 +109,12 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
     abstract static class PyComplexRealAsDoubleNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        double asDouble(PComplex d) {
+        static double asDouble(PComplex d) {
             return d.getReal();
         }
 
         @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object asDouble(VirtualFrame frame, Object obj,
+        public static Object asDouble(VirtualFrame frame, Object obj,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -129,7 +129,7 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object asDoubleFloat(VirtualFrame frame, Object obj,
+        public static Object asDoubleFloat(VirtualFrame frame, Object obj,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -153,12 +153,12 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
     abstract static class PyComplexImagAsDoubleNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        double asDouble(PComplex d) {
+        static double asDouble(PComplex d) {
             return d.getImag();
         }
 
         @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object asDouble(VirtualFrame frame, Object obj,
+        public static Object asDouble(VirtualFrame frame, Object obj,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,

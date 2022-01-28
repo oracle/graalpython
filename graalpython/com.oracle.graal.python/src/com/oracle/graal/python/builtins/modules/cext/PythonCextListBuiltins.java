@@ -189,7 +189,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
     abstract static class PyListAppendNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object append(PList list, Object newItem,
+        static Object append(PList list, Object newItem,
                         @Cached AppendNode appendNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -202,7 +202,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object appendNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object newItem,
+        public static Object appendNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object newItem,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -210,7 +210,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object append(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object newItem,
+        public static Object append(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object newItem,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
@@ -325,7 +325,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
     abstract static class PyListSetSliceNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
-        Object getSlice(VirtualFrame frame, PList list, long iLow, long iHigh, Object s,
+        static Object getSlice(VirtualFrame frame, PList list, long iLow, long iHigh, Object s,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached BranchProfile isIntRangeProfile,
@@ -344,7 +344,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh, Object s,
+        static Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh, Object s,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -358,7 +358,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object getSliceNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh,
+        public static Object getSliceNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh,
                         @SuppressWarnings("unused") Object s,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -367,7 +367,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh, @SuppressWarnings("unused") Object s,
+        public static Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh, @SuppressWarnings("unused") Object s,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
@@ -424,7 +424,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
     abstract static class PyListSizeNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object append(PList list,
+        static Object append(PList list,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -436,7 +436,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object asTupleNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        public static Object asTupleNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -444,7 +444,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object asTuple(VirtualFrame frame, Object obj,
+        public static Object asTuple(VirtualFrame frame, Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
@@ -462,7 +462,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
     abstract static class PyListSortNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object append(VirtualFrame frame, PList list,
+        static Object append(VirtualFrame frame, PList list,
                         @Cached ListSortNode sortNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -475,7 +475,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object asTupleNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        public static Object asTupleNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -483,7 +483,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isList(obj)", "!isListSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object asTuple(VirtualFrame frame, Object obj,
+        public static Object asTuple(VirtualFrame frame, Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
@@ -501,7 +501,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
     abstract static class PyListInsertNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        Object insert(VirtualFrame frame, PList list, Object i, Object item,
+        static Object insert(VirtualFrame frame, PList list, Object i, Object item,
                         @Cached ListInsertNode insertNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -514,7 +514,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isList(obj)", "isListSubtype(frame, obj, getClassNode, isSubtypeNode)"}, limit = "1")
-        public Object insertNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") long i, @SuppressWarnings("unused") Object item,
+        public static Object insertNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") long i, @SuppressWarnings("unused") Object item,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -523,7 +523,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        public Object error(VirtualFrame frame, Object obj, Object i, Object item,
+        public static Object error(VirtualFrame frame, Object obj, Object i, Object item,
                         @Cached StrNode strNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
@@ -568,7 +568,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyListReverse extends PythonUnaryBuiltinNode {
         @Specialization
-        int reverse(VirtualFrame frame, PList self,
+        static int reverse(VirtualFrame frame, PList self,
                         @Cached ListBuiltins.ListReverseNode reverseNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {

@@ -3182,7 +3182,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(obj)")
         Object doMapping(Object klass, Object obj,
                         @Cached PyMappingCheckNode mappingCheckNode) {
-            if (mappingCheckNode.execute(obj)) {
+            // descrobject.c mappingproxy_check_mapping()
+            if (!(obj instanceof PList || obj instanceof PTuple) && mappingCheckNode.execute(obj)) {
                 return factory().createMappingproxy(klass, obj);
             }
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
