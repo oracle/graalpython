@@ -332,9 +332,9 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.startOffset = node.getStartOffset();
     }
 
-    private void collectIntoArray(SSTNode[] nodes, int bits) {
+    private void collectIntoArray(SSTNode[] nodes, int bits, int alreadyOnStack) {
         boolean collectionOnStack = false;
-        int cnt = 0;
+        int cnt = alreadyOnStack;
         for (SSTNode e : nodes) {
             assert e instanceof ExprTy || e instanceof KeywordTy || e instanceof ExprTy.Starred;
             if (e instanceof ExprTy.Starred || (e instanceof KeywordTy && ((KeywordTy) e).arg == null)) {
@@ -369,6 +369,11 @@ public class Compiler implements SSTreeVisitor<Void> {
         } else {
             addOp(COLLECTION_ADD_STACK, bits | cnt);
         }
+    }
+
+
+    private void collectIntoArray(SSTNode[] nodes, int bits) {
+        collectIntoArray(nodes, bits, 0);
     }
 
     private void makeClosure(CodeUnit code, int hasDefaults, int hasKwDefaults) {
@@ -978,15 +983,14 @@ public class Compiler implements SSTreeVisitor<Void> {
         makeClosure(co, 0, 0);
         addOp(LOAD_CONST, addObject(unit.constants, node.name));
 
-        // for class creation we expect to end up in varargs calls anyway, so just do args array
-        // calls
-        if (node.bases == null && node.keywords == null) {
-            addOp(CALL_FUNCTION, 0);
-        } else if (node.keywords == null) {
-            collectIntoArray(node.bases, CollectionBits.OBJECT);
+        if ((node.bases.length < 4) && node.keywords.length == 0) {
+            visitSequence(node.bases);
+            addOp(CALL_FUNCTION, 1 + node.bases.length);
+        } else if (node.keywords.length == 0) {
+            collectIntoArray(node.bases, CollectionBits.OBJECT, 1);
             addOp(CALL_FUNCTION_VARARGS);
         } else {
-            collectIntoArray(node.bases == null ? new ExprTy[0] : node.bases, CollectionBits.OBJECT);
+            collectIntoArray(node.bases, CollectionBits.OBJECT, 1);
             collectIntoArray(node.keywords, CollectionBits.KWORDS);
             addOp(CALL_FUNCTION_KW);
         }

@@ -67,16 +67,20 @@ Disassembly of <module>.measure:
 000422        11 LOAD_GLOBAL                       1    (docompute)
 000435        13 LOAD_LONG                         0    (10000)
 000439        15 CALL_FUNCTION                     1
-000439        17 STORE_FAST                        2    (sum_)
-000439        19 JUMP_BACKWARD                     12   (to 7)
-000439   >>   21 LOAD_GLOBAL                       2    (print)
-000439        23 LOAD_STRING                       1    (sum)
-000439        25 LOAD_FAST                         2    (sum_)
-000439        27 CALL_FUNCTION                     2
-000439        29 POP_TOP
+000000        17 STORE_FAST                        2    (sum_)
+000000        19 JUMP_BACKWARD                     12   (to 7)
+000000   >>   21 LOAD_GLOBAL                       2    (print)
+000000        23 LOAD_STRING                       1    (sum)
+000000        25 LOAD_FAST                         2    (sum_)
+000000        27 CALL_FUNCTION                     2
+000000        29 POP_TOP
+000000        30 LOAD_NONE
+000000        31 RETURN_VALUE
 
 Disassembly of <module>.__benchmark__:
 000473         0 LOAD_GLOBAL                       0    (measure)
 000484         2 LOAD_FAST                         0    (num)
-000484         4 CALL_FUNCTION                     1
-000484         6 POP_TOP
+000000         4 CALL_FUNCTION                     1
+000000         6 POP_TOP
+000000         7 LOAD_NONE
+000000         8 RETURN_VALUE

@@ -4,12 +4,10 @@ Disassembly of <module>:
 000000         3 MAKE_FUNCTION                     1
 000018         5 LOAD_CONST                        1    (HandlerTask)
 000018         7 LOAD_GLOBAL                       0    (Task)
-000018         9 COLLECTION_FROM_STACK             1    (Object[])
-000018        11 COLLECTION_FROM_STACK             0    (PKeyword[])
-000018        13 CALL_FUNCTION_KW
-000018        14 STORE_NAME                        1    (HandlerTask)
-000018        16 LOAD_NONE
-000018        17 RETURN_VALUE
+000018         9 CALL_FUNCTION                     2
+000018        11 STORE_NAME                        1    (HandlerTask)
+000018        13 LOAD_NONE
+000018        14 RETURN_VALUE
 
 Disassembly of <module>.HandlerTask:
 000000         0 LOAD_NAME                         0    (__name__)
