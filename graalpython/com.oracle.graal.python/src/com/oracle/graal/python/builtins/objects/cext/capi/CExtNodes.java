@@ -3421,7 +3421,7 @@ public abstract class CExtNodes {
                             break;
                         case 'p':
                             // %p
-                            result.append("0x").append(Long.toHexString(getPyObject(getVaArgsNode, vaList, vaArgIdx).hashCode()));
+                            result.append(getVaArgsNode.getVoidPtr(vaList, vaArgIdx).toString());
                             vaArgIdx++;
                             valid = true;
                             break;
