@@ -1268,13 +1268,10 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         }
 
         protected static boolean isSetOrDeque(Object obj, IsSameTypeNode isSameType, GetClassNode getClassNode) {
-            return isSameType(obj, PythonBuiltinClassType.PSet, isSameType, getClassNode) ||
-                            isSameType(obj, PythonBuiltinClassType.PFrozenSet, isSameType, getClassNode) ||
-                            isSameType(obj, PythonBuiltinClassType.PDeque, isSameType, getClassNode);
-        }
-
-        private static boolean isSameType(Object obj, PythonBuiltinClassType type, IsSameTypeNode isSameType, GetClassNode getClassNode) {
-            return isSameType.execute(getClassNode.execute(obj), type);
+            Object cls = getClassNode.execute(obj);
+            return isSameType.execute(cls, PythonBuiltinClassType.PSet) ||
+                    isSameType.execute(cls, PythonBuiltinClassType.PFrozenSet) ||
+                    isSameType.execute(cls, PythonBuiltinClassType.PDeque);
         }
     }
 
