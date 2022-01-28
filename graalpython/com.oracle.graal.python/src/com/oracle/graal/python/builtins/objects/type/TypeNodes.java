@@ -221,6 +221,9 @@ public abstract class TypeNodes {
                 case PBuiltinMethod:
                     result = DEFAULT | HAVE_GC | HAVE_VECTORCALL;
                     break;
+                case PInstancemethod:
+                    result = DEFAULT | HAVE_GC;
+                    break;
                 case GetSetDescriptor:
                 case MemberDescriptor:
                 case PMappingproxy:

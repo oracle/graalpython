@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextClassBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins;
@@ -265,6 +266,7 @@ import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltin
 import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.InstancemethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
@@ -423,6 +425,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
                         new StaticmethodBuiltins(),
+                        new InstancemethodBuiltins(),
                         new SimpleNamespaceBuiltins(),
                         new PolyglotModuleBuiltins(),
                         new ObjectBuiltins(),
@@ -494,6 +497,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextCEvalBuiltins(),
                         new PythonCextCodeBuiltins(),
                         new PythonCextComplexBuiltins(),
+                        new PythonCextClassBuiltins(),
                         new PythonCextDescrBuiltins(),
                         new PythonCextDictBuiltins(),
                         new PythonCextErrBuiltins(),

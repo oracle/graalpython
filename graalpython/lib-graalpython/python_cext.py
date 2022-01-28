@@ -53,38 +53,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-# corresponds to PyInstanceMethod_Type
-class instancemethod:
-    def __init__(self, func):
-        if not callable(func):
-            raise TypeError("first argument must be callable")
-        self.__func__ = func
-
-    def __getattribute__(self, name):
-        try:
-            return object.__getattribute__(self, name)
-        except AttributeError:
-            return getattr(self.__func__, name)
-
-    @property
-    def __doc__(self):
-        return self.__func__.__doc__
-
-    def __call__(self, *args, **kwargs):
-        return self.__func__(*args, **kwargs)
-
-    def __get__(self, obj, type):
-        if not obj:
-            return self.__func__
-        return PyMethod_New(self.__func__, obj)
-
-    def __repr__(self):
-        return "<instancemethod {} at ?>".format(self.__func__.__name__)
-
-
-def PyInstanceMethod_New(func):
-    return instancemethod(func)
-
 @may_raise
 def dict_from_list(lst):
     if len(lst) % 2 != 0:

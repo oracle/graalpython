@@ -34,6 +34,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
 import static com.oracle.graal.python.nodes.BuiltinNames.CLASSMETHOD;
+import static com.oracle.graal.python.nodes.BuiltinNames.INSTANCEMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPLEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMITERATOR;
@@ -3359,6 +3360,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object doObjectIndirect(Object self, @SuppressWarnings("unused") Object callable) {
             return factory().createClassmethod(self);
+        }
+    }
+
+    @Builtin(name = INSTANCEMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PInstancemethod, isPublic = false, doc = "instancemethod(function)\n\nBind a function to a class.")
+    @GenerateNodeFactory
+    public abstract static class InstancemethodNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doObjectIndirect(Object self, @SuppressWarnings("unused") Object callable) {
+            return factory().createInstancemethod(self);
         }
     }
 
