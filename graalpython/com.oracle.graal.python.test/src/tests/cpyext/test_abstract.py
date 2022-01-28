@@ -392,6 +392,7 @@ class TestAbstractWithNative(object):
         TestSequenceCheck = CPyExtType("TestSequenceCheck",
                              """
                              PyObject* test_sq_item(PyObject *a, Py_ssize_t i) {
+                                 Py_INCREF(a);
                                  return a;
                              }
                              PyObject* callCheck(PyObject* a) {
@@ -424,6 +425,7 @@ class TestAbstractWithNative(object):
         TestMappingCheck = CPyExtType("TestMappingCheck",
                              """
                              PyObject* test_mp_subscript(PyObject* a, PyObject* b) {
+                                 Py_INCREF(a);
                                  return a;
                              }
                              PyObject* callCheck(PyObject* a) {
