@@ -127,6 +127,16 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testIf() {
+        String source = "" +
+            "if False:\n" +
+            "   print(True)\n" +
+            "else:\n" +
+            "   print(False)\n";
+        doTest(source, null);
+    }
+
+    @Test
     public void testBenchmark() {
         String source = "def docompute(num):\n" +
                         "    for i in range(num):\n" +

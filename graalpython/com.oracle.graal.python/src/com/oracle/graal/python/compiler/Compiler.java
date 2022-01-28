@@ -1185,7 +1185,23 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.If node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        node.test.accept(this);
+        Block then = new Block();
+        Block end = new Block();
+        Block alt = node.orElse != null && node.orElse.length > 0 ? new Block() : end;
+
+        setOffset(node.test.getEndOffset());
+        addOp(POP_AND_JUMP_IF_FALSE, alt);
+        unit.useNextBlock(then);
+        visitSequence(node.body);
+        if (alt != end) {
+            setOffset(node.body[node.body.length - 1].getEndOffset());
+            addOp(JUMP_FORWARD, end);
+            unit.useNextBlock(alt);
+            visitSequence(node.orElse);
+        }
+        unit.useBlock(end);
+        return null;
     }
 
     @Override
