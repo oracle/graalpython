@@ -742,11 +742,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
      * Get the module object corresponding to a module name. First check the modules dictionary if
      * there's one there, if not, create a new one and insert it in the modules dictionary.
      */
-
     private static PythonModule importAddModule(Python3Core core, String name) {
         return core.createModule(name);
     }
 
+    @TruffleBoundary
     private static void raiseFrozenError(FrozenStatus status, String moduleName, PRaiseNode raiseNode) {
         switch (status) {
             case FROZEN_BAD_NAME:
@@ -763,7 +763,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // There was no error.
                 break;
             default:
-                CompilerDirectives.shouldNotReachHere("Unknown FrozenStatus " + status);
+                throw CompilerDirectives.shouldNotReachHere("Unknown FrozenStatus " + status);
         }
     }
 
