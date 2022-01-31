@@ -202,30 +202,30 @@ del_stmt[stmt_ty]:
     | invalid_del_stmt
 
 import_stmt[stmt_ty]: import_name | import_from
-import_name[stmt_ty]: 'import' a=dotted_as_names { _PyAST_Import(a, EXTRA) }
+import_name[stmt_ty]: 'import' a=dotted_as_names { factory.createImport(a, startToken.startOffset, endToken.endOffset) }
 # note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
 import_from[stmt_ty]:
     | 'from' a=('.' | '...')* b=dotted_name 'import' c=import_from_targets {
-        _PyAST_ImportFrom(b->v.Name.id, c, _PyPegen_seq_count_dots(a), EXTRA) }
+        factory.createImportFrom(((ExprTy.Name)b).id, c, countDots(a), startToken.startOffset, endToken.endOffset) }
     | 'from' a=('.' | '...')+ 'import' b=import_from_targets {
-        _PyAST_ImportFrom(NULL, b, _PyPegen_seq_count_dots(a), EXTRA) }
+        factory.createImportFrom(null, b, countDots(a), startToken.startOffset, endToken.endOffset) }
 import_from_targets[asdl_alias_seq*]:
     | '(' a=import_from_as_names [','] ')' { a }
     | import_from_as_names !','
-    | '*' { (asdl_alias_seq*)_PyPegen_singleton_seq(p, CHECK(alias_ty, _PyPegen_alias_for_star(p, EXTRA))) }
+    | '*' { this.singletonSequence(factory.createAlias("*", null, startToken.startOffset, endToken.endOffset)) }
     | invalid_import_from_targets
 import_from_as_names[asdl_alias_seq*]:
     | a[asdl_alias_seq*]=','.import_from_as_name+ { a }
 import_from_as_name[alias_ty]:
-    | a=NAME b=['as' z=NAME { z }] { _PyAST_alias(a->v.Name.id,
-                                               (b) ? ((expr_ty) b)->v.Name.id : NULL,
-                                               EXTRA) }
+    | a=NAME b=['as' z=NAME { z }] { factory.createAlias(((ExprTy.Name)a).id,
+                                               b == null ? null : ((ExprTy.Name)b).id,
+                                               startToken.startOffset, endToken.endOffset) }
 dotted_as_names[asdl_alias_seq*]:
     | a[asdl_alias_seq*]=','.dotted_as_name+ { a }
 dotted_as_name[alias_ty]:
-    | a=dotted_name b=['as' z=NAME { z }] { _PyAST_alias(a->v.Name.id,
-                                                      (b) ? ((expr_ty) b)->v.Name.id : NULL,
-                                                      EXTRA) }
+    | a=dotted_name b=['as' z=NAME { z }] { factory.createAlias(((ExprTy.Name)a).id,
+                                                      b == null ? null : ((ExprTy.Name)b).id,
+                                                      startToken.startOffset, endToken.endOffset) }
 dotted_name[expr_ty]:
     | a=dotted_name '.' b=NAME { this.joinNamesWithDot(a, b) }
     | NAME
@@ -759,7 +759,7 @@ star_targets[expr_ty]:
 star_targets_list_seq[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_target+ [','] { a }
 star_targets_tuple_seq[asdl_expr_seq*]:
     | a=star_target b=(',' c=star_target { c })+ [','] { this.insertInFront(a, b) }
-    | a=star_target ',' { (asdl_expr_seq*) this.singletonSequence(a) }
+    | a=star_target ',' { this.singletonSequence(a) }
 star_target[expr_ty] (memo):
     | '*' a=(!'*' star_target) {
         _PyAST_Starred(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), Store, EXTRA) }

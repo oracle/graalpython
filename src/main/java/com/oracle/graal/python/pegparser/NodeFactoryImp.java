@@ -45,6 +45,7 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.AbstractParser.NameDefaultPair;
 import com.oracle.graal.python.pegparser.AbstractParser.SlashWithDefault;
 import com.oracle.graal.python.pegparser.AbstractParser.StarEtc;
+import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
@@ -472,4 +473,20 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy createRaise(ExprTy object, ExprTy from, int startOffset, int endOffset) {
         return new StmtTy.Raise(object, from, startOffset, endOffset);
     }
+
+    @Override
+    public StmtTy createImport(AliasTy[] names, int startOffset, int endOffset) {
+        return new StmtTy.Import(names, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createImportFrom(String fromName, AliasTy[] names, int level, int startOffset, int endOffset) {
+        return new StmtTy.ImportFrom(fromName, names, level, startOffset, endOffset);
+    }
+
+    @Override
+    public AliasTy createAlias(String name, String asName, int startOffset, int endOffset) {
+        return new AliasTy(name, asName, startOffset, endOffset);
+    }
+
 }

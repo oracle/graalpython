@@ -213,6 +213,10 @@ public class Scope {
         return type == ScopeType.Class;
     }
 
+    public boolean isModule() {
+        return type == ScopeType.Module;
+    }
+
     public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> flags, int start) {
         int i = start;
         HashMap<String, Integer> mapping = new HashMap<>();

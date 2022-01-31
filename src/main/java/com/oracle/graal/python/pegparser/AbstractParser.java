@@ -213,6 +213,22 @@ abstract class AbstractParser {
     }
 
     /**
+     * _PyPegen_seq_count_dots
+     */
+    public int countDots(Token[] tokens) {
+        int cnt = 0;
+        for (Token t : tokens) {
+            if (t.type == Token.Kind.ELLIPSIS) {
+                cnt += 3;
+            } else {
+                assert t.type == Token.Kind.DOT;
+                cnt += 1;
+            }
+        }
+        return cnt;
+    }
+
+    /**
      * _PyPegen_expect_soft_keyword
      */
     protected ExprTy.Name expect_SOFT_KEYWORD(String keyword) {
