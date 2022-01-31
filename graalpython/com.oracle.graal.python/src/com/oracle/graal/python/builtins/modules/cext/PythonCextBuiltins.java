@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
+import static com.oracle.graal.python.nodes.ErrorMessages.LIST_CANNOT_BE_CONVERTED_TO_DICT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -177,6 +178,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager;
@@ -284,7 +286,9 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -407,7 +411,38 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    ///////////// mappingproxy /////////////
+    @Builtin(name = "PyTruffle_Dict_From_List", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class DictFromListNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object values(VirtualFrame frame, Object list,
+                        @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
+                        @Cached ListBuiltins.GetItemNode getItemNode,
+                        @Cached BranchProfile wrongLenProfile,
+                        @Cached LoopConditionProfile loopProfile,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                int size = sizeNode.execute(frame, list);
+                if (size % 2 != 0) {
+                    wrongLenProfile.enter();
+                    return raiseNativeNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.SystemError, LIST_CANNOT_BE_CONVERTED_TO_DICT);
+                }
+                HashingStorage store = PDict.createNewStorage(false, size);
+                loopProfile.profileCounted(size);
+                for (int i = 0; loopProfile.profile(i < size); i = i + 2) {
+                    Object k = getItemNode.execute(frame, list, i);
+                    Object v = getItemNode.execute(frame, list, i + 1);
+                    store = lib.setItem(store, k, v);
+                }
+                return factory().createDict(store);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getContext().getNativeNull();
+            }
+        }
+    }
 
     @Builtin(name = "Py_DECREF", minNumOfPositionalArgs = 1)
     @Builtin(name = "Py_INCREF", minNumOfPositionalArgs = 1)

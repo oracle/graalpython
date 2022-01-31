@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -443,7 +443,7 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
             if (v->prev == NULL) {
                 PyErr_SetString(PyExc_SystemError, "'}' without '{' in Py_BuildValue");
             } else {
-                PyList_Append(v->prev->list, to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "dict_from_list", to_java(v->list))));
+                PyList_Append(v->prev->list, to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Dict_From_List", to_java(v->list))));
                 next = v;
                 v = v->prev;
                 free(next);

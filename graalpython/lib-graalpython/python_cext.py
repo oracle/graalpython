@@ -53,15 +53,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-@may_raise
-def dict_from_list(lst):
-    if len(lst) % 2 != 0:
-        raise SystemError("list cannot be converted to dict")
-    d = {}
-    for i in range(0, len(lst), 2):
-        d[lst[i]] = lst[i + 1]
-    return d
-
 ##################### C EXT HELPERS
 
 def PyTruffle_Debug(*args):
