@@ -425,7 +425,19 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(AliasTy node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            String importedName = node.asName == null ? node.name : node.asName;
+            int dotIndex = importedName.indexOf('.');
+            if (dotIndex >= 0) {
+                importedName = importedName.substring(0, dotIndex);
+            }
+            if ("*".equals(importedName)) {
+                if (!currentScope.isModule()) {
+                    // TODO: syntax error: IMPORT_STAR not in module scope
+                }
+            } else {
+                addDef(importedName, DefUse.DefImport);
+            }
+            return null;
         }
 
         @Override

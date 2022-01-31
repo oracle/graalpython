@@ -157,4 +157,10 @@ public interface NodeFactory {
     public ExprTy createOr(ExprTy[] values, int startOffset, int endOffset);
 
     public StmtTy createRaise(ExprTy object, ExprTy from, int startOffset, int endOffset);
+
+    public StmtTy createImport(AliasTy[] names, int startOffset, int endOffset);
+
+    public StmtTy createImportFrom(String fromName, AliasTy[] names, int level, int startOffset, int endOffset);
+
+    public AliasTy createAlias(String name, String asName, int startOffset, int endOffset);
 }

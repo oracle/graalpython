@@ -41,7 +41,12 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     @Override
     public String visit(AliasTy node) {
-        return addHeader(node) + " " + node.name + " as " + node.asName;
+        StringBuilder sb = new StringBuilder();
+        sb.append(node.name);
+        if (node.asName != null) {
+            sb.append(" as ").append(node.asName);
+        }
+        return sb.toString();
     }
 
     @Override
@@ -808,6 +813,11 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(StmtTy.Import node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        for (AliasTy a : node.names) {
+            sb.append('\n').append(indent()).append(a.accept(this));
+        }
+        level--;
         return sb.toString();
 
     }
@@ -815,7 +825,12 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(StmtTy.ImportFrom node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append(" Level ").append(node.level).append(' ').append(node.module);
+        level++;
+        for (AliasTy a : node.names) {
+            sb.append('\n').append(indent()).append(a.accept(this));
+        }
+        level--;
         return sb.toString();
 
     }

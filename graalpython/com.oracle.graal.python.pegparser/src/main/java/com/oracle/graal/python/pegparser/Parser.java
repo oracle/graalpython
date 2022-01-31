@@ -1976,6 +1976,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, IMPORT_NAME_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'import' dotted_as_names
             Token _keyword;
             AliasTy[] a;
@@ -1985,9 +1986,11 @@ public final class Parser extends AbstractParser {
                 (a = dotted_as_names_rule()) != null  // dotted_as_names
             )
             {
-                // TODO: node.action: _PyAST_Import ( a , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Import ( a , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createImport(a,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, IMPORT_NAME_ID, _res);
                 return (StmtTy)_res;
             }
@@ -2009,6 +2012,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, IMPORT_FROM_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'from' (('.' | '...'))* dotted_name 'import' import_from_targets
             Token _keyword;
             Token _keyword_1;
@@ -2027,9 +2031,11 @@ public final class Parser extends AbstractParser {
                 (c = import_from_targets_rule()) != null  // import_from_targets
             )
             {
-                // TODO: node.action: _PyAST_ImportFrom ( b -> v . Name . id , c , _PyPegen_seq_count_dots ( a ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ImportFrom ( b -> v . Name . id , c , _PyPegen_seq_count_dots ( a ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createImportFrom(((ExprTy.Name)b).id,c,countDots(a),startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, IMPORT_FROM_ID, _res);
                 return (StmtTy)_res;
             }
@@ -2050,9 +2056,11 @@ public final class Parser extends AbstractParser {
                 (b = import_from_targets_rule()) != null  // import_from_targets
             )
             {
-                // TODO: node.action: _PyAST_ImportFrom ( NULL , b , _PyPegen_seq_count_dots ( a ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ImportFrom ( NULL , b , _PyPegen_seq_count_dots ( a ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createImportFrom(null,b,countDots(a),startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, IMPORT_FROM_ID, _res);
                 return (StmtTy)_res;
             }
@@ -2076,6 +2084,7 @@ public final class Parser extends AbstractParser {
             _res = (AliasTy[])cache.getResult(_mark, IMPORT_FROM_TARGETS_ID);
             return (AliasTy[])_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '(' import_from_as_names ','? ')'
             Token _literal;
             Token _literal_1;
@@ -2117,9 +2126,11 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(16)) != null  // token='*'
             )
             {
-                // TODO: node.action: ( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = this.singletonSequence(factory.createAlias("*",null,startToken.startOffset,endToken.endOffset));
                 cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
                 return (AliasTy[])_res;
             }
@@ -2177,6 +2188,7 @@ public final class Parser extends AbstractParser {
             _res = (AliasTy)cache.getResult(_mark, IMPORT_FROM_AS_NAME_ID);
             return (AliasTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME ['as' NAME]
             ExprTy a;
             ExprTy b;
@@ -2186,9 +2198,11 @@ public final class Parser extends AbstractParser {
                 ((b = _tmp_40_rule()) != null || true)  // ['as' NAME]
             )
             {
-                // TODO: node.action: _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createAlias(((ExprTy.Name)a).id,b == null ? null :((ExprTy.Name)b).id,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, IMPORT_FROM_AS_NAME_ID, _res);
                 return (AliasTy)_res;
             }
@@ -2234,6 +2248,7 @@ public final class Parser extends AbstractParser {
             _res = (AliasTy)cache.getResult(_mark, DOTTED_AS_NAME_ID);
             return (AliasTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // dotted_name ['as' NAME]
             ExprTy a;
             ExprTy b;
@@ -2243,9 +2258,11 @@ public final class Parser extends AbstractParser {
                 ((b = _tmp_43_rule()) != null || true)  // ['as' NAME]
             )
             {
-                // TODO: node.action: _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createAlias(((ExprTy.Name)a).id,b == null ? null :((ExprTy.Name)b).id,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, DOTTED_AS_NAME_ID, _res);
                 return (AliasTy)_res;
             }
@@ -9475,9 +9492,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
             )
             {
-                // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
-                _res = null;
+                _res = this.singletonSequence(a);
                 cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
                 return (ExprTy[])_res;
             }
