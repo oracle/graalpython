@@ -56,6 +56,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.FILE_OR_STREAM_IS_NOT_
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_INVALID_POS;
 import static com.oracle.graal.python.nodes.ErrorMessages.REENTRANT_CALL_INSIDE_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_OF_CLOSED_FILE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TO_CLOSED_FILE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -94,9 +95,11 @@ public class BufferedIONodes {
     abstract static class CheckIsClosedNode extends PNodeWithContext {
 
         private final String method;
+        private final String messageFmt;
 
         public CheckIsClosedNode(String method) {
             this.method = method;
+            this.messageFmt = IONodes.WRITE.equals(method) ? S_TO_CLOSED_FILE : S_OF_CLOSED_FILE;
         }
 
         public abstract boolean execute(VirtualFrame frame, PBuffered self);
@@ -107,7 +110,7 @@ public class BufferedIONodes {
                         @Cached IsClosedNode isClosedNode,
                         @Cached ConditionProfile isError) {
             if (isError.profile(isClosedNode.execute(frame, self))) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, S_TO_CLOSED_FILE, method);
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, messageFmt, method);
             }
             return false;
         }
