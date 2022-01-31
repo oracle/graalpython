@@ -193,7 +193,6 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -295,7 +294,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     public static final String PYTHON_CEXT = "python_cext";
 
-    private static final String ERROR_HANDLER = "error_handler";
     public static final String NATIVE_NULL = "native_null";
 
     private PythonObject errorHandler;
@@ -308,11 +306,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        PythonClass errorHandlerClass = core.factory().createPythonClassAndFixupSlots(core.getLanguage(), PythonBuiltinClassType.PythonClass,
-                        "CErrorHandler", new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
-        builtinConstants.put("CErrorHandler", errorHandlerClass);
-        errorHandler = core.factory().createPythonObject(errorHandlerClass);
-        builtinConstants.put(ERROR_HANDLER, errorHandler);
         // TODO can be removed when python_cext.py is gone
         builtinConstants.put(NATIVE_NULL, core.getContext().getNativeNull());
         builtinConstants.put("PyEval_SaveThread", new PyEvalSaveThread());
@@ -375,15 +368,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Fallback
         Object run(VirtualFrame frame, Object o) {
             return raiseNative(frame, PNone.NO_VALUE, PythonErrorType.SystemError, ErrorMessages.CANNOT_CONVERT_OBJ_TO_C_STRING, o, o.getClass().getName());
-        }
-    }
-
-    @Builtin(name = "Py_ErrorHandler", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    public abstract static class PyErrorHandlerNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object run(PythonModule cextPython) {
-            return ((PythonCextBuiltins) cextPython.getBuiltins()).errorHandler;
         }
     }
 
