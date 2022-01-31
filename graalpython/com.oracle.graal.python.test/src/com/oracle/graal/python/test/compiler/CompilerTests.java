@@ -175,6 +175,23 @@ public class CompilerTests extends PythonTests {
         doTest(source, "<module>");
     }
 
+    @Test
+    public void testImport() {
+        String source = "" +
+            "if __name__ == '__main__':\n" +
+            "    import sys\n" +
+            "    if not (len(sys.argv) == 1 and sys.argv[0] == 'java_embedding_bench'):\n" +
+            "        import time\n" +
+            "        start = time.time()\n" +
+            "        if len(sys.argv) >= 2:\n" +
+            "            num = int(sys.argv[1])\n" +
+            "            __benchmark__(num)\n" +
+            "        else:\n" +
+            "            __benchmark__()\n" +
+            "        print(\"%s took %s s\" % (__file__, time.time() - start))\n";
+        doTest(source, "<module>");
+    }
+
     private void doTest(String src, String moduleName) {
         ParserTokenizer tokenizer = new ParserTokenizer(src);
         NodeFactory factory = new NodeFactoryImp();

@@ -532,7 +532,28 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.BoolOp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        Block end = new Block();
+        for (ExprTy v : node.values) {
+            v.accept(this);
+            switch (node.op) {
+                case And:
+                    addOp(JUMP_IF_FALSE_OR_POP, end);
+                    break;
+                case Or:
+                default:
+                    addOp(JUMP_IF_TRUE_OR_POP, end);
+            }
+        }
+        switch (node.op) {
+            case And:
+                addOp(LOAD_TRUE);
+                break;
+            case Or:
+            default:
+                addOp(LOAD_FALSE);
+        }
+        unit.useNextBlock(end);
+        return null;
     }
 
     private boolean isAttributeLoad(ExprTy node) {
@@ -813,7 +834,18 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Subscript node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        node.value.accept(this);
+        node.slice.accept(this);
+        setOffset(node);
+        switch (node.context) {
+            case Load:
+                return addOp(BINARY_SUBSCR);
+            case Store:
+                return addOp(STORE_SUBSCR);
+            case Delete:
+            default:
+                return addOp(DELETE_SUBSCR);
+        }
     }
 
     @Override
@@ -833,7 +865,19 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.UnaryOp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        node.operand.accept(this);
+        setOffset(node);
+        switch (node.op) {
+            case ADD:
+                return addOp(UNARY_POSITIVE);
+            case INVERT:
+                return addOp(UNARY_INVERT);
+            case NOT:
+                return addOp(UNARY_NOT);
+            case SUB:
+            default:
+                return addOp(UNARY_NEGATIVE);
+        }
     }
 
     @Override
@@ -1200,7 +1244,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             unit.useNextBlock(alt);
             visitSequence(node.orElse);
         }
-        unit.useBlock(end);
+        unit.useNextBlock(end);
         return null;
     }
 
