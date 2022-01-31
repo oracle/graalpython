@@ -22,7 +22,6 @@ class TestFrozen(unittest.TestCase):
             del sys.modules[name]
         with captured_stdout() as out:
             import __hello__
-            __hello__.main()
         self.assertEqual(out.getvalue(), 'Hello world!\n')
 
 

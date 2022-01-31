@@ -1,6 +1,5 @@
-"""Freeze modules and regen related files (e.g. Python/frozen.c).
-
-See the notes at the top of Python/frozen.c for more info.
+"""Freeze specified modules and regenerate
+   graalpython/com.oracle.graal.python.frozen/src/com/oracle/graal/python/frozen/modules
 """
 
 from collections import namedtuple

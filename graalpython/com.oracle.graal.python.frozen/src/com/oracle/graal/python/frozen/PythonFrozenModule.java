@@ -1,9 +1,9 @@
 package com.oracle.graal.python.frozen;
 
 public final class PythonFrozenModule {
-    String name;
-    byte[] code;
-    int size;
+    final String name;
+    final byte[] code;
+    final int size;
 
     public PythonFrozenModule(String name, byte[] code, int size) {
         this.name = name;
@@ -15,23 +15,11 @@ public final class PythonFrozenModule {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public byte[] getCode() {
         return code;
     }
 
-    public void setCode(byte[] code) {
-        this.code = code;
-    }
-
     public int getSize() {
         return size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
     }
 }
