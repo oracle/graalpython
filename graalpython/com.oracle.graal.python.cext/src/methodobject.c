@@ -44,7 +44,8 @@ typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
 
 PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyCFunctionObject), offsetof(PyCFunctionObject, vectorcall));
 
-typedef PyObject* (*PyCFunction_NewEx_fun_t)(void* name, 
+typedef PyObject* (*PyCFunction_NewEx_fun_t)(PyMethodDef* methodDef,
+                                                    void* name,
                                                     void* methObj, 
                                                     int flags, 
                                                     int wrapper,
@@ -53,7 +54,8 @@ typedef PyObject* (*PyCFunction_NewEx_fun_t)(void* name,
                                                     const char* doc);
 UPCALL_TYPED_ID(PyCFunction_NewEx, PyCFunction_NewEx_fun_t);
 PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
-    return _jls_PyCFunction_NewEx(polyglot_from_string(ml->ml_name, SRC_CS),
+    return _jls_PyCFunction_NewEx(ml,
+                                               polyglot_from_string(ml->ml_name, SRC_CS),
                                                function_pointer_to_java(ml->ml_meth),
                                                ml->ml_flags,
                                                get_method_flags_wrapper(ml->ml_flags),

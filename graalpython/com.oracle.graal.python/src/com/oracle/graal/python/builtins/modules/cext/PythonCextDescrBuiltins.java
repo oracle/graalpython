@@ -42,8 +42,9 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import java.util.List;
+
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -109,7 +110,7 @@ public final class PythonCextDescrBuiltins extends PythonBuiltins {
     }
 
     // directly called without landing function
-    @Builtin(name = "PyDescr_NewClassMethod", minNumOfPositionalArgs = 6, parameterNames = {"name", "doc", "flags", "wrapper", "cfunc", "primary"})
+    @Builtin(name = "PyDescr_NewClassMethod", parameterNames = {"methodDefPtr", "name", "doc", "flags", "wrapper", "cfunc", "primary"})
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
     abstract static class PyDescrNewClassMethod extends PythonClinicBuiltinNode {
@@ -119,12 +120,12 @@ public final class PythonCextDescrBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doNativeCallable(String name, Object doc, int flags, Object wrapper, Object methObj, Object primary,
+        Object doNativeCallable(Object methodDefPtr, String name, Object doc, int flags, Object wrapper, Object methObj, Object primary,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached PythonCextBuiltins.NewClassMethodNode newClassMethodNode,
                         @Cached CExtNodes.ToNewRefNode newRefNode) {
             Object type = asPythonObjectNode.execute(primary);
-            Object func = newClassMethodNode.execute(name, methObj, flags, wrapper, type, doc, factory());
+            Object func = newClassMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, type, doc, factory());
             if (!isClassOrStaticMethod(flags)) {
                 /*
                  * NewClassMethodNode only wraps method with METH_CLASS and METH_STATIC set but we
@@ -135,5 +136,4 @@ public final class PythonCextDescrBuiltins extends PythonBuiltins {
             return newRefNode.execute(func);
         }
     }
-
 }
