@@ -66,6 +66,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
@@ -152,6 +153,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1066,6 +1068,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return methodDefPtr;
             }
             return new PyMethodDefWrapper(object);
+        }
+
+        @Specialization(guards = {"eq(M_MODULE, key)", "isAnyFunctionObject(object)"})
+        static Object doPyCFunctionObjectMModule(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached ToSulongNode toSulongNode) {
+            Object module = lookup.execute(null, object, __MODULE__);
+            return toSulongNode.execute(module != PNone.NO_VALUE ? module : PythonContext.get(toSulongNode).getNativeNull());
         }
 
         @Specialization(guards = "eq(M_SELF, key)")
