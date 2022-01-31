@@ -164,6 +164,12 @@ class CompressTests(BaseCompressTestCase, unittest.TestCase):
         compressed = zlib.compress(data, 1)
         self.assertEqual(zlib.decompress(compressed, 15, CustomInt()), data)
 
+    def test_decoding_flush_ignore_error(self):
+        d = zlib.decompressobj()
+        self.assertRaises(zlib.error, d.decompress, b"asdf")
+        d.flush()
+
+
 HAMLET_SCENE = b"""
 LAERTES
 

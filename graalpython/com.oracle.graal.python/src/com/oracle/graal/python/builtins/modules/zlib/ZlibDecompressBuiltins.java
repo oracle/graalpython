@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -253,7 +254,13 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         PBytes doit(ZLibCompObject.JavaZlibCompObject self, int length,
                         @Cached ZlibNodes.JavaDecompressNode decompressNode,
                         @Cached BytesNodes.ToBytesNode toBytes) {
-            byte[] res = decompressNode.execute(self, toBytes.execute(self.getUnconsumedTail()), 0, length, factory());
+            byte[] res;
+            try {
+                res = decompressNode.execute(self, toBytes.execute(self.getUnconsumedTail()), 0, length, factory());
+            } catch (PException e) {
+                // CPython ignores errors here
+                res = PythonUtils.EMPTY_BYTE_ARRAY;
+            }
             self.setUninitialized();
             return factory().createBytes(res);
         }
