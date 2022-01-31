@@ -1,0 +1,8 @@
+Module[0, 38]
+    FunctionDef[0, 38]
+        Name:fn
+        ---- Function body of fn ----
+        Import[12, 38]
+            sys as system
+            math
+        ---- End of fn function ----
