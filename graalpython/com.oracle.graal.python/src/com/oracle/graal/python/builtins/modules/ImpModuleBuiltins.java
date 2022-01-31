@@ -785,6 +785,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     }
 
+    @TruffleBoundary
     private static void raiseFrozenError(FrozenStatus status, String moduleName, PRaiseNode raiseNode) {
         switch (status) {
             case FROZEN_BAD_NAME:
