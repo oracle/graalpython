@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -30,10 +30,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -48,6 +46,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -63,7 +62,7 @@ public class WithNode extends ExceptionHandlingStatementNode {
     @Child private CoerceToBooleanNode toBooleanNode = CoerceToBooleanNode.createIfTrueNode();
     @Child private GetClassNode getClassNode = GetClassNode.create();
     @Child private PRaiseNode raiseNode;
-    @Child private GetTracebackNode getTracebackNode;
+    @Child private GetExceptionTracebackNode getExceptionTracebackNode;
 
     private final BranchProfile noEnter = BranchProfile.create();
     private final BranchProfile noExit = BranchProfile.create();
@@ -79,11 +78,8 @@ public class WithNode extends ExceptionHandlingStatementNode {
     }
 
     private void applyValues(VirtualFrame frame, Object asNameValue) {
-        if (targetNode == null) {
-            return;
-        } else {
+        if (targetNode != null) {
             targetNode.executeObject(frame, asNameValue);
-            return;
         }
     }
 
@@ -127,22 +123,35 @@ public class WithNode extends ExceptionHandlingStatementNode {
             throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __EXIT__);
         }
         doEnter(frame, withObject, enterCallable);
-        Object result = null;
+        Object result;
         try {
             result = doBody(frame, isReturn);
-        } catch (PException exception) {
-            handleException(frame, withObject, exitCallable, exception);
-            return PNone.NONE;
+        } catch (PException pe) {
+            if (handleException(frame, withObject, exitCallable, pe.setCatchingFrameAndGetEscapedException(frame, this), pe, pe)) {
+                return PNone.NONE;
+            } else {
+                throw pe.getExceptionForReraise();
+            }
         } catch (ControlFlowException e) {
             doLeave(frame, withObject, exitCallable);
+            throw e;
+        } catch (AbstractTruffleException e) {
+            if (isTruffleException(e)) {
+                if (handleException(frame, withObject, exitCallable, e, exceptionStateForTruffleException(e), null)) {
+                    return PNone.NONE;
+                }
+            }
             throw e;
         } catch (Throwable e) {
             PException pe = wrapJavaExceptionIfApplicable(e);
             if (pe == null) {
                 throw e;
             }
-            handleException(frame, withObject, exitCallable, pe);
-            return PNone.NONE;
+            if (handleException(frame, withObject, exitCallable, pe.setCatchingFrameAndGetEscapedException(frame, this), pe, pe)) {
+                return PNone.NONE;
+            } else {
+                throw pe.getExceptionForReraise();
+            }
         }
         doLeave(frame, withObject, exitCallable);
         return result;
@@ -180,50 +189,45 @@ public class WithNode extends ExceptionHandlingStatementNode {
     /**
      * Call __exit__ to handle the exception
      */
-    protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException pException) {
-        PBaseException caughtException = pException.setCatchingFrameAndGetEscapedException(frame, this);
-        tryChainPreexistingException(frame, caughtException);
+    protected boolean handleException(VirtualFrame frame, Object withObject, Object exitCallable, Object exceptionObject, PException exceptionState, PException chain) {
+        if (exceptionObject instanceof PBaseException) {
+            tryChainPreexistingException(frame, (PBaseException) exceptionObject);
+        }
         ExceptionState savedExceptionState = saveExceptionState(frame);
-        SetCaughtExceptionNode.execute(frame, pException);
-        Object type = getClassNode.execute(caughtException);
-        LazyTraceback caughtTraceback = caughtException.getTraceback();
-        PTraceback tb = getTraceback(caughtTraceback);
+        SetCaughtExceptionNode.execute(frame, exceptionState);
+        Object type = getClassNode.execute(exceptionObject);
+        Object tb = getTraceback(exceptionObject);
         // If exit handler returns 'true', suppress
         boolean handled;
         try {
-            Object returnValue = exitDispatch.execute(frame, exitCallable, withObject, type, caughtException, tb != null ? tb : PNone.NONE);
+            Object returnValue = exitDispatch.execute(frame, exitCallable, withObject, type, exceptionObject, tb);
             handled = toBooleanNode.executeBoolean(frame, returnValue);
         } catch (PException handlerException) {
-            tryChainExceptionFromHandler(handlerException, pException);
-            throw handlerException;
-        } catch (Throwable e) {
-            PException handlerException = wrapJavaExceptionIfApplicable(e);
-            if (handlerException == null) {
-                throw e;
+            if (chain != null) {
+                tryChainExceptionFromHandler(handlerException, chain);
             }
-            tryChainExceptionFromHandler(handlerException, pException);
-            throw handlerException.getExceptionForReraise();
+            throw handlerException;
+        } catch (Exception | StackOverflowError | AssertionError e) {
+            if (chain != null) {
+                PException handlerException = wrapJavaExceptionIfApplicable(e);
+                if (handlerException == null) {
+                    throw e;
+                }
+                tryChainExceptionFromHandler(handlerException, chain);
+                throw handlerException.getExceptionForReraise();
+            }
+            throw e;
         } finally {
             restoreExceptionState(frame, savedExceptionState);
         }
-        if (!handled) {
-            // re-raise exception
-            throw caughtException.getExceptionForReraise(caughtTraceback);
-        }
+        return handled;
     }
 
-    public ExpressionNode getWithContext() {
-        return withContext;
-    }
-
-    private PTraceback getTraceback(LazyTraceback tb) {
-        if (tb != null) {
-            if (getTracebackNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTracebackNode = insert(GetTracebackNode.create());
-            }
-            return getTracebackNode.execute(tb);
+    private Object getTraceback(Object e) {
+        if (getExceptionTracebackNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getExceptionTracebackNode = insert(GetExceptionTracebackNode.create());
         }
-        return null;
+        return getExceptionTracebackNode.execute(e);
     }
 }

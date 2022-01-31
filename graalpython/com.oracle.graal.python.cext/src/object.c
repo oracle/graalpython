@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -133,11 +133,6 @@ PyObject _Py_NotImplementedStruct = {
 
 int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
-}
-
-UPCALL_ID(PyObject_Size);
-Py_ssize_t PyObject_Size(PyObject *o) {
-    return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(o));
 }
 
 typedef void (*object_dump_fun_t)(PyObject *);

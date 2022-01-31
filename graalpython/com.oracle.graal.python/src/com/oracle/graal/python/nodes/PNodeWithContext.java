@@ -50,6 +50,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class, BuiltinNames.class})
 public abstract class PNodeWithContext extends Node {
@@ -78,5 +79,13 @@ public abstract class PNodeWithContext extends Node {
 
     public final PythonContext getContext() {
         return PythonContext.get(this);
+    }
+
+    public final boolean isSingleContext() {
+        return getLanguage().isSingleContext();
+    }
+
+    public ValueProfile createValueIdentityProfile() {
+        return getLanguage().isSingleContext() ? ValueProfile.createIdentityProfile() : ValueProfile.createClassProfile();
     }
 }

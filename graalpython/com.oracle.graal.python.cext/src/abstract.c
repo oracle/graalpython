@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -285,9 +285,42 @@ int PySequence_Check(PyObject *s) {
     return UPCALL_CEXT_I(_jls_PySequence_Check, native_to_java(s));
 }
 
-UPCALL_ID(PyObject_Size);
+// downcall for native python objects
+// taken from CPython "Objects/abstract.c PySequence_Check()"
+int PyTruffle_PySequence_Check(PyObject *s) {
+    if (PyDict_Check(s))
+        return 0;
+    return s->ob_type->tp_as_sequence && s->ob_type->tp_as_sequence->sq_item != NULL;
+}
+
+UPCALL_ID(PySequence_Size);
 Py_ssize_t PySequence_Size(PyObject *s) {
-    return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(s));
+    return UPCALL_CEXT_L(_jls_PySequence_Size, native_to_java(s));
+}
+
+// downcall for native python objects
+// taken from CPython "Objects/abstract.c/Py_Sequence_Size"
+Py_ssize_t PyTruffle_PySequence_Size(PyObject *s) {
+    PySequenceMethods *m;
+
+    if (s == NULL) {
+        null_error();
+        return -1;
+    }
+
+    m = s->ob_type->tp_as_sequence;
+    if (m && m->sq_length) {
+        Py_ssize_t len = m->sq_length(s);
+        assert(len >= 0 || PyErr_Occurred());
+        return len;
+    }
+
+    if (s->ob_type->tp_as_mapping && s->ob_type->tp_as_mapping->mp_length) {
+        PyErr_Format(PyExc_TypeError, "PyTruffle_PySequence_Size(): object of type '%s' is not a sequence", Py_TYPE(s)->tp_name);
+        return -1;
+    }
+    PyErr_Format(PyExc_TypeError, "PyTruffle_PySequence_Size(): object of type '%s' has no len()", Py_TYPE(s)->tp_name);
+    return -1;    
 }
 
 UPCALL_ID(PySequence_Contains);
@@ -347,6 +380,31 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
     return _jls_PyObject_GetItem(native_to_java(o), polyglot_from_string(key, SRC_CS));
 }
 
+UPCALL_ID(PyObject_Size);
+Py_ssize_t PyObject_Size(PyObject *o) {
+    return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(o));
+}
+
+// downcall for native python objects
+// taken from CPython "Objects/abstract.c/PyObject_Size"
+Py_ssize_t PyTruffle_PyObject_Size(PyObject *o) {
+    PySequenceMethods *m;
+
+    if (o == NULL) {
+        null_error();
+        return -1;
+    }
+
+    m = o->ob_type->tp_as_sequence;
+    if (m && m->sq_length) {
+        Py_ssize_t len = m->sq_length(o);
+        assert(len >= 0 || PyErr_Occurred());
+        return len;
+    }
+
+    return PyMapping_Size(o);
+}
+
 UPCALL_ID(PyMapping_Keys);
 PyObject * PyMapping_Keys(PyObject *o) {
     return UPCALL_CEXT_O(_jls_PyMapping_Keys, native_to_java(o));
@@ -365,8 +423,14 @@ PyObject * PyMapping_Values(PyObject *o) {
     return UPCALL_CEXT_O(_jls_PyMapping_Values, native_to_java(o));
 }
 
-// taken from CPython "Objects/abstract.c"
+UPCALL_ID(PyMapping_Check);
 int PyMapping_Check(PyObject *o) {
+    return UPCALL_CEXT_I(_jls_PyMapping_Check, native_to_java(o));
+}
+
+// downcall for native python objects
+// taken from CPython "Objects/abstract.c PyMapping_Check"
+int PyTruffle_PyMapping_Check(PyObject *o) {
     return o && o->ob_type->tp_as_mapping && o->ob_type->tp_as_mapping->mp_subscript;
 }
 
@@ -517,8 +581,14 @@ int PyBuffer_IsContiguous(const Py_buffer *view, char order) {
     return 0;
 }
 
-// partially taken from CPython "Objects/abstract.c"
-Py_ssize_t PyMapping_Size(PyObject *o) {
+UPCALL_ID(PyMapping_Size);
+Py_ssize_t PyMapping_Size(PyObject *s) {
+    return UPCALL_CEXT_L(_jls_PyMapping_Size, native_to_java(s));
+}
+
+// PyMapping_Size downcall for native python objects
+// partially taken from CPython "Objects/abstract.c/Py_Mapping_Size"
+Py_ssize_t PyTruffle_PyMapping_Size(PyObject *o) {
     PyMappingMethods *m;
 
     if (o == NULL) {
@@ -533,7 +603,7 @@ Py_ssize_t PyMapping_Size(PyObject *o) {
         return len;
     }
 
-    PyErr_Format(PyExc_TypeError, "object of type '%s' has no len()", Py_TYPE(o)->tp_name);
+    PyErr_Format(PyExc_TypeError, "PyTruffle_PyMapping_Size(): object of type '%s' has no len()", Py_TYPE(o)->tp_name);
     return -1;
 }
 

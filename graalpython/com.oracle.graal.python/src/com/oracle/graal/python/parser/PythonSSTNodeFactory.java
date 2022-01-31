@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,11 +59,11 @@ import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
-import com.oracle.graal.python.nodes.statement.PrintExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AnnotationSSTNode;
+import com.oracle.graal.python.parser.sst.ArgDefListBuilder;
 import com.oracle.graal.python.parser.sst.ArgListBuilder;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
@@ -96,13 +96,15 @@ import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+
+import static com.oracle.graal.python.nodes.BuiltinNames.__FUTURE__;
 
 public final class PythonSSTNodeFactory {
 
@@ -118,6 +120,7 @@ public final class PythonSSTNodeFactory {
     private final Source source;
     private final PythonParser.ParserErrorCallback errors;
     private FStringExprParser fStringExprParser;
+    private boolean futureAnnotations = false;
 
     public PythonSSTNodeFactory(PythonParser.ParserErrorCallback errors, Source source, FStringExprParser fStringExprParser) {
         this.errors = errors;
@@ -163,6 +166,9 @@ public final class PythonSSTNodeFactory {
     public SSTNode createImportFrom(String from, String[][] asNames, int startOffset, int endOffset) {
         if (asNames != null) {
             for (String[] asName : asNames) {
+                if (__FUTURE__.equals(from) && asName[0].equals("annotations")) {
+                    futureAnnotations = true;
+                }
                 scopeEnvironment.createLocal(asName[1] == null ? asName[0] : asName[1]);
             }
         } else {
@@ -172,6 +178,21 @@ public final class PythonSSTNodeFactory {
         }
 
         return new ImportFromSSTNode(scopeEnvironment.getCurrentScope(), from, asNames, startOffset, endOffset);
+    }
+
+    public SSTNode createAnnotationType(SSTNode type) {
+        SSTNode annotType = type;
+        if (futureAnnotations && type != null) {
+            final String value = source.getCharacters().subSequence(type.getStartOffset() - 1, type.getEndOffset() + 1).toString();
+            annotType = createStringLiteral(new String[]{value}, type.getStartOffset(), type.getEndOffset());
+        }
+        return annotType;
+    }
+
+    public FunctionDefSSTNode createFunctionDef(ScopeInfo functionScope, String name, String enclosingClassName, ArgDefListBuilder argBuilder, SSTNode body, SSTNode resultAnnotation, int startOffset,
+                    int endOffset) {
+        SSTNode annotation = createAnnotationType(resultAnnotation);
+        return new FunctionDefSSTNode(functionScope, name, enclosingClassName, argBuilder, body, annotation, startOffset, endOffset);
     }
 
     public String mangleNameInCurrentScope(String name) {
@@ -340,6 +361,7 @@ public final class PythonSSTNodeFactory {
     }
 
     public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int start, int end) {
+        SSTNode annotType = createAnnotationType(type);
         // checking if the annotation has the right target
         if (!(lhs instanceof VarLookupSSTNode || lhs instanceof GetAttributeSSTNode || lhs instanceof SubscriptSSTNode)) {
             if (lhs instanceof CollectionSSTNode) {
@@ -355,7 +377,7 @@ public final class PythonSSTNodeFactory {
         if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
             scopeEnvironment.getCurrentScope().setHasAnnotations(true);
         }
-        return new AnnotationSSTNode(lhs, type, start, end);
+        return new AnnotationSSTNode(lhs, annotType, start, end);
     }
 
     public SSTNode createAugAssignment(SSTNode lhs, String operation, SSTNode rhs, int startOffset, int endOffset) {
@@ -513,6 +535,7 @@ public final class PythonSSTNodeFactory {
     }
 
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame, ArrayList<String> deprecationWarnings) {
+        assert currentFrame == null || mode == ParserMode.InlineEvaluation || mode == ParserMode.WithArguments;
         Node result;
         boolean isGen = false;
         Frame useFrame = currentFrame;
@@ -531,7 +554,7 @@ public final class PythonSSTNodeFactory {
             scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
         }
         scopeEnvironment.setFreeVarsInRootScope(useFrame);
-        FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source);
+        FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source, mode == PythonParser.ParserMode.Statement);
         if (isGen) {
             factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source, factoryVisitor);
         }
@@ -543,19 +566,19 @@ public final class PythonSSTNodeFactory {
                             : parserSSTResult instanceof BlockSSTNode
                                             ? factoryVisitor.asExpression((BlockSSTNode) parserSSTResult)
                                             : FactorySSTVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
-            FrameDescriptor fd = useFrame == null ? null : useFrame.getFrameDescriptor();
             switch (mode) {
                 case Eval:
                     scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
-                    StatementNode evalReturn = new ReturnNode.FrameReturnNode(body, scopeEnvironment.getReturnSlot());
-                    ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, ReadLocalVariableNode.create(scopeEnvironment.getReturnSlot()));
-                    FunctionRootNode functionRoot = rootNodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    StatementNode evalReturn = new ReturnNode.FrameReturnNode(body, scopeEnvironment.getCurrentScope().getReturnSlot());
+                    ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()));
+                    ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+                    FunctionRootNode functionRoot = rootNodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
                                     returnTarget,
-                                    scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY, null);
+                                    executionCellSlots, Signature.EMPTY, null);
                     result = functionRoot;
                     break;
                 case File:
-                    result = rootNodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    result = rootNodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
@@ -563,13 +586,13 @@ public final class PythonSSTNodeFactory {
                     result = body;
                     break;
                 case InteractiveStatement:
-                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd, scopeEnvironment.getGlobalScope().hasAnnotations());
+                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
+                                    scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
                 case Statement:
-                    ExpressionNode printExpression = PrintExpressionNode.create(body);
-                    printExpression.assignSourceSection(body.getSourceSection());
-                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    body.assignSourceSection(body.getSourceSection());
+                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -121,15 +121,18 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextImportBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextMemoryViewBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextIterBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextNamespaceBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSysBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextWarnBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
@@ -346,11 +349,9 @@ public abstract class Python3Core extends ParserErrorCallback {
     private static String[] initializeCoreFiles() {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
-                        "object",
                         "type",
                         "_imp",
                         "function",
-                        "method",
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
@@ -358,7 +359,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         PythonCextBuiltins.PYTHON_CEXT,
                         "bytearray",
                         "unicodedata",
-                        "_locale",
                         "_sre",
                         "function",
                         "_sysconfig",
@@ -367,8 +367,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "java",
                         "_contextvars",
                         "pip_hook",
-                        "_struct",
-                        "_posixshmem"));
+                        "_struct"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
@@ -494,6 +493,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextCodeBuiltins(),
                         new PythonCextComplexBuiltins(),
                         new PythonCextDictBuiltins(),
+                        new PythonCextErrBuiltins(),
                         new PythonCextFileBuiltins(),
                         new PythonCextFloatBuiltins(),
                         new PythonCextImportBuiltins(),
@@ -502,6 +502,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextLongBuiltins(),
                         new PythonCextMemoryViewBuiltins(),
                         new PythonCextModuleBuiltins(),
+                        new PythonCextObjectBuiltins(),
                         new PythonCextPythonRunBuiltins(),
                         new PythonCextNamespaceBuiltins(),
                         new PythonCextSetBuiltins(),
@@ -509,6 +510,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextSysBuiltins(),
                         new PythonCextTupleBuiltins(),
                         new PythonCextUnicodeBuiltins(),
+                        new PythonCextWarnBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),

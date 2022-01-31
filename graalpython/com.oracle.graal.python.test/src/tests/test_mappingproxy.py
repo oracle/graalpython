@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,8 @@
 # SOFTWARE.
 
 # the dict representation of a type is a mappingproxy
+import array, collections
+
 _mappingproxy = type(type.__dict__)
 
 
@@ -128,6 +130,25 @@ def test_iter():
 
     mp_keys = set([k for k in mp])
     assert d.keys() == mp_keys
+    
+def test_create():    
+    _mappingproxy(dict())
+    mp = _mappingproxy({'a': 1})
+    _mappingproxy(mp)
+    _mappingproxy('abc')
+    _mappingproxy(b'abc')
+    _mappingproxy(bytearray(b'abc'))
+    assert_raises(TypeError, _mappingproxy, ())
+    assert_raises(TypeError,_mappingproxy, (1,2,3))
+    assert_raises(TypeError,_mappingproxy, [])
+    assert_raises(TypeError,_mappingproxy, [1,2,3])
+    _mappingproxy(memoryview(b'abc'))
+    _mappingproxy(array.array("I", [1,2,3]))
+    assert_raises(TypeError, _mappingproxy, collections.deque([1,2,3]))
+    assert_raises(TypeError, _mappingproxy, set())
+    assert_raises(TypeError, _mappingproxy, {1,2,3})
+    assert_raises(TypeError, _mappingproxy, None)
+    assert_raises(TypeError, _mappingproxy, 123)
 
 def test_iter_changed_size():
     class A:

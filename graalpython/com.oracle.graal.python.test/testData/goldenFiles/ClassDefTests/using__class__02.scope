@@ -5,26 +5,26 @@ Scope: []
     FreeVars: Empty
     Scope: X
         Kind: Class
-        FrameDescriptor: [createY, methodX, __class__]
+        FrameDescriptor: [__class__, createY, methodX]
         CellVars: [__class__]
         FreeVars: Empty
         Scope: methodX
             Kind: Function
-            FrameDescriptor: [yy, this, <return_val>, __class__]
+            FrameDescriptor: [<return_val>, __class__, this, yy]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: createY
             Kind: Function
-            FrameDescriptor: [this, Y, <return_val>, __class__]
+            FrameDescriptor: [<return_val>, Y, __class__, this]
             CellVars: Empty
             FreeVars: [__class__]
             Scope: Y
                 Kind: Class
-                FrameDescriptor: [<>freevar__class__, z, methodY, __class__]
+                FrameDescriptor: [<>freevar__class__, __class__, methodY, z]
                 CellVars: [__class__]
                 FreeVars: [__class__]
                 Scope: methodY
                     Kind: Function
-                    FrameDescriptor: [this, y, <return_val>, __class__]
+                    FrameDescriptor: [<return_val>, __class__, this, y]
                     CellVars: Empty
                     FreeVars: [__class__]

@@ -40,9 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_MAPPING_CHECK;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_MAPPING_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_OBJECT_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
@@ -67,26 +73,31 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.NextNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyErrRestoreNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins.PyErrRestoreNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -105,11 +116,15 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -170,12 +185,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     abstract static class PyNumberLongNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        int nlong(int i) {
+        static int nlong(int i) {
             return i;
         }
 
         @Specialization
-        long nlong(long i) {
+        static long nlong(long i) {
             return i;
         }
 
@@ -657,7 +672,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySequenceTupleNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isTuple(obj, getClassNode)")
-        public PTuple values(PTuple obj,
+        public static PTuple values(PTuple obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return obj;
         }
@@ -699,9 +714,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_SetItem", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class PySequenceSetItemNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = "checkNode.execute(obj)")
+        @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         public Object setItem(VirtualFrame frame, Object obj, Object key, Object value,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached ConditionProfile hasSetItem,
                         @Cached CallNode callNode,
@@ -720,9 +735,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)")
+        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         Object setItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
         }
@@ -733,9 +748,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PySequenceGetSliceNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "checkNode.execute(obj)")
+        @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         Object getSlice(VirtualFrame frame, Object obj, long iLow, long iHigh,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SliceLiteralNode sliceNode,
                         @Cached CallNode callNode,
@@ -749,9 +764,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)")
+        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
         }
@@ -762,7 +777,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     abstract static class PySequenceContainsNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object contains(VirtualFrame frame, Object haystack, Object needle,
+        static Object contains(VirtualFrame frame, Object haystack, Object needle,
                         @Cached ContainsNode containsNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -777,9 +792,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_Repeat", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PySequenceRepeatNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "checkNode.execute(obj)")
+        @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         Object repeat(VirtualFrame frame, Object obj, long n,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached("createMul()") MulNode mulNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -790,9 +805,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)")
+        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
@@ -805,12 +820,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_InPlaceRepeat", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PySequenceInPlaceRepeatNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"checkNode.execute(obj)"})
+        @Specialization(guards = {"checkNode.execute(obj)"}, limit = "1")
         Object repeat(VirtualFrame frame, Object obj, long n,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
                         @Cached("createMul()") MulNode mulNode,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object imulCallable = lookupNode.execute(frame, obj, __IMUL__);
@@ -825,9 +840,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)")
+        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         protected Object repeat(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object n,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
@@ -840,9 +855,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_Concat", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PySequenceConcatNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"})
+        @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"}, limit = "1")
         Object concat(VirtualFrame frame, Object s1, Object s2,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -853,9 +868,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"})
+        @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"}, limit = "1")
         protected Object cantConcat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
@@ -869,12 +884,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PySequenceInPlaceConcatNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"checkNode.execute(s1)"})
+        @Specialization(guards = {"checkNode.execute(s1)"}, limit = "1")
         Object concat(VirtualFrame frame, Object s1, Object s2,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object iaddCallable = lookupNode.execute(frame, s1, __IADD__);
@@ -888,9 +903,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(s1)")
+        @Specialization(guards = "!checkNode.execute(s1)", limit = "1")
         protected Object concat(VirtualFrame frame, Object s1, @SuppressWarnings("unused") Object s2,
-                        @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
@@ -904,7 +919,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySequenceDelItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object run(VirtualFrame frame, Object o, Object i,
+        static Object run(VirtualFrame frame, Object o, Object i,
                         @Cached PyObjectDelItem delItemNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -919,21 +934,31 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PySequence_Check", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PySequenceCheck extends PythonUnaryBuiltinNode {
-        @Specialization
+    abstract static class PySequenceCheckNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "!isNativeObject(object)")
         static boolean check(Object object,
-                        @Cached PySequenceCheckNode check) {
+                        @Cached com.oracle.graal.python.lib.PySequenceCheckNode check) {
             return check.execute(object);
+        }
+
+        @Specialization(guards = "isNativeObject(object)")
+        static Object doNative(VirtualFrame frame, Object object,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(object));
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK.getName(), result);
+            return result;
         }
     }
 
     @Builtin(name = "PySequence_GetItem", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PySequenceGetItem extends PythonBinaryBuiltinNode {
-
+    abstract static class PySequenceGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doManaged(VirtualFrame frame, Object listWrapper, Object position,
-                        @Cached PySequenceCheckNode pySequenceCheck,
+                        @Cached com.oracle.graal.python.lib.PySequenceCheckNode pySequenceCheck,
                         @Cached com.oracle.graal.python.lib.PyObjectGetItem getItem,
                         @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
                         @Cached AsPythonObjectNode positionAsPythonObjectNode,
@@ -953,11 +978,65 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PySequence_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class PySequenceSizeNode extends PythonUnaryBuiltinNode {
+
+        // cant use PySequence_Size: PySequence_Size returns the __len__ value also for
+        // subclasses of types not accepted by PySequence_Check as long they have an overriden
+        // __len__ method
+        @Specialization(guards = {"!isNativeObject(obj)", "!isDictOrMappingProxy(obj, isSameType, getClassNode)"}, limit = "1")
+        static Object doSequence(VirtualFrame frame, Object obj,
+                        @Shared("isSameType") @SuppressWarnings("unused") @Cached IsSameTypeNode isSameType,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return sizeNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "isNativeObject(obj)")
+        Object doNative(VirtualFrame frame, Object obj,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            Object state = IndirectCallContext.enter(frame, this);
+            try {
+                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(obj));
+                checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE.getName(), result);
+                return result;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            } finally {
+                IndirectCallContext.exit(frame, this, state);
+            }
+        }
+
+        @Specialization(guards = {"isDictOrMappingProxy(obj, isSameType, getClassNode)"}, limit = "1")
+        static Object notSequence(VirtualFrame frame, Object obj,
+                        @Shared("isSameType") @SuppressWarnings("unused") @Cached IsSameTypeNode isSameType,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
+        }
+
+        protected static boolean isDictOrMappingProxy(Object obj, IsSameTypeNode isSameType, GetClassNode getClassNode) {
+            return obj instanceof PMappingproxy || isSameType.execute(getClassNode.execute(obj), PythonBuiltinClassType.PDict);
+        }
+    }
+
     /////// PyObject ///////
 
     @Builtin(name = "PyObject_GetItem", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyObjectGetItem extends PythonBinaryBuiltinNode {
+    abstract static class PyObjectGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doManaged(VirtualFrame frame, Object listWrapper, Object key,
                         @Cached com.oracle.graal.python.lib.PyObjectGetItem getItem,
@@ -972,6 +1051,46 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return toNewRefNode.execute(getContext().getNativeNull());
+            }
+        }
+    }
+
+    @Builtin(name = "PyObject_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class PyObjectSizeNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = {"!isNativeObject(obj)"})
+        static int doGenericUnboxed(VirtualFrame frame, Object obj,
+                        @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                // TODO: theoretically, it is legal for __LEN__ to return a PythonNativeVoidPtr,
+                // which is not handled in c.o.g.p.lib.PyObjectSizeNode at this point
+                return sizeNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"isNativeObject(obj)"})
+        Object size(VirtualFrame frame, Object obj,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            Object state = IndirectCallContext.enter(frame, this);
+            try {
+                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_OBJECT_SIZE, toSulongNode.execute(obj));
+                checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_OBJECT_SIZE.getName(), result);
+                return result;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            } finally {
+                IndirectCallContext.exit(frame, this, state);
             }
         }
     }
@@ -1079,11 +1198,88 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyMapping_Check", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class PyMappingCheckNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "!isNativeObject(object)")
+        static boolean doPythonObject(Object object,
+                        @Cached com.oracle.graal.python.lib.PyMappingCheckNode checkNode) {
+            return checkNode.execute(object);
+        }
+
+        @Specialization(guards = "isNativeObject(obj)")
+        static Object doNative(VirtualFrame frame, Object obj,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_CHECK, toSulongNode.execute(obj));
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_MAPPING_CHECK.getName(), result);
+            return result;
+        }
+    }
+
+    @Builtin(name = "PyMapping_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class PyMappingSizeNode extends PythonUnaryBuiltinNode {
+
+        // cant use PyMapping_Check: PyMapping_Size returns the __len__ value also for
+        // subclasses of types not accepted by PyMapping_Check as long they have an overriden
+        // __len__ method
+        @Specialization(guards = {"!isNativeObject(obj)", "!isSetOrDeque(obj, isSameType, getClassNode)"}, limit = "1")
+        static int doMapping(VirtualFrame frame, Object obj,
+                        @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
+                        @Shared("isSameType") @SuppressWarnings("unused") @Cached IsSameTypeNode isSameType,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return sizeNode.execute(frame, obj);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "isNativeObject(obj)")
+        static Object doNative(VirtualFrame frame, Object obj,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_SIZE, toSulongNode.execute(obj));
+                checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_MAPPING_SIZE.getName(), result);
+                return result;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        @Specialization(guards = {"isSetOrDeque(obj, isSameType, getClassNode)"}, limit = "1")
+        static Object notMapping(VirtualFrame frame, Object obj,
+                        @Shared("isSameType") @SuppressWarnings("unused") @Cached IsSameTypeNode isSameType,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, TypeError, OBJ_ISNT_MAPPING, obj);
+        }
+
+        protected static boolean isSetOrDeque(Object obj, IsSameTypeNode isSameType, GetClassNode getClassNode) {
+            Object cls = getClassNode.execute(obj);
+            return isSameType.execute(cls, PythonBuiltinClassType.PSet) ||
+                            isSameType.execute(cls, PythonBuiltinClassType.PFrozenSet) ||
+                            isSameType.execute(cls, PythonBuiltinClassType.PDeque);
+        }
+    }
+
     /////// PyIter ///////
 
     @Builtin(name = "PyIter_Next", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyIterNextCheck extends PythonUnaryBuiltinNode {
+    abstract static class PyIterNextNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object check(VirtualFrame frame, Object object,
                         @Cached NextNode nextNode,

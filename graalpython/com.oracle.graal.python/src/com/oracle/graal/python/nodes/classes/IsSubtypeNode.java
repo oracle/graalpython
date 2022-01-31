@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -181,6 +181,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
+                    "isSingleContext()",
                     "isTypeDerived.execute(derived)", "isTypeCls.execute(cls)",
                     "isSameType(isSameDerivedNode, derived, cachedDerived)",
                     "isSameType(isSameClsNode, cls, cachedCls)",
@@ -189,7 +190,6 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "isVariableSubtypeOfConstantTypeCachedMultiContext",
     }, assumptions = {
                     "mro.getLookupStableAssumption()",
-                    "singleContextAssumption()"
     })
     @SuppressWarnings("unused")
     boolean isSubtypeOfCached(Object derived, Object cls,
@@ -207,6 +207,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
+                    "isSingleContext()",
                     "isTypeDerived.execute(derived)", "isTypeCls.execute(cls)",
                     "isSameType(isSameDerivedNode, derived, cachedDerived)",
                     "mro.getInternalClassArray().length < 32"
@@ -215,8 +216,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "isVariableSubtypeOfConstantTypeCachedMultiContext",
                     "isSubtypeOfCached"
     }, assumptions = {
-                    "mro.getLookupStableAssumption()",
-                    "singleContextAssumption()"
+                    "mro.getLookupStableAssumption()"
     })
     boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") Object derived, Object cls,
                     @Cached("derived") @SuppressWarnings("unused") Object cachedDerived,
@@ -231,6 +231,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
+                    "isSingleContext()",
                     "isKindOfBuiltinClass(derived)", // see assertion in isSubMro
                     "isKindOfBuiltinClass(cls)", // see assertion in isSubMro
                     "mroAry.length == derivedMroLen",
@@ -242,8 +243,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "isSubtypeOfCached",
                     "isSubtypeOfVariableTypeCached",
     }, assumptions = {
-                    "baseMro.getLookupStableAssumption()",
-                    "singleContextAssumption()"
+                    "baseMro.getLookupStableAssumption()"
     })
     boolean isVariableSubtypeOfConstantTypeCached(Object derived, @SuppressWarnings("unused") Object cls,
                     @Cached("cls") @SuppressWarnings("unused") Object cachedCls,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -828,6 +828,13 @@ public class LoggingPosixSupport extends PosixSupport {
         } catch (PosixException e) {
             throw logException("mmapFlush", e);
         }
+    }
+
+    @ExportMessage
+    public long mmapGetPointer(Object mmap,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("mmapGetPointer", "%s", mmap);
+        return lib.mmapGetPointer(delegate, mmap);
     }
 
     @ExportMessage

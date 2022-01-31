@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltinsClinicProviders.WarnBuiltinNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltinsFactory.WarnBuiltinNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -953,11 +954,13 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "stacklevel", conversion = ClinicConversion.Int, defaultValue = "1")
     @ArgumentClinic(name = "source", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
-    abstract static class WarnBuiltinNode extends PythonClinicBuiltinNode {
+    public abstract static class WarnBuiltinNode extends PythonClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return WarnBuiltinNodeClinicProviderGen.INSTANCE;
         }
+
+        public abstract Object execute(VirtualFrame frame, PythonModule mod, Object message, Object category, int stacklevel, Object source);
 
         @Specialization
         Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, int stacklevel, Object source,
@@ -966,6 +969,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             moduleFunctionsNode.doWarn(frame, mod, message, moduleFunctionsNode.getCategory(frame, message, category), stacklevel, source);
             return PNone.NONE;
         }
+
+        public static WarnBuiltinNode create() {
+            return WarnBuiltinNodeFactory.create(null);
+        }
+
     }
 
     @ReportPolymorphism

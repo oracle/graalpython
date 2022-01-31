@@ -23,17 +23,17 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: x, 
+              CellVarsSlots: x
             FunctionRootNode SourceSection: [0,74]`def outer ():↵    de...`
               Name: outer
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: x
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [inner, x, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, inner, x]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: x, 
+                CellVarsSlots: x
               InnerRootNode SourceSection: [0,74]`def outer ():↵    de...`
                 ReturnTargetNode SourceSection: [0,74]`def outer ():↵    de...`
                   Body: BlockNode SourceSection: None
@@ -46,9 +46,9 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: x, 
+                          FreeVarSlots: x
                           ExecutionSlots:
-                            FreeVarsSlots: x, 
+                            FreeVarsSlots: x
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [18,54]`def inner():↵       ...`
                             Name: inner
@@ -56,9 +56,9 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                             CelVars: None
                             FreeVars: x
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [x, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, x]
                             ExecutionSlots:
-                              FreeVarsSlots: x, 
+                              FreeVarsSlots: x
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [18,54]`def inner():↵       ...`
                               ReturnTargetNode SourceSection: [18,54]`def inner():↵       ...`
@@ -73,7 +73,6 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                                         ReadLocalCellNodeGen SourceSection: [45,46]`x`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [0,x,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
                       WriteLocalCellNodeGen SourceSection: [54,60]`x = 12`

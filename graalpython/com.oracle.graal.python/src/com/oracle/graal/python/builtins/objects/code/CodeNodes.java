@@ -139,7 +139,7 @@ public abstract class CodeNodes {
             PythonLanguage language = context.getLanguage();
             Supplier<CallTarget> createCode = () -> {
                 ByteSequence bytes = ByteSequence.create(codedata);
-                Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).cached(!language.singleContextAssumption.isValid()).build();
+                Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).cached(!language.isSingleContext()).build();
                 return context.getEnv().parsePublic(source);
             };
 
@@ -172,7 +172,6 @@ public abstract class CodeNodes {
         private static final GetCodeCallTargetNode UNCACHED = new GetCodeCallTargetNode(false);
 
         private final boolean isAdoptable;
-        @CompilationFinal private Assumption singleContextAssumption;
         @CompilationFinal private ConditionProfile hasCtProfile;
         @CompilationFinal private PCode cachedCode1;
         @CompilationFinal private PCode cachedCode2;
@@ -185,12 +184,8 @@ public abstract class CodeNodes {
 
         public final RootCallTarget execute(PCode code) {
             if (isAdoptable) {
-                if (singleContextAssumption == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
-                }
                 if (hasCtProfile == null) {
-                    if (singleContextAssumption.isValid()) {
+                    if (PythonLanguage.get(this).isSingleContext()) {
                         if (cachedCode1 == null) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             cachedCode1 = code;
@@ -239,17 +234,12 @@ public abstract class CodeNodes {
     }
 
     @GenerateUncached
-    public abstract static class GetCodeSignatureNode extends Node {
+    public abstract static class GetCodeSignatureNode extends PNodeWithContext {
         public abstract Signature execute(PCode code);
 
-        protected static final Assumption getSingleContextAssumption() {
-            return PythonLanguage.get(null).singleContextAssumption;
-        }
-
         @SuppressWarnings("unused")
-        @Specialization(guards = "cachedCode == code", limit = "2", assumptions = "singleContextAssumption")
+        @Specialization(guards = {"isSingleContext()", "cachedCode == code"}, limit = "2")
         protected static Signature doCached(PCode code,
-                        @Cached("getSingleContextAssumption()") Assumption singleContextAssumption,
                         @Cached("code") PCode cachedCode,
                         @Cached("code.initializeCallTarget()") RootCallTarget ct,
                         @Cached("code.initializeSignature(ct)") Signature signature) {

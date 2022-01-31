@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -49,9 +49,9 @@ def _proxy_get(proxy):
 
 
 class ProxyType(object):
-    def __init__(self, other):
+    def __init__(self, other, callback=None):
         import weakref
-        object.__setattr__(self, "_weakref", weakref.ref(other))
+        object.__setattr__(self, "_weakref", weakref.ref(other, callback))
 
     def __getattribute__(self, key):
         return getattr(_proxy_get(self), key)

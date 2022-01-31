@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,47 +48,49 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class TupleNodes {
 
-    @ImportStatic({PGuards.class, SpecialMethodNames.class})
+    @GenerateUncached
     public abstract static class ConstructTupleNode extends PNodeWithContext {
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-
         public final PTuple execute(VirtualFrame frame, Object value) {
             return execute(frame, PythonBuiltinClassType.PTuple, value);
         }
 
-        public abstract PTuple execute(VirtualFrame frame, Object cls, Object value);
+        public abstract PTuple execute(Frame frame, Object cls, Object value);
 
         @Specialization(guards = "isNoValue(none)")
-        PTuple tuple(Object cls, @SuppressWarnings("unused") PNone none) {
+        static PTuple tuple(Object cls, @SuppressWarnings("unused") PNone none,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createEmptyTuple(cls);
         }
 
         @Specialization
-        PTuple tuple(Object cls, String arg) {
+        static PTuple tuple(Object cls, String arg,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createTuple(cls, StringUtils.toCharacterArray(arg));
         }
 
         @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(iterable, getClassNode)"}, limit = "1")
-        PTuple tuple(@SuppressWarnings("unused") Object cls, PTuple iterable,
+        static PTuple tuple(@SuppressWarnings("unused") Object cls, PTuple iterable,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return iterable;
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable, getClassNode)"}, limit = "1")
-        PTuple tuple(VirtualFrame frame, Object cls, Object iterable,
+        static PTuple tuple(VirtualFrame frame, Object cls, Object iterable,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached CreateStorageFromIteratorNode storageNode,
                         @Cached PyObjectGetIter getIter) {
             Object iterObj = getIter.execute(frame, iterable);
@@ -96,7 +98,7 @@ public abstract class TupleNodes {
         }
 
         @Fallback
-        public PTuple tuple(@SuppressWarnings("unused") Object cls, Object value) {
+        static PTuple tuple(@SuppressWarnings("unused") Object cls, Object value) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("tuple does not support iterable object " + value);
         }

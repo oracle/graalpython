@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,10 +43,13 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
@@ -75,34 +78,54 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
 
     @Specialization
     static boolean doString(@SuppressWarnings("unused") String object) {
-        return false;
+        return true;
     }
 
     @Specialization
     static boolean doSequence(@SuppressWarnings("unused") PSequence object) {
-        return false;
+        return true;
     }
 
     @Specialization
     static boolean doArray(@SuppressWarnings("unused") PArray object) {
-        return false;
+        return true;
     }
 
     @Specialization
     static boolean doMemoryView(@SuppressWarnings("unused") PMemoryView object) {
-        return false;
+        return true;
+    }
+
+    @Specialization
+    static boolean doMappingproxy(@SuppressWarnings("unused") PMappingproxy object) {
+        return true;
     }
 
     @Specialization
     static boolean doRange(@SuppressWarnings("unused") PRange object) {
+        return true;
+    }
+
+    @Specialization
+    static boolean doDeque(@SuppressWarnings("unused") PDeque object) {
+        return false;
+    }
+
+    @Specialization
+    static boolean doSet(@SuppressWarnings("unused") PBaseSet object) {
         return false;
     }
 
     protected static boolean cannotBeMapping(Object object) {
-        return object instanceof String || object instanceof PSequence || object instanceof PArray || object instanceof PMemoryView || object instanceof PRange;
+        return object instanceof PDeque || object instanceof PBaseSet;
     }
 
-    @Specialization(guards = "!cannotBeMapping(object)")
+    protected static boolean isKnownMapping(Object object) {
+        return object instanceof PDict || object instanceof String || object instanceof PSequence || object instanceof PArray ||
+                        object instanceof PMemoryView || object instanceof PRange || object instanceof PMappingproxy;
+    }
+
+    @Specialization(guards = {"!isKnownMapping(object)", "!cannotBeMapping(object)"})
     boolean doPythonObject(PythonObject object,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem) {
@@ -110,7 +133,7 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
         return lookupGetItem.execute(type) != PNone.NO_VALUE;
     }
 
-    @Specialization(guards = "!cannotBeMapping(object)", replaces = "doPythonObject")
+    @Specialization(guards = {"!isKnownMapping(object)", "!cannotBeMapping(object)"}, replaces = "doPythonObject")
     boolean doGeneric(Object object,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem,

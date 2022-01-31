@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: <genexpr>
         Kind: DictComp
-        FrameDescriptor: [t, i, <return_val>]
+        FrameDescriptor: [<return_val>, i, t]
         CellVars: [i]
         FreeVars: Empty
         Scope: <genexpr>
             Kind: GenExp
-            FrameDescriptor: [i, j, <return_val>]
+            FrameDescriptor: [<return_val>, i, j]
             CellVars: Empty
             FreeVars: [i]

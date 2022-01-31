@@ -5,46 +5,46 @@ Scope: []
     FreeVars: Empty
     Scope: dump
         Kind: Function
-        FrameDescriptor: [item, d, f, prefix, items, <return_val>]
+        FrameDescriptor: [<>temp5, <return_val>, d, f, item, items, prefix]
         CellVars: Empty
         FreeVars: Empty
     Scope: _makecodes
         Kind: Function
-        FrameDescriptor: [names, items, <return_val>]
+        FrameDescriptor: [<return_val>, items, names]
         CellVars: Empty
         FreeVars: Empty
         Scope: <genexpr>
             Kind: DictComp
-            FrameDescriptor: [item, <return_val>]
+            FrameDescriptor: [<return_val>, item]
             CellVars: Empty
             FreeVars: Empty
         Scope: <genexpr>
             Kind: ListComp
-            FrameDescriptor: [name, <>temp2, i, <>temp3, <return_val>]
+            FrameDescriptor: [<>temp2, <>temp3, <return_val>, i, name]
             CellVars: Empty
             FreeVars: Empty
     Scope: _NamedIntConstant
         Kind: Class
-        FrameDescriptor: [__str__, __repr__, __new__, __class__]
+        FrameDescriptor: [__class__, __new__, __repr__, __str__]
         CellVars: [__class__]
         FreeVars: Empty
         Scope: __str__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __new__
             Kind: Function
-            FrameDescriptor: [name, self, cls, value, <return_val>, __class__]
+            FrameDescriptor: [<return_val>, __class__, cls, name, self, value]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: error
         Kind: Class
-        FrameDescriptor: [__doc__, __init__, __module__, __class__]
+        FrameDescriptor: [__class__, __doc__, __init__, __module__]
         CellVars: [__class__]
         FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [msg, newline, <>temp6, pos, pattern, self, <return_val>, __class__]
+            FrameDescriptor: [<>temp6, <return_val>, __class__, msg, newline, pattern, pos, self]
             CellVars: Empty
             FreeVars: [__class__]

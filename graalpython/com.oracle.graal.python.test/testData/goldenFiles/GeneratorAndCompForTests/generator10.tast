@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
         WriteNameNodeGen SourceSection: [0,155]`def non_empty_lines(...`
           Identifier: non_empty_lines
           GeneratorFunctionDefinitionNode Name: non_empty_lines SourceSection: None
-            FrameDescriptor: 4 slots [path, line, f, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, f, line, path]
             Active Flags: 6
             For Nodes: 2
             Block Nodes: 1
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [path, line, f, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, f, line, path]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

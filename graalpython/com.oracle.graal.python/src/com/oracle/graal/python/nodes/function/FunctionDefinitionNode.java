@@ -41,7 +41,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
-import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -58,7 +57,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     protected final String functionName;
     protected final String qualname;
     protected final String enclosingClassName;
-    protected final RootCallTarget callTarget;
     @CompilationFinal private PCode cachedCode;
 
     @Children protected ExpressionNode[] defaults;
@@ -75,15 +73,12 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
 
     public FunctionDefinitionNode(String functionName, String qualname, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
-                    RootCallTarget callTarget,
-                    DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
-                    Map<String, ExpressionNode> annotations) {
-        super(definitionCellSlots, executionCellSlots);
+                    RootCallTarget callTarget, DefinitionCellSlots definitionCellSlots, Map<String, ExpressionNode> annotations) {
+        super(definitionCellSlots, callTarget);
         this.functionName = functionName;
         this.qualname = qualname;
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
-        this.callTarget = callTarget;
         assert defaults == null || noNullElements(defaults);
         this.defaults = defaults;
         assert kwDefaults == null || noNullElements(kwDefaults);
@@ -129,7 +124,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         PythonLanguage lang = PythonLanguage.get(this);
         CompilerAsserts.partialEvaluationConstant(lang);
         PCode code;
-        if (lang.singleContextAssumption.isValid()) {
+        if (lang.isSingleContext()) {
             if (cachedCode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 cachedCode = factory().createCode(callTarget);
@@ -207,10 +202,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
 
     public String getFunctionName() {
         return functionName;
-    }
-
-    public RootCallTarget getCallTarget() {
-        return callTarget;
     }
 
     public RootNode getFunctionRoot() {

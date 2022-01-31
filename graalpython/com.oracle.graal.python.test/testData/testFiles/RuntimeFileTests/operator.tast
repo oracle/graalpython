@@ -94,7 +94,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -140,7 +140,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -186,7 +186,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -232,7 +232,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -278,7 +278,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -324,7 +324,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -370,7 +370,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [a, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, a]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -407,7 +407,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [a, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, a]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -447,7 +447,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -493,7 +493,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -540,7 +540,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [a, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, a]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -580,7 +580,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -626,7 +626,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -672,7 +672,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -718,7 +718,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [a, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, a]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -757,7 +757,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [a, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, a]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -800,7 +800,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -846,7 +846,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -892,7 +892,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -938,7 +938,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -984,7 +984,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [a, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, a]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1021,7 +1021,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1067,7 +1067,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [a, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, a]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1104,7 +1104,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1150,7 +1150,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1196,7 +1196,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1242,7 +1242,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1288,7 +1288,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1334,7 +1334,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [a, b, msg, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, a, b, msg]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1415,7 +1415,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1464,7 +1464,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [a, b, count, i, <return_val>]
+            FrameDescriptor: 6 slots [<>temp4, <return_val>, a, b, count, i]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1522,7 +1522,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       ReadLocalVariableNodeGen SourceSection: [3375,3380]`count`
                         Frame: [2,count,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Object]
+                  Frame: [5,<return_val>,Object]
       WriteNameNodeGen SourceSection: [3382,3439]`def delitem(a, b):↵ ...`
         Identifier: delitem
         FunctionDefinitionNode Name: delitem SourceSection: None
@@ -1540,7 +1540,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1585,7 +1585,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1631,7 +1631,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [a, b, i, j, <return_val>, <>temp5, <>temp6]
+            FrameDescriptor: 8 slots [<>temp4, <>temp6, <>temp7, <return_val>, a, b, i, j]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1658,21 +1658,21 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           ForNextElementNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp5
-                                Frame: [5,<>temp5,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp6
                                 Frame: [6,<>temp6,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp7
+                                Frame: [7,<>temp7,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: i
                                 Frame: [2,i,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [5,<>temp5,Illegal]
+                                  Frame: [6,<>temp6,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: j
                                 Frame: [3,j,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [6,<>temp6,Illegal]
+                                  Frame: [7,<>temp7,Illegal]
                           IfNode SourceSection: [3592,3628]`if j == b:↵         ...`
                             YesNodeGen SourceSection: None
                               EqNodeGen SourceSection: [3595,3601]`j == b`
@@ -1699,7 +1699,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           StringLiteralNode SourceSection: [3659,3697]`'sequence.index(x): ...`
                         NoValueNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Object]
+                  Frame: [5,<return_val>,Object]
       WriteNameNodeGen SourceSection: [3700,3760]`def setitem(a, b, c)...`
         Identifier: setitem
         FunctionDefinitionNode Name: setitem SourceSection: None
@@ -1717,7 +1717,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [a, b, c, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, a, b, c]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1772,7 +1772,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [obj, default, msg, hint, val, <return_val>]
+            FrameDescriptor: 6 slots [<return_val>, default, hint, msg, obj, val]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1978,7 +1978,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__slots__, __init__, __call__, __repr__, __reduce__, __doc__]
+              FrameDescriptor: 6 slots [__call__, __doc__, __init__, __reduce__, __repr__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -2012,7 +2012,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: getters, , names, 
+                            CellVarsSlots: getters, names
                           FunctionRootNode SourceSection: [5349,5988]`def __init__(self, a...`
                             Name: __init__
                             Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
@@ -2020,10 +2020,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: getters, names
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, attr, attrs, names, func, getters, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, attr, attrs, func, getters, names, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: getters, , names, 
+                              CellVarsSlots: getters, names
                             InnerRootNode SourceSection: [5349,5988]`def __init__(self, a...`
                               ReturnTargetNode SourceSection: [5349,5988]`def __init__(self, a...`
                                 Body: BlockNode SourceSection: None
@@ -2095,9 +2095,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Arguments: None
                                             KwArguments: None
                                             Documentation: None
-                                            FreeVarSlots: names, 
+                                            FreeVarSlots: names
                                             ExecutionSlots:
-                                              FreeVarsSlots: names, 
+                                              FreeVarsSlots: names
                                               CellVarsSlots: None
                                             FunctionRootNode SourceSection: [5596,5730]`def func(obj):↵     ...`
                                               Name: func
@@ -2106,9 +2106,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               CelVars: None
                                               FreeVars: names
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 4 slots [obj, name, names, <return_val>]
+                                              FrameDescriptor: 5 slots [<>temp3, <return_val>, name, names, obj]
                                               ExecutionSlots:
-                                                FreeVarsSlots: names, 
+                                                FreeVarsSlots: names
                                                 CellVarsSlots: None
                                               InnerRootNode SourceSection: [5596,5730]`def func(obj):↵     ...`
                                                 ReturnTargetNode SourceSection: [5596,5730]`def func(obj):↵     ...`
@@ -2142,13 +2142,12 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                             ReadLocalCellNodeGen SourceSection: [5639,5644]`names`
                                                               ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [2,names,Illegal]
-                                                              ReadFromCellNodeGen SourceSection: None
                                                         BlockNode SourceSection: None
                                                       FrameReturnNode SourceSection: [5707,5717]`return obj`
                                                         ReadLocalVariableNodeGen SourceSection: [5714,5717]`obj`
                                                           Frame: [0,obj,Illegal]
                                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                    Frame: [3,<return_val>,Object]
+                                                    Frame: [4,<return_val>,Object]
                                         SetAttributeNodeGen SourceSection: [5730,5747]`self._call = func`
                                           Attribute: _call
                                           ReadLocalVariableNodeGen SourceSection: [5730,5734]`self`
@@ -2195,10 +2194,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Arguments: None
                                             KwArguments: None
                                             Documentation: None
-                                            FreeVarSlots: getters, 
+                                            FreeVarSlots: getters
                                             ExecutionSlots:
-                                              FreeVarsSlots: getters, 
-                                              CellVarsSlots: obj, 
+                                              FreeVarsSlots: getters
+                                              CellVarsSlots: obj
                                             FunctionRootNode SourceSection: [5874,5965]`def func(obj):↵     ...`
                                               Name: func
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -2206,10 +2205,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               CelVars: obj
                                               FreeVars: getters
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 3 slots [obj, getters, <return_val>]
+                                              FrameDescriptor: 3 slots [<return_val>, getters, obj]
                                               ExecutionSlots:
-                                                FreeVarsSlots: getters, 
-                                                CellVarsSlots: obj, 
+                                                FreeVarsSlots: getters
+                                                CellVarsSlots: obj
                                               InnerRootNode SourceSection: [5874,5965]`def func(obj):↵     ...`
                                                 ReturnTargetNode SourceSection: [5874,5965]`def func(obj):↵     ...`
                                                   Body: BlockNode SourceSection: None
@@ -2228,9 +2227,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                             Identifier: tuple
                                                           GeneratorExpressionNode SourceSection: [5918,5951]`getter(obj) for gett...`
                                                             Name: <genexpr>
-                                                            FrameDescriptor: 3 slots [getter, obj, <return_val>]
+                                                            FrameDescriptor: 3 slots [<return_val>, getter, obj]
                                                             Enclosing
-                                                              FrameDescriptor: 3 slots [obj, getters, <return_val>]
+                                                              FrameDescriptor: 3 slots [<return_val>, getters, obj]
                                                             Active Flags: 2
                                                             For Nodes: 1
                                                             Block Nodes: 0
@@ -2241,9 +2240,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               CelVars: None
                                                               FreeVars: obj
                                                               NeedsCellFrame: False
-                                                              FrameDescriptor: 3 slots [getter, obj, <return_val>]
+                                                              FrameDescriptor: 3 slots [<return_val>, getter, obj]
                                                               ExecutionSlots:
-                                                                FreeVarsSlots: obj, 
+                                                                FreeVarsSlots: obj
                                                                 CellVarsSlots: None
                                                               InnerRootNode SourceSection: [5918,5951]`getter(obj) for gett...`
                                                                 GeneratorReturnTargetNode SourceSection: [5918,5951]`getter(obj) for gett...`
@@ -2259,7 +2258,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                           ReadLocalCellNodeGen SourceSection: [5925,5928]`obj`
                                                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                               Frame: [1,obj,Illegal]
-                                                                            ReadFromCellNodeGen SourceSection: None
                                                                         GeneratorAccessNode SourceSection: None
                                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                                       Identifier: getter
@@ -2282,7 +2280,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               ReadLocalCellNodeGen SourceSection: [5944,5951]`getters`
                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [1,getters,Illegal]
-                                                                ReadFromCellNodeGen SourceSection: None
                                                             PythonObjectFactoryNodeGen SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Object]
@@ -2311,7 +2308,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, obj, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, obj, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2359,7 +2356,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2438,7 +2435,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2493,7 +2490,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__slots__, __init__, __call__, __repr__, __reduce__, __doc__]
+              FrameDescriptor: 6 slots [__call__, __doc__, __init__, __reduce__, __repr__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -2527,7 +2524,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: item, , items, 
+                            CellVarsSlots: item, items
                           FunctionRootNode SourceSection: [6607,6965]`def __init__(self, i...`
                             Name: __init__
                             Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=2
@@ -2535,10 +2532,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: item, items
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [self, item, items, func, <>temp4, <return_val>]
+                            FrameDescriptor: 6 slots [<>temp4, <return_val>, func, item, items, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: item, , items, 
+                              CellVarsSlots: item, items
                             InnerRootNode SourceSection: [6607,6965]`def __init__(self, i...`
                               ReturnTargetNode SourceSection: [6607,6965]`def __init__(self, i...`
                                 Body: BlockNode SourceSection: None
@@ -2569,7 +2566,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         ReadLocalCellNodeGen SourceSection: [6656,6661]`items`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [2,items,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6675,6696]`self._items = (item,...`
                                           Attribute: _items
@@ -2579,7 +2575,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadLocalCellNodeGen SourceSection: [6690,6694]`item`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [1,item,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [6709,6769]`def func(obj):↵     ...`
                                           Identifier: func
@@ -2588,9 +2583,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Arguments: None
                                             KwArguments: None
                                             Documentation: None
-                                            FreeVarSlots: item, 
+                                            FreeVarSlots: item
                                             ExecutionSlots:
-                                              FreeVarsSlots: item, 
+                                              FreeVarsSlots: item
                                               CellVarsSlots: None
                                             FunctionRootNode SourceSection: [6709,6769]`def func(obj):↵     ...`
                                               Name: func
@@ -2599,9 +2594,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               CelVars: None
                                               FreeVars: item
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 3 slots [obj, item, <return_val>]
+                                              FrameDescriptor: 3 slots [<return_val>, item, obj]
                                               ExecutionSlots:
-                                                FreeVarsSlots: item, 
+                                                FreeVarsSlots: item
                                                 CellVarsSlots: None
                                               InnerRootNode SourceSection: [6709,6769]`def func(obj):↵     ...`
                                                 ReturnTargetNode SourceSection: [6709,6769]`def func(obj):↵     ...`
@@ -2620,7 +2615,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                           ReadLocalCellNodeGen SourceSection: [6751,6755]`item`
                                                             ReadLocalVariableNodeGen SourceSection: None
                                                               Frame: [1,item,Illegal]
-                                                            ReadFromCellNodeGen SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Object]
                                         SetAttributeNodeGen SourceSection: [6769,6786]`self._call = func`
@@ -2639,12 +2633,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalCellNodeGen SourceSection: [6836,6840]`item`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [1,item,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [6845,6850]`items`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [2,items,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                           SetAttributeNodeGen SourceSection: None
                                             Attribute: _items
                                             ReadLocalVariableNodeGen SourceSection: [6813,6817]`self`
@@ -2664,10 +2656,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Arguments: None
                                             KwArguments: None
                                             Documentation: None
-                                            FreeVarSlots: items, 
+                                            FreeVarSlots: items
                                             ExecutionSlots:
-                                              FreeVarsSlots: items, 
-                                              CellVarsSlots: obj, 
+                                              FreeVarsSlots: items
+                                              CellVarsSlots: obj
                                             FunctionRootNode SourceSection: [6863,6942]`def func(obj):↵     ...`
                                               Name: func
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -2675,10 +2667,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               CelVars: obj
                                               FreeVars: items
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 3 slots [obj, items, <return_val>]
+                                              FrameDescriptor: 3 slots [<return_val>, items, obj]
                                               ExecutionSlots:
-                                                FreeVarsSlots: items, 
-                                                CellVarsSlots: obj, 
+                                                FreeVarsSlots: items
+                                                CellVarsSlots: obj
                                               InnerRootNode SourceSection: [6863,6942]`def func(obj):↵     ...`
                                                 ReturnTargetNode SourceSection: [6863,6942]`def func(obj):↵     ...`
                                                   Body: BlockNode SourceSection: None
@@ -2697,9 +2689,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                             Identifier: tuple
                                                           GeneratorExpressionNode SourceSection: [6907,6928]`obj[i] for i in item...`
                                                             Name: <genexpr>
-                                                            FrameDescriptor: 3 slots [i, obj, <return_val>]
+                                                            FrameDescriptor: 3 slots [<return_val>, i, obj]
                                                             Enclosing
-                                                              FrameDescriptor: 3 slots [obj, items, <return_val>]
+                                                              FrameDescriptor: 3 slots [<return_val>, items, obj]
                                                             Active Flags: 2
                                                             For Nodes: 1
                                                             Block Nodes: 0
@@ -2710,9 +2702,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               CelVars: None
                                                               FreeVars: obj
                                                               NeedsCellFrame: False
-                                                              FrameDescriptor: 3 slots [i, obj, <return_val>]
+                                                              FrameDescriptor: 3 slots [<return_val>, i, obj]
                                                               ExecutionSlots:
-                                                                FreeVarsSlots: obj, 
+                                                                FreeVarsSlots: obj
                                                                 CellVarsSlots: None
                                                               InnerRootNode SourceSection: [6907,6928]`obj[i] for i in item...`
                                                                 GeneratorReturnTargetNode SourceSection: [6907,6928]`obj[i] for i in item...`
@@ -2725,7 +2717,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                           ReadLocalCellNodeGen SourceSection: None
                                                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                               Frame: [1,obj,Illegal]
-                                                                            ReadFromCellNodeGen SourceSection: None
                                                                           ReadGeneratorFrameVariableNodeGen SourceSection: [6911,6912]`i`
                                                                             Frame: [0,i,Illegal]
                                                                         GeneratorAccessNode SourceSection: None
@@ -2750,7 +2741,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               ReadLocalCellNodeGen SourceSection: [6923,6928]`items`
                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [1,items,Illegal]
-                                                                ReadFromCellNodeGen SourceSection: None
                                                             PythonObjectFactoryNodeGen SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Object]
@@ -2779,7 +2769,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, obj, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, obj, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2827,7 +2817,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2906,7 +2896,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2961,7 +2951,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__slots__, __init__, __call__, __repr__, __reduce__, __doc__]
+              FrameDescriptor: 6 slots [__call__, __doc__, __init__, __reduce__, __repr__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3004,7 +2994,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [args, kwargs, msg, self, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, args, kwargs, msg, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3128,7 +3118,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, obj, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, obj, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3202,7 +3192,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, args, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, args, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3259,9 +3249,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Frame: [1,args,Illegal]
                                         GeneratorExpressionNode SourceSection: [8227,8276]`'%s=%r' % (k, v) for...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                          FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                           Enclosing
-                                            FrameDescriptor: 3 slots [self, args, <return_val>]
+                                            FrameDescriptor: 3 slots [<return_val>, args, self]
                                           Active Flags: 2
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -3272,7 +3262,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             CelVars: None
                                             FreeVars: None
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                             ExecutionSlots:
                                               FreeVarsSlots: None
                                               CellVarsSlots: None
@@ -3389,7 +3379,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, partial, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, partial, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3510,7 +3500,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3562,7 +3552,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3614,7 +3604,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [a, b, msg, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, a, b, msg]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3701,7 +3691,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3753,7 +3743,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3805,7 +3795,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3857,7 +3847,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3909,7 +3899,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -3961,7 +3951,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4013,7 +4003,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4065,7 +4055,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4117,7 +4107,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4169,7 +4159,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -4221,7 +4211,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [a, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, a, b]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None

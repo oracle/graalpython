@@ -131,8 +131,8 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return invokeNode.execute(frame, callTarget, arguments);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObjectSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
@@ -145,7 +145,8 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         }
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, //
+                    limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObject(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
@@ -158,8 +159,8 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         }
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
@@ -168,8 +169,8 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return builtinNode.execute(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
@@ -178,7 +179,8 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return builtinNode.execute(frame, func.getSelf(), arg1, arg2);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
@@ -188,7 +190,8 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return builtinNode.execute(frame, arg1, arg2);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
@@ -202,7 +205,8 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
      * In case the function takes less or equal to 2 arguments (so it is <it>at least</it> binary)
      * we also try to call a ternary function.
      */
-    @Specialization(guards = {"builtinNode != null", "minArgs <= 2", "func.getCallTarget() == ct", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "minArgs <= 2", "func.getCallTarget() == ct", "frame != null || unusedFrame"}, //
+                    limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callTernaryFunction(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
@@ -219,7 +223,8 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
      * In case the function takes less or equal to 2 arguments (so it is <it>at least</it> binary)
      * we also try to call a quaternary function.
      */
-    @Specialization(guards = {"builtinNode != null", "minArgs <= 2", "func.getCallTarget() == ct", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "minArgs <= 2", "func.getCallTarget() == ct", "frame != null || unusedFrame"}, //
+                    limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callQuaternaryFunction(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,

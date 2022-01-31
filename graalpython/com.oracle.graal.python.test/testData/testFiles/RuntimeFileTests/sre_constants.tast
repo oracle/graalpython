@@ -39,17 +39,17 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: __class__
             ClassBodyRootNode SourceSection: [515,1619]`class error(Exceptio...`
               Name: error
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__class__, __module__, __init__, __doc__]
+              FrameDescriptor: 4 slots [__class__, __doc__, __init__, __module__]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               InnerRootNode SourceSection: [515,1619]`class error(Exceptio...`
                 ReturnTargetNode SourceSection: [515,1619]`class error(Exceptio...`
                   Body: BlockNode SourceSection: None
@@ -76,9 +76,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             ObjectLiteralNode SourceSection: [981,985]`None`
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [939,1619]`def __init__(self, m...`
                             Name: __init__
@@ -87,9 +87,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             CelVars: None
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [self, msg, pattern, pos, newline, __class__, <>temp6, <return_val>]
+                            FrameDescriptor: 8 slots [<>temp6, <return_val>, __class__, msg, newline, pattern, pos, self]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [939,1619]`def __init__(self, m...`
                               ReturnTargetNode SourceSection: [939,1619]`def __init__(self, m...`
@@ -285,7 +285,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                     WriteNameNodeGen SourceSection: None
                       Identifier: __classcell__
                       ReadLocalVariableNodeGen SourceSection: None
-                        Frame: [0,__class__,Illegal]
+                        Frame: [2,__class__,Illegal]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [527,536]`Exception`
@@ -305,17 +305,17 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: __class__
             ClassBodyRootNode SourceSection: [1619,1868]`class _NamedIntConst...`
               Name: _NamedIntConstant
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__class__, __new__, __str__, __repr__]
+              FrameDescriptor: 4 slots [__class__, __new__, __repr__, __str__]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               InnerRootNode SourceSection: [1619,1868]`class _NamedIntConst...`
                 ReturnTargetNode SourceSection: [1619,1868]`class _NamedIntConst...`
                   Body: BlockNode SourceSection: None
@@ -334,9 +334,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [1653,1799]`def __new__(cls, val...`
                             Name: __new__
@@ -345,9 +345,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             CelVars: None
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [cls, value, name, self, __class__, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, __class__, cls, name, self, value]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [1653,1799]`def __new__(cls, val...`
                               ReturnTargetNode SourceSection: [1653,1799]`def __new__(cls, val...`
@@ -418,7 +418,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -449,7 +449,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                     WriteNameNodeGen SourceSection: None
                       Identifier: __classcell__
                       ReadLocalVariableNodeGen SourceSection: None
-                        Frame: [0,__class__,Illegal]
+                        Frame: [3,__class__,Illegal]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [1643,1646]`int`
@@ -486,7 +486,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [names, items, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, items, names]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -520,9 +520,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [1993,2051]`_NamedIntConstant(i,...`
                           Name: <genexpr>
-                          FrameDescriptor: 5 slots [i, name, <>temp2, <>temp3, <return_val>]
+                          FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, i, name]
                           Enclosing
-                            FrameDescriptor: 3 slots [names, items, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, items, names]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -533,7 +533,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [i, name, <>temp2, <>temp3, <return_val>]
+                            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, i, name]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -606,9 +606,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             Identifier: dict
                           GeneratorExpressionNode SourceSection: [2075,2108]`item.name: item for ...`
                             Name: <genexpr>
-                            FrameDescriptor: 2 slots [item, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, item]
                             Enclosing
-                              FrameDescriptor: 3 slots [names, items, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, items, names]
                             Active Flags: 2
                             For Nodes: 1
                             Block Nodes: 0
@@ -619,7 +619,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [item, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, item]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -1068,7 +1068,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                     CelVars: None
                     FreeVars: None
                     NeedsCellFrame: False
-                    FrameDescriptor: 6 slots [f, d, prefix, items, item, <return_val>]
+                    FrameDescriptor: 7 slots [<>temp5, <return_val>, d, f, item, items, prefix]
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: None
@@ -1132,7 +1132,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                     Frame: [3,items,Illegal]
                               BlockNode SourceSection: None
                         Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                          Frame: [5,<return_val>,Object]
+                          Frame: [6,<return_val>,Object]
               WithNode SourceSection: [5758,7163]`with open("sre_const...`
                 BlockNode SourceSection: None
                   ExpressionStatementNode SourceSection: [5806,6190]`f.write("""\↵/*↵ * S...`

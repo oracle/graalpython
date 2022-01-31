@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -2327,6 +2327,12 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
             handle.channel = null;
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long mmapGetPointer(@SuppressWarnings("unused") Object mmap) {
+        throw new UnsupportedPosixFeatureException("Unable to obtain mmap pointer in emulated posix backend");
     }
 
     @TruffleBoundary

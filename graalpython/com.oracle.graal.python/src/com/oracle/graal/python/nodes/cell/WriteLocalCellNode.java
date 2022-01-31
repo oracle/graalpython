@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -46,18 +46,17 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "write_cell")
 @NodeChild(value = "rhs", type = ExpressionNode.class)
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class WriteLocalCellNode extends StatementNode implements WriteIdentifierNode {
     @Child private ExpressionNode readLocal;
 
-    private final com.oracle.truffle.api.frame.FrameSlot frameSlot;
+    private final int frameSlot;
 
-    WriteLocalCellNode(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode readLocalNode) {
+    WriteLocalCellNode(int frameSlot, ExpressionNode readLocalNode) {
         this.frameSlot = frameSlot;
         this.readLocal = readLocalNode;
     }
 
-    public static WriteLocalCellNode create(com.oracle.truffle.api.frame.FrameSlot frameSlot, ExpressionNode readLocal, ExpressionNode right) {
+    public static WriteLocalCellNode create(int frameSlot, ExpressionNode readLocal, ExpressionNode right) {
         return WriteLocalCellNodeGen.create(frameSlot, readLocal, right);
     }
 
@@ -78,7 +77,7 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
 
     @Override
     public Object getIdentifier() {
-        return frameSlot.getIdentifier();
+        return getRootNode().getFrameDescriptor().getSlotName(frameSlot);
     }
 
     @ImportStatic(PythonOptions.class)
@@ -86,9 +85,8 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
 
         public abstract void execute(PCell cell, Object value);
 
-        @Specialization(guards = "cell == cachedCell", limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption")
+        @Specialization(guards = {"isSingleContext()", "cell == cachedCell"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
         void doWriteCached(@SuppressWarnings("unused") PCell cell, Object value,
-                        @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                         @Cached("cell") PCell cachedCell) {
             if (value == NO_VALUE) {
                 cachedCell.clearRef(cachedCell.isEffectivelyFinalAssumption());

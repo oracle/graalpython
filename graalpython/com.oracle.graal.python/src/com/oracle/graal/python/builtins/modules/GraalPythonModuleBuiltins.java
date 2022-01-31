@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -261,7 +262,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             String inputFilePath = context.getOption(PythonOptions.InputFilePath);
             PythonModule sysModule = context.getSysModule();
-            boolean needsMainImporter = getImporter(sysModule, inputFilePath);
+            boolean needsMainImporter = !inputFilePath.isEmpty() && getImporter(sysModule, inputFilePath);
             if (needsMainImporter) {
                 Object sysPath = sysModule.getAttribute("path");
                 PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, inputFilePath);
@@ -279,11 +280,19 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        // Equivalent of CPython's pymain_run_file
+        // Equivalent of CPython's pymain_run_file and pymain_run_stdin
         private void runFile(PythonContext context, String inputFilePath) {
             Source source;
             try {
-                source = Source.newBuilder(PythonLanguage.ID, context.getPublicTruffleFileRelaxed(inputFilePath)).mimeType(PythonLanguage.MIME_TYPE).build();
+                Source.SourceBuilder builder;
+                if (inputFilePath.isEmpty()) {
+                    // Reading from stdin
+                    builder = Source.newBuilder(PythonLanguage.ID, new InputStreamReader(context.getStandardIn()), "<stdin>");
+                } else {
+                    TruffleFile file = context.getPublicTruffleFileRelaxed(inputFilePath);
+                    builder = Source.newBuilder(PythonLanguage.ID, file);
+                }
+                source = builder.mimeType(PythonLanguage.MIME_TYPE).build();
                 // TODO we should handle non-IO errors better
             } catch (IOException e) {
                 ErrorAndMessagePair error = OSErrorEnum.fromException(e);

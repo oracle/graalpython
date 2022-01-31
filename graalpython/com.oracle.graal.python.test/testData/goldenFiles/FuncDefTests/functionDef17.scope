@@ -5,16 +5,16 @@ Scope: []
     FreeVars: Empty
     Scope: test
         Kind: Function
-        FrameDescriptor: [inner, <return_val>]
+        FrameDescriptor: [<return_val>, inner]
         CellVars: Empty
         FreeVars: Empty
         Scope: inner
             Kind: Function
-            FrameDescriptor: [inner_inner, end, <return_val>]
+            FrameDescriptor: [<return_val>, end, inner_inner]
             CellVars: [end]
             FreeVars: Empty
             Scope: inner_inner
                 Kind: Function
-                FrameDescriptor: [end, <return_val>]
+                FrameDescriptor: [<return_val>, end]
                 CellVars: Empty
                 FreeVars: [end]

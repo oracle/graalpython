@@ -66,7 +66,7 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, string, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, self, string]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None

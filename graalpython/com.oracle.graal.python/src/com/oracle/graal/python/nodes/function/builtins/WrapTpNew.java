@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.function.builtins;
 
 import org.graalvm.collections.Pair;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -53,6 +52,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -137,11 +137,7 @@ public final class WrapTpNew extends SlotWrapper {
             if (newMethod instanceof PBuiltinFunction) {
                 if (builtinProfile == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    if (PythonLanguage.get(this).singleContextAssumption.isValid()) {
-                        builtinProfile = ValueProfile.createIdentityProfile();
-                    } else {
-                        builtinProfile = ValueProfile.getUncached();
-                    }
+                    builtinProfile = PythonUtils.createValueIdentityProfile();
                 }
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) builtinProfile.profile(newMethod)).getBuiltinNodeFactory();
                 if (factory != null) {

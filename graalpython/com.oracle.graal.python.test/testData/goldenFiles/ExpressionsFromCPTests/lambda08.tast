@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
         CelVars: None
         FreeVars: None
         NeedsCellFrame: False
-        FrameDescriptor: 3 slots [foo, spaz, <return_val>]
+        FrameDescriptor: 3 slots [<return_val>, foo, spaz]
         ExecutionSlots:
           FreeVarsSlots: None
           CellVarsSlots: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,17 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.MAXSIZE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.nodes.BuiltinNames.TRACEBACKLIMIT;
+import static com.oracle.graal.python.util.PythonUtils.NEW_LINE;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -68,17 +79,6 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-
-import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.MAXSIZE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
-import static com.oracle.graal.python.nodes.BuiltinNames.TRACEBACKLIMIT;
-import static com.oracle.graal.python.util.PythonUtils.NEW_LINE;
 
 /**
  * Equivalent of {@code PyTraceBack_Print} from CPython. the node contains also a number of utility
@@ -190,7 +190,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         return GetClassNode.getUncached().execute(object);
     }
 
-    public static PTraceback getExceptionTraceback(PBaseException e) {
+    public static Object getExceptionTraceback(PBaseException e) {
         return GetExceptionTracebackNode.getUncached().execute(e);
     }
 

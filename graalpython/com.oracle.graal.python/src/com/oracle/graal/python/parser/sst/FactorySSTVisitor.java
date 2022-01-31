@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,7 +92,6 @@ import com.oracle.graal.python.nodes.expression.TernaryIfNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteNameNode;
 import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNode;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
@@ -132,6 +131,7 @@ import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
+import com.oracle.graal.python.nodes.statement.PrintExpressionNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
@@ -140,6 +140,8 @@ import com.oracle.graal.python.nodes.statement.WithNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
+import com.oracle.graal.python.parser.DefinitionCellSlots;
+import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
@@ -163,15 +165,17 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     protected final PythonParser.ParserErrorCallback errors;
 
     protected int comprLevel;
+    protected boolean interactive;
 
     private static final String RETURN = "return";
 
-    public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, RootNodeFactory nodeFactory, Source source) {
+    public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, RootNodeFactory nodeFactory, Source source, boolean interactive) {
         this.scopeEnvironment = scopeEnvironment;
         this.source = source;
         this.nodeFactory = nodeFactory;
         this.errors = errors;
         this.comprLevel = 0;
+        this.interactive = interactive;
     }
 
     /**
@@ -279,9 +283,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return BlockNode.create(statements);
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
-    protected StatementNode createFrameReturn(ExpressionNode right, com.oracle.truffle.api.frame.FrameSlot slot) {
-        assert slot != null;
+    protected StatementNode createFrameReturn(ExpressionNode right, int slot) {
         return new FrameReturnNode(right, slot);
     }
 
@@ -416,7 +418,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     @Override
-    @SuppressWarnings("deprecation")    // new Frame API
     public PNode visit(ClassSSTNode node) {
         ScopeInfo classScope = node.scope;
         scopeEnvironment.setCurrentScope(classScope);
@@ -469,17 +470,19 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             // Only if __class__ is generated in the class scope. The __class__ is in class scope,
             // when an inner method uses __class__ or super is used.
             classStatements[2 + delta] = scopeEnvironment.findVariable(__CLASSCELL__).makeWriteNode(
-                            ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().getFrameDescriptor().findFrameSlot(__CLASS__)));
+                            ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().findFrameSlot(__CLASS__)));
         }
 
         SourceSection nodeSourceSection = createSourceSection(node.startOffset, node.endOffset);
         StatementNode body = BlockNode.create(classStatements);
         ExpressionNode bodyAsExpr = new ReturnTargetNode(body, new ObjectLiteralNode(null));
         bodyAsExpr.assignSourceSection(nodeSourceSection);
-        ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, scopeEnvironment.getCurrentFrame(), bodyAsExpr, scopeEnvironment.getExecutionCellSlots());
+        ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+        DefinitionCellSlots definitionCellSlots = scopeEnvironment.getDefinitionCellSlots();
+        FrameDescriptor fd = scopeEnvironment.getCurrentScope().createFrameDescriptor();
+        ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, fd, bodyAsExpr, executionCellSlots);
         RootCallTarget ct = PythonUtils.getOrCreateCallTarget(classBodyRoot);
-        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, qualifiedName, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(),
-                        scopeEnvironment.getExecutionCellSlots(), null);
+        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, qualifiedName, null, null, null, null, ct, definitionCellSlots, null);
         scopeEnvironment.setCurrentScope(node.scope.getParent());
 
         ExpressionNode[] args;
@@ -732,6 +735,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(ExpressionStatementSSTNode node) {
         ExpressionNode expression = (ExpressionNode) node.expression.accept(this);
+        if (interactive && scopeEnvironment.atModuleLevel()) {
+            expression = PrintExpressionNode.create(expression);
+        }
         return expression.asStatement();
     }
 
@@ -758,6 +764,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(ForSSTNode node) {
+        int iteratorSlot = scopeEnvironment.getCurrentScope().acquireScopedTemp();
         ExpressionNode[] targets = new ExpressionNode[node.targets.length];
         for (int i = 0; i < targets.length; i++) {
             targets[i] = (ExpressionNode) node.targets[i].accept(this);
@@ -789,7 +796,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         iterator.assignSourceSection(createSourceSection(node.iterator.startOffset, node.iterator.endOffset));
         GetIteratorExpressionNode getIterator = GetIteratorExpressionNode.create(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
-        StatementNode forNode = new ForNode(body, makeWriteNode((ExpressionNode) target), getIterator);
+        StatementNode forNode = new ForNode(body, makeWriteNode((ExpressionNode) target), getIterator, iteratorSlot);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
         StatementNode elseBranch = node.elseStatement == null ? BlockNode.create(StatementNode.EMPTY_STATEMENT_ARRAY) : (StatementNode) node.elseStatement.accept(this);
         StatementNode result;
@@ -803,6 +810,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                             new BreakTargetNode(forNode, BlockNode.create(StatementNode.EMPTY_STATEMENT_ARRAY)) : new BreakTargetNode(forNode, elseBranch);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        scopeEnvironment.getCurrentScope().releaseScopedTemp();
         return result;
     }
 
@@ -862,10 +870,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode returnTarget;
 
         if (scopeEnvironment.isInGeneratorScope()) {
-            returnTarget = new GeneratorReturnTargetNode(argumentNodes, body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()), generatorFactory.getMutableGeneratorInfo());
+            returnTarget = new GeneratorReturnTargetNode(argumentNodes, body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()),
+                            generatorFactory.getMutableGeneratorInfo());
         } else {
             body = BlockNode.create(argumentNodes, body);
-            returnTarget = new ReturnTargetNode(body, ReadLocalVariableNode.create(scopeEnvironment.getReturnSlot()));
+            returnTarget = new ReturnTargetNode(body, ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()));
         }
 
         SourceSection sourceSection = createSourceSection(node.startOffset, node.endOffset);
@@ -894,19 +903,18 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         /*
          * Function root
          */
-        FrameDescriptor fd = scopeEnvironment.getCurrentFrame();
+        ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+        DefinitionCellSlots definitionCellSlots = scopeEnvironment.getDefinitionCellSlots();
+        FrameDescriptor fd = scopeEnvironment.getCurrentScope().createFrameDescriptor();
         String name = node.name;
         String qualname = node.scope.getQualname();
-        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, scopeEnvironment.getExecutionCellSlots(),
-                        signature, doc);
+        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, executionCellSlots, signature, doc);
         RootCallTarget ct = PythonUtils.getOrCreateCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
-            funcDef = GeneratorFunctionDefinitionNode.create(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd,
-                            scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            generatorFactory.getGeneratorInfo(), annotations);
+            funcDef = GeneratorFunctionDefinitionNode.create(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd, definitionCellSlots, generatorFactory.getGeneratorInfo(),
+                            annotations);
         } else {
-            funcDef = new FunctionDefinitionNode(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
-                            scopeEnvironment.getExecutionCellSlots(), annotations);
+            funcDef = new FunctionDefinitionNode(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, definitionCellSlots, annotations);
         }
         scopeEnvironment.setCurrentScope(node.scope.getParent());
         ReadNode funcVar = scopeEnvironment.findVariable(name);
@@ -1027,24 +1035,24 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             generatorFactory = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source, this);
             lambdaExpr = (ExpressionNode) node.body.accept(generatorFactory);
             lambdaBody = new LambdaBodyNode(lambdaExpr);
-            frameReturn = new GeneratorFrameReturnNode(lambdaBody, scopeEnvironment.getReturnSlot());
+            frameReturn = new GeneratorFrameReturnNode(lambdaBody, scopeEnvironment.getCurrentScope().getReturnSlot());
         } else {
             lambdaExpr = (ExpressionNode) node.body.accept(this instanceof GeneratorFactorySSTVisitor
                             ? ((GeneratorFactorySSTVisitor) this).parentVisitor
                             : this);
 
             lambdaBody = new LambdaBodyNode(lambdaExpr);
-            frameReturn = new FrameReturnNode(lambdaBody, scopeEnvironment.getReturnSlot());
+            frameReturn = new FrameReturnNode(lambdaBody, scopeEnvironment.getCurrentScope().getReturnSlot());
         }
         lambdaBody.assignSourceSection(createSourceSection(node.body.getStartOffset(), node.body.getEndOffset()));
 
         ExpressionNode returnTargetNode;
         if (scopeEnvironment.isInGeneratorScope()) {
-            returnTargetNode = new GeneratorReturnTargetNode(argumentNodes, frameReturn, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()),
+            returnTargetNode = new GeneratorReturnTargetNode(argumentNodes, frameReturn, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()),
                             generatorFactory.getMutableGeneratorInfo());
         } else {
             StatementNode body = BlockNode.create(argumentNodes, frameReturn);
-            returnTargetNode = new ReturnTargetNode(body, ReadLocalVariableNode.create(scopeEnvironment.getReturnSlot()));
+            returnTargetNode = new ReturnTargetNode(body, ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()));
         }
         returnTargetNode.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
 
@@ -1059,9 +1067,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         /**
          * Lambda function root
          */
-        FrameDescriptor fd = scopeEnvironment.getCurrentFrame();
-        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTargetNode.getSourceSection(), funcname, scopeEnvironment.isInGeneratorScope(), fd, returnTargetNode,
-                        scopeEnvironment.getExecutionCellSlots(), signature, null);
+        ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+        DefinitionCellSlots definitionCellSlots = scopeEnvironment.getDefinitionCellSlots();
+        FrameDescriptor fd = scopeEnvironment.getCurrentScope().createFrameDescriptor();
+        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTargetNode.getSourceSection(), funcname, scopeEnvironment.isInGeneratorScope(), fd, returnTargetNode, executionCellSlots,
+                        signature, null);
 
         /**
          * Definition
@@ -1069,12 +1079,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode funcDef;
         RootCallTarget ct = PythonUtils.getOrCreateCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
-            funcDef = GeneratorFunctionDefinitionNode.create(funcname, qualname, null, null, defaults, kwDefaults, ct, fd,
-                            scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            generatorFactory.getGeneratorInfo(), null);
+            funcDef = GeneratorFunctionDefinitionNode.create(funcname, qualname, null, null, defaults, kwDefaults, ct, fd, definitionCellSlots, generatorFactory.getGeneratorInfo(), null);
         } else {
-            funcDef = new FunctionDefinitionNode(funcname, qualname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
-                            scopeEnvironment.getExecutionCellSlots(), null);
+            funcDef = new FunctionDefinitionNode(funcname, qualname, null, null, defaults, kwDefaults, ct, definitionCellSlots, null);
             funcDef.assignSourceSection(returnTargetNode.getSourceSection());
         }
         scopeEnvironment.setCurrentScope(oldScope);
@@ -1136,7 +1143,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(ReturnSSTNode node) {
         StatementNode result;
         if (node.value != null) {
-            result = createFrameReturn((ExpressionNode) node.value.accept(this), scopeEnvironment.getReturnSlot());
+            result = createFrameReturn((ExpressionNode) node.value.accept(this), scopeEnvironment.getCurrentScope().getReturnSlot());
         } else {
             result = new ReturnNode();
         }
@@ -1348,10 +1355,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
     public ReadNode makeTempLocalVariable() {
-        Object tempName = FrameSlotIDs.getTempLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().getSize());
-        com.oracle.truffle.api.frame.FrameSlot tempSlot = scopeEnvironment.createAndReturnLocal(tempName);
+        int tempSlot = scopeEnvironment.getCurrentScope().createTemp();
         return !scopeEnvironment.isInGeneratorScope()
                         ? ReadLocalVariableNode.create(tempSlot)
                         : ReadGeneratorFrameVariableNode.create(tempSlot);

@@ -25,12 +25,13 @@
  */
 package com.oracle.graal.python.nodes.function;
 
+import java.util.Set;
+
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
-import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -43,22 +44,20 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     private final String name;
     private final String qualname;
-    private final RootCallTarget callTarget;
     @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
     private final GeneratorInfo generatorInfo;
 
-    @CompilationFinal private FrameDescriptor enclosingFrameDescriptor;
+    @CompilationFinal private Set<Object> enclosingFrameDescriptor;
     @CompilationFinal private boolean isEnclosingFrameGenerator;
     @Child private ExpressionNode getIterator;
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     public GeneratorExpressionNode(String name, String qualname, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
-                    ExecutionCellSlots executionCellSlots, GeneratorInfo generatorInfo) {
-        super(definitionCellSlots, executionCellSlots);
+                    GeneratorInfo generatorInfo) {
+        super(definitionCellSlots, callTarget);
         this.name = name;
         this.qualname = qualname;
-        this.callTarget = callTarget;
         this.getIterator = getIterator;
         this.frameDescriptor = descriptor;
         this.generatorInfo = generatorInfo;
@@ -68,19 +67,15 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         return name;
     }
 
-    public RootCallTarget getCallTarget() {
-        return callTarget;
-    }
-
     public FrameDescriptor getFrameDescriptor() {
         return frameDescriptor;
     }
 
-    public FrameDescriptor getEnclosingFrameDescriptor() {
+    public Set<Object> getEnclosingFrameDescriptor() {
         return enclosingFrameDescriptor;
     }
 
-    public void setEnclosingFrameDescriptor(FrameDescriptor frameDescriptor) {
+    public void setEnclosingFrameDescriptor(Set<Object> frameDescriptor) {
         CompilerAsserts.neverPartOfCompilation();
         enclosingFrameDescriptor = frameDescriptor;
     }
@@ -116,7 +111,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         }
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, arguments, closure, executionCellSlots, generatorInfo, iterator);
+        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, arguments, closure, getExecutionCellSlots(), generatorInfo, iterator);
     }
 
     @Override

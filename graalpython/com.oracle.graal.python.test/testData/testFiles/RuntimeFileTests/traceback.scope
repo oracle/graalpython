@@ -5,67 +5,67 @@ Scope: []
     FreeVars: Empty
     Scope: TracebackException
         Kind: Class
-        FrameDescriptor: [_load_lines, from_exception, __str__, format_exception_only, format, __doc__, __eq__, __init__]
+        FrameDescriptor: [__doc__, __eq__, __init__, __str__, _load_lines, format, format_exception_only, from_exception]
         CellVars: Empty
         FreeVars: Empty
         Scope: format
             Kind: Generator
-            FrameDescriptor: [chain, self, *, <return_val>]
+            FrameDescriptor: [*, <return_val>, chain, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: format_exception_only
             Kind: Generator
-            FrameDescriptor: [msg, filename, lineno, offset, badline, stype, caretspace, self, smod, <return_val>]
+            FrameDescriptor: [<return_val>, badline, caretspace, filename, lineno, msg, offset, self, smod, stype]
             CellVars: Empty
             FreeVars: Empty
             Scope: <genexpr>
                 Kind: GenExp
-                FrameDescriptor: [c, <return_val>]
+                FrameDescriptor: [<return_val>, c]
                 CellVars: Empty
                 FreeVars: Empty
         Scope: __str__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __eq__
             Kind: Function
-            FrameDescriptor: [other, self, <return_val>]
+            FrameDescriptor: [<return_val>, other, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: _load_lines
             Kind: Function
-            FrameDescriptor: [self, <return_val>, frame]
+            FrameDescriptor: [<>temp2, <return_val>, frame, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: from_exception
             Kind: Function
-            FrameDescriptor: [args, exc, kwargs, cls, <return_val>]
+            FrameDescriptor: [<return_val>, args, cls, exc, kwargs]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [exc_traceback, limit, context, self, cause, exc_type, *, lookup_lines, _seen, capture_locals, exc_value, <return_val>]
+            FrameDescriptor: [*, <return_val>, _seen, capture_locals, cause, context, exc_traceback, exc_type, exc_value, limit, lookup_lines, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: StackSummary
         Kind: Class
-        FrameDescriptor: [extract, from_list, format, __doc__]
+        FrameDescriptor: [__doc__, extract, format, from_list]
         CellVars: Empty
         FreeVars: Empty
         Scope: format
             Kind: Function
-            FrameDescriptor: [last_line, count, <>temp10, last_name, <>temp11, result, name, self, row, value, <return_val>, last_file, frame]
+            FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp13, <return_val>, count, frame, last_file, last_line, last_name, name, result, row, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: from_list
             Kind: Function
-            FrameDescriptor: [line, <>temp10, <>temp11, a_list, result, filename, lineno, klass, <>temp8, <>temp9, name, <return_val>, frame]
+            FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp8, <>temp9, <return_val>, a_list, filename, frame, klass, line, lineno, name, result]
             CellVars: Empty
             FreeVars: Empty
         Scope: extract
             Kind: Function
-            FrameDescriptor: [<>temp14, f, <>temp15, fnames, *, lookup_lines, capture_locals, co, result, filename, lineno, klass, limit, name, frame_gen, f_locals, <return_val>]
+            FrameDescriptor: [*, <>temp14, <>temp15, <>temp16, <return_val>, capture_locals, co, f, f_locals, filename, fnames, frame_gen, klass, limit, lineno, lookup_lines, name, result]
             CellVars: Empty
             FreeVars: Empty
     Scope: walk_tb
@@ -75,47 +75,47 @@ Scope: []
         FreeVars: Empty
     Scope: walk_stack
         Kind: Generator
-        FrameDescriptor: [f, <return_val>]
+        FrameDescriptor: [<return_val>, f]
         CellVars: Empty
         FreeVars: Empty
     Scope: FrameSummary
         Kind: Class
-        FrameDescriptor: [__iter__, line, __getitem__, __repr__, __doc__, __slots__, __eq__, __init__]
+        FrameDescriptor: [__doc__, __eq__, __getitem__, __init__, __iter__, __repr__, __slots__, line]
         CellVars: Empty
         FreeVars: Empty
         Scope: line
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __iter__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __getitem__
             Kind: Function
-            FrameDescriptor: [pos, self, <return_val>]
+            FrameDescriptor: [<return_val>, pos, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __eq__
             Kind: Function
-            FrameDescriptor: [other, self, <return_val>]
+            FrameDescriptor: [<return_val>, other, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [filename, lineno, line, name, self, *, lookup_line, <return_val>, locals]
+            FrameDescriptor: [*, <return_val>, filename, line, lineno, locals, lookup_line, name, self]
             CellVars: Empty
             FreeVars: Empty
             Scope: <genexpr>
                 Kind: DictComp
-                FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
+                FrameDescriptor: [<>temp2, <>temp3, <return_val>, k, v]
                 CellVars: Empty
                 FreeVars: Empty
     Scope: clear_frames
@@ -125,81 +125,81 @@ Scope: []
         FreeVars: Empty
     Scope: extract_stack
         Kind: Function
-        FrameDescriptor: [stack, f, limit, <return_val>]
+        FrameDescriptor: [<return_val>, f, limit, stack]
         CellVars: Empty
         FreeVars: Empty
     Scope: format_stack
         Kind: Function
-        FrameDescriptor: [f, limit, <return_val>]
+        FrameDescriptor: [<return_val>, f, limit]
         CellVars: Empty
         FreeVars: Empty
     Scope: print_stack
         Kind: Function
-        FrameDescriptor: [file, f, limit, <return_val>]
+        FrameDescriptor: [<return_val>, f, file, limit]
         CellVars: Empty
         FreeVars: Empty
     Scope: print_last
         Kind: Function
-        FrameDescriptor: [chain, file, limit, <return_val>]
+        FrameDescriptor: [<return_val>, chain, file, limit]
         CellVars: Empty
         FreeVars: Empty
     Scope: format_exc
         Kind: Function
-        FrameDescriptor: [chain, limit, <return_val>]
+        FrameDescriptor: [<return_val>, chain, limit]
         CellVars: Empty
         FreeVars: Empty
     Scope: print_exc
         Kind: Function
-        FrameDescriptor: [chain, file, limit, <return_val>]
+        FrameDescriptor: [<return_val>, chain, file, limit]
         CellVars: Empty
         FreeVars: Empty
     Scope: _some_str
         Kind: Function
-        FrameDescriptor: [value, <return_val>]
+        FrameDescriptor: [<return_val>, value]
         CellVars: Empty
         FreeVars: Empty
     Scope: _format_final_exc_line
         Kind: Function
-        FrameDescriptor: [valuestr, line, etype, value, <return_val>]
+        FrameDescriptor: [<return_val>, etype, line, value, valuestr]
         CellVars: Empty
         FreeVars: Empty
     Scope: format_exception_only
         Kind: Function
-        FrameDescriptor: [etype, value, <return_val>]
+        FrameDescriptor: [<return_val>, etype, value]
         CellVars: Empty
         FreeVars: Empty
     Scope: format_exception
         Kind: Function
-        FrameDescriptor: [chain, limit, etype, value, <return_val>, tb]
+        FrameDescriptor: [<return_val>, chain, etype, limit, tb, value]
         CellVars: Empty
         FreeVars: Empty
     Scope: print_exception
         Kind: Function
-        FrameDescriptor: [chain, file, line, limit, etype, value, <return_val>, tb]
+        FrameDescriptor: [<>temp7, <return_val>, chain, etype, file, limit, line, tb, value]
         CellVars: Empty
         FreeVars: Empty
     Scope: extract_tb
         Kind: Function
-        FrameDescriptor: [limit, <return_val>, tb]
+        FrameDescriptor: [<return_val>, limit, tb]
         CellVars: Empty
         FreeVars: Empty
     Scope: format_tb
         Kind: Function
-        FrameDescriptor: [limit, <return_val>, tb]
+        FrameDescriptor: [<return_val>, limit, tb]
         CellVars: Empty
         FreeVars: Empty
     Scope: print_tb
         Kind: Function
-        FrameDescriptor: [file, limit, <return_val>, tb]
+        FrameDescriptor: [<return_val>, file, limit, tb]
         CellVars: Empty
         FreeVars: Empty
     Scope: format_list
         Kind: Function
-        FrameDescriptor: [extracted_list, <return_val>]
+        FrameDescriptor: [<return_val>, extracted_list]
         CellVars: Empty
         FreeVars: Empty
     Scope: print_list
         Kind: Function
-        FrameDescriptor: [extracted_list, item, file, <return_val>]
+        FrameDescriptor: [<>temp3, <return_val>, extracted_list, file, item]
         CellVars: Empty
         FreeVars: Empty

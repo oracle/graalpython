@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
         WriteNameNodeGen SourceSection: [0,692]`def find_on_path(imp...`
           Identifier: find_on_path
           GeneratorFunctionDefinitionNode Name: find_on_path SourceSection: None
-            FrameDescriptor: 11 slots [importer, path_item, only, entries, filtered, path_item_entries, fullpath, factory, dist, entry, <return_val>]
+            FrameDescriptor: 11 slots [<return_val>, dist, entries, entry, factory, filtered, fullpath, importer, only, path_item, path_item_entries]
             Active Flags: 5
             For Nodes: 2
             Block Nodes: 3
@@ -23,7 +23,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: only, , path_item, 
+              CellVarsSlots: only, path_item
             FunctionRootNode SourceSection: [0,692]`def find_on_path(imp...`
               Name: find_on_path
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -31,10 +31,10 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
               CelVars: only, path_item
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 11 slots [importer, path_item, only, entries, filtered, path_item_entries, fullpath, factory, dist, entry, <return_val>]
+              FrameDescriptor: 11 slots [<return_val>, dist, entries, entry, factory, filtered, fullpath, importer, only, path_item, path_item_entries]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: only, , path_item, 
+                CellVarsSlots: only, path_item
               InnerRootNode SourceSection: [0,692]`def find_on_path(imp...`
                 GeneratorReturnTargetNode SourceSection: [0,692]`def find_on_path(imp...`
                   flagSlot: 4
@@ -50,7 +50,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             ReadLocalCellNodeGen SourceSection: [75,84]`path_item`
                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                 Frame: [1,path_item,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                         GeneratorBlockNode SourceSection: None
                           ExpressionStatementNode SourceSection: [95,261]`yield Distribution.f...`
                             YieldNode SourceSection: [95,261]`yield Distribution.f...`
@@ -60,7 +59,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 ReadLocalCellNodeGen SourceSection: [141,150]`path_item`
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [1,path_item,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                                 KeywordArgumentsNodeGen SourceSection: None
                                   ExecuteKeywordArgumentsNode SourceSection: None
                                     KeywordLiteralNode SourceSection: None
@@ -71,7 +69,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                         ReadLocalCellNodeGen SourceSection: [191,200]`path_item`
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                             Frame: [1,path_item,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [202,237]`os.path.join(path_it...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
@@ -85,7 +82,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                           ReadLocalCellNodeGen SourceSection: [215,224]`path_item`
                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                                               Frame: [1,path_item,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [226,236]`'EGG-INFO'`
                                   EmptyNode SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
@@ -105,15 +101,14 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           ReadLocalCellNodeGen SourceSection: [305,314]`path_item`
                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                               Frame: [1,path_item,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: [321,430]`filtered = (↵       ...`
                         Identifier: filtered
                         Frame: [4,filtered,Illegal]
                         GeneratorExpressionNode SourceSection: [342,424]`entry↵        for en...`
                           Name: <genexpr>
-                          FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, entry, only, path_item]
                           Enclosing
-                            FrameDescriptor: 11 slots [importer, path_item, only, entries, filtered, path_item_entries, fullpath, factory, dist, entry, <return_val>]
+                            FrameDescriptor: 11 slots [<return_val>, dist, entries, entry, factory, filtered, fullpath, importer, only, path_item, path_item_entries]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -124,9 +119,9 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             CelVars: None
                             FreeVars: only, path_item
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, entry, only, path_item]
                             ExecutionSlots:
-                              FreeVarsSlots: only, , path_item, 
+                              FreeVarsSlots: only, path_item
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [342,424]`entry↵        for en...`
                               GeneratorReturnTargetNode SourceSection: [342,424]`entry↵        for en...`
@@ -142,13 +137,11 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                         ReadLocalCellNodeGen SourceSection: [401,410]`path_item`
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                             Frame: [1,path_item,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [412,417]`entry`
                                           Frame: [0,entry,Illegal]
                                         ReadLocalCellNodeGen SourceSection: [419,423]`only`
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                             Frame: [2,only,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [342,347]`entry`
                                       YieldNode SourceSection: [342,347]`entry`
                                         flagSlot: 0
@@ -205,7 +198,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 ReadLocalCellNodeGen SourceSection: [557,566]`path_item`
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [1,path_item,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: [568,573]`entry`
                                   Frame: [9,entry,Illegal]
                             WriteGeneratorFrameVariableNodeGen SourceSection: [583,629]`factory = dist_facto...`
@@ -218,13 +210,11 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 ReadLocalCellNodeGen SourceSection: [606,615]`path_item`
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [1,path_item,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: [617,622]`entry`
                                   Frame: [9,entry,Illegal]
                                 ReadLocalCellNodeGen SourceSection: [624,628]`only`
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [2,only,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                             ElseNode SourceSection: [638,692]`for dist in factory(...`
                               GeneratorForNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [681,691]`yield dist`

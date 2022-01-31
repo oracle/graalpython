@@ -424,7 +424,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         abstract Object execute(VirtualFrame frame, Object self, Object[] args, PKeyword[] keywords, boolean doCreateArgs);
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"}, assumptions = "singleContextAssumption()")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"isSingleContext()", "self == cachedSelf"})
         protected Object doIt0BuiltinSingle(VirtualFrame frame, @SuppressWarnings("unused") PythonBuiltinClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
                         @Cached("self") PythonBuiltinClass cachedSelf) {
             PythonBuiltinClassType type = cachedSelf.getType();
@@ -434,8 +434,8 @@ public class TypeBuiltins extends PythonBuiltins {
             return op(frame, type, arguments, keywords, doCreateArgs);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "isPythonClass(cachedSelf)",
-                        "!isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"isSingleContext()", "self == cachedSelf", "isPythonClass(cachedSelf)",
+                        "!isPythonBuiltinClass(cachedSelf)"})
         protected Object doIt0User(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
                         @Cached(value = "self", weak = true) Object cachedSelf) {
             return op(frame, cachedSelf, arguments, keywords, doCreateArgs);
@@ -476,7 +476,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         /* self is native */
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"}, assumptions = "singleContextAssumption()")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"isSingleContext()", "self == cachedSelf"})
         protected Object doIt1(VirtualFrame frame, @SuppressWarnings("unused") PythonNativeObject self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
                         @Cached("self") PythonNativeObject cachedSelf) {
             return op(frame, PythonNativeClass.cast(cachedSelf), arguments, keywords, doCreateArgs);

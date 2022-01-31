@@ -127,8 +127,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         return functionName;
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
-    public com.oracle.truffle.api.frame.FrameSlot[] getCellVarSlots() {
+    public int[] getCellVarSlots() {
         return cellVarSlots;
     }
 
@@ -138,15 +137,14 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     }
 
     @ExplodeLoop
-    @SuppressWarnings("deprecation")    // new Frame API
     private void initializeCellVars(Frame frame) {
         for (int i = 0; i < cellVarSlots.length; i++) {
-            com.oracle.truffle.api.frame.FrameSlot frameSlot = cellVarSlots[i];
+            int frameSlot = cellVarSlots[i];
 
             // get the cell
             PCell cell = null;
             if (isGenerator) {
-                cell = (PCell) com.oracle.truffle.api.frame.FrameUtil.getObjectSafe(frame, frameSlot);
+                cell = (PCell) frame.getObject(frameSlot);
             }
             if (cell == null) {
                 cell = new PCell(cellEffectivelyFinalAssumptions[i]);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,6 @@ package com.oracle.graal.python.nodes.frame;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -37,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -59,7 +59,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -163,7 +162,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return WriteGlobalNode.create(attributeId, rhs);
     }
 
-    @Specialization(guards = {"globals == cachedGlobals"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
     protected Object readGlobalCached(@SuppressWarnings("unused") PythonModule globals,
                     @Shared("readFromModule") @Cached ReadAttributeFromObjectNode readFromModuleNode,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals) {
@@ -178,8 +177,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
-    @Specialization(guards = {"globals == cachedGlobals", "isBuiltinDict(cachedGlobals)",
-                    "cachedGlobals.getDictStorage() == cachedStorage"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)",
+                    "cachedGlobals.getDictStorage() == cachedStorage"}, limit = "1")
     protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") PDict globals,
                     @SuppressWarnings("unused") @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Cached(value = "globals.getDictStorage()", weak = true) HashingStorage cachedStorage,
@@ -188,8 +187,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
-    @Specialization(guards = {"globals == cachedGlobals",
-                    "isBuiltinDict(cachedGlobals)"}, assumptions = "singleContextAssumption()", replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals",
+                    "isBuiltinDict(cachedGlobals)"}, replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
     protected Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") PDict globals,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @CachedLibrary(value = "cachedGlobals.getDictStorage()") HashingStorageLibrary hlib) {
@@ -250,11 +249,10 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     }
 }
 
-abstract class ReadBuiltinNode extends Node {
+abstract class ReadBuiltinNode extends PNodeWithContext {
     protected static final Assumption singleCoreNotInitialized = Truffle.getRuntime().createAssumption();
 
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
-    protected final Assumption singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
     protected final String attributeId;
 
     @CompilationFinal private ConditionProfile isCoreInitializedProfile;
@@ -270,7 +268,7 @@ abstract class ReadBuiltinNode extends Node {
 
     // TODO: (tfel) Think about how we can globally catch writes to the builtin
     // module so we can treat anything read from it as constant here.
-    @Specialization(assumptions = "singleContextAssumption")
+    @Specialization(guards = "isSingleContext()")
     Object returnBuiltinFromConstantModule(
                     @SuppressWarnings("unused") @Cached("getBuiltins()") PythonModule builtins) {
         Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);

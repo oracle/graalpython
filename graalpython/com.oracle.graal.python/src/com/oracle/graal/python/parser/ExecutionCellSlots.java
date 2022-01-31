@@ -29,10 +29,9 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 
-@SuppressWarnings("deprecation")    // new Frame API
 public final class ExecutionCellSlots implements CellSlots {
-    @CompilationFinal(dimensions = 1) private final com.oracle.truffle.api.frame.FrameSlot[] cellVarSlots;
-    @CompilationFinal(dimensions = 1) private final com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots;
+    @CompilationFinal(dimensions = 1) private final int[] cellVarSlots;
+    @CompilationFinal(dimensions = 1) private final int[] freeVarSlots;
     @CompilationFinal(dimensions = 1) private final Assumption[] cellVarAssumptions;
 
     ExecutionCellSlots(CellFrameSlotSupplier supplier) {
@@ -45,12 +44,12 @@ public final class ExecutionCellSlots implements CellSlots {
     }
 
     @Override
-    public com.oracle.truffle.api.frame.FrameSlot[] getCellVarSlots() {
+    public int[] getCellVarSlots() {
         return cellVarSlots;
     }
 
     @Override
-    public com.oracle.truffle.api.frame.FrameSlot[] getFreeVarSlots() {
+    public int[] getFreeVarSlots() {
         return freeVarSlots;
     }
 

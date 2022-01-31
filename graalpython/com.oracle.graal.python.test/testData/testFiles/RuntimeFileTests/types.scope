@@ -10,127 +10,127 @@ Scope: []
         FreeVars: Empty
     Scope: coroutine
         Kind: Function
-        FrameDescriptor: [co_flags, func, functools, co, wrapped, <return_val>, _collections_abc]
+        FrameDescriptor: [<return_val>, _collections_abc, co, co_flags, func, functools, wrapped]
         CellVars: [_collections_abc, func]
         FreeVars: Empty
         Scope: wrapped
             Kind: Function
-            FrameDescriptor: [args, func, coro, kwargs, <return_val>, _collections_abc]
+            FrameDescriptor: [<return_val>, _collections_abc, args, coro, func, kwargs]
             CellVars: Empty
             FreeVars: [_collections_abc, func]
     Scope: _GeneratorWrapper
         Kind: Class
-        FrameDescriptor: [cr_await, gi_frame, __iter__, cr_code, __next__, cr_running, gi_code, cr_frame, throw, gi_yieldfrom, __init__, __await__, send, close, gi_running]
+        FrameDescriptor: [__await__, __init__, __iter__, __next__, close, cr_await, cr_code, cr_frame, cr_running, gi_code, gi_frame, gi_running, gi_yieldfrom, send, throw]
         CellVars: Empty
         FreeVars: Empty
         Scope: __iter__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __next__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: gi_yieldfrom
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: gi_running
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: gi_frame
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: gi_code
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: close
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: throw
             Kind: Function
-            FrameDescriptor: [rest, self, tp, <return_val>]
+            FrameDescriptor: [<return_val>, rest, self, tp]
             CellVars: Empty
             FreeVars: Empty
         Scope: send
             Kind: Function
-            FrameDescriptor: [val, self, <return_val>]
+            FrameDescriptor: [<return_val>, self, val]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [gen, self, <return_val>]
+            FrameDescriptor: [<return_val>, gen, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: DynamicClassAttribute
         Kind: Class
-        FrameDescriptor: [__get__, __set__, getter, __doc__, __delete__, __init__, setter, deleter]
+        FrameDescriptor: [__delete__, __doc__, __get__, __init__, __set__, deleter, getter, setter]
         CellVars: Empty
         FreeVars: Empty
         Scope: deleter
             Kind: Function
-            FrameDescriptor: [result, self, fdel, <return_val>]
+            FrameDescriptor: [<return_val>, fdel, result, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: setter
             Kind: Function
-            FrameDescriptor: [result, self, fset, <return_val>]
+            FrameDescriptor: [<return_val>, fset, result, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: getter
             Kind: Function
-            FrameDescriptor: [result, self, fdoc, <return_val>, fget]
+            FrameDescriptor: [<return_val>, fdoc, fget, result, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __delete__
             Kind: Function
-            FrameDescriptor: [instance, self, <return_val>]
+            FrameDescriptor: [<return_val>, instance, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __set__
             Kind: Function
-            FrameDescriptor: [instance, self, value, <return_val>]
+            FrameDescriptor: [<return_val>, instance, self, value]
             CellVars: Empty
             FreeVars: Empty
         Scope: __get__
             Kind: Function
-            FrameDescriptor: [instance, self, ownerclass, <return_val>]
+            FrameDescriptor: [<return_val>, instance, ownerclass, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [self, doc, fdel, fset, <return_val>, fget]
+            FrameDescriptor: [<return_val>, doc, fdel, fget, fset, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: _calculate_meta
         Kind: Function
-        FrameDescriptor: [bases, winner, meta, base_meta, <return_val>, base]
+        FrameDescriptor: [<>temp5, <return_val>, base, base_meta, bases, meta, winner]
         CellVars: Empty
         FreeVars: Empty
     Scope: prepare_class
         Kind: Function
-        FrameDescriptor: [bases, ns, meta, name, kwds, <return_val>]
+        FrameDescriptor: [<return_val>, bases, kwds, meta, name, ns]
         CellVars: Empty
         FreeVars: Empty
     Scope: resolve_bases
         Kind: Function
-        FrameDescriptor: [bases, new_bases, new_base, <>temp7, <>temp8, shift, i, updated, <return_val>, base]
+        FrameDescriptor: [<>temp7, <>temp8, <>temp9, <return_val>, base, bases, i, new_base, new_bases, shift, updated]
         CellVars: Empty
         FreeVars: Empty
     Scope: new_class
         Kind: Function
-        FrameDescriptor: [bases, resolved_bases, ns, <>temp7, meta, <>temp8, <>temp9, name, kwds, exec_body, <return_val>]
+        FrameDescriptor: [<>temp7, <>temp8, <>temp9, <return_val>, bases, exec_body, kwds, meta, name, ns, resolved_bases]
         CellVars: Empty
         FreeVars: Empty
     Scope: _C
@@ -140,7 +140,7 @@ Scope: []
         FreeVars: Empty
         Scope: _m
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: _ag

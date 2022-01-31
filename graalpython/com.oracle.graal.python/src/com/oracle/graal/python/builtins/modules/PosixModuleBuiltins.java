@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -1800,7 +1800,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_exit", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class ExitNode extends PythonBuiltinNode {
+    public abstract static class ExitNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
         Object exit(int status) {

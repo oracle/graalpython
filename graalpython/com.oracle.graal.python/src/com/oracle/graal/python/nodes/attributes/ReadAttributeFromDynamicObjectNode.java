@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -84,6 +84,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     @SuppressWarnings("unused")
     @Specialization(limit = "1", //
                     guards = {
+                                    "isSingleContext()",
                                     "dynamicObject == cachedObject",
                                     "isLongLivedObject(cachedObject)",
                                     "key == cachedKey",
@@ -91,7 +92,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                                     "loc != null",
                                     "loc.isAssumedFinal()"
                     }, //
-                    assumptions = {"singleContextAssumption()", "cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
+                    assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
     protected Object readFinalAttr(DynamicObject dynamicObject, String key,
                     @Cached("key") String cachedKey,
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,

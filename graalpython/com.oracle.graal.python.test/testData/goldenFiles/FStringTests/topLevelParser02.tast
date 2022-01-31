@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
         StringLiteralNode SourceSection: [0,2]`''`
       GeneratorExpressionNode SourceSection: [8,47]`f'{name}' for name i...`
         Name: <genexpr>
-        FrameDescriptor: 2 slots [name, <return_val>]
+        FrameDescriptor: 2 slots [<return_val>, name]
         Enclosing
           FrameDescriptor:  Empty
         Active Flags: 2
@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
           CelVars: None
           FreeVars: None
           NeedsCellFrame: False
-          FrameDescriptor: 2 slots [name, <return_val>]
+          FrameDescriptor: 2 slots [<return_val>, name]
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,10 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -111,6 +114,12 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     @Override
     Object parseMappingKey(int start, int end) {
         return core.factory().createBytes(Arrays.copyOfRange(formatBytes, start, end));
+    }
+
+    @Override
+    protected boolean isMapping(Object obj) {
+        // bytesobject.c _PyBytes_FormatEx()
+        return !(obj instanceof PTuple || obj instanceof PBytesLike || obj instanceof PString || obj instanceof String) && PyMappingCheckNode.getUncached().execute(obj);
     }
 
     @Override

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -90,22 +90,7 @@ class TestPyObject(CPyExtTestCase):
     # PyObject_Del
     # PyObject_FREE
     # PyObject_Free
-    def forgiving_len(o):
-        try:
-            return len(o)
-        except TypeError:
-            return -1
 
-    test_PyObject_Length = CPyExtFunction(
-        forgiving_len,
-        lambda: ([], [1, 2, 3, 4], (1,), sys.modules),
-        resultspec="i",
-    )
-    test_PyObject_Size = CPyExtFunction(
-        forgiving_len,
-        lambda: ([], [1, 2, 3, 4], (1,), sys.modules),
-        resultspec="i",
-    )
     # PyObject_MALLOC
     # PyObject_Malloc
     # PyObject_New
@@ -130,7 +115,7 @@ class TestPyObject(CPyExtTestCase):
             (kwonly_fun, tuple(), {"x": 456, "y": 789}),
             (sum, ("hello, world",), None),
             (kwonly_fun, tuple(), None),
-        )
+    )
 
     test_PyObject_Call = CPyExtFunction(
         lambda args: args[0](*args[1], **args[2]) if args[2] else args[0](*args[1], **dict()),
@@ -324,36 +309,53 @@ class TestPyObject(CPyExtTestCase):
         lambda: ([], {}, 0, 123, b"ello")
     )
 
-    # richcompare_args = ([ ([], [], i) for i in range(6) ] +
-    #                     [ (12, 24, i) for i in range(6) ] +
-    #                     [ ("aa", "ba", i) for i in range(6) ])
+    richcompare_args = lambda: (([], [], 0),  
+                 ([], [], 1),
+                 ([], [], 2),
+                 ([], [], 3),
+                 ([], [], 4),
+                 ([], [], 5),
+                 (12, 24, 0),
+                 (12, 24, 1),
+                 (12, 24, 2),
+                 (12, 24, 3),
+                 (12, 24, 4),
+                 (12, 24, 5),
+                 ("aa", "ba", 0),
+                 ("aa", "ba", 1),
+                 ("aa", "ba", 2),
+                 ("aa", "ba", 3),
+                 ("aa", "ba", 4),
+                 ("aa", "ba", 5))
 
-    # def richcompare(args):
-    #     return eval("%r %s %r" % (args[0], ["<", "<=", "==", "!=", ">", ">="][args[2]], args[1]))
+    def richcompare(args):
+        return eval("%r %s %r" % (args[0], ["<", "<=", "==", "!=", ">", ">="][args[2]], args[1]))
 
-    # test_PyObject_RichCompare = CPyExtFunction(
-    #     richcompare,
-    #     richcompare_args,
-    #     arguments=["PyObject* left", "PyObject* right", "int op"],
-    #     argspec="OOi",
-    # )
+    test_PyObject_RichCompare = CPyExtFunction(
+        richcompare,
+        richcompare_args,
+        arguments=["PyObject* left", "PyObject* right", "int op"],
+        argspec="OOi",
+        resultspec="O",
+    )
 
-    # def richcompare_bool(args):
-    #     try:
-    #         if eval("%r %s %r" % (args[0], ["<", "<=", "==", "!=", ">", ">="][args[2]], args[1])):
-    #             return 1
-    #         else:
-    #             return 0
-    #     except:
-    #         return -1
+    def richcompare_bool(args):
+        try:
+            if eval("%r %s %r" % (args[0], ["<", "<=", "==", "!=", ">", ">="][args[2]], args[1])):
+                return 1
+            else:
+                return 0
+        except:
+            return -1
 
-    # test_PyObject_RichCompareBool = CPyExtFunction(
-    #     richcompare_bool,
-    #     richcompare_args,
-    #     arguments=["PyObject* left", "PyObject* right", "int op"],
-    #     argspec="OOi",
-    #     resultspec="i",
-    # )
+    test_PyObject_RichCompareBool = CPyExtFunction(
+        richcompare_bool,
+        richcompare_args,
+        arguments=["PyObject* left", "PyObject* right", "int op"],
+        argspec="OOi",
+        resultspec="i",
+    )
+    
     __PyObject_GetAttrString_ARGS = (
             (MyObject(), "foo"),
             ([], "__len__"),
@@ -386,6 +388,18 @@ class TestPyObject(CPyExtTestCase):
         resultspec="i",
         cmpfunc=unhandled_error_compare
     )
+    test_PyObject_HasAttr = CPyExtFunction(
+        lambda args: 1 if hasattr(*args) else 0,
+        lambda: (
+            (TestPyObject.MyObject, "foo"),
+            ([], "__len__"),
+            ([], "foobar"),
+        ),
+        arguments=["PyObject* object", "PyObject* attr"],
+        argspec="OO",
+        resultspec="i",
+    )
+    
     test_PyObject_HasAttrString = CPyExtFunction(
         lambda args: 1 if hasattr(*args) else 0,
         lambda: (
@@ -396,6 +410,23 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* object", "const char* attr"],
         argspec="Os",
         resultspec="i",
+    )
+    
+    def _ref_hash_not_implemented(args):
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            raise TypeError
+    
+    test_PyObject_HashNotImplemented = CPyExtFunction(
+        _ref_hash_not_implemented,
+        lambda: (
+            ("foo",),
+        ),
+        arguments=["PyObject* object"],
+        argspec="O",
+        resultspec="n",
+        cmpfunc=unhandled_error_compare
     )
     __PyObject_GetAttr_ARGS = (
             (MyObject(), "foo"),

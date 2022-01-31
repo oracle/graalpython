@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: test
         Kind: Function
-        FrameDescriptor: [a, fn1, fn2, <return_val>]
+        FrameDescriptor: [<return_val>, a, fn1, fn2]
         CellVars: Empty
         FreeVars: Empty
         Scope: fn2

@@ -32,7 +32,7 @@ ModuleRootNode Name: <module 'lambda10'> SourceSection: [0,35]`lambda foo=bar, b
         CelVars: None
         FreeVars: None
         NeedsCellFrame: False
-        FrameDescriptor: 4 slots [foo, blaz, z, <return_val>]
+        FrameDescriptor: 4 slots [<return_val>, blaz, foo, z]
         ExecutionSlots:
           FreeVarsSlots: None
           CellVarsSlots: None

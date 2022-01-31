@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -1301,7 +1301,7 @@ def _python_checkpatchfiles():
             content = listfile.read()
         patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/.*\.patch")
         checked = set()
-        allowed_licenses = ["MIT", "BSD", "MIT license", "PSF"]
+        allowed_licenses = ["MIT", "BSD", "BSD-3-Clause", "MIT license", "PSF"]
         for line in content.split("\n"):
             match = patchfile_pattern.search(line)
             if match:
