@@ -937,10 +937,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
             int i = 0;
             while (i < length) {
                 int len = bytes[i];
-                if (i + len + 1 < length) {
-                    protocols.add(new String(bytes, i + 1, len, StandardCharsets.US_ASCII));
+                i++;
+                if (i + len <= length) {
+                    protocols.add(new String(bytes, i, len, StandardCharsets.US_ASCII));
                 }
-                i += len + 1;
+                i += len;
             }
             return protocols.toArray(new String[0]);
         }

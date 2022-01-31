@@ -77,12 +77,14 @@ def check_handshake(server_context, client_context, err = None):
     except Exception as e:
         if err is None:
             assert False
-        else:    
+        else:
             assert isinstance(e, err)
     else:
         if err is not None:
             assert False
-                
+    return server, client
+
+
 class CertTests(unittest.TestCase):
 
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -110,11 +112,11 @@ class CertTests(unittest.TestCase):
                 cafile = data_file(cafile)
             if cadata is not None:
                 cadata = open(data_file(cadata)).read()
-            self.ctx.load_verify_locations(cafile, capath, cadata)            
+            self.ctx.load_verify_locations(cafile, capath, cadata)
         except err as e:
             if errno != -1:
                 self.assertEqual(e.errno, errno)
-            if strerror is not None:    
+            if strerror is not None:
                 if isinstance(ssl.SSLError, err):
                     self.assertIn(strerror, e.strerror)
                 else:
@@ -122,16 +124,16 @@ class CertTests(unittest.TestCase):
             self.assertIsInstance(type(e), type(err))
         else:
             assert False
-            
+
     def check_load_verify_locations_cadata_bytes_error(self, cadata, errno=-1, strerror=None, err=ssl.SSLError):
-        try:                        
+        try:
             cadata = open(data_file(cadata)).read()
             cadata.replace("")
-            self.ctx.load_verify_locations(cafile, capath, cadata)            
+            self.ctx.load_verify_locations(cafile, capath, cadata)
         except err as e:
             if errno != -1:
                 self.assertEqual(e.errno, errno)
-            if strerror is not None:    
+            if strerror is not None:
                 if isinstance(ssl.SSLError, err):
                     self.assertIn(strerror, e.strerror)
                 else:
@@ -176,14 +178,14 @@ class CertTests(unittest.TestCase):
         self.check_load_cert_chain_error(certfile="cert_rsa.pem", keyfile="broken_pk_no_begin.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="cert_rsa.pem", keyfile="broken_pk_no_end.pem", errno=9, strerror="[SSL] PEM lib")
 
-        self.check_load_cert_chain_error(certfile="cert_rsa2.pem", keyfile="pk_rsa.pem", errno=116, strerror="[X509: KEY_VALUES_MISMATCH] key values mismatch")        
-        self.check_load_cert_chain_error(certfile="cert_rsa2.pem", keyfile="pk_ecc.pem")        
+        self.check_load_cert_chain_error(certfile="cert_rsa2.pem", keyfile="pk_rsa.pem", errno=116, strerror="[X509: KEY_VALUES_MISMATCH] key values mismatch")
+        self.check_load_cert_chain_error(certfile="cert_rsa2.pem", keyfile="pk_ecc.pem")
 
     def test_load_verify_locations(self):
         self.ctx.load_verify_locations(data_file("cert_rsa.pem"))
         self.ctx.load_verify_locations(capath=data_file("cert_rsa.pem"))
         cad = open(data_file("cert_rsa.pem")).read()
-        self.ctx.load_verify_locations(cadata=cad)        
+        self.ctx.load_verify_locations(cadata=cad)
         cad = ssl.PEM_cert_to_DER_cert(cad)
         self.ctx.load_verify_locations(cadata=cad)
         self.ctx.load_verify_locations(data_file("cert_rsa.pem"), 'does_not_exit')
@@ -224,12 +226,12 @@ class CertTests(unittest.TestCase):
         self.check_load_verify_locations_error(cadata="broken_cert_no_end.pem")
         self.check_load_verify_locations_error(cadata="broken_cert_data.pem", errno=100, strerror="[PEM: BAD_BASE64_DECODE]")
         self.check_load_verify_locations_error(cadata="broken_cert_data_at_begin.pem", errno=100, strerror="[PEM: BAD_BASE64_DECODE]")
-        self.check_load_verify_locations_error(cadata="broken_cert_data_at_end.pem", errno=100, strerror="[PEM: BAD_BASE64_DECODE]")        
+        self.check_load_verify_locations_error(cadata="broken_cert_data_at_end.pem", errno=100, strerror="[PEM: BAD_BASE64_DECODE]")
 
     def test_load_default_verify_paths(self):
         env = os.environ
         certFile = env["SSL_CERT_FILE"] if "SSL_CERT_FILE" in env else None
-        certDir = env["SSL_CERT_DIR"] if "SSL_CERT_DIR" in env else None 
+        certDir = env["SSL_CERT_DIR"] if "SSL_CERT_DIR" in env else None
         try:
             env["SSL_CERT_DIR"] = "does_not_exit"
             env["SSL_CERT_FILE"] = "does_not_exit"
@@ -243,18 +245,18 @@ class CertTests(unittest.TestCase):
         except Exception:
             # load_default_certs reports no errors
             assert False
-        finally:    
+        finally:
             if certFile is not None:
                 env["SSL_CERT_FILE"] = certFile
             else:
                 del env["SSL_CERT_FILE"]
             if certDir is not None:
                 env["SSL_CERT_DIR"] = certDir
-            else:    
+            else:
                 del env["SSL_CERT_DIR"]
 
     @unittest.skipIf(sys.implementation.name == 'cpython', "graalpython specific")
-    def test_load_default_verify_keystore(self):        
+    def test_load_default_verify_keystore(self):
         # execute with javax.net.ssl.trustStore=tests/ssldata/signing_keystore.jks
         # the JKS keystore:
         # - contains one trusted certificate, the same as in tests/ssldata/signing_ca.pem
@@ -285,7 +287,7 @@ class CertTests(unittest.TestCase):
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
-        server_context.verify_mode = ssl.CERT_NONE   
+        server_context.verify_mode = ssl.CERT_NONE
 
         client_context.check_hostname = False
 
@@ -323,7 +325,7 @@ class CertTests(unittest.TestCase):
 
         # client provides cert, server verifies
         client_context.load_verify_locations(signing_ca)
-        
+
         client_context.verify_mode = ssl.CERT_REQUIRED
         check_handshake(server_context, client_context)
         client_context.verify_mode = ssl.CERT_OPTIONAL
@@ -331,7 +333,7 @@ class CertTests(unittest.TestCase):
 
         # server provides wrong cert for CERT_OPTIONAL client
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        server_context.load_cert_chain(signed_cert2)        
+        server_context.load_cert_chain(signed_cert2)
         check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
 
         ########################################################################
@@ -352,7 +354,7 @@ class CertTests(unittest.TestCase):
         check_handshake(server_context, client_context, ssl.SSLError)
         server_context.verify_mode = ssl.CERT_OPTIONAL
         check_handshake(server_context, client_context, ssl.SSLError)
-        
+
         # no cert from client
         server_context.load_cert_chain(signed_cert)
 
@@ -387,6 +389,27 @@ class CertTests(unittest.TestCase):
         client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         client_context.load_cert_chain(signed_cert2)
         check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+
+    def test_alpn(self):
+        signed_cert = data_file("signed_cert.pem")
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(signed_cert)
+        server_context.verify_mode = ssl.CERT_NONE
+        client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client_context.check_hostname = False
+        client_context.verify_mode = ssl.CERT_NONE
+        server, client = check_handshake(server_context, client_context)
+        self.assertIsNone(client.selected_alpn_protocol())
+
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(signed_cert)
+        server_context.set_alpn_protocols(["http/1.1"])
+        client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client_context.check_hostname = False
+        client_context.verify_mode = ssl.CERT_NONE
+        client_context.set_alpn_protocols(["http/1.1"])
+        server, client = check_handshake(server_context, client_context)
+        self.assertEqual(client.selected_alpn_protocol(), "http/1.1")
 
 def get_cipher_list(cipher_string):
     context = ssl.SSLContext()

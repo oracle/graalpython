@@ -415,7 +415,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization
         static Object get(PSSLSocket socket) {
             String protocol = socket.getEngine().getApplicationProtocol();
-            return protocol != null ? protocol : PNone.NONE;
+            return protocol != null && !protocol.isEmpty() ? protocol : PNone.NONE;
         }
     }
 
