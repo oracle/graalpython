@@ -222,8 +222,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
         parameters.setCipherSuites(enabledCipherNames);
 
-        if (ALPNHelper.hasAlpn() && context.getAlpnProtocols() != null) {
-            ALPNHelper.setApplicationProtocols(parameters, context.getAlpnProtocols());
+        if (context.getAlpnProtocols() != null) {
+            parameters.setApplicationProtocols(context.getAlpnProtocols());
         }
         if (serverMode) {
             switch (context.getVerifyMode()) {
@@ -922,9 +922,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
         Object setFromBuffer(VirtualFrame frame, PSSLContext self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                if (!ALPNHelper.hasAlpn()) {
-                    throw raise(NotImplementedError, "The ALPN extension requires JDK 8u252 or later");
-                }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 self.setAlpnProtocols(parseProtocols(bytes, len));

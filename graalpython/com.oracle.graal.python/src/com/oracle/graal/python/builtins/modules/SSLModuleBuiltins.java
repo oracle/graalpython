@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.ssl.ALPNHelper;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipher;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipherSelector;
@@ -222,7 +221,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         // We have ECDH ciphers, but we don't yet expose the methods that let you pick the curve
         module.setAttribute("HAS_ECDH", false);
         module.setAttribute("HAS_NPN", false);
-        module.setAttribute("HAS_ALPN", ALPNHelper.hasAlpn());
+        module.setAttribute("HAS_ALPN", true);
         module.setAttribute("HAS_SSLv2", false);
         boolean hasSSLv3 = supportedProtocols.contains(SSLProtocol.SSLv3);
         module.setAttribute("HAS_SSLv3", hasSSLv3);
