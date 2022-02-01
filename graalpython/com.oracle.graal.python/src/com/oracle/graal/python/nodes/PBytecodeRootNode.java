@@ -1339,7 +1339,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     default:
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "not implemented bytecode %s", OpCodes.VALUES[bci]);
+                        throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "not implemented bytecode %s", OpCodes.VALUES[bc]);
                 }
                 // prepare next loop
                 bci++;
@@ -1372,7 +1372,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case 0: {
                 CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
                 Object result = callNode.execute(frame, func, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
-                stack[stackTop--] = null;
                 stack[stackTop] = result;
                 break;
             }
@@ -1526,35 +1525,41 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private int bytecodeMakeFunction(Object globals, Object[] stack, int lastStackTop, int bci, int oparg) {
         int stackTop = lastStackTop;
-        CodeUnit co = (CodeUnit) stack[stackTop];
+        CodeUnit newCode = (CodeUnit) stack[stackTop];
 
         PCell[] closure = null;
         Object annotations = null;
         PKeyword[] kwdefaults = null;
         Object[] defaults = null;
 
-        if (co.freevars.length > 0) {
+        if (newCode.freevars.length > 0) {
             stack[stackTop--] = null;
             closure = (PCell[]) stack[stackTop];
         }
         // TODO: annotations
-        if (co.hasKwDefaults()) {
+        if (newCode.hasKwDefaults()) {
             stack[stackTop--] = null;
             kwdefaults = (PKeyword[]) stack[stackTop];
         }
-        if (co.hasDefaults()) {
+        if (newCode.hasDefaults()) {
             stack[stackTop--] = null;
             defaults = (Object[]) stack[stackTop];
         }
-        Signature newSignature = new Signature(co.argCount - co.positionalOnlyArgCount,
-                        co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, false,
-                        Arrays.copyOf(co.varnames, co.argCount), // parameter names
-                        Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
-        PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), newSignature, co, source);
-        PCode codeobj = factory.createCode(rootNode.getCallTarget(), signature, co.nlocals, co.stacksize, co.flags,
-                        co.constants, co.names, co.varnames, co.freevars, co.cellvars, co.filename, co.name,
-                        co.startOffset, co.srcOffsetTable);
-        stack[stackTop] = factory.createFunction(co.name, null, codeobj, (PythonObject) globals, defaults, kwdefaults, closure);
+        String[] parameterNames = Arrays.copyOf(newCode.varnames, newCode.argCount);
+        int kwOnlyOffset = newCode.argCount + (newCode.takesVarArgs() ? 1 : 0);
+        String[] kwOnlyNames = Arrays.copyOfRange(newCode.varnames, kwOnlyOffset, kwOnlyOffset + newCode.kwOnlyArgCount);
+        int varArgsIndex = newCode.takesVarArgs() ? newCode.argCount : -1;
+        Signature newSignature = new Signature(newCode.positionalOnlyArgCount - 1,
+                        newCode.takesVarKeywordArgs(),
+                        varArgsIndex,
+                        false,
+                        parameterNames,
+                        kwOnlyNames);
+        PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), newSignature, newCode, source);
+        PCode codeobj = factory.createCode(rootNode.getCallTarget(), newSignature, newCode.nlocals, newCode.stacksize, newCode.flags,
+                        newCode.constants, newCode.names, newCode.varnames, newCode.freevars, newCode.cellvars, newCode.filename, newCode.name,
+                        newCode.startOffset, newCode.srcOffsetTable);
+        stack[stackTop] = factory.createFunction(newCode.name, null, codeobj, (PythonObject) globals, defaults, kwdefaults, closure);
         if (annotations != null) {
             DynamicObjectLibrary.getUncached().put((DynamicObject) stack[stackTop], __ANNOTATIONS__, annotations);
         }
@@ -1567,13 +1572,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int typ = oparg & ~OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
         switch (typ) {
             case OpCodes.CollectionBits.LIST: {
-                PList l = factory.createList(Arrays.copyOfRange(stack, stackTop - cnt, stackTop + 1));
+                PList l = factory.createList(Arrays.copyOfRange(stack, stackTop - cnt + 1, stackTop + 1));
                 stackTop = unwindBlock(stack, stackTop, stackTop - cnt);
                 stack[++stackTop] = l;
                 break;
             }
             case OpCodes.CollectionBits.TUPLE: {
-                PTuple t = factory.createTuple(Arrays.copyOfRange(stack, stackTop - cnt, stackTop + 1));
+                PTuple t = factory.createTuple(Arrays.copyOfRange(stack, stackTop - cnt + 1, stackTop + 1));
                 stackTop = unwindBlock(stack, stackTop, stackTop - cnt);
                 stack[++stackTop] = t;
                 break;
