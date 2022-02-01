@@ -869,10 +869,12 @@ public abstract class Python3Core extends ParserErrorCallback {
         return frozenModules.get(name);
     }
 
+    @TruffleBoundary
     public final boolean isFrozenModuleAlias(String name) {
         return frozenAliases.containsKey(name);
     }
 
+    @TruffleBoundary
     public final String getFrozenModuleOriginalName(String alias) {
         return frozenAliases.get(alias);
     }
