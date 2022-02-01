@@ -1055,14 +1055,14 @@ public class Compiler implements SSTreeVisitor<Void> {
         makeClosure(co, 0, 0);
         addOp(LOAD_CONST, addObject(unit.constants, node.name));
 
-        if ((node.bases.length < 4) && node.keywords.length == 0) {
+        if ((node.bases.length < 3) && node.keywords.length == 0) {
             visitSequence(node.bases);
-            addOp(CALL_FUNCTION, 1 + node.bases.length);
+            addOp(CALL_FUNCTION, 2 + node.bases.length);
         } else if (node.keywords.length == 0) {
-            collectIntoArray(node.bases, CollectionBits.OBJECT, 1);
+            collectIntoArray(node.bases, CollectionBits.OBJECT, 2);
             addOp(CALL_FUNCTION_VARARGS);
         } else {
-            collectIntoArray(node.bases, CollectionBits.OBJECT, 1);
+            collectIntoArray(node.bases, CollectionBits.OBJECT, 2);
             collectIntoArray(node.keywords, CollectionBits.KWORDS);
             addOp(CALL_FUNCTION_KW);
         }
