@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDescrBuiltinsClinicProviders.PyDescrNewClassMethodClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDescrBuiltinsClinicProviders.PyDescrNewGetSetNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -134,18 +133,6 @@ public final class PythonCextDescrBuiltins extends PythonBuiltins {
                 func = factory().createClassmethodFromCallableObj(func);
             }
             return newRefNode.execute(func);
-        }
-    }
-
-    @Builtin(name = "PyMethodDescr_Check", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyMethodDescrCheckNode extends PythonUnaryBuiltinNode {
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static int check(VirtualFrame frame, Object func,
-                        @Cached IsInstanceNode isInstanceNode) {
-            return isInstanceNode.executeWith(frame, func, PythonBuiltinClassType.PBuiltinFunction) ? 1 : 0;
         }
     }
 
