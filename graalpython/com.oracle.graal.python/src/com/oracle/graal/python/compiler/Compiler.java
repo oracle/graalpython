@@ -1028,7 +1028,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.ClassDef node) {
         visitSequence(node.decoratorList);
 
-        enterScope(node.name, CompilationScope.Class, node, 1, 0, 0, false, false);
+        enterScope(node.name, CompilationScope.Class, node, 0, 0, 0, false, false);
         setOffset(node.body[0]);
         addNameOp("__name__", ExprContext.Load);
         addNameOp("__module__", ExprContext.Store);
