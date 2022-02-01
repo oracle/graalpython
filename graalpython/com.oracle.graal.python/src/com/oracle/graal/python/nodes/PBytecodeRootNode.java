@@ -158,6 +158,8 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
 import java.math.BigInteger;
 import java.util.Arrays;
 
@@ -295,6 +297,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private final CodeUnit co;
 
+    private final Source source;
+    private SourceSection sourceSection;
+
     @CompilationFinal(dimensions = 1) private final byte[] bytecode;
     @CompilationFinal(dimensions = 1) private final Object[] consts;
     @CompilationFinal(dimensions = 1) private final long[] longConsts;
@@ -329,12 +334,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     };
 
-    public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, CodeUnit co) {
-        this(language, DESCRIPTOR, sign, co);
+    public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, CodeUnit co, Source source) {
+        this(language, DESCRIPTOR, sign, co, source);
     }
 
-    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co) {
+    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source) {
         super(language, fd);
+        this.source = source;
         this.signature = sign;
         this.bytecode = co.code;
         this.adoptedNodes = new Node[co.code.length];
@@ -1540,11 +1546,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             stack[stackTop--] = null;
             defaults = (Object[]) stack[stackTop];
         }
-        Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
+        Signature newSignature = new Signature(co.argCount - co.positionalOnlyArgCount,
                         co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, false,
                         Arrays.copyOf(co.varnames, co.argCount), // parameter names
                         Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
-        PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), signature, co);
+        PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), newSignature, co, source);
         PCode codeobj = factory.createCode(rootNode.getCallTarget(), signature, co.nlocals, co.stacksize, co.flags,
                         co.constants, co.names, co.varnames, co.freevars, co.cellvars, co.filename, co.name,
                         co.startOffset, co.srcOffsetTable);
@@ -1666,5 +1672,23 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     public int getStartOffset() {
         return co.startOffset;
+    }
+
+    @Override
+    public SourceSection getSourceSection() {
+        if (sourceSection != null) {
+            return sourceSection;
+        } else if (source == null) {
+            return null;
+        } else {
+            int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
+            for (int bci = 0; bci < co.code.length; bci++) {
+                int offset = co.bciToSrcOffset(bci);
+                min = Math.min(min, offset);
+                max = Math.max(max, offset);
+            }
+            sourceSection = source.createSection(max, min);
+            return sourceSection;
+        }
     }
 }

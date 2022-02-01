@@ -156,6 +156,7 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
 import java.util.Arrays;
 import java.util.EnumSet;
+import org.graalvm.polyglot.io.ByteSequence;
 
 @CoreFunctions(defineModule = __GRAALPYTHON__, isEager = true)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
@@ -869,11 +870,26 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Cached("create(false)") BuiltinFunctions.CompileNode compileNode) {
             if (mode.equals("pyc")) {
                 ParserTokenizer tok;
+                Source source = null;
                 if (codestr instanceof PBytesLike) {
-                    tok = new ParserTokenizer(toBytes.execute((PBytesLike) codestr));
+                    try {
+                        byte[] c = toBytes.execute((PBytesLike) codestr);
+                        TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+                        if (truffleFile.exists() && c.length == truffleFile.size()) {
+                            source = Source.newBuilder(PythonLanguage.ID, truffleFile).mimeType(PythonLanguage.getCompileMimeType(2)).build();
+                        } else {
+                            ByteSequence bs = ByteSequence.create(c);
+                            source = Source.newBuilder(PythonLanguage.ID, bs, path).mimeType(PythonLanguage.getCompileMimeType(2)).build();
+                        }
+                        tok = new ParserTokenizer(c);
+                    } catch (SecurityException | IOException ex) {
+                        throw raise.raise(SystemError, ex);
+                    }
                 } else {
                     try {
-                        tok = new ParserTokenizer(castStr.execute(codestr));
+                        String c = castStr.execute(codestr);
+                        tok = new ParserTokenizer(c);
+                        source = PythonLanguage.newSource(getContext(), c, path, true, PythonLanguage.getCompileMimeType(2));
                     } catch (CannotCastException e) {
                         throw raise.raise(TypeError, "expected str or bytes, got '%p'", codestr);
                     }
@@ -899,7 +915,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                                 co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, false,
                                 Arrays.copyOf(co.varnames, co.argCount), // parameter names
                                 Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
-                PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), signature, co);
+                PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), signature, co, source);
                 return objFactory.createCode(rootNode.getCallTarget(), signature, co.nlocals, co.stacksize, co.flags,
                                 co.constants, co.names, co.varnames, co.freevars, co.cellvars, co.filename, co.name,
                                 co.startOffset, co.srcOffsetTable);

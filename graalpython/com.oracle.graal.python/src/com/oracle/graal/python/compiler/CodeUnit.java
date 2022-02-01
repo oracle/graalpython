@@ -108,12 +108,24 @@ public final class CodeUnit {
     }
 
     OpCodes codeForBC(int bc) {
-        return OpCodes.values()[bc];
+        return OpCodes.VALUES[bc];
     }
 
-    int bciToSrcOffset(int bci) {
+    public int bciToSrcOffset(int bci) {
         int diffIdx = 0;
         int currentOffset = 0;
+
+        int bytecodeNumber = 0;
+        for (int i = 0; i < code.length;) {
+            if (bci <= i) {
+                break;
+            } else {
+                OpCodes op = codeForBC(code[i]);
+                i += op.length();
+                bytecodeNumber++;
+            }
+        }
+
         for (int i = 0; i < srcOffsetTable.length; i++) {
             byte diff = srcOffsetTable[i];
             int intDiff = diff;
@@ -131,7 +143,7 @@ public final class CodeUnit {
                     currentOffset += intDiff + diff + 1;
                 }
             }
-            if (diffIdx == bci) {
+            if (diffIdx == bytecodeNumber) {
                 break;
             }
             diffIdx++;
@@ -174,7 +186,7 @@ public final class CodeUnit {
 
             String[] line = lines.computeIfAbsent(bcBCI, k -> new String[6]);
 
-            int srcOffset = bciToSrcOffset(bytecodeCount++);
+            int srcOffset = bciToSrcOffset(bcBCI);
             offset = srcOffset;
             line[0] = String.format("%06d", offset);
             if (line[1] == null) {
