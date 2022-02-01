@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -3074,6 +3075,18 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             // Note: CPython also constructs the object directly, without running the constructor or
             // checking the inputs
             return factory().createMethod(self, func);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Debug", takesVarArgs = true)
+    @GenerateNodeFactory
+    public abstract static class PyTruffleDebugNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public Object doIt(Object[] args,
+                        @Cached DebugNode debugNode) {
+            debugNode.execute(args);
+            return PNone.NONE;
         }
     }
 }

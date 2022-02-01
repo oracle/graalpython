@@ -55,19 +55,6 @@ def may_raise(error_result=native_null):
 
 ##################### C EXT HELPERS
 
-def PyTruffle_Debug(*args):
-    __graalpython__.tdebug(*args)
-
-
-def PyTruffle_GetBuiltin(name):
-    return getattr(sys.modules["builtins"], name)
-
-
-def check_argtype(idx, obj, typ):
-    if not isinstance(obj, typ):
-        raise TypeError("argument %d must be '%s', not '%s'" % (idx, str(typ), str(type(obj)).__name__))
-
-
 def initialize_datetime_capi(capi_library):
     import datetime
 
