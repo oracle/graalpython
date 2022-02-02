@@ -238,6 +238,7 @@ public final class CompilationUnit {
             b = b.next;
         }
 
+        boolean recurse = false;
         p = 0;
         b = startBlock;
         while (b != null) {
@@ -248,15 +249,21 @@ public final class CompilationUnit {
                     int targetPos = blockLocationMap.get(tgt);
                     int distance = Math.abs(p - targetPos);
                     OpCodes opcode = is.opcode;
-                    if (distance > 0xff) {
-                        // switch to long jump opcode
+                    if (distance > 0xff && opcode.argLength == 1) {
+                        // switch to long jump opcode, we'll have to go through again
                         opcode = OpCodes.values()[opcode.ordinal() + 1];
+                        recurse = true;
+                    } else if (distance > 0xffff) {
+                        throw new IllegalStateException(">16bit jumps not supported");
                     }
                     b.instr.set(i, new Instruction(opcode, distance, is.target, is.srcOffset));
                 }
                 p += is.opcode.length();
             }
             b = b.next;
+        }
+        if (recurse) {
+            calculateJumpInstructionArguments();
         }
     }
 

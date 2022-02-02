@@ -1229,7 +1229,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[stackTop--] = null;
                         Object left = stack[stackTop];
                         IsNode opNode = insertChildNode(localNodes[bci], UNCACHED_IS_NODE, NODE_IS_NODE, bci);
-                        stack[stackTop] = opNode.execute(left, right);
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        boolean result = opNode.execute(left, right);
+                        if (oparg == 1) {
+                            stack[stackTop] = !result;
+                        } else {
+                            stack[stackTop] = result;
+                        }
                         break;
                     }
                     case IMPORT_NAME: {
@@ -1289,13 +1295,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bci++;
                         break;
                     }
-                    case JUMP_BACKWARD: {
+                    case JUMP_BACKWARD:
+                    case JUMP_BACKWARD_FAR: {
                         if (inInterpreter) {
                             loopCount++;
                             if (BytecodeOSRNode.pollOSRBackEdge(this)) {
                                 // we're in the interpreter, so the unboxed storage for locals
                                 // is not used
-                                int newBCI = bci - Byte.toUnsignedInt(localBC[bci + 1]);
+                                int newBCI;
+                                if (bc == JUMP_BACKWARD_FAR) {
+                                    newBCI = bci - ((Byte.toUnsignedInt(localBC[bci + 1]) << 8) | Byte.toUnsignedInt(localBC[bci + 2]));
+                                } else {
+                                    newBCI = bci - Byte.toUnsignedInt(localBC[bci + 1]);
+                                }
                                 Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(newBCI) | encodeStackTop(stackTop), originalArgs, null, frame);
                                 if (osrResult != null) {
                                     LoopNode.reportLoopCount(this, loopCount);
@@ -1303,7 +1315,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 }
                             }
                         }
-                        bci -= Byte.toUnsignedInt(localBC[bci + 1]);
+                        if (bc == JUMP_BACKWARD_FAR) {
+                            bci -= ((Byte.toUnsignedInt(localBC[bci + 1]) << 8) | Byte.toUnsignedInt(localBC[bci + 2]));
+                        } else {
+                            bci -= Byte.toUnsignedInt(localBC[bci + 1]);
+                        }
                         continue;
                     }
                     case GET_ITER:
