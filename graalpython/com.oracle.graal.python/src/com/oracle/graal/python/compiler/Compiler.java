@@ -578,15 +578,18 @@ public class Compiler implements SSTreeVisitor<Void> {
         ExprTy func = node.func;
         OpCodes op = CALL_FUNCTION_VARARGS;
         int oparg = 0;
+        boolean shortCall = false;
         if (isAttributeLoad(func) && node.keywords.length == 0) {
             ((ExprTy.Attribute) func).value.accept(this);
             op = CALL_METHOD_VARARGS;
             oparg = addObject(unit.names, ((ExprTy.Attribute) func).attr);
+            shortCall = node.args.length <= 3;
         } else {
             func.accept(this);
+            shortCall = node.args.length <= 4;
         }
         setOffset(func.getEndOffset());
-        if (hasOnlyPlainArgs(node) && node.args.length <= 4) {
+        if (hasOnlyPlainArgs(node) && shortCall) {
             if (op == CALL_METHOD_VARARGS) {
                 oparg = (node.args.length << 8) | oparg;
                 op = CALL_METHOD;
@@ -599,7 +602,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             setOffset(node.getEndOffset());
             return addOp(op, oparg);
         } else {
-            collectIntoArray(node.args, CollectionBits.OBJECT);
+            collectIntoArray(node.args, CollectionBits.OBJECT, op == CALL_METHOD_VARARGS ? 1 : 0);
             if (node.keywords.length > 0) {
                 assert op == CALL_FUNCTION_VARARGS;
                 collectIntoArray(node.keywords, CollectionBits.KWORDS);

@@ -1312,6 +1312,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
+                    case CALL_METHOD: {
+                        int argcount = Byte.toUnsignedInt(localBC[++bci]);
+                        String methodName = localNames[Byte.toUnsignedInt(localBC[++bci])];
+                        stackTop = bytecodeCallMethod(frame, stack, stackTop, bci, argcount, methodName, localNodes);
+                        break;
+                    }
+                    case CALL_METHOD_VARARGS: {
+                        PyObjectGetMethod getMethodNode = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_METHOD, NODE_OBJECT_GET_METHOD, bci);
+                        Object[] args = (Object[]) stack[stackTop];
+                        String methodName = localNames[Byte.toUnsignedInt(localBC[++bci])];
+                        Object rcvr = args[0];
+                        Object func = getMethodNode.execute(frame, rcvr, methodName);
+                        CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
+                        stack[stackTop] = callNode.execute(frame, func, args, PKeyword.EMPTY_KEYWORDS);
+                        break;
+                    }
                     case CALL_FUNCTION: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeCallFunction(frame, stack, stackTop, bci, oparg, localNodes);
@@ -1320,14 +1336,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case CALL_FUNCTION_VARARGS: {
                         CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
                         Object callable = stack[stackTop - 1];
-                        stack[stackTop - 1] = callNode.execute(frame, callable, stack[stackTop], PKeyword.EMPTY_KEYWORDS);
+                        Object[] args = (Object[]) stack[stackTop];
+                        stack[stackTop - 1] = callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS);
                         stack[--stackTop] = null;
                         break;
                     }
                     case CALL_FUNCTION_KW: {
                         CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
                         Object callable = stack[stackTop - 2];
-                        stack[stackTop - 2] = callNode.execute(frame, callable, stack[stackTop - 1], (PKeyword[])stack[stackTop]);
+                        Object[] args = (Object[]) stack[stackTop - 1];
+                        stack[stackTop - 2] = callNode.execute(frame, callable, args, (PKeyword[])stack[stackTop]);
                         stack[--stackTop] = null;
                         stack[--stackTop] = null;
                         break;
@@ -1413,6 +1431,48 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 Object arg0 = stack[stackTop];
                 stack[stackTop--] = null;
                 stack[stackTop] = callNode.execute(frame, func, arg0, arg1, arg2, arg3);
+                break;
+            }
+        }
+        return stackTop;
+    }
+
+    private int bytecodeCallMethod(VirtualFrame frame, Object[] stack, int stackTop, int bci, int oparg, String methodName, Node[] localNodes) {
+        Object rcvr = stack[stackTop - oparg];
+        PyObjectGetMethod getMethodNode = insertChildNode(localNodes[bci - 1], UNCACHED_OBJECT_GET_METHOD, NODE_OBJECT_GET_METHOD, bci - 1);
+        Object func = getMethodNode.execute(frame, rcvr, methodName);
+        switch (oparg) {
+            case 0: {
+                CallUnaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_UNARY_METHOD, NODE_CALL_UNARY_METHOD, bci);
+                Object result = callNode.executeObject(frame, func, rcvr);
+                stack[stackTop] = result;
+                break;
+            }
+            case 1: {
+                CallBinaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_BINARY_METHOD, NODE_CALL_BINARY_METHOD, bci);
+                Object result = callNode.executeObject(frame, func, rcvr, stack[stackTop]);
+                stack[stackTop--] = null;
+                stack[stackTop] = result;
+                break;
+            }
+            case 2: {
+                CallTernaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_TERNARY_METHOD, NODE_CALL_TERNARY_METHOD, bci);
+                Object arg1 = stack[stackTop];
+                stack[stackTop--] = null;
+                Object arg0 = stack[stackTop];
+                stack[stackTop--] = null;
+                stack[stackTop] = callNode.execute(frame, func, rcvr, arg0, arg1);
+                break;
+            }
+            case 3: {
+                CallQuaternaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_QUATERNARY_METHOD, NODE_CALL_QUATERNARY_METHOD, bci);
+                Object arg2 = stack[stackTop];
+                stack[stackTop--] = null;
+                Object arg1 = stack[stackTop];
+                stack[stackTop--] = null;
+                Object arg0 = stack[stackTop];
+                stack[stackTop--] = null;
+                stack[stackTop] = callNode.execute(frame, func, rcvr, arg0, arg1, arg2);
                 break;
             }
         }

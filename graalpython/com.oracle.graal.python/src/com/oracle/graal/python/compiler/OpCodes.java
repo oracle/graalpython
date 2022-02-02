@@ -142,7 +142,7 @@ public enum OpCodes {
     MAKE_COMPLEX(              0,   -1),
 
     // calling
-    CALL_METHOD_VARARGS(       1,   -1), // receiver, args[] => result
+    CALL_METHOD_VARARGS(       1,    0), // args[] => result
     CALL_METHOD(               2,    Constants.CALL_METHOD_EFFECT),
     CALL_FUNCTION(             1,    Constants.CALL_EFFECT),
     CALL_FUNCTION_KW(          0,   -2), // func, args[], keywords[] => result
