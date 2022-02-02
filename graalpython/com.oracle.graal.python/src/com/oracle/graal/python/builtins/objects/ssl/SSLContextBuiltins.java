@@ -114,6 +114,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -196,7 +197,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
         SSLParameters parameters = new SSLParameters();
         SSLEngine engine;
-        if (serverHostname != null) {
+        // Set SNI hostname only for non-IP hostnames
+        if (serverHostname != null && !isIPAddress(serverHostname)) {
             try {
                 parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
             } catch (IllegalArgumentException e) {
@@ -243,6 +245,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
         engine.setSSLParameters(parameters);
         return engine;
+    }
+
+    @TruffleBoundary
+    private static boolean isIPAddress(String str) {
+        return IPAddressUtil.isIPv4LiteralAddress(str) || IPAddressUtil.isIPv6LiteralAddress(str) ||
+                        str.startsWith("[") && str.endsWith("]") && IPAddressUtil.isIPv6LiteralAddress(str.substring(1, str.length() - 1));
     }
 
     @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 3, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
