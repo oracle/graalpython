@@ -267,4 +267,8 @@ public abstract class IsNode extends Node {
     public static IsNode create() {
         return IsNodeGen.create();
     }
+
+    public static IsNode getUncached() {
+        return IsNodeGen.getUncached();
+    }
 }

@@ -238,6 +238,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private static final NodeFunction<String, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
 
+    private static final IsNode UNCACHED_IS_NODE = IsNode.getUncached();
+    private static final NodeSupplier<IsNode> NODE_IS_NODE = IsNode::create;
+
     private static final IntNodeFunction<BinaryComparisonNode> COMPARE_OP_FACTORY = (int op) -> {
         switch (op) {
             case 0:
@@ -1219,6 +1222,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object left = stack[stackTop];
                         BinaryComparisonNode opNode = insertChildNode(localNodes[bci - 1], COMPARE_OP_FACTORY, bci - 1, oparg);
                         stack[stackTop] = opNode.executeObject(frame, left, right);
+                        break;
+                    }
+                    case IS_OP: {
+                        Object right = stack[stackTop];
+                        stack[stackTop--] = null;
+                        Object left = stack[stackTop];
+                        IsNode opNode = insertChildNode(localNodes[bci], UNCACHED_IS_NODE, NODE_IS_NODE, bci);
+                        stack[stackTop] = opNode.execute(left, right);
                         break;
                     }
                     case IMPORT_NAME: {
