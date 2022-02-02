@@ -183,8 +183,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static final LanguageReference<PythonLanguage> REFERENCE = LanguageReference.create(PythonLanguage.class);
 
-    public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
-
     @CompilationFinal private boolean singleContext = true;
 
     public boolean isSingleContext() {
@@ -732,7 +730,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
-        singleContextAssumption.invalidate();
         singleContext = false;
     }
 
@@ -795,7 +792,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public Shape getShapeForClass(PythonAbstractClass klass) {
-        if (singleContextAssumption.isValid()) {
+        if (isSingleContext()) {
             return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, klass, 0).build();
         } else {
             return getEmptyShape();
