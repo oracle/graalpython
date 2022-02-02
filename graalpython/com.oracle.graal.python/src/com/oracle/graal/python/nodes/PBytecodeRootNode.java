@@ -1309,14 +1309,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case GET_ITER:
                         stack[stackTop] = insertChildNode(localNodes[bci], UNCACHED_OBJECT_GET_ITER, NODE_OBJECT_GET_ITER, bci).execute(frame, stack[stackTop]);
                         break;
-                    case FOR_ITER: {
+                    case FOR_ITER:
+                    case FOR_ITER_FAR: {
                         try {
                             Object next = insertChildNode(localNodes[bci], UNCACHED_GET_NEXT, NODE_GET_NEXT, bci).execute(frame, stack[stackTop]);
                             stack[++stackTop] = next;
-                            bci++;
+                            bci = bci + 1 + (bc - FOR_ITER);
                         } catch (PException e) {
                             e.expect(StopIteration, insertChildNode(localNodes[bci + 1], UNCACHED_IS_BUILTIN_CLASS_PROFILE, NODE_IS_BUILTIN_CLASS_PROFILE, bci + 1));
                             int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                            if (bc == FOR_ITER_FAR) {
+                                oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
+                            }
                             stack[stackTop--] = null;
                             bci += oparg;
                             continue;
