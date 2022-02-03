@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,11 +60,6 @@ POLYGLOT_DECLARE_TYPE(mappingproxyobject);
 UPCALL_ID(PyDictProxy_New);
 PyObject* PyDictProxy_New(PyObject *mapping) {
     return (PyObject*) UPCALL_CEXT_O(_jls_PyDictProxy_New, native_to_java(mapping));
-}
-
-UPCALL_ID(PyMethodDescr_Check);
-int PyMethodDescr_Check(PyObject* method) {
-    return UPCALL_CEXT_I(_jls_PyMethodDescr_Check, native_to_java(method));
 }
 
 typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(void* name,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -150,6 +150,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSocket("socket", "_socket"),
     PStaticmethod("staticmethod", BUILTINS, Flags.PUBLIC_BASE_WDICT),
     PClassmethod("classmethod", BUILTINS, Flags.PUBLIC_BASE_WDICT),
+    PInstancemethod("instancemethod", BUILTINS, Flags.PUBLIC_BASE_WDICT),
     PScandirIterator("ScandirIterator", "posix", Flags.PRIVATE_DERIVED_WODICT),
     PDirEntry("DirEntry", "posix", Flags.PUBLIC_DERIVED_WODICT),
     LsprofProfiler("Profiler", "_lsprof"),

@@ -276,7 +276,7 @@ public abstract class ErrorMessages {
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
     public static final String FILTER_SPECIFIER_MUST_HAVE = "Filter specifier must have an \"id\" entry";
-    public static final String FIRST_ARG_MUST_BE_CALLABLE_S = "first argument must be callable%s";
+    public static final String FIRST_ARG_MUST_BE_CALLABLE_S = "first argument must be callable %s";
     public static final String FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P = "%s first arg must be %s or a tuple of str, not %p";
     public static final String FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH = "the first two maketrans arguments must have equal length";
     public static final String S_FOR_ISLICE_MUST_BE = "% for islice() must be None or an integer: 0 <= x <= sys.maxsize.";
@@ -405,6 +405,7 @@ public abstract class ErrorMessages {
     public static final String LEN_SHOULD_RETURN_GT_ZERO = "__len__() should return >= 0";
     public static final String LENGTH_HINT_SHOULD_RETURN_MT_ZERO = "__length_hint__() should return >= 0";
     public static final String LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = "list assignment index out of range";
+    public static final String LIST_CANNOT_BE_CONVERTED_TO_DICT = "list cannot be converted to dict";
     public static final String LIST_INDEX_OUT_OF_RANGE = "list index out of range";
     public static final String LIST_LENGTH_OUT_OF_RANGE = "list length out of range";
     public static final String LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT = "local variable '%s' referenced before assignment";

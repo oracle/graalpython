@@ -72,9 +72,9 @@ class TestPyObject(CPyExtTestCase):
         type,
         lambda: ([], 12, sys.modules)
     )
-
+        
     # Below are the PyObject_* identifiers that we know are used in numpy
-
+    
     def is_buffer(x):
         __breakpoint__()
         if (isinstance(x, bytes) or isinstance(x, bytearray) or isinstance(x, array.array)):
@@ -459,3 +459,14 @@ class TestPyObject(CPyExtTestCase):
     # )
     # test_PyObject_Init = CPyExtFunction(
     # )
+
+    test_PyStaticMethod_New = CPyExtFunction(
+        lambda args: None,
+        lambda: (
+            (kw_fun,),
+        ),
+        resultspec="O",
+        arguments=["PyObject* func"],
+        argspec="O",
+        cmpfunc=lambda x, y: type(x) == staticmethod
+    )

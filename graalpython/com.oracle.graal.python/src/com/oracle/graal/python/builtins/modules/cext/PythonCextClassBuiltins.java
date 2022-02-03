@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.builtins.modules.cext;
 
-#include "capi.h"
+import com.oracle.graal.python.builtins.Builtin;
+import java.util.List;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
-PyTypeObject PyFunction_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("function", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyFunctionObject), offsetof(PyFunctionObject, vectorcall));
-PyTypeObject PyStaticMethod_Type = PY_TRUFFLE_TYPE("staticmethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PyType_Type));
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
+@GenerateNodeFactory
+public final class PythonCextClassBuiltins extends PythonBuiltins {
 
-UPCALL_ID(PyStaticMethod_New)
-PyObject* PyStaticMethod_New(PyObject *callable) {
-    return UPCALL_CEXT_O(_jls_PyStaticMethod_New, native_to_java(callable));
-}
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return PythonCextClassBuiltinsFactory.getFactories();
+    }
 
-PyObject* PyClassMethod_New(PyObject* method) {
-    return UPCALL_O(PY_BUILTIN, polyglot_from_string("classmethod", SRC_CS), native_to_java(method));
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+    }
+
+    @Builtin(name = "PyInstanceMethod_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyInstancemethodNewNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object staticmethod(Object func) {
+            PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
+            res.setCallable(func);
+            return res;
+        }
+    }
 }

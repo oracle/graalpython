@@ -44,7 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
+import static com.oracle.graal.python.nodes.ErrorMessages.LIST_CANNOT_BE_CONVERTED_TO_DICT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -179,6 +178,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager;
@@ -195,7 +195,6 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -287,7 +286,9 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -297,7 +298,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     public static final String PYTHON_CEXT = "python_cext";
 
-    private static final String ERROR_HANDLER = "error_handler";
     public static final String NATIVE_NULL = "native_null";
 
     private PythonObject errorHandler;
@@ -310,11 +310,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        PythonClass errorHandlerClass = core.factory().createPythonClassAndFixupSlots(core.getLanguage(), PythonBuiltinClassType.PythonClass,
-                        "CErrorHandler", new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
-        builtinConstants.put("CErrorHandler", errorHandlerClass);
-        errorHandler = core.factory().createPythonObject(errorHandlerClass);
-        builtinConstants.put(ERROR_HANDLER, errorHandler);
         // TODO can be removed when python_cext.py is gone
         builtinConstants.put(NATIVE_NULL, core.getContext().getNativeNull());
         builtinConstants.put("PyEval_SaveThread", new PyEvalSaveThread());
@@ -380,15 +375,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "Py_ErrorHandler", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    public abstract static class PyErrorHandlerNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object run(PythonModule cextPython) {
-            return ((PythonCextBuiltins) cextPython.getBuiltins()).errorHandler;
-        }
-    }
-
     @Builtin(name = "Py_NotImplemented")
     @GenerateNodeFactory
     public abstract static class PyNotImplementedNode extends PythonBuiltinNode {
@@ -425,15 +411,36 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    ///////////// mappingproxy /////////////
-
-    @Builtin(name = "PyDictProxy_New", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_Dict_From_List", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PyDictProxyNewNode extends PythonUnaryBuiltinNode {
+    public abstract static class DictFromListNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public static Object values(VirtualFrame frame, Object obj,
-                        @Cached MappingproxyNode mappingNode) {
-            return mappingNode.execute(frame, PythonBuiltinClassType.PMappingproxy, obj);
+        public Object values(VirtualFrame frame, Object list,
+                        @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
+                        @Cached ListBuiltins.GetItemNode getItemNode,
+                        @Cached BranchProfile wrongLenProfile,
+                        @Cached LoopConditionProfile loopProfile,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                int size = sizeNode.execute(frame, list);
+                if (size % 2 != 0) {
+                    wrongLenProfile.enter();
+                    return raiseNativeNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.SystemError, LIST_CANNOT_BE_CONVERTED_TO_DICT);
+                }
+                HashingStorage store = PDict.createNewStorage(false, size);
+                loopProfile.profileCounted(size);
+                for (int i = 0; loopProfile.profile(i < size); i = i + 2) {
+                    Object k = getItemNode.execute(frame, list, i);
+                    Object v = getItemNode.execute(frame, list, i + 1);
+                    store = lib.setItem(store, k, v);
+                }
+                return factory().createDict(store);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getContext().getNativeNull();
+            }
         }
     }
 
@@ -2407,34 +2414,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyDescr_NewClassMethod", minNumOfPositionalArgs = 6, parameterNames = {"name", "doc", "flags", "wrapper", "cfunc", "primary"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
-    @GenerateNodeFactory
-    abstract static class PyDescrNewClassMethod extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyDescrNewClassMethodClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object doNativeCallable(String name, Object doc, int flags, Object wrapper, Object methObj, Object primary,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached NewClassMethodNode newClassMethodNode,
-                        @Cached ToNewRefNode newRefNode) {
-            Object type = asPythonObjectNode.execute(primary);
-            Object func = newClassMethodNode.execute(name, methObj, flags, wrapper, type, doc, factory());
-            if (!isClassOrStaticMethod(flags)) {
-                /*
-                 * NewClassMethodNode only wraps method with METH_CLASS and METH_STATIC set but we
-                 * need to do so here.
-                 */
-                func = factory().createClassmethodFromCallableObj(func);
-            }
-            return newRefNode.execute(func);
-        }
-    }
-
     abstract static class CFunctionNewExMethodNode extends Node {
 
         abstract Object execute(String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
@@ -2655,26 +2634,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         private static RootCallTarget setterCallTarget(String name, PythonLanguage lang) {
             Function<PythonLanguage, RootNode> rootNodeFunction = l -> new SetterRoot(l, name, PExternalFunctionWrapper.SETTER);
             return lang.createCachedCallTarget(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true);
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyDescr_NewGetSet", minNumOfPositionalArgs = 6, parameterNames = {"name", "cls", "getter", "setter", "doc", "closure"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
-    @GenerateNodeFactory
-    abstract static class PyDescrNewGetSetNode extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyDescrNewGetSetNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object doNativeCallable(String name, Object cls, Object getter, Object setter, Object doc, Object closure,
-                        @Cached CreateGetSetNode createGetSetNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure,
-                            getLanguage(), factory());
-            return toSulongNode.execute(descr);
         }
     }
 

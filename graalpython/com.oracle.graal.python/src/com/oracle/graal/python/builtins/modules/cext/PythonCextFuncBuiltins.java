@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,10 +38,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.modules.cext;
 
-PyTypeObject PyFunction_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("function", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyFunctionObject), offsetof(PyFunctionObject, vectorcall));
+import com.oracle.graal.python.builtins.Builtin;
+import java.util.List;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
-PyObject* PyClassMethod_New(PyObject* method) {
-    return UPCALL_O(PY_BUILTIN, polyglot_from_string("classmethod", SRC_CS), native_to_java(method));
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
+@GenerateNodeFactory
+public final class PythonCextFuncBuiltins extends PythonBuiltins {
+
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return PythonCextFuncBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+    }
+
+    @Builtin(name = "PyStaticMethod_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyStaticMethodNewNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object staticmethod(Object func) {
+            PDecoratedMethod res = factory().createStaticmethod(PythonBuiltinClassType.PStaticmethod);
+            res.setCallable(func);
+            return res;
+        }
+    }
 }
