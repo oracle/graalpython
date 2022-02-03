@@ -3421,7 +3421,16 @@ public abstract class CExtNodes {
                             break;
                         case 'p':
                             // %p
-                            result.append(getVaArgsNode.getVoidPtr(vaList, vaArgIdx).toString());
+                            Object ptr = getVaArgsNode.getVoidPtr(vaList, vaArgIdx);
+                            long value;
+                            if (interopLibrary.isPointer(ptr)) {
+                                value = interopLibrary.asPointer(ptr);
+                            } else if (interopLibrary.hasIdentity(ptr)) {
+                                value = interopLibrary.identityHashCode(ptr);
+                            } else {
+                                value = System.identityHashCode(ptr);
+                            }
+                            result.append(String.format("0x%x", value));
                             vaArgIdx++;
                             valid = true;
                             break;
