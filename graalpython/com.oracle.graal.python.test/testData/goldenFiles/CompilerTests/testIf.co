@@ -1,4 +1,4 @@
-Disassembly of null:
+Disassembly of <module>:
 000003         0 LOAD_FALSE
 000008         1 POP_AND_JUMP_IF_FALSE             10   (to 11)
 000013         3 LOAD_NAME                         0    (print)

@@ -4,7 +4,7 @@ Disassembly of <module>:
 000000         3 MAKE_FUNCTION                     1
 000000         5 LOAD_CONST                        1    (HandlerTask)
 000018         7 LOAD_GLOBAL                       0    (Task)
-000018         9 CALL_FUNCTION                     2
+000018         9 CALL_FUNCTION                     3
 000000        11 STORE_NAME                        1    (HandlerTask)
 000283        13 LOAD_NONE
 000283        14 RETURN_VALUE
@@ -32,7 +32,7 @@ Disassembly of <module>.HandlerTask.__init__:
 000149        16 LOAD_FAST                         3    (w)
 000151        18 LOAD_FAST                         4    (s)
 000153        20 LOAD_FAST                         5    (r)
-000154        22 COLLECTION_FROM_STACK             6    (Object[])
+000154        22 COLLECTION_FROM_STACK             7    (Object[])
 000155        24 CALL_METHOD_VARARGS               2    (__init__)
 000155        26 POP_TOP
 -00128        27 LOAD_NONE

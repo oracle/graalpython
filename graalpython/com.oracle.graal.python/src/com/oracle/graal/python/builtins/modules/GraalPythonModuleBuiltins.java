@@ -869,6 +869,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castStr,
                         @Cached("create(false)") BuiltinFunctions.CompileNode compileNode) {
             if (mode.equals("pyc")) {
+                String name = path;
                 ParserTokenizer tok;
                 Source source = null;
                 if (codestr instanceof PBytesLike) {
@@ -877,6 +878,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
                         if (truffleFile.exists() && c.length == truffleFile.size()) {
                             source = Source.newBuilder(PythonLanguage.ID, truffleFile).mimeType(PythonLanguage.getCompileMimeType(2)).build();
+                            name = truffleFile.getName();
                         } else {
                             ByteSequence bs = ByteSequence.create(c);
                             source = Source.newBuilder(PythonLanguage.ID, bs, path).mimeType(PythonLanguage.getCompileMimeType(2)).build();
@@ -908,7 +910,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 };
                 Parser parser = new Parser(tok, factory, fexpParser, errorCb);
                 Compiler compiler = new Compiler();
-                CompilationUnit cu = compiler.compile(parser.file_rule(), path, EnumSet.noneOf(Compiler.Flags.class), 2);
+                CompilationUnit cu = compiler.compile(parser.file_rule(), name, EnumSet.noneOf(Compiler.Flags.class), 2);
                 CodeUnit co = cu.assemble(path, 0);
 
                 Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,

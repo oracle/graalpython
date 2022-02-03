@@ -1,13 +1,13 @@
-Disassembly of null:
+Disassembly of <module>:
 000024         0 LOAD_BYTE                         5
 000025         2 COLLECTION_FROM_STACK             1    (Object[])
-000000         4 LOAD_CONST                        0    (null.docompute from <module>)
+000000         4 LOAD_CONST                        0    (<module>.docompute from <module>)
 000000         6 MAKE_FUNCTION                     2
 000000         8 STORE_NAME                        0    (docompute)
 000049        10 LOAD_NONE
 000049        11 RETURN_VALUE
 
-Disassembly of null.docompute:
+Disassembly of <module>.docompute:
 000039         0 LOAD_FAST                         0    (num)
 000044         2 LOAD_FAST                         1    (num2)
 000048         4 COLLECTION_FROM_STACK             2    (tuple)

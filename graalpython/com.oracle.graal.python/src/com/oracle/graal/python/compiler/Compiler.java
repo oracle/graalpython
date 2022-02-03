@@ -79,7 +79,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         this.filename = filename == null ? "<module>" : filename;
         this.flags = flags;
         this.env = new ScopeEnvironment(mod);
-        enterScope(filename, CompilationScope.Module, mod);
+        enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);
         CompilationUnit topUnit = unit;
         if (!unit.currentBlock.isReturn()) {
