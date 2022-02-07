@@ -295,16 +295,12 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     public static final String PYTHON_CEXT = "python_cext";
 
-    public static final String NATIVE_NULL = "native_null";
-
     /*
      * Native pointer to the PyMethodDef struct for functions created in C. We need to keep it
      * because the C program may expect to get its pointer back when accessing m_ml member of
      * methods.
      */
     public static final HiddenKey METHOD_DEF_PTR = new HiddenKey("method_def_ptr");
-
-    private PythonObject errorHandler;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -314,8 +310,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        // TODO can be removed when python_cext.py is gone
-        builtinConstants.put(NATIVE_NULL, core.getContext().getNativeNull());
         builtinConstants.put("PyEval_SaveThread", new PyEvalSaveThread());
         builtinConstants.put("PyEval_RestoreThread", new PyEvalRestoreThread());
         builtinConstants.put("PyGILState_Ensure", new PyGILStateEnsure());

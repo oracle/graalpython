@@ -360,7 +360,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "__graalpython__",
                         "_weakref",
                         "faulthandler",
-                        PythonCextBuiltins.PYTHON_CEXT,
                         "bytearray",
                         "unicodedata",
                         "_sre",
