@@ -216,6 +216,15 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_MEMCPY_BYTES("truffle_memcpy_bytes"),
     FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new"),
 
+    /* PyDateTime_CAPI */
+
+    FUN_SET_PY_DATETIME_IDS("set_PyDateTime_typeids"),
+    FUN_CREATE_DATETIME_CAPSULE("truffle_create_datetime_capsule"),
+    FUN_GET_DATETIME_DATE_BASICSIZE("get_PyDateTime_Date_basicsize"),
+    FUN_GET_DATETIME_TIME_BASICSIZE("get_PyDateTime_Time_basicsize"),
+    FUN_GET_DATETIME_DATETIME_BASICSIZE("get_PyDateTime_DateTime_basicsize"),
+    FUN_GET_DATETIME_DELTA_BASICSIZE("get_PyDateTime_Delta_basicsize"),
+
     // ctypes
     FUN_MEMMOVE("memmove"),
     FUN_MEMSET("memset"),

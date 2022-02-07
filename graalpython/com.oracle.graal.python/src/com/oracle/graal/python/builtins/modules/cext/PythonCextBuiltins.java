@@ -130,7 +130,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCacheFactory.ResolveNativeReferenceNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalRestoreThread;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalSaveThread;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyGILStateNodes.PyGILStateEnsure;
@@ -2244,15 +2243,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             context.getCApiContext().traceStaticMemory(primitivePtr, null, className);
             LOGGER.fine(() -> String.format("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
             return 0;
-        }
-    }
-
-    @Builtin(name = "wrap_PyDateTime_CAPI", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class WrapPyDateTimeCAPI extends PythonBuiltinNode {
-        @Specialization
-        static Object doGeneric(Object object) {
-            return new PyDateTimeCAPIWrapper(object);
         }
     }
 

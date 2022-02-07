@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,9 +70,7 @@ POLYGLOT_DECLARE_TYPE(PyDateTime_Delta);
 POLYGLOT_DECLARE_TYPE(PyDateTime_TZInfo);
 
 /** to be used from Java code only; returns the type ID for a PyDateTime_CAPI */
-extern PyObject* set_PyDateTime_typeids(PyTypeObject* dtcapiType, PyTypeObject* dateType, PyTypeObject* dateTimeType, PyTypeObject* timeType, PyTypeObject* deltaType, PyTypeObject* tzinfoType) {
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", dtcapiType, polyglot_PyDateTime_CAPI_typeid());
-
+extern polyglot_typeid set_PyDateTime_typeids(PyTypeObject* dateType, PyTypeObject* dateTimeType, PyTypeObject* timeType, PyTypeObject* deltaType, PyTypeObject* tzinfoType) {
     /* safe native get/set descriptors */
     PyGetSetDef* getsets_date= PyDateTime_DateType.tp_getset;
     PyGetSetDef* getsets_time = PyDateTime_TimeType.tp_getset;
@@ -91,7 +89,7 @@ extern PyObject* set_PyDateTime_typeids(PyTypeObject* dtcapiType, PyTypeObject* 
     register_native_slots(&PyDateTime_TimeType, getsets_time, NULL);
     register_native_slots(&PyDateTime_DeltaType, NULL, members_delta);
 
-    return Py_True;
+    return polyglot_PyDateTime_CAPI_typeid();
 }
 
 BASICSIZE_GETTER(PyDateTime_Date);
