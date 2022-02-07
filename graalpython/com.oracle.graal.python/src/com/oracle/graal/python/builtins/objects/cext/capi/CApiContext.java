@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -446,6 +446,18 @@ public final class CApiContext extends CExtContext {
                     startTime = System.currentTimeMillis();
                 }
 
+                /*
+                 * Note about the order of operations - we need to call the finalizers first before
+                 * removing the objects from the wrapper list because the finalizers may still make
+                 * upcalls and those need the wrappers to work correctly.
+                 */
+
+                callBulkSubref.call(NativeCAPISymbol.FUN_BULK_SUBREF, new PointerArrayWrapper(nativeObjectReferences), new RefCountArrayWrapper(nativeObjectReferences), (long) n);
+
+                if (loggable) {
+                    middleTime = System.currentTimeMillis();
+                }
+
                 if (LOGGER.isLoggable(Level.FINER)) {
                     // it's not an OSR loop, so we do this before the loop
                     if (n > 0 && pointerObjectLib == null) {
@@ -473,12 +485,6 @@ public final class CApiContext extends CExtContext {
                         }
                     }
                 }
-
-                if (loggable) {
-                    middleTime = System.currentTimeMillis();
-                }
-
-                callBulkSubref.call(NativeCAPISymbol.FUN_BULK_SUBREF, new PointerArrayWrapper(nativeObjectReferences), new RefCountArrayWrapper(nativeObjectReferences), (long) n);
 
                 if (loggable) {
                     final long countDuration = middleTime - startTime;

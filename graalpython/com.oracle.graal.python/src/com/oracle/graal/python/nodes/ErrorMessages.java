@@ -852,6 +852,7 @@ public abstract class ErrorMessages {
     public static final String FILE_NOT_OPEN_FOR_S = "File not open for %s";
     public static final String UNBOUNDED_READ_RETURNED_MORE_BYTES = "unbounded read returned more bytes than a Python bytes object can hold";
     public static final String INVALID_MODE_S = "invalid mode: %s";
+    public static final String S_OF_CLOSED_FILE = "%s of closed file";
     public static final String S_TO_CLOSED_FILE = "%s to closed file";
     public static final String NOT_POSSIBLE_TO_SET_THE_ENCODING_OR = "It is not possible to set the encoding or newline of stream after the first read";
     public static final String NOT_WRITABLE = "not writable";

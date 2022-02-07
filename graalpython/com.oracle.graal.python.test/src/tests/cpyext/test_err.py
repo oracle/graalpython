@@ -367,6 +367,7 @@ class TestPyErr(CPyExtTestCase):
         resultspec="O",
         argspec='Osn',
         arguments=["PyObject* category", "char* msg", "Py_ssize_t level"],
+        stderr_validator=lambda args, stderr: "UserWarning: custom warning" in stderr,
         cmpfunc=unhandled_error_compare
     )
 
@@ -389,17 +390,36 @@ class TestPyErr(CPyExtTestCase):
             (None,),
             ("hello",),
         ),
-        resultspec="O",
         argspec='O',
         arguments=["PyObject* obj"],
         code="""void wrap_PyErr_WriteUnraisable(PyObject* object) {
-            PyErr_SetString(PyExc_RuntimeError, "unraisable exception");
+            PyErr_SetString(PyExc_RuntimeError, "unraisable_exception");
             if (object == Py_None)
                 object = NULL;
             PyErr_WriteUnraisable(object);
         }""",
         callfunction="wrap_PyErr_WriteUnraisable",
-        stderr_validator=lambda args, stderr: 'unraisable exception' in stderr,
+        stderr_validator=lambda args, stderr: "RuntimeError: unraisable_exception" in stderr,
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyErr_WriteUnraisableMsg = CPyExtFunctionVoid(
+        lambda args: None,
+        lambda: (
+            (None,),
+            ("hello",),
+        ),
+        code="""void wrap_PyErr_WriteUnraisableMsg(PyObject* object) {
+                PyErr_SetString(PyExc_RuntimeError, "unraisable_exception");
+                if (object == Py_None)
+                    object = NULL;
+                _PyErr_WriteUnraisableMsg("in my function", object);
+             }
+             """,
+        argspec='O',
+        arguments=["PyObject* obj"],
+        callfunction="wrap_PyErr_WriteUnraisableMsg",
+        stderr_validator=lambda args, stderr: "RuntimeError: unraisable_exception" in stderr and "Exception ignored in my function:" in stderr,
         cmpfunc=unhandled_error_compare
     )
 

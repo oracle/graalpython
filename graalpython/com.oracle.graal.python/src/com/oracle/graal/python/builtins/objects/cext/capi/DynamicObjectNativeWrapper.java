@@ -41,6 +41,7 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.METHOD_DEF_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MA_VERSION_TAG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_DEF;
@@ -65,6 +66,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
@@ -151,6 +153,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -208,6 +211,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -1056,9 +1060,22 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return object instanceof PBuiltinFunction || object instanceof PBuiltinMethod || object instanceof PFunction || object instanceof PMethod;
         }
 
-        @Specialization(guards = {"eq(M_ML, key)", "isAnyFunctionObject(object)"})
-        static Object doPyCFunctionObjectMMl(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        @Specialization(guards = {"eq(M_ML, key)", "isAnyFunctionObject(object)"}, limit = "1")
+        static Object doPyCFunctionObjectMMl(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @CachedLibrary("object") DynamicObjectLibrary dylib) {
+            Object methodDefPtr = dylib.getOrDefault(object, METHOD_DEF_PTR, null);
+            if (methodDefPtr != null) {
+                return methodDefPtr;
+            }
             return new PyMethodDefWrapper(object);
+        }
+
+        @Specialization(guards = {"eq(M_MODULE, key)", "isAnyFunctionObject(object)"})
+        static Object doPyCFunctionObjectMModule(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached ToSulongNode toSulongNode) {
+            Object module = lookup.execute(null, object, __MODULE__);
+            return toSulongNode.execute(module != PNone.NO_VALUE ? module : PythonContext.get(toSulongNode).getNativeNull());
         }
 
         @Specialization(guards = "eq(M_SELF, key)")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -190,7 +190,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         Object shutdown(VirtualFrame frame, PSSLSocket self,
                         @Cached SSLOperationNode sslOperationNode) {
             sslOperationNode.shutdown(frame, self);
-            return PNone.NONE;
+            return self.getSocket() != null ? self.getSocket() : PNone.NONE;
         }
     }
 
@@ -413,12 +413,10 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SelectedAlpnProtocol extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         static Object get(PSSLSocket socket) {
-            String protocol = null;
-            if (ALPNHelper.hasAlpn()) {
-                protocol = ALPNHelper.getApplicationProtocol(socket.getEngine());
-            }
-            return protocol != null ? protocol : PNone.NONE;
+            String protocol = socket.getEngine().getApplicationProtocol();
+            return protocol != null && !protocol.isEmpty() ? protocol : PNone.NONE;
         }
     }
 

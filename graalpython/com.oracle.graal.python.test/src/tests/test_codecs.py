@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -153,6 +153,9 @@ class UnicodeEscapeTest(unittest.TestCase):
             check(chr(b), ('\\x%02x' % b).encode())
         check('\u20ac', br'\u20ac')
         check('\U0001d120', br'\U0001d120')
+        check('\U0001d120A', br'\U0001d120A')
+        check('\ud800', b'\\ud800')
+        check('\ud800A', b'\\ud800A')
 
     def test_escape_decode(self):
         decode = codecs.unicode_escape_decode

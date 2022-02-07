@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -240,6 +240,11 @@ void PyDict_Clear(PyObject *obj) {
 UPCALL_ID(PyDict_Merge);
 int PyDict_Merge(PyObject *a, PyObject *b, int override) {
     return UPCALL_CEXT_I(_jls_PyDict_Merge, native_to_java(a), native_to_java(b), override);
+}
+
+UPCALL_ID(PyDict_Keys);
+PyObject * PyDict_Keys(PyObject *dict) {
+    return UPCALL_CEXT_O(_jls_PyDict_Keys, native_to_java(dict));
 }
 
 UPCALL_ID(PyDict_Values);
