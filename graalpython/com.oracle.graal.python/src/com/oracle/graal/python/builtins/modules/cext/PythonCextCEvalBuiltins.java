@@ -47,22 +47,43 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins.AllocateLockNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockNode;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.ReleaseLockNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -139,6 +160,106 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
             }
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyEval_EvalCodeEx", minNumOfPositionalArgs = 9, needsFrame = true)
+    @GenerateNodeFactory
+    abstract static class PyEvalEvalCodeEx extends PythonBuiltinNode {
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object codeWrapper, Object globalsWrapper, Object localsWrapper,
+                        Object argumentArrayPtr, Object kwnamesPtr, Object keywordArrayPtr, Object defaultValueArrayPtr,
+                        Object kwdefaultsWrapper, Object closureWrapper,
+                        @CachedLibrary(limit = "2") InteropLibrary ptrLib,
+                        @Cached CExtNodes.AsPythonObjectNode codeAsPythonObjectNode,
+                        @Cached CExtNodes.AsPythonObjectNode globalsAsPythonObjectNode,
+                        @Cached CExtNodes.AsPythonObjectNode localsAsPythonObjectNode,
+                        @Cached CExtNodes.AsPythonObjectNode kwdefaultsAsPythonObjectNode,
+                        @Cached CExtNodes.AsPythonObjectNode closureAsPythonObjectNode,
+                        @Cached CExtNodes.ToJavaNode elementToJavaNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached CodeNodes.GetCodeSignatureNode getSignatureNode,
+                        @Cached CodeNodes.GetCodeCallTargetNode getCallTargetNode,
+                        @Cached CreateArgumentsNode.CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                        @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
+                        @Cached GenericInvokeNode invokeNode) {
+            PCode code = (PCode) codeAsPythonObjectNode.execute(codeWrapper);
+            Object globals = globalsAsPythonObjectNode.execute(globalsWrapper);
+            Object locals = localsAsPythonObjectNode.execute(localsWrapper);
+            Object[] defaults = unwrapArray(defaultValueArrayPtr, ptrLib, elementToJavaNode);
+            PKeyword[] kwdefaults = expandKeywordStarargsNode.execute(kwdefaultsAsPythonObjectNode.execute(kwdefaultsWrapper));
+            PCell[] closure = null;
+            Object closureObj = closureAsPythonObjectNode.execute(closureWrapper);
+            if (closureObj != PNone.NO_VALUE) {
+                // CPython also just accesses the object as tuple without further checks.
+                closure = PCell.toCellArray(getObjectArrayNode.execute(closureObj));
+            }
+            Object[] keywordNames = unwrapArray(kwnamesPtr, ptrLib, elementToJavaNode);
+            Object[] keywordArguments = unwrapArray(keywordArrayPtr, ptrLib, elementToJavaNode);
+
+            // The two arrays 'kwnamesPtr' and 'keywordArrayPtr' are expected to have the same size.
+            if (keywordNames.length != keywordArguments.length) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            PKeyword[] keywords = new PKeyword[keywordNames.length];
+            for (int i = 0; i < keywordNames.length; i++) {
+                String keywordName = castToJavaStringNode.execute(keywordNames[i]);
+                keywords[i] = new PKeyword(keywordName, keywordArguments[i]);
+            }
+
+            // prepare Python frame arguments
+            Object[] userArguments = unwrapArray(argumentArrayPtr, ptrLib, elementToJavaNode);
+            Signature signature = getSignatureNode.execute(code);
+            Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, defaults, kwdefaults, false);
+
+            // set custom locals
+            if (!(locals instanceof PNone)) {
+                PArguments.setSpecialArgument(pArguments, locals);
+                PArguments.setCustomLocals(pArguments, locals);
+            }
+            PArguments.setClosure(pArguments, closure);
+            // TODO(fa): set builtins in globals
+            // PythonModule builtins = getContext().getBuiltins();
+            // setBuiltinsInGlobals(frame, globals, setBuiltins, builtins, lib);
+            if (globals instanceof PythonObject) {
+                PArguments.setGlobals(pArguments, (PythonObject) globals);
+            } else {
+                // TODO(fa): raise appropriate exception
+            }
+
+            try {
+                RootCallTarget rootCallTarget = getCallTargetNode.execute(code);
+                Object result = invokeNode.execute(frame, rootCallTarget, pArguments);
+                return toNewRefNode.execute(result);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getContext().getNativeNull();
+            }
+        }
+
+        private static Object[] unwrapArray(Object ptr, InteropLibrary ptrLib, CExtNodes.ToJavaNode elementToJavaNode) {
+            if (ptrLib.hasArrayElements(ptr)) {
+                try {
+                    int size = PInt.intValueExact(ptrLib.getArraySize(ptr));
+                    Object[] result = new Object[size];
+                    for (int i = 0; i < result.length; i++) {
+                        result[i] = elementToJavaNode.execute(ptrLib.readArrayElement(ptr, i));
+                    }
+                    return result;
+                } catch (UnsupportedMessageException | OverflowException | InvalidArrayIndexException e) {
+                    // fall through
+                }
+            }
+            /*
+             * Whenever some access goes wrong then this would basically be a segfault in CPython.
+             * So, we just throw a fatal exception which is not a Python exception.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 }
