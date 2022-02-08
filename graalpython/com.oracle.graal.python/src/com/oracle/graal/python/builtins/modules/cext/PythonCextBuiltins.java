@@ -1149,23 +1149,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_SetBufferProcs", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyTruffleSetBufferProcs extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        static Object doNativeWrapper(PythonClassNativeWrapper nativeWrapper, Object getBufferProc, Object releaseBufferProc) {
-            nativeWrapper.setGetBufferProc(getBufferProc);
-            nativeWrapper.setReleaseBufferProc(releaseBufferProc);
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization
-        static Object doPythonObject(PythonManagedClass obj, Object getBufferProc, Object releaseBufferProc) {
-            return doNativeWrapper(obj.getClassNativeWrapper(), getBufferProc, releaseBufferProc);
-        }
-    }
-
     @Builtin(name = "PyMemoryView_FromObject", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleMemoryViewFromObject extends NativeBuiltin {

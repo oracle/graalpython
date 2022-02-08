@@ -51,8 +51,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
  */
 public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
-    private Object getBufferProc;
-    private Object releaseBufferProc;
 
     private PythonClassNativeWrapper(PythonManagedClass object, String name) {
         super(object);
@@ -61,22 +59,6 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
 
     public CStringWrapper getNameWrapper() {
         return nameWrapper;
-    }
-
-    public Object getGetBufferProc() {
-        return getBufferProc;
-    }
-
-    public void setGetBufferProc(Object getBufferProc) {
-        this.getBufferProc = getBufferProc;
-    }
-
-    public Object getReleaseBufferProc() {
-        return releaseBufferProc;
-    }
-
-    public void setReleaseBufferProc(Object releaseBufferProc) {
-        this.releaseBufferProc = releaseBufferProc;
     }
 
     public static PythonClassNativeWrapper wrap(PythonManagedClass obj, String name) {
