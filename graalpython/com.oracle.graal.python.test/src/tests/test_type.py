@@ -153,6 +153,7 @@ def test_base():
 #    assert raised
 #    assert C.__bases__ == [object]
 
+
 def test_namespace_with_non_string_keys():
     class MyStr(str):
         pass
@@ -161,6 +162,7 @@ def test_namespace_with_non_string_keys():
         MyStr("x"): 42
     })
     assert any(type(k) == MyStr for k in A.__dict__.keys())
+
 
 def test_mro():
     class M(type):
@@ -173,7 +175,8 @@ def test_mro():
     class C(A, B, metaclass = M): pass
 
     assert C.__mro__ == (C, B, A, object)
-    
+
+
 def test_dir_sorted():
     class C:
         b = 1
@@ -253,6 +256,7 @@ def test_flags():
     ]:
         assert type(x).__flags__ & flag, "masked __flags__ = {}, expected {}".format(type(x).__flags__ & flag, flag)
 
+
 def test_dict():
     def dict_element_raises(o, err):
         raised = False
@@ -295,7 +299,8 @@ def test_dict():
     
     str(type(SubSlots.__dict__['__dict__'])) == "<class 'get_set_desc'>"
     assert SubSlots().__dict__ == {}
-        
+
+
 def test_itemsize():
     assert object.__itemsize__ == 0
     assert list.__itemsize__ == 0
@@ -330,7 +335,8 @@ def test_itemsize():
     class C(tuple):
         __itemsize__ = 42
     assert C.__itemsize__ == 8
-    
+
+
 def test_descr_name_qualname():    
     assert float.real.__qualname__ == 'float.real'
     assert float.real.__name__ == 'real'
@@ -349,7 +355,8 @@ def test_descr_name_qualname():
     except AttributeError:
         raised = True
     assert raised    
-    
+
+
 def test_cant_set_builtin_attributes():
     raised = False
     try:
@@ -392,3 +399,41 @@ def test_cant_set_builtin_attributes():
     except TypeError:
         raised = True
     assert raised    
+
+
+def test_slots_no_instance_layout_conflict():
+    # with slots
+    class A(object):
+        __slots__ = ("a", "b")
+
+    class B(A):
+        pass
+
+    class C(A):
+        pass
+
+    raised = False
+    try:
+        class D(B, C):
+            pass
+    except TypeError:
+        raised = True
+    assert not raised
+
+    # without slots
+    class A(object):
+        pass
+
+    class B(A):
+        pass
+
+    class C(A):
+        pass
+
+    raised = False
+    try:
+        class D(B, C):
+            pass
+    except TypeError:
+        raised = True
+    assert not raised
