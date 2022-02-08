@@ -316,6 +316,14 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
 #define COPYMAP(SLOT) COPYSLOT(tp_as_mapping->SLOT)
 #define COPYBUF(SLOT) COPYSLOT(tp_as_buffer->SLOT)
 
+    if (type->tp_as_buffer != NULL && base->tp_as_buffer != NULL) {
+        basebase = base->tp_base;
+        if (basebase->tp_as_buffer == NULL)
+            basebase = NULL;
+        COPYBUF(bf_getbuffer);
+        COPYBUF(bf_releasebuffer);
+    }
+
     basebase = base->tp_base;
 
     COPYSLOT(tp_dealloc);
@@ -734,6 +742,21 @@ int PyType_Ready(PyTypeObject* cls) {
         } else if (PyDict_SetItem(cls->tp_dict, doc_id, Py_None) < 0) {
             RETURN_ERROR(cls);
         }
+    }
+
+    /* Some more special stuff */
+    base = cls->tp_base;
+    if (base != NULL) {
+        // if (cls->tp_as_async == NULL)
+        //     cls->tp_as_async = base->tp_as_async;
+        // if (cls->tp_as_number == NULL)
+        //     cls->tp_as_number = base->tp_as_number;
+        // if (cls->tp_as_sequence == NULL)
+        //     cls->tp_as_sequence = base->tp_as_sequence;
+        // if (cls->tp_as_mapping == NULL)
+        //     cls->tp_as_mapping = base->tp_as_mapping;
+        if (cls->tp_as_buffer == NULL)
+            cls->tp_as_buffer = base->tp_as_buffer;
     }
 
     /* Link into each base class's list of subclasses */
