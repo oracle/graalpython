@@ -1148,8 +1148,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         private static boolean extraivars(Object type, Object base, Object typeSlots, Object baseSlots, GetInternalObjectArrayNode getArrayNode) {
-            if (typeSlots == null && baseSlots != null && length(((PSequence) baseSlots).getSequenceStorage(), getArrayNode) != 0 ||
-                            baseSlots == null && typeSlots != null && length(((PSequence) typeSlots).getSequenceStorage(), getArrayNode) != 0) {
+            if (typeSlots == null && baseSlots != null && length(baseSlots, getArrayNode) != 0 ||
+                            baseSlots == null && typeSlots != null && length(typeSlots, getArrayNode) != 0) {
                 return true;
             }
             Object typeNewMethod = LookupAttributeInMRONode.lookup(type, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
@@ -1158,18 +1158,26 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static int length(SequenceStorage storage, GetInternalObjectArrayNode getArrayNode) {
-            int result = 0;
-            int length = storage.length();
-            Object[] slots = getArrayNode.execute(storage);
-            for (int i = 0; i < length; i++) {
-                // omit __DICT__ and __WEAKREF__, they cause no class layout conflict
-                // see also test_slts.py#test_no_bases_have_class_layout_conflict
-                if (!(slots[i].equals(__DICT__) || slots[i].equals(__WEAKREF__))) {
-                    result++;
+        private static int length(Object slotsObject, GetInternalObjectArrayNode getArrayNode) {
+            assert PGuards.isString(slotsObject) || PGuards.isPSequence(slotsObject): "slotsObject must be either a String or a PSequence";
+
+            if (PGuards.isString(slotsObject)) {
+                return (slotsObject.equals(__DICT__) || slotsObject.equals(__WEAKREF__)) ? 0 : 1;
+            } else {
+                SequenceStorage storage = ((PSequence) slotsObject).getSequenceStorage();
+
+                int count = 0;
+                int length = storage.length();
+                Object[] slots = getArrayNode.execute(storage);
+                for (int i = 0; i < length; i++) {
+                    // omit __DICT__ and __WEAKREF__, they cause no class layout conflict
+                    // see also test_slts.py#test_no_bases_have_class_layout_conflict
+                    if (!(slots[i].equals(__DICT__) || slots[i].equals(__WEAKREF__))) {
+                        count++;
+                    }
                 }
+                return count;
             }
-            return result;
         }
 
         private static Object getSlotsFromType(Object type, ReadAttributeFromObjectNode readAttr) {
