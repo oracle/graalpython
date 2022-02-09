@@ -476,8 +476,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
                 if (arg.matches("(-Xrunjdwp:|-agentlib:jdwp=).*suspend=y.*")) {
                     arg = arg.replace("suspend=y", "suspend=n");
-                }
-                if ((javaOptions != null && javaOptions.contains(arg)) || (javaToolOptions != null && javaToolOptions.contains(arg))) {
+                } else if (arg.matches(".*ThreadPriorityPolicy.*")) {
+                    // skip this one, it may cause warnings
+                    continue;
+                } else if ((javaOptions != null && javaOptions.contains(arg)) || (javaToolOptions != null && javaToolOptions.contains(arg))) {
                     // both _JAVA_OPTIONS and JAVA_TOOL_OPTIONS are adeed during
                     // JVM startup automatically. We do not want to repeat these
                     // for subprocesses, because they should also pick up those
