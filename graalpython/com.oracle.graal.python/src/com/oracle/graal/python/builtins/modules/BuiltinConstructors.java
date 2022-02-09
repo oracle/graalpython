@@ -867,11 +867,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (noGetItemProfile.profile(getItem == PNone.NO_VALUE)) {
                     throw raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
+                    Object h = lookupLen.executeObject(frame, sequence);
+                    int lengthHint;
                     try {
-                        return factory().createSequenceReverseIterator(cls, sequence, PGuards.expectInteger(lookupLen.executeObject(frame, sequence)));
-                    } catch (UnexpectedResultException e) {
-                        throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, e.getResult());
+                        lengthHint = PGuards.expectInt(h);
+                    } catch (UnexpectedResultException | OverflowException e) {
+                        throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, h);
                     }
+                    return factory().createSequenceReverseIterator(cls, sequence, lengthHint);
                 }
             } else {
                 return callReversed.executeObject(frame, reversed, sequence);
