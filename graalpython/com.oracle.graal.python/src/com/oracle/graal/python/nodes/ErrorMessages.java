@@ -391,7 +391,6 @@ public abstract class ErrorMessages {
     public static final String INVALID_VALUE_NAN = "Invalid value NaN (not a number)";
     public static final String IS_NOT_SUBTYPE_OF = "%s.__new__(%N): %N is not a subtype of %s";
     public static final String IS_NOT_TYPE_OBJ = "%s is not a type object (%p)";
-    public static final String ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_CLSS_WAS = "issubclass() arg 2 must be a class or tuple of classes";
     public static final String ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE = "isinstance() arg 2 must be a type or tuple of types (was: %s)";
     public static final String ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE = "issubclass() arg 2 must be a class or tuple of classes";
     public static final String ITER_V_MUST_BE_CALLABLE = "iter(v, w): v must be callable";
