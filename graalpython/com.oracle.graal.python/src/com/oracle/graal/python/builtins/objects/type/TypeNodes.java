@@ -1101,30 +1101,29 @@ public abstract class TypeNodes {
         protected Object getSolid(Object type,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
-                        @Cached GetInternalObjectArrayNode getArrayNode,
                         @Cached BranchProfile typeIsNotBase,
                         @Cached BranchProfile hasBase,
                         @Cached BranchProfile hasNoBase) {
-            return solidBase(type, getBaseClassNode, PythonContext.get(this), readAttr, getArrayNode, typeIsNotBase, hasBase,
+            return solidBase(type, getBaseClassNode, PythonContext.get(this), readAttr, typeIsNotBase, hasBase,
                             hasNoBase, 0);
         }
 
         @TruffleBoundary
-        protected Object solidBaseTB(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, GetInternalObjectArrayNode getArrayNode, int depth) {
-            return solidBase(type, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncachedForceType(), getArrayNode, BranchProfile.getUncached(),
+        protected Object solidBaseTB(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, int depth) {
+            return solidBase(type, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncachedForceType(), BranchProfile.getUncached(),
                             BranchProfile.getUncached(), BranchProfile.getUncached(), depth);
         }
 
         protected Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, ReadAttributeFromObjectNode readAttr,
-                        GetInternalObjectArrayNode getArrayNode, BranchProfile typeIsNotBase, BranchProfile hasBase, BranchProfile hasNoBase, int depth) {
+                        BranchProfile typeIsNotBase, BranchProfile hasBase, BranchProfile hasNoBase, int depth) {
             CompilerAsserts.partialEvaluationConstant(depth);
             Object base = getBaseClassNode.execute(type);
             if (base != null) {
                 hasBase.enter();
                 if (depth > 3) {
-                    base = solidBaseTB(base, getBaseClassNode, context, getArrayNode, depth);
+                    base = solidBaseTB(base, getBaseClassNode, context, depth);
                 } else {
-                    base = solidBase(base, getBaseClassNode, context, readAttr, getArrayNode, typeIsNotBase, hasBase,
+                    base = solidBase(base, getBaseClassNode, context, readAttr, typeIsNotBase, hasBase,
                                     hasNoBase, depth + 1);
                 }
             } else {
@@ -1138,7 +1137,7 @@ public abstract class TypeNodes {
             typeIsNotBase.enter();
 
             Object typeSlots = getSlotsFromType(type, readAttr);
-            if (extraivars(type, base, typeSlots, getArrayNode)) {
+            if (extraivars(type, base, typeSlots)) {
                 return type;
             } else {
                 return base;
@@ -1146,8 +1145,8 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static boolean extraivars(Object type, Object base, Object typeSlots, GetInternalObjectArrayNode getArrayNode) {
-            if (typeSlots != null && length(typeSlots, getArrayNode) != 0) {
+        private static boolean extraivars(Object type, Object base, Object typeSlots) {
+            if (typeSlots != null && length(typeSlots) != 0) {
                 return true;
             }
             Object typeNewMethod = LookupAttributeInMRONode.lookup(type, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
@@ -1156,7 +1155,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static int length(Object slotsObject, GetInternalObjectArrayNode getArrayNode) {
+        private static int length(Object slotsObject) {
             assert PGuards.isString(slotsObject) || PGuards.isPSequence(slotsObject) : "slotsObject must be either a String or a PSequence";
 
             if (PGuards.isString(slotsObject)) {
@@ -1166,7 +1165,7 @@ public abstract class TypeNodes {
 
                 int count = 0;
                 int length = storage.length();
-                Object[] slots = getArrayNode.execute(storage);
+                Object[] slots = GetInternalObjectArrayNode.getUncached().execute(storage);
                 for (int i = 0; i < length; i++) {
                     // omit __DICT__ and __WEAKREF__, they cause no class layout conflict
                     // see also test_slts.py#test_no_bases_have_class_layout_conflict

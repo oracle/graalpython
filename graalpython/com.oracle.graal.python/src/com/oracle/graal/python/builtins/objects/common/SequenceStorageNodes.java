@@ -3624,6 +3624,10 @@ public abstract class SequenceStorageNodes {
             }
             return barr;
         }
+
+        public static GetInternalObjectArrayNode getUncached() {
+            return SequenceStorageNodesFactory.GetInternalObjectArrayNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
