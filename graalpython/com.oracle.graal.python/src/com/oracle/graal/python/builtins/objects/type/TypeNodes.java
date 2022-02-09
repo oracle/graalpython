@@ -1138,8 +1138,7 @@ public abstract class TypeNodes {
             typeIsNotBase.enter();
 
             Object typeSlots = getSlotsFromType(type, readAttr);
-            Object baseSlots = getSlotsFromType(base, readAttr);
-            if (extraivars(type, base, typeSlots, baseSlots, getArrayNode)) {
+            if (extraivars(type, base, typeSlots, getArrayNode)) {
                 return type;
             } else {
                 return base;
@@ -1147,9 +1146,8 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static boolean extraivars(Object type, Object base, Object typeSlots, Object baseSlots, GetInternalObjectArrayNode getArrayNode) {
-            if (typeSlots == null && baseSlots != null && length(baseSlots, getArrayNode) != 0 ||
-                            baseSlots == null && typeSlots != null && length(typeSlots, getArrayNode) != 0) {
+        private static boolean extraivars(Object type, Object base, Object typeSlots, GetInternalObjectArrayNode getArrayNode) {
+            if (typeSlots != null && length(typeSlots, getArrayNode) != 0) {
                 return true;
             }
             Object typeNewMethod = LookupAttributeInMRONode.lookup(type, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
@@ -1159,7 +1157,7 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         private static int length(Object slotsObject, GetInternalObjectArrayNode getArrayNode) {
-            assert PGuards.isString(slotsObject) || PGuards.isPSequence(slotsObject): "slotsObject must be either a String or a PSequence";
+            assert PGuards.isString(slotsObject) || PGuards.isPSequence(slotsObject) : "slotsObject must be either a String or a PSequence";
 
             if (PGuards.isString(slotsObject)) {
                 return (slotsObject.equals(__DICT__) || slotsObject.equals(__WEAKREF__)) ? 0 : 1;
