@@ -71,6 +71,7 @@
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_excepthook
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_excepthook_thread_None
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_system_exit
+*graalpython.lib-python.3.test.test_threading.InterruptMainTests.test_interrupt_main_noerror
 *graalpython.lib-python.3.test.test_threading.LockTests.test_acquire_contended
 *graalpython.lib-python.3.test.test_threading.LockTests.test_acquire_destroy
 *graalpython.lib-python.3.test.test_threading.LockTests.test_acquire_release

@@ -172,6 +172,7 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_DEALLOC = new HiddenKey("__dealloc__");
     public static final HiddenKey TYPE_DEL = new HiddenKey("__del__");
     public static final HiddenKey TYPE_FREE = new HiddenKey("__free__");
+    public static final HiddenKey TYPE_AS_BUFFER = new HiddenKey("__tp_as_buffer__");
     public static final HiddenKey TYPE_FLAGS = new HiddenKey(__FLAGS__);
     public static final HiddenKey TYPE_VECTORCALL_OFFSET = new HiddenKey("__vectorcall_offset__");
     public static final HiddenKey TYPE_GETBUFFER = new HiddenKey("__getbuffer__");

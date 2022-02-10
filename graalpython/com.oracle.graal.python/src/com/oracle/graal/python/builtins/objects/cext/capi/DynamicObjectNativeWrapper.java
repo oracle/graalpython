@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_AS_BUFFER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DEALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DEL;
@@ -84,7 +85,6 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
@@ -472,45 +472,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
         static Object doTpAsBuffer(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached IsSubtypeNode isSubtype,
-                        @Cached BranchProfile notBytes,
-                        @Cached BranchProfile notBytearray,
-                        @Cached BranchProfile notMemoryview,
-                        @Cached BranchProfile notBuffer,
-                        @Cached BranchProfile notMmap,
                         @Cached LookupNativeMemberInMRONode lookupTpAsBufferNode,
                         @Shared("nullToSulongNode") @Cached ToSulongNode toSulongNode) {
-            Python3Core core = PythonContext.get(toSulongNode);
-            PythonBuiltinClass pBytes = core.lookupType(PythonBuiltinClassType.PBytes);
-            if (isSubtype.execute(object, pBytes)) {
-                return new PyBufferProcsWrapper(pBytes);
-            }
-            notBytes.enter();
-            PythonBuiltinClass pBytearray = core.lookupType(PythonBuiltinClassType.PByteArray);
-            if (isSubtype.execute(object, pBytearray)) {
-                return new PyBufferProcsWrapper(pBytearray);
-            }
-            notBytearray.enter();
-            PythonBuiltinClass pMemoryview = core.lookupType(PythonBuiltinClassType.PMemoryView);
-            if (isSubtype.execute(object, pMemoryview)) {
-                return new PyBufferProcsWrapper(pMemoryview);
-            }
-            notMemoryview.enter();
-            PythonBuiltinClass pBuffer = core.lookupType(PythonBuiltinClassType.PBuffer);
-            if (isSubtype.execute(object, pBuffer)) {
-                return new PyBufferProcsWrapper(pBuffer);
-            }
-            notBuffer.enter();
-            PythonBuiltinClass pMmap = core.lookupType(PythonBuiltinClassType.PMMap);
-            if (isSubtype.execute(object, pMmap)) {
-                return new PyBufferProcsWrapper(pMmap);
-            }
-            notMmap.enter();
-            /*
-             * Managed classes don't store PyBufferProcs objects and so there is no attribute. This
-             * is why we use managedMemberName == "".
-             */
-            Object result = lookupTpAsBufferNode.execute(object, NativeMember.TP_AS_BUFFER, "");
+            Object result = lookupTpAsBufferNode.execute(object, NativeMember.TP_AS_BUFFER, TypeBuiltins.TYPE_AS_BUFFER);
             if (result == PNone.NO_VALUE) {
                 // NULL pointer
                 return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
@@ -1457,6 +1421,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 writeAttrNode.execute(object, TypeBuiltins.TYPE_FREE, asPythonObjectNode.execute(freeFunc));
             }
 
+            @Specialization(guards = {"isPythonClass(object)", "eq(TP_AS_BUFFER, key)"})
+            static void doTpAsBuffer(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object bufferProcs,
+                            @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached WrapVoidPtrNode asPythonObjectNode) {
+                writeAttrNode.execute(object, TypeBuiltins.TYPE_AS_BUFFER, asPythonObjectNode.execute(bufferProcs));
+            }
+
             @GenerateUncached
             static final class EachSubclassAdd extends HashingStorageLibrary.ForEachNode<SubclassAddState> {
 
@@ -1633,6 +1604,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         MD_STATE.getMemberName().equals(member) ||
                         TP_DICT.getMemberName().equals(member) ||
                         TP_DICTOFFSET.getMemberName().equals(member) ||
+                        TP_AS_BUFFER.getMemberName().equals(member) ||
                         MEMORYVIEW_EXPORTS.getMemberName().equals(member);
     }
 
