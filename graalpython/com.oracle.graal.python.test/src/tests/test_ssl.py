@@ -164,9 +164,9 @@ class CertTests(unittest.TestCase):
         self.check_load_cert_chain_error(certfile="broken_cert_double_begin.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="broken_cert_only_begin.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="broken_cert_no_end.pem", errno=9, strerror="[SSL] PEM lib")
-        self.check_load_cert_chain_error(certfile="broken_cert_data.pem", errno=9, strerror="[SSL] PEM lib")
-        self.check_load_cert_chain_error(certfile="broken_cert_data_at_begin.pem", errno=9, strerror="[SSL] PEM lib")
-        self.check_load_cert_chain_error(certfile="broken_cert_data_at_end.pem", errno=100, strerror="[PEM: BAD_BASE64_DECODE] bad base64 decode")
+        self.check_load_cert_chain_error(certfile="broken_cert_data.pem")
+        self.check_load_cert_chain_error(certfile="broken_cert_data_at_begin.pem")
+        self.check_load_cert_chain_error(certfile="broken_cert_data_at_end.pem")
 
         self.check_load_cert_chain_error(certfile="cert_rsa.pem", keyfile="empty.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="cert_rsa.pem", keyfile="empty_pk.pem", errno=9, strerror="[SSL] PEM lib")
@@ -389,6 +389,25 @@ class CertTests(unittest.TestCase):
         client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         client_context.load_cert_chain(signed_cert2)
         check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+
+    def check_keypair(self, signed_cert, signing_ca, password=None):
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(data_file(signed_cert), password=password)
+        client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client_context.load_verify_locations(data_file(signing_ca))
+        check_handshake(server_context, client_context)
+
+    def test_private_key_pkcs8(self):
+        self.check_keypair("signed_cert.pem", "signing_ca.pem")
+
+    def test_private_key_pkcs8_password(self):
+        self.check_keypair("signed_cert_password.pem", "signing_ca.pem", password="password")
+
+    def test_private_key_pkcs1(self):
+        self.check_keypair("signed_cert_pkcs1.pem", "signing_ca.pem")
+
+    def test_private_key_pkcs1_password(self):
+        self.check_keypair("signed_cert_pkcs1_password.pem", "signing_ca.pem", password="password")
 
     def test_alpn(self):
         signed_cert = data_file("signed_cert.pem")
