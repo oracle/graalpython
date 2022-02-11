@@ -277,7 +277,6 @@ suite = {
                 "regex:TREGEX",
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
-                "sdk:JLINE3",
             ],
             "requires": [
                 "java.management",
@@ -480,11 +479,16 @@ suite = {
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
+                "sulong:SULONG_API",
+                "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+            ],
+            "exclude": [
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+                "XZ-1.8",
                 "truffle:ANTLR4",
                 "truffle:ICU4J",
                 "truffle:ICU4J-CHARSET",
-                "sulong:SULONG_API",
-                "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
