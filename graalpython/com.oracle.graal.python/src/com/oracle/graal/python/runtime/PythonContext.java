@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -68,7 +68,6 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -76,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInt
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
@@ -102,7 +102,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
@@ -2074,10 +2073,7 @@ public final class PythonContext extends Python3Core {
         assert this.cApiContext == null : "tried to create new C API context but it was already created";
         this.cApiContext = capiContext;
 
-        ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
-        PythonModule builtinModule = lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
-        CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
-        callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_DATETIME_CAPI), capiContext.getLLVMLibrary());
+        PyDateTimeCAPIWrapper.initWrapper(capiContext);
 
         for (Runnable capiHook : capiHooks) {
             capiHook.run();

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
@@ -545,6 +546,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tdebug", takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class DebugNode extends PythonBuiltinNode {
+
+        public abstract Object execute(Object[] args);
+
         @Specialization
         @TruffleBoundary
         public Object doIt(Object[] args) {
@@ -554,6 +558,10 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
             stdout.flush();
             return PNone.NONE;
+        }
+
+        public static DebugNode create() {
+            return DebugNodeFactory.create(null);
         }
     }
 

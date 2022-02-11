@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -129,7 +130,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCacheFactory.ResolveNativeReferenceNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalRestoreThread;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalSaveThread;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyGILStateNodes.PyGILStateEnsure;
@@ -295,16 +295,12 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     public static final String PYTHON_CEXT = "python_cext";
 
-    public static final String NATIVE_NULL = "native_null";
-
     /*
      * Native pointer to the PyMethodDef struct for functions created in C. We need to keep it
      * because the C program may expect to get its pointer back when accessing m_ml member of
      * methods.
      */
     public static final HiddenKey METHOD_DEF_PTR = new HiddenKey("method_def_ptr");
-
-    private PythonObject errorHandler;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -314,8 +310,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        // TODO can be removed when python_cext.py is gone
-        builtinConstants.put(NATIVE_NULL, core.getContext().getNativeNull());
         builtinConstants.put("PyEval_SaveThread", new PyEvalSaveThread());
         builtinConstants.put("PyEval_RestoreThread", new PyEvalRestoreThread());
         builtinConstants.put("PyGILState_Ensure", new PyGILStateEnsure());
@@ -2229,15 +2223,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "wrap_PyDateTime_CAPI", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class WrapPyDateTimeCAPI extends PythonBuiltinNode {
-        @Specialization
-        static Object doGeneric(Object object) {
-            return new PyDateTimeCAPIWrapper(object);
-        }
-    }
-
     @ImportStatic(CExtContext.class)
     abstract static class NewClassMethodNode extends Node {
 
@@ -3057,6 +3042,18 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             // Note: CPython also constructs the object directly, without running the constructor or
             // checking the inputs
             return factory().createMethod(self, func);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Debug", takesVarArgs = true)
+    @GenerateNodeFactory
+    public abstract static class PyTruffleDebugNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public Object doIt(Object[] args,
+                        @Cached DebugNode debugNode) {
+            debugNode.execute(args);
+            return PNone.NONE;
         }
     }
 }

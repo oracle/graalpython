@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1919,7 +1919,7 @@ public abstract class ExternalFunctionNodes {
          *
          * @param node The processing node (needed for the source location if a {@code SystemError}
          *            is raised).
-         * @param name The name of the funciton (used for the error message).
+         * @param name The name of the function (used for the error message).
          * @param indicatesError {@code true} if the function results indicates an error (e.g.
          *            {@code NULL} if the return type is a pointer or {@code -1} if the return type
          *            is an int).
