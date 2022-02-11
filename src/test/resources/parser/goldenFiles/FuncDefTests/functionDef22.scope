@@ -1,10 +1,10 @@
 ScopeEnvironment
   Scope null Module
-    Symbols: 
+    Symbols:
       print: [Use, GlobalImplicit]
-      test: [DefLocal, Local]
+      test: [DefLocal, Use, Local]
     Scope test Function
-        Symbols: 
+        Symbols:
             a: [DefLocal, Local]
             fn1: [DefLocal, Local]
             fn2: [DefLocal, Local]

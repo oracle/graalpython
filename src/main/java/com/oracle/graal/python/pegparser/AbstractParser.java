@@ -58,8 +58,8 @@ import java.util.Map;
  * parser generator very similar to CPython for easier updating in the future.
  */
 abstract class AbstractParser {
-    protected static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
-    protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
+    public static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
+    public static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
 
     private final ParserTokenizer tokenizer;
     private final ParserErrorCallback errorCb;
@@ -210,6 +210,22 @@ abstract class AbstractParser {
         } else {
             return null;
         }
+    }
+
+    /**
+     * _PyPegen_seq_count_dots
+     */
+    public int countDots(Token[] tokens) {
+        int cnt = 0;
+        for (Token t : tokens) {
+            if (t.type == Token.Kind.ELLIPSIS) {
+                cnt += 3;
+            } else {
+                assert t.type == Token.Kind.DOT;
+                cnt += 1;
+            }
+        }
+        return cnt;
     }
 
     /**
@@ -554,6 +570,13 @@ abstract class AbstractParser {
      */
     static KeywordTy[] deleteStarredExpressions(KeywordOrStarred[] kwds) {
         return Arrays.stream(kwds).filter(n -> n.isKeyword).map(n -> (KeywordTy)n.element).toArray(KeywordTy[]::new);
+    }
+
+    /**
+     * _PyPegen_map_names_to_ids
+     */
+    static String[] extractNames(ExprTy[] seq) {
+        return Arrays.stream(seq).map((e) -> ((ExprTy.Name) e).id).toArray(String[]::new);
     }
 
     /**

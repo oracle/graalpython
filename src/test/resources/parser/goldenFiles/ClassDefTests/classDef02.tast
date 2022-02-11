@@ -1,0 +1,7 @@
+Module[0, 22]
+    ClassDef[0, 22] foo
+        Bases:
+            Name[10, 16] Value: "object"
+        ---- Class body of foo ----
+        Pass[18, 22]
+        ---- End of foo class ----

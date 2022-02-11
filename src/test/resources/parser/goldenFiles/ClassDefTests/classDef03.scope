@@ -1,0 +1,12 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      MyClass: [DefLocal, Local]
+    Scope MyClass Class
+        Symbols:
+            f: [DefLocal, Local]
+            i: [DefLocal, Local]
+      Scope f Function
+            Varnames: self
+            Symbols:
+                  self: [DefParam, Local]

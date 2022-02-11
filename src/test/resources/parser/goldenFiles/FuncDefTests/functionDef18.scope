@@ -1,13 +1,13 @@
 ScopeEnvironment
   Scope null Module
-    Symbols: 
+    Symbols:
       __new__: [DefLocal, Local]
     Scope __new__ Function
         Varnames: _cls, hits, misses, maxsize, currsize
-        Symbols: 
-            hits: [DefParam, Local]
-            currsize: [DefParam, Local]
+        Symbols:
+            _cls: [DefParam, Use, Local]
             _tuple_new: [Use, GlobalImplicit]
-            _cls: [DefParam, Local]
-            misses: [DefParam, Local]
-            maxsize: [DefParam, Local]
+            currsize: [DefParam, Use, Local]
+            hits: [DefParam, Use, Local]
+            maxsize: [DefParam, Use, Local]
+            misses: [DefParam, Use, Local]

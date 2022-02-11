@@ -3,7 +3,7 @@ Module[0, 52]
         Name:fn
         ---- Function body of fn ----
         For[12, 52]
-            Target: Tuple[16, 20]
+            Target: Tuple[16, 20] Context: Store
                 Values:
                     Name[16, 17] Value: "a" Store
                     Name[19, 20] Value: "b" Store

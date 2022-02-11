@@ -1,0 +1,13 @@
+Module[0, 63]
+    FunctionDef[0, 63]
+        Name:fn
+        ---- Function body of fn ----
+        ClassDef[12, 63] DerivedClassName
+            Bases:
+                Attribute[35, 42] 
+                    Receiver: Name[35, 42] Value: "modname"
+                    Attr: BaseClassName
+            ---- Class body of DerivedClassName ----
+            Pass[59, 63]
+            ---- End of DerivedClassName class ----
+        ---- End of fn function ----

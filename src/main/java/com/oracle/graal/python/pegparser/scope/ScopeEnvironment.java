@@ -317,6 +317,7 @@ public class ScopeEnvironment {
                     // TODO: raises SyntaxError:
                     // "duplicate argument '%s' in function definition", name
                 }
+                flags.add(flag);
             } else {
                 flags = EnumSet.of(flag);
             }
@@ -406,11 +407,11 @@ public class ScopeEnvironment {
                 try {
                     visitAnnotations(args.posOnlyArgs);
                     visitAnnotations(args.args);
-                    if (args.varArg != null) {
-                        args.varArg.accept(this);
+                    if (args.varArg != null && args.varArg.annotation != null) {
+                        args.varArg.annotation.accept(this);
                     }
-                    if (args.kwArg != null) {
-                        args.kwArg.accept(this);
+                    if (args.kwArg != null && args.kwArg.annotation != null) {
+                        args.kwArg.annotation.accept(this);
                     }
                     visitAnnotations(args.kwOnlyArgs);
                 } finally {
@@ -424,7 +425,19 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(AliasTy node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            String importedName = node.asName == null ? node.name : node.asName;
+            int dotIndex = importedName.indexOf('.');
+            if (dotIndex >= 0) {
+                importedName = importedName.substring(0, dotIndex);
+            }
+            if ("*".equals(importedName)) {
+                if (!currentScope.isModule()) {
+                    // TODO: syntax error: IMPORT_STAR not in module scope
+                }
+            } else {
+                addDef(importedName, DefUse.DefImport);
+            }
+            return null;
         }
 
         @Override

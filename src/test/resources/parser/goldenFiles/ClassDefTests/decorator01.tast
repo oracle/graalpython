@@ -1,0 +1,7 @@
+Module[0, 33]
+    ClassDef[0, 33] foo
+        Decorators:
+            Name[1, 16] Value: "class_decorator"
+        ---- Class body of foo ----
+        Pass[29, 33]
+        ---- End of foo class ----

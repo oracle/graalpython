@@ -1,11 +1,11 @@
 ScopeEnvironment
   Scope null Module
-    Symbols: 
+    Symbols:
       test: [DefLocal, Local]
     Scope test Function
         Varnames: self, msg, offset
-        Symbols: 
-            msg: [DefParam, Local]
+        Symbols:
+            msg: [DefParam, Use, Local]
             offset: [DefParam, Local]
+            self: [DefParam, Use, Local]
             test: [Use, GlobalImplicit]
-            self: [DefParam, Local]

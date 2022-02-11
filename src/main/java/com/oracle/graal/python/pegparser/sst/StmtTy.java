@@ -101,6 +101,10 @@ public abstract class StmtTy extends SSTNode {
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
         }
+
+        public FunctionDef copyWithDecorators(ExprTy[] decoratorList) {
+            return new FunctionDef(name, args, body, decoratorList, returns, typeComment, startOffset, endOffset);
+        }
     }
 
     public static final class AsyncFunctionDef extends FunctionDef {
@@ -111,6 +115,11 @@ public abstract class StmtTy extends SSTNode {
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
+        }
+
+        @Override
+        public AsyncFunctionDef copyWithDecorators(ExprTy[] decoratorList) {
+            return new AsyncFunctionDef(name, args, body, decoratorList, returns, typeComment, startOffset, endOffset);
         }
     }
 

@@ -1,0 +1,10 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      add: [DefLocal, Use, Local]
+      c: [DefGlobal, DefLocal, Use, GlobalExplicit]
+      print: [Use, GlobalImplicit]
+    Scope add Function
+        Symbols:
+            c: [DefGlobal, DefLocal, Use, GlobalExplicit]
+            print: [Use, GlobalImplicit]
