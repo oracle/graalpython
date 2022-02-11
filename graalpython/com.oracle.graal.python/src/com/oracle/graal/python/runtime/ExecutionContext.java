@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -271,7 +271,7 @@ public abstract class ExecutionContext {
                 }
 
                 // force the frame so that it can be accessed later
-                ensureMaterializeNode().execute(frame, node, false, true);
+                ensureMaterializeNode().execute(frame, node, false, true, true);
                 info.materialize(PythonLanguage.get(this), frame, node);
                 // if this frame escaped we must ensure that also f_back does
                 callerInfo.markAsEscaped();
