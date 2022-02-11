@@ -488,7 +488,8 @@ suite = {
                 "XZ-1.8",
                 "truffle:ANTLR4",
                 "truffle:ICU4J",
-                "truffle:ICU4J-CHARSET",
+                # TODO this fails native image build for some reason
+                # "truffle:ICU4J-CHARSET",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
