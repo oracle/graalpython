@@ -148,15 +148,15 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("...");
     }
 
-//    @Test
-//    public void simpleExpression06() throws Exception {
-//        checkTreeResult("a[1]");
-//    }
+    @Test
+    public void simpleExpression06() throws Exception {
+        checkTreeResult("a[1]");
+    }
 
-//    @Test
-//    public void simpleExpression07() throws Exception {
-//        checkTreeResult("");
-//    }
+    @Test
+    public void simpleExpression07() throws Exception {
+        checkTreeResult( "");
+    }
 
 //    @Test
 //    public void simpleExpression08() throws Exception {
@@ -203,25 +203,25 @@ public class BasicTests extends ParserTestBase {
        checkTreeResult("1 < '10' > True");
    }
 
-   // @Test
-   // public void comparision03() throws Exception {
-   //     checkTreeResult("1 < '10' > True != 1.0");
-   // }
+    @Test
+    public void comparision03() throws Exception {
+        checkTreeResult("1 < '10' > True != 1.0");
+    }
 
    @Test
    public void comparision04() throws Exception {
        checkScopeAndTree("x < y() <= z");
    }
 
-   // @Test
-   // public void comparision05() throws Exception {
-   //     checkScopeAndTree("x() < y() <= z()");
-   // }
+    @Test
+    public void comparision05() throws Exception {
+        checkScopeAndTree("x() < y() <= z()");
+    }
 
-   // @Test
-   // public void comparision06() throws Exception {
-   //     checkScopeAndTree("x() < y() < y() <= z()");
-   // }
+    @Test
+    public void comparision06() throws Exception {
+        checkScopeAndTree("x() < y() < y() <= z()");
+    }
 
    @Test
    public void comparision07() throws Exception {
@@ -381,10 +381,10 @@ public class BasicTests extends ParserTestBase {
         checkScopeAndTree("def fn(): \"in\".format(name=\"Baf\")");
     }
 
-//    @Test
-//    public void call20() throws Exception {
-//        checkScopeAndTree("def fn(name): \"in\".format(name=name)");
-//    }
+    @Test
+    public void call20() throws Exception {
+        checkScopeAndTree("def fn(name): \"in\".format(name=name)");
+    }
 //
 //    @Test
 //    public void call21() throws Exception {

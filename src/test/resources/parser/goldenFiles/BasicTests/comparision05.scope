@@ -1,0 +1,6 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      x: [Use, GlobalImplicit]
+      y: [Use, GlobalImplicit]
+      z: [Use, GlobalImplicit]
