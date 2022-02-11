@@ -66,9 +66,8 @@ public class NodeFactoryImp implements NodeFactory{
 
     @Override
     public StmtTy createAssert(ExprTy test, ExprTy msg, int startOffset, int endOffset) {
-        // TODO Handle error if the field is null. 
         if (test == null) {
-            
+            // TODO Handle error if the field is null. 
         }
         return new StmtTy.Assert(test, msg, startOffset, endOffset);
     }
