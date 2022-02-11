@@ -256,6 +256,7 @@ suite = {
                 "XZ-1.8",
                 "truffle:ICU4J",
                 "truffle:ICU4J-CHARSET",
+                "regex:TREGEX",
                 "sdk:JLINE3",
             ],
             "requires": [
