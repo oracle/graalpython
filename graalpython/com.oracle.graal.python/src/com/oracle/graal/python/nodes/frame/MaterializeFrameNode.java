@@ -468,7 +468,9 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         protected static boolean isBytecodeFrame(Frame frameToSync) {
-            return frameToSync.getFrameDescriptor() == PBytecodeRootNode.DESCRIPTOR;
+            FrameDescriptor fd = frameToSync.getFrameDescriptor();
+            int sc = fd.getNumberOfSlots();
+            return fd.getSlotInfo(sc - 1) == PBytecodeRootNode.FRAME_MARKER;
         }
 
         @Specialization(guards = { //
