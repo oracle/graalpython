@@ -1,0 +1,14 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      OrderedDict: [DefLocal, Local]
+      dict: [Use, GlobalImplicit]
+    Scope OrderedDict Class
+        Symbols:
+            dict: [Use, GlobalImplicit]
+            setup: [DefLocal, Local]
+      Scope setup Function
+            Varnames: dict_setitem
+            Symbols:
+                  dict: [Use, GlobalImplicit]
+                  dict_setitem: [DefParam, Use, Local]

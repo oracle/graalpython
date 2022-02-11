@@ -1,7 +1,7 @@
 Module[0, 15]
     Assign[0, 15]
         LHS: 
-            Tuple[0, 7]
+            Tuple[0, 7] Context: Store
                 Values:
                     Name[0, 1] Value: "i" Store
                     Name[3, 4] Value: "j" Store

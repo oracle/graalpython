@@ -1,6 +1,6 @@
 Module[0, 20]
     For[0, 20]
-        Target: Tuple[4, 8]
+        Target: Tuple[4, 8] Context: Store
             Values:
                 Name[4, 5] Value: "i" Store
                 Name[7, 8] Value: "b" Store

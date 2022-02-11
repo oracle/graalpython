@@ -1,0 +1,6 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      Enum: [DefLocal, Local]
+      EnumMeta: [Use, GlobalImplicit]
+    Scope Enum Class

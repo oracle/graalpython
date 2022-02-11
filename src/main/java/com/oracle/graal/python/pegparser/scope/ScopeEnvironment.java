@@ -70,12 +70,11 @@ import java.util.Stack;
  */
 public class ScopeEnvironment {
     final Scope topScope;
-    final HashMap<SSTNode, Scope> blocks;
+    final HashMap<SSTNode, Scope> blocks = new HashMap<>();
 
     public ScopeEnvironment(ModTy moduleNode) {
-        blocks = new HashMap<>();
         // First pass, similar to the entry point `symtable_enter_block' on CPython
-        FirstPassVisitor visitor = new FirstPassVisitor(moduleNode);
+        FirstPassVisitor visitor = new FirstPassVisitor(moduleNode, this);
         topScope = visitor.currentScope;
         moduleNode.accept(visitor);
 
@@ -89,6 +88,14 @@ public class ScopeEnvironment {
         sb.append("ScopeEnvironment\n");
         sb.append(topScope.toString(1));
         return sb.toString();
+    }
+
+    private void addScope(SSTNode node, Scope scope) {
+        blocks.put(node, scope);
+    }
+
+    public Scope lookupScope(SSTNode node) {
+        return blocks.get(node);
     }
 
     private void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global) {
@@ -244,20 +251,40 @@ public class ScopeEnvironment {
         }
     }
 
+    public static String mangle(String className, String name) {
+        if (className == null || !name.startsWith("__")) {
+            return name;
+        }
+        if (name.endsWith("__") || name.contains(".")) {
+            return name;
+        }
+        int offset = 0;
+        while (className.charAt(offset) == '_') {
+            offset++;
+            if (offset >= className.length()) {
+                return name;
+            }
+        }
+        return "_" + className.substring(offset) + name;
+    }
+
     private final class FirstPassVisitor implements SSTreeVisitor<Void> {
         private final Stack<Scope> stack;
         private final HashMap<String, EnumSet<DefUse>> globals;
+        private final ScopeEnvironment env;
         private Scope currentScope;
         private String currentClassName;
 
-        private FirstPassVisitor(ModTy moduleNode) {
+        private FirstPassVisitor(ModTy moduleNode, ScopeEnvironment env) {
             this.stack = new Stack<>();
+            this.env = env;
             enterBlock(null, Scope.ScopeType.Module, moduleNode);
             this.globals = this.currentScope.symbols;
         }
 
         private void enterBlock(String name, Scope.ScopeType type, SSTNode ast) {
             Scope scope = new Scope(name, type, ast);
+            env.addScope(ast, scope);
             stack.add(scope);
             if (type == Scope.ScopeType.Annotation) {
                 return;
@@ -275,20 +302,7 @@ public class ScopeEnvironment {
         }
 
         private String mangle(String name) {
-            if (currentClassName == null || !name.startsWith("__")) {
-                return name;
-            }
-            if (name.endsWith("__") || name.contains(".")) {
-                return name;
-            }
-            int offset = 0;
-            while (currentClassName.charAt(offset) == '_') {
-                offset++;
-                if (offset >= currentClassName.length()) {
-                    return name;
-                }
-            }
-            return "_" + currentClassName.substring(offset) + name;
+            return ScopeEnvironment.mangle(currentClassName, name);
         }
 
         private void addDef(String name, DefUse flag) {
@@ -297,12 +311,13 @@ public class ScopeEnvironment {
 
         private void addDef(String name, DefUse flag, Scope scope) {
             String mangled = mangle(name);
-            EnumSet<DefUse> flags = scope.symbols.get(mangled);
+            EnumSet<DefUse> flags = scope.getUseOfName(mangled);
             if (flags != null) {
                 if (flag == DefUse.DefParam && flags.contains(DefUse.DefParam)) {
                     // TODO: raises SyntaxError:
                     // "duplicate argument '%s' in function definition", name
                 }
+                flags.add(flag);
             } else {
                 flags = EnumSet.of(flag);
             }
@@ -392,11 +407,11 @@ public class ScopeEnvironment {
                 try {
                     visitAnnotations(args.posOnlyArgs);
                     visitAnnotations(args.args);
-                    if (args.varArg != null) {
-                        args.varArg.accept(this);
+                    if (args.varArg != null && args.varArg.annotation != null) {
+                        args.varArg.annotation.accept(this);
                     }
-                    if (args.kwArg != null) {
-                        args.kwArg.accept(this);
+                    if (args.kwArg != null && args.kwArg.annotation != null) {
+                        args.kwArg.annotation.accept(this);
                     }
                     visitAnnotations(args.kwOnlyArgs);
                 } finally {
@@ -410,7 +425,19 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(AliasTy node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            String importedName = node.asName == null ? node.name : node.asName;
+            int dotIndex = importedName.indexOf('.');
+            if (dotIndex >= 0) {
+                importedName = importedName.substring(0, dotIndex);
+            }
+            if ("*".equals(importedName)) {
+                if (!currentScope.isModule()) {
+                    // TODO: syntax error: IMPORT_STAR not in module scope
+                }
+            } else {
+                addDef(importedName, DefUse.DefImport);
+            }
+            return null;
         }
 
         @Override
@@ -577,14 +604,14 @@ public class ScopeEnvironment {
                     Scope s = stack.get(i);
                     // If we find a comprehension scope, check for conflict
                     if (s.flags.contains(ScopeFlags.IsComprehension)) {
-                        if (s.symbols.get(targetName).contains(DefUse.DefCompIter)) {
+                        if (s.getUseOfName(targetName).contains(DefUse.DefCompIter)) {
                             // TODO: raise NAMED_EXPR_COMP_CONFLICT
                         }
                         continue;
                     }
                     // If we find a FunctionBlock entry, add as GLOBAL/LOCAL or NONLOCAL/LOCAL
                     if (s.type == ScopeType.Function) {
-                        EnumSet<DefUse> uses = s.symbols.get(targetName);
+                        EnumSet<DefUse> uses = s.getUseOfName(targetName);
                         if (uses.contains(DefUse.DefGlobal)) {
                             addDef(targetName, DefUse.DefGlobal);
                         } else {
@@ -723,7 +750,7 @@ public class ScopeEnvironment {
         public Void visit(StmtTy.AnnAssign node) {
             if (node.target instanceof ExprTy.Name) {
                 ExprTy.Name name = (ExprTy.Name) node.target;
-                EnumSet<DefUse> cur = currentScope.symbols.get(mangle(name.id));
+                EnumSet<DefUse> cur = currentScope.getUseOfName(mangle(name.id));
                 if (cur.contains(DefUse.DefGlobal) || cur.contains(DefUse.DefNonLocal) &&
                                 currentScope.symbols != globals &&
                                 node.isSimple) {

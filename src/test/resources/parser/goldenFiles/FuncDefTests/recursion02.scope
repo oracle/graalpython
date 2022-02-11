@@ -1,15 +1,15 @@
 ScopeEnvironment
   Scope null Module
     Flags: [HasChildWithFreeVars]
-    Symbols: 
+    Symbols:
       outer: [DefLocal, Local]
     Scope outer Function
         Flags: [HasChildWithFreeVars]
-        Symbols: 
-            recursionInner: [DefLocal, Cell]
+        Symbols:
+            recursionInner: [DefLocal, Use, Cell]
       Scope recursionInner Function
             Flags: [HasFreeVars]
             Varnames: arg
-            Symbols: 
-                  arg: [DefParam, Local]
+            Symbols:
+                  arg: [DefParam, Use, Local]
                   recursionInner: [Use, Free]

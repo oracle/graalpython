@@ -92,10 +92,6 @@ public interface NodeFactory {
 
     public ExprTy createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
 
-    default ExprTy createSubscript(ExprTy receiver, ExprTy slice, int startOffset, int endOffset) {
-        return createSubscript(receiver, slice, null, startOffset, endOffset);
-    }
-
     public ExprTy createSubscript(ExprTy receiver, ExprTy slice, ExprContext context, int startOffset, int endOffset);
 
     public ExprTy createUnaryOp(ExprTy.UnaryOp.Operator op, ExprTy value, int startOffset, int endOffset);
@@ -106,15 +102,7 @@ public interface NodeFactory {
 
     public ExprTy.Name createVariable(String name, int startOffset, int endOffset, ExprContext context);
 
-    default ExprTy createTuple(ExprTy[] values, int startOffset, int endOffset) {
-        return createTuple(values, null, startOffset, endOffset);
-    }
-
     public ExprTy createTuple(ExprTy[] values, ExprContext context, int startOffset, int endOffset);
-
-    default ExprTy createList(ExprTy[] values, int startOffset, int endOffset) {
-        return createList(values, null, startOffset, endOffset);
-    }
 
     public ExprTy createList(ExprTy[] values, ExprContext context, int startOffset, int endOffset);
 
@@ -144,7 +132,9 @@ public interface NodeFactory {
 
     public ExprTy createGenerator(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset);
 
-    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decorators, ExprTy returns, String typeComment, int startOffset, int endOffset);
+    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, int startOffset, int endOffset);
+
+    public StmtTy createFunctionDef(StmtTy funcDef, ExprTy[] decorators);
 
     public StmtTy createReturn(ExprTy value, int startOffset, int endOffset);
 
@@ -155,4 +145,24 @@ public interface NodeFactory {
     public ExprTy createIfExpression(ExprTy condition, ExprTy then, ExprTy orElse, int startOffset, int endOffset);
 
     public ExprTy createLambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset);
+
+    public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, int startOffset, int endOffset);
+
+    public StmtTy createClassDef(StmtTy classDef, ExprTy[] decorators, int startOffset, int endOffset);
+
+    public StmtTy createNonLocal(String[] names, int startOffset, int endOffset);
+
+    public StmtTy createGlobal(String[] names, int startOffset, int endOffset);
+
+    public ExprTy createAnd(ExprTy[] values, int startOffset, int endOffset);
+
+    public ExprTy createOr(ExprTy[] values, int startOffset, int endOffset);
+
+    public StmtTy createRaise(ExprTy object, ExprTy from, int startOffset, int endOffset);
+
+    public StmtTy createImport(AliasTy[] names, int startOffset, int endOffset);
+
+    public StmtTy createImportFrom(String fromName, AliasTy[] names, int level, int startOffset, int endOffset);
+
+    public AliasTy createAlias(String name, String asName, int startOffset, int endOffset);
 }

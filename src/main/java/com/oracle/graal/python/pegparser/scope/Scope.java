@@ -43,8 +43,10 @@ package com.oracle.graal.python.pegparser.scope;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,7 +68,7 @@ public class Scope {
         Annotation;
     }
 
-    enum DefUse {
+    public enum DefUse {
         DefGlobal,
         DefLocal,
         DefParam,
@@ -88,6 +90,7 @@ public class Scope {
     };
 
     HashMap<String, EnumSet<DefUse>> symbols = new HashMap<>();
+    private List<String> sortedSymbols; // for lazy sorting
 
     static final class Directive {
         final String name;
@@ -160,13 +163,13 @@ public class Scope {
             for (int i = 0; i < indent; i++) {
                 sb.append("    ");
             }
-            sb.append("Symbols: ");
-            for (Map.Entry<String, EnumSet<DefUse>> k : symbols.entrySet()) {
+            sb.append("Symbols:");
+            for (String k : getSortedSymbols()) {
                 sb.append('\n');
                 for (int i = 0; i < indent; i++) {
                     sb.append("      ");
                 }
-                sb.append(k.getKey()).append(": ").append(k.getValue());
+                sb.append(k).append(": ").append(symbols.get(k));
             }
         }
         for (Scope child : children) {
@@ -180,5 +183,57 @@ public class Scope {
             directives = new ArrayList<>();
         }
         directives.add(new Directive(name, startOffset, endOffset));
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ArrayList<String> getVarnames() {
+        return varnames;
+    }
+
+    private List<String> getSortedSymbols() {
+        if (sortedSymbols == null) {
+            sortedSymbols = new ArrayList<>(symbols.keySet());
+            sortedSymbols.sort((s1,s2) -> s1.compareTo(s2));
+        }
+        return sortedSymbols;
+    }
+
+    public boolean needsClassClosure() {
+        return flags.contains(ScopeFlags.NeedsClassClosure);
+    }
+
+    public boolean isFunction() {
+        return type == ScopeType.Function;
+    }
+
+    public boolean isClass() {
+        return type == ScopeType.Class;
+    }
+
+    public boolean isModule() {
+        return type == ScopeType.Module;
+    }
+
+    public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> flags, int start) {
+        int i = start;
+        HashMap<String, Integer> mapping = new HashMap<>();
+        for (String key : getSortedSymbols()) {
+            EnumSet<DefUse> keyFlags = getUseOfName(key);
+            if (!Collections.disjoint(flags, keyFlags)) {
+                mapping.put(key, i++);
+            }
+        }
+        return mapping;
+    }
+
+    public EnumSet<DefUse> getUseOfName(String name) {
+        return symbols.get(name);
+    }
+
+    public ArrayList<Scope> getChildren() {
+        return children;
     }
 }

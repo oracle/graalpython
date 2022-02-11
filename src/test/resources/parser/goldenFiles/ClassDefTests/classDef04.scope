@@ -1,0 +1,13 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      Complex: [DefLocal, Local]
+    Scope Complex Class
+        Symbols:
+            __init__: [DefLocal, Local]
+      Scope __init__ Function
+            Varnames: self, realpart, imagpart
+            Symbols:
+                  imagpart: [DefParam, Use, Local]
+                  realpart: [DefParam, Use, Local]
+                  self: [DefParam, Use, Local]

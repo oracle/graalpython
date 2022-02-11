@@ -1,0 +1,4 @@
+Module[0, 52]
+    ImportFrom[0, 52] Level 0 sys.path
+        dirname as my_dirname
+        basename

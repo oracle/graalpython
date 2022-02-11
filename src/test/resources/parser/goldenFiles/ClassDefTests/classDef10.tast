@@ -1,0 +1,28 @@
+Module[0, 83]
+    FunctionDef[0, 21]
+        Name:test
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[9, 12] arg
+        ---- Function body of test ----
+        Pass[17, 21]
+        ---- End of test function ----
+    ClassDef[22, 83] FalseRec
+        ---- Class body of FalseRec ----
+        FunctionDef[40, 83]
+            Name:test
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[49, 53] self
+                    ArgTy[55, 58] arg
+            ---- Function body of test ----
+            Return[65, 83] 
+                Call[72, 83]
+                    Target: Name[72, 76] Value: "test"
+                    Args:
+                        BinOp[77, 82]
+                            Op: ADD
+                            LHS: Name[77, 80] Value: "arg"
+                            RHS: LONG[81, 82] Value: 1
+            ---- End of test function ----
+        ---- End of FalseRec class ----

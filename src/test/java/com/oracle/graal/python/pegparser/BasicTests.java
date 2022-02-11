@@ -537,33 +537,52 @@ public class BasicTests extends ParserTestBase {
 //                                        "    class foo:\n" +
 //                                        "        break\n");
 //    }
-//
-//    //Test
-//    public void global01() throws Exception {
-//        checkScopeAndTree();
-//    }
-//
-//    //Test
-//    public void global02() throws Exception {
-//        checkTreeResult("global x");
-//    }
-//
-//    //Test
-//    public void nonlocal01() throws Exception {
-//        checkScopeAndTree();
-//    }
 
-//    //Test
-//    public void or01() throws Exception {
-//        checkTreeResult("a or b");
-//    }
-//
-//    //Test
-//    public void and01() throws Exception {
-//        checkTreeResult("a and b");
-//    }
-//
-//    //Test
+   @Test
+   public void global01() throws Exception {
+       checkScopeAndTree("c = 0 # global variable\n" +
+                       "\n" +
+                       "def add():\n" +
+                       "    global c\n" +
+                       "    c = c + 2 # increment by 2\n" +
+                       "    print('Inside add():', c)\n" +
+                       "\n" +
+                       "add()\n" +
+                       "print('In main:', c)");
+   }
+
+   @Test
+   public void global02() throws Exception {
+       checkTreeResult("global x");
+   }
+
+   @Test
+   public void nonlocal01() throws Exception {
+       checkScopeAndTree("def outer():\n" +
+                       "    x = 'local'\n" +
+                       "    \n" +
+                       "    def inner():\n" +
+                       "        nonlocal x\n" +
+                       "        x = 'nonlocal'\n" +
+                       "        print('inner:', x)\n" +
+                       "    \n" +
+                       "    inner()\n" +
+                       "    print('outer:', x)\n" +
+                       "\n" +
+                       "outer()\n");
+   }
+
+   @Test
+   public void or01() throws Exception {
+       checkTreeResult("a or b");
+   }
+
+   @Test
+   public void and01() throws Exception {
+       checkTreeResult("a and b");
+   }
+
+//    @Test
 //    public void not01() throws Exception {
 //        checkTreeResult("not a");
 //    }
@@ -573,27 +592,27 @@ public class BasicTests extends ParserTestBase {
 //        checkSyntaxError("nonlocal x");
 //    }
 //
-//    //Test
-//    public void raise01() throws Exception {
-//        checkTreeResult("raise");
-//    }
-//
-//    //Test
-//    public void raise02() throws Exception {
-//        checkTreeResult("raise NameError");
-//    }
-//
-//    //Test
-//    public void raise03() throws Exception {
-//        checkTreeResult("raise NameError('Pavel')");
-//    }
-//
-//    //Test
-//    public void raise04() throws Exception {
-//        checkTreeResult("raise NameError('Pavel') from exc");
-//    }
-//
-//    //Test
+   @Test
+   public void raise01() throws Exception {
+       checkTreeResult("raise");
+   }
+
+   @Test
+   public void raise02() throws Exception {
+       checkTreeResult("raise NameError");
+   }
+
+   @Test
+   public void raise03() throws Exception {
+       checkTreeResult("raise NameError('Pavel')");
+   }
+
+   @Test
+   public void raise04() throws Exception {
+       checkTreeResult("raise NameError('Pavel') from exc");
+   }
+
+//    @Test
 //    public void try01() throws Exception {
 //        checkScopeAndTree(
 //                        "try:\n" +

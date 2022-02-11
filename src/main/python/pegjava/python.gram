@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2021 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -10,7 +10,7 @@
 #   default rule is renamed to default_param
 
 @license '''/*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -189,9 +189,9 @@ augassign[AugOperator*]:
     | '//=' { ExprTy.BinOp.Operator.FLOORDIV }
 
 global_stmt[stmt_ty]: 'global' a[asdl_expr_seq*]=','.NAME+ {
-    _PyAST_Global(CHECK(String*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
+    factory.createGlobal(extractNames(a), startToken.startOffset, endToken.endOffset) }
 nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
-    _PyAST_Nonlocal(CHECK(String*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
+    factory.createNonLocal(extractNames(a), startToken.startOffset, endToken.endOffset) }
 
 yield_stmt[stmt_ty]: y=yield_expr { factory.createExpression(y) }
 
@@ -202,30 +202,30 @@ del_stmt[stmt_ty]:
     | invalid_del_stmt
 
 import_stmt[stmt_ty]: import_name | import_from
-import_name[stmt_ty]: 'import' a=dotted_as_names { _PyAST_Import(a, EXTRA) }
+import_name[stmt_ty]: 'import' a=dotted_as_names { factory.createImport(a, startToken.startOffset, endToken.endOffset) }
 # note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
 import_from[stmt_ty]:
     | 'from' a=('.' | '...')* b=dotted_name 'import' c=import_from_targets {
-        _PyAST_ImportFrom(b->v.Name.id, c, _PyPegen_seq_count_dots(a), EXTRA) }
+        factory.createImportFrom(((ExprTy.Name)b).id, c, countDots(a), startToken.startOffset, endToken.endOffset) }
     | 'from' a=('.' | '...')+ 'import' b=import_from_targets {
-        _PyAST_ImportFrom(NULL, b, _PyPegen_seq_count_dots(a), EXTRA) }
+        factory.createImportFrom(null, b, countDots(a), startToken.startOffset, endToken.endOffset) }
 import_from_targets[asdl_alias_seq*]:
     | '(' a=import_from_as_names [','] ')' { a }
     | import_from_as_names !','
-    | '*' { (asdl_alias_seq*)_PyPegen_singleton_seq(p, CHECK(alias_ty, _PyPegen_alias_for_star(p, EXTRA))) }
+    | '*' { this.singletonSequence(factory.createAlias("*", null, startToken.startOffset, endToken.endOffset)) }
     | invalid_import_from_targets
 import_from_as_names[asdl_alias_seq*]:
     | a[asdl_alias_seq*]=','.import_from_as_name+ { a }
 import_from_as_name[alias_ty]:
-    | a=NAME b=['as' z=NAME { z }] { _PyAST_alias(a->v.Name.id,
-                                               (b) ? ((expr_ty) b)->v.Name.id : NULL,
-                                               EXTRA) }
+    | a=NAME b=['as' z=NAME { z }] { factory.createAlias(((ExprTy.Name)a).id,
+                                               b == null ? null : ((ExprTy.Name)b).id,
+                                               startToken.startOffset, endToken.endOffset) }
 dotted_as_names[asdl_alias_seq*]:
     | a[asdl_alias_seq*]=','.dotted_as_name+ { a }
 dotted_as_name[alias_ty]:
-    | a=dotted_name b=['as' z=NAME { z }] { _PyAST_alias(a->v.Name.id,
-                                                      (b) ? ((expr_ty) b)->v.Name.id : NULL,
-                                                      EXTRA) }
+    | a=dotted_name b=['as' z=NAME { z }] { factory.createAlias(((ExprTy.Name)a).id,
+                                                      b == null ? null : ((ExprTy.Name)b).id,
+                                                      startToken.startOffset, endToken.endOffset) }
 dotted_name[expr_ty]:
     | a=dotted_name '.' b=NAME { this.joinNamesWithDot(a, b) }
     | NAME
@@ -392,18 +392,18 @@ return_stmt[stmt_ty]:
     | 'return' a=[star_expressions] { factory.createReturn(a, startToken.startOffset, endToken.endOffset) }
 
 raise_stmt[stmt_ty]:
-    | 'raise' a=expression b=['from' z=expression { z }] { _PyAST_Raise(a, b, EXTRA) }
-    | 'raise' { _PyAST_Raise(NULL, NULL, EXTRA) }
+    | 'raise' a=expression b=['from' z=expression { z }] { factory.createRaise(a, b, startToken.startOffset, endToken.endOffset) }
+    | 'raise' { factory.createRaise(null, null, startToken.startOffset, endToken.endOffset) }
 
 function_def[stmt_ty]:
-    | d=decorators f=function_def_raw { _PyPegen_function_def_decorators(p, d, f) }
+    | d=decorators f=function_def_raw { factory.createFunctionDef(f, d) }
     | function_def_raw
 
 function_def_raw[stmt_ty]:
     | 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
         factory.createFunctionDef(((ExprTy.Name)n).id,
                         params,
-                        b, null, (ExprTy)a, newTypeComment((Token)tc),
+                        b, (ExprTy)a, newTypeComment((Token)tc),
                         startToken.startOffset, endToken.endOffset) }
     | ASYNC 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
         CHECK_VERSION(
@@ -482,14 +482,11 @@ default_param[expr_ty]: '=' a=expression { a }
 decorators[asdl_expr_seq*]: a[asdl_expr_seq*]=('@' f=named_expression NEWLINE { f })+ { a }
 
 class_def[stmt_ty]:
-    | a=decorators b=class_def_raw { _PyPegen_class_def_decorators(p, a, b) }
+    | a=decorators b=class_def_raw { factory.createClassDef(b, a, startToken.startOffset, endToken.endOffset) }
     | class_def_raw
 class_def_raw[stmt_ty]:
     | 'class' a=NAME b=['(' z=[arguments] ')' { z }] &&':' c=block {
-        _PyAST_ClassDef(a->v.Name.id,
-                     (b) ? ((expr_ty) b)->v.Call.args : NULL,
-                     (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
-                     c, NULL, EXTRA) }
+        factory.createClassDef(a, b, c, startToken.startOffset, endToken.endOffset) }
 
 block[asdl_stmt_seq*] (memo):
     | NEWLINE INDENT a=statements DEDENT { a }
@@ -583,16 +580,14 @@ lambda_param_maybe_default[NameDefaultPair*]:
 lambda_param[arg_ty]: a=NAME { factory.createArgument(((ExprTy.Name)a).id, null, null, startToken.startOffset, endToken.endOffset) }
 
 disjunction[expr_ty] (memo):
-    | a=conjunction b=('or' c=conjunction { c })+ { _PyAST_BoolOp(
-        Or,
-        CHECK(asdl_expr_seq*, this.insertInFront(a, b)),
-        EXTRA) }
+    | a=conjunction b=('or' c=conjunction { c })+ { factory.createOr(
+        this.insertInFront(a, b),
+        startToken.startOffset, endToken.endOffset) }
     | conjunction
 conjunction[expr_ty] (memo):
-    | a=inversion b=('and' c=inversion { c })+ { _PyAST_BoolOp(
-        And,
-        CHECK(asdl_expr_seq*, this.insertInFront(a, b)),
-        EXTRA) }
+    | a=inversion b=('and' c=inversion { c })+ { factory.createAnd(
+        this.insertInFront(a, b),
+        startToken.startOffset, endToken.endOffset) }
     | inversion
 inversion[expr_ty] (memo):
     | 'not' a=inversion { factory.createUnaryOp(ExprTy.UnaryOp.Operator.NOT, a, startToken.startOffset, endToken.endOffset) }
@@ -614,7 +609,7 @@ compare_op_bitwise_or_pair[CmpopExprPair*]:
     | is_bitwise_or
 eq_bitwise_or[CmpopExprPair*]: '==' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.EQ, a); }
 noteq_bitwise_or[CmpopExprPair*]:
-    | (tok='!=' { _PyPegen_check_barry_as_flufl(p, tok) ? NULL : tok}) a=bitwise_or {_PyPegen_cmpop_expr_pair(p, NotEq, a) }
+    | (tok='!=' { this.checkBarryAsFlufl(tok) ? null : tok}) a=bitwise_or {_PyPegen_cmpop_expr_pair(p, NotEq, a) }
 lte_bitwise_or[CmpopExprPair*]: '<=' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.LTE, a) }
 lt_bitwise_or[CmpopExprPair*]: '<' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.LT, a) }
 gte_bitwise_or[CmpopExprPair*]: '>=' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.GTE, a) }
@@ -666,7 +661,7 @@ primary[expr_ty]:
     | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
     | a=primary '(' b=[arguments] ')' {
         factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) }
-    | a=primary '[' b=slices ']' { factory.createSubscript(a, b, startToken.startOffset, startToken.endOffset) }
+    | a=primary '[' b=slices ']' { factory.createSubscript(a, b, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | atom
 
 slices[expr_ty]:
@@ -689,13 +684,13 @@ atom[expr_ty]:
 
 strings[expr_ty] (memo): a=STRING+ { this.concatenateStrings(a) }
 list[expr_ty]:
-    | '[' a=[star_named_expressions] ']' { factory.createList(a, startToken.startOffset, endToken.endOffset) }
+    | '[' a=[star_named_expressions] ']' { factory.createList(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 listcomp[expr_ty]:
     | '[' a=named_expression b=for_if_clauses ']' { factory.createListComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
 tuple[expr_ty]:
     | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, z) } ] ')' {
-        factory.createTuple((ExprTy[])a, startToken.startOffset, endToken.endOffset) }
+        factory.createTuple((ExprTy[])a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 group[expr_ty]:
     | '(' a=(yield_expr | named_expression) ')' { a }
     | invalid_group
@@ -760,11 +755,11 @@ kwarg_or_double_starred[KeywordOrStarred*]:
 star_targets[expr_ty]:
     | a=star_target !',' { a }
     | a=star_target b=(',' c=star_target { c })* [','] {
-        factory.createTuple(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset); // Store }
+        factory.createTuple(this.insertInFront(a,b),ExprContext.Store,startToken.startOffset,endToken.endOffset); }
 star_targets_list_seq[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_target+ [','] { a }
 star_targets_tuple_seq[asdl_expr_seq*]:
     | a=star_target b=(',' c=star_target { c })+ [','] { this.insertInFront(a, b) }
-    | a=star_target ',' { (asdl_expr_seq*) this.singletonSequence(a) }
+    | a=star_target ',' { this.singletonSequence(a) }
 star_target[expr_ty] (memo):
     | '*' a=(!'*' star_target) {
         _PyAST_Starred(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), Store, EXTRA) }

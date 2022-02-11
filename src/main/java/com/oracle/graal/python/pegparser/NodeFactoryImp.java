@@ -45,6 +45,7 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.AbstractParser.NameDefaultPair;
 import com.oracle.graal.python.pegparser.AbstractParser.SlashWithDefault;
 import com.oracle.graal.python.pegparser.AbstractParser.StarEtc;
+import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
@@ -58,7 +59,6 @@ import java.util.Arrays;
 
 
 public class NodeFactoryImp implements NodeFactory{
-
     @Override
     public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, int startOffset, int endOffset) {
         return new StmtTy.AnnAssign(target, annotation, rhs, isSimple, startOffset, endOffset);
@@ -95,7 +95,7 @@ public class NodeFactoryImp implements NodeFactory{
 
     @Override
     public ExprTy createBooleanLiteral(boolean value, int startOffset, int endOffset) {
-        return new ExprTy.Constant(value, null, startOffset, endOffset);
+        return new ExprTy.Constant(value, ExprTy.Constant.Kind.BOOLEAN, startOffset, endOffset);
     }
 
     @Override
@@ -400,8 +400,13 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decorators, ExprTy returns, String typeComment, int startOffset, int endOffset) {
-        return new StmtTy.FunctionDef(name, args, body, decorators, returns, typeComment, startOffset, endOffset);
+    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, int startOffset, int endOffset) {
+        return new StmtTy.FunctionDef(name, args, body, null, returns, typeComment, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createFunctionDef(StmtTy funcDef, ExprTy[] decorators) {
+        return ((StmtTy.FunctionDef) funcDef).copyWithDecorators(decorators);
     }
 
     @Override
@@ -438,4 +443,59 @@ public class NodeFactoryImp implements NodeFactory{
     public ExprTy createLambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset) {
         return new ExprTy.Lambda(args, body, startOffset, endOffset);
     }
+
+    @Override
+    public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, int startOffset, int endOffset) {
+        return new StmtTy.ClassDef(((ExprTy.Name) name).id,
+                        call == null ? AbstractParser.EMPTY_EXPR : ((ExprTy.Call) call).args,
+                        call == null ? AbstractParser.EMPTY_KWDS : ((ExprTy.Call) call).keywords,
+                        body, null, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createClassDef(StmtTy proto, ExprTy[] decorators, int startOffset, int endOffset) {
+        StmtTy.ClassDef classdef = (StmtTy.ClassDef) proto;
+        return new StmtTy.ClassDef(classdef.name, classdef.bases, classdef.keywords, classdef.body, decorators, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createNonLocal(String[] names, int startOffset, int endOffset) {
+        return new StmtTy.NonLocal(names, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createGlobal(String[] names, int startOffset, int endOffset) {
+        return new StmtTy.Global(names, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createAnd(ExprTy[] values, int startOffset, int endOffset) {
+        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.And, values, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createOr(ExprTy[] values, int startOffset, int endOffset) {
+        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.Or, values, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createRaise(ExprTy object, ExprTy from, int startOffset, int endOffset) {
+        return new StmtTy.Raise(object, from, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createImport(AliasTy[] names, int startOffset, int endOffset) {
+        return new StmtTy.Import(names, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createImportFrom(String fromName, AliasTy[] names, int level, int startOffset, int endOffset) {
+        return new StmtTy.ImportFrom(fromName, names, level, startOffset, endOffset);
+    }
+
+    @Override
+    public AliasTy createAlias(String name, String asName, int startOffset, int endOffset) {
+        return new AliasTy(name, asName, startOffset, endOffset);
+    }
+
 }
