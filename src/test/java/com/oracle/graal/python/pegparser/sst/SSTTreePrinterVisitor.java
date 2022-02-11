@@ -598,8 +598,9 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         sb.append(indent()).append("Test: ").append(node.test.accept(this));
         if (node.msg != null) {
             sb.append('\n');
-            sb.append(indent()).append("Test: ").append(node.test.accept(this));
+            sb.append(indent()).append("Msg: ").append(node.msg.accept(this));
         }
+        level--;
         return sb.toString();
 
     }

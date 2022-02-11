@@ -6998,9 +6998,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , NotEq , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , NotEq , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.NOTEQ,a);
                 cache.putResult(_mark, NOTEQ_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }

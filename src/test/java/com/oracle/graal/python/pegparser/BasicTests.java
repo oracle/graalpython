@@ -95,19 +95,19 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("assert True");
     }
 
-//    @Test
-//    public void assert02() throws Exception {
-//        checkScopeAndTree(
-//                        "def avg(marks):\n" +
-//                                        "    assert len(marks) != 0,\"List is empty.\"");
-//    }
-//  
-//    @Test
-//    public void assert03() throws Exception {
-//        checkTreeResult(
-//                        "def avg():\n" +
-//                                        "    assert len != 0, getMessage(len)");
-//    }
+    @Test
+    public void assert02() throws Exception {
+        checkScopeAndTree(
+                        "def avg(marks):\n" +
+                                        "    assert len(marks) != 0,\"List is empty.\"");
+    }
+  
+    @Test
+    public void assert03() throws Exception {
+        checkTreeResult(
+                        "def avg():\n" +
+                                        "    assert len != 0, getMessage(len)");
+    }
     
     @Test
     public void assert04() throws Exception {
@@ -246,6 +246,16 @@ public class BasicTests extends ParserTestBase {
    @Test
    public void comparision11() throws Exception {
        checkScopeAndTree("x >= y");
+   }
+   
+   @Test
+   public void comparision12() throws Exception {
+       checkScopeAndTree("x == y");
+   }
+   
+   @Test
+   public void comparision13() throws Exception {
+       checkScopeAndTree("x != y");
    }
 
    @Test

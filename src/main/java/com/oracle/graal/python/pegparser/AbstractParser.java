@@ -413,9 +413,9 @@ abstract class AbstractParser {
     public boolean checkBarryAsFlufl (Token token) {
         if ((flags & PARSE_BARRY_AS_BDFL) != 0 && !getText(token).equals("<>")) {
             errorCb.onError(token.startOffset, token.endOffset, BARRY_AS_BDFL);
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
     
     /**
