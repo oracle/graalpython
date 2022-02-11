@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,7 +88,17 @@ public class HashMapStorage extends HashingStorage {
     }
 
     public HashMapStorage(LinkedHashMap<Object, Object> map) {
+        assert hasStringKeys(map) : "keys in HashMapStorage have to be java.lang.String";
         values = map;
+    }
+
+    private static boolean hasStringKeys(LinkedHashMap<Object, Object> map) {
+        for (Object k : map.keySet()) {
+            if (!(k instanceof String)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @TruffleBoundary

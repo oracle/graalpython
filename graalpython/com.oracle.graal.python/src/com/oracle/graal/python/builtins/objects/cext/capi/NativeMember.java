@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -233,6 +233,7 @@ public enum NativeMember {
     // PyCFunctionObject
     M_ML("m_ml"),
     M_SELF("m_self"),
+    M_MODULE("m_module"),
 
     // PyDateTime_Date
     DATETIME_DATA("data"),

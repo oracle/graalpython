@@ -44,7 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
+import static com.oracle.graal.python.nodes.ErrorMessages.LIST_CANNOT_BE_CONVERTED_TO_DICT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -169,7 +168,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -179,6 +177,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager;
@@ -195,7 +194,6 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -210,7 +208,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -262,7 +259,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -287,7 +283,9 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -297,8 +295,14 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     public static final String PYTHON_CEXT = "python_cext";
 
-    private static final String ERROR_HANDLER = "error_handler";
     public static final String NATIVE_NULL = "native_null";
+
+    /*
+     * Native pointer to the PyMethodDef struct for functions created in C. We need to keep it
+     * because the C program may expect to get its pointer back when accessing m_ml member of
+     * methods.
+     */
+    public static final HiddenKey METHOD_DEF_PTR = new HiddenKey("method_def_ptr");
 
     private PythonObject errorHandler;
 
@@ -310,11 +314,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        PythonClass errorHandlerClass = core.factory().createPythonClassAndFixupSlots(core.getLanguage(), PythonBuiltinClassType.PythonClass,
-                        "CErrorHandler", new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
-        builtinConstants.put("CErrorHandler", errorHandlerClass);
-        errorHandler = core.factory().createPythonObject(errorHandlerClass);
-        builtinConstants.put(ERROR_HANDLER, errorHandler);
         // TODO can be removed when python_cext.py is gone
         builtinConstants.put(NATIVE_NULL, core.getContext().getNativeNull());
         builtinConstants.put("PyEval_SaveThread", new PyEvalSaveThread());
@@ -380,15 +379,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "Py_ErrorHandler", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    public abstract static class PyErrorHandlerNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object run(PythonModule cextPython) {
-            return ((PythonCextBuiltins) cextPython.getBuiltins()).errorHandler;
-        }
-    }
-
     @Builtin(name = "Py_NotImplemented")
     @GenerateNodeFactory
     public abstract static class PyNotImplementedNode extends PythonBuiltinNode {
@@ -425,15 +415,36 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    ///////////// mappingproxy /////////////
-
-    @Builtin(name = "PyDictProxy_New", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_Dict_From_List", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PyDictProxyNewNode extends PythonUnaryBuiltinNode {
+    public abstract static class DictFromListNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public static Object values(VirtualFrame frame, Object obj,
-                        @Cached MappingproxyNode mappingNode) {
-            return mappingNode.execute(frame, PythonBuiltinClassType.PMappingproxy, obj);
+        public Object values(VirtualFrame frame, Object list,
+                        @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
+                        @Cached ListBuiltins.GetItemNode getItemNode,
+                        @Cached BranchProfile wrongLenProfile,
+                        @Cached LoopConditionProfile loopProfile,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                int size = sizeNode.execute(frame, list);
+                if (size % 2 != 0) {
+                    wrongLenProfile.enter();
+                    return raiseNativeNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.SystemError, LIST_CANNOT_BE_CONVERTED_TO_DICT);
+                }
+                HashingStorage store = PDict.createNewStorage(false, size);
+                loopProfile.profileCounted(size);
+                for (int i = 0; loopProfile.profile(i < size); i = i + 2) {
+                    Object k = getItemNode.execute(frame, list, i);
+                    Object v = getItemNode.execute(frame, list, i + 1);
+                    store = lib.setItem(store, k, v);
+                }
+                return factory().createDict(store);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getContext().getNativeNull();
+            }
         }
     }
 
@@ -632,20 +643,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         static boolean isDecoratedManagedFunction(Object obj) {
             return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getNativeFunction());
-        }
-    }
-
-    @Builtin(name = "PyTruffle_WriteUnraisable", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTruffleWriteUnraisable extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object run(PBaseException exception, Object object,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached WriteUnraisableNode writeUnraisableNode) {
-            writeUnraisableNode.execute(null, exception, null, (object instanceof PNone) ? PNone.NONE : object);
-            getThreadStateNode.setCaughtException(PException.NO_EXCEPTION);
-            return PNone.NO_VALUE;
         }
     }
 
@@ -1146,23 +1143,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLibrary("klass") PythonNativeWrapperLibrary lib) {
             ((PythonManagedClass) lib.getDelegate(klass)).setSulongType(ptr);
             return ptr;
-        }
-    }
-
-    @Builtin(name = "PyTruffle_SetBufferProcs", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyTruffleSetBufferProcs extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        static Object doNativeWrapper(PythonClassNativeWrapper nativeWrapper, Object getBufferProc, Object releaseBufferProc) {
-            nativeWrapper.setGetBufferProc(getBufferProc);
-            nativeWrapper.setReleaseBufferProc(releaseBufferProc);
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization
-        static Object doPythonObject(PythonManagedClass obj, Object getBufferProc, Object releaseBufferProc) {
-            return doNativeWrapper(obj.getClassNativeWrapper(), getBufferProc, releaseBufferProc);
         }
     }
 
@@ -2261,11 +2241,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @ImportStatic(CExtContext.class)
     abstract static class NewClassMethodNode extends Node {
 
-        abstract Object execute(String name, Object methObj, Object flags, Object wrapper, Object type, Object doc,
+        abstract Object execute(Object methodDefPtr, String name, Object methObj, Object flags, Object wrapper, Object type, Object doc,
                         PythonObjectFactory factory);
 
         @Specialization(guards = "isClassOrStaticMethod(flags)")
-        static Object classOrStatic(String name, Object methObj, int flags, int wrapper, Object type,
+        static Object classOrStatic(Object methodDefPtr, String name, Object methObj, int flags, int wrapper, Object type,
                         Object doc, PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Shared("cf") @Cached CreateFunctionNode createFunctionNode,
@@ -2279,66 +2259,76 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             }
             dylib.put(function, __NAME__, name);
             dylib.put(function, __DOC__, cstrPtr.execute(doc));
+            dylib.put(function, METHOD_DEF_PTR, methodDefPtr);
             return function;
         }
 
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
-        static Object doNativeCallable(String name, Object methObj, int flags, int wrapper, Object type,
+        static Object doNativeCallable(Object methodDefPtr, String name, Object methObj, int flags, int wrapper, Object type,
                         Object doc, PythonObjectFactory factory,
                         @Cached PyObjectSetAttrNode setattr,
+                        @Cached WriteAttributeToObjectNode write,
                         @Shared("cf") @Cached CreateFunctionNode createFunctionNode,
                         @Shared("cstr") @Cached CharPtrToJavaObjectNode cstrPtr) {
             Object func = createFunctionNode.execute(name, methObj, wrapper, type, flags, factory);
             setattr.execute(func, __NAME__, name);
             setattr.execute(func, __DOC__, cstrPtr.execute(doc));
+            write.execute(func, METHOD_DEF_PTR, methodDefPtr);
             return func;
         }
     }
 
     // directly called without landing function
-    @Builtin(name = "AddFunction", minNumOfPositionalArgs = 6, parameterNames = {"primary", "tpDict", "name", "cfunc", "flags", "wrapper", "doc"})
+    @Builtin(name = "AddFunctionToType", parameterNames = {"method_def_ptr", "primary", "tpDict", "name", "cfunc", "flags", "wrapper", "doc"})
     @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
     @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "wrapper", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class AddFunctionNode extends PythonClinicBuiltinNode {
+    abstract static class AddFunctionToTypeNode extends PythonClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.AddFunctionNodeClinicProviderGen.INSTANCE;
+            return PythonCextBuiltinsClinicProviders.AddFunctionToTypeNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "isPythonModule(owner)")
-        Object moduleFunction(VirtualFrame frame, @SuppressWarnings("unused") Object primary,
-                        @SuppressWarnings("unused") Object tpDict,
-                        String name, Object cfunc, int flags, int wrapper, Object doc,
-                        @SuppressWarnings("unused") @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Bind("getOwner(asPythonObjectNode, primary)") Object owner,
-                        @Cached ObjectBuiltins.SetattrNode setattrNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                        @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
-            PythonModule mod = (PythonModule) owner;
-            Object modName = dylib.getOrDefault(mod.getStorage(), __NAME__, null);
-            assert modName != null : "module name is missing!";
-            Object func = cFunctionNewExMethodNode.execute(name, cfunc, flags, wrapper, mod, modName, doc, factory());
-            setattrNode.execute(frame, mod, name, func);
-            return 0;
-        }
-
-        @Specialization(guards = "!isPythonModule(owner)")
-        Object classMethod(VirtualFrame frame, @SuppressWarnings("unused") Object primary,
+        @Specialization
+        Object classMethod(VirtualFrame frame, Object methodDefPtr, Object primary,
                         Object tpDict, String name, Object cfunc, int flags, int wrapper, Object doc,
                         @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Bind("getOwner(asPythonObjectNode, primary)") Object owner,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Cached DictBuiltins.SetItemNode setItemNode) {
-            Object func = newClassMethodNode.execute(name, cfunc, flags, wrapper, owner, doc, factory());
+            Object type = asPythonObjectNode.execute(primary);
+            Object func = newClassMethodNode.execute(methodDefPtr, name, cfunc, flags, wrapper, type, doc, factory());
             Object dict = asPythonObjectNode.execute(tpDict);
             setItemNode.execute(frame, dict, name, func);
             return 0;
         }
+    }
 
-        static Object getOwner(AsPythonObjectNode asPythonObjectNode, Object primary) {
-            return asPythonObjectNode.execute(primary);
+    // directly called without landing function
+    @Builtin(name = "AddFunctionToModule", parameterNames = {"method_def_ptr", "primary", "name", "cfunc", "flags", "wrapper", "doc"})
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "wrapper", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class AddFunctionToModuleNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PythonCextBuiltinsClinicProviders.AddFunctionToModuleNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object moduleFunction(VirtualFrame frame, Object methodDefPtr, Object primary,
+                        String name, Object cfunc, int flags, int wrapper, Object doc,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached ObjectBuiltins.SetattrNode setattrNode,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                        @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
+            PythonModule mod = (PythonModule) asPythonObjectNode.execute(primary);
+            Object modName = dylib.getOrDefault(mod.getStorage(), __NAME__, null);
+            assert modName != null : "module name is missing!";
+            Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc, factory());
+            setattrNode.execute(frame, mod, name, func);
+            return 0;
         }
     }
 
@@ -2407,41 +2397,13 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyDescr_NewClassMethod", minNumOfPositionalArgs = 6, parameterNames = {"name", "doc", "flags", "wrapper", "cfunc", "primary"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
-    @GenerateNodeFactory
-    abstract static class PyDescrNewClassMethod extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyDescrNewClassMethodClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object doNativeCallable(String name, Object doc, int flags, Object wrapper, Object methObj, Object primary,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached NewClassMethodNode newClassMethodNode,
-                        @Cached ToNewRefNode newRefNode) {
-            Object type = asPythonObjectNode.execute(primary);
-            Object func = newClassMethodNode.execute(name, methObj, flags, wrapper, type, doc, factory());
-            if (!isClassOrStaticMethod(flags)) {
-                /*
-                 * NewClassMethodNode only wraps method with METH_CLASS and METH_STATIC set but we
-                 * need to do so here.
-                 */
-                func = factory().createClassmethodFromCallableObj(func);
-            }
-            return newRefNode.execute(func);
-        }
-    }
-
     abstract static class CFunctionNewExMethodNode extends Node {
 
-        abstract Object execute(String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
+        abstract Object execute(Object methodDefPtr, String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
                         PythonObjectFactory factory);
 
         @Specialization
-        static Object doNativeCallable(String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
+        static Object doNativeCallable(Object methodDefPtr, String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
                         PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CreateFunctionNode createFunctionNode,
@@ -2455,11 +2417,12 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             dylib.put(func.getStorage(), __DOC__, strDoc);
             PBuiltinMethod method = factory.createBuiltinMethod(self, func);
             dylib.put(method.getStorage(), __MODULE__, module);
+            dylib.put(method.getStorage(), METHOD_DEF_PTR, methodDefPtr);
             return method;
         }
     }
 
-    @Builtin(name = "PyCFunction_NewEx", minNumOfPositionalArgs = 7, parameterNames = {"name", "cfunc", "flags", "wrapper", "self", "module", "doc"})
+    @Builtin(name = "PyCFunction_NewEx", minNumOfPositionalArgs = 8, parameterNames = {"method_def_ptr", "name", "cfunc", "flags", "wrapper", "self", "module", "doc"})
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
     abstract static class PyCFunctionNewExMethod extends PythonClinicBuiltinNode {
@@ -2469,13 +2432,13 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doNativeCallable(String name, Object methObj, int flags, int wrapper, Object selfO, Object moduleO, Object doc,
+        Object doNativeCallable(Object methodDefPtr, String name, Object methObj, int flags, int wrapper, Object selfO, Object moduleO, Object doc,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode,
                         @Cached ToNewRefNode newRefNode) {
             Object self = asPythonObjectNode.execute(selfO);
             Object module = asPythonObjectNode.execute(moduleO);
-            Object func = cFunctionNewExMethodNode.execute(name, methObj, flags, wrapper, self, module, doc, factory());
+            Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, self, module, doc, factory());
             return newRefNode.execute(func);
         }
     }
@@ -2655,26 +2618,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         private static RootCallTarget setterCallTarget(String name, PythonLanguage lang) {
             Function<PythonLanguage, RootNode> rootNodeFunction = l -> new SetterRoot(l, name, PExternalFunctionWrapper.SETTER);
             return lang.createCachedCallTarget(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true);
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyDescr_NewGetSet", minNumOfPositionalArgs = 6, parameterNames = {"name", "cls", "getter", "setter", "doc", "closure"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
-    @GenerateNodeFactory
-    abstract static class PyDescrNewGetSetNode extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyDescrNewGetSetNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object doNativeCallable(String name, Object cls, Object getter, Object setter, Object doc, Object closure,
-                        @Cached CreateGetSetNode createGetSetNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure,
-                            getLanguage(), factory());
-            return toSulongNode.execute(descr);
         }
     }
 

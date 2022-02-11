@@ -49,15 +49,16 @@ import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FU
 import static com.oracle.graal.python.nodes.ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_MODULE_CLASS;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TRACEBACK__;
+
+import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -448,15 +450,16 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyErr_WriteUnraisable", minNumOfPositionalArgs = 4)
+    @Builtin(name = "_PyErr_WriteUnraisableMsg", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyErrWriteUnraisableNode extends PythonUnaryBuiltinNode {
+    abstract static class PyErrWriteUnraisableMsgNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object write(VirtualFrame frame, Object obj,
+        Object write(VirtualFrame frame, Object msg, Object obj,
                         @Cached PyErrFetchNode fetchNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached PythonCextBuiltins.PyTruffleWriteUnraisable writeUnraisable,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached WriteUnraisableNode writeUnraisableNode,
                         @Cached BranchProfile noValProfile) {
             Object val = null;
             Object tb = null;
@@ -466,7 +469,7 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                 val = getItemNode.execute(frame, fetchedTuple, 1);
                 tb = getItemNode.execute(frame, fetchedTuple, 2);
             }
-            if (val == null || val == PNone.NONE) {
+            if (!(val instanceof PBaseException)) {
                 noValProfile.enter();
                 // This means an invalid call, but this function is not supposed to raise exceptions
                 return PNone.NONE;
@@ -475,7 +478,8 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                 tb = PNone.NONE;
             }
             writeAttrNode.execute(val, __TRACEBACK__, tb);
-            writeUnraisable.execute(frame, val, obj);
+            writeUnraisableNode.execute(frame, (PBaseException) val, msg instanceof String ? (String) msg : null, (obj instanceof PNone) ? PNone.NONE : obj);
+            getThreadStateNode.setCaughtException(PException.NO_EXCEPTION);
             return PNone.NONE;
         }
     }

@@ -1,0 +1,2 @@
+*graalpython.lib-python.3.test.test_threadsignals.ThreadSignals.test_lock_acquire_retries_on_intr
+*graalpython.lib-python.3.test.test_threadsignals.ThreadSignals.test_rlock_acquire_retries_on_intr

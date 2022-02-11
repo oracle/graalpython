@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,53 +38,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.ssl;
+package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import com.oracle.graal.python.builtins.Builtin;
+import java.util.List;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
+@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
+@GenerateNodeFactory
+public final class PythonCextClassBuiltins extends PythonBuiltins {
 
-public class ALPNHelper {
-    // The ALPN API is only available from JDK 8u252, use reflection to detect its presence
-    private static final Method setApplicationProtocols;
-    private static final Method getApplicationProtocol;
-
-    static {
-        Method setApplicationProtocolsMethod;
-        Method getApplicationProtocolMethod;
-        try {
-            setApplicationProtocolsMethod = SSLParameters.class.getMethod("setApplicationProtocols", String[].class);
-            getApplicationProtocolMethod = SSLEngine.class.getMethod("getApplicationProtocol");
-        } catch (NoSuchMethodException e) {
-            setApplicationProtocolsMethod = null;
-            getApplicationProtocolMethod = null;
-        }
-        setApplicationProtocols = setApplicationProtocolsMethod;
-        getApplicationProtocol = getApplicationProtocolMethod;
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return PythonCextClassBuiltinsFactory.getFactories();
     }
 
-    public static boolean hasAlpn() {
-        return setApplicationProtocols != null;
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
     }
 
-    @TruffleBoundary
-    public static void setApplicationProtocols(SSLParameters parameters, String[] protocols) {
-        try {
-            setApplicationProtocols.invoke(parameters, (Object) protocols);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @TruffleBoundary
-    public static String getApplicationProtocol(SSLEngine engine) {
-        try {
-            return (String) getApplicationProtocol.invoke(engine);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException(e);
+    @Builtin(name = "PyInstanceMethod_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyInstancemethodNewNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object staticmethod(Object func) {
+            PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
+            res.setCallable(func);
+            return res;
         }
     }
 }

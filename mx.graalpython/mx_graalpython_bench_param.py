@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -214,31 +214,21 @@ MESO_BENCHMARKS = {
     'spectralnorm3': ITER_10 + ['3000'],
     'pidigits': ITER_10 + [],
     'sieve-sized': ITER_15 + ['500_000'],
-    'image-magix': ITER_10 + ['10000'],
     'image-magix-sized2': ITER_10 + ['30000'],
     'parrot-b2': ITER_10 + ['200'],
     'threadring': ITER_25 + ['100_000_000'],
-    'regexdna': ITER_25 + [],
     'regexdna-sized2': ITER_25 + ['4'],
     'knucleotide': ITER_25 + [],
-    'chaos': ITER_10 + ['200'],
     'chaos-sized2': ITER_10 + ['500'],
-    'go': ITER_10 + [],
     'go-sized2': ITER_15 + ['50'],
     'raytrace-simple': ITER_10 + [],
-    'lud': ITER_10 + ['512'],
     'lud-sized2': ITER_10 + ['1536'],
-    'mm': ITER_10 + ['10'],
     'mm-sized2': ITER_15 + ['350'],
     # Rodinia
-    'backprop_rodinia': ITER_10 + ['1048576'],
     'backprop_rodinia-sized2': ITER_15 + ['8388608'],
-    'lavaMD_rodinia': ITER_10 + ['32'],
     'lavaMD_rodinia-sized2': ITER_15 + ['48'],
-    'pathfinder_rodinia': ITER_10 + ['10'],
     'pathfinder_rodinia-sized2': ITER_25 + ['50'],
     'particlefilter_rodinia': ITER_10 + ['2048'],
-    'srad_rodinia': ITER_10 + ['100'],
     'srad_rodinia-sized2': ITER_15 + ['1000'],
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -648,6 +648,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDecoratedMethod createBuiltinClassmethodFromCallableObj(Object callable) {
         return trace(new PDecoratedMethod(PythonBuiltinClassType.PBuiltinClassMethod, PythonBuiltinClassType.PBuiltinClassMethod.getInstanceShape(getLanguage()), callable));
+    }
+
+    public final PDecoratedMethod createInstancemethod(Object cls) {
+        return trace(new PDecoratedMethod(cls, getShape(cls)));
     }
 
     public final PDecoratedMethod createStaticmethod(Object cls) {

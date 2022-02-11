@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,13 +49,15 @@ import java.nio.charset.CoderResult;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 
 public class PythonUnicodeEscapeCharsetEncoder extends CharsetEncoder {
+    private byte[] tmpBuf = new byte[10];
+    private char highSurrogate;
+
     protected PythonUnicodeEscapeCharsetEncoder(Charset cs) {
         super(cs, 2, 10, new byte[]{(byte) '?'});
     }
 
     @Override
     protected CoderResult encodeLoop(CharBuffer source, ByteBuffer target) {
-        byte[] tmpBuf = new byte[10];
         while (true) {
             if (!source.hasRemaining()) {
                 return CoderResult.UNDERFLOW;
@@ -66,19 +68,23 @@ public class PythonUnicodeEscapeCharsetEncoder extends CharsetEncoder {
             int initialPosition = source.position();
             char ch = source.get();
             int codePoint = ch;
-            if (Character.isHighSurrogate(ch)) {
-                if (!source.hasRemaining()) {
-                    source.position(initialPosition);
-                    return CoderResult.UNDERFLOW;
-                }
-                char low = source.get();
-                if (Character.isLowSurrogate(low)) {
-                    codePoint = Character.toCodePoint(ch, low);
+            if (highSurrogate != 0) {
+                if (Character.isLowSurrogate(ch)) {
+                    codePoint = Character.toCodePoint(highSurrogate, ch);
                 } else {
-                    // Unpaired surrogate - emit the high surrogate as is and process the low in the
-                    // next iteration
-                    source.position(source.position() - 1);
+                    // Unpaired surrogate - emit the surrogates as separate characters
+                    int len = BytesUtils.unicodeEscape(highSurrogate, 0, tmpBuf);
+                    if (target.remaining() < len) {
+                        source.position(initialPosition);
+                        return CoderResult.OVERFLOW;
+                    }
+                    target.put(tmpBuf, 0, len);
+                    highSurrogate = 0;
                 }
+            }
+            if (Character.isHighSurrogate(ch)) {
+                highSurrogate = ch;
+                continue;
             }
             int len = BytesUtils.unicodeEscape(codePoint, 0, tmpBuf);
             if (target.remaining() < len) {
@@ -86,6 +92,26 @@ public class PythonUnicodeEscapeCharsetEncoder extends CharsetEncoder {
                 return CoderResult.OVERFLOW;
             }
             target.put(tmpBuf, 0, len);
+            highSurrogate = 0;
         }
+    }
+
+    @Override
+    protected CoderResult implFlush(ByteBuffer target) {
+        if (highSurrogate != 0) {
+            int len = BytesUtils.unicodeEscape(highSurrogate, 0, tmpBuf);
+            if (target.remaining() < len) {
+                return CoderResult.OVERFLOW;
+            }
+            target.put(tmpBuf, 0, len);
+            highSurrogate = 0;
+        }
+        return super.implFlush(target);
+    }
+
+    @Override
+    protected void implReset() {
+        super.implReset();
+        highSurrogate = 0;
     }
 }

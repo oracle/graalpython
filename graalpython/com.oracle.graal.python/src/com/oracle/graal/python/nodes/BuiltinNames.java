@@ -144,6 +144,7 @@ public abstract class BuiltinNames {
     public static final String RANGE = "range";
     public static final String VARS = "vars";
     public static final String CLASSMETHOD = "classmethod";
+    public static final String INSTANCEMETHOD = "instancemethod";
     public static final String GETATTR = "getattr";
     public static final String LOCALS = "locals";
     public static final String REPR = "repr";

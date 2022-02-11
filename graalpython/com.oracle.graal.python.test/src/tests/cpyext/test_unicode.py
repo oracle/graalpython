@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import sys
+import re
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON
 
@@ -154,6 +155,29 @@ class Dummy():
     pass
 
 
+class Displayable:
+    def __str__(self):
+        return 'str: 文字列'
+
+    def __repr__(self):
+        return 'repr: 文字列'
+
+
+class BrokenDisplayable:
+    def __str__(self):
+        raise NotImplementedError
+
+    def __repr__(self):
+        raise NotImplementedError
+
+
+def compare_ptr_string(x, y):
+    if isinstance(x, str) and isinstance(y, str):
+        x = re.sub(r'0x[0-9a-fA-F]+', '0xPLACEHOLDER', x)
+        y = re.sub(r'0x[0-9a-fA-F]+', '0xPLACEHOLDER', y)
+    return unhandled_error_compare(x, y)
+
+
 def gen_intern_args():
     args = (
         ("some text",),
@@ -199,9 +223,11 @@ class TestPyUnicode(CPyExtTestCase):
     )
 
     test_PyUnicode_FromFormat0 = CPyExtFunction(
-        _reference_fromformat,
+        lambda args: args[0].replace('%%', '%'),
         lambda: (
             ("hello, world!",),
+            ("<%%>",),
+            ("<%6>",),
         ),
         code="""PyObject* wrap_PyUnicode_FromFormat0(char* fmt) {
             return PyUnicode_FromFormat(fmt);
@@ -225,6 +251,91 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["char* fmt", "int c"],
         callfunction="PyUnicode_FromFormat",
         cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_FromFormat_U = CPyExtFunction(
+        lambda args: f'obj({args[1]})',
+        lambda: (
+            ("obj(%U)", "str"),
+        ),
+        resultspec="O",
+        argspec='sO',
+        arguments=["char* fmt", "PyObject* obj"],
+        callfunction="PyUnicode_FromFormat",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_FromFormat_V = CPyExtFunction(
+        lambda args: f'obj({args[1] or args[2]})',
+        lambda: (
+            ("obj(%V)", "str", "fallback"),
+            ("obj(%V)", None, "fallback"),
+        ),
+        code="""PyObject* wrap_PyUnicode_FromFormat_V(char* fmt, PyObject* obj, char* fallback) {
+            if (obj == Py_None)
+                obj = NULL;
+            return PyUnicode_FromFormat(fmt, obj, fallback);
+        }
+        """,
+        resultspec="O",
+        argspec='sOs',
+        arguments=["char* fmt", "PyObject* obj", "char* fallback"],
+        callfunction="wrap_PyUnicode_FromFormat_V",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_FromFormat_S = CPyExtFunction(
+        lambda args: f'obj({args[1]})',
+        lambda: (
+            ("obj(%S)", "str"),
+            ("obj(%S)", Displayable()),
+            ("obj(%S)", BrokenDisplayable()),
+        ),
+        resultspec="O",
+        argspec='sO',
+        arguments=["char* fmt", "PyObject* obj"],
+        callfunction="PyUnicode_FromFormat",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_FromFormat_R = CPyExtFunction(
+        lambda args: f'obj({args[1]!r})',
+        lambda: (
+            ("obj(%R)", "str"),
+            ("obj(%R)", Displayable()),
+            ("obj(%R)", BrokenDisplayable()),
+        ),
+        resultspec="O",
+        argspec='sO',
+        arguments=["char* fmt", "PyObject* obj"],
+        callfunction="PyUnicode_FromFormat",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_FromFormat_A = CPyExtFunction(
+        lambda args: f'obj({args[1]!a})',
+        lambda: (
+            ("obj(%A)", "str"),
+            ("obj(%A)", Displayable()),
+            ("obj(%A)", BrokenDisplayable()),
+        ),
+        resultspec="O",
+        argspec='sO',
+        arguments=["char* fmt", "PyObject* obj"],
+        callfunction="PyUnicode_FromFormat",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_FromFormat_p = CPyExtFunction(
+        lambda args: "ptr(0xdeadbeef)",
+        lambda: (
+            ("ptr(%p)", object()),
+        ),
+        resultspec="O",
+        argspec='sO',
+        arguments=["char* fmt", "PyObject* obj"],
+        callfunction="PyUnicode_FromFormat",
+        cmpfunc=compare_ptr_string
     )
 
     test_PyUnicode_FromFormat4 = CPyExtFunction(

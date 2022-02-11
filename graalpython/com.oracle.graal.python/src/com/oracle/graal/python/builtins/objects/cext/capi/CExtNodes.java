@@ -3274,7 +3274,7 @@ public abstract class CExtNodes {
 
         private static Matcher match(String formatStr) {
             if (pattern == null) {
-                pattern = Pattern.compile("%(?<flags>[-\\+ #0])?(?<width>\\d+)?(\\.(?<prec>\\d+))?(?<len>(l|ll|z))?(?<spec>[%cduixsAUVSR])");
+                pattern = Pattern.compile("%(?<flags>[-+ #0])?(?<width>\\d+)?(\\.(?<prec>\\d+))?(?<len>(l|ll|z))?(?<spec>[%cduixspAUVSR])");
             }
             return pattern.matcher(formatStr);
         }
@@ -3298,6 +3298,7 @@ public abstract class CExtNodes {
             current.set(this);
             StringBuilder result = new StringBuilder();
             int vaArgIdx = 0;
+            Object unicodeObj;
             try {
                 Matcher matcher = match(format);
                 int cur = 0;
@@ -3320,6 +3321,7 @@ public abstract class CExtNodes {
                         case '%':
                             // %%
                             result.append('%');
+                            valid = true;
                             break;
                         case 'c':
                             int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t);
@@ -3393,8 +3395,15 @@ public abstract class CExtNodes {
                             break;
                         case 's':
                             // %s
-                            Object unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx));
-                            String sValue = castToJavaStringNode.execute(unicodeObj);
+                            Object charPtr = getVaArgsNode.getCharPtr(vaList, vaArgIdx);
+                            String sValue;
+                            if (interopLibrary.isNull(charPtr)) {
+                                // CPython would segfault. Let's make debugging easier for ourselves
+                                sValue = "(NULL)";
+                            } else {
+                                unicodeObj = fromCharPointerNode.execute(charPtr);
+                                sValue = castToJavaStringNode.execute(unicodeObj);
+                            }
                             try {
                                 if (prec == -1) {
                                     result.append(sValue);
@@ -3412,7 +3421,16 @@ public abstract class CExtNodes {
                             break;
                         case 'p':
                             // %p
-                            result.append("0x").append(Long.toHexString(getPyObject(getVaArgsNode, vaList, vaArgIdx).hashCode()));
+                            Object ptr = getVaArgsNode.getVoidPtr(vaList, vaArgIdx);
+                            long value;
+                            if (interopLibrary.isPointer(ptr)) {
+                                value = interopLibrary.asPointer(ptr);
+                            } else if (interopLibrary.hasIdentity(ptr)) {
+                                value = interopLibrary.identityHashCode(ptr);
+                            } else {
+                                value = System.identityHashCode(ptr);
+                            }
+                            result.append(String.format("0x%x", value));
                             vaArgIdx++;
                             valid = true;
                             break;

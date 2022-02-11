@@ -498,7 +498,7 @@ public abstract class CExtParseArgumentsNode {
                 if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PBytes)) {
                     writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
-                    throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, arg);
+                    throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, "bytes", arg);
                 }
             }
             return state.incrementOutIndex();
