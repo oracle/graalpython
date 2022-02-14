@@ -58,14 +58,24 @@ import java.util.Map;
  * parser generator very similar to CPython for easier updating in the future.
  */
 abstract class AbstractParser {
-    public static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
-    public static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
+    protected static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
+    protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
+    
+    /**
+     * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used 
+     * instead != . 
+     */
+    protected static final int PARSE_BARRY_AS_BDFL = 0x0020;
+    
+    private static final String BARRY_AS_BDFL = "with Barry as BDFL, use '<>' instead of '!='";
 
     private final ParserTokenizer tokenizer;
     private final ParserErrorCallback errorCb;
     private final FExprParser fexprParser;
     protected final NodeFactory factory;
 
+    private final int flags;
+    
     protected int level = 0;
     protected boolean callInvalidRules = false;
     private ExprTy.Name cachedDummyName;
@@ -80,12 +90,17 @@ abstract class AbstractParser {
     protected abstract String[] getSoftKeywords();
 
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {
+        this(tokenizer, factory, fexprParser, errorCb, 0);
+    }
+    
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb, int flags) {
         this.tokenizer = tokenizer;
         this.factory = factory;
         this.fexprParser = fexprParser;
         this.errorCb = errorCb;
         this.reservedKeywords = getReservedKeywords();
         this.softKeywords = getSoftKeywords();
+        this.flags = flags;
     }
 
     /**
@@ -210,6 +225,15 @@ abstract class AbstractParser {
         } else {
             return null;
         }
+    }
+
+
+    /**
+     * 
+     * @return flags that influence parsing.
+     */
+    public int getFlags() {
+        return flags;
     }
 
     /**
@@ -383,6 +407,17 @@ abstract class AbstractParser {
         return factory.createString(values, startOffset, endOffset, fexprParser, errorCb);
     }
 
+    /**
+     * _PyPegen_check_barry_as_flufl
+     */
+    public boolean checkBarryAsFlufl (Token token) {
+        if ((flags & PARSE_BARRY_AS_BDFL) != 0 && !getText(token).equals("<>")) {
+            errorCb.onError(token.startOffset, token.endOffset, BARRY_AS_BDFL);
+            return true;
+        }
+        return false;
+    }
+    
     /**
      * equivalent to initialize_token
      */

@@ -48,6 +48,8 @@ import com.oracle.graal.python.pegparser.sst.*;
 public interface NodeFactory {
     public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, int startOffset, int endOffset);
 
+    public StmtTy createAssert(ExprTy test, ExprTy msg, int startOffset, int endOffset);
+    
     public StmtTy createAssignment(ExprTy[] lhs, ExprTy rhs, String typeComment, int startOffset, int endOffset);
 
     public StmtTy createAugAssignment(ExprTy lhs, ExprTy.BinOp.Operator operation, ExprTy rhs, int startOffset, int endOffset);
