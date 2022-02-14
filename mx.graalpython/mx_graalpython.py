@@ -1160,7 +1160,7 @@ def update_import_cmd(args):
             exec(f.read(), d, d) # pylint: disable=exec-used;
         for suite in d["suite"].get("imports", {}).get("suites", []):
             import_name = suite["name"]
-            if suite.get("version") and import_name not in local_names:
+            if suite.get("version") and import_name not in local_names and import_name != 'library-tester':
                 imports_to_update.add(import_name)
 
     revisions = {}
