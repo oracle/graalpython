@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,10 +50,14 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -70,6 +74,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "faulthandler")
 public class FaulthandlerModuleBuiltins extends PythonBuiltins {
+
+    private boolean enabled = true;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FaulthandlerModuleBuiltinsFactory.getFactories();
@@ -163,6 +170,44 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return FaulthandlerModuleBuiltinsClinicProviders.DumpTracebackNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "enable", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, parameterNames = {"$self", "file", "all_threads"})
+    @GenerateNodeFactory
+    abstract static class EnableNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        static PNone doit(PythonModule self, Object file, Object allThreads) {
+            ((FaulthandlerModuleBuiltins) self.getBuiltins()).enabled = true;
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "disable", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class DisableNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static PNone doit(PythonModule self) {
+            ((FaulthandlerModuleBuiltins) self.getBuiltins()).enabled = false;
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "is_enabled", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class IsEnabledNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean doit(PythonModule self) {
+            return ((FaulthandlerModuleBuiltins) self.getBuiltins()).enabled;
+        }
+    }
+
+    @Builtin(name = "cancel_dump_traceback_later")
+    @GenerateNodeFactory
+    abstract static class CancelDumpTracebackLaterNode extends PythonBuiltinNode {
+        @Specialization
+        PNone doit() {
+            return PNone.NONE;
         }
     }
 }
