@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TermiosModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TraceModuleBuiltins;
@@ -365,7 +366,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "_sre",
                         "function",
                         "_sysconfig",
-                        "termios",
                         "zipimport",
                         "java",
                         "_contextvars",
@@ -483,6 +483,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new ImpModuleBuiltins(),
                         new ArrayModuleBuiltins(),
                         new ArrayBuiltins(),
+                        new TermiosModuleBuiltins(),
                         new TimeModuleBuiltins(),
                         new ModuleBuiltins(),
                         new MathModuleBuiltins(),
