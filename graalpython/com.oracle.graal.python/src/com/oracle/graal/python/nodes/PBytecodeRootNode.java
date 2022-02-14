@@ -1604,7 +1604,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(start);
         CompilerAsserts.partialEvaluationConstant(stop);
         for (int j = 0, i = start; i < stop; i++, j++) {
-            target[j++] = (T) frame.getObject(i);
+            target[j] = (T) frame.getObject(i);
             frame.setObject(i, null);
         }
     }
