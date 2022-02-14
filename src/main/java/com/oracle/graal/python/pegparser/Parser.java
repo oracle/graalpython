@@ -42,7 +42,7 @@
 // Checkstyle: stop
 // JaCoCo Exclude
 //@formatter:off
-// Generated from graalpython/com.oracle.graal.python.pegparser/src/main/python/pegjava/python.gram by pegen
+// Generated from pegjava/python.gram by pegen
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.*;
@@ -1859,6 +1859,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, ASSERT_STMT_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'assert' expression [',' expression]
             Token _keyword;
             ExprTy a;
@@ -1871,9 +1872,11 @@ public final class Parser extends AbstractParser {
                 ((b = _tmp_33_rule()) != null || true)  // [',' expression]
             )
             {
-                // TODO: node.action: _PyAST_Assert ( a , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Assert ( a , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createAssert(a,b,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, ASSERT_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -6995,9 +6998,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , NotEq , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_cmpop_expr_pair ( p , NotEq , a ) to Java !!![0m");
-                _res = null;
+                _res = new CmpopExprPair(ExprTy.Compare.Operator.NOTEQ,a);
                 cache.putResult(_mark, NOTEQ_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -16627,9 +16628,7 @@ public final class Parser extends AbstractParser {
                 (tok = (Token)expect(28)) != null  // token='!='
             )
             {
-                // TODO: node.action: _PyPegen_check_barry_as_flufl ( p , tok ) ? NULL : tok
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_check_barry_as_flufl ( p , tok ) ? NULL : tok to Java !!![0m");
-                _res = null;
+                _res = this.checkBarryAsFlufl(tok)? null : tok;
                 cache.putResult(_mark, _TMP_144_ID, _res);
                 return (Token)_res;
             }

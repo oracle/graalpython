@@ -222,10 +222,12 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append("\n");
         level++;
-        sb.append(indent()).append("LHS: ").append(node.left.accept(this)).append("\n");
+        sb.append(indent()).append("LHS: ");
+        putOnSameLineIfShort(sb, node.left);
         for (int i = 0; i < node.ops.length; i++) {
-            sb.append(indent()).append("Op: ").append(node.ops[i].toString()).append("\n");
-            sb.append(indent()).append("RHS: ").append(node.comparators[i].accept(this));
+            sb.append("\n").append(indent()).append("Op: ").append(node.ops[i].toString()).append("\n");
+            sb.append(indent()).append("RHS: ");
+            putOnSameLineIfShort(sb, node.comparators[i]);
         }
         level--;
         return sb.toString();
@@ -562,11 +564,13 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ModTy.Module node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
-        level++;
-        for(SSTNode child: node.body) {
-            sb.append('\n').append(indent()).append(child.accept(this));
+        if (node.body != null) {
+            level++;
+            for(SSTNode child: node.body) {
+                sb.append('\n').append(indent()).append(child.accept(this));
+            }
+            level--;
         }
-        level--;
         return sb.toString();
     }
 
@@ -593,7 +597,14 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(StmtTy.Assert node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Test: ").append(node.test.accept(this));
+        if (node.msg != null) {
+            sb.append('\n');
+            sb.append(indent()).append("Msg: ").append(node.msg.accept(this));
+        }
+        level--;
         return sb.toString();
 
     }
