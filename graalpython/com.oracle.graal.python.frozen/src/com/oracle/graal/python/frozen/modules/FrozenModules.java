@@ -41,34 +41,38 @@ package com.oracle.graal.python.frozen.modules;
 
 import com.oracle.graal.python.frozen.PythonFrozenModule;
 
-import java.util.HashMap;
-import java.util.Map;
-
-
 public final class FrozenModules {
-    public static Map<String, PythonFrozenModule> frozenModules = createFrozenModulesMap();
-    public static Map<String, String>  frozenAliases = createFrozenAliasesMap();
 
-	private static Map<String, PythonFrozenModule> createFrozenModulesMap() {
-	    Map<String, PythonFrozenModule> frozenModules = new HashMap<String, PythonFrozenModule>();
-		frozenModules.put("abc", new PythonFrozenModule("Abc", FrozenAbc.abcByteCode, FrozenAbc.abcByteCodeSize));
-		frozenModules.put("codecs", new PythonFrozenModule("Codecs", FrozenCodecs.codecsByteCode, FrozenCodecs.codecsByteCodeSize));
-		frozenModules.put("io", new PythonFrozenModule("Io", FrozenIo.ioByteCode, FrozenIo.ioByteCodeSize));
-		frozenModules.put("_collections_abc", new PythonFrozenModule("CollectionsAbc", FrozenCollectionsAbc.collectionsAbcByteCode, FrozenCollectionsAbc.collectionsAbcByteCodeSize));
-		frozenModules.put("_sitebuiltins", new PythonFrozenModule("Sitebuiltins", FrozenSitebuiltins.sitebuiltinsByteCode, FrozenSitebuiltins.sitebuiltinsByteCodeSize));
-		frozenModules.put("genericpath", new PythonFrozenModule("Genericpath", FrozenGenericpath.genericpathByteCode, FrozenGenericpath.genericpathByteCodeSize));
-		frozenModules.put("ntpath", new PythonFrozenModule("Ntpath", FrozenNtpath.ntpathByteCode, FrozenNtpath.ntpathByteCodeSize));
-		frozenModules.put("posixpath", new PythonFrozenModule("Posixpath", FrozenPosixpath.posixpathByteCode, FrozenPosixpath.posixpathByteCodeSize));
-		frozenModules.put("os", new PythonFrozenModule("Os", FrozenOs.osByteCode, FrozenOs.osByteCodeSize));
-		frozenModules.put("site", new PythonFrozenModule("Site", FrozenSite.siteByteCode, FrozenSite.siteByteCodeSize));
-		frozenModules.put("stat", new PythonFrozenModule("Stat", FrozenStat.statByteCode, FrozenStat.statByteCodeSize));
-		frozenModules.put("__hello__", new PythonFrozenModule("Hello", FrozenHello.helloByteCode, FrozenHello.helloByteCodeSize));
-	    return frozenModules;
-	}
+    private static final class Map {
+        private static final PythonFrozenModule Abc = new PythonFrozenModule("Abc", "abc");
+        private static final PythonFrozenModule Codecs = new PythonFrozenModule("Codecs", "codecs");
+        private static final PythonFrozenModule Io = new PythonFrozenModule("Io", "io");
+        private static final PythonFrozenModule CollectionsAbc = new PythonFrozenModule("CollectionsAbc", "_collections_abc");
+        private static final PythonFrozenModule Sitebuiltins = new PythonFrozenModule("Sitebuiltins", "_sitebuiltins");
+        private static final PythonFrozenModule Genericpath = new PythonFrozenModule("Genericpath", "genericpath");
+        private static final PythonFrozenModule Ntpath = new PythonFrozenModule("Ntpath", "ntpath");
+        private static final PythonFrozenModule Posixpath = new PythonFrozenModule("Posixpath", "posixpath");
+        private static final PythonFrozenModule Os = new PythonFrozenModule("Os", "os");
+        private static final PythonFrozenModule Site = new PythonFrozenModule("Site", "site");
+        private static final PythonFrozenModule Stat = new PythonFrozenModule("Stat", "stat");
+        private static final PythonFrozenModule Hello = new PythonFrozenModule("Hello", "__hello__");
+    }
 
-	private static Map<String, String> createFrozenAliasesMap() {
-	    // alias, originalName
-	    Map<String, String> frozenAliases = new HashMap<String, String>();
-        return frozenAliases;
+    public static final PythonFrozenModule lookup(String name) {
+        switch (name) {
+            case "abc": return Map.Abc;
+            case "codecs": return Map.Codecs;
+            case "io": return Map.Io;
+            case "_collections_abc": return Map.CollectionsAbc;
+            case "_sitebuiltins": return Map.Sitebuiltins;
+            case "genericpath": return Map.Genericpath;
+            case "ntpath": return Map.Ntpath;
+            case "posixpath": return Map.Posixpath;
+            case "os": return Map.Os;
+            case "site": return Map.Site;
+            case "stat": return Map.Stat;
+            case "__hello__": return Map.Hello;
+            default: return null;
+        }
     }
 }

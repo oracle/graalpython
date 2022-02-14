@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.frozen.PythonFrozenModule;
+import com.oracle.graal.python.frozen.modules.FrozenModules;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -440,7 +441,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     "Returns True if the module name corresponds to a frozen module.")
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
-     abstract static class IsFrozen extends PythonUnaryClinicBuiltinNode {
+    abstract static class IsFrozen extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -449,21 +450,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean run(String name) {
-            return isFrozenModule(name);
-        }
-
-        private boolean isFrozenModule(String name) {
-            return getCore().lookupFrozenModule(name) != null;
+            return FrozenModules.lookup(name) != null;
         }
     }
 
     @Builtin(name = "is_frozen_package", parameterNames = {"name"}, minNumOfPositionalArgs = 1, doc = "is_frozen_package($module, name, /)\n" +
-            "--\n" +
-            "\n" +
-            "Returns True if the module name is of a frozen package.")
+                    "--\n" +
+                    "\n" +
+                    "Returns True if the module name is of a frozen package.")
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
-     abstract static class IsFrozenPackage extends PythonUnaryClinicBuiltinNode {
+    abstract static class IsFrozenPackage extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -472,8 +469,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean run(String name,
-                           @Cached PRaiseNode raiseNode,
-                           @Cached ConditionProfile isStringProfile) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached ConditionProfile isStringProfile) {
             FrozenResult result = findFrozen(name, isStringProfile, getContext());
             if (result.status != FROZEN_OKAY && result.status != FROZEN_EXCLUDED) {
                 raiseFrozenError(result.status, name, raiseNode);
@@ -483,13 +480,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_frozen_object", parameterNames = {"name", "data"}, minNumOfPositionalArgs = 1, doc = "get_frozen_object($module, name, data=None, /)\n" +
-            "--\n" +
-            "\n" +
-            "Create a code object for a frozen module.")
+                    "--\n" +
+                    "\n" +
+                    "Create a code object for a frozen module.")
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
     @ArgumentClinic(name = "data", conversion = ClinicConversion.ReadableBuffer, defaultValue = "PNone.NONE", useDefaultForNone = true)
-     static abstract class GetFrozenObject extends PythonBinaryClinicBuiltinNode {
+    static abstract class GetFrozenObject extends PythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -497,11 +494,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-         Object run(VirtualFrame frame, String name, Object dataObj,
-                          @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                          @Cached PRaiseNode raiseNode,
-                          @Cached ConditionProfile isCodeObjectProfile,
-                          @Cached ConditionProfile isStringProfile) {
+        Object run(VirtualFrame frame, String name, Object dataObj,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached ConditionProfile isCodeObjectProfile,
+                        @Cached ConditionProfile isStringProfile) {
 
             FrozenInfo info = new FrozenInfo();
 
@@ -558,7 +555,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
     @ArgumentClinic(name = "withData", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
-     abstract static class FindFrozen extends PythonBinaryClinicBuiltinNode {
+    abstract static class FindFrozen extends PythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -566,7 +563,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-         Object run(VirtualFrame frame, String name, boolean withData,
+        Object run(VirtualFrame frame, String name, boolean withData,
                         @Cached MemoryViewNode memoryViewNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached ConditionProfile isStringProfile) {
@@ -589,9 +586,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
 
             Object[] returnValues = new Object[]{
-                            data == null ? PNone.NONE : data,
-                            info.isAlias,
-                            info.origName == null ? PNone.NONE : info.origName
+                data == null ? PNone.NONE : data,
+                info.isPackage,
+                info.origName == null ? PNone.NONE : info.origName
             };
 
             return factory().createTuple(returnValues);
@@ -599,12 +596,12 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "init_frozen", parameterNames = {"name"}, minNumOfPositionalArgs = 1, doc = "init_frozen($module, name, /)\n" +
-            "--\n" +
-            "\n" +
-            "Initializes a frozen module.")
+                    "--\n" +
+                    "\n" +
+                    "Initializes a frozen module.")
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
-     abstract static class InitFrozen extends PythonUnaryClinicBuiltinNode {
+    abstract static class InitFrozen extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -612,8 +609,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-         Object run(String name,
-                    @Cached PRaiseNode raiseNode) {
+        Object run(String name,
+                        @Cached PRaiseNode raiseNode) {
             int ret = importFrozenModuleObject(getCore(), name, raiseNode);
 
             if (ret == 0) {
@@ -629,7 +626,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
      * for success, 0 if the module is not found, and raise an exception if the initialization
      * failed.
      */
-    @TruffleBoundary
     private static int importFrozenModuleObject(Python3Core core, String name, PRaiseNode raiseNode) {
 
         PythonContext ctx = PythonContext.get(raiseNode);
@@ -705,7 +701,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             name = (String) nameobj;
         }
 
-        PythonFrozenModule module = ctx.lookupFrozenModule(name);
+        PythonFrozenModule module = FrozenModules.lookup(name);
 
         if (module == null) {
             result.status = FROZEN_NOT_FOUND;
@@ -716,8 +712,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         result.info.data = module.getCode();
         result.info.size = module.getSize() < 0 ? -(module.getSize()) : module.getSize();
         result.info.isPackage = module.getSize() < 0;
-        result.info.isAlias = ctx.isFrozenModuleAlias(name);
-        result.info.origName = result.info.isAlias ? ctx.getFrozenModuleOriginalName(name) : name;
+        result.info.origName = module.getName();
+        result.info.isAlias = !name.equals(result.info.origName);
 
         if (module.getCode() == null) {
             /* It is frozen but marked as un-importable. */
