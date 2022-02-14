@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,27 +40,28 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public final class PythonCextClassBuiltins extends PythonBuiltins {
+public final class PythonCextMethodBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextClassBuiltinsFactory.getFactories();
+        return PythonCextMethodBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -68,25 +69,24 @@ public final class PythonCextClassBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "PyInstanceMethod_New", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyCFunction_NewEx", minNumOfPositionalArgs = 8, parameterNames = {"method_def_ptr", "name", "cfunc", "flags", "wrapper", "self", "module", "doc"})
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class PyInstancemethodNewNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object staticmethod(Object func) {
-            PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
-            res.setCallable(func);
-            return res;
+    abstract static class PyCFunctionNewExMethod extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PythonCextMethodBuiltinsClinicProviders.PyCFunctionNewExMethodClinicProviderGen.INSTANCE;
         }
-    }
 
-    @Builtin(name = "PyMethod_New", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyMethodNew extends PythonBinaryBuiltinNode {
         @Specialization
-        Object methodNew(Object func, Object self) {
-            // Note: CPython also constructs the object directly, without running the constructor or
-            // checking the inputs
-            return factory().createMethod(self, func);
+        Object doNativeCallable(Object methodDefPtr, String name, Object methObj, int flags, int wrapper, Object selfO, Object moduleO, Object doc,
+                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Cached PythonCextBuiltins.CFunctionNewExMethodNode cFunctionNewExMethodNode,
+                        @Cached CExtNodes.ToNewRefNode newRefNode) {
+            Object self = asPythonObjectNode.execute(selfO);
+            Object module = asPythonObjectNode.execute(moduleO);
+            Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, self, module, doc, factory());
+            return newRefNode.execute(func);
         }
     }
 }

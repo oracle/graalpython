@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,23 +44,26 @@ import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public final class PythonCextClassBuiltins extends PythonBuiltins {
+public final class PythonCextPyStateBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextClassBuiltinsFactory.getFactories();
+        return PythonCextPyStateBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -68,25 +71,35 @@ public final class PythonCextClassBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "PyInstanceMethod_New", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyThreadState_Get")
     @GenerateNodeFactory
-    public abstract static class PyInstancemethodNewNode extends PythonUnaryBuiltinNode {
+    abstract static class PyThreadStateGet extends PythonCextBuiltins.NativeBuiltin {
+
         @Specialization
-        public Object staticmethod(Object func) {
-            PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
-            res.setCallable(func);
-            return res;
+        PThreadState get() {
+            return PThreadState.getThreadState(getLanguage(), getContext());
         }
     }
 
-    @Builtin(name = "PyMethod_New", minNumOfPositionalArgs = 2)
+    // directly called without landing function
+    @Builtin(name = "PyState_FindModule", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyMethodNew extends PythonBinaryBuiltinNode {
+    abstract static class PyStateFindModule extends PythonUnaryBuiltinNode {
+
         @Specialization
-        Object methodNew(Object func, Object self) {
-            // Note: CPython also constructs the object directly, without running the constructor or
-            // checking the inputs
-            return factory().createMethod(self, func);
+        Object doGeneric(long mIndex,
+                        @Cached CExtNodes.ToSulongNode toSulongNode) {
+            Object result;
+            try {
+                int i = PInt.intValueExact(mIndex);
+                result = getContext().getCApiContext().getModuleByIndex(i);
+                if (result == null) {
+                    result = getContext().getNativeNull();
+                }
+            } catch (CannotCastException | OverflowException e) {
+                result = getContext().getNativeNull();
+            }
+            return toSulongNode.execute(result);
         }
     }
 }

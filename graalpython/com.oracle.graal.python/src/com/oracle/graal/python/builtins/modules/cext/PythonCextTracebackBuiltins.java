@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,27 +40,35 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins.PyCodeNewEmpty;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public final class PythonCextClassBuiltins extends PythonBuiltins {
+public final class PythonCextTracebackBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextClassBuiltinsFactory.getFactories();
+        return PythonCextTracebackBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -68,25 +76,39 @@ public final class PythonCextClassBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "PyInstanceMethod_New", minNumOfPositionalArgs = 1)
+    @Builtin(name = "_PyTraceback_Add", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PyInstancemethodNewNode extends PythonUnaryBuiltinNode {
+    abstract static class PyTracebackAdd extends PythonTernaryBuiltinNode {
         @Specialization
-        public Object staticmethod(Object func) {
-            PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
-            res.setCallable(func);
-            return res;
+        Object tbHere(String funcname, String filename, int lineno,
+                        @Cached PyCodeNewEmpty newCode,
+                        @Cached PyTraceBackHereNode pyTraceBackHereNode) {
+            PFrame frame = factory().createPFrame(null, newCode.execute(filename, funcname, lineno), factory().createDict(), factory().createDict());
+            pyTraceBackHereNode.execute(null, frame);
+            return PNone.NONE;
         }
     }
 
-    @Builtin(name = "PyMethod_New", minNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTraceBack_Here", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyMethodNew extends PythonBinaryBuiltinNode {
+    abstract static class PyTraceBackHereNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object methodNew(Object func, Object self) {
-            // Note: CPython also constructs the object directly, without running the constructor or
-            // checking the inputs
-            return factory().createMethod(self, func);
+        int tbHere(PFrame frame,
+                        @Cached GetTracebackNode getTracebackNode) {
+            PythonLanguage language = getLanguage();
+            PythonContext.PythonThreadState threadState = getContext().getThreadState(language);
+            PException currentException = threadState.getCurrentException();
+            if (currentException != null) {
+                PTraceback traceback = null;
+                if (currentException.getTraceback() != null) {
+                    traceback = getTracebackNode.execute(currentException.getTraceback());
+                }
+                PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
+                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
+                threadState.setCurrentException(PException.fromExceptionInfo(currentException.getUnreifiedException(), newTraceback, withJavaStacktrace));
+            }
+
+            return 0;
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,23 +44,20 @@ import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public final class PythonCextClassBuiltins extends PythonBuiltins {
+public final class PythonCextBoolBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextClassBuiltinsFactory.getFactories();
+        return PythonCextBoolBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -68,25 +65,21 @@ public final class PythonCextClassBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "PyInstanceMethod_New", minNumOfPositionalArgs = 1)
+    @Builtin(name = "Py_True")
     @GenerateNodeFactory
-    public abstract static class PyInstancemethodNewNode extends PythonUnaryBuiltinNode {
+    public abstract static class PyTrueNode extends PythonBuiltinNode {
         @Specialization
-        public Object staticmethod(Object func) {
-            PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
-            res.setCallable(func);
-            return res;
+        static Object run() {
+            return true;
         }
     }
 
-    @Builtin(name = "PyMethod_New", minNumOfPositionalArgs = 2)
+    @Builtin(name = "Py_False")
     @GenerateNodeFactory
-    abstract static class PyMethodNew extends PythonBinaryBuiltinNode {
+    public abstract static class PyFalseNode extends PythonBuiltinNode {
         @Specialization
-        Object methodNew(Object func, Object self) {
-            // Note: CPython also constructs the object directly, without running the constructor or
-            // checking the inputs
-            return factory().createMethod(self, func);
+        static Object run() {
+            return false;
         }
     }
 }
