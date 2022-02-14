@@ -937,7 +937,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         Block end = new Block();
         node.test.accept(this);
         setOffset(node);
-        addOp(JUMP_IF_FALSE_OR_POP, end);
+        addOp(POP_AND_JUMP_IF_TRUE, end);
         addOp(LOAD_ASSERTION_ERROR);
         if (node.msg != null) {
             node.msg.accept(this);
