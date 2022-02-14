@@ -90,29 +90,29 @@ public class BasicTests extends ParserTestBase {
 //        checkTreeResult("a: 1");
 //    }
 
-//    @Test
-//    public void assert01() throws Exception {
-//        checkTreeResult("assert True");
-//    }
-//
-//    @Test
-//    public void assert02() throws Exception {
-//        checkScopeAndTree(
-//                        "def avg(marks):\n" +
-//                                        "    assert len(marks) != 0,\"List is empty.\"");
-//    }
-//
-//    @Test
-//    public void assert03() throws Exception {
-//        checkTreeResult(
-//                        "def avg():\n" +
-//                                        "    assert len != 0, getMessage(len)");
-//    }
-//
-//    @Test
-//    public void assert04() throws Exception {
-//        checkTreeResult("assert not hascased");
-//    }
+    @Test
+    public void assert01() throws Exception {
+        checkTreeResult("assert True");
+    }
+
+    @Test
+    public void assert02() throws Exception {
+        checkScopeAndTree(
+                        "def avg(marks):\n" +
+                                        "    assert len(marks) != 0,\"List is empty.\"");
+    }
+  
+    @Test
+    public void assert03() throws Exception {
+        checkTreeResult(
+                        "def avg():\n" +
+                                        "    assert len != 0, getMessage(len)");
+    }
+    
+    @Test
+    public void assert04() throws Exception {
+        checkTreeResult("assert not hascased");
+    }
 //
 //    @Test
 //    public void inline01() throws Exception {
@@ -148,15 +148,15 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("...");
     }
 
-//    @Test
-//    public void simpleExpression06() throws Exception {
-//        checkTreeResult("a[1]");
-//    }
+    @Test
+    public void simpleExpression06() throws Exception {
+        checkTreeResult("a[1]");
+    }
 
-//    @Test
-//    public void simpleExpression07() throws Exception {
-//        checkTreeResult("");
-//    }
+    @Test
+    public void simpleExpression07() throws Exception {
+        checkTreeResult( "");
+    }
 
 //    @Test
 //    public void simpleExpression08() throws Exception {
@@ -203,25 +203,25 @@ public class BasicTests extends ParserTestBase {
        checkTreeResult("1 < '10' > True");
    }
 
-   // @Test
-   // public void comparision03() throws Exception {
-   //     checkTreeResult("1 < '10' > True != 1.0");
-   // }
+    @Test
+    public void comparision03() throws Exception {
+        checkTreeResult("1 < '10' > True != 1.0");
+    }
 
    @Test
    public void comparision04() throws Exception {
        checkScopeAndTree("x < y() <= z");
    }
 
-   // @Test
-   // public void comparision05() throws Exception {
-   //     checkScopeAndTree("x() < y() <= z()");
-   // }
+    @Test
+    public void comparision05() throws Exception {
+        checkScopeAndTree("x() < y() <= z()");
+    }
 
-   // @Test
-   // public void comparision06() throws Exception {
-   //     checkScopeAndTree("x() < y() < y() <= z()");
-   // }
+    @Test
+    public void comparision06() throws Exception {
+        checkScopeAndTree("x() < y() < y() <= z()");
+    }
 
    @Test
    public void comparision07() throws Exception {
@@ -246,6 +246,16 @@ public class BasicTests extends ParserTestBase {
    @Test
    public void comparision11() throws Exception {
        checkScopeAndTree("x >= y");
+   }
+   
+   @Test
+   public void comparision12() throws Exception {
+       checkScopeAndTree("x == y");
+   }
+   
+   @Test
+   public void comparision13() throws Exception {
+       checkScopeAndTree("x != y");
    }
 
    @Test
@@ -371,10 +381,10 @@ public class BasicTests extends ParserTestBase {
         checkScopeAndTree("def fn(): \"in\".format(name=\"Baf\")");
     }
 
-//    @Test
-//    public void call20() throws Exception {
-//        checkScopeAndTree("def fn(name): \"in\".format(name=name)");
-//    }
+    @Test
+    public void call20() throws Exception {
+        checkScopeAndTree("def fn(name): \"in\".format(name=name)");
+    }
 //
 //    @Test
 //    public void call21() throws Exception {

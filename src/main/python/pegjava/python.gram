@@ -195,7 +195,7 @@ nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
 
 yield_stmt[stmt_ty]: y=yield_expr { factory.createExpression(y) }
 
-assert_stmt[stmt_ty]: 'assert' a=expression b=[',' z=expression { z }] { _PyAST_Assert(a, b, EXTRA) }
+assert_stmt[stmt_ty]: 'assert' a=expression b=[',' z=expression { z }] { factory.createAssert(a, b, startToken.startOffset, endToken.endOffset) }
 
 del_stmt[stmt_ty]:
     | 'del' a=del_targets &(';' | NEWLINE) { _PyAST_Delete(a, EXTRA) }
@@ -609,7 +609,7 @@ compare_op_bitwise_or_pair[CmpopExprPair*]:
     | is_bitwise_or
 eq_bitwise_or[CmpopExprPair*]: '==' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.EQ, a); }
 noteq_bitwise_or[CmpopExprPair*]:
-    | (tok='!=' { _PyPegen_check_barry_as_flufl(p, tok) ? NULL : tok}) a=bitwise_or {_PyPegen_cmpop_expr_pair(p, NotEq, a) }
+    | (tok='!=' { this.checkBarryAsFlufl(tok) ? null : tok}) a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.NOTEQ, a) }
 lte_bitwise_or[CmpopExprPair*]: '<=' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.LTE, a) }
 lt_bitwise_or[CmpopExprPair*]: '<' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.LT, a) }
 gte_bitwise_or[CmpopExprPair*]: '>=' a=bitwise_or { new CmpopExprPair(ExprTy.Compare.Operator.GTE, a) }
