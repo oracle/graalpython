@@ -195,6 +195,7 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugHandleBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
@@ -368,7 +369,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "termios",
                         "zipimport",
                         "java",
-                        "_contextvars",
                         "pip_hook",
                         "_struct"));
         // add service loader defined python file extensions
@@ -521,6 +521,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
+                        new ContextVarBuiltins(),
                         // exceptions
                         new SystemExitBuiltins(),
                         new ImportErrorBuiltins(),

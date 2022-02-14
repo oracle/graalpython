@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
 import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
@@ -1429,5 +1430,9 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDebugHandle createDebugHandle(GraalHPyHandle handle) {
         return trace(new PDebugHandle(PythonBuiltinClassType.DebugHandle, getShape(PythonBuiltinClassType.DebugHandle), handle));
+    }
+
+    public final PContextVar createContextVar(String name, Object def, Object local) {
+        return trace(new PContextVar(PythonBuiltinClassType.ContextVar, getShape(PythonBuiltinClassType.ContextVar), name, def, local));
     }
 }
