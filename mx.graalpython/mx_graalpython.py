@@ -140,7 +140,7 @@ def python(args, **kwargs):
     do_run_python(args, **kwargs)
 
 
-def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, **kwargs):
+def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, minimal=False, **kwargs):
     experimental_opt_added = False
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
@@ -164,7 +164,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         elif check_vm_env == '0':
             check_vm()
 
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
+    dists = [f'{"" if minimal else "MINIMAL_"}GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
@@ -1853,7 +1853,7 @@ def python_build_watch(args):
             mx.log("Build done.")
 
 
-class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
+class GraalpythonBuildTask(mx.ProjectBuildTask):
     class PrefixingOutput():
         def __init__(self, prefix, printfunc):
             self.prefix = "[" + prefix + "] "
@@ -1865,61 +1865,41 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
 
     def __init__(self, args, project):
         jobs = min(mx.cpu_count(), 8)
-        super(GraalpythonCAPIBuildTask, self).__init__(args, jobs, project)
+        super().__init__(args, jobs, project)
 
     def __str__(self):
-        return 'Building C API project {} with setuptools'.format(self.subject.name)
-
-    def run(self, args, env=None, cwd=None, **kwargs):
-        env = env.copy() if env else os.environ.copy()
-        # n.b.: we don't want derived projects to also have to depend on our build env vars
-        env.update(mx.dependency("com.oracle.graal.python.cext").getBuildEnv())
-        env.update(self.subject.getBuildEnv())
-
-        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
-        for var in ["CC", "CFLAGS", "LDFLAGS"]:
-            env.pop(var, None)
-        args.insert(0, '--PosixModuleBackend=java')
-        return do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
-
-    def _dev_headers_dir(self):
-        return os.path.join(SUITE.dir, "graalpython", "include")
-
-    def _prepare_headers(self):
-        target_dir = self._dev_headers_dir()
-        if os.path.exists(target_dir):
-            shutil.rmtree(target_dir)
-        mx.logv("Preparing header files (dest: {!s})".format(target_dir))
-        shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir)
-        shutil.copy(os.path.join(mx.dependency("SULONG_LEGACY").get_output(), "include", "truffle.h"), target_dir)
+        return 'Building project {}'.format(self.subject.name)
 
     def build(self):
-        self._prepare_headers()
+        args = [mx_subst.path_substitutions.substitute(a, dependency=self) for a in self.subject.args]
+        return self.run(args)
 
-        # n.b.: we do the following to ensure that there's a directory when the
-        # importlib PathFinder initializes it's directory finders
-        mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
-
-        cwd = os.path.join(self.subject.get_output_root(), "mxbuild_temp")
+    def run(self, args, env=None, cwd=None, **kwargs):
+        cwd = cwd or os.path.join(self.subject.get_output_root(), "mxbuild_temp")
 
         if os.path.exists("/dev/null"):
             pycache_dir = "/dev/null"
         else:
             pycache_dir = os.path.join(self.subject.get_output_root(), "__pycache__")
 
-        args = []
         if mx._opts.verbose:
-            args.append("-v")
+            args.insert(0, "-v")
         else:
             # always add "-q" if not verbose to suppress hello message
-            args.append("-q")
+            args.insert(0, "-q")
 
-        args += ["--python.PyCachePrefix=" + pycache_dir,
-                 "-B",
-                 "-S", os.path.join(self.src_dir(), "setup.py"),
-                 self.subject.get_output_root()]
+        args[:0] = [
+            f"--python.PyCachePrefix={pycache_dir}",
+            "-B",
+            "-S"
+        ]
         mx.ensure_dir_exists(cwd)
-        rc = self.run(args, cwd=cwd)
+
+        env = env.copy() if env else os.environ.copy()
+        env.update(self.subject.getBuildEnv())
+        args.insert(0, '--PosixModuleBackend=java')
+        rc = do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
+
         shutil.rmtree(cwd) # remove the temporary build files
         # if we're just running style tests, this is allowed to fail
         if os.environ.get("BUILD_NAME") == "python-style":
@@ -1961,25 +1941,64 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         return None
 
     def clean(self, forBuild=False):
+        try:
+            shutil.rmtree(self.subject.get_output_root())
+        except BaseException:
+            return 1
+        else:
+            return 0
+
+
+class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
+    def run(self, args, env=None, cwd=None, **kwargs):
+        env = env.copy() if env else os.environ.copy()
+        # n.b.: we don't want derived projects to also have to depend on our build env vars
+        env.update(mx.dependency("com.oracle.graal.python.cext").getBuildEnv())
+        env.update(self.subject.getBuildEnv())
+
+        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
+        for var in ["CC", "CFLAGS", "LDFLAGS"]:
+            env.pop(var, None)
+        return super().run(args, env=env, cwd=cwd, **kwargs)
+
+    def _dev_headers_dir(self):
+        return os.path.join(SUITE.dir, "graalpython", "include")
+
+    def _prepare_headers(self):
+        target_dir = self._dev_headers_dir()
+        if os.path.exists(target_dir):
+            shutil.rmtree(target_dir)
+        mx.logv("Preparing header files (dest: {!s})".format(target_dir))
+        shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir)
+        shutil.copy(os.path.join(mx.dependency("SULONG_LEGACY").get_output(), "include", "truffle.h"), target_dir)
+
+    def build(self):
+        self._prepare_headers()
+
+        # n.b.: we do the following to ensure that there's a directory when the
+        # importlib PathFinder initializes it's directory finders
+        mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
+
+        args = [
+            os.path.join(self.src_dir(), "setup.py"),
+            self.subject.get_output_root()
+        ]
+        return self.run(args)
+
+    def clean(self, forBuild=False):
         result = 0
         try:
             shutil.rmtree(self._dev_headers_dir())
         except BaseException:
             result = 1
-        try:
-            shutil.rmtree(self.subject.get_output_root())
-        except BaseException:
-            result = 1
-        return result
+        return max(result, super().clean(forBuild=forBuild))
 
 
-class GraalpythonCAPIProject(mx.Project):
+class GraalpythonProject(mx.Project):
     def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
         context = 'project ' + name
         self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
-        if mx.suite("sulong-managed", fatalIfMissing=False) is not None:
-            self.buildDependencies.append('sulong-managed:SULONG_MANAGED_HOME')
-        super(GraalpythonCAPIProject, self).__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
+        super().__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
 
     def getOutput(self, replaceVar=mx_subst.results_substitutions):
         return self.get_output_root()
@@ -1997,7 +2016,7 @@ class GraalpythonCAPIProject(mx.Project):
                     yield fullname, name
 
     def getBuildTask(self, args):
-        return GraalpythonCAPIBuildTask(args, self)
+        return GraalpythonBuildTask(args, self)
 
     def getBuildEnv(self, replaceVar=mx_subst.path_substitutions):
         ret = {}
@@ -2005,6 +2024,16 @@ class GraalpythonCAPIProject(mx.Project):
             for key, value in self.buildEnv.items():
                 ret[key] = replaceVar.substitute(value, dependency=self)
         return ret
+
+
+class GraalpythonCAPIProject(GraalpythonProject):
+    def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
+        super().__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
+        if mx.suite("sulong-managed", fatalIfMissing=False) is not None:
+            self.buildDependencies.append('sulong-managed:SULONG_MANAGED_HOME')
+
+    def getBuildTask(self, args):
+        return GraalpythonCAPIBuildTask(args, self)
 
 
 def checkout_find_version_for_graalvm(args):

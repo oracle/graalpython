@@ -38,21 +38,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.frozen;
+package com.oracle.graal.python.builtins.objects.module;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 public final class PythonFrozenModule {
     private final String name;
     private final byte[] code;
-    private final int size;
 
     private static byte[] getByteCode(String symbol) {
-       byte[] byteCode;
        try {
-           byteCode = FrozenIo.class.getResourceAsStream("Frozen" + symbol + ".bin").readAllBytes();
-       } catch (NullPointerException | IOException e) {
-           byteCode = new byte[0];
+           InputStream resourceAsStream = PythonFrozenModule.class.getClassLoader().getResourceAsStream("com/oracle/graal/python/frozen/Frozen" + symbol + ".bin");
+           if (resourceAsStream != null) {
+               return resourceAsStream.readAllBytes();
+           }
+       } catch (IOException e) {
+           // fall-through
        }
-       return byteCode;
+       return null;
     }
 
     public PythonFrozenModule(String symbol, String name) {
@@ -69,6 +73,6 @@ public final class PythonFrozenModule {
     }
 
     public int getSize() {
-        return code.length;
+        return code != null ? code.length : 0;
     }
 }

@@ -241,14 +241,21 @@ suite = {
         # FROZEN MODULES
         "com.oracle.graal.python.frozen": {
             "subDir": "graalpython",
-            "sourceDirs": ["src"],
-            "dependencies": [
-                "com.oracle.graal.python.annotations"
+            "vpath": True,
+            "type": "GraalpythonProject",
+            "args": [
+                "<path:com.oracle.graal.python.frozen>/freeze_modules.py",
+                "--python-lib",
+                "<suite:graalpython>/graalpython/lib-python/3",
+                "--binary-dir",
+                "<path:com.oracle.graal.python.frozen>/src/com/oracle/graal/python/frozen/",
+                "--sources-dir",
+                "<path:com.oracle.graal.python>/src/com/oracle/graal/python/builtins/objects/module",
             ],
-            "jacoco": "exclude",
-            "javaCompliance": "11+",
-            "checkstyle": "com.oracle.graal.python",
-            "workingSets": "Truffle,Python",
+            "platformDependent": False,
+            "buildDependencies": [
+                "MINIMAL_GRAALPYTHON",
+            ],
         },
 
         # GRAALPYTHON
@@ -258,7 +265,6 @@ suite = {
             "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
-                "com.oracle.graal.python.frozen",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
@@ -361,7 +367,7 @@ suite = {
             "type": "GraalpythonCAPIProject",
             "platformDependent": False,
             "buildDependencies": [
-                "GRAALPYTHON",
+                "MINIMAL_GRAALPYTHON",
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
@@ -461,7 +467,7 @@ suite = {
             "maven": True,
         },
 
-        "GRAALPYTHON": {
+        "MINIMAL_GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
             ],
@@ -478,6 +484,14 @@ suite = {
                 "truffle:ICU4J-CHARSET",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+            ],
+            "description": "GraalPython engine during build time",
+        },
+
+        "GRAALPYTHON": {
+            "dependencies": [
+                "MINIMAL_GRAALPYTHON",
+                "com.oracle.graal.python.frozen",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
@@ -497,14 +511,6 @@ suite = {
             "dependencies": ["python-lib", "python-test-support-lib"],
             "description": "Python 3 lib files",
             "maven": False,
-        },
-
-        "GRAALPYTHON_FROZEN_MODULES": {
-                    "dependencies": [
-                        "com.oracle.graal.python.frozen",
-                    ],
-                    "description": "Frozen modules",
-                    "maven": False,
         },
 
         "GRAALPYTHON_UNIT_TESTS": {

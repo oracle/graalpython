@@ -1,5 +1,9 @@
-"""Freeze specified modules and regenerate
-   graalpython/com.oracle.graal.python.frozen/src/com/oracle/graal/python/frozen/modules
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (C) 1996-2020 Python Software Foundation
+#
+# Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+
+"""Freeze specified modules
 """
 
 from collections import namedtuple
@@ -10,22 +14,8 @@ import os
 import posixpath
 import sys
 import textwrap
+import shutil
 
-ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
-ROOT_DIR = os.path.abspath(ROOT_DIR)
-# FROZEN_ONLY = os.path.join(ROOT_DIR, 'Tools', 'freeze', 'flag.py') TODO: Enable tests.
-
-STDLIB_DIR = os.path.join(ROOT_DIR, "graalpython", "lib-python", "3")
-
-# If FROZEN_MODULES_DIR or DEEPFROZEN_MODULES_DIR is changed then the
-# .gitattributes and .gitignore files needs to be updated.
-FROZEN_MODULES_DIR = os.path.join(
-    ROOT_DIR,
-    "graalpython/com.oracle.graal.python.frozen/src/com/oracle/graal/python/frozen/modules",
-)
-FROZEN_MODULES_FILE = os.path.join(FROZEN_MODULES_DIR, "FrozenModules.java")
-
-OS_PATH = "ntpath" if os.name == "nt" else "posixpath"
 
 # These are modules that get frozen.
 TESTS_SECTION = "Test module"
@@ -64,7 +54,6 @@ FROZEN = [
             "posixpath",
             # We must explicitly mark os.path as a frozen module
             # even though it will never be imported.
-            # f'{OS_PATH} : os.path',
             "os",
             "site",
             "stat",
@@ -93,32 +82,32 @@ BOOTSTRAP = {
 # specs
 
 
-def parse_frozen_specs():
+def parse_frozen_specs(stdlib_path, output_path):
     seen = {}
     for section, specs in FROZEN:
-        parsed = _parse_specs(specs, section, seen)
+        parsed = _parse_specs(specs, section, seen, stdlib_path=stdlib_path)
         for item in parsed:
             frozenid, pyfile, modname, ispkg, section = item
             print(frozenid, pyfile, modname, ispkg, section)
             try:
                 source = seen[frozenid]
             except KeyError:
-                source = FrozenSource.from_id(frozenid, pyfile)
+                source = FrozenSource.from_id(stdlib_path=stdlib_path, output_path=output_path, frozenid=frozenid, pyfile=pyfile)
                 seen[frozenid] = source
             else:
                 assert not pyfile or pyfile == source.pyfile, item
             yield FrozenModule(modname, ispkg, section, source)
 
 
-def _parse_specs(specs, section, seen):
+def _parse_specs(specs, section, seen, *, stdlib_path):
     for spec in specs:
-        info, subs = _parse_spec(spec, seen, section)
+        info, subs = _parse_spec(spec, seen, section, stdlib_path=stdlib_path)
         yield info
         for info in subs or ():
             yield info
 
 
-def _parse_spec(spec, knownids=None, section=None):
+def _parse_spec(spec, knownids=None, section=None, *, stdlib_path):
     """Yield an info tuple for each module corresponding to the given spec.
 
     The info consists of: (frozenid, pyfile, modname, ispkg, section).
@@ -178,7 +167,7 @@ def _parse_spec(spec, knownids=None, section=None):
         ispkg = False
     else:
         assert not modname or check_modname(modname), spec
-        resolved = iter(resolve_modules(frozenid))
+        resolved = iter(resolve_modules(frozenid, stdlib_path=stdlib_path))
         frozenid, pyfile, ispkg = next(resolved)
         if not modname:
             modname = frozenid
@@ -213,11 +202,11 @@ def _parse_spec(spec, knownids=None, section=None):
 
 class FrozenSource(namedtuple("FrozenSource", "id pyfile binaryfile")):
     @classmethod
-    def from_id(cls, frozenid, pyfile=None):
+    def from_id(cls, *, stdlib_path, output_path, frozenid, pyfile=None):
         if not pyfile:
-            pyfile = os.path.join(STDLIB_DIR, *frozenid.split(".")) + ".py"
+            pyfile = os.path.join(stdlib_path, *frozenid.split(".")) + ".py"
             assert os.path.exists(pyfile), (frozenid, pyfile)
-        binaryfile = resolve_frozen_file(frozenid, FROZEN_MODULES_DIR)
+        binaryfile = resolve_frozen_file(frozenid, output_path)
         return cls(frozenid, pyfile, binaryfile)
 
     @classmethod
@@ -327,7 +316,7 @@ def _get_checksum(filename):
     return m.hexdigest()
 
 
-def resolve_modules(modname, pyfile=None):
+def resolve_modules(modname, *, stdlib_path, pyfile=None):
     if modname.startswith("<") and modname.endswith(">"):
         if pyfile:
             assert (
@@ -356,7 +345,7 @@ def resolve_modules(modname, pyfile=None):
         raise ValueError(f"not a valid module name ({rawname})")
 
     if not pyfile:
-        pyfile = _resolve_module(modname, ispkg=ispkg)
+        pyfile = _resolve_module(modname, stdlib_path, ispkg=ispkg)
     elif os.path.isdir(pyfile):
         pyfile = _resolve_module(modname, pyfile, ispkg)
     yield modname, pyfile, ispkg
@@ -420,7 +409,7 @@ def _resolve_modname_matcher(match, rootdir=None):
     return match_modname
 
 
-def _resolve_module(modname, pathentry=STDLIB_DIR, ispkg=False):
+def _resolve_module(modname, pathentry, ispkg=False):
     assert pathentry, pathentry
     pathentry = os.path.normpath(pathentry)
     assert os.path.isabs(pathentry)
@@ -465,7 +454,7 @@ def trim(str):
 #############################################
 # write frozen files
 
-COPYRIGHT_HEADER = """
+FROZEN_MODULES_HEADER = """
     /* Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
     * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
     *
@@ -505,15 +494,9 @@ COPYRIGHT_HEADER = """
     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     * SOFTWARE.
     */
-    """
+    package com.oracle.graal.python.builtins.objects.module;
 
-FROZEN_MODULES_HEADER = """
-    package com.oracle.graal.python.frozen.modules;
-
-    import com.oracle.graal.python.frozen.PythonFrozenModule;
-
-    public final class FrozenModules {
-    """
+    public final class FrozenModules {"""
 
 def freeze_module(src):
     with open(src.pyfile, "r") as src_file, open(src.binaryfile, "wb") as binary_file:
@@ -542,19 +525,12 @@ def write_frozen_lookup(out_file, modules):
 
 def write_frozen_module_file(file, modules):
     with open(file, "w") as out_file:
-        out_file.write(trim(COPYRIGHT_HEADER))
-        out_file.write("\n")
         out_file.write(trim(FROZEN_MODULES_HEADER))
         out_file.write("\n\n")
         write_frozen_modules_map(out_file, modules)
         out_file.write("\n")
         write_frozen_lookup(out_file, modules)
         out_file.write("}\n")
-
-
-def clean_frozen_modules_directory():
-    for file in os.listdir(FROZEN_MODULES_DIR):
-        os.remove(os.path.join(FROZEN_MODULES_DIR, file))
 
 
 def add_tabs(str, number):
@@ -567,21 +543,27 @@ def add_tabs(str, number):
     return "\n".join(tabbed_lines)
 
 
-def main():
-    # create module specs
-    modules = list(parse_frozen_specs())
+def main(args):
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('--python-lib', required=True)
+    parser.add_argument('--binary-dir', required=True)
+    parser.add_argument('--sources-dir', required=True)
+    parsed_args = parser.parse_args(args)
 
-    clean_frozen_modules_directory()
-    # write frozen module binary files containing the byte code and class files used for importing the binary files
+    # create module specs
+    modules = list(parse_frozen_specs(parsed_args.python_lib, parsed_args.binary_dir))
+
+    shutil.rmtree(parsed_args.binary_dir, ignore_errors=True)
+    os.makedirs(parsed_args.binary_dir)
+    # write frozen module binary files containing the byte code and class files
+    # used for importing the binary files
     for src in _iter_sources(modules):
         freeze_module(src)
 
     # write frozen modules class used for storing frozen modules byte code arrays
-    write_frozen_module_file(FROZEN_MODULES_FILE, modules)
+    write_frozen_module_file(os.path.join(parsed_args.sources_dir, "FrozenModules.java"), modules)
 
 
 if __name__ == "__main__":
-    argv = sys.argv[1:]
-    if argv:
-        sys.exit(f"ERROR: got unexpected args {argv}")
-    main()
+    main(sys.argv[1:])

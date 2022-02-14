@@ -94,8 +94,8 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.frozen.PythonFrozenModule;
-import com.oracle.graal.python.frozen.modules.FrozenModules;
+import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
+import com.oracle.graal.python.builtins.objects.module.FrozenModules;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -450,7 +450,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean run(String name) {
-            return FrozenModules.lookup(name) != null;
+            PythonFrozenModule mod = FrozenModules.lookup(name);
+            return mod != null && mod.getCode() != null;
         }
     }
 

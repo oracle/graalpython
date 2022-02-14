@@ -337,8 +337,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
-import com.oracle.graal.python.frozen.PythonFrozenModule;
-
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
  * types. The core is embedded, using inheritance, into {@link PythonContext} to avoid indirection
