@@ -1105,14 +1105,16 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode toString,
+                        @Cached PythonObjectFactory factory,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             try {
                 // TODO(fa) provide encoding (utf8)
-                Object str = fromCharPointerNode.execute(arguments[1]);
-                return asHandleNode.execute(context, str);
+                String str = toString.execute(fromCharPointerNode.execute(arguments[1]));
+                return asHandleNode.execute(context, factory.createString(str));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
                 return GraalHPyHandle.NULL_HANDLE;
