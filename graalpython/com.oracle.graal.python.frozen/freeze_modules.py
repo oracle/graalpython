@@ -16,6 +16,7 @@ import sys
 import textwrap
 import shutil
 
+FROZEN_ONLY = os.path.join(os.path.dirname(__file__), 'flag.py')
 
 # These are modules that get frozen.
 TESTS_SECTION = "Test module"
@@ -37,23 +38,35 @@ FROZEN = [
         [
             "abc",
             "codecs",
-            # For now we do not freeze the encodings, due # to the noise all
-            # those extra modules add to the text printed during the build.
-            # (See https://github.com/python/cpython/pull/28398#pullrequestreview-756856469.)
-            # '<encodings.*>',
+            '<encodings.*>',
             "io",
         ],
     ),
     (
         "stdlib - startup, with site",
         [
+            "_py_abc",
+            "_weakrefset",
+            "types",
+            "enum",
+            "sre_constants",
+            "sre_parse",
+            "sre_compile",
+            "operator",
+            "keyword",
+            "heapq",
+            "reprlib",
+            "<collections.*>",
+            "functools",
+            "copyreg",
+            "re",
+            "locale",
+            "rlcompleter",
             "_collections_abc",
             "_sitebuiltins",
             "genericpath",
             "ntpath",
             "posixpath",
-            # We must explicitly mark os.path as a frozen module
-            # even though it will never be imported.
             "os",
             "site",
             "stat",
@@ -63,12 +76,11 @@ FROZEN = [
         TESTS_SECTION,
         [
             "__hello__",
-            #                 TODO: enable further tests.
-            #                 '__hello__ : __hello_alias__',
-            #                 '__hello__ : <__phello_alias__>',
-            #                 '__hello__ : __phello_alias__.spam',
-            #                 '<__phello__.**.*>',
-            #                 f'frozen_only : __hello_only__ = {FROZEN_ONLY}',
+            '__hello__ : __hello_alias__',
+            '__hello__ : <__phello_alias__>',
+            '__hello__ : __phello_alias__.spam',
+            # '<__phello__.**.*>',
+            f'frozen_only : __hello_only__ = {FROZEN_ONLY}',
         ],
     ),
 ]
@@ -200,18 +212,18 @@ def _parse_spec(spec, knownids=None, section=None, *, stdlib_path):
 # frozen source files
 
 
-class FrozenSource(namedtuple("FrozenSource", "id pyfile binaryfile")):
+class FrozenSource(namedtuple("FrozenSource", "id pyfile binaryfile stdlib_path")):
     @classmethod
     def from_id(cls, *, stdlib_path, output_path, frozenid, pyfile=None):
         if not pyfile:
             pyfile = os.path.join(stdlib_path, *frozenid.split(".")) + ".py"
             assert os.path.exists(pyfile), (frozenid, pyfile)
         binaryfile = resolve_frozen_file(frozenid, output_path)
-        return cls(frozenid, pyfile, binaryfile)
+        return cls(frozenid, pyfile, binaryfile, stdlib_path)
 
     @classmethod
     def resolve_symbol(cls, frozen_id):
-        return frozen_id.replace(".", " ").replace("_", " ").title().replace(" ", "")
+        return frozen_id.replace(".", "_").upper()
 
     @property
     def frozenid(self):
@@ -219,7 +231,7 @@ class FrozenSource(namedtuple("FrozenSource", "id pyfile binaryfile")):
 
     @property
     def modname(self):
-        if self.pyfile.startswith(STDLIB_DIR):
+        if self.pyfile.startswith(self.stdlib_path):
             return self.id
         return None
 
@@ -359,9 +371,10 @@ def check_modname(modname):
     return all(n.isidentifier() for n in modname.split("."))
 
 
-def iter_submodules(pkgname, pkgdir=None, match="*"):
+def iter_submodules(pkgname, pkgdir=None, match="*", stdlib_path=None):
     if not pkgdir:
-        pkgdir = os.path.join(STDLIB_DIR, *pkgname.split("."))
+        assert stdlib_path
+        pkgdir = os.path.join(stdlib_path, *pkgname.split("."))
     if not match:
         match = "**.*"
     match_modname = _resolve_modname_matcher(match, pkgdir)
@@ -507,9 +520,10 @@ def freeze_module(src):
 def write_frozen_modules_map(out_file, modules):
     out_file.write("    private static final class Map {\n")
     for module in modules:
-        out_file.write(
-            f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", "{module.frozenid}");\n'
-        )
+        if not module.isalias or not module.orig:
+            out_file.write(
+                f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", "{module.frozenid}");\n'
+            )
     out_file.write("    }\n")
 
 
