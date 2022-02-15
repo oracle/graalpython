@@ -410,7 +410,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                         @Cached("create(__LOADER__)") SetAttributeNode setAttributeNode,
                         @Cached PyObjectLookupAttr lookup) {
             Object name = lookup.execute(frame, moduleSpec, "name");
-            PythonModule builtinModule = getBuiltinModule(toJavaStringNode.execute(name));
+            PythonModule builtinModule = getCore().lookupBuiltinModule(toJavaStringNode.execute(name));
             if (builtinModule != null) {
                 // TODO: GR-26411 builtin modules cannot be re-initialized (see is_builtin)
                 // We are setting the loader to the spec loader (since this is the loader that is
@@ -423,11 +423,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 return builtinModule;
             }
             throw raise(NotImplementedError, "_imp.create_builtin");
-        }
-
-        @TruffleBoundary
-        private PythonModule getBuiltinModule(String name) {
-            return getCore().lookupBuiltinModule(name);
         }
     }
 
