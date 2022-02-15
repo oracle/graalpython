@@ -248,7 +248,7 @@ suite = {
                 "--python-lib",
                 "<suite:graalpython>/graalpython/lib-python/3",
                 "--binary-dir",
-                "<output_root:com.oracle.graal.python.frozen>/bin/com/oracle/graal/python/builtins/objects/module/",
+                "<output_root:com.oracle.graal.python.frozen>/com/oracle/graal/python/builtins/objects/module/",
                 "--sources-dir",
                 "<path:com.oracle.graal.python>/src/com/oracle/graal/python/builtins/objects/module/",
             ],

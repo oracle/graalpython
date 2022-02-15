@@ -164,7 +164,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         elif check_vm_env == '0':
             check_vm()
 
-    dists = [f'{"" if minimal else "MINIMAL_"}GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
+    dists = [f'{"MINIMAL_" if minimal else ""}GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
@@ -1907,7 +1907,7 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         env = env.copy() if env else os.environ.copy()
         env.update(self.subject.getBuildEnv())
         args.insert(0, '--PosixModuleBackend=java')
-        rc = do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
+        rc = do_run_python(args, env=env, cwd=cwd, minimal=True, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 
         shutil.rmtree(cwd) # remove the temporary build files
         # if we're just running style tests, this is allowed to fail
@@ -2003,14 +2003,23 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         return max(result, super().clean(forBuild=forBuild))
 
 
-class GraalpythonProject(mx.Project):
+class GraalpythonProject(mx.ArchivableProject):
     def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
         context = 'project ' + name
         self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
-        super().__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
+        mx.Project.__init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
 
     def getOutput(self, replaceVar=mx_subst.results_substitutions):
         return self.get_output_root()
+
+    def output_dir(self):
+        return self.getOutput()
+
+    def archive_prefix(self):
+        return ""
+
+    def getResults(self):
+        return [x[0] for x in self.getArchivableResults(use_relpath=False)]
 
     def getArchivableResults(self, use_relpath=True, single=False):
         if single:
