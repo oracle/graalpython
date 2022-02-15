@@ -164,7 +164,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         elif check_vm_env == '0':
             check_vm()
 
-    dists = [f'{"MINIMAL_" if minimal else ""}GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
+    dists = [f'{"BOOTSTRAP_" if minimal else ""}GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)

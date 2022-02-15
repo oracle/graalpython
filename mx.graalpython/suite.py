@@ -254,7 +254,7 @@ suite = {
             ],
             "platformDependent": False,
             "buildDependencies": [
-                "MINIMAL_GRAALPYTHON",
+                "BOOTSTRAP_GRAALPYTHON",
             ],
         },
 
@@ -367,7 +367,7 @@ suite = {
             "type": "GraalpythonCAPIProject",
             "platformDependent": False,
             "buildDependencies": [
-                "MINIMAL_GRAALPYTHON",
+                "BOOTSTRAP_GRAALPYTHON",
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
@@ -467,7 +467,7 @@ suite = {
             "maven": True,
         },
 
-        "MINIMAL_GRAALPYTHON": {
+        "BOOTSTRAP_GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
             ],
@@ -490,7 +490,7 @@ suite = {
 
         "GRAALPYTHON": {
             "dependencies": [
-                "MINIMAL_GRAALPYTHON",
+                "BOOTSTRAP_GRAALPYTHON",
                 "com.oracle.graal.python.frozen",
             ],
             "javaProperties": {
