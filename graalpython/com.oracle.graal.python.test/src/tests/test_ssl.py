@@ -41,8 +41,7 @@ import unittest
 import ssl
 import os
 import json
-import sys
-import subprocess
+
 
 def data_file(name):
     return os.path.join(os.path.dirname(__file__), "ssldata", name)
@@ -254,26 +253,6 @@ class CertTests(unittest.TestCase):
                 env["SSL_CERT_DIR"] = certDir
             else:
                 del env["SSL_CERT_DIR"]
-
-    @unittest.skipIf(sys.implementation.name == 'cpython', "graalpython specific")
-    def test_load_default_verify_keystore(self):
-        # execute with javax.net.ssl.trustStore=tests/ssldata/signing_keystore.jks
-        # the JKS keystore:
-        # - contains one trusted certificate, the same as in tests/ssldata/signing_ca.pem
-        # - password is testssl
-        curdir = os.path.abspath(os.path.dirname(__file__))
-        src = "import ssl, sys, os\n" \
-               "sys.path.append('" + curdir + "')\n" \
-               "from test_ssl import data_file, check_handshake\n" \
-               "server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)\n" \
-               "server_context.load_cert_chain(data_file('signed_cert.pem'))\n" \
-               "client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)\n" \
-               "check_handshake(server_context, client_context, ssl.SSLCertVerificationError)\n" \
-               "client_context.load_default_certs()\n" \
-               "check_handshake(server_context, client_context)\n"
-        env = os.environ.copy()
-        env['JAVA_TOOL_OPTIONS'] = "-Djavax.net.ssl.trustStore=" + curdir + "/ssldata/signing_keystore.jks"
-        subprocess.run([sys.executable, '-c', src], env=env)
 
     def test_verify_mode(self):
         signed_cert = data_file("signed_cert.pem")
