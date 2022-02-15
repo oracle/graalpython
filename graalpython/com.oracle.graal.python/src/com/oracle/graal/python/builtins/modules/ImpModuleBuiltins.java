@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -102,13 +101,13 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -132,17 +131,39 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     static final String HPY_SUFFIX = ".hpy.so";
 
     private static class FrozenResult {
-        FrozenStatus status;
-        FrozenInfo info = new FrozenInfo();
+        final FrozenStatus status;
+        final FrozenInfo info;
+
+        FrozenResult(FrozenStatus status) {
+            this(status, null);
+        }
+
+        FrozenResult(FrozenStatus status, FrozenInfo info) {
+            this.status = status;
+            this.info = info;
+        }
     }
 
     private static class FrozenInfo {
-        String name;
-        byte[] data;
-        int size;
-        boolean isPackage;
-        boolean isAlias;
-        String origName;
+        final String name;
+        final byte[] data;
+        final int size;
+        final boolean isPackage;
+        final String origName;
+        final boolean isAlias;
+
+        FrozenInfo(byte[] data, int size) {
+            this(null, data, size, false, null, false);
+        }
+
+        FrozenInfo(String name, byte[] data, int size, boolean isPackage, String origName, boolean isAlias) {
+            this.name = name;
+            this.data = data;
+            this.size = size;
+            this.isPackage = isPackage;
+            this.origName = origName;
+            this.isAlias = isAlias;
+        }
     }
 
     enum FrozenStatus {
@@ -469,11 +490,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean run(String name,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached ConditionProfile isStringProfile) {
-            FrozenResult result = findFrozen(name, isStringProfile, getContext());
-            if (result.status != FROZEN_OKAY && result.status != FROZEN_EXCLUDED) {
+        static boolean run(String name,
+                        @Cached PRaiseNode raiseNode) {
+            FrozenResult result = findFrozen(name);
+            if (result.status != FROZEN_EXCLUDED) {
                 raiseFrozenError(result.status, name, raiseNode);
             }
             return result.info.isPackage;
@@ -498,30 +518,23 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         Object run(VirtualFrame frame, String name, Object dataObj,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode,
-                        @Cached ConditionProfile isCodeObjectProfile,
-                        @Cached ConditionProfile isStringProfile) {
-
-            FrozenInfo info = new FrozenInfo();
-
+                        @Cached ConditionProfile isCodeObjectProfile) {
+            FrozenInfo info;
             if (dataObj != PNone.NONE) {
                 try {
-                    info.data = bufferLib.getInternalOrCopiedByteArray(dataObj);
-                    info.size = bufferLib.getBufferLength(dataObj);
+                    info = new FrozenInfo(bufferLib.getInternalOrCopiedByteArray(dataObj), bufferLib.getBufferLength(dataObj));
                 } finally {
                     bufferLib.release(dataObj, frame, this);
                 }
+                if (info.size == 0) {
+                    /* Does not contain executable code. */
+                    raiseFrozenError(FROZEN_INVALID, name, raiseNode);
+                }
             } else {
-                FrozenResult result = findFrozen(name, isStringProfile, getContext());
+                FrozenResult result = findFrozen(name);
                 FrozenStatus status = result.status;
                 info = result.info;
-                if (status != FROZEN_OKAY) {
-                    raiseFrozenError(status, name, raiseNode);
-                }
-            }
-
-            if (info.size == 0) {
-                /* Does not contain executable code. */
-                raiseFrozenError(FROZEN_INVALID, name, raiseNode);
+                raiseFrozenError(status, name, raiseNode);
             }
 
             Object code = null;
@@ -566,18 +579,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run(VirtualFrame frame, String name, boolean withData,
                         @Cached MemoryViewNode memoryViewNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached ConditionProfile isStringProfile) {
-            FrozenResult result = findFrozen(name, isStringProfile, getContext());
+                        @Cached PRaiseNode raiseNode) {
+            FrozenResult result = findFrozen(name);
             FrozenStatus status = result.status;
             FrozenInfo info = result.info;
 
-            if (status == FrozenStatus.FROZEN_NOT_FOUND || status == FROZEN_DISABLED) {
-                return PNone.NONE;
-            } else if (status == FROZEN_BAD_NAME) {
-                return PNone.NONE;
-            } else if (status != FrozenStatus.FROZEN_OKAY) {
-                raiseFrozenError(status, name, raiseNode);
+            switch (status) {
+                case FROZEN_NOT_FOUND:
+                case FROZEN_DISABLED:
+                case FROZEN_BAD_NAME:
+                    return PNone.NONE;
+                default:
+                    raiseFrozenError(status, name, raiseNode);
             }
 
             PMemoryView data = null;
@@ -610,130 +623,88 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(String name,
-                        @Cached PRaiseNode raiseNode) {
-            int ret = importFrozenModuleObject(getCore(), name, raiseNode);
-
-            if (ret == 0) {
-                return PNone.NONE;
-            }
-
-            return importGetModule(getCore(), name);
+        Object run(String name) {
+            return importFrozenModuleObject(getCore(), name);
         }
     }
 
-    /*
-     * Equivalent to CPythons PyImport_FrozenModuleObject. Initialize a frozen module. Return 1
-     * for success, 0 if the module is not found, and raise an exception if the initialization
-     * failed.
+    /**
+     * Equivalent to CPythons PyImport_FrozenModuleObject. Initialize a frozen module. Returns the
+     * imported module or raises a Python exception.
      */
-    private static int importFrozenModuleObject(Python3Core core, String name, PRaiseNode raiseNode) {
-
-        PythonContext ctx = PythonContext.get(raiseNode);
-
-        FrozenResult result = findFrozen(name, ConditionProfile.getUncached(), ctx);
+    @TruffleBoundary
+    private static Object importFrozenModuleObject(Python3Core core, String name) {
+        FrozenResult result = findFrozen(name);
         FrozenStatus status = result.status;
         FrozenInfo info = result.info;
 
-        if (status == FROZEN_NOT_FOUND || status == FROZEN_DISABLED || status == FROZEN_BAD_NAME) {
-            return 0;
-        } else if (status != FROZEN_OKAY) {
-            raiseFrozenError(status, name, raiseNode);
+        switch (status) {
+            case FROZEN_NOT_FOUND:
+            case FROZEN_DISABLED:
+            case FROZEN_BAD_NAME:
+                return 0;
+            default:
+                raiseFrozenError(status, name, PRaiseNode.getUncached());
         }
 
         PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(info.data, info.size);
 
-        PythonModule module = importAddModule(core, name);
+        PythonModule module = core.createModule(name);
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */
-            module.setAttribute("__path__", PythonObjectFactory.getUncached().createList());
+            WriteAttributeToDynamicObjectNode.getUncached().execute(module, "__path__", core.factory().createList());
         }
 
         RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(module));
 
-        PythonModule importedModule = importGetModule(core, name);
+        PythonModule importedModule = core.lookupBuiltinModule(name);
 
         if (importedModule == null) {
-            raiseNode.raise(ImportError, ErrorMessages.MODULE_NOT_FOUND, name);
+            throw PRaiseNode.getUncached().raise(ImportError, ErrorMessages.MODULE_NOT_FOUND, name);
         }
 
         /* Set __origname__ (consumed in FrozenImporter._setup_module()). */
         Object origName = info.origName == null ? PNone.NONE : info.origName;
 
-        importedModule.setAttribute("__origname__", origName);
+        WriteAttributeToDynamicObjectNode.getUncached().execute(importedModule, "__origname__", origName);
 
-        return 1;
-    }
-
-    @TruffleBoundary
-    private static PythonModule importGetModule(Python3Core core, String name) {
-        return core.lookupBuiltinModule(name);
+        return importedModule;
     }
 
     /*
-     * Get the module object corresponding to a module name. First check the modules dictionary if
-     * there's one there, if not, create a new one and insert it in the modules dictionary.
+     * CPython's version of this accepts any object and casts, but all Python-level callers use
+     * argument clinic to convert the name first. The only exeption is
+     * PyImport_ImportFrozenModuleObject, which we don't expose as C API and handle differently_
      */
-    @TruffleBoundary
-    private static PythonModule importAddModule(Python3Core core, String name) {
-        return core.createModule(name);
-    }
-
-    private static FrozenResult findFrozen(Object nameobj, ConditionProfile isStringProfile, PythonContext ctx) {
-
-        String name;
-        FrozenResult result = new FrozenResult();
-
-        if (!isStringProfile.profile(nameobj instanceof String)) {
-            if (nameobj == null || nameobj == PNone.NONE) {
-                result.status = FROZEN_BAD_NAME;
-                return result;
-            }
-
-            try {
-                name = CastToJavaStringNode.getUncached().execute(nameobj);
-            } catch (CannotCastException e) {
-                result.status = FROZEN_BAD_NAME;
-                return result;
-            }
-        } else {
-            name = (String) nameobj;
-        }
-
+    private static FrozenResult findFrozen(String name) {
         PythonFrozenModule module = FrozenModules.lookup(name);
 
         if (module == null) {
-            result.status = FROZEN_NOT_FOUND;
-            return result;
+            return new FrozenResult(FROZEN_NOT_FOUND);
         }
 
-        result.info.name = name;
-        result.info.data = module.getCode();
-        result.info.size = module.getSize() < 0 ? -(module.getSize()) : module.getSize();
-        result.info.isPackage = module.getSize() < 0;
-        result.info.origName = module.getName();
-        result.info.isAlias = !name.equals(result.info.origName);
+        FrozenInfo info = new FrozenInfo(name,
+                        module.getCode(),
+                        module.getSize() < 0 ? -(module.getSize()) : module.getSize(),
+                        module.getSize() < 0,
+                        module.getName(),
+                        !name.equals(module.getName()));
 
         if (module.getCode() == null) {
             /* It is frozen but marked as un-importable. */
-            result.status = FROZEN_EXCLUDED;
-            return result;
+            return new FrozenResult(FROZEN_EXCLUDED, info);
         }
 
         if (module.getCode()[0] == '\0' || module.getSize() == 0) {
             /* Does not contain executable code. */
-            result.status = FROZEN_INVALID;
-            return result;
+            return new FrozenResult(FROZEN_INVALID, info);
         }
 
-        result.status = FROZEN_OKAY;
-        return result;
-
+        return new FrozenResult(FROZEN_OKAY, info);
     }
 
-    @TruffleBoundary
     private static void raiseFrozenError(FrozenStatus status, String moduleName, PRaiseNode raiseNode) {
         switch (status) {
             case FROZEN_BAD_NAME:
@@ -750,7 +721,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // There was no error.
                 break;
             default:
-                CompilerDirectives.shouldNotReachHere("Unknown FrozenStatus " + status);
+                throw CompilerDirectives.shouldNotReachHere("Unknown FrozenStatus " + status);
         }
     }
 
