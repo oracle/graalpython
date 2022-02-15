@@ -100,7 +100,8 @@ def parse_frozen_specs(stdlib_path, output_path):
         parsed = _parse_specs(specs, section, seen, stdlib_path=stdlib_path)
         for item in parsed:
             frozenid, pyfile, modname, ispkg, section = item
-            print(frozenid, pyfile, modname, ispkg, section)
+            if sys.flags.verbose:
+                print(frozenid, pyfile, modname, ispkg, section)
             try:
                 source = seen[frozenid]
             except KeyError:
