@@ -49,7 +49,7 @@ public final class PythonFrozenModule {
 
     private static byte[] getByteCode(String symbol) {
        try {
-           InputStream resourceAsStream = PythonFrozenModule.class.getClassLoader().getResourceAsStream("com/oracle/graal/python/frozen/Frozen" + symbol + ".bin");
+           InputStream resourceAsStream = PythonFrozenModule.class.getResourceAsStream("Frozen" + symbol + ".bin");
            if (resourceAsStream != null) {
                return resourceAsStream.readAllBytes();
            }

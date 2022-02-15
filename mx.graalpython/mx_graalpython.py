@@ -1046,8 +1046,17 @@ def _get_src_dir(projectname):
     mx.abort("Could not find src dir for project %s" % projectname)
 
 
+def _get_output_root(projectname):
+    for suite in mx.suites():
+        for p in suite.projects:
+            if p.name == projectname:
+                return p.get_output_root()
+    mx.abort("Could not find out dir for project %s" % projectname)
+
+
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
 mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
+mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
 
 
 def delete_self_if_testdownstream(args):
