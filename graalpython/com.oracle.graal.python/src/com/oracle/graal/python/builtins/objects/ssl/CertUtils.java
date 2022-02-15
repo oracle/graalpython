@@ -113,11 +113,9 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.frame.Frame;
 
 public final class CertUtils {
-    private static BouncyCastleProvider BOUNCYCASTLE_PROVIDER;
+    public static final BouncyCastleProvider BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
 
-    public static void initialize() {
-
-        BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
+    static {
         Security.addProvider(BOUNCYCASTLE_PROVIDER);
     }
 

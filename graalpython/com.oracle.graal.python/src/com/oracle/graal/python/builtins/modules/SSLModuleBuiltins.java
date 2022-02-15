@@ -204,7 +204,6 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        CertUtils.initialize();
         loadDefaults();
         PythonModule module = core.lookupBuiltinModule("_ssl");
         PythonObjectFactory factory = core.factory();
