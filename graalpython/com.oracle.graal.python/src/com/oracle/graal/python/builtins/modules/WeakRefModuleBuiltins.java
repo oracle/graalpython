@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -119,7 +120,9 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         PythonModule weakrefModule = core.lookupBuiltinModule("_weakref");
         weakrefModule.setAttribute(weakRefQueueKey, weakRefQueue);
-        core.lookupType(PythonBuiltinClassType.PReferenceType).setAttribute(weakRefQueueKey, weakRefQueue);
+        PythonBuiltinClass refType = core.lookupType(PythonBuiltinClassType.PReferenceType);
+        weakrefModule.setAttribute("ref", refType);
+        refType.setAttribute(weakRefQueueKey, weakRefQueue);
         final PythonContext ctx = core.getContext();
         core.getContext().registerAsyncAction(() -> {
             if (!ctx.isGcEnabled()) {
@@ -190,73 +193,6 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         public PReferenceType refType(@SuppressWarnings("unused") Object cls, Object object, @SuppressWarnings("unused") Object callback) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
-        }
-
-        @SuppressWarnings("unchecked")
-        private ReferenceQueue<Object> getWeakReferenceQueue() {
-            Object queueObject = readQueue.execute(getCore().lookupType(PythonBuiltinClassType.PReferenceType), weakRefQueueKey);
-            if (queueObject instanceof ReferenceQueue) {
-                ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
-                return queue;
-            } else {
-                if (getContext().isCoreInitialized()) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("the weak reference queue was modified!");
-                } else {
-                    // returning a null reference queue is fine, it just means
-                    // that the finalizer won't run
-                    return null;
-                }
-            }
-        }
-    }
-
-    // ref()
-    @Builtin(name = "ref", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class RefNode extends PythonBuiltinNode {
-        @Child private ReadAttributeFromObjectNode readQueue = ReadAttributeFromObjectNode.create();
-        @Child private CExtNodes.GetTypeMemberNode getTpWeaklistoffsetNode;
-
-        @Specialization(guards = "!isNativeObject(object)")
-        public PReferenceType refType(Object object, @SuppressWarnings("unused") PNone none) {
-            return factory().createReferenceType(object, null, getWeakReferenceQueue());
-        }
-
-        @Specialization(guards = {"!isNativeObject(object)", "!isPNone(callback)"})
-        public PReferenceType refTypeWithCallback(Object object, Object callback) {
-            return factory().createReferenceType(object, callback, getWeakReferenceQueue());
-        }
-
-        @Specialization
-        public PReferenceType refType(PythonAbstractNativeObject pythonObject, Object callback,
-                                      @Cached GetClassNode getClassNode,
-                                      @Cached IsBuiltinClassProfile profile) {
-            Object actualCallback = callback instanceof PNone ? null : callback;
-            Object clazz = getClassNode.execute(pythonObject);
-
-            // if the object is a type, a weak ref is allowed
-            if (profile.profileClass(clazz, PythonBuiltinClassType.PythonClass)) {
-                return factory().createReferenceType(pythonObject, actualCallback, getWeakReferenceQueue());
-            }
-
-            // if the object's type is a native type, we need to consider 'tp_weaklistoffset'
-            if (PGuards.isNativeClass(clazz)) {
-                if (getTpWeaklistoffsetNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create());
-                }
-                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMember.TP_WEAKLISTOFFSET);
-                if (tpWeaklistoffset != PNone.NO_VALUE) {
-                    return factory().createReferenceType(pythonObject, actualCallback, getWeakReferenceQueue());
-                }
-            }
-            return refType(pythonObject, actualCallback);
-        }
-
-        @Fallback
-        public PReferenceType refType(@SuppressWarnings("unused") Object object, @SuppressWarnings("unused") Object callback) {
             throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
         }
 
