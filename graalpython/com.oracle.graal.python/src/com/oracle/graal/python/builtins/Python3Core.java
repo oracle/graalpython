@@ -850,7 +850,9 @@ public abstract class Python3Core extends ParserErrorCallback {
         importFunc = (PFunction) readNode.execute(bootstrap, "__import__");
         importlib = bootstrap;
 
-        writeNode.execute(lookupType(PythonBuiltinClassType.PythonModule), __REPR__, readNode.execute(bootstrap, "_module_repr"));
+        PythonBuiltinClass moduleType = lookupType(PythonBuiltinClassType.PythonModule);
+        writeNode.execute(moduleType, __REPR__, readNode.execute(bootstrap, "_module_repr"));
+        SpecialMethodSlot.reinitializeSpecialMethodSlots(moduleType, getLanguage());
 
         // __package__ needs to be set and doesn't get set by _bootstrap setup
         writeNode.execute(bootstrap, __PACKAGE__, "importlib");
