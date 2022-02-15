@@ -627,7 +627,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
      * imported module or raises a Python exception.
      */
     @TruffleBoundary
-    private static Object importFrozenModuleObject(Python3Core core, String name) {
+    public static Object importFrozenModuleObject(Python3Core core, String name) {
         FrozenResult result = findFrozen(name);
         FrozenStatus status = result.status;
         FrozenInfo info = result.info;
