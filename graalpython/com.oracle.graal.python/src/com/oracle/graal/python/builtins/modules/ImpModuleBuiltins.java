@@ -465,8 +465,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean run(String name) {
-            PythonFrozenModule mod = FrozenModules.lookup(name);
-            return mod != null && mod.getCode() != null;
+            return findFrozen(name).status == FROZEN_OKAY;
         }
     }
 
@@ -618,7 +617,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(String name) {
-            return importFrozenModuleObject(getCore(), name);
+            return importFrozenModuleObject(getCore(), name, true);
         }
     }
 
@@ -627,7 +626,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
      * imported module, null, or raises a Python exception.
      */
     @TruffleBoundary
-    public static Object importFrozenModuleObject(Python3Core core, String name) {
+    public static Object importFrozenModuleObject(Python3Core core, String name, boolean doRaise) {
         FrozenResult result = findFrozen(name);
         FrozenStatus status = result.status;
         FrozenInfo info = result.info;
@@ -638,7 +637,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             case FROZEN_BAD_NAME:
                 return null;
             default:
-                raiseFrozenError(status, name, PRaiseNode.getUncached());
+                if (doRaise) {
+                    raiseFrozenError(status, name, PRaiseNode.getUncached());
+                } else {
+                    return null;
+                }
         }
 
         PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(info.data, info.size);

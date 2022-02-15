@@ -69,7 +69,7 @@ FROZEN = [
             "ntpath",
             "posixpath",
             # We must explicitly mark os.path as a frozen module
-            f'{"ntpath" if os.name == "nt" else "posixpath"} : os.path",
+            ("ntpath" if os.name == "nt" else "posixpath") + " : os.path",
             "os",
             "site",
             "stat",
@@ -526,7 +526,10 @@ def freeze_module(src):
 def write_frozen_modules_map(out_file, modules):
     out_file.write("    private static final class Map {\n")
     for module in modules:
-        if not module.isalias or not module.orig:
+        if (not module.isalias or
+            not module.orig or
+            not any(module.orig == m.orig for m in modules if m != module)
+        ):
             ispkg = "true" if module.ispkg else "false"
             out_file.write(
                 f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", "{module.frozenid}", {ispkg});\n'
