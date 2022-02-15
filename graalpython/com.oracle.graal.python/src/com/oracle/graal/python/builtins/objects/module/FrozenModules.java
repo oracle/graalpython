@@ -203,7 +203,7 @@ public final class FrozenModules {
             case "abc": return Map.ABC;
             case "codecs": return Map.CODECS;
             case "encodings": return Map.ENCODINGS;
-            case "encodings.__init__": return Map.ENCODINGS;
+            case "encodings.__init__": return Map.ENCODINGS.asPackage(false);
             case "encodings.aliases": return Map.ENCODINGS_ALIASES;
             case "encodings.ascii": return Map.ENCODINGS_ASCII;
             case "encodings.base64_codec": return Map.ENCODINGS_BASE64_CODEC;
@@ -339,7 +339,7 @@ public final class FrozenModules {
             case "heapq": return Map.HEAPQ;
             case "reprlib": return Map.REPRLIB;
             case "collections": return Map.COLLECTIONS;
-            case "collections.__init__": return Map.COLLECTIONS;
+            case "collections.__init__": return Map.COLLECTIONS.asPackage(false);
             case "collections.abc": return Map.COLLECTIONS_ABC;
             case "functools": return Map.FUNCTOOLS;
             case "copyreg": return Map.COPYREG;
@@ -356,8 +356,10 @@ public final class FrozenModules {
             case "stat": return Map.STAT;
             case "__hello__": return Map.__HELLO__;
             case "__hello_alias__": return Map.__HELLO__;
-            case "__phello_alias__": return Map.__HELLO__;
+            case "__phello_alias__": return Map.__HELLO__.asPackage(true);
             case "__phello_alias__.spam": return Map.__HELLO__;
+            case "__phello__": return Map.__HELLO__.asPackage(true);
+            case "__phello__.spam": return Map.__HELLO__;
             case "__hello_only__": return Map.FROZEN_ONLY;
             default: return null;
         }

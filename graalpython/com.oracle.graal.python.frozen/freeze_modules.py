@@ -79,6 +79,8 @@ FROZEN = [
             '__hello__ : __hello_alias__',
             '__hello__ : <__phello_alias__>',
             '__hello__ : __phello_alias__.spam',
+            '__hello__ : <__phello__>',
+            '__hello__ : __phello__.spam',
             # '<__phello__.**.*>',
             f'frozen_only : __hello_only__ = {FROZEN_ONLY}',
         ],
@@ -533,7 +535,10 @@ def write_frozen_lookup(out_file, modules):
     out_file.write("    public static final PythonFrozenModule lookup(String name) {\n")
     out_file.write("        switch (name) {\n")
     for module in modules:
-        out_file.write(f'            case "{module.name}": return Map.{module.symbol};\n')
+        if module.source and (module.source.ispkg != module.ispkg):
+            out_file.write(f'            case "{module.name}": return Map.{module.symbol}.asPackage({"true" if module.ispkg else "false"});\n')
+        else:
+            out_file.write(f'            case "{module.name}": return Map.{module.symbol};\n')
     out_file.write("            default: return null;\n")
     out_file.write("        }\n")
     out_file.write("    }\n")
@@ -560,6 +565,8 @@ def write_frozen_module_file(file, modules):
         # set mtime to the old one, if we didn't change anything
         print(f"{file} not modified")
         os.utime(file, (atime, mtime))
+    else:
+        print(f"{file} modified, rebuild needed!")
 
 def add_tabs(str, number):
     lines = str.splitlines()

@@ -61,9 +61,21 @@ public final class PythonFrozenModule {
     }
 
     public PythonFrozenModule(String symbol, String name, boolean isPackage) {
+        this(name, getByteCode(symbol), isPackage);
+    }
+
+    private PythonFrozenModule(String name, byte[] code, boolean isPackage) {
         this.name = name;
-        this.code = getByteCode(symbol);
+        this.code = code;
         this.isPackage = isPackage;
+    }
+
+    public PythonFrozenModule asPackage(boolean flag) {
+        if (flag == isPackage) {
+            return this;
+        } else {
+            return new PythonFrozenModule(name, code, flag);
+        }
     }
 
     public String getName() {
