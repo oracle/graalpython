@@ -524,6 +524,13 @@ def write_frozen_lookup(out_file, modules):
 
 
 def write_frozen_module_file(file, modules):
+    if os.path.exists(file):
+        with open(file, "r") as f:
+            content = f.read()
+        stat_result = os.stat(file)
+        atime, mtime = stat_result.st_atime, stat_result.st_mtime
+    else:
+        content = None
     with open(file, "w") as out_file:
         out_file.write(trim(FROZEN_MODULES_HEADER))
         out_file.write("\n\n")
@@ -531,7 +538,12 @@ def write_frozen_module_file(file, modules):
         out_file.write("\n")
         write_frozen_lookup(out_file, modules)
         out_file.write("}\n")
-
+    with open(file, "r") as f:
+        new_content = f.read()
+    if new_content == content:
+        # set mtime to the old one, if we didn't change anything
+        print(f"{file} not modified")
+        os.utime(file, (atime, mtime))
 
 def add_tabs(str, number):
     lines = str.splitlines()
