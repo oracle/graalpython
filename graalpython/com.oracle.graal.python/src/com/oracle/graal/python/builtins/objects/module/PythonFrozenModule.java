@@ -46,6 +46,7 @@ import java.io.InputStream;
 public final class PythonFrozenModule {
     private final String name;
     private final byte[] code;
+    private final boolean isPackage;
 
     private static byte[] getByteCode(String symbol) {
        try {
@@ -59,9 +60,10 @@ public final class PythonFrozenModule {
        return null;
     }
 
-    public PythonFrozenModule(String symbol, String name) {
+    public PythonFrozenModule(String symbol, String name, boolean isPackage) {
         this.name = name;
         this.code = getByteCode(symbol);
+        this.isPackage = isPackage;
     }
 
     public String getName() {
@@ -70,6 +72,10 @@ public final class PythonFrozenModule {
 
     public byte[] getCode() {
         return code;
+    }
+
+    public boolean isPackage() {
+        return isPackage;
     }
 
     public int getSize() {

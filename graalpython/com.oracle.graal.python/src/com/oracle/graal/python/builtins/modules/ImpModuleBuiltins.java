@@ -682,8 +682,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         FrozenInfo info = new FrozenInfo(name,
                         module.getCode(),
-                        module.getSize() < 0 ? -(module.getSize()) : module.getSize(),
-                        module.getSize() < 0,
+                        module.getSize(),
+                        module.isPackage(),
                         module.getName(),
                         !name.equals(module.getName()));
 

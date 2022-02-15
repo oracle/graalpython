@@ -522,8 +522,9 @@ def write_frozen_modules_map(out_file, modules):
     out_file.write("    private static final class Map {\n")
     for module in modules:
         if not module.isalias or not module.orig:
+            ispkg = "true" if module.ispkg else "false"
             out_file.write(
-                f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", "{module.frozenid}");\n'
+                f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", "{module.frozenid}", {ispkg});\n'
             )
     out_file.write("    }\n")
 
