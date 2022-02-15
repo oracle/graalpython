@@ -302,6 +302,7 @@ def retag_unittests(args):
     parser.add_argument('--upload-results-to')
     parser.add_argument('--inspect', action='store_true')
     parser.add_argument('-debug-java', action='store_true')
+    parser.add_argument('--jvm', action='store_true')
     parsed_args, remaining_args = parser.parse_known_args(args)
     env = os.environ.copy()
     env.update(
@@ -320,7 +321,8 @@ def retag_unittests(args):
         'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
         '--retag'
     ]
-    mx.run([python_svm()] + args + remaining_args, env=env)
+    vm = python_svm() if not parsed_args.jvm else python_gvm_with_assertions()
+    mx.run([vm] + args + remaining_args, env=env)
     if parsed_args.upload_results_to:
         with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
             filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
@@ -1158,7 +1160,7 @@ def update_import_cmd(args):
             exec(f.read(), d, d) # pylint: disable=exec-used;
         for suite in d["suite"].get("imports", {}).get("suites", []):
             import_name = suite["name"]
-            if suite.get("version") and import_name not in local_names:
+            if suite.get("version") and import_name not in local_names and import_name != 'library-tester':
                 imports_to_update.add(import_name)
 
     revisions = {}
