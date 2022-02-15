@@ -832,10 +832,22 @@ public abstract class Python3Core extends ParserErrorCallback {
         PythonModule bootstrap = (PythonModule) ImpModuleBuiltins.importFrozenModuleObject(this, "_frozen_importlib");
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
-        callNode.execute(null, bootstrap, "_install", getSysModule(), lookupBuiltinModule("_imp"));
-
         WriteAttributeToDynamicObjectNode writeNode = WriteAttributeToDynamicObjectNode.getUncached();
         ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
+
+        if (bootstrap == null) {
+            // true when the frozen module is not available
+            PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
+            writeNode.execute(bootstrapExternal, __PACKAGE__, "importlib");
+            addBuiltinModule("_frozen_importlib_external", bootstrapExternal);
+            bootstrap = createModule("importlib._bootstrap");
+            writeNode.execute(bootstrap, __PACKAGE__, "importlib");
+            addBuiltinModule("_frozen_importlib", bootstrap);
+            loadFile("importlib/_bootstrap_external.py", getContext().getStdlibHome());
+            loadFile("importlib/_bootstrap.py", getContext().getStdlibHome());
+        }
+
+        callNode.execute(null, bootstrap, "_install", getSysModule(), lookupBuiltinModule("_imp"));
         writeNode.execute(getBuiltins(), "__import__", readNode.execute(bootstrap, "__import__"));
         callNode.execute(null, bootstrap, "_install_external_importers");
         importFunc = (PFunction) readNode.execute(bootstrap, "__import__");

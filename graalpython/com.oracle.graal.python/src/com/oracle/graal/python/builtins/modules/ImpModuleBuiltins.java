@@ -624,7 +624,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     /**
      * Equivalent to CPythons PyImport_FrozenModuleObject. Initialize a frozen module. Returns the
-     * imported module or raises a Python exception.
+     * imported module, null, or raises a Python exception.
      */
     @TruffleBoundary
     public static Object importFrozenModuleObject(Python3Core core, String name) {
@@ -636,7 +636,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             case FROZEN_NOT_FOUND:
             case FROZEN_DISABLED:
             case FROZEN_BAD_NAME:
-                return 0;
+                return null;
             default:
                 raiseFrozenError(status, name, PRaiseNode.getUncached());
         }
