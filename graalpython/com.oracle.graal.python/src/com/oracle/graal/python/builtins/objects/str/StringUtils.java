@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -362,40 +362,14 @@ public final class StringUtils {
             return false;
         }
         int c = value.codePointAt(pos);
-        int type = Character.getType(c);
-        if (c != '_') {
-            // Unicode XID_Start
-            switch (type) {
-                case Character.UPPERCASE_LETTER:
-                case Character.LOWERCASE_LETTER:
-                case Character.TITLECASE_LETTER:
-                case Character.MODIFIER_LETTER:
-                case Character.OTHER_LETTER:
-                case Character.LETTER_NUMBER:
-                    break;
-                default:
-                    return false;
-            }
+        if (c != '_' && !UCharacter.hasBinaryProperty(c, UProperty.XID_START)) {
+            return false;
         }
         pos += Character.charCount(c);
         while (pos < value.length()) {
             c = value.codePointAt(pos);
-            type = Character.getType(c);
-            // Unicode XID_Continue
-            switch (type) {
-                case Character.UPPERCASE_LETTER:
-                case Character.LOWERCASE_LETTER:
-                case Character.TITLECASE_LETTER:
-                case Character.MODIFIER_LETTER:
-                case Character.OTHER_LETTER:
-                case Character.LETTER_NUMBER:
-                case Character.NON_SPACING_MARK:
-                case Character.COMBINING_SPACING_MARK:
-                case Character.DECIMAL_DIGIT_NUMBER:
-                case Character.CONNECTOR_PUNCTUATION:
-                    break;
-                default:
-                    return false;
+            if (!UCharacter.hasBinaryProperty(c, UProperty.XID_CONTINUE)) {
+                return false;
             }
             pos += Character.charCount(c);
         }

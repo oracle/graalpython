@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
@@ -47,6 +48,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 
 import java.util.List;
+
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -206,7 +208,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @SuppressWarnings("unused")
@@ -228,7 +230,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyDictSizeNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        public int size(PDict dict,
+        public static int size(PDict dict,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -240,16 +242,16 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isDict(dict)", "isDictSubtype(frame, dict, getClassNode, isSubtypeNode)"})
-        public Object sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict,
+        public static Object sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raiseInt(frame, -1, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object size(VirtualFrame frame, Object obj,
+        public static Object size(VirtualFrame frame, Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -281,7 +283,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
@@ -359,7 +361,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
@@ -379,7 +381,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyDictSetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
-        public Object setItem(VirtualFrame frame, PDict dict, Object key, Object value,
+        public static Object setItem(VirtualFrame frame, PDict dict, Object key, Object value,
                         @Cached SetItemNode setItemNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -392,15 +394,15 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isDict(dict)", "isDictSubtype(frame, dict, getClassNode, isSubtypeNode)"})
-        public Object setItemNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+        public static Object setItemNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raiseInt(frame, -1, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object setItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+        public static Object setItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -436,15 +438,15 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isDict(dict)", "isDictSubtype(frame, dict, getClassNode, isSubtypeNode)"})
-        public Object setItemNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+        public static Object setItemNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raiseInt(frame, -1, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object setItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object givenHash,
+        public static Object setItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object givenHash,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -460,7 +462,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyDictDelItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object delItem(VirtualFrame frame, PDict dict, Object key,
+        public static Object delItem(VirtualFrame frame, PDict dict, Object key,
                         @Cached DelItemNode delItemNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -473,15 +475,15 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isDict(dict)", "isDictSubtype(frame, dict, getClassNode, isSubtypeNode)"})
-        public Object delItemNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") Object key,
+        public static Object delItemNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") Object key,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raiseInt(frame, -1, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object delItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key,
+        public static Object delItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -497,7 +499,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyDictContainsNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        public int contains(VirtualFrame frame, PDict dict, Object key,
+        public static int contains(VirtualFrame frame, PDict dict, Object key,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -510,20 +512,57 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isDict(obj)", "isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object containsNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object key,
+        public static Object containsNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object key,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raiseInt(frame, -1, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object contains(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key,
+        public static Object contains(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isDictSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PDict);
+        }
+    }
+
+    @Builtin(name = "PyDict_Keys", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyDictKeysNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object keys(VirtualFrame frame, PDict dict,
+                        @Cached ConstructListNode listNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return listNode.execute(frame, factory().createDictKeysView(dict));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getContext().getNativeNull();
+            }
+        }
+
+        @Specialization(guards = {"!isDict(obj)", "isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object keysNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+        }
+
+        @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object keys(VirtualFrame frame, Object obj,
+                        @Cached StrNode strNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
         }
 
         protected boolean isDictSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -551,7 +590,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
@@ -573,7 +612,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     public abstract static class PyDictMergeNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = {"override != 0"})
-        public Object merge(VirtualFrame frame, PDict a, Object b, @SuppressWarnings("unused") int override,
+        public static Object merge(VirtualFrame frame, PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached CallNode callNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -588,7 +627,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "override == 0", limit = "3")
-        public Object merge(VirtualFrame frame, PDict a, PDict b, @SuppressWarnings("unused") int override,
+        public static Object merge(VirtualFrame frame, PDict a, PDict b, @SuppressWarnings("unused") int override,
                         @CachedLibrary("a.getDictStorage()") HashingStorageLibrary libA,
                         @CachedLibrary("b.getDictStorage()") HashingStorageLibrary libB,
                         @Cached ConditionProfile hasFrameProfile,
@@ -611,7 +650,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"override == 0", "!isDict(b)"}, limit = "3")
-        public Object merge(VirtualFrame frame, PDict a, Object b, @SuppressWarnings("unused") int override,
+        public static Object merge(VirtualFrame frame, PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Cached LenNode lenNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
@@ -648,15 +687,15 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isDict(a)", "isDictSubtype(frame, a, getClassNode, isSubtypeNode)"})
-        public Object mergeNative(VirtualFrame frame, @SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b, @SuppressWarnings("unused") int override,
+        public static Object mergeNative(VirtualFrame frame, @SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b, @SuppressWarnings("unused") int override,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+            return raiseNativeNode.raiseInt(frame, -1, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
         }
 
         @Specialization(guards = {"!isDict(a)", "!isDictSubtype(frame, a, getClassNode, isSubtypeNode)"})
-        public Object merge(VirtualFrame frame, Object a, @SuppressWarnings("unused") Object b, @SuppressWarnings("unused") int override,
+        public static Object merge(VirtualFrame frame, Object a, @SuppressWarnings("unused") Object b, @SuppressWarnings("unused") int override,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,

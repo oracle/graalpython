@@ -42,7 +42,10 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+
+import java.math.BigInteger;
 import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -93,7 +96,6 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import java.math.BigInteger;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -115,54 +117,54 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n == 0")
-        int sign(int n) {
+        static int sign(int n) {
             return 0;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n < 0")
-        int signNeg(int n) {
+        static int signNeg(int n) {
             return -1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n > 0")
-        int signPos(int n) {
+        static int signPos(int n) {
             return 1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n == 0")
-        int sign(long n) {
+        static int sign(long n) {
             return 0;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n < 0")
-        int signNeg(long n) {
+        static int signNeg(long n) {
             return -1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n > 0")
-        int signPos(long n) {
+        static int signPos(long n) {
             return 1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "b")
-        int signTrue(boolean b) {
+        static int signTrue(boolean b) {
             return 1;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!b")
-        int signFalse(boolean b) {
+        static int signFalse(boolean b) {
             return 0;
         }
 
         @Specialization
-        int sign(PInt n,
+        static int sign(PInt n,
                         @Cached BranchProfile zeroProfile,
                         @Cached BranchProfile negProfile) {
             if (n.isNegative()) {
@@ -178,7 +180,7 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object signNative(VirtualFrame frame, Object obj,
+        public static Object signNative(VirtualFrame frame, Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             // function returns int, but -1 is expected result for 'n < 0'
@@ -186,7 +188,7 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(frame, obj,getClassNode,isSubtypeNode)"})
-        public Object sign(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        public static Object sign(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             // assert(PyLong_Check(v));
@@ -437,17 +439,8 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
             return toNewRefNode.execute(factory().createInt(convertToBigInteger(n)));
         }
 
-        @TruffleBoundary
-        private static BigInteger convertToBigInteger(long n) {
-            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
-        }
-    }
-
-    @Builtin(name = "PyLong_FromVoidPtr", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyLongFromVoidPtr extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "2")
-        Object doPointer(Object pointer,
+        @Specialization(guards = "!isInteger(pointer)", limit = "2")
+        Object doPointer(Object pointer, @SuppressWarnings("unused") int signed,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @CachedLibrary("pointer") InteropLibrary lib) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
@@ -459,6 +452,11 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
                 }
             }
             return toSulongNode.execute(factory().createNativeVoidPtr(pointer));
+        }
+
+        @TruffleBoundary
+        private static BigInteger convertToBigInteger(long n) {
+            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
         }
     }
 

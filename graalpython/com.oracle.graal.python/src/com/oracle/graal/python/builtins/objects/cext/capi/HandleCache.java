@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -59,7 +59,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.InvalidAssumptionException;
-import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
 public final class HandleCache implements TruffleObject {
@@ -107,12 +106,11 @@ public final class HandleCache implements TruffleObject {
 
     @GenerateUncached
     @ImportStatic(HandleCache.class)
-    abstract static class GetOrInsertNode extends Node {
+    abstract static class GetOrInsertNode extends PNodeWithContext {
         public abstract Object execute(HandleCache cache, long handle) throws UnsupportedTypeException, ArityException, UnsupportedMessageException;
 
         @Specialization(limit = "CACHE_SIZE", //
-                        guards = {"handle == cachedHandle", "cachedValue != null"}, //
-                        assumptions = "singleContextAssumption()", //
+                        guards = {"isSingleContext()", "handle == cachedHandle", "cachedValue != null"}, //
                         rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper doCachedSingleContext(@SuppressWarnings("unused") HandleCache cache, @SuppressWarnings("unused") long handle,
                         @Cached("handle") @SuppressWarnings("unused") long cachedHandle,
@@ -122,7 +120,7 @@ public final class HandleCache implements TruffleObject {
             return cachedValue;
         }
 
-        @Specialization(replaces = "doCachedSingleContext", assumptions = "singleContextAssumption()")
+        @Specialization(replaces = "doCachedSingleContext", guards = "isSingleContext()")
         static Object doGenericSingleContext(@SuppressWarnings("unused") HandleCache cache, long handle,
                         @Cached(value = "cache.getPtrToResolveHandle()", allowUncached = true) Object resolveHandleFunction,
                         @CachedLibrary("resolveHandleFunction") InteropLibrary interopLibrary) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
@@ -149,10 +147,6 @@ public final class HandleCache implements TruffleObject {
         static Object resolveHandle(long handle, Object ptrToResolveHandle, InteropLibrary interopLibrary)
                         throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
             return interopLibrary.execute(ptrToResolveHandle, handle);
-        }
-
-        Assumption singleContextAssumption() {
-            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {

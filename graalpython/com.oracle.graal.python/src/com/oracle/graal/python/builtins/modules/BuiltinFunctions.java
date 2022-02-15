@@ -220,7 +220,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1767,7 +1766,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final String DEFAULT_END = "\n";
         private static final String DEFAULT_SEPARATOR = " ";
         @Child private ReadAttributeFromObjectNode readStdout;
-        @CompilationFinal private Assumption singleContextAssumption;
         @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
@@ -1845,12 +1843,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private Object getStdout() {
-            if (singleContextAssumption == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                singleContextAssumption = singleContextAssumption();
-            }
             PythonModule sys;
-            if (singleContextAssumption.isValid()) {
+            if (getLanguage().isSingleContext()) {
                 if (cachedSys == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     cachedSys = getContext().lookupBuiltinModule("sys");

@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'try03'> SourceSection: [0,61]`def fn():â†µ  try:â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [va, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, va]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

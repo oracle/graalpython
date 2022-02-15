@@ -5,12 +5,12 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Function
-        FrameDescriptor: [ret, gen, MyIter, <return_val>]
+        FrameDescriptor: [<return_val>, MyIter, gen, ret]
         CellVars: [MyIter, ret]
         FreeVars: Empty
         Scope: gen
             Kind: Generator
-            FrameDescriptor: [ret, MyIter, <>temp2, <return_val>]
+            FrameDescriptor: [<>temp2, <return_val>, MyIter, ret]
             CellVars: Empty
             FreeVars: [MyIter, ret]
         Scope: MyIter
@@ -20,11 +20,11 @@ Scope: []
             FreeVars: Empty
             Scope: __next__
                 Kind: Function
-                FrameDescriptor: [self, <return_val>]
+                FrameDescriptor: [<return_val>, self]
                 CellVars: Empty
                 FreeVars: Empty
             Scope: __iter__
                 Kind: Function
-                FrameDescriptor: [self, <return_val>]
+                FrameDescriptor: [<return_val>, self]
                 CellVars: Empty
                 FreeVars: Empty

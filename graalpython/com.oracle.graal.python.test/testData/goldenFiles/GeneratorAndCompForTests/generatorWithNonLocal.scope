@@ -5,16 +5,16 @@ Scope: []
     FreeVars: Empty
     Scope: b_func
         Kind: Function
-        FrameDescriptor: [gen, _inner_func, exec_gen, Y, <return_val>]
+        FrameDescriptor: [<return_val>, Y, _inner_func, exec_gen, gen]
         CellVars: [Y, exec_gen]
         FreeVars: Empty
         Scope: _inner_func
             Kind: Generator
-            FrameDescriptor: [A, C, doit, exec_gen, Y, <return_val>]
+            FrameDescriptor: [<return_val>, A, C, Y, doit, exec_gen]
             CellVars: Empty
             FreeVars: [Y, exec_gen]
             Scope: doit
                 Kind: Function
-                FrameDescriptor: [exec_gen, <return_val>]
+                FrameDescriptor: [<return_val>, exec_gen]
                 CellVars: Empty
                 FreeVars: [exec_gen]

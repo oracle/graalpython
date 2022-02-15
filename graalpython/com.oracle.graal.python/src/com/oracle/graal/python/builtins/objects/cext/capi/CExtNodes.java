@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJav
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
@@ -104,7 +105,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -470,7 +470,7 @@ public abstract class CExtNodes {
             return doSingleton(cextContext, object, getContext());
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
@@ -483,7 +483,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
                         @Cached("wrapNativeClassFast(object, getContext())") PythonClassNativeWrapper wrapper) {
@@ -737,7 +737,7 @@ public abstract class CExtNodes {
             return doSingleton(cextContext, object, getContext());
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
@@ -751,7 +751,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
                         @Cached("wrapNativeClassFast(getContext(), object)") PythonClassNativeWrapper wrapper) {
@@ -912,7 +912,7 @@ public abstract class CExtNodes {
             return ToNewRefNode.doSingleton(cextContext, object, getContext());
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
@@ -926,7 +926,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
                         @Cached("wrapNativeClassFast(getContext(), object)") PythonClassNativeWrapper wrapper) {
@@ -1588,7 +1588,7 @@ public abstract class CExtNodes {
     public abstract static class GetNativeClassNode extends PNodeWithContext {
         public abstract Object execute(PythonAbstractNativeObject object);
 
-        @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "1")
         @SuppressWarnings("unused")
         static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
                         @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
@@ -1600,7 +1600,7 @@ public abstract class CExtNodes {
             return cachedClass;
         }
 
-        @Specialization(guards = "isSame(lib, cachedObject, object)", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "isSame(lib, cachedObject, object)"})
         @SuppressWarnings("unused")
         static Object getNativeClassCached(PythonAbstractNativeObject object,
                         @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
@@ -2637,7 +2637,7 @@ public abstract class CExtNodes {
 
         public abstract boolean execute(PythonNativeWrapper obj);
 
-        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+        @Specialization(guards = "isSingleContext()", assumptions = "nativeObjectsAllManagedAssumption()")
         static boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
             return false;
         }
@@ -2680,9 +2680,9 @@ public abstract class CExtNodes {
          * native context, so we can be sure that the "nativeClassStableAssumption" (which is
          * per-context) is from the context in which this native object was created.
          */
-        @Specialization(guards = {"lib.isIdentical(cachedObj, obj, lib)", "memberName == cachedMemberName"}, //
+        @Specialization(guards = {"isSingleContext()", "lib.isIdentical(cachedObj, obj, lib)", "memberName == cachedMemberName"}, //
                         limit = "1", //
-                        assumptions = {"getNativeClassStableAssumption(cachedObj)", "singleContextAssumption()"})
+                        assumptions = {"getNativeClassStableAssumption(cachedObj)"})
         public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") NativeMember memberName,
                         @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
                         @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
@@ -3126,15 +3126,14 @@ public abstract class CExtNodes {
     }
 
     @GenerateUncached
-    public abstract static class ResolveHandleNode extends Node {
+    public abstract static class ResolveHandleNode extends PNodeWithContext {
 
         public abstract Object execute(Object pointerObject);
 
         public abstract Object executeLong(long pointer);
 
         @Specialization(limit = "3", //
-                        guards = {"cachedPointer == pointer", "cachedValue != null"}, //
-                        assumptions = "singleContextAssumption()", //
+                        guards = {"isSingleContext()", "cachedPointer == pointer", "cachedValue != null"}, //
                         rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper resolveLongCached(@SuppressWarnings("unused") long pointer,
                         @Cached("pointer") @SuppressWarnings("unused") long cachedPointer,
@@ -3145,8 +3144,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(limit = "3", //
-                        guards = {"isSame(lib, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
-                        assumptions = "singleContextAssumption()", //
+                        guards = {"isSingleContext()", "isSame(lib, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
                         rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper resolveObjectCached(@SuppressWarnings("unused") Object pointerObject,
                         @Cached("pointerObject") @SuppressWarnings("unused") Object cachedPointerObject,
@@ -3184,10 +3182,6 @@ public abstract class CExtNodes {
 
         static boolean isSame(InteropLibrary lib, Object left, Object right) {
             return lib.isIdentical(left, right, lib);
-        }
-
-        Assumption singleContextAssumption() {
-            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {
@@ -3280,7 +3274,7 @@ public abstract class CExtNodes {
 
         private static Matcher match(String formatStr) {
             if (pattern == null) {
-                pattern = Pattern.compile("%(?<flags>[-\\+ #0])?(?<width>\\d+)?(\\.(?<prec>\\d+))?(?<len>(l|ll|z))?(?<spec>[%cduixsAUVSR])");
+                pattern = Pattern.compile("%(?<flags>[-+ #0])?(?<width>\\d+)?(\\.(?<prec>\\d+))?(?<len>(l|ll|z))?(?<spec>[%cduixspAUVSR])");
             }
             return pattern.matcher(formatStr);
         }
@@ -3304,6 +3298,7 @@ public abstract class CExtNodes {
             current.set(this);
             StringBuilder result = new StringBuilder();
             int vaArgIdx = 0;
+            Object unicodeObj;
             try {
                 Matcher matcher = match(format);
                 int cur = 0;
@@ -3326,6 +3321,7 @@ public abstract class CExtNodes {
                         case '%':
                             // %%
                             result.append('%');
+                            valid = true;
                             break;
                         case 'c':
                             int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t);
@@ -3399,8 +3395,15 @@ public abstract class CExtNodes {
                             break;
                         case 's':
                             // %s
-                            Object unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx));
-                            String sValue = castToJavaStringNode.execute(unicodeObj);
+                            Object charPtr = getVaArgsNode.getCharPtr(vaList, vaArgIdx);
+                            String sValue;
+                            if (interopLibrary.isNull(charPtr)) {
+                                // CPython would segfault. Let's make debugging easier for ourselves
+                                sValue = "(NULL)";
+                            } else {
+                                unicodeObj = fromCharPointerNode.execute(charPtr);
+                                sValue = castToJavaStringNode.execute(unicodeObj);
+                            }
                             try {
                                 if (prec == -1) {
                                     result.append(sValue);
@@ -3418,7 +3421,16 @@ public abstract class CExtNodes {
                             break;
                         case 'p':
                             // %p
-                            result.append("0x").append(Long.toHexString(getPyObject(getVaArgsNode, vaList, vaArgIdx).hashCode()));
+                            Object ptr = getVaArgsNode.getVoidPtr(vaList, vaArgIdx);
+                            long value;
+                            if (interopLibrary.isPointer(ptr)) {
+                                value = interopLibrary.asPointer(ptr);
+                            } else if (interopLibrary.hasIdentity(ptr)) {
+                                value = interopLibrary.identityHashCode(ptr);
+                            } else {
+                                value = System.identityHashCode(ptr);
+                            }
+                            result.append(String.format("0x%x", value));
                             vaArgIdx++;
                             valid = true;
                             break;

@@ -83,12 +83,12 @@ public final class PythonCextFloatBuiltins extends PythonBuiltins {
     abstract static class PyFloatFromDoubleNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        double fromDouble(double d) {
+        static double fromDouble(double d) {
             return d;
         }
 
         @Specialization(guards = {"!isDouble(obj)"})
-        public Object fromDouble(VirtualFrame frame, Object obj,
+        public static Object fromDouble(VirtualFrame frame, Object obj,
                         @Cached StrNode strNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             // cpython PyFloat_FromDouble takes only 'double'

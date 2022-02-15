@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'functionDefCPT19'> SourceSection: [0,24]`def f(*, 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [*, a, b, <return_val>]
+              FrameDescriptor: 4 slots [*, <return_val>, a, b]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

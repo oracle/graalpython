@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -476,8 +476,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
                 if (arg.matches("(-Xrunjdwp:|-agentlib:jdwp=).*suspend=y.*")) {
                     arg = arg.replace("suspend=y", "suspend=n");
-                }
-                if ((javaOptions != null && javaOptions.contains(arg)) || (javaToolOptions != null && javaToolOptions.contains(arg))) {
+                } else if (arg.matches(".*ThreadPriorityPolicy.*")) {
+                    // skip this one, it may cause warnings
+                    continue;
+                } else if ((javaOptions != null && javaOptions.contains(arg)) || (javaToolOptions != null && javaToolOptions.contains(arg))) {
                     // both _JAVA_OPTIONS and JAVA_TOOL_OPTIONS are adeed during
                     // JVM startup automatically. We do not want to repeat these
                     // for subprocesses, because they should also pick up those
@@ -621,7 +623,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
             consoleHandler.setContext(context);
 
-            if (commandString != null || inputFile != null) {
+            if (commandString != null || inputFile != null || !stdinIsInteractive) {
                 try {
                     evalNonInteractive(context, consoleHandler);
                     rc = 0;
@@ -722,8 +724,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         if (commandString != null) {
             src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
         } else {
-            assert inputFile != null;
-            // the path is passed through a context option
+            // the path is passed through a context option, may be empty when running from stdin
             src = Source.newBuilder(getLanguageId(), "__graalpython__.run_path()", "<internal>").internal(true).build();
         }
         context.eval(src);

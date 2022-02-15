@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 8 slots [self, count, name, value, frame, <>temp5, <>temp6, <return_val>]
+              FrameDescriptor: 10 slots [<>temp5, <>temp6, <>temp7, <>temp8, <return_val>, count, frame, name, self, value]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -80,21 +80,21 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                         ForNextElementNodeGen SourceSection: None
                                           DestructuringAssignmentNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
-                                              Identifier: <>temp5
-                                              Frame: [5,<>temp5,Illegal]
+                                              Identifier: <>temp7
+                                              Frame: [7,<>temp7,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: None
-                                              Identifier: <>temp6
-                                              Frame: [6,<>temp6,Illegal]
+                                              Identifier: <>temp8
+                                              Frame: [8,<>temp8,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: name
                                               Frame: [2,name,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [5,<>temp5,Illegal]
+                                                Frame: [7,<>temp7,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: value
                                               Frame: [3,value,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [6,<>temp6,Illegal]
+                                                Frame: [8,<>temp8,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: [177,186]`count = 1`
                                           Identifier: count
                                           Frame: [1,count,Illegal]
@@ -110,4 +110,4 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                               Frame: [0,self,Illegal]
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [7,<return_val>,Object]
+                    Frame: [9,<return_val>,Object]

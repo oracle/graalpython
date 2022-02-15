@@ -113,13 +113,13 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyBytesSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int size(VirtualFrame frame, PBytes obj,
+        public static int size(VirtualFrame frame, PBytes obj,
                         @Cached PyObjectSizeNode sizeNode) {
             return sizeNode.execute(frame, obj);
         }
 
         @Specialization(guards = {"!isPBytes(obj)", "isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public int sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        public static int sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -127,7 +127,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public int size(VirtualFrame frame, Object obj,
+        public static int size(VirtualFrame frame, Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
@@ -145,12 +145,12 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
     public abstract static class PyBytesCheckNode extends PythonUnaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object check(PBytes obj) {
+        public static Object check(PBytes obj) {
             return true;
         }
 
         @Specialization(guards = "!isPBytes(obj)")
-        public Object check(VirtualFrame frame, Object obj,
+        public static Object check(VirtualFrame frame, Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
@@ -253,7 +253,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyBytesFromObjectNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"isPBytes(obj) || isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object fromObject(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        public static Object fromObject(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             return obj;
@@ -283,11 +283,11 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
             return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
         }
 
-        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+        protected static boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
         }
 
-        protected boolean isAcceptedSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
+        protected static boolean isAcceptedSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
             Object klass = getClassNode.execute(obj);
             return isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PList) ||
                             isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PTuple) ||
@@ -299,7 +299,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
     @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(CApiGuards.class)
-    abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
+    abstract static class PyBytesFromStringAndSizeNode extends NativeBuiltin {
         // n.b.: the specializations for PIBytesLike are quite common on
         // managed, when the PySequenceArrayWrapper that we used never went
         // native, and during the upcall to here it was simply unwrapped again
@@ -341,7 +341,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
     public abstract static class PyBytesResize extends PythonBinaryBuiltinNode {
 
         @Specialization
-        int resize(VirtualFrame frame, PBytes self, long newSizeL,
+        static int resize(VirtualFrame frame, PBytes self, long newSizeL,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -359,7 +359,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(self)")
-        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
+        static int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a set object", self);
         }

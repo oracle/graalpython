@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -176,9 +176,8 @@ FLAG_NAMES = [
 
 
 class Match():
-    def __init__(self, pattern, pos, endpos, result, input_str, compiled_regex, indexgroup):
+    def __init__(self, pattern, pos, endpos, result, input_str, indexgroup):
         self.__result = result
-        self.__compiled_regex = compiled_regex
         self.__re = pattern
         self.__pos = pos
         self.__endpos = endpos
@@ -186,7 +185,8 @@ class Match():
         self.__indexgroup = indexgroup
 
     def end(self, groupnum=0):
-        return self.__result.getEnd(groupnum)
+        idxarg = self.__groupidx(groupnum)
+        return self.__result.getEnd(idxarg)
 
     def group(self, *args):
         if not args:
@@ -201,7 +201,7 @@ class Match():
 
     def groups(self, default=None):
         lst = []
-        for arg in range(1, self.__compiled_regex.groupCount):
+        for arg in range(1, self.__re.groups + 1):
             lst.append(self.__group(arg, default))
         return tuple(lst)
 
@@ -212,10 +212,10 @@ class Match():
         try:
             if hasattr(idx, '__index__'):
                 int_idx = int(idx)
-                if 0 <= int_idx < self.__compiled_regex.groupCount:
+                if 0 <= int_idx <= self.__re.groups:
                     return int_idx
             else:
-                return getattr(self.__compiled_regex.groups, idx)
+                return self.__re.groupindex[idx]
         except Exception:
             pass
         raise IndexError("no such group")
@@ -231,9 +231,9 @@ class Match():
             return bytes(self.__input_str[start:self.__result.getEnd(idxarg)])
 
     def groupdict(self, default=None):
-        groups = self.__compiled_regex.groups
+        groups = self.__re.groupindex
         if groups:
-            return {name: self.__group(name, default) for name in dir(groups)}
+            return {name: self.__group(name, default) for name in groups.keys()}
         return {}
 
     def span(self, groupnum=0):
@@ -250,7 +250,7 @@ class Match():
 
     @property
     def regs(self):
-        return tuple(self.span(i) for i in range(self.__compiled_regex.groupCount))
+        return tuple(self.span(i) for i in range(self.__re.groups + 1))
 
     @property
     def string(self):
@@ -311,7 +311,7 @@ class Pattern():
                 flags_str.append(char)
         self.__flags_str = "".join(flags_str)
         self.__compiled_regexes = {}
-        compiled_regex = self.__tregex_compile(self.pattern)
+        compiled_regex = self.__tregex_compile()
         self.groups = compiled_regex.groupCount - 1
         groups = compiled_regex.groups
         if groups is None:
@@ -332,7 +332,7 @@ class Pattern():
     def flags(self):
         # Flags can be spcified both in the flag argument or inline in the regex. Extract them back from the regex
         flags = self.__input_flags
-        regex_flags = self.__tregex_compile(self.pattern).flags
+        regex_flags = self.__tregex_compile().flags
         for flag, name in FLAG_NAMES:
             try:
                 if getattr(regex_flags, name):
@@ -349,12 +349,11 @@ class Pattern():
         if self.__binary and isinstance(input, str):
             raise TypeError("cannot use a bytes pattern on a string-like object")
 
-    def __tregex_compile(self, pattern, flags=None):
-        if flags is None:
-            flags = self.__flags_str
-        if (pattern, flags) not in self.__compiled_regexes:
+    def __tregex_compile(self, method="search", must_advance=False):
+        if (method, must_advance) not in self.__compiled_regexes:
             try:
-                self.__compiled_regexes[(pattern, flags)] = tregex_compile_internal(pattern, flags, fallback_compiler)
+                extra_options = f"PythonMethod={method},MustAdvance={'true' if must_advance else 'false'}"
+                self.__compiled_regexes[(method, must_advance)] = tregex_compile_internal(self.pattern, self.__flags_str, extra_options, fallback_compiler)
             except ValueError as e:
                 if len(e.args) == 2:
                     msg = e.args[0]
@@ -365,9 +364,9 @@ class Pattern():
                             "ASCII and LOCALE flags are incompatible",
                     ):
                         raise ValueError(msg) from None
-                    raise error(msg, pattern, e.args[1]) from None
+                    raise error(msg, self.pattern, e.args[1]) from None
                 raise
-        return self.__compiled_regexes[(pattern, flags)]
+        return self.__compiled_regexes[(method, must_advance)]
 
     def __repr__(self):
         flags = self.flags
@@ -405,25 +404,25 @@ class Pattern():
     def __deepcopy__(self, memo):
         return self
 
-    def _search(self, pattern, string, pos, endpos, sticky=False):
+    def _search(self, string, pos, endpos, method="search", must_advance=False):
         _check_pos(pos)
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
-        pattern = self.__tregex_compile(pattern, self.__flags_str + ("y" if sticky else ""))
-        result = tregex_call_exec(pattern.exec, substring, pos)
+        compiled_regex = self.__tregex_compile(method=method, must_advance=must_advance)
+        result = tregex_call_exec(compiled_regex.exec, substring, pos)
         if result.isMatch:
-            return Match(self, pos, endpos, result, string, pattern, self.__indexgroup)
+            return Match(self, pos, endpos, result, string, self.__indexgroup)
         else:
             return None
 
     def search(self, string, pos=0, endpos=maxsize):
-        return self._search(self.pattern, string, pos, endpos)
+        return self._search(string, pos, endpos, method="search")
 
     def match(self, string, pos=0, endpos=maxsize):
-        return self._search(self.pattern, string, pos, endpos, sticky=True)
+        return self._search(string, pos, endpos, method="match")
 
     def fullmatch(self, string, pos=0, endpos=maxsize):
-        return self._search(_append_end_assert(self.pattern), string, pos, endpos, sticky=True)
+        return self._search(string, pos, endpos, method="fullmatch")
 
     def __sanitize_out_type(self, elem):
         """Helper function for findall and split. Ensures that the type of the elements of the
@@ -439,18 +438,19 @@ class Pattern():
         _check_pos(pos)
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
-        compiled_regex = self.__tregex_compile(self.pattern)
-        return self.__finditer_gen(string, compiled_regex, substring, pos, endpos)
+        return self.__finditer_gen(string, substring, pos, endpos)
 
-    def __finditer_gen(self, string, compiled_regex, substring, pos, endpos):
+    def __finditer_gen(self, string, substring, pos, endpos):
+        must_advance = False
         while pos <= endpos:
+            compiled_regex = self.__tregex_compile(must_advance=must_advance)
             result = tregex_call_exec(compiled_regex.exec, substring, pos)
             if not result.isMatch:
                 break
             else:
-                yield Match(self, pos, endpos, result, string, compiled_regex, self.__indexgroup)
-            no_progress = (result.getStart(0) == result.getEnd(0))
-            pos = result.getEnd(0) + no_progress
+                yield Match(self, pos, endpos, result, string, self.__indexgroup)
+            pos = result.getEnd(0)
+            must_advance = (result.getStart(0) == result.getEnd(0))
         return
 
     def findall(self, string, pos=0, endpos=maxsize):
@@ -458,9 +458,10 @@ class Pattern():
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
         matchlist = []
-        compiled_regex = self.__tregex_compile(self.pattern)
-        group_count = compiled_regex.groupCount
+        group_count = self.__tregex_compile().groupCount
+        must_advance = False
         while pos <= endpos:
+            compiled_regex = self.__tregex_compile(must_advance=must_advance)
             result = tregex_call_exec(compiled_regex.exec, substring, pos)
             if not result.isMatch:
                 break
@@ -469,9 +470,9 @@ class Pattern():
             elif group_count == 2:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
             else:
-                matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, compiled_regex, self.__indexgroup).groups())))
-            no_progress = (result.getStart(0) == result.getEnd(0))
-            pos = result.getEnd(0) + no_progress
+                matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, self.__indexgroup).groups())))
+            pos = result.getEnd(0)
+            must_advance = (result.getStart(0) == result.getEnd(0))
         return matchlist
 
     def sub(self, repl, string, count=0):
@@ -480,10 +481,10 @@ class Pattern():
     def subn(self, repl, string, count=0):
         self.__check_input_type(string)
         n = 0
-        pattern = self.__tregex_compile(self.pattern)
         result = []
         pos = 0
         literal = False
+        must_advance = False
         if not callable(repl):
             self.__check_input_type(repl)
             if isinstance(repl, str):
@@ -497,7 +498,8 @@ class Pattern():
                     literal = True
 
         while (count == 0 or n < count) and pos <= len(string):
-            match_result = tregex_call_exec(pattern.exec, string, pos)
+            compiled_regex = self.__tregex_compile(must_advance=must_advance)
+            match_result = tregex_call_exec(compiled_regex.exec, string, pos)
             if not match_result.isMatch:
                 break
             n += 1
@@ -507,14 +509,11 @@ class Pattern():
             if literal:
                 result.append(repl)
             else:
-                _srematch = Match(self, pos, -1, match_result, string, pattern, self.__indexgroup)
+                _srematch = Match(self, pos, -1, match_result, string, self.__indexgroup)
                 _repl = repl(_srematch)
                 result.append(_repl)
             pos = end
-            if start == end:
-                if pos < len(string):
-                    result.append(string[pos])
-                pos = pos + 1
+            must_advance = start == end
         result.append(string[pos:])
         if self.__binary:
             return b"".join(result), n
@@ -523,12 +522,14 @@ class Pattern():
 
     def split(self, string, maxsplit=0):
         n = 0
-        pattern = self.__tregex_compile(self.pattern)
+        group_count = self.__tregex_compile().groupCount
         result = []
         collect_pos = 0
         search_pos = 0
+        must_advance = False
         while (maxsplit == 0 or n < maxsplit) and search_pos <= len(string):
-            match_result = tregex_call_exec(pattern.exec, string, search_pos)
+            compiled_regex = self.__tregex_compile(must_advance=must_advance)
+            match_result = tregex_call_exec(compiled_regex.exec, string, search_pos)
             if not match_result.isMatch:
                 break
             n += 1
@@ -536,7 +537,7 @@ class Pattern():
             end = match_result.getEnd(0)
             result.append(self.__sanitize_out_type(string[collect_pos:start]))
             # add all group strings
-            for i in range(1, pattern.groupCount):
+            for i in range(1, group_count):
                 groupStart = match_result.getStart(i)
                 if groupStart >= 0:
                     result.append(self.__sanitize_out_type(string[groupStart:match_result.getEnd(i)]))
@@ -544,8 +545,7 @@ class Pattern():
                     result.append(None)
             collect_pos = end
             search_pos = end
-            if start == end:
-                search_pos = search_pos + 1
+            must_advance = start == end
         result.append(self.__sanitize_out_type(string[collect_pos:]))
         return result
 
@@ -559,24 +559,24 @@ class SREScanner(object):
         self._string = string
         self._start = start
         self._end = end
+        self._must_advance = False
 
-    def _match_search(self, matcher):
+    def _match_search(self, method):
         if self._start > len(self._string):
             return None
-        match = matcher(self._string, self._start, self._end)
+        match = self.pattern._search(self._string, self._start, self._end, method=method, must_advance=self._must_advance)
         if match is None:
             self._start += 1
         else:
             self._start = match.end()
-            if match.start() == self._start:
-                self._start += 1
+            self._must_advance = match.start() == self._start
         return match
 
     def match(self):
-        return self._match_search(self.pattern.match)
+        return self._match_search("match")
 
     def search(self):
-        return self._match_search(self.pattern.search)
+        return self._match_search("search")
 
 
 _t_compile = Pattern

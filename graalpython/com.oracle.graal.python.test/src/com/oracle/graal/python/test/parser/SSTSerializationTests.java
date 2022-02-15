@@ -48,9 +48,11 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -211,6 +213,14 @@ public class SSTSerializationTests extends ParserTestBase {
         checkSerialization("@decorator1\n" +
                         "@decorator1\n" +
                         "class foo():pass");
+    }
+
+    @Test
+    public void classSuperTest() throws Exception {
+        checkSerialization(
+                        "class Foo():\n" +
+                                        "  def bar():\n" +
+                                        "    super()");
     }
 
     @Test
@@ -1262,6 +1272,7 @@ public class SSTSerializationTests extends ParserTestBase {
 
         // at first parse the source and obtain the parse result
         RootNode parserResult = (RootNode) parse(source, PythonParser.ParserMode.File);
+        parserResult.getCallTarget(); // set parent pointers
         ScopeInfo parserScope = getLastGlobalScope();
         checkScopeSerialization(parserScope);
         Assert.assertNotNull("Parser result is null", parserResult);
@@ -1270,6 +1281,7 @@ public class SSTSerializationTests extends ParserTestBase {
         Assert.assertNotNull("Serialized data are null", serializeResult);
         // and get the tree from serialized data
         RootNode deserialize = serializer.deserialize(context, serializeResult);
+        deserialize.getCallTarget(); // set parent pointers
 
         Assert.assertNotNull("Deserialized result is null", parserResult);
         // compare the tree from parser with the tree from serializer
@@ -1328,13 +1340,13 @@ public class SSTSerializationTests extends ParserTestBase {
         }
     }
 
-    private static void printSet(StringBuilder sb, Set<String> set) {
+    private static void print(StringBuilder sb, Collection<String> set) {
         if (set == null || set.isEmpty()) {
             sb.append("Empty");
         } else {
             sb.append("[");
             boolean first = true;
-            for (String name : set) {
+            for (String name : new TreeSet<>(set)) {
                 if (first) {
                     sb.append(name);
                     first = false;
@@ -1346,51 +1358,30 @@ public class SSTSerializationTests extends ParserTestBase {
         }
     }
 
-    @SuppressWarnings("deprecation")    // new Frame API
-    private static void printFrameSlots(StringBuilder sb, com.oracle.truffle.api.frame.FrameSlot[] slots) {
-        if (slots.length == 0) {
-            sb.append("Empty");
-        } else {
-            sb.append("[");
-            boolean first = true;
-            for (com.oracle.truffle.api.frame.FrameSlot slot : slots) {
-                if (first) {
-                    sb.append(slot.getIdentifier());
-                    first = false;
-                } else {
-                    sb.append(", ").append(slot.getIdentifier());
-                }
-            }
-        }
-    }
-
     // here we can not use the ScopeInfo.debugPrint(), because we need exclude the temporary
     // variables.
-    @SuppressWarnings("deprecation")    // new Frame API
     private static void printScope(ScopeInfo scope, StringBuilder sb, int indent) {
         indent(sb, indent);
         sb.append("Scope: ").append(scope.getScopeId()).append("\n");
         indent(sb, indent + 1);
         sb.append("Kind: ").append(scope.getScopeKind()).append("\n");
         Set<String> names = new HashSet<>();
-        scope.getFrameDescriptor().getIdentifiers().forEach((id) -> {
-            if (id instanceof String) {
-                names.add(id.toString());
-            } else if (id == FrameSlotIDs.FREEVAR__CLASS__ || id == FrameSlotIDs.RETURN_SLOT_ID) {
+        for (Object id : scope.getFrameIdentifiers()) { // sorted
+            if (id instanceof String || id == FrameSlotIDs.FREEVAR__CLASS__ || id == FrameSlotIDs.RETURN_SLOT_ID) {
                 names.add(id.toString());
             }
-        });
+        }
         indent(sb, indent + 1);
         sb.append("FrameDescriptor: ");
-        printSet(sb, names);
+        print(sb, names);
         sb.append("\n");
         indent(sb, indent + 1);
         sb.append("CellVars: ");
-        printFrameSlots(sb, scope.getCellVarSlots());
+        print(sb, scope.getCellVars());
         sb.append("\n");
         indent(sb, indent + 1);
         sb.append("FreeVars: ");
-        printFrameSlots(sb, scope.getFreeVarSlots());
+        print(sb, scope.getFreeVars());
         sb.append("\n");
         ScopeInfo child = scope.getFirstChildScope();
         while (child != null) {
@@ -1406,13 +1397,13 @@ public class SSTSerializationTests extends ParserTestBase {
          * Processor Intel(R) Core(TM) i7-6820HQ CPU @ 2.70GHz Memory 32801MB Operating System
          * Ubuntu 18.04.2 LTS the result should be : Memory times: parsing: 6,674,919,690ns (100%)
          * serialization: 435,290,014ns(+6%) deserialization: 2,220,701,051ns (-67%)
-         * 
+         *
          * Average times: parsing: 4,171,824ns (100%) serialization: 272,056ns (+6%)
          * deserialization: 1,387,938ns(-67%)
-         * 
+         *
          * Times with file operations: parsing: 6,879,809,367ns (100%) serialization:
          * 583,667,690ns(+8%) deserialization: 2,270,131,909ns (-68%)
-         * 
+         *
          * Average times: parsing: 4,299,880ns (100%) serialization: 364,792ns (+8%)
          * deserialization: 1,418,832ns(-68%)
          */

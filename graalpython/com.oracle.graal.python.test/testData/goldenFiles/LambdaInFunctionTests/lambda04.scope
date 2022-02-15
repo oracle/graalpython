@@ -10,6 +10,6 @@ Scope: []
         FreeVars: Empty
         Scope: <lambda>
             Kind: Function
-            FrameDescriptor: [y, z, <return_val>]
+            FrameDescriptor: [<return_val>, y, z]
             CellVars: Empty
             FreeVars: Empty

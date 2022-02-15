@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
         WriteNameNodeGen SourceSection: [0,92]`def gen(c, b):↵  if ...`
           Identifier: gen
           GeneratorFunctionDefinitionNode Name: gen SourceSection: None
-            FrameDescriptor: 3 slots [c, b, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, b, c]
             Active Flags: 8
             For Nodes: 0
             Block Nodes: 1
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [c, b, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, b, c]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

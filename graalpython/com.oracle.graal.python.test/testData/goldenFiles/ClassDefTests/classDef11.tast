@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: fields, , name, 
+              CellVarsSlots: fields, name
             FunctionRootNode SourceSection: [0,282]`def make_named_tuple...`
               Name: make_named_tuple_class
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -26,10 +26,10 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
               CelVars: fields, name
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [name, fields, named_tuple, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, fields, name, named_tuple]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: fields, , name, 
+                CellVarsSlots: fields, name
               InnerRootNode SourceSection: [0,282]`def make_named_tuple...`
                 ReturnTargetNode SourceSection: [0,282]`def make_named_tuple...`
                   Body: BlockNode SourceSection: None
@@ -60,9 +60,9 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: fields, , name, 
+                            FreeVarSlots: fields, name
                             ExecutionSlots:
-                              FreeVarsSlots: fields, , name, 
+                              FreeVarsSlots: fields, name
                               CellVarsSlots: None
                             ClassBodyRootNode SourceSection: [46,264]`class named_tuple(tu...`
                               Name: named_tuple
@@ -70,9 +70,9 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                               CelVars: None
                               FreeVars: fields, name
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [__name__, n_sequence_fields, fields, __repr__, name]
+                              FrameDescriptor: 5 slots [__name__, __repr__, fields, n_sequence_fields, name]
                               ExecutionSlots:
-                                FreeVarsSlots: fields, , name, 
+                                FreeVarsSlots: fields, name
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [46,264]`class named_tuple(tu...`
                                 ReturnTargetNode SourceSection: [46,264]`class named_tuple(tu...`
@@ -108,9 +108,9 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                           Arguments: None
                                           KwArguments: None
                                           Documentation: None
-                                          FreeVarSlots: fields, , name, 
+                                          FreeVarSlots: fields, name
                                           ExecutionSlots:
-                                            FreeVarsSlots: fields, , name, 
+                                            FreeVarsSlots: fields, name
                                             CellVarsSlots: None
                                           FunctionRootNode SourceSection: [168,264]`def __repr__(self):↵...`
                                             Name: __repr__
@@ -119,9 +119,9 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                             CelVars: None
                                             FreeVars: fields, name
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 6 slots [self, sb, f, name, fields, <return_val>]
+                                            FrameDescriptor: 7 slots [<>temp5, <return_val>, f, fields, name, sb, self]
                                             ExecutionSlots:
-                                              FreeVarsSlots: fields, , name, 
+                                              FreeVarsSlots: fields, name
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [168,264]`def __repr__(self):↵...`
                                               ReturnTargetNode SourceSection: [168,264]`def __repr__(self):↵...`
@@ -139,7 +139,6 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                       ReadLocalCellNodeGen SourceSection: [205,209]`name`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [3,name,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                     ElseNode SourceSection: [222,264]`for f in fields:↵   ...`
                                                       ForNode SourceSection: None
                                                         ForRepeatingNode SourceSection: None
@@ -153,10 +152,9 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                           ReadLocalCellNodeGen SourceSection: [231,237]`fields`
                                                             ReadLocalVariableNodeGen SourceSection: None
                                                               Frame: [4,fields,Illegal]
-                                                            ReadFromCellNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [5,<return_val>,Object]
+                                                  Frame: [6,<return_val>,Object]
                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [64,69]`tuple`

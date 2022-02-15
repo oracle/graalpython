@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -316,6 +316,14 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
 #define COPYMAP(SLOT) COPYSLOT(tp_as_mapping->SLOT)
 #define COPYBUF(SLOT) COPYSLOT(tp_as_buffer->SLOT)
 
+    if (type->tp_as_buffer != NULL && base->tp_as_buffer != NULL) {
+        basebase = base->tp_base;
+        if (basebase->tp_as_buffer == NULL)
+            basebase = NULL;
+        COPYBUF(bf_getbuffer);
+        COPYBUF(bf_releasebuffer);
+    }
+
     basebase = base->tp_base;
 
     COPYSLOT(tp_dealloc);
@@ -392,18 +400,18 @@ int add_getset(PyTypeObject* cls, PyObject* type_dict, char* name, getter getter
                         closure);
 }
 
-//                                  cls             dict     name    cfunc  flags  sig  doc
-typedef int (*AddFunction_fun_t)(PyTypeObject *, PyObject *, void *, void *, int , int, char *);
-UPCALL_TYPED_ID(AddFunction, AddFunction_fun_t);
-static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* result_conversion, void* meth, int flags, int signature, char* doc) {
-	    void *resolved_meth = function_pointer_to_java(meth);
-        _jls_AddFunction(cls,
+//                                     method_def     cls             dict        name          cfunc   flags sig  doc
+typedef int (*AddFunctionToType_fun_t)(PyMethodDef *, PyTypeObject *, PyObject *, const char *, void *, int , int, char *);
+UPCALL_TYPED_ID(AddFunctionToType, AddFunctionToType_fun_t);
+static void add_method(PyTypeObject* cls, PyObject* type_dict, PyMethodDef* def) {
+        _jls_AddFunctionToType(def,
+                       cls,
                        native_to_java(type_dict),
-                       polyglot_from_string(name, SRC_CS),
-                       native_pointer_to_java(result_conversion != NULL ? pytruffle_decorate_function(resolved_meth, result_conversion) : resolved_meth),
-                       flags,
-                       (signature != 0 ? signature : get_method_flags_wrapper(flags)),
-                       doc);
+                       polyglot_from_string(def->ml_name, SRC_CS),
+                       function_pointer_to_java(def->ml_meth),
+                       def->ml_flags,
+                       get_method_flags_wrapper(def->ml_flags),
+                       def->ml_doc);
 }
 
 typedef int (*add_slot_fun_t)(PyTypeObject *, PyObject *, void *, void *, int , int, char *);
@@ -440,11 +448,6 @@ int PyType_Ready(PyTypeObject* cls) {
 	} while(0)
 
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
-#define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, NULL, m.ml_meth, m.ml_flags, NULL, m.ml_doc)
-#define ADD_METHOD_OR_SLOT(__name__, __res_conv__, __meth__, __flags__, __signature__, __doc__) \
-	if (__meth__) { \
-            add_method_or_slot(cls, dict, (__name__), (__res_conv__), (__meth__), (__flags__), (__signature__), (__doc__)); \
-	}
 #define ADD_SLOT_CONV(__name__, __meth__, __flags__, __signature__) add_slot(cls, dict, (__name__), (__meth__), (__flags__), (__signature__), NULL)
 
     Py_ssize_t n;
@@ -520,13 +523,9 @@ int PyType_Ready(PyTypeObject* cls) {
         cls->tp_dict = dict;
     }
 
-    PyMethodDef* methods = cls->tp_methods;
-    if (methods) {
-        int idx = 0;
-        PyMethodDef def = methods[idx];
-        while (def.ml_name != NULL) {
-            ADD_METHOD(def);
-            def = methods[++idx];
+    if (cls->tp_methods) {
+        for (PyMethodDef* def = cls->tp_methods; def->ml_name != NULL; def++) {
+            add_method(cls, dict, def);
         }
     }
 
@@ -736,6 +735,21 @@ int PyType_Ready(PyTypeObject* cls) {
         }
     }
 
+    /* Some more special stuff */
+    base = cls->tp_base;
+    if (base != NULL) {
+        // if (cls->tp_as_async == NULL)
+        //     cls->tp_as_async = base->tp_as_async;
+        // if (cls->tp_as_number == NULL)
+        //     cls->tp_as_number = base->tp_as_number;
+        // if (cls->tp_as_sequence == NULL)
+        //     cls->tp_as_sequence = base->tp_as_sequence;
+        // if (cls->tp_as_mapping == NULL)
+        //     cls->tp_as_mapping = base->tp_as_mapping;
+        if (cls->tp_as_buffer == NULL)
+            cls->tp_as_buffer = base->tp_as_buffer;
+    }
+
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
     n = PyTuple_GET_SIZE(bases);
@@ -760,9 +774,7 @@ int PyType_Ready(PyTypeObject* cls) {
     return 0;
 
 #undef ADD_IF_MISSING
-#undef ADD_METHOD
 #undef ADD_SLOT
-#undef ADD_METHOD_OR_SLOT
 }
 
 MUST_INLINE static int valid_identifier(PyObject *s) {

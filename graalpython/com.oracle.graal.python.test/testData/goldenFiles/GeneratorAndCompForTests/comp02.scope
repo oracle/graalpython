@@ -5,16 +5,16 @@ Scope: []
     FreeVars: Empty
     Scope: mro
         Kind: Function
-        FrameDescriptor: [other, cls, abcs, <return_val>, base]
+        FrameDescriptor: [<>temp4, <return_val>, abcs, base, cls, other]
         CellVars: [abcs, base]
         FreeVars: Empty
         Scope: <genexpr>
             Kind: ListComp
-            FrameDescriptor: [abcs, <return_val>, base]
+            FrameDescriptor: [<return_val>, abcs, base]
             CellVars: Empty
             FreeVars: [abcs]
         Scope: <genexpr>
             Kind: GenExp
-            FrameDescriptor: [b, <return_val>, base]
+            FrameDescriptor: [<return_val>, b, base]
             CellVars: Empty
             FreeVars: [base]

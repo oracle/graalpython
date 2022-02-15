@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import java.util.ArrayList;
+import com.oracle.truffle.api.dsl.Specialization;
 import java.util.List;
 
 @CoreFunctions(defineModule = "_posixshmem")
@@ -52,7 +56,17 @@ public class PosixShMemModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return PosixShMemModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "shm_unlink", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class LocaleConvNode extends PythonUnaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object doit(Object path) {
+            return PNone.NONE;
+        }
     }
 
 }

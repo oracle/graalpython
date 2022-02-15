@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.nodes;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
@@ -52,29 +54,33 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-@SuppressWarnings("deprecation")    // new Frame API
 public abstract class PClosureRootNode extends PRootNode {
-    private final Assumption singleContextAssumption;
+    private final boolean isSingleContext;
     private final boolean annotationsAvailable;
-    @CompilationFinal(dimensions = 1) protected final com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots;
+    @CompilationFinal(dimensions = 1) protected final int[] freeVarSlots;
     @CompilationFinal(dimensions = 1) protected PCell[] closure;
     private final int length;
 
-    protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots, boolean hasAnnotations) {
+    protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, boolean hasAnnotations) {
         super(language, frameDescriptor);
-        this.singleContextAssumption = language.singleContextAssumption;
-        this.freeVarSlots = freeVarSlots;
-        this.length = freeVarSlots != null ? freeVarSlots.length : 0;
+        this.isSingleContext = language.isSingleContext();
+        if (executionCellSlots == null) {
+            this.freeVarSlots = null;
+            this.length = 0;
+        } else {
+            this.freeVarSlots = executionCellSlots.getFreeVarSlots();
+            this.length = freeVarSlots.length;
+        }
         this.annotationsAvailable = hasAnnotations;
     }
 
     protected final void addClosureCellsToLocals(Frame frame) {
         PCell[] frameClosure = PArguments.getClosure(frame);
         if (frameClosure != null) {
-            if (singleContextAssumption.isValid() && closure == null) {
+            if (isSingleContext && closure == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 closure = frameClosure;
-            } else if (closure != PythonUtils.NO_CLOSURE && ((!singleContextAssumption.isValid() && closure != null) || closure != frameClosure)) {
+            } else if (closure != PythonUtils.NO_CLOSURE && ((!isSingleContext && closure != null) || closure != frameClosure)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 closure = PythonUtils.NO_CLOSURE;
             }
@@ -116,18 +122,19 @@ public abstract class PClosureRootNode extends PRootNode {
     public abstract void initializeFrame(VirtualFrame frame);
 
     public final String[] getFreeVars() {
-        if (freeVarSlots != null) {
-            String[] freeVars = new String[freeVarSlots.length];
-            int count = 0;
-            for (int i = 0; i < freeVarSlots.length; i++) {
-                Object identifier = freeVarSlots[i].getIdentifier();
-                if (identifier instanceof String) {
-                    freeVars[count++] = (String) identifier;
-                }
-            }
-            return freeVars.length == count ? freeVars : PythonUtils.arrayCopyOf(freeVars, count);
+        if (freeVarSlots == null || freeVarSlots.length == 0) {
+            return PythonUtils.EMPTY_STRING_ARRAY;
         }
-        return PythonUtils.EMPTY_STRING_ARRAY;
+        FrameDescriptor descriptor = getFrameDescriptor();
+        String[] result = new String[freeVarSlots.length];
+        int count = 0;
+        for (int i = 0; i < result.length; i++) {
+            Object identifier = descriptor.getSlotName(freeVarSlots[i]);
+            if (identifier instanceof String) {
+                result[count++] = (String) identifier;
+            }
+        }
+        return result.length == count ? result : Arrays.copyOf(result, count);
     }
 
     public boolean hasAnnotations() {

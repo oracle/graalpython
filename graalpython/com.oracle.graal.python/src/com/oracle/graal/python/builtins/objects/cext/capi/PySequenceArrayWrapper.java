@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PTR_ARRAY_TYPE_ID;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NATIVE_HANDLE_FOR_ARRAY;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -62,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -73,7 +73,6 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -482,7 +481,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @GenerateUncached
     @ImportStatic({SpecialMethodNames.class, PySequenceArrayWrapper.class})
-    abstract static class GetTypeIDNode extends Node {
+    abstract static class GetTypeIDNode extends PNodeWithContext {
 
         public abstract Object execute(Object delegate);
 
@@ -494,17 +493,15 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             return PCallCapiFunction.getUncached().call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
         }
 
-        @Specialization(assumptions = "singleContextAssumption", guards = "hasByteArrayContent(object)")
+        @Specialization(guards = {"isSingleContext()", "hasByteArrayContent(object)"})
         Object doByteArray(@SuppressWarnings("unused") Object object,
-                        @Shared("singleContextAssumption") @Cached("singleContextAssumption()") @SuppressWarnings("unused") Assumption singleContextAssumption,
                         @Exclusive @Cached("callGetByteArrayTypeIDUncached()") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
         }
 
-        @Specialization(assumptions = "singleContextAssumption", guards = "!hasByteArrayContent(object)")
+        @Specialization(guards = {"isSingleContext()", "!hasByteArrayContent(object)"})
         Object doPtrArray(@SuppressWarnings("unused") Object object,
-                        @Shared("singleContextAssumption") @Cached("singleContextAssumption()") @SuppressWarnings("unused") Assumption singleContextAssumption,
                         @Exclusive @Cached("callGetPtrArrayTypeIDUncached()") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
@@ -517,13 +514,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "!hasByteArrayContent(object)", replaces = "doPtrArray")
-        Object doPtrArrayMultiCtx(@SuppressWarnings("unused") PSequence object,
+        Object doPtrArrayMultiCtx(@SuppressWarnings("unused") Object object,
                         @Shared("callUnaryNode") @Cached PCallCapiFunction callUnaryNode) {
             return callUnaryNode.call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
-        }
-
-        protected Assumption singleContextAssumption() {
-            return PythonLanguage.get(this).singleContextAssumption;
         }
     }
 

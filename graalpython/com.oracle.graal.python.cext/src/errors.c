@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -169,9 +169,13 @@ PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
     return NULL;
 }
 
-UPCALL_ID(PyErr_WriteUnraisable);
 void PyErr_WriteUnraisable(PyObject *obj) {
-    UPCALL_CEXT_VOID(_jls_PyErr_WriteUnraisable, native_to_java(obj));
+    _PyErr_WriteUnraisableMsg(NULL, obj);
+}
+
+UPCALL_ID(_PyErr_WriteUnraisableMsg);
+void _PyErr_WriteUnraisableMsg(const char *err_msg_str, PyObject *obj) {
+    UPCALL_CEXT_VOID(_jls__PyErr_WriteUnraisableMsg, err_msg_str != NULL ? polyglot_from_string(err_msg_str, SRC_CS) : NULL, native_to_java(obj));
 }
 
 UPCALL_ID(PyErr_Display);

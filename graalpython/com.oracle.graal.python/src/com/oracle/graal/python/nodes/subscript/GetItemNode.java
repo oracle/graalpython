@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -85,6 +85,10 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         return GetItemNodeGen.create(primary, slice);
     }
 
+    protected LookupAndCallBinaryNode createLookupAndCallGetItemNode() {
+        return LookupAndCallBinaryNode.create(SpecialMethodSlot.GetItem);
+    }
+
     @Override
     public StatementNode makeWriteNode(ExpressionNode rhs) {
         return SetItemNode.create(getPrimary(), getSlice(), rhs);
@@ -101,9 +105,10 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     @SuppressWarnings("unused")
     @Specialization(guards = {"!indexCheckNode.execute(index)", "!isPSlice(index)"}, limit = "1")
     public Object doListError(VirtualFrame frame, PList primary, Object index,
+                    @Cached("createLookupAndCallGetItemNode()") LookupAndCallBinaryNode lookupAndCallGetItem,
                     @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", index);
+        return lookupAndCallGetItem.executeObject(frame, primary, index);
     }
 
     @Specialization(guards = {"indexCheckNode.execute(index) || isPSlice(index)", "isBuiltinTuple.profileIsAnyBuiltinObject(primary)"}, limit = "1")

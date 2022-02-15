@@ -15,17 +15,17 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: var, 
+            CellVarsSlots: var
           FunctionRootNode SourceSection: [0,112]`def outer():â†µ    var...`
             Name: outer
             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
             CelVars: var
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [var, toInternal, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, toInternal, var]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: var, 
+              CellVarsSlots: var
             InnerRootNode SourceSection: [0,112]`def outer():â†µ    var...`
               ReturnTargetNode SourceSection: [0,112]`def outer():â†µ    var...`
                 Body: BlockNode SourceSection: None
@@ -43,9 +43,9 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: var, 
+                        FreeVarSlots: var
                         ExecutionSlots:
-                          FreeVarsSlots: var, 
+                          FreeVarsSlots: var
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [32,93]`def toInternal(obj):...`
                           Name: toInternal
@@ -54,9 +54,9 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                           CelVars: None
                           FreeVars: var
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [obj, x, var, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, obj, var, x]
                           ExecutionSlots:
-                            FreeVarsSlots: var, 
+                            FreeVarsSlots: var
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [32,93]`def toInternal(obj):...`
                             ReturnTargetNode SourceSection: [32,93]`def toInternal(obj):...`

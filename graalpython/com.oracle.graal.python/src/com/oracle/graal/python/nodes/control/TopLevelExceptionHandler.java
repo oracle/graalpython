@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackN
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -165,8 +164,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         }
         if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
             Object type = GetClassNode.getUncached().execute(pythonException);
-            PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
-            Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
+            Object tb = GetExceptionTracebackNode.getUncached().execute(pythonException);
 
             PythonModule sys = getContext().lookupBuiltinModule("sys");
             sys.setAttribute(BuiltinNames.LAST_TYPE, type);

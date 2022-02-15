@@ -73,7 +73,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: fields, , name, , named_tuple, 
+            CellVarsSlots: fields, name, named_tuple
           FunctionRootNode SourceSection: [2075,2974]`def make_named_tuple...`
             Name: make_named_tuple_class
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -81,10 +81,10 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
             CelVars: fields, name, named_tuple
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [name, fields, named_tuple, _define_named_tuple_methods, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, _define_named_tuple_methods, fields, name, named_tuple]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: fields, , name, , named_tuple, 
+              CellVarsSlots: fields, name, named_tuple
             InnerRootNode SourceSection: [2075,2974]`def make_named_tuple...`
               ReturnTargetNode SourceSection: [2075,2974]`def make_named_tuple...`
                 Body: BlockNode SourceSection: None
@@ -116,9 +116,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: fields, , name, 
+                          FreeVarSlots: fields, name
                           ExecutionSlots:
-                            FreeVarsSlots: fields, , name, 
+                            FreeVarsSlots: fields, name
                             CellVarsSlots: None
                           ClassBodyRootNode SourceSection: [2121,2611]`class named_tuple(tu...`
                             Name: named_tuple
@@ -126,9 +126,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                             CelVars: None
                             FreeVars: fields, name
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [__name__, n_sequence_fields, fields, __str__, __repr__, name]
+                            FrameDescriptor: 6 slots [__name__, __repr__, __str__, fields, n_sequence_fields, name]
                             ExecutionSlots:
-                              FreeVarsSlots: fields, , name, 
+                              FreeVarsSlots: fields, name
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [2121,2611]`class named_tuple(tu...`
                               ReturnTargetNode SourceSection: [2121,2611]`class named_tuple(tu...`
@@ -175,7 +175,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           CelVars: None
                                           FreeVars: None
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 2 slots [self, <return_val>]
+                                          FrameDescriptor: 2 slots [<return_val>, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: None
                                             CellVarsSlots: None
@@ -203,9 +203,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: fields, , name, 
+                                        FreeVarSlots: fields, name
                                         ExecutionSlots:
-                                          FreeVarsSlots: fields, , name, 
+                                          FreeVarsSlots: fields, name
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [2307,2611]`def __repr__(self):↵...`
                                           Name: __repr__
@@ -214,9 +214,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           CelVars: None
                                           FreeVars: fields, name
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 6 slots [self, sb, f, name, fields, <return_val>]
+                                          FrameDescriptor: 7 slots [<>temp5, <return_val>, f, fields, name, sb, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: fields, , name, 
+                                            FreeVarsSlots: fields, name
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [2307,2611]`def __repr__(self):↵...`
                                             ReturnTargetNode SourceSection: [2307,2611]`def __repr__(self):↵...`
@@ -235,7 +235,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       ReadLocalCellNodeGen SourceSection: [2345,2349]`name`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [3,name,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                       StringLiteralNode SourceSection: [2351,2354]`"("`
                                                       PythonObjectFactoryNodeGen SourceSection: None
                                                   ElseNode SourceSection: [2368,2539]`for f in fields:↵   ...`
@@ -290,7 +289,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                         ReadLocalCellNodeGen SourceSection: [2377,2383]`fields`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [4,fields,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                     BlockNode SourceSection: None
                                                   ExpressionStatementNode SourceSection: [2539,2547]`sb.pop()`
                                                     PythonCallNodeGen SourceSection: [2539,2547]`sb.pop()`
@@ -313,7 +311,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       ReadLocalVariableNodeGen SourceSection: [2602,2604]`sb`
                                                         Frame: [1,sb,Illegal]
                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [5,<return_val>,Object]
+                                                Frame: [6,<return_val>,Object]
                                 Return Expresssion: ObjectLiteralNode SourceSection: None
                         StringLiteralNode SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2139,2144]`tuple`
@@ -325,9 +323,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: fields, , named_tuple, 
+                        FreeVarSlots: fields, named_tuple
                         ExecutionSlots:
-                          FreeVarsSlots: fields, , named_tuple, 
+                          FreeVarsSlots: fields, named_tuple
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [2611,2919]`def _define_named_tu...`
                           Name: _define_named_tuple_methods
@@ -335,9 +333,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                           CelVars: None
                           FreeVars: fields, named_tuple
                           NeedsCellFrame: False
-                          FrameDescriptor: 8 slots [make_func, i, name, fields, named_tuple, <>temp5, <>temp6, <return_val>]
+                          FrameDescriptor: 9 slots [<>temp5, <>temp6, <>temp7, <return_val>, fields, i, make_func, name, named_tuple]
                           ExecutionSlots:
-                            FreeVarsSlots: fields, , named_tuple, 
+                            FreeVarsSlots: fields, named_tuple
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [2611,2919]`def _define_named_tu...`
                             ReturnTargetNode SourceSection: [2611,2919]`def _define_named_tu...`
@@ -350,21 +348,21 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                         ForNextElementNodeGen SourceSection: None
                                           DestructuringAssignmentNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
-                                              Identifier: <>temp5
-                                              Frame: [5,<>temp5,Illegal]
-                                            WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <>temp6
                                               Frame: [6,<>temp6,Illegal]
+                                            WriteLocalVariableNodeGen SourceSection: None
+                                              Identifier: <>temp7
+                                              Frame: [7,<>temp7,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: i
                                               Frame: [1,i,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [5,<>temp5,Illegal]
+                                                Frame: [6,<>temp6,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: name
                                               Frame: [2,name,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [6,<>temp6,Illegal]
+                                                Frame: [7,<>temp7,Illegal]
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [2700,2825]`def make_func(i):↵  ...`
                                             Identifier: make_func
@@ -376,7 +374,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               FreeVarSlots: None
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
-                                                CellVarsSlots: i, 
+                                                CellVarsSlots: i
                                               FunctionRootNode SourceSection: [2700,2825]`def make_func(i):↵  ...`
                                                 Name: make_func
                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -384,10 +382,10 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                 CelVars: i
                                                 FreeVars: None
                                                 NeedsCellFrame: False
-                                                FrameDescriptor: 3 slots [i, func, <return_val>]
+                                                FrameDescriptor: 3 slots [<return_val>, func, i]
                                                 ExecutionSlots:
                                                   FreeVarsSlots: None
-                                                  CellVarsSlots: i, 
+                                                  CellVarsSlots: i
                                                 InnerRootNode SourceSection: [2700,2825]`def make_func(i):↵  ...`
                                                   ReturnTargetNode SourceSection: [2700,2825]`def make_func(i):↵  ...`
                                                     Body: BlockNode SourceSection: None
@@ -406,9 +404,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                             Arguments: None
                                                             KwArguments: None
                                                             Documentation: None
-                                                            FreeVarSlots: i, 
+                                                            FreeVarSlots: i
                                                             ExecutionSlots:
-                                                              FreeVarsSlots: i, 
+                                                              FreeVarsSlots: i
                                                               CellVarsSlots: None
                                                             FunctionRootNode SourceSection: [2734,2801]`def func(self):↵    ...`
                                                               Name: func
@@ -417,9 +415,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                               CelVars: None
                                                               FreeVars: i
                                                               NeedsCellFrame: False
-                                                              FrameDescriptor: 3 slots [self, i, <return_val>]
+                                                              FrameDescriptor: 3 slots [<return_val>, i, self]
                                                               ExecutionSlots:
-                                                                FreeVarsSlots: i, 
+                                                                FreeVarsSlots: i
                                                                 CellVarsSlots: None
                                                               InnerRootNode SourceSection: [2734,2801]`def func(self):↵    ...`
                                                                 ReturnTargetNode SourceSection: [2734,2801]`def func(self):↵    ...`
@@ -438,7 +436,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                           ReadLocalCellNodeGen SourceSection: [2782,2783]`i`
                                                                             ReadLocalVariableNodeGen SourceSection: None
                                                                               Frame: [1,i,Illegal]
-                                                                            ReadFromCellNodeGen SourceSection: None
                                                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                                     Frame: [2,<return_val>,Object]
                                                         FrameReturnNode SourceSection: [2801,2812]`return func`
@@ -454,7 +451,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               ReadLocalCellNodeGen SourceSection: [2833,2844]`named_tuple`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [4,named_tuple,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [2846,2850]`name`
                                                 Frame: [2,name,Illegal]
                                               PythonCallNodeGen SourceSection: [2852,2911]`descriptor(fget=make...`
@@ -475,7 +471,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       ReadLocalCellNodeGen SourceSection: [2899,2910]`named_tuple`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [4,named_tuple,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                   EmptyNode SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2852,2862]`descriptor`
                                                   Identifier: descriptor
@@ -487,10 +482,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           ReadLocalCellNodeGen SourceSection: [2679,2685]`fields`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [3,fields,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [7,<return_val>,Object]
+                                Frame: [8,<return_val>,Object]
                     ExpressionStatementNode SourceSection: [2919,2948]`_define_named_tuple_...`
                       PythonCallNodeGen SourceSection: [2919,2948]`_define_named_tuple_...`
                         CallNodeGen SourceSection: None
@@ -500,7 +494,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                       ReadLocalCellNodeGen SourceSection: [2960,2971]`named_tuple`
                         ReadLocalVariableNodeGen SourceSection: None
                           Frame: [2,named_tuple,Illegal]
-                        ReadFromCellNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [4,<return_val>,Object]
       ExpressionWithSideEffect SourceSection: None
@@ -527,7 +520,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 5 slots [__init__, __delattr__, __getattr__, __setattr__, __repr__]
+                  FrameDescriptor: 5 slots [__delattr__, __getattr__, __init__, __repr__, __setattr__]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: None
@@ -561,7 +554,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, kwargs, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, kwargs, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -612,7 +605,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, name, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, name, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -666,7 +659,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, name, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, name, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -718,7 +711,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 4 slots [self, name, value, <return_val>]
+                                FrameDescriptor: 4 slots [<return_val>, name, self, value]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -777,7 +770,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 8 slots [self, sb, ns, k, v, <>temp5, <>temp6, <return_val>]
+                                FrameDescriptor: 9 slots [<>temp5, <>temp6, <>temp7, <return_val>, k, ns, sb, self, v]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -813,21 +806,21 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               ForNextElementNodeGen SourceSection: None
                                                 DestructuringAssignmentNodeGen SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: <>temp5
-                                                    Frame: [5,<>temp5,Illegal]
-                                                  WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: <>temp6
                                                     Frame: [6,<>temp6,Illegal]
+                                                  WriteLocalVariableNodeGen SourceSection: None
+                                                    Identifier: <>temp7
+                                                    Frame: [7,<>temp7,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: k
                                                     Frame: [3,k,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [5,<>temp5,Illegal]
+                                                      Frame: [6,<>temp6,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: v
                                                     Frame: [4,v,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
-                                                      Frame: [6,<>temp6,Illegal]
+                                                      Frame: [7,<>temp7,Illegal]
                                               ExpressionStatementNode SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
                                                 PythonCallUnary SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
                                                   CallUnaryMethodNodeGen SourceSection: None
@@ -859,7 +852,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               ReadLocalVariableNodeGen SourceSection: [3597,3599]`sb`
                                                 Frame: [1,sb,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [7,<return_val>,Object]
+                                      Frame: [8,<return_val>,Object]
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [2996,3002]`object`

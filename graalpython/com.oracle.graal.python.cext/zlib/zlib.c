@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1108,13 +1108,6 @@ int zlib_Decompress_flush(zlib_stream *zst, ssize_t length) {
             error_occurred(zst, INFLATE_END_ERROR);
             return err;
         }
-    } else if (err != Z_OK && err != Z_BUF_ERROR) {
-        /* We will only get Z_BUF_ERROR if the output buffer was full
-           but there wasn't more output when we tried again, so it is
-           not an error condition.
-        */
-        error_occurred(zst, INFLATE_FLUSH_ERROR);
-        return err;
     }
     if (zst->output->size) {
         zst->output_size = zst->zst.next_out - zst->output->buf;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -114,6 +114,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -196,7 +197,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
         SSLParameters parameters = new SSLParameters();
         SSLEngine engine;
-        if (serverHostname != null) {
+        // Set SNI hostname only for non-IP hostnames
+        if (serverHostname != null && !isIPAddress(serverHostname)) {
             try {
                 parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
             } catch (IllegalArgumentException e) {
@@ -222,8 +224,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
         parameters.setCipherSuites(enabledCipherNames);
 
-        if (ALPNHelper.hasAlpn() && context.getAlpnProtocols() != null) {
-            ALPNHelper.setApplicationProtocols(parameters, context.getAlpnProtocols());
+        if (context.getAlpnProtocols() != null) {
+            parameters.setApplicationProtocols(context.getAlpnProtocols());
         }
         if (serverMode) {
             switch (context.getVerifyMode()) {
@@ -243,6 +245,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
         engine.setSSLParameters(parameters);
         return engine;
+    }
+
+    @TruffleBoundary
+    private static boolean isIPAddress(String str) {
+        return IPAddressUtil.isIPv4LiteralAddress(str) || IPAddressUtil.isIPv6LiteralAddress(str) ||
+                        str.startsWith("[") && str.endsWith("]") && IPAddressUtil.isIPv6LiteralAddress(str.substring(1, str.length() - 1));
     }
 
     @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 3, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
@@ -922,9 +930,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
         Object setFromBuffer(VirtualFrame frame, PSSLContext self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                if (!ALPNHelper.hasAlpn()) {
-                    throw raise(NotImplementedError, "The ALPN extension requires JDK 8u252 or later");
-                }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 self.setAlpnProtocols(parseProtocols(bytes, len));
@@ -940,10 +945,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
             int i = 0;
             while (i < length) {
                 int len = bytes[i];
-                if (i + len + 1 < length) {
-                    protocols.add(new String(bytes, i + 1, len, StandardCharsets.US_ASCII));
+                i++;
+                if (i + len <= length) {
+                    protocols.add(new String(bytes, i, len, StandardCharsets.US_ASCII));
                 }
-                i += len + 1;
+                i += len;
             }
             return protocols.toArray(new String[0]);
         }

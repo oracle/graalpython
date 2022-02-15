@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -154,7 +154,7 @@ public abstract class CExtCommonNodes {
 
         public abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol);
 
-        @Specialization(guards = "cachedSymbol == symbol", limit = "1", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "cachedSymbol == symbol"}, limit = "1")
         static Object doSymbolCached(@SuppressWarnings("unused") CExtContext nativeContext, @SuppressWarnings("unused") NativeCExtSymbol symbol,
                         @Cached("symbol") @SuppressWarnings("unused") NativeCExtSymbol cachedSymbol,
                         @Cached("importCAPISymbolUncached(nativeContext, symbol)") Object llvmSymbol) {
@@ -162,8 +162,7 @@ public abstract class CExtCommonNodes {
         }
 
         // n.b. if 'singleContextAssumption' is valid, we may also cache the native context
-        @Specialization(guards = "nativeContext == cachedNativeContext", limit = "1", //
-                        assumptions = "singleContextAssumption()", //
+        @Specialization(guards = {"isSingleContext()", "nativeContext == cachedNativeContext"}, limit = "1", //
                         replaces = "doSymbolCached")
         Object doWithSymbolCacheSingleContext(@SuppressWarnings("unused") CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Cached("nativeContext") CExtContext cachedNativeContext,

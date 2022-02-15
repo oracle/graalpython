@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -184,6 +184,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private static final LanguageReference<PythonLanguage> REFERENCE = LanguageReference.create(PythonLanguage.class);
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
+
+    @CompilationFinal private boolean singleContext = true;
+
+    public boolean isSingleContext() {
+        return singleContext;
+    }
 
     /**
      * This assumption will be valid if all contexts are single-threaded. Hence, it will be
@@ -727,6 +733,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
         singleContextAssumption.invalidate();
+        singleContext = false;
     }
 
     private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();

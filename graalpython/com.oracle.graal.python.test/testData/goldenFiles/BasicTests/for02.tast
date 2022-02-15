@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'for02'> SourceSection: [0,31]`for i in range(210):
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor:  Empty
+  FrameDescriptor: 1 slots [<>temp0]
   Documentation: None
   InnerRootNode SourceSection: [0,31]`for i in range(210):...`
     ExpressionWithSideEffect SourceSection: [0,31]`for i in range(210):...`

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -164,9 +164,14 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_LONG_BITS_PER_DIGIT("get_long_bits_in_digit"),
     FUN_BULK_SUBREF("PyTruffle_bulk_SUBREF"),
     FUN_TRUFFLE_ADD_SUBOFFSET("truffle_add_suboffset"),
+    FUN_PY_TRUFFLE_PY_MAPPING_CHECK("PyTruffle_PyMapping_Check"),
+    FUN_PY_TRUFFLE_PY_MAPPING_SIZE("PyTruffle_PyMapping_Size"),
     FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER("PyTruffle_MemoryViewFromBuffer"),
     FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT("PyTruffle_MemoryViewFromObject"),
+    FUN_PY_TRUFFLE_PY_OBJECT_SIZE("PyTruffle_PyObject_Size"),
     FUN_PY_TRUFFLE_RELEASE_BUFFER("PyTruffle_ReleaseBuffer"),
+    FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK("PyTruffle_PySequence_Check"),
+    FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE("PyTruffle_PySequence_Size"),
     FUN_GET_INT_T_TYPEID("get_int_t_typeid"),
     FUN_GET_INT8_T_TYPEID("get_int8_t_typeid"),
     FUN_GET_INT16_T_TYPEID("get_int16_t_typeid"),
@@ -210,6 +215,15 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_SUBCLASS_CHECK("truffle_subclass_check"),
     FUN_MEMCPY_BYTES("truffle_memcpy_bytes"),
     FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new"),
+
+    /* PyDateTime_CAPI */
+
+    FUN_SET_PY_DATETIME_IDS("set_PyDateTime_typeids"),
+    FUN_CREATE_DATETIME_CAPSULE("truffle_create_datetime_capsule"),
+    FUN_GET_DATETIME_DATE_BASICSIZE("get_PyDateTime_Date_basicsize"),
+    FUN_GET_DATETIME_TIME_BASICSIZE("get_PyDateTime_Time_basicsize"),
+    FUN_GET_DATETIME_DATETIME_BASICSIZE("get_PyDateTime_DateTime_basicsize"),
+    FUN_GET_DATETIME_DELTA_BASICSIZE("get_PyDateTime_Delta_basicsize"),
 
     // ctypes
     FUN_MEMMOVE("memmove"),

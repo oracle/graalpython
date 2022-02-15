@@ -48,10 +48,8 @@ public class ModuleRootNode extends PClosureRootNode {
     @Child private WriteGlobalNode writeAnnotations;
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
-    @SuppressWarnings("deprecation")    // new Frame API
-    public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, com.oracle.truffle.api.frame.FrameSlot[] freeVarSlots,
-                    boolean hasAnnotations) {
-        super(language, descriptor, freeVarSlots, hasAnnotations);
+    public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, boolean hasAnnotations) {
+        super(language, descriptor, null, hasAnnotations);
         if (name.startsWith("<")) {
             this.name = "<module>";
         } else {

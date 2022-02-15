@@ -5,12 +5,12 @@ Scope: []
     FreeVars: Empty
     Scope: X
         Kind: Class
-        FrameDescriptor: [run, __class__]
+        FrameDescriptor: [__class__, run]
         CellVars: [__class__]
         FreeVars: Empty
         Scope: run
             Kind: Function
-            FrameDescriptor: [f, self, <return_val>, __class__]
+            FrameDescriptor: [<return_val>, __class__, f, self]
             CellVars: Empty
             FreeVars: [__class__]
             Scope: f

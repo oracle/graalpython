@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,12 +62,8 @@ PyObject* PyDictProxy_New(PyObject *mapping) {
     return (PyObject*) UPCALL_CEXT_O(_jls_PyDictProxy_New, native_to_java(mapping));
 }
 
-UPCALL_ID(PyMethodDescr_Check);
-int PyMethodDescr_Check(PyObject* method) {
-    return UPCALL_CEXT_I(_jls_PyMethodDescr_Check, native_to_java(method));
-}
-
-typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(void* name,
+typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(PyMethodDef* methodDef,
+                                                    void* name,
                                                     const char* doc,
                                                     int flags,
                                                     int wrapper,
@@ -76,7 +72,8 @@ typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(void* name,
 UPCALL_TYPED_ID(PyDescr_NewClassMethod, PyDescr_NewClassMethod_fun_t);
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
     int flags = method->ml_flags;
-    return _jls_PyDescr_NewClassMethod(polyglot_from_string(method->ml_name, SRC_CS),
+    return _jls_PyDescr_NewClassMethod(method,
+                    polyglot_from_string(method->ml_name, SRC_CS),
                     method->ml_doc,
                     flags,
                     get_method_flags_wrapper(flags),

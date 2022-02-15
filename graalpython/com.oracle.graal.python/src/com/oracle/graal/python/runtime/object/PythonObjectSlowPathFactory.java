@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ package com.oracle.graal.python.runtime.object;
 
 import java.util.Objects;
 
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
@@ -63,9 +63,18 @@ import com.oracle.truffle.api.object.Shape;
 public final class PythonObjectSlowPathFactory extends PythonObjectFactory {
 
     private final AllocationReporter reporter;
+    private final PythonLanguage language;
+    private final SlowPathGetInstanceShapeNode getInstanceShapeNode;
 
-    public PythonObjectSlowPathFactory(AllocationReporter reporter) {
+    public PythonObjectSlowPathFactory(AllocationReporter reporter, PythonLanguage language) {
         this.reporter = Objects.requireNonNull(reporter);
+        this.language = language;
+        this.getInstanceShapeNode = new SlowPathGetInstanceShapeNode(language);
+    }
+
+    @Override
+    public PythonLanguage getLanguage() {
+        return language;
     }
 
     @TruffleBoundary
@@ -78,7 +87,7 @@ public final class PythonObjectSlowPathFactory extends PythonObjectFactory {
     @TruffleBoundary
     @Override
     protected Shape executeGetShape(Object arg0Value, boolean arg1Value) {
-        return PythonObjectFactory.getShape(arg0Value, arg1Value, (GetInstanceShapeNodeGen.getUncached()));
+        return PythonObjectFactory.getShape(arg0Value, arg1Value, getInstanceShapeNode);
     }
 
     @Override

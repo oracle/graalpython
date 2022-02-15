@@ -10,11 +10,11 @@ Scope: []
         FreeVars: Empty
         Scope: fn2
             Kind: Function
-            FrameDescriptor: [args, kwds, <return_val>]
+            FrameDescriptor: [<return_val>, args, kwds]
             CellVars: Empty
             FreeVars: Empty
         Scope: fn1
             Kind: Function
-            FrameDescriptor: [format, <return_val>]
+            FrameDescriptor: [<return_val>, format]
             CellVars: Empty
             FreeVars: Empty

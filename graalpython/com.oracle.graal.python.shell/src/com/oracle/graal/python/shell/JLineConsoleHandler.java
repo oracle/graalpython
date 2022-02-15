@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,6 +67,7 @@ import org.graalvm.shadowed.org.jline.reader.LineReaderBuilder;
 import org.graalvm.shadowed.org.jline.reader.Macro;
 import org.graalvm.shadowed.org.jline.reader.ParsedLine;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
+import org.graalvm.shadowed.org.jline.reader.impl.DefaultParser;
 import org.graalvm.shadowed.org.jline.terminal.Terminal;
 import org.graalvm.shadowed.org.jline.terminal.TerminalBuilder;
 
@@ -103,9 +104,9 @@ public class JLineConsoleHandler extends ConsoleHandler {
             builder.completer(new Completer() {
                 @Override
                 public void complete(LineReader r, ParsedLine pl, List<Candidate> candidates) {
-                    String line = pl.line();
-                    if (line != null) {
-                        List<String> l = completer.apply(line);
+                    String word = pl.word();
+                    if (word != null) {
+                        List<String> l = completer.apply(word);
                         for (String value : l) {
                             candidates.add(new Candidate(value, value, null, null, null, null, false));
                         }
@@ -113,8 +114,24 @@ public class JLineConsoleHandler extends ConsoleHandler {
                 }
             });
         }
+
+        builder.parser(new DefaultParser() {
+            @Override
+            public boolean isDelimiterChar(CharSequence buffer, int pos) {
+                // Never count a last character of a char sequence as delimiter. The REPL completer
+                // implemented by `rlcompleter.py` adds a trailing whitespace to keywords,
+                // e.g. 'raise '. The default DefaultParser implementation always escaped this
+                // whitespace leading to wrong completions like 'raise\ '.
+                if (pos == buffer.length() - 1) {
+                    return false;
+                }
+                return Character.isWhitespace(buffer.charAt(pos));
+            }
+        });
+
         reader = builder.build();
         reader.option(LineReader.Option.DISABLE_EVENT_EXPANSION, true);
+        reader.option(LineReader.Option.INSERT_TAB, true);
         reader.setVariable(LineReader.COMMENT_BEGIN, "#");
 
         // numpad bindings

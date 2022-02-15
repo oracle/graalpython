@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: files, 
+              CellVarsSlots: files
             FunctionRootNode SourceSection: [0,78]`def fn(files, dirs):...`
               Name: fn
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -26,10 +26,10 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
               CelVars: files
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [files, dirs, a, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, a, dirs, files]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: files, 
+                CellVarsSlots: files
               InnerRootNode SourceSection: [0,78]`def fn(files, dirs):...`
                 ReturnTargetNode SourceSection: [0,78]`def fn(files, dirs):...`
                   Body: BlockNode SourceSection: None
@@ -57,9 +57,9 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                             Identifier: list
                           GeneratorExpressionNode SourceSection: [28,77]`join(dir, file) for ...`
                             Name: <genexpr>
-                            FrameDescriptor: 4 slots [file, dir, files, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, dir, file, files]
                             Enclosing
-                              FrameDescriptor: 4 slots [files, dirs, a, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, a, dirs, files]
                             Active Flags: 2
                             For Nodes: 2
                             Block Nodes: 0
@@ -70,9 +70,9 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                               CelVars: None
                               FreeVars: files
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [file, dir, files, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, dir, file, files]
                               ExecutionSlots:
-                                FreeVarsSlots: files, 
+                                FreeVarsSlots: files
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [28,77]`join(dir, file) for ...`
                                 GeneratorReturnTargetNode SourceSection: [28,77]`join(dir, file) for ...`
@@ -98,7 +98,6 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                         ReadLocalCellNodeGen SourceSection: [72,77]`files`
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                             Frame: [2,files,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                       GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__

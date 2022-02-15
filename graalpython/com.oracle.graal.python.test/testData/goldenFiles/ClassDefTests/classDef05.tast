@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [DerivedClassName, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, DerivedClassName]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

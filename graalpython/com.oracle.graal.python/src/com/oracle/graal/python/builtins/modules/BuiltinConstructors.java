@@ -34,6 +34,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
 import static com.oracle.graal.python.nodes.BuiltinNames.CLASSMETHOD;
+import static com.oracle.graal.python.nodes.BuiltinNames.INSTANCEMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPLEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMITERATOR;
@@ -1656,19 +1657,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 if (profileNew == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    if (getLanguage().singleContextAssumption.isValid()) {
-                        profileNew = ValueProfile.createIdentityProfile();
-                    } else {
-                        profileNew = ValueProfile.createClassProfile();
-                    }
+                    profileNew = createValueIdentityProfile();
                 }
                 if (profileInit == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    if (getLanguage().singleContextAssumption.isValid()) {
-                        profileInit = ValueProfile.createIdentityProfile();
-                    } else {
-                        profileInit = ValueProfile.createClassProfile();
-                    }
+                    profileInit = createValueIdentityProfile();
                 }
                 if (profileNewFactory == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2364,8 +2357,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 SequenceStorage slotsStorage;
                 Object slotsObject;
                 if (slots[0] instanceof String) {
-                    slotsObject = factory().createList(slots);
-                    slotsStorage = ((PList) slotsObject).getSequenceStorage();
+                    slotsObject = slots[0];
+                    slotsStorage = new ObjectSequenceStorage(slots);
                 } else if (slots[0] instanceof PTuple) {
                     slotsObject = slots[0];
                     slotsStorage = ((PTuple) slots[0]).getSequenceStorage();
@@ -3190,7 +3183,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(obj)")
         Object doMapping(Object klass, Object obj,
                         @Cached PyMappingCheckNode mappingCheckNode) {
-            if (mappingCheckNode.execute(obj)) {
+            // descrobject.c mappingproxy_check_mapping()
+            if (!(obj instanceof PList || obj instanceof PTuple) && mappingCheckNode.execute(obj)) {
                 return factory().createMappingproxy(klass, obj);
             }
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
@@ -3366,6 +3360,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object doObjectIndirect(Object self, @SuppressWarnings("unused") Object callable) {
             return factory().createClassmethod(self);
+        }
+    }
+
+    @Builtin(name = INSTANCEMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PInstancemethod, isPublic = false, doc = "instancemethod(function)\n\nBind a function to a class.")
+    @GenerateNodeFactory
+    public abstract static class InstancemethodNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doObjectIndirect(Object self, @SuppressWarnings("unused") Object callable) {
+            return factory().createInstancemethod(self);
         }
     }
 

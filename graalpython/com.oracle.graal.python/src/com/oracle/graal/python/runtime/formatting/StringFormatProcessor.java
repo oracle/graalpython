@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -11,7 +11,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
@@ -56,6 +58,12 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
     @Override
     Object parseMappingKey(int start, int end) {
         return formatText.substring(start, end);
+    }
+
+    @Override
+    protected boolean isMapping(Object obj) {
+        // unicodeobject.c PyUnicode_Format()
+        return !(obj instanceof PTuple || obj instanceof PString || obj instanceof String) && PyMappingCheckNode.getUncached().execute(obj);
     }
 
     private static boolean isOneCharacter(String str) {

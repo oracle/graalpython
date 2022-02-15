@@ -27,7 +27,7 @@ ModuleRootNode Name: <module 'functionDefCPT12'> SourceSection: [0,23]`def f(a, 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [a, b, kw, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, a, b, kw]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None

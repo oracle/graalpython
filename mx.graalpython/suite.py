@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "b79445b15014fa064862a0b5435846004212cc8f",
+                "version": "aebf9889d1856b765b9498089e09ad255765cb4e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "b79445b15014fa064862a0b5435846004212cc8f",
+                "version": "aebf9889d1856b765b9498089e09ad255765cb4e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "b79445b15014fa064862a0b5435846004212cc8f",
+                "version": "aebf9889d1856b765b9498089e09ad255765cb4e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -241,13 +241,21 @@ suite = {
         # FROZEN MODULES
         "com.oracle.graal.python.frozen": {
             "subDir": "graalpython",
-            "sourceDirs": ["src"],
-            "dependencies": [
-                "com.oracle.graal.python.annotations"
+            "vpath": True,
+            "type": "GraalpythonProject",
+            "args": [
+                "<path:com.oracle.graal.python.frozen>/freeze_modules.py",
+                "--python-lib",
+                "<suite:graalpython>/graalpython/lib-python/3",
+                "--binary-dir",
+                "<output_root:com.oracle.graal.python.frozen>/com/oracle/graal/python/builtins/objects/module/",
+                "--sources-dir",
+                "<path:com.oracle.graal.python>/src/com/oracle/graal/python/builtins/objects/module/",
             ],
-            "jacoco": "exclude",
-            "javaCompliance": "11+",
-            "checkstyle": "com.oracle.graal.python",
+            "platformDependent": False,
+            "buildDependencies": [
+                "BOOTSTRAP_GRAALPYTHON",
+            ],
         },
 
         # GRAALPYTHON
@@ -257,7 +265,6 @@ suite = {
             "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
-                "com.oracle.graal.python.frozen",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
@@ -268,6 +275,7 @@ suite = {
                 "XZ-1.8",
                 "truffle:ICU4J",
                 "truffle:ICU4J-CHARSET",
+                "regex:TREGEX",
                 "sdk:JLINE3",
             ],
             "requires": [
@@ -359,7 +367,7 @@ suite = {
             "type": "GraalpythonCAPIProject",
             "platformDependent": False,
             "buildDependencies": [
-                "GRAALPYTHON",
+                "BOOTSTRAP_GRAALPYTHON",
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
@@ -459,7 +467,7 @@ suite = {
             "maven": True,
         },
 
-        "GRAALPYTHON": {
+        "BOOTSTRAP_GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
             ],
@@ -476,6 +484,14 @@ suite = {
                 "truffle:ICU4J-CHARSET",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+            ],
+            "description": "GraalPython engine during build time",
+        },
+
+        "GRAALPYTHON": {
+            "dependencies": [
+                "BOOTSTRAP_GRAALPYTHON",
+                "com.oracle.graal.python.frozen",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
@@ -495,14 +511,6 @@ suite = {
             "dependencies": ["python-lib", "python-test-support-lib"],
             "description": "Python 3 lib files",
             "maven": False,
-        },
-
-        "GRAALPYTHON_FROZEN_MODULES": {
-                    "dependencies": [
-                        "com.oracle.graal.python.frozen",
-                    ],
-                    "description": "Frozen modules",
-                    "maven": False,
         },
 
         "GRAALPYTHON_UNIT_TESTS": {

@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):�
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor:  Empty
+  FrameDescriptor: 1 slots [<>temp0]
   Documentation: None
   InnerRootNode SourceSection: [0,43]`for x in xrange(3):↵...`
     ExpressionWithSideEffect SourceSection: [0,43]`for x in xrange(3):↵...`

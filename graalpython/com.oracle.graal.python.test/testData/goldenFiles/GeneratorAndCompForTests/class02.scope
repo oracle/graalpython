@@ -10,11 +10,11 @@ Scope: []
         FreeVars: Empty
         Scope: _keep_positive
             Kind: Function
-            FrameDescriptor: [elem, nonpositive, self, <return_val>]
+            FrameDescriptor: [<>temp3, <return_val>, elem, nonpositive, self]
             CellVars: Empty
             FreeVars: Empty
             Scope: <genexpr>
                 Kind: ListComp
-                FrameDescriptor: [elem, count, <>temp2, <>temp3, <return_val>]
+                FrameDescriptor: [<>temp2, <>temp3, <return_val>, count, elem]
                 CellVars: Empty
                 FreeVars: Empty

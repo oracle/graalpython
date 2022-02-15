@@ -46,11 +46,11 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -107,7 +107,7 @@ public final class NativeReferenceCache implements TruffleObject {
 
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
-    public abstract static class ResolveNativeReferenceNode extends Node {
+    public abstract static class ResolveNativeReferenceNode extends PNodeWithContext {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ResolveNativeReferenceNode.class);
 
         private static final Object NO_REF_CNT = new Object();
@@ -127,9 +127,8 @@ public final class NativeReferenceCache implements TruffleObject {
             return PythonContext.get(node);
         }
 
-        @Specialization(guards = {"!isResolved(pointerObject)", "ref != null", "isSame(interoplibrary, pointerObject, ref)"}, //
+        @Specialization(guards = {"isSingleContext()", "!isResolved(pointerObject)", "ref != null", "isSame(interoplibrary, pointerObject, ref)"}, //
                         rewriteOn = {CannotCastException.class, InvalidCacheEntry.class}, //
-                        assumptions = "singleContextAssumption(interoplibrary)", //
                         limit = "1")
         static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
                         @Shared("stealProfile") @Cached ConditionProfile stealProfile,
@@ -233,10 +232,6 @@ public final class NativeReferenceCache implements TruffleObject {
 
         static boolean isResolved(Object object) {
             return CApiGuards.isNativeWrapper(object) || object instanceof String;
-        }
-
-        static Assumption singleContextAssumption(Node node) {
-            return PythonLanguage.get(node).singleContextAssumption;
         }
 
         static boolean isNoRefCnt(Object refCnt) {

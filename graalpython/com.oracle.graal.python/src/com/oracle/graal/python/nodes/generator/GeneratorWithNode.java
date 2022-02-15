@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -99,9 +99,9 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
-    protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException pException) {
+    protected boolean handleException(VirtualFrame frame, Object withObject, Object exitCallable, Object exceptionObject, PException exceptionState, PException chain) {
         reset(frame);
-        super.handleException(frame, withObject, exitCallable, pException);
+        return super.handleException(frame, withObject, exitCallable, exceptionObject, exceptionState, chain);
     }
 
     @Override

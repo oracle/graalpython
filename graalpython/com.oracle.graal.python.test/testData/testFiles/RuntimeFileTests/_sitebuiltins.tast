@@ -33,7 +33,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__init__, __repr__, __call__]
+              FrameDescriptor: 3 slots [__call__, __init__, __repr__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -66,7 +66,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, name, eof, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, eof, name, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -124,7 +124,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -177,7 +177,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, code, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, code, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -251,7 +251,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [MAXLINES, __init__, _Printer__setup, __repr__, __call__, __doc__]
+              FrameDescriptor: 6 slots [MAXLINES, _Printer__setup, __call__, __doc__, __init__, __repr__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -287,7 +287,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: files, , os, 
+                            CellVarsSlots: files, os
                           FunctionRootNode SourceSection: [942,1249]`def __init__(self, n...`
                             Name: __init__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -295,10 +295,10 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                             CelVars: files, os
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, name, data, files, dirs, os, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, data, dirs, files, name, os, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: files, , os, 
+                              CellVarsSlots: files, os
                             InnerRootNode SourceSection: [942,1249]`def __init__(self, n...`
                               ReturnTargetNode SourceSection: [942,1249]`def __init__(self, n...`
                                 Body: BlockNode SourceSection: None
@@ -369,9 +369,9 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           Identifier: list
                                         GeneratorExpressionNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 5 slots [filename, dir, files, os, <return_val>]
+                                          FrameDescriptor: 5 slots [<return_val>, dir, filename, files, os]
                                           Enclosing
-                                            FrameDescriptor: 7 slots [self, name, data, files, dirs, os, <return_val>]
+                                            FrameDescriptor: 7 slots [<return_val>, data, dirs, files, name, os, self]
                                           Active Flags: 2
                                           For Nodes: 2
                                           Block Nodes: 0
@@ -382,9 +382,9 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             CelVars: None
                                             FreeVars: files, os
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 5 slots [filename, dir, files, os, <return_val>]
+                                            FrameDescriptor: 5 slots [<return_val>, dir, filename, files, os]
                                             ExecutionSlots:
-                                              FreeVarsSlots: files, , os, 
+                                              FreeVarsSlots: files, os
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
                                               GeneratorReturnTargetNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
@@ -405,7 +405,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                               ReadLocalCellNodeGen SourceSection: [1121,1123]`os`
                                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                   Frame: [3,os,Illegal]
-                                                                ReadFromCellNodeGen SourceSection: None
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: [1134,1137]`dir`
                                                             Frame: [1,dir,Illegal]
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: [1139,1147]`filename`
@@ -418,7 +417,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       ReadLocalCellNodeGen SourceSection: [1237,1242]`files`
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                           Frame: [2,files,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                     GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
@@ -465,7 +463,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, data, fp, filename, <return_val>]
+                            FrameDescriptor: 6 slots [<>temp4, <return_val>, data, filename, fp, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -586,7 +584,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           ReadLocalVariableNodeGen SourceSection: [1668,1672]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [4,<return_val>,Object]
+                                  Frame: [5,<return_val>,Object]
                       WriteNameNodeGen SourceSection: [1687,1915]`def __repr__(self):↵...`
                         Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
@@ -604,7 +602,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -691,7 +689,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [self, prompt, lineno, i, key, <return_val>]
+                            FrameDescriptor: 7 slots [<>temp5, <return_val>, i, key, lineno, prompt, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -837,7 +835,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   BlockNode SourceSection: None
                                       BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [5,<return_val>,Object]
+                                  Frame: [6,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [788,794]`object`
@@ -868,7 +866,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 3 slots [__repr__, __call__, __doc__]
+                  FrameDescriptor: 3 slots [__call__, __doc__, __repr__]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: None
@@ -904,7 +902,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 2 slots [self, <return_val>]
+                                FrameDescriptor: 2 slots [<return_val>, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -940,7 +938,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 5 slots [self, args, kwds, pydoc, <return_val>]
+                                FrameDescriptor: 5 slots [<return_val>, args, kwds, pydoc, self]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None

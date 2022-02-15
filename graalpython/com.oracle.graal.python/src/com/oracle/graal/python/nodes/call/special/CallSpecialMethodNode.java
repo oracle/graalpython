@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
@@ -62,7 +63,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -72,7 +72,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.NodeField;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -80,7 +79,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PythonOptions.class, PGuards.class})
 @NodeField(name = "maxSizeExceeded", type = boolean.class)
-abstract class CallSpecialMethodNode extends Node {
+abstract class CallSpecialMethodNode extends PNodeWithContext {
 
     /**
      * for interpreter performance: cache if we exceeded the max caller size. We never allow
@@ -128,10 +127,6 @@ abstract class CallSpecialMethodNode extends Node {
             return false;
         }
         return true;
-    }
-
-    protected Assumption singleContextAssumption() {
-        return PythonLanguage.get(this).singleContextAssumption;
     }
 
     protected static boolean frameIsUnused(PythonBuiltinBaseNode builtinNode) {

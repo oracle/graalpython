@@ -245,6 +245,7 @@ public abstract class ErrorMessages {
     public static final String ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED = "'e*' format specifiers are not supported";
     public static final String EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = "exception cause must be None or derive from BaseException";
     public static final String EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = "exception causes must derive from BaseException";
+    public static final String EXCEPTION_NOT_BASEEXCEPTION = "exception %s not a BaseException subclass";
     public static final String EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX = "exceptions must be classes or instances deriving from BaseException, not %p";
     public static final String EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX = "exceptions must derive from BaseException";
     public static final String EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY = "execv() arg 2 first element cannot be empty";
@@ -275,7 +276,7 @@ public abstract class ErrorMessages {
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
     public static final String FILTER_SPECIFIER_MUST_HAVE = "Filter specifier must have an \"id\" entry";
-    public static final String FIRST_ARG_MUST_BE_CALLABLE_S = "first argument must be callable%s";
+    public static final String FIRST_ARG_MUST_BE_CALLABLE_S = "first argument must be callable %s";
     public static final String FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P = "%s first arg must be %s or a tuple of str, not %p";
     public static final String FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH = "the first two maketrans arguments must have equal length";
     public static final String S_FOR_ISLICE_MUST_BE = "% for islice() must be None or an integer: 0 <= x <= sys.maxsize.";
@@ -404,6 +405,7 @@ public abstract class ErrorMessages {
     public static final String LEN_SHOULD_RETURN_GT_ZERO = "__len__() should return >= 0";
     public static final String LENGTH_HINT_SHOULD_RETURN_MT_ZERO = "__length_hint__() should return >= 0";
     public static final String LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = "list assignment index out of range";
+    public static final String LIST_CANNOT_BE_CONVERTED_TO_DICT = "list cannot be converted to dict";
     public static final String LIST_INDEX_OUT_OF_RANGE = "list index out of range";
     public static final String LIST_LENGTH_OUT_OF_RANGE = "list length out of range";
     public static final String LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT = "local variable '%s' referenced before assignment";
@@ -451,6 +453,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_INTEGER = "%s must be an integer";
     public static final String MUST_BE_INTEGER_QUOTED_ATTR = "\"%s\" must be an integer";
     public static final String MUST_BE_INTEGER_NOT_P = "%s must be an integer, not %p";
+    public static final String MUST_BE_MODULE_CLASS = "%s: %s must be module.class";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
     public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
     public static final String MUST_BE_NUMERIC = "must be numeric, not %p";
@@ -849,6 +852,7 @@ public abstract class ErrorMessages {
     public static final String FILE_NOT_OPEN_FOR_S = "File not open for %s";
     public static final String UNBOUNDED_READ_RETURNED_MORE_BYTES = "unbounded read returned more bytes than a Python bytes object can hold";
     public static final String INVALID_MODE_S = "invalid mode: %s";
+    public static final String S_OF_CLOSED_FILE = "%s of closed file";
     public static final String S_TO_CLOSED_FILE = "%s to closed file";
     public static final String NOT_POSSIBLE_TO_SET_THE_ENCODING_OR = "It is not possible to set the encoding or newline of stream after the first read";
     public static final String NOT_WRITABLE = "not writable";
@@ -1055,7 +1059,6 @@ public abstract class ErrorMessages {
     public static final String FROZEN_EXCLUDED = "Excluded frozen object named %s";
     public static final String FROZEN_INVALID = "Frozen object named %s is invalid";
     public static final String NOT_A_CODE_OBJECT = "frozen object %s is not a code object";
-
     public static final String MODULE_NOT_FOUND = "Loaded module %s not found in sys.modules";
 
     // warnings

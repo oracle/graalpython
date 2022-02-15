@@ -53,7 +53,7 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [foo, z, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, foo, z]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None

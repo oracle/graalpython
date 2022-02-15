@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                   Identifier: dict
                 GeneratorExpressionNode SourceSection: [65,97]`k:v*2 for (k,v) in d...`
                   Name: <genexpr>
-                  FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                  FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                   Enclosing
                     FrameDescriptor:  Empty
                   Active Flags: 2
@@ -32,7 +32,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                     CelVars: None
                     FreeVars: None
                     NeedsCellFrame: False
-                    FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                    FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: None

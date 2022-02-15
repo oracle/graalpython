@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017-2022, Oracle and/or its affiliates.
  * Copyright (c) 2014 by Bart Kiers
  *
  * The MIT License (MIT)
@@ -1172,11 +1172,11 @@ public class Python3Parser extends Parser {
 			setState(277);
 			_localctx.s = suite();
 			 
-			            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, _localctx.parameters.result, optimize(_localctx.s.result), resultType, getStartIndex(_localctx), getStopIndex(_localctx.s));
-			            scopeEnvironment.popScope();
-			            loopState = savedLoopState;
-			            push(funcDef);
-			        
+			        SSTNode funcDef = factory.createFunctionDef(scopeEnvironment.getCurrentScope(), name, enclosingClassName, _localctx.parameters.result, optimize(_localctx.s.result), resultType, getStartIndex(_localctx), getStopIndex(_localctx.s));
+			        scopeEnvironment.popScope();
+			        loopState = savedLoopState;
+			        push(funcDef);
+			    
 			}
 		}
 		catch (RecognitionException re) {
@@ -1690,7 +1690,7 @@ public class Python3Parser extends Parser {
 			            if (name != null) {
 			                name = factory.mangleNameInCurrentScope(name);
 			            }
-			            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue);
+			            ArgDefListBuilder.AddParamResult result = args.addParam(name, factory.createAnnotationType(type), defValue);
 			            switch(result) {
 			                case NONDEFAULT_FOLLOWS_DEFAULT:
 			                    throw new PythonRecognitionException("non-default argument follows default argument", this, _input, _localctx, getCurrentToken());

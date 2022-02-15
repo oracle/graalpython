@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,7 @@
 
 package com.oracle.graal.python.parser.sst;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -57,8 +55,9 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.regex.chardata.UnicodeCharacterAliases;
 
 public class StringUtils {
 
@@ -263,7 +262,7 @@ public class StringUtils {
      * @param offset this is offset of the open brace
      * @return offset of the close brace
      */
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     private static int doCharacterName(String text, StringBuilder sb, int offset) {
         if (offset >= text.length()) {
             throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset, MALFORMED_ERROR);
@@ -288,61 +287,21 @@ public class StringUtils {
         return closeIndex;
     }
 
-    // ICU4J doesn't have names for most control characters
-    private static final Map<String, Integer> CONTROL_CHAR_NAMES = new HashMap<>(32);
-    static {
-        CONTROL_CHAR_NAMES.put("NULL", 0x0000);
-        CONTROL_CHAR_NAMES.put("START OF HEADING", 0x0001);
-        CONTROL_CHAR_NAMES.put("START OF TEXT", 0x0002);
-        CONTROL_CHAR_NAMES.put("END OF TEXT", 0x0003);
-        CONTROL_CHAR_NAMES.put("END OF TRANSMISSION", 0x0004);
-        CONTROL_CHAR_NAMES.put("ENQUIRY", 0x0005);
-        CONTROL_CHAR_NAMES.put("ACKNOWLEDGE", 0x0006);
-        CONTROL_CHAR_NAMES.put("BELL", 0x0007);
-        CONTROL_CHAR_NAMES.put("BACKSPACE", 0x0008);
-        CONTROL_CHAR_NAMES.put("CHARACTER TABULATION", 0x0009);
-        CONTROL_CHAR_NAMES.put("LINE FEED", 0x000A);
-        CONTROL_CHAR_NAMES.put("LINE TABULATION", 0x000B);
-        CONTROL_CHAR_NAMES.put("FORM FEED", 0x000C);
-        CONTROL_CHAR_NAMES.put("CARRIAGE RETURN", 0x000D);
-        CONTROL_CHAR_NAMES.put("SHIFT OUT", 0x000E);
-        CONTROL_CHAR_NAMES.put("SHIFT IN", 0x000F);
-        CONTROL_CHAR_NAMES.put("DATA LINK ESCAPE", 0x0010);
-        CONTROL_CHAR_NAMES.put("DEVICE CONTROL ONE", 0x0011);
-        CONTROL_CHAR_NAMES.put("DEVICE CONTROL TWO", 0x0012);
-        CONTROL_CHAR_NAMES.put("DEVICE CONTROL THREE", 0x0013);
-        CONTROL_CHAR_NAMES.put("DEVICE CONTROL FOUR", 0x0014);
-        CONTROL_CHAR_NAMES.put("NEGATIVE ACKNOWLEDGE", 0x0015);
-        CONTROL_CHAR_NAMES.put("SYNCHRONOUS IDLE", 0x0016);
-        CONTROL_CHAR_NAMES.put("END OF TRANSMISSION BLOCK", 0x0017);
-        CONTROL_CHAR_NAMES.put("CANCEL", 0x0018);
-        CONTROL_CHAR_NAMES.put("END OF MEDIUM", 0x0019);
-        CONTROL_CHAR_NAMES.put("SUBSTITUTE", 0x001A);
-        CONTROL_CHAR_NAMES.put("ESCAPE", 0x001B);
-        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR FOUR", 0x001C);
-        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR THREE", 0x001D);
-        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR TWO", 0x001E);
-        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR ONE", 0x001F);
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    public static int getCodePoint(String charName) {
-        int possibleChar = UCharacter.getCharFromName(charName);
-        if (possibleChar > -1) {
-            return possibleChar;
+    @TruffleBoundary
+    public static int getCodePoint(String characterName) {
+        // CPython's logic for resolving these character names goes like this:
+        // 1) handle Hangul Syllables in region AC00-D7A3
+        // 2) handle CJK Ideographs
+        // 3) handle character names as given in UnicodeData.txt
+        // 4) handle all aliases as given in NameAliases.txt
+        // With ICU's UCharacter, we get cases 1), 2) and 3). As for 4), the aliases, ICU only
+        // handles aliases of type 'correction'. Therefore, we extract the contents of
+        // NameAliases.txt and handle aliases by ourselves.
+        String normalizedName = characterName.trim().toUpperCase(Locale.ROOT);
+        if (UnicodeCharacterAliases.CHARACTER_ALIASES.containsKey(normalizedName)) {
+            return UnicodeCharacterAliases.CHARACTER_ALIASES.get(normalizedName);
+        } else {
+            return UCharacter.getCharFromName(characterName);
         }
-        possibleChar = UCharacter.getCharFromExtendedName(charName);
-        if (possibleChar > -1) {
-            return possibleChar;
-        }
-        possibleChar = UCharacter.getCharFromNameAlias(charName);
-        if (possibleChar > -1) {
-            return possibleChar;
-        }
-        possibleChar = CONTROL_CHAR_NAMES.getOrDefault(charName.toUpperCase(Locale.ROOT), -1);
-        if (possibleChar > -1) {
-            return possibleChar;
-        }
-        return -1;
     }
 }

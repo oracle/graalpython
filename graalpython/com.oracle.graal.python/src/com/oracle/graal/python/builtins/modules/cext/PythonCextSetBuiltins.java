@@ -129,7 +129,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySetContainsNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        public int contains(VirtualFrame frame, PSet anyset, Object item,
+        public static int contains(VirtualFrame frame, PSet anyset, Object item,
                         @Cached ConditionProfile hasFrameProfile,
                         @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -144,7 +144,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        public int contains(VirtualFrame frame, PFrozenSet anyset, Object item,
+        public static int contains(VirtualFrame frame, PFrozenSet anyset, Object item,
                         @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -159,7 +159,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)", limit = "1")
-        public Object containsNative(VirtualFrame frame, @SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object item,
+        public static Object containsNative(VirtualFrame frame, @SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object item,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode) {
@@ -167,7 +167,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"}, limit = "1")
-        public Object contains(VirtualFrame frame, Object anyset, @SuppressWarnings("unused") Object item,
+        public static Object contains(VirtualFrame frame, Object anyset, @SuppressWarnings("unused") Object item,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
@@ -316,7 +316,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
     public abstract static class PySetDiscardNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
-        public Object discard(VirtualFrame frame, PSet s, Object key,
+        public static Object discard(VirtualFrame frame, PSet s, Object key,
                         @Cached DiscardNode discardNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -328,7 +328,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPSet(set)", "isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object popNative(VirtualFrame frame, @SuppressWarnings("unused") Object set, @SuppressWarnings("unused") Object key,
+        public static Object popNative(VirtualFrame frame, @SuppressWarnings("unused") Object set, @SuppressWarnings("unused") Object key,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -336,7 +336,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPSet(set)", "!isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object discard(VirtualFrame frame, Object set, @SuppressWarnings("unused") Object key,
+        public static Object discard(VirtualFrame frame, Object set, @SuppressWarnings("unused") Object key,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
@@ -354,7 +354,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
     public abstract static class PySetClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
-        public Object clear(VirtualFrame frame, PSet s,
+        public static Object clear(VirtualFrame frame, PSet s,
                         @Cached ClearNode clearNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -367,7 +367,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPSet(set)", "isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object clearNative(VirtualFrame frame, @SuppressWarnings("unused") Object set,
+        public static Object clearNative(VirtualFrame frame, @SuppressWarnings("unused") Object set,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -375,7 +375,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPSet(set)", "!isSetSubtype(frame, set, getClassNode, isSubtypeNode)"})
-        public Object clear(VirtualFrame frame, Object set,
+        public static Object clear(VirtualFrame frame, Object set,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
@@ -393,7 +393,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
     public abstract static class PySetAdd extends PythonBinaryBuiltinNode {
 
         @Specialization
-        int add(VirtualFrame frame, PBaseSet self, Object o,
+        static int add(VirtualFrame frame, PBaseSet self, Object o,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -406,7 +406,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isAnySet(self)")
-        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
+        static int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, EXPECTED_S_NOT_P, "a set object", self);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -3623,6 +3623,10 @@ public abstract class SequenceStorageNodes {
                 barr[i] = getItemNode.execute(s, i);
             }
             return barr;
+        }
+
+        public static GetInternalObjectArrayNode getUncached() {
+            return SequenceStorageNodesFactory.GetInternalObjectArrayNodeGen.getUncached();
         }
     }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ def _reference_bytes(args):
         res = obj.__bytes__()
         if not isinstance(res, bytes):
             raise TypeError("__bytes__ returned non-bytes (type %s)" % type(res).__name__)
+        return res
     if isinstance(obj, (list, tuple, memoryview)) or (not isinstance(obj, str) and hasattr(obj, "__iter__")):
         return bytes(obj)
     raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
@@ -683,6 +684,16 @@ class TestObject(object):
         assert len(obj.some_member.__doc__) == len(expected_doc)
         assert obj.some_member.__doc__ == expected_doc
 
+class CBytes: 
+    def __bytes__(self):
+        return b'abc'
+    
+class CBytesWrongReturn: 
+    def __bytes__(self):
+        return 'abc'
+    
+class DummyBytes(bytes): 
+    pass     
 
 class TestObjectFunctions(CPyExtTestCase):
     def compile_module(self, name):
@@ -712,6 +723,10 @@ class TestObjectFunctions(CPyExtTestCase):
             (memoryview(b"world"),),
             (1.234,),
             (bytearray(b"blah"),),
+            (CBytes(),),
+            (CBytesWrongReturn(),),
+            (DummyBytes(),),
+            ([1,2,3],),
         ),
         arguments=["PyObject* obj"],
         resultspec="O",

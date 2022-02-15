@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@
 
 void *PY_TRUFFLE_CEXT;
 void *PY_BUILTIN;
+void *PY_SYS;
 void *Py_NoValue;
 
 void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
@@ -72,6 +73,7 @@ __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
     PY_BUILTIN = (void*)polyglot_eval("python", "import builtins\nbuiltins");
+    PY_SYS = (void*)polyglot_eval("python", "import sys\nsys");
 
     pytruffle_decorate_function = ((void*(*)(void *fun0, void* fun1))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Decorate_Function", SRC_CS)));
 
@@ -113,6 +115,7 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     destructor dealloc_fun = structure->tp_dealloc;
     freefunc free_fun = structure->tp_free;
     Py_ssize_t vectorcall_offset = structure->tp_vectorcall_offset;
+    PyBufferProcs* as_buffer = structure->tp_as_buffer;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
@@ -132,6 +135,9 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     }
     if (vectorcall_offset) {
     	type_handle->tp_vectorcall_offset = vectorcall_offset;
+    }
+    if (as_buffer) {
+        type_handle->tp_as_buffer = as_buffer;
     }
 }
 
@@ -306,20 +312,39 @@ static void initialize_globals() {
     void *jfalse = UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
     truffle_assign_managed(&_Py_FalseStruct, jfalse);
 
-    // error marker
-    void *jerrormarker = UPCALL_CEXT_PTR(polyglot_from_string("Py_ErrorHandler", SRC_CS));
-    truffle_assign_managed(&marker_struct, jerrormarker);
-
     // long zero, long one
     _PyLong_Zero = (PyObject *)&_Py_FalseStruct;
     _PyLong_One = (PyObject *)&_Py_TrueStruct;
 }
 
 static void initialize_bufferprocs() {
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)bytearray_getbuffer, (releasebufferproc)bytearray_releasebuffer);
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyMemoryView_Type), (getbufferproc)memoryview_getbuffer, (releasebufferproc)memoryview_releasebuffer);
+    static PyBufferProcs bytes_as_buffer = {
+        (getbufferproc)bytes_buffer_getbuffer,       /* bf_getbuffer */
+        (releasebufferproc)NULL,                     /* bf_releasebuffer */
+    };
+    PyBytes_Type.tp_as_buffer = &bytes_as_buffer;
+
+    static PyBufferProcs bytearray_as_buffer = {
+        (getbufferproc)bytearray_getbuffer,          /* bf_getbuffer */
+        (releasebufferproc)bytearray_releasebuffer,  /* bf_releasebuffer */
+    };
+    PyByteArray_Type.tp_as_buffer = &bytearray_as_buffer;
+
+    static PyBufferProcs buffer_as_buffer = {
+        (getbufferproc)bufferdecorator_getbuffer,    /* bf_getbuffer */
+        (releasebufferproc)NULL,                     /* bf_releasebuffer */
+    };
+    PyBuffer_Type.tp_as_buffer = &buffer_as_buffer;
+
+    static PyBufferProcs memory_as_buffer = {
+        (getbufferproc)memoryview_getbuffer,         /* bf_getbuffer */
+        (releasebufferproc)memoryview_releasebuffer, /* bf_releasebuffer */
+    };
+    PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
+}
+
+static void initialize_filesystemencoding() {
+    Py_FileSystemDefaultEncoding = (const char *)to_sulong(polyglot_invoke(PY_SYS, "getfilesystemencoding"));
 }
 
 __attribute__((constructor (20000)))
@@ -329,6 +354,7 @@ static void initialize_capi() {
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
+    initialize_filesystemencoding();
 }
 
 // Workaround: use 'uint64' to avoid conversion to an LLVM boxed primitive such

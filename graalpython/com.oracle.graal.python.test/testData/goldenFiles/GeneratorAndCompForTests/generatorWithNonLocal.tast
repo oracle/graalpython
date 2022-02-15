@@ -18,17 +18,17 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: Y, , exec_gen, 
+              CellVarsSlots: Y, exec_gen
             FunctionRootNode SourceSection: [0,247]`def b_func():↵  exec...`
               Name: b_func
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: Y, exec_gen
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [exec_gen, _inner_func, gen, Y, <return_val>]
+              FrameDescriptor: 5 slots [<return_val>, Y, _inner_func, exec_gen, gen]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: Y, , exec_gen, 
+                CellVarsSlots: Y, exec_gen
               InnerRootNode SourceSection: [0,247]`def b_func():↵  exec...`
                 ReturnTargetNode SourceSection: [0,247]`def b_func():↵  exec...`
                   Body: BlockNode SourceSection: None
@@ -43,16 +43,16 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                         Identifier: _inner_func
                         Frame: [1,_inner_func,Illegal]
                         GeneratorFunctionDefinitionNode Name: _inner_func SourceSection: None
-                          FrameDescriptor: 6 slots [doit, C, A, exec_gen, Y, <return_val>]
+                          FrameDescriptor: 6 slots [<return_val>, A, C, Y, doit, exec_gen]
                           Active Flags: 2
                           For Nodes: 2
                           Block Nodes: 1
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: Y, , exec_gen, 
+                          FreeVarSlots: Y, exec_gen
                           ExecutionSlots:
-                            FreeVarsSlots: Y, , exec_gen, 
+                            FreeVarsSlots: Y, exec_gen
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [35,190]`def _inner_func():↵ ...`
                             Name: _inner_func
@@ -60,9 +60,9 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                             CelVars: None
                             FreeVars: Y, exec_gen
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [doit, C, A, exec_gen, Y, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, A, C, Y, doit, exec_gen]
                             ExecutionSlots:
-                              FreeVarsSlots: Y, , exec_gen, 
+                              FreeVarsSlots: Y, exec_gen
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [35,190]`def _inner_func():↵ ...`
                               GeneratorReturnTargetNode SourceSection: [35,190]`def _inner_func():↵ ...`
@@ -76,9 +76,9 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: exec_gen, 
+                                        FreeVarSlots: exec_gen
                                         ExecutionSlots:
-                                          FreeVarsSlots: exec_gen, 
+                                          FreeVarsSlots: exec_gen
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [58,137]`def doit():↵      no...`
                                           Name: doit
@@ -86,9 +86,9 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                           CelVars: None
                                           FreeVars: exec_gen
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 2 slots [exec_gen, <return_val>]
+                                          FrameDescriptor: 2 slots [<return_val>, exec_gen]
                                           ExecutionSlots:
-                                            FreeVarsSlots: exec_gen, 
+                                            FreeVarsSlots: exec_gen
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [58,137]`def doit():↵      no...`
                                             ReturnTargetNode SourceSection: [58,137]`def doit():↵      no...`
@@ -126,7 +126,6 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                               ReadLocalCellNodeGen SourceSection: [169,170]`Y`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [4,Y,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                             GetNextCached SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__

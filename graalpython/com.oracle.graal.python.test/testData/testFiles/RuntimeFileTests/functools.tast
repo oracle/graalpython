@@ -127,7 +127,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [wrapper, wrapped, assigned, updated, value, attr, <return_val>]
+            FrameDescriptor: 8 slots [<>temp6, <return_val>, assigned, attr, updated, value, wrapped, wrapper]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -243,7 +243,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       ReadLocalVariableNodeGen SourceSection: [2581,2588]`wrapper`
                         Frame: [0,wrapper,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [6,<return_val>,Object]
+                  Frame: [7,<return_val>,Object]
       WriteNameNodeGen SourceSection: [2590,3686]`def wraps(wrapped,↵ ...`
         Identifier: wraps
         FunctionDefinitionNode Name: wraps SourceSection: None
@@ -269,7 +269,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [wrapped, assigned, updated, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, assigned, updated, wrapped]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -338,7 +338,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -420,7 +420,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -490,7 +490,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -565,7 +565,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -647,7 +647,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -728,7 +728,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -803,7 +803,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -885,7 +885,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -955,7 +955,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1030,7 +1030,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1112,7 +1112,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1193,7 +1193,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [self, other, NotImplemented, op_result, <return_val>]
+            FrameDescriptor: 5 slots [<return_val>, NotImplemented, op_result, other, self]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1352,7 +1352,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: cls, 
+            CellVarsSlots: cls
           FunctionRootNode SourceSection: [7283,8082]`def total_ordering(c...`
             Name: total_ordering
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -1360,10 +1360,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: cls
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 8 slots [cls, roots, root, opname, opfunc, <>temp5, <>temp6, <return_val>]
+            FrameDescriptor: 9 slots [<>temp5, <>temp6, <>temp7, <return_val>, cls, opfunc, opname, root, roots]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: cls, 
+              CellVarsSlots: cls
             InnerRootNode SourceSection: [7283,8082]`def total_ordering(c...`
               ReturnTargetNode SourceSection: [7283,8082]`def total_ordering(c...`
                 Body: BlockNode SourceSection: None
@@ -1384,9 +1384,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: set
                         GeneratorExpressionNode SourceSection: [7457,7537]`op for op in _conver...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [op, cls, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, cls, op]
                           Enclosing
-                            FrameDescriptor: 8 slots [cls, roots, root, opname, opfunc, <>temp5, <>temp6, <return_val>]
+                            FrameDescriptor: 9 slots [<>temp5, <>temp6, <>temp7, <return_val>, cls, opfunc, opname, root, roots]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -1397,9 +1397,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: cls
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [op, cls, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, cls, op]
                             ExecutionSlots:
-                              FreeVarsSlots: cls, 
+                              FreeVarsSlots: cls
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [7457,7537]`op for op in _conver...`
                               GeneratorReturnTargetNode SourceSection: [7457,7537]`op for op in _conver...`
@@ -1417,7 +1417,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalCellNodeGen SourceSection: [7490,7493]`cls`
                                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                 Frame: [1,cls,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [7495,7497]`op`
                                               Frame: [0,op,Illegal]
                                             ObjectLiteralNode SourceSection: [7499,7503]`None`
@@ -1485,21 +1484,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ForNextElementNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp5
-                                Frame: [5,<>temp5,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp6
                                 Frame: [6,<>temp6,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp7
+                                Frame: [7,<>temp7,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: opname
                                 Frame: [3,opname,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [5,<>temp5,Illegal]
+                                  Frame: [6,<>temp6,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: opfunc
                                 Frame: [4,opfunc,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [6,<>temp6,Illegal]
+                                  Frame: [7,<>temp7,Illegal]
                           IfNode SourceSection: [7764,7870]`if opname not in roo...`
                             NotNodeGen SourceSection: [7767,7786]`opname not in roots`
                               ContainsNodeGen SourceSection: None
@@ -1525,7 +1524,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadLocalCellNodeGen SourceSection: [7845,7848]`cls`
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [0,cls,Illegal]
-                                    ReadFromCellNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [7850,7856]`opname`
                                     Frame: [3,opname,Illegal]
                                   ReadLocalVariableNodeGen SourceSection: [7858,7864]`opfunc`
@@ -1542,9 +1540,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       ReadLocalCellNodeGen SourceSection: [7877,7880]`cls`
                         ReadLocalVariableNodeGen SourceSection: None
                           Frame: [0,cls,Illegal]
-                        ReadFromCellNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [7,<return_val>,Object]
+                  Frame: [8,<return_val>,Object]
       WriteNameNodeGen SourceSection: [8082,8725]`def cmp_to_key(mycmp...`
         Identifier: cmp_to_key
         FunctionDefinitionNode Name: cmp_to_key SourceSection: None
@@ -1554,7 +1551,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: mycmp, 
+            CellVarsSlots: mycmp
           FunctionRootNode SourceSection: [8082,8725]`def cmp_to_key(mycmp...`
             Name: cmp_to_key
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -1562,10 +1559,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: mycmp
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [mycmp, K, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, K, mycmp]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: mycmp, 
+              CellVarsSlots: mycmp
             InnerRootNode SourceSection: [8082,8725]`def cmp_to_key(mycmp...`
               ReturnTargetNode SourceSection: [8082,8725]`def cmp_to_key(mycmp...`
                 Body: BlockNode SourceSection: None
@@ -1588,9 +1585,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: mycmp, 
+                          FreeVarSlots: mycmp
                           ExecutionSlots:
-                            FreeVarsSlots: mycmp, 
+                            FreeVarsSlots: mycmp
                             CellVarsSlots: None
                           ClassBodyRootNode SourceSection: [8164,8715]`class K(object):↵   ...`
                             Name: K
@@ -1598,9 +1595,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: mycmp
                             NeedsCellFrame: False
-                            FrameDescriptor: 9 slots [__slots__, __init__, __lt__, __gt__, __eq__, __le__, __ge__, __hash__, mycmp]
+                            FrameDescriptor: 9 slots [__eq__, __ge__, __gt__, __hash__, __init__, __le__, __lt__, __slots__, mycmp]
                             ExecutionSlots:
-                              FreeVarsSlots: mycmp, 
+                              FreeVarsSlots: mycmp
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [8164,8715]`class K(object):↵   ...`
                               ReturnTargetNode SourceSection: [8164,8715]`class K(object):↵   ...`
@@ -1636,7 +1633,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: None
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 3 slots [self, obj, <return_val>]
+                                          FrameDescriptor: 3 slots [<return_val>, obj, self]
                                           ExecutionSlots:
                                             FreeVarsSlots: None
                                             CellVarsSlots: None
@@ -1671,9 +1668,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8277,8360]`def __lt__(self, oth...`
                                           Name: __lt__
@@ -1682,9 +1679,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8277,8360]`def __lt__(self, oth...`
                                             ReturnTargetNode SourceSection: [8277,8360]`def __lt__(self, oth...`
@@ -1710,7 +1707,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         ReadLocalCellNodeGen SourceSection: [8321,8326]`mycmp`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [2,mycmp,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                         GetAttributeNode SourceSection: [8327,8335]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
@@ -1735,9 +1731,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8360,8443]`def __gt__(self, oth...`
                                           Name: __gt__
@@ -1746,9 +1742,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8360,8443]`def __gt__(self, oth...`
                                             ReturnTargetNode SourceSection: [8360,8443]`def __gt__(self, oth...`
@@ -1774,7 +1770,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         ReadLocalCellNodeGen SourceSection: [8404,8409]`mycmp`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [2,mycmp,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                         GetAttributeNode SourceSection: [8410,8418]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
@@ -1799,9 +1794,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8443,8527]`def __eq__(self, oth...`
                                           Name: __eq__
@@ -1810,9 +1805,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8443,8527]`def __eq__(self, oth...`
                                             ReturnTargetNode SourceSection: [8443,8527]`def __eq__(self, oth...`
@@ -1838,7 +1833,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         ReadLocalCellNodeGen SourceSection: [8487,8492]`mycmp`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [2,mycmp,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                         GetAttributeNode SourceSection: [8493,8501]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
@@ -1863,9 +1857,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8527,8611]`def __le__(self, oth...`
                                           Name: __le__
@@ -1874,9 +1868,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8527,8611]`def __le__(self, oth...`
                                             ReturnTargetNode SourceSection: [8527,8611]`def __le__(self, oth...`
@@ -1902,7 +1896,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         ReadLocalCellNodeGen SourceSection: [8571,8576]`mycmp`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [2,mycmp,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                         GetAttributeNode SourceSection: [8577,8585]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
@@ -1927,9 +1920,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: mycmp, 
+                                        FreeVarSlots: mycmp
                                         ExecutionSlots:
-                                          FreeVarsSlots: mycmp, 
+                                          FreeVarsSlots: mycmp
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8611,8695]`def __ge__(self, oth...`
                                           Name: __ge__
@@ -1938,9 +1931,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
+                                          FrameDescriptor: 4 slots [<return_val>, mycmp, other, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: mycmp, 
+                                            FreeVarsSlots: mycmp
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8611,8695]`def __ge__(self, oth...`
                                             ReturnTargetNode SourceSection: [8611,8695]`def __ge__(self, oth...`
@@ -1966,7 +1959,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         ReadLocalCellNodeGen SourceSection: [8655,8660]`mycmp`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [2,mycmp,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                         GetAttributeNode SourceSection: [8661,8669]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
@@ -2031,17 +2023,17 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: __class__
             ClassBodyRootNode SourceSection: [9042,11795]`class partial:↵    "...`
               Name: partial
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 8 slots [__class__, __slots__, __new__, __call__, __repr__, __reduce__, __setstate__, __doc__]
+              FrameDescriptor: 8 slots [__call__, __class__, __doc__, __new__, __reduce__, __repr__, __setstate__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               InnerRootNode SourceSection: [9042,11795]`class partial:↵    "...`
                 ReturnTargetNode SourceSection: [9042,11795]`class partial:↵    "...`
                   Body: BlockNode SourceSection: None
@@ -2072,9 +2064,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: __class__
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: __class__
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [9227,10003]`def __new__(*args, *...`
                             Name: __new__
@@ -2083,9 +2075,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: __class__
                             NeedsCellFrame: False
-                            FrameDescriptor: 11 slots [args, keywords, cls, func, tmpkw, self, __class__, <>temp7, <>temp8, <>temp9, <return_val>]
+                            FrameDescriptor: 11 slots [<>temp7, <>temp8, <>temp9, <return_val>, __class__, args, cls, func, keywords, self, tmpkw]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [9227,10003]`def __new__(*args, *...`
                               ReturnTargetNode SourceSection: [9227,10003]`def __new__(*args, *...`
@@ -2311,7 +2303,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [args, keywords, self, newkeywords, <>temp4, <>temp5, <return_val>]
+                            FrameDescriptor: 7 slots [<>temp4, <>temp5, <return_val>, args, keywords, newkeywords, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2434,7 +2426,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, qualname, args, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, args, qualname, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -2486,9 +2478,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [2,args,Illegal]
                                           GeneratorExpressionNode SourceSection: [10448,10474]`repr(x) for x in sel...`
                                             Name: <genexpr>
-                                            FrameDescriptor: 2 slots [x, <return_val>]
+                                            FrameDescriptor: 2 slots [<return_val>, x]
                                             Enclosing
-                                              FrameDescriptor: 4 slots [self, qualname, args, <return_val>]
+                                              FrameDescriptor: 4 slots [<return_val>, args, qualname, self]
                                             Active Flags: 2
                                             For Nodes: 1
                                             Block Nodes: 0
@@ -2499,7 +2491,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               CelVars: None
                                               FreeVars: None
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 2 slots [x, <return_val>]
+                                              FrameDescriptor: 2 slots [<return_val>, x]
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
                                                 CellVarsSlots: None
@@ -2551,9 +2543,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [2,args,Illegal]
                                           GeneratorExpressionNode SourceSection: [10496,10544]`f"{k}={v!r}" for (k,...`
                                             Name: <genexpr>
-                                            FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                             Enclosing
-                                              FrameDescriptor: 4 slots [self, qualname, args, <return_val>]
+                                              FrameDescriptor: 4 slots [<return_val>, args, qualname, self]
                                             Active Flags: 2
                                             For Nodes: 1
                                             Block Nodes: 0
@@ -2564,7 +2556,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               CelVars: None
                                               FreeVars: None
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                              FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
                                                 CellVarsSlots: None
@@ -2662,7 +2654,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2749,7 +2741,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 11 slots [self, state, func, args, kwds, namespace, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>]
+                            FrameDescriptor: 11 slots [<>temp6, <>temp7, <>temp8, <>temp9, <return_val>, args, func, kwds, namespace, self, state]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -2989,7 +2981,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                     WriteNameNodeGen SourceSection: None
                       Identifier: __classcell__
                       ReadLocalVariableNodeGen SourceSection: None
-                        Frame: [0,__class__,Illegal]
+                        Frame: [6,__class__,Illegal]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
       TryFinallyNode SourceSection: [11795,11886]`try:↵    from _funct...`
@@ -3033,7 +3025,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__init__, __repr__, _make_unbound_method, __get__, __isabstractmethod__, __doc__]
+              FrameDescriptor: 6 slots [__doc__, __get__, __init__, __isabstractmethod__, __repr__, _make_unbound_method]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3070,7 +3062,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, func, args, keywords, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, args, func, keywords, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3236,7 +3228,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, args, keywords, format_string, <return_val>]
+                            FrameDescriptor: 5 slots [<return_val>, args, format_string, keywords, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3279,9 +3271,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           StringLiteralNode SourceSection: [13095,13099]`", "`
                                         GeneratorExpressionNode SourceSection: [13105,13194]`"{}={!r}".format(k, ...`
                                           Name: <genexpr>
-                                          FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                          FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                           Enclosing
-                                            FrameDescriptor: 5 slots [self, args, keywords, format_string, <return_val>]
+                                            FrameDescriptor: 5 slots [<return_val>, args, format_string, keywords, self]
                                           Active Flags: 2
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -3292,7 +3284,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             CelVars: None
                                             FreeVars: None
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
+                                            FrameDescriptor: 5 slots [<>temp2, <>temp3, <return_val>, k, v]
                                             ExecutionSlots:
                                               FreeVarsSlots: None
                                               CellVarsSlots: None
@@ -3419,7 +3411,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
-                            CellVarsSlots: self, 
+                            CellVarsSlots: self
                           FunctionRootNode SourceSection: [13563,14019]`def _make_unbound_me...`
                             Name: _make_unbound_method
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -3427,10 +3419,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: self
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, _method, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, _method, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: self, 
+                              CellVarsSlots: self
                             InnerRootNode SourceSection: [13563,14019]`def _make_unbound_me...`
                               ReturnTargetNode SourceSection: [13563,14019]`def _make_unbound_me...`
                                 Body: BlockNode SourceSection: None
@@ -3449,9 +3441,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: self, 
+                                        FreeVarSlots: self
                                         ExecutionSlots:
-                                          FreeVarsSlots: self, 
+                                          FreeVarsSlots: self
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [13603,13896]`def _method(*args, *...`
                                           Name: _method
@@ -3460,9 +3452,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           CelVars: None
                                           FreeVars: self
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 10 slots [args, keywords, call_keywords, cls_or_self, rest, call_args, self, <>temp7, <>temp8, <return_val>]
+                                          FrameDescriptor: 10 slots [<>temp7, <>temp8, <return_val>, args, call_args, call_keywords, cls_or_self, keywords, rest, self]
                                           ExecutionSlots:
-                                            FreeVarsSlots: self, 
+                                            FreeVarsSlots: self
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [13603,13896]`def _method(*args, *...`
                                             ReturnTargetNode SourceSection: [13603,13896]`def _method(*args, *...`
@@ -3495,7 +3487,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                           ReadLocalCellNodeGen SourceSection: [13663,13667]`self`
                                                             ReadLocalVariableNodeGen SourceSection: None
                                                               Frame: [6,self,Illegal]
-                                                            ReadFromCellNodeGen SourceSection: None
                                                   ExpressionStatementNode SourceSection: [13696,13726]`call_keywords.update...`
                                                     PythonCallUnary SourceSection: [13696,13726]`call_keywords.update...`
                                                       CallUnaryMethodNodeGen SourceSection: None
@@ -3540,7 +3531,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                           ReadLocalCellNodeGen SourceSection: [13806,13810]`self`
                                                             ReadLocalVariableNodeGen SourceSection: None
                                                               Frame: [6,self,Illegal]
-                                                            ReadFromCellNodeGen SourceSection: None
                                                       PythonCallUnary SourceSection: [13818,13829]`tuple(rest)`
                                                         CallUnaryMethodNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [13818,13823]`tuple`
@@ -3562,7 +3552,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         ReadLocalCellNodeGen SourceSection: [13849,13853]`self`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [6,self,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [9,<return_val>,Object]
                                     SetAttributeNodeGen SourceSection: [13896,13952]`_method.__isabstract...`
@@ -3577,7 +3566,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ReadLocalCellNodeGen SourceSection: [13927,13931]`self`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [0,self,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                     SetAttributeNodeGen SourceSection: [13961,13990]`_method._partialmeth...`
                                       Attribute: _partialmethod
                                       ReadLocalVariableNodeGen SourceSection: [13961,13968]`_method`
@@ -3585,7 +3573,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadLocalCellNodeGen SourceSection: [13986,13990]`self`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,self,Illegal]
-                                        ReadFromCellNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [13999,14013]`return _method`
                                       ReadLocalVariableNodeGen SourceSection: [14006,14013]`_method`
                                         Frame: [1,_method,Illegal]
@@ -3608,7 +3595,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, obj, cls, get, result, new_func, <return_val>]
+                            FrameDescriptor: 7 slots [<return_val>, cls, get, new_func, obj, result, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3782,7 +3769,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [self, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -3853,7 +3840,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__slots__, __init__, __hash__, __doc__]
+              FrameDescriptor: 4 slots [__doc__, __hash__, __init__, __slots__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3894,7 +3881,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, tup, hash, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, hash, self, tup]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -3960,7 +3947,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [self, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, self]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -4040,7 +4027,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: type, 
+            CellVarsSlots: type
           FunctionRootNode SourceSection: [15601,16835]`def _make_key(args, ...`
             Name: _make_key
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4048,10 +4035,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: type
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 11 slots [args, kwds, typed, kwd_mark, fasttypes, tuple, type, len, key, item, <return_val>]
+            FrameDescriptor: 12 slots [<>temp10, <return_val>, args, fasttypes, item, key, kwd_mark, kwds, len, tuple, type, typed]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: type, 
+              CellVarsSlots: type
             InnerRootNode SourceSection: [15601,16835]`def _make_key(args, ...`
               ReturnTargetNode SourceSection: [15601,16835]`def _make_key(args, ...`
                 Body: BlockNode SourceSection: None
@@ -4166,9 +4153,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 Frame: [5,tuple,Illegal]
                               GeneratorExpressionNode SourceSection: [16634,16655]`type(v) for v in arg...`
                                 Name: <genexpr>
-                                FrameDescriptor: 3 slots [v, type, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, type, v]
                                 Enclosing
-                                  FrameDescriptor: 11 slots [args, kwds, typed, kwd_mark, fasttypes, tuple, type, len, key, item, <return_val>]
+                                  FrameDescriptor: 12 slots [<>temp10, <return_val>, args, fasttypes, item, key, kwd_mark, kwds, len, tuple, type, typed]
                                 Active Flags: 2
                                 For Nodes: 1
                                 Block Nodes: 0
@@ -4179,9 +4166,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   CelVars: None
                                   FreeVars: type
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 3 slots [v, type, <return_val>]
+                                  FrameDescriptor: 3 slots [<return_val>, type, v]
                                   ExecutionSlots:
-                                    FreeVarsSlots: type, 
+                                    FreeVarsSlots: type
                                     CellVarsSlots: None
                                   InnerRootNode SourceSection: [16634,16655]`type(v) for v in arg...`
                                     GeneratorReturnTargetNode SourceSection: [16634,16655]`type(v) for v in arg...`
@@ -4195,7 +4182,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [16634,16638]`type`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [1,type,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [16639,16640]`v`
                                                 Frame: [0,v,Illegal]
                                             GeneratorAccessNode SourceSection: None
@@ -4237,9 +4223,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   Frame: [5,tuple,Illegal]
                                 GeneratorExpressionNode SourceSection: [16699,16729]`type(v) for v in kwd...`
                                   Name: <genexpr>
-                                  FrameDescriptor: 3 slots [v, type, <return_val>]
+                                  FrameDescriptor: 3 slots [<return_val>, type, v]
                                   Enclosing
-                                    FrameDescriptor: 11 slots [args, kwds, typed, kwd_mark, fasttypes, tuple, type, len, key, item, <return_val>]
+                                    FrameDescriptor: 12 slots [<>temp10, <return_val>, args, fasttypes, item, key, kwd_mark, kwds, len, tuple, type, typed]
                                   Active Flags: 2
                                   For Nodes: 1
                                   Block Nodes: 0
@@ -4250,9 +4236,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     CelVars: None
                                     FreeVars: type
                                     NeedsCellFrame: False
-                                    FrameDescriptor: 3 slots [v, type, <return_val>]
+                                    FrameDescriptor: 3 slots [<return_val>, type, v]
                                     ExecutionSlots:
-                                      FreeVarsSlots: type, 
+                                      FreeVarsSlots: type
                                       CellVarsSlots: None
                                     InnerRootNode SourceSection: [16699,16729]`type(v) for v in kwd...`
                                       GeneratorReturnTargetNode SourceSection: [16699,16729]`type(v) for v in kwd...`
@@ -4266,7 +4252,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [16699,16703]`type`
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [1,type,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [16704,16705]`v`
                                                   Frame: [0,v,Illegal]
                                               GeneratorAccessNode SourceSection: None
@@ -4317,7 +4302,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 ReadLocalCellNodeGen SourceSection: [16758,16762]`type`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [6,type,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                                 GetItemNodeGen SourceSection: [16763,16769]`key[0]`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [8,key,Illegal]
@@ -4341,7 +4325,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadLocalVariableNodeGen SourceSection: [16829,16832]`key`
                           Frame: [8,key,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [10,<return_val>,Object]
+                  Frame: [11,<return_val>,Object]
       WriteNameNodeGen SourceSection: [16835,18354]`def lru_cache(maxsiz...`
         Identifier: lru_cache
         FunctionDefinitionNode Name: lru_cache SourceSection: None
@@ -4354,7 +4338,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: maxsize, , typed, 
+            CellVarsSlots: maxsize, typed
           FunctionRootNode SourceSection: [16835,18354]`def lru_cache(maxsiz...`
             Name: lru_cache
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4362,10 +4346,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: maxsize, typed
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [maxsize, typed, decorating_function, <return_val>]
+            FrameDescriptor: 4 slots [<return_val>, decorating_function, maxsize, typed]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: maxsize, , typed, 
+              CellVarsSlots: maxsize, typed
             InnerRootNode SourceSection: [16835,18354]`def lru_cache(maxsiz...`
               ReturnTargetNode SourceSection: [16835,18354]`def lru_cache(maxsiz...`
                 Body: BlockNode SourceSection: None
@@ -4393,7 +4377,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               ReadLocalCellNodeGen SourceSection: [18019,18026]`maxsize`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,maxsize,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                               ObjectLiteralNode SourceSection: [18034,18038]`None`
                           NotNodeGen SourceSection: [18043,18071]`not isinstance(maxsi...`
                             PythonCallBinary SourceSection: [18047,18071]`isinstance(maxsize, ...`
@@ -4403,7 +4386,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               ReadLocalCellNodeGen SourceSection: [18058,18065]`maxsize`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,maxsize,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [18067,18070]`int`
                                 Identifier: int
                           YesNodeGen SourceSection: None
@@ -4422,9 +4404,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: maxsize, , typed, 
+                        FreeVarSlots: maxsize, typed
                         ExecutionSlots:
-                          FreeVarsSlots: maxsize, , typed, 
+                          FreeVarsSlots: maxsize, typed
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [18147,18326]`def decorating_funct...`
                           Name: decorating_function
@@ -4433,9 +4415,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: maxsize, typed
                           NeedsCellFrame: False
-                          FrameDescriptor: 5 slots [user_function, wrapper, maxsize, typed, <return_val>]
+                          FrameDescriptor: 5 slots [<return_val>, maxsize, typed, user_function, wrapper]
                           ExecutionSlots:
-                            FreeVarsSlots: maxsize, , typed, 
+                            FreeVarsSlots: maxsize, typed
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [18147,18326]`def decorating_funct...`
                             ReturnTargetNode SourceSection: [18147,18326]`def decorating_funct...`
@@ -4459,11 +4441,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadLocalCellNodeGen SourceSection: [18239,18246]`maxsize`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [2,maxsize,Illegal]
-                                        ReadFromCellNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [18248,18253]`typed`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [3,typed,Illegal]
-                                        ReadFromCellNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [18255,18265]`_CacheInfo`
                                         Identifier: _CacheInfo
                                   FrameReturnNode SourceSection: [18275,18320]`return update_wrappe...`
@@ -4491,7 +4471,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: KEY, , NEXT, , PREV, , RESULT, , _CacheInfo, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , sentinel, , typed, , user_function, 
+            CellVarsSlots: KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function
           FunctionRootNode SourceSection: [18354,23204]`def _lru_cache_wrapp...`
             Name: _lru_cache_wrapper
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -4499,10 +4479,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 27 slots [user_function, maxsize, typed, _CacheInfo, sentinel, make_key, PREV, NEXT, KEY, RESULT, cache, hits, misses, full, cache_get, cache_len, lock, root, wrapper, cache_info, cache_clear, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <return_val>]
+            FrameDescriptor: 27 slots [<>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <return_val>, KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_clear, cache_get, cache_info, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function, wrapper]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: KEY, , NEXT, , PREV, , RESULT, , _CacheInfo, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , sentinel, , typed, , user_function, 
+              CellVarsSlots: KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function
             InnerRootNode SourceSection: [18354,23204]`def _lru_cache_wrapp...`
               ReturnTargetNode SourceSection: [18354,23204]`def _lru_cache_wrapp...`
                 Body: BlockNode SourceSection: None
@@ -4638,7 +4618,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadLocalCellNodeGen SourceSection: [18766,18771]`cache`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [10,cache,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [18829,18854]`cache_len = cache.__...`
                       Identifier: cache_len
                       ReadLocalVariableNodeGen SourceSection: None
@@ -4651,7 +4630,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadLocalCellNodeGen SourceSection: [18841,18846]`cache`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [10,cache,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [18899,18913]`lock = RLock()`
                       Identifier: lock
                       ReadLocalVariableNodeGen SourceSection: None
@@ -4670,7 +4648,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       ReadLocalCellNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: None
                           Frame: [17,root,Illegal]
-                        ReadFromCellNodeGen SourceSection: None
                       SliceLiteralNodeGen SourceSection: [19051,19052]`:`
                         PythonObjectFactoryNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -4680,11 +4657,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadLocalCellNodeGen SourceSection: [19057,19061]`root`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [17,root,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [19063,19067]`root`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [17,root,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                         ObjectLiteralNode SourceSection: [19069,19073]`None`
                         ObjectLiteralNode SourceSection: [19075,19079]`None`
                         PythonObjectFactoryNodeGen SourceSection: None
@@ -4694,7 +4669,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadLocalCellNodeGen SourceSection: [19126,19133]`maxsize`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,maxsize,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [19137,19138]`0`
                             Value: 0
                       WriteLocalVariableNodeGen SourceSection: [19149,19387]`def wrapper(*args, *...`
@@ -4704,9 +4678,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: misses, , user_function, 
+                          FreeVarSlots: misses, user_function
                           ExecutionSlots:
-                            FreeVarsSlots: misses, , user_function, 
+                            FreeVarsSlots: misses, user_function
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [19149,19387]`def wrapper(*args, *...`
                             Name: wrapper
@@ -4715,9 +4689,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: misses, user_function
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [args, kwds, result, user_function, misses, <return_val>]
+                            FrameDescriptor: 6 slots [<return_val>, args, kwds, misses, result, user_function]
                             ExecutionSlots:
-                              FreeVarsSlots: misses, , user_function, 
+                              FreeVarsSlots: misses, user_function
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [19149,19387]`def wrapper(*args, *...`
                               ReturnTargetNode SourceSection: [19149,19387]`def wrapper(*args, *...`
@@ -4754,7 +4728,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ReadLocalCellNodeGen SourceSection: [19303,19316]`user_function`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [3,user_function,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                     WriteLocalCellNodeGen SourceSection: [19344,19355]`misses += 1`
                                       Identifier: misses
                                       ReadLocalVariableNodeGen SourceSection: None
@@ -4763,7 +4736,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ReadLocalCellNodeGen SourceSection: [19344,19350]`misses`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [4,misses,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [19354,19355]`1`
                                           Value: 1
                                         ObjectLiteralNode SourceSection: None
@@ -4778,7 +4750,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ReadLocalCellNodeGen SourceSection: [19392,19399]`maxsize`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [1,maxsize,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                             ObjectLiteralNode SourceSection: [19403,19407]`None`
                         WriteLocalVariableNodeGen SourceSection: [19418,19864]`def wrapper(*args, *...`
                           Identifier: wrapper
@@ -4787,9 +4758,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: cache, , cache_get, , hits, , make_key, , misses, , sentinel, , typed, , user_function, 
+                            FreeVarSlots: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
                             ExecutionSlots:
-                              FreeVarsSlots: cache, , cache_get, , hits, , make_key, , misses, , sentinel, , typed, , user_function, 
+                              FreeVarsSlots: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [19418,19864]`def wrapper(*args, *...`
                               Name: wrapper
@@ -4798,9 +4769,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
                               NeedsCellFrame: False
-                              FrameDescriptor: 13 slots [args, kwds, key, result, user_function, typed, sentinel, make_key, cache, hits, misses, cache_get, <return_val>]
+                              FrameDescriptor: 13 slots [<return_val>, args, cache, cache_get, hits, key, kwds, make_key, misses, result, sentinel, typed, user_function]
                               ExecutionSlots:
-                                FreeVarsSlots: cache, , cache_get, , hits, , make_key, , misses, , sentinel, , typed, , user_function, 
+                                FreeVarsSlots: cache, cache_get, hits, make_key, misses, sentinel, typed, user_function
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [19418,19864]`def wrapper(*args, *...`
                                 ReturnTargetNode SourceSection: [19418,19864]`def wrapper(*args, *...`
@@ -4829,7 +4800,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [19558,19566]`make_key`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [7,make_key,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [19567,19571]`args`
                                             Frame: [0,args,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [19573,19577]`kwds`
@@ -4837,7 +4807,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [19579,19584]`typed`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [5,typed,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [19598,19631]`result = cache_get(k...`
                                         Identifier: result
                                         Frame: [3,result,Illegal]
@@ -4846,13 +4815,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [19607,19616]`cache_get`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [11,cache_get,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [19617,19620]`key`
                                             Frame: [2,key,Illegal]
                                           ReadLocalCellNodeGen SourceSection: [19622,19630]`sentinel`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [6,sentinel,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                       IfNode SourceSection: [19644,19739]`if result is not sen...`
                                         NotNodeGen SourceSection: [19647,19669]`result is not sentin...`
                                           IsExpressionNodeGen SourceSection: None
@@ -4861,7 +4828,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalCellNodeGen SourceSection: [19661,19669]`sentinel`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [6,sentinel,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                           WriteLocalCellNodeGen SourceSection: [19687,19696]`hits += 1`
                                             Identifier: hits
@@ -4871,7 +4837,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [19687,19691]`hits`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [9,hits,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [19695,19696]`1`
                                                 Value: 1
                                               ObjectLiteralNode SourceSection: None
@@ -4895,12 +4860,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [19748,19761]`user_function`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [4,user_function,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                       SetItemNodeGen SourceSection: [19789,19808]`cache[key] = result`
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [8,cache,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [19795,19798]`key`
                                           Frame: [2,key,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [19802,19808]`result`
@@ -4913,7 +4876,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [19821,19827]`misses`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [10,misses,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [19831,19832]`1`
                                             Value: 1
                                           ObjectLiteralNode SourceSection: None
@@ -4929,9 +4891,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: KEY, , NEXT, , PREV, , RESULT, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , typed, , user_function, 
+                            FreeVarSlots: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
                             ExecutionSlots:
-                              FreeVarsSlots: KEY, , NEXT, , PREV, , RESULT, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , typed, , user_function, 
+                              FreeVarsSlots: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [19879,22710]`def wrapper(*args, *...`
                               Name: wrapper
@@ -4940,9 +4902,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
                               NeedsCellFrame: False
-                              FrameDescriptor: 36 slots [args, kwds, key, link, link_prev, link_next, _key, result, last, oldroot, oldkey, oldresult, user_function, maxsize, typed, make_key, PREV, NEXT, KEY, RESULT, cache, hits, misses, full, cache_get, cache_len, lock, root, <>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <return_val>, <>temp34, <>temp35]
+                              FrameDescriptor: 36 slots [<>temp28, <>temp29, <>temp30, <>temp31, <>temp32, <>temp34, <>temp35, <return_val>, KEY, NEXT, PREV, RESULT, _key, args, cache, cache_get, cache_len, full, hits, key, kwds, last, link, link_next, link_prev, lock, make_key, maxsize, misses, oldkey, oldresult, oldroot, result, root, typed, user_function]
                               ExecutionSlots:
-                                FreeVarsSlots: KEY, , NEXT, , PREV, , RESULT, , cache, , cache_get, , cache_len, , full, , hits, , lock, , make_key, , maxsize, , misses, , root, , typed, , user_function, 
+                                FreeVarsSlots: KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [19879,22710]`def wrapper(*args, *...`
                                 ReturnTargetNode SourceSection: [19879,22710]`def wrapper(*args, *...`
@@ -4971,7 +4933,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [20038,20046]`make_key`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [15,make_key,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [20047,20051]`args`
                                             Frame: [0,args,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [20053,20057]`kwds`
@@ -4979,7 +4940,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [20059,20064]`typed`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [14,typed,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                       WithNode SourceSection: [20078,20634]`with lock:↵         ...`
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [20105,20126]`link = cache_get(key...`
@@ -4990,7 +4950,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [20112,20121]`cache_get`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [24,cache_get,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [20122,20125]`key`
                                                 Frame: [2,key,Illegal]
                                           IfNode SourceSection: [20143,20634]`if link is not None:...`
@@ -5041,7 +5000,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [20327,20331]`NEXT`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [17,NEXT,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [20335,20344]`link_next`
                                                   Frame: [5,link_next,Illegal]
                                               SetItemNodeGen SourceSection: [20365,20392]`link_next[PREV] = li...`
@@ -5050,7 +5008,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [20375,20379]`PREV`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [16,PREV,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [20383,20392]`link_prev`
                                                   Frame: [4,link_prev,Illegal]
                                               WriteLocalVariableNodeGen SourceSection: [20413,20430]`last = root[PREV]`
@@ -5060,11 +5017,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadLocalCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [27,root,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [20425,20429]`PREV`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [16,PREV,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                               BlockNode SourceSection: [20451,20481]`last[NEXT] = root[PR...`
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <>temp32
@@ -5077,18 +5032,15 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadLocalCellNodeGen SourceSection: [20456,20460]`NEXT`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [17,NEXT,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [32,<>temp32,Illegal]
                                                 SetItemNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [27,root,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [20469,20473]`PREV`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [16,PREV,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [32,<>temp32,Illegal]
                                               SetItemNodeGen SourceSection: [20502,20519]`link[PREV] = last`
@@ -5097,7 +5049,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [20507,20511]`PREV`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [16,PREV,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [20515,20519]`last`
                                                   Frame: [8,last,Illegal]
                                               SetItemNodeGen SourceSection: [20540,20557]`link[NEXT] = root`
@@ -5106,11 +5057,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [20545,20549]`NEXT`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [17,NEXT,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [20553,20557]`root`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [27,root,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                               WriteLocalCellNodeGen SourceSection: [20578,20587]`hits += 1`
                                                 Identifier: hits
                                                 ReadLocalVariableNodeGen SourceSection: None
@@ -5119,7 +5068,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadLocalCellNodeGen SourceSection: [20578,20582]`hits`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [21,hits,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [20586,20587]`1`
                                                     Value: 1
                                                   ObjectLiteralNode SourceSection: None
@@ -5130,7 +5078,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ReadLocalCellNodeGen SourceSection: [20083,20087]`lock`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [26,lock,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         CachedLookupNodeGen SourceSection: None
                                         CachedLookupNodeGen SourceSection: None
                                         CallUnaryMethodNodeGen SourceSection: None
@@ -5153,7 +5100,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [20643,20656]`user_function`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [12,user_function,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                       WithNode SourceSection: [20684,22691]`with lock:↵         ...`
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [20711,22667]`if key in cache:↵   ...`
@@ -5167,7 +5113,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [20721,20726]`cache`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [20,cache,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [21038,21042]`pass`
                                               EmptyNode SourceSection: [21038,21042]`pass`
                                             IfNode SourceSection: [21059,22667]`elif full:↵         ...`
@@ -5175,7 +5120,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [21064,21068]`full`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [23,full,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [21162,21176]`oldroot = root`
                                                   Identifier: oldroot
@@ -5183,14 +5127,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadLocalCellNodeGen SourceSection: [21172,21176]`root`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [27,root,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                 SetItemNodeGen SourceSection: [21197,21215]`oldroot[KEY] = key`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [9,oldroot,Illegal]
                                                   ReadLocalCellNodeGen SourceSection: [21205,21208]`KEY`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [18,KEY,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [21212,21215]`key`
                                                     Frame: [2,key,Illegal]
                                                 SetItemNodeGen SourceSection: [21236,21260]`oldroot[RESULT] = re...`
@@ -5199,7 +5141,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadLocalCellNodeGen SourceSection: [21244,21250]`RESULT`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [19,RESULT,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [21254,21260]`result`
                                                     Frame: [7,result,Illegal]
                                                 WriteLocalCellNodeGen SourceSection: [21702,21722]`root = oldroot[NEXT]...`
@@ -5212,7 +5153,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadLocalCellNodeGen SourceSection: [21717,21721]`NEXT`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [17,NEXT,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [21743,21761]`oldkey = root[KEY]`
                                                   Identifier: oldkey
                                                   Frame: [10,oldkey,Illegal]
@@ -5220,11 +5160,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadLocalCellNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [27,root,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [21757,21760]`KEY`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [18,KEY,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [21782,21806]`oldresult = root[RES...`
                                                   Identifier: oldresult
                                                   Frame: [11,oldresult,Illegal]
@@ -5232,11 +5170,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadLocalCellNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [27,root,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [21799,21805]`RESULT`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [19,RESULT,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                 BlockNode SourceSection: [21827,21858]`root[KEY] = root[RES...`
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: <>temp34
@@ -5246,36 +5182,30 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadLocalCellNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [27,root,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [21832,21835]`KEY`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [18,KEY,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [34,<>temp34,Illegal]
                                                   SetItemNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [27,root,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [21844,21850]`RESULT`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [19,RESULT,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [34,<>temp34,Illegal]
                                                 DeleteItemNodeGen SourceSection: [21934,21951]`del cache[oldkey]`
                                                   ReadLocalCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [20,cache,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [21944,21950]`oldkey`
                                                     Frame: [10,oldkey,Illegal]
                                                 SetItemNodeGen SourceSection: [22163,22183]`cache[key] = oldroot...`
                                                   ReadLocalCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [20,cache,Illegal]
-                                                    ReadFromCellNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [22169,22172]`key`
                                                     Frame: [2,key,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [22176,22183]`oldroot`
@@ -5288,11 +5218,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadLocalCellNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [27,root,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [22312,22316]`PREV`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [16,PREV,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [22338,22370]`link = [last, root, ...`
                                                   Identifier: link
                                                   Frame: [3,link,Illegal]
@@ -5302,7 +5230,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadLocalCellNodeGen SourceSection: [22352,22356]`root`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [27,root,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [22358,22361]`key`
                                                       Frame: [2,key,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: [22363,22369]`result`
@@ -5320,25 +5247,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadLocalCellNodeGen SourceSection: [22396,22400]`NEXT`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [17,NEXT,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [35,<>temp35,Illegal]
                                                   SetItemNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [27,root,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [22409,22413]`PREV`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [16,PREV,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [35,<>temp35,Illegal]
                                                   SetItemNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [20,cache,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [22423,22426]`key`
                                                       Frame: [2,key,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: None
@@ -5353,11 +5276,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       ReadLocalCellNodeGen SourceSection: [22627,22636]`cache_len`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [25,cache_len,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [22642,22649]`maxsize`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [13,maxsize,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                           WriteLocalCellNodeGen SourceSection: [22667,22678]`misses += 1`
                                             Identifier: misses
                                             ReadLocalVariableNodeGen SourceSection: None
@@ -5366,14 +5287,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [22667,22673]`misses`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [22,misses,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [22677,22678]`1`
                                                 Value: 1
                                               ObjectLiteralNode SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [20689,20693]`lock`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [26,lock,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         CachedLookupNodeGen SourceSection: None
                                         CachedLookupNodeGen SourceSection: None
                                         CallUnaryMethodNodeGen SourceSection: None
@@ -5392,9 +5311,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: StringLiteralNode: `Report cache statist...`
-                        FreeVarSlots: _CacheInfo, , cache_len, , hits, , lock, , maxsize, , misses, 
+                        FreeVarSlots: _CacheInfo, cache_len, hits, lock, maxsize, misses
                         ExecutionSlots:
-                          FreeVarsSlots: _CacheInfo, , cache_len, , hits, , lock, , maxsize, , misses, 
+                          FreeVarsSlots: _CacheInfo, cache_len, hits, lock, maxsize, misses
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [22710,22856]`def cache_info():↵  ...`
                           Name: cache_info
@@ -5402,9 +5321,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: _CacheInfo, cache_len, hits, lock, maxsize, misses
                           NeedsCellFrame: False
-                          FrameDescriptor: 7 slots [maxsize, _CacheInfo, hits, misses, cache_len, lock, <return_val>]
+                          FrameDescriptor: 7 slots [<return_val>, _CacheInfo, cache_len, hits, lock, maxsize, misses]
                           ExecutionSlots:
-                            FreeVarsSlots: _CacheInfo, , cache_len, , hits, , lock, , maxsize, , misses, 
+                            FreeVarsSlots: _CacheInfo, cache_len, hits, lock, maxsize, misses
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [22710,22856]`def cache_info():↵  ...`
                             ReturnTargetNode SourceSection: [22710,22856]`def cache_info():↵  ...`
@@ -5418,29 +5337,23 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ReadLocalCellNodeGen SourceSection: [22804,22814]`_CacheInfo`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,_CacheInfo,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [22815,22819]`hits`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [2,hits,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [22821,22827]`misses`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [3,misses,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [22829,22836]`maxsize`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [0,maxsize,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [22838,22849]`cache_len()`
                                           CallNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [22838,22847]`cache_len`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [4,cache_len,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                     ReadLocalCellNodeGen SourceSection: [22779,22783]`lock`
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [5,lock,Illegal]
-                                      ReadFromCellNodeGen SourceSection: None
                                     CachedLookupNodeGen SourceSection: None
                                     CachedLookupNodeGen SourceSection: None
                                     CallUnaryMethodNodeGen SourceSection: None
@@ -5456,9 +5369,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: StringLiteralNode: `Clear the cache and ...`
-                        FreeVarSlots: cache, , full, , hits, , lock, , misses, , root, 
+                        FreeVarSlots: cache, full, hits, lock, misses, root
                         ExecutionSlots:
-                          FreeVarsSlots: cache, , full, , hits, , lock, , misses, , root, 
+                          FreeVarsSlots: cache, full, hits, lock, misses, root
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [22856,23114]`def cache_clear():↵ ...`
                           Name: cache_clear
@@ -5466,9 +5379,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: cache, full, hits, lock, misses, root
                           NeedsCellFrame: False
-                          FrameDescriptor: 8 slots [cache, hits, misses, full, lock, root, <>temp6, <return_val>]
+                          FrameDescriptor: 8 slots [<>temp6, <return_val>, cache, full, hits, lock, misses, root]
                           ExecutionSlots:
-                            FreeVarsSlots: cache, , full, , hits, , lock, , misses, , root, 
+                            FreeVarsSlots: cache, full, hits, lock, misses, root
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [22856,23114]`def cache_clear():↵ ...`
                             ReturnTargetNode SourceSection: [22856,23114]`def cache_clear():↵ ...`
@@ -5486,12 +5399,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalCellNodeGen SourceSection: [22993,22998]`cache`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [0,cache,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                       SetItemNodeGen SourceSection: [23019,23053]`root[:] = [root, roo...`
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [5,root,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         SliceLiteralNodeGen SourceSection: [23024,23025]`:`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
@@ -5501,11 +5412,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [23030,23034]`root`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [5,root,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [23036,23040]`root`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [5,root,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                           ObjectLiteralNode SourceSection: [23042,23046]`None`
                                           ObjectLiteralNode SourceSection: [23048,23052]`None`
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -5535,7 +5444,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     ReadLocalCellNodeGen SourceSection: [22975,22979]`lock`
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [4,lock,Illegal]
-                                      ReadFromCellNodeGen SourceSection: None
                                     CachedLookupNodeGen SourceSection: None
                                     CachedLookupNodeGen SourceSection: None
                                     CallUnaryMethodNodeGen SourceSection: None
@@ -5599,7 +5507,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [sequences, result, candidate, s2, s1, seq, <return_val>]
+            FrameDescriptor: 9 slots [<>temp7, <>temp8, <return_val>, candidate, result, s1, s2, seq, sequences]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -5633,9 +5541,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   Identifier: list
                                 GeneratorExpressionNode SourceSection: [23745,23770]`s for s in sequences...`
                                   Name: <genexpr>
-                                  FrameDescriptor: 2 slots [s, <return_val>]
+                                  FrameDescriptor: 2 slots [<return_val>, s]
                                   Enclosing
-                                    FrameDescriptor: 7 slots [sequences, result, candidate, s2, s1, seq, <return_val>]
+                                    FrameDescriptor: 9 slots [<>temp7, <>temp8, <return_val>, candidate, result, s1, s2, seq, sequences]
                                   Active Flags: 4
                                   For Nodes: 1
                                   Block Nodes: 0
@@ -5646,7 +5554,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     CelVars: None
                                     FreeVars: None
                                     NeedsCellFrame: False
-                                    FrameDescriptor: 2 slots [s, <return_val>]
+                                    FrameDescriptor: 2 slots [<return_val>, s]
                                     ExecutionSlots:
                                       FreeVarsSlots: None
                                       CellVarsSlots: None
@@ -5812,7 +5720,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: abcs, , base, 
+            CellVarsSlots: abcs, base
           FunctionRootNode SourceSection: [24428,26555]`def _c3_mro(cls, abc...`
             Name: _c3_mro
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -5820,10 +5728,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: abcs, base
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+            FrameDescriptor: 15 slots [<>temp11, <>temp12, <>temp13, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: abcs, , base, 
+              CellVarsSlots: abcs, base
             InnerRootNode SourceSection: [24428,26555]`def _c3_mro(cls, abc...`
               ReturnTargetNode SourceSection: [24428,26555]`def _c3_mro(cls, abc...`
                 Body: BlockNode SourceSection: None
@@ -5848,22 +5756,22 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ForNextElementNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <>temp11
-                                Frame: [11,<>temp11,Illegal]
-                              WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <>temp12
                                 Frame: [12,<>temp12,Illegal]
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: <>temp13
+                                Frame: [13,<>temp13,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: i
                                 Frame: [3,i,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [11,<>temp11,Illegal]
+                                  Frame: [12,<>temp12,Illegal]
                               WriteLocalCellNodeGen SourceSection: None
                                 Identifier: base
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,base,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [12,<>temp12,Illegal]
+                                  Frame: [13,<>temp13,Illegal]
                           IfNode SourceSection: [25430,25599]`if hasattr(base, '__...`
                             YesNodeGen SourceSection: None
                               PythonCallBinary SourceSection: [25433,25469]`hasattr(base, '__abs...`
@@ -5873,7 +5781,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 ReadLocalCellNodeGen SourceSection: [25441,25445]`base`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [4,base,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [25447,25468]`'__abstractmethods__...`
                             BlockNode SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: [25483,25516]`boundary = len(cls._...`
@@ -5925,7 +5832,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadLocalCellNodeGen SourceSection: [25651,25655]`abcs`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,abcs,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [25637,25647]`list(abcs)`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [25637,25641]`list`
@@ -5933,7 +5839,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadLocalCellNodeGen SourceSection: [25642,25646]`abcs`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,abcs,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                         ListLiteralNode SourceSection: [25661,25663]`[]`
                           PythonObjectFactoryNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [25668,25715]`explicit_bases = lis...`
@@ -6003,7 +5908,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadLocalCellNodeGen SourceSection: [25838,25842]`base`
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [4,base,Illegal]
-                                    ReadFromCellNodeGen SourceSection: None
                                 NotNodeGen SourceSection: [25848,25929]`not any(↵           ...`
                                   PythonCallUnary SourceSection: [25852,25929]`any(↵               ...`
                                     CallUnaryMethodNodeGen SourceSection: None
@@ -6011,9 +5915,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       Identifier: any
                                     GeneratorExpressionNode SourceSection: [25873,25915]`issubclass(b, base) ...`
                                       Name: <genexpr>
-                                      FrameDescriptor: 3 slots [b, base, <return_val>]
+                                      FrameDescriptor: 3 slots [<return_val>, b, base]
                                       Enclosing
-                                        FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+                                        FrameDescriptor: 15 slots [<>temp11, <>temp12, <>temp13, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
                                       Active Flags: 2
                                       For Nodes: 1
                                       Block Nodes: 0
@@ -6024,9 +5928,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         CelVars: None
                                         FreeVars: base
                                         NeedsCellFrame: False
-                                        FrameDescriptor: 3 slots [b, base, <return_val>]
+                                        FrameDescriptor: 3 slots [<return_val>, b, base]
                                         ExecutionSlots:
-                                          FreeVarsSlots: base, 
+                                          FreeVarsSlots: base
                                           CellVarsSlots: None
                                         InnerRootNode SourceSection: [25873,25915]`issubclass(b, base) ...`
                                           GeneratorReturnTargetNode SourceSection: [25873,25915]`issubclass(b, base) ...`
@@ -6044,7 +5948,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadLocalCellNodeGen SourceSection: [25887,25891]`base`
                                                       ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                         Frame: [1,base,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                               WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                 Identifier: b
@@ -6082,13 +5985,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 ReadLocalCellNodeGen SourceSection: [26097,26101]`base`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [4,base,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [25805,25809]`abcs`
                           ReadLocalCellNodeGen SourceSection: [25805,25809]`abcs`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,abcs,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     ElseNode SourceSection: [26107,26165]`for base in abstract...`
                       ForNode SourceSection: None
@@ -6105,11 +6006,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 ReadLocalCellNodeGen SourceSection: [26143,26147]`abcs`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,abcs,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [26155,26159]`base`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,base,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [26119,26133]`abstract_bases`
                           ReadLocalVariableNodeGen SourceSection: [26119,26133]`abstract_bases`
                             Frame: [6,abstract_bases,Illegal]
@@ -6123,9 +6022,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, abcs, base]
                           Enclosing
-                            FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+                            FrameDescriptor: 15 slots [<>temp11, <>temp12, <>temp13, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -6136,9 +6035,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: abcs
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             ExecutionSlots:
-                              FreeVarsSlots: abcs, 
+                              FreeVarsSlots: abcs
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
                               GeneratorReturnTargetNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
@@ -6157,7 +6056,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [26204,26208]`abcs`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [1,abcs,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [26185,26192]`_c3_mro`
                                           Identifier: _c3_mro
@@ -6192,9 +6090,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, abcs, base]
                           Enclosing
-                            FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+                            FrameDescriptor: 15 slots [<>temp11, <>temp12, <>temp13, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -6205,9 +6103,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: abcs
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             ExecutionSlots:
-                              FreeVarsSlots: abcs, 
+                              FreeVarsSlots: abcs
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
                               GeneratorReturnTargetNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
@@ -6226,7 +6124,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [26281,26285]`abcs`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [1,abcs,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [26262,26269]`_c3_mro`
                                           Identifier: _c3_mro
@@ -6261,9 +6158,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, abcs, base]
                           Enclosing
-                            FrameDescriptor: 14 slots [cls, abcs, boundary, i, base, explicit_bases, abstract_bases, other_bases, explicit_c3_mros, abstract_c3_mros, other_c3_mros, <>temp11, <>temp12, <return_val>]
+                            FrameDescriptor: 15 slots [<>temp11, <>temp12, <>temp13, <return_val>, abcs, abstract_bases, abstract_c3_mros, base, boundary, cls, explicit_bases, explicit_c3_mros, i, other_bases, other_c3_mros]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -6274,9 +6171,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: abcs
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             ExecutionSlots:
-                              FreeVarsSlots: abcs, 
+                              FreeVarsSlots: abcs
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
                               GeneratorReturnTargetNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
@@ -6295,7 +6192,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [26355,26359]`abcs`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [1,abcs,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [26336,26343]`_c3_mro`
                                           Identifier: _c3_mro
@@ -6357,7 +6253,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Frame: [7,other_bases,Illegal]
                             PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [13,<return_val>,Object]
+                  Frame: [14,<return_val>,Object]
       WriteNameNodeGen SourceSection: [26555,28154]`def _compose_mro(cls...`
         Identifier: _compose_mro
         FunctionDefinitionNode Name: _compose_mro SourceSection: None
@@ -6367,7 +6263,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: bases, , cls, , is_related, , is_strict_base, , type_set, , types, 
+            CellVarsSlots: bases, cls, is_related, is_strict_base, type_set, types
           FunctionRootNode SourceSection: [26555,28154]`def _compose_mro(cls...`
             Name: _compose_mro
             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -6375,10 +6271,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: bases, cls, is_related, is_strict_base, type_set, types
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
+            FrameDescriptor: 15 slots [<>temp11, <>temp12, <>temp13, <return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: bases, , cls, , is_related, , is_strict_base, , type_set, , types, 
+              CellVarsSlots: bases, cls, is_related, is_strict_base, type_set, types
             InnerRootNode SourceSection: [26555,28154]`def _compose_mro(cls...`
               ReturnTargetNode SourceSection: [26555,28154]`def _compose_mro(cls...`
                 Body: BlockNode SourceSection: None
@@ -6414,7 +6310,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadLocalCellNodeGen SourceSection: [26831,26834]`cls`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [0,cls,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [26924,27069]`def is_related(typ):...`
                       Identifier: is_related
                       ReadLocalVariableNodeGen SourceSection: None
@@ -6423,9 +6318,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: bases, , cls, 
+                        FreeVarSlots: bases, cls
                         ExecutionSlots:
-                          FreeVarsSlots: bases, , cls, 
+                          FreeVarsSlots: bases, cls
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [26924,27069]`def is_related(typ):...`
                           Name: is_related
@@ -6434,9 +6329,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: bases, cls
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [typ, cls, bases, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, bases, cls, typ]
                           ExecutionSlots:
-                            FreeVarsSlots: bases, , cls, 
+                            FreeVarsSlots: bases, cls
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [26924,27069]`def is_related(typ):...`
                             ReturnTargetNode SourceSection: [26924,27069]`def is_related(typ):...`
@@ -6461,7 +6356,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalCellNodeGen SourceSection: [26972,26977]`bases`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [2,bases,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                         PythonCallBinary SourceSection: [26982,27005]`hasattr(typ, '__mro_...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [26982,26989]`hasattr`
@@ -6477,7 +6371,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ReadLocalCellNodeGen SourceSection: [27054,27057]`cls`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,cls,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [27059,27062]`typ`
                                           Frame: [0,typ,Illegal]
                                       YesNodeGen SourceSection: None
@@ -6493,9 +6386,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [27078,27111]`n for n in types if ...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [n, is_related, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, is_related, n]
                           Enclosing
-                            FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
+                            FrameDescriptor: 15 slots [<>temp11, <>temp12, <>temp13, <return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -6506,9 +6399,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: is_related
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [n, is_related, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, is_related, n]
                             ExecutionSlots:
-                              FreeVarsSlots: is_related, 
+                              FreeVarsSlots: is_related
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [27078,27111]`n for n in types if ...`
                               GeneratorReturnTargetNode SourceSection: [27078,27111]`n for n in types if ...`
@@ -6522,7 +6415,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ReadLocalCellNodeGen SourceSection: [27098,27108]`is_related`
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                             Frame: [1,is_related,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [27109,27110]`n`
                                           Frame: [0,n,Illegal]
                                     ExpressionStatementNode SourceSection: [27078,27079]`n`
@@ -6553,7 +6445,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ReadLocalCellNodeGen SourceSection: [27089,27094]`types`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [1,types,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [27221,27381]`def is_strict_base(t...`
                       Identifier: is_strict_base
@@ -6563,9 +6454,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: types, 
+                        FreeVarSlots: types
                         ExecutionSlots:
-                          FreeVarsSlots: types, 
+                          FreeVarsSlots: types
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [27221,27381]`def is_strict_base(t...`
                           Name: is_strict_base
@@ -6574,9 +6465,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           CelVars: None
                           FreeVars: types
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [typ, other, types, <return_val>]
+                          FrameDescriptor: 5 slots [<>temp3, <return_val>, other, typ, types]
                           ExecutionSlots:
-                            FreeVarsSlots: types, 
+                            FreeVarsSlots: types
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [27221,27381]`def is_strict_base(t...`
                             ReturnTargetNode SourceSection: [27221,27381]`def is_strict_base(t...`
@@ -6624,12 +6515,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ReadLocalCellNodeGen SourceSection: [27267,27272]`types`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [2,types,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                   FrameReturnNode SourceSection: [27364,27376]`return False`
                                     BooleanLiteralNode SourceSection: [27371,27376]`False`
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [3,<return_val>,Object]
+                                Frame: [4,<return_val>,Object]
                     WriteLocalCellNodeGen SourceSection: [27381,27432]`types = [n for n in ...`
                       Identifier: types
                       ReadLocalVariableNodeGen SourceSection: None
@@ -6640,9 +6530,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: list
                         GeneratorExpressionNode SourceSection: [27390,27431]`n for n in types if ...`
                           Name: <genexpr>
-                          FrameDescriptor: 3 slots [n, is_strict_base, <return_val>]
+                          FrameDescriptor: 3 slots [<return_val>, is_strict_base, n]
                           Enclosing
-                            FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
+                            FrameDescriptor: 15 slots [<>temp11, <>temp12, <>temp13, <return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
                           Active Flags: 4
                           For Nodes: 1
                           Block Nodes: 0
@@ -6653,9 +6543,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             CelVars: None
                             FreeVars: is_strict_base
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [n, is_strict_base, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, is_strict_base, n]
                             ExecutionSlots:
-                              FreeVarsSlots: is_strict_base, 
+                              FreeVarsSlots: is_strict_base
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [27390,27431]`n for n in types if ...`
                               GeneratorReturnTargetNode SourceSection: [27390,27431]`n for n in types if ...`
@@ -6670,7 +6560,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalCellNodeGen SourceSection: [27414,27428]`is_strict_base`
                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                                               Frame: [1,is_strict_base,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [27429,27430]`n`
                                             Frame: [0,n,Illegal]
                                     ExpressionStatementNode SourceSection: [27390,27391]`n`
@@ -6701,7 +6590,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ReadLocalCellNodeGen SourceSection: [27401,27406]`types`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [1,types,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [27558,27579]`type_set = set(types...`
                       Identifier: type_set
@@ -6714,7 +6602,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadLocalCellNodeGen SourceSection: [27573,27578]`types`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [1,types,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [27584,27592]`mro = []`
                       Identifier: mro
                       Frame: [6,mro,Illegal]
@@ -6754,7 +6641,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [27701,27706]`bases`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [2,bases,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [27711,27731]`issubclass(cls, sub)...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [27711,27721]`issubclass`
@@ -6762,7 +6648,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalCellNodeGen SourceSection: [27722,27725]`cls`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [0,cls,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [27727,27730]`sub`
                                               Frame: [8,sub,Illegal]
                                           YesNodeGen SourceSection: None
@@ -6778,9 +6663,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Identifier: list
                                             GeneratorExpressionNode SourceSection: [27763,27802]`s for s in sub.__mro...`
                                               Name: <genexpr>
-                                              FrameDescriptor: 3 slots [s, type_set, <return_val>]
+                                              FrameDescriptor: 3 slots [<return_val>, s, type_set]
                                               Enclosing
-                                                FrameDescriptor: 12 slots [cls, types, bases, is_related, is_strict_base, type_set, mro, found, sub, subcls, typ, <return_val>]
+                                                FrameDescriptor: 15 slots [<>temp11, <>temp12, <>temp13, <return_val>, bases, cls, found, is_related, is_strict_base, mro, sub, subcls, typ, type_set, types]
                                               Active Flags: 4
                                               For Nodes: 1
                                               Block Nodes: 0
@@ -6791,9 +6676,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 CelVars: None
                                                 FreeVars: type_set
                                                 NeedsCellFrame: False
-                                                FrameDescriptor: 3 slots [s, type_set, <return_val>]
+                                                FrameDescriptor: 3 slots [<return_val>, s, type_set]
                                                 ExecutionSlots:
-                                                  FreeVarsSlots: type_set, 
+                                                  FreeVarsSlots: type_set
                                                   CellVarsSlots: None
                                                 InnerRootNode SourceSection: [27763,27802]`s for s in sub.__mro...`
                                                   GeneratorReturnTargetNode SourceSection: [27763,27802]`s for s in sub.__mro...`
@@ -6811,7 +6696,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                             ReadLocalCellNodeGen SourceSection: [27794,27802]`type_set`
                                                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                 Frame: [1,type_set,Illegal]
-                                                              ReadFromCellNodeGen SourceSection: None
                                                         ExpressionStatementNode SourceSection: [27763,27764]`s`
                                                           YieldNode SourceSection: [27763,27764]`s`
                                                             flagSlot: 0
@@ -6927,7 +6811,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadLocalCellNodeGen SourceSection: [27608,27613]`types`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,types,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [28123,28152]`return _c3_mro(cls, ...`
                       PythonCallNodeGen SourceSection: [28130,28152]`_c3_mro(cls, abcs=mr...`
@@ -6935,7 +6818,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadLocalCellNodeGen SourceSection: [28138,28141]`cls`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [0,cls,Illegal]
-                          ReadFromCellNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
                           ExecuteKeywordArgumentsNode SourceSection: None
                             KeywordLiteralNode SourceSection: None
@@ -6945,7 +6827,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadGlobalOrBuiltinNodeGen SourceSection: [28130,28137]`_c3_mro`
                           Identifier: _c3_mro
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [11,<return_val>,Object]
+                  Frame: [14,<return_val>,Object]
       WriteNameNodeGen SourceSection: [28154,29187]`def _find_impl(cls, ...`
         Identifier: _find_impl
         FunctionDefinitionNode Name: _find_impl SourceSection: None
@@ -6963,7 +6845,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [cls, registry, mro, match, t, <return_val>]
+            FrameDescriptor: 7 slots [<>temp5, <return_val>, cls, match, mro, registry, t]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -7116,7 +6998,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadLocalVariableNodeGen SourceSection: [29179,29184]`match`
                           Frame: [3,match,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [5,<return_val>,Object]
+                  Frame: [6,<return_val>,Object]
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -7130,7 +7012,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: cache_token, , dispatch, , dispatch_cache, , register, , registry, 
+                CellVarsSlots: cache_token, dispatch, dispatch_cache, register, registry
               FunctionRootNode SourceSection: [29187,32199]`def singledispatch(f...`
                 Name: singledispatch
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -7138,10 +7020,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                 CelVars: cache_token, dispatch, dispatch_cache, register, registry
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 10 slots [func, types, weakref, registry, dispatch_cache, cache_token, dispatch, register, wrapper, <return_val>]
+                FrameDescriptor: 10 slots [<return_val>, cache_token, dispatch, dispatch_cache, func, register, registry, types, weakref, wrapper]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: cache_token, , dispatch, , dispatch_cache, , register, , registry, 
+                  CellVarsSlots: cache_token, dispatch, dispatch_cache, register, registry
                 InnerRootNode SourceSection: [29187,32199]`def singledispatch(f...`
                   ReturnTargetNode SourceSection: [29187,32199]`def singledispatch(f...`
                     Body: BlockNode SourceSection: None
@@ -7192,9 +7074,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: StringLiteralNode: `generic_func.dispatc...`
-                            FreeVarSlots: cache_token, , dispatch_cache, , registry, 
+                            FreeVarSlots: cache_token, dispatch_cache, registry
                             ExecutionSlots:
-                              FreeVarsSlots: cache_token, , dispatch_cache, , registry, 
+                              FreeVarsSlots: cache_token, dispatch_cache, registry
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [29923,30673]`def dispatch(cls):↵ ...`
                               Name: dispatch
@@ -7203,9 +7085,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: cache_token, dispatch_cache, registry
                               NeedsCellFrame: False
-                              FrameDescriptor: 7 slots [cls, current_token, impl, registry, dispatch_cache, cache_token, <return_val>]
+                              FrameDescriptor: 7 slots [<return_val>, cache_token, cls, current_token, dispatch_cache, impl, registry]
                               ExecutionSlots:
-                                FreeVarsSlots: cache_token, , dispatch_cache, , registry, 
+                                FreeVarsSlots: cache_token, dispatch_cache, registry
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [29923,30673]`def dispatch(cls):↵ ...`
                                 ReturnTargetNode SourceSection: [29923,30673]`def dispatch(cls):↵ ...`
@@ -7225,7 +7107,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalCellNodeGen SourceSection: [30201,30212]`cache_token`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [5,cache_token,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                             ObjectLiteralNode SourceSection: [30220,30224]`None`
                                         BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [30238,30271]`current_token = get_...`
@@ -7241,7 +7122,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [30287,30298]`cache_token`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [5,cache_token,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [30302,30315]`current_token`
                                                   Frame: [1,current_token,Illegal]
                                             BlockNode SourceSection: None
@@ -7252,7 +7132,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadLocalCellNodeGen SourceSection: [30333,30347]`dispatch_cache`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [4,dispatch_cache,Illegal]
-                                                      ReadFromCellNodeGen SourceSection: None
                                               WriteLocalCellNodeGen SourceSection: [30372,30399]`cache_token = curren...`
                                                 Identifier: cache_token
                                                 ReadLocalVariableNodeGen SourceSection: None
@@ -7270,7 +7149,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [4,dispatch_cache,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [30447,30450]`cls`
                                                 Frame: [0,cls,Illegal]
                                           ExceptNode SourceSection: None
@@ -7284,7 +7162,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       ReadLocalCellNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [3,registry,Illegal]
-                                                        ReadFromCellNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [30526,30529]`cls`
                                                         Frame: [0,cls,Illegal]
                                                   ExceptNode SourceSection: None
@@ -7300,7 +7177,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         ReadLocalCellNodeGen SourceSection: [30599,30607]`registry`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [3,registry,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [30550,30558]`KeyError`
                                                       Identifier: KeyError
                                                   BlockNode SourceSection: None
@@ -7308,7 +7184,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [4,dispatch_cache,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [30636,30639]`cls`
                                                   Frame: [0,cls,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [30643,30647]`impl`
@@ -7330,10 +7205,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               ObjectLiteralNode SourceSection: [30696,30700]`None`
                             KwArguments: None
                             Documentation: StringLiteralNode: `generic_func.registe...`
-                            FreeVarSlots: cache_token, , dispatch_cache, , register, , registry, 
+                            FreeVarSlots: cache_token, dispatch_cache, register, registry
                             ExecutionSlots:
-                              FreeVarsSlots: cache_token, , dispatch_cache, , register, , registry, 
-                              CellVarsSlots: cls, 
+                              FreeVarsSlots: cache_token, dispatch_cache, register, registry
+                              CellVarsSlots: cls
                             FunctionRootNode SourceSection: [30673,31866]`def register(cls, fu...`
                               Name: register
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -7341,10 +7216,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: cls
                               FreeVars: cache_token, dispatch_cache, register, registry
                               NeedsCellFrame: False
-                              FrameDescriptor: 12 slots [cls, func, ann, get_type_hints, argname, registry, dispatch_cache, cache_token, register, <return_val>, <>temp10, <>temp11]
+                              FrameDescriptor: 12 slots [<>temp10, <>temp11, <return_val>, ann, argname, cache_token, cls, dispatch_cache, func, get_type_hints, register, registry]
                               ExecutionSlots:
-                                FreeVarsSlots: cache_token, , dispatch_cache, , register, , registry, 
-                                CellVarsSlots: cls, 
+                                FreeVarsSlots: cache_token, dispatch_cache, register, registry
+                                CellVarsSlots: cls
                               InnerRootNode SourceSection: [30673,31866]`def register(cls, fu...`
                                 ReturnTargetNode SourceSection: [30673,31866]`def register(cls, fu...`
                                   Body: BlockNode SourceSection: None
@@ -7381,7 +7256,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [30929,30932]`cls`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [0,cls,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [30934,30938]`type`
                                                   Identifier: type
                                             FrameReturnNode SourceSection: [30957,30990]`return lambda f: reg...`
@@ -7389,9 +7263,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 Arguments: None
                                                 KwArguments: None
                                                 Documentation: None
-                                                FreeVarSlots: cls, , register, 
+                                                FreeVarSlots: cls, register
                                                 ExecutionSlots:
-                                                  FreeVarsSlots: cls, , register, 
+                                                  FreeVarsSlots: cls, register
                                                   CellVarsSlots: None
                                                 FunctionRootNode SourceSection: [30964,30990]`lambda f: register(c...`
                                                   Name: <lambda>
@@ -7400,9 +7274,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   CelVars: None
                                                   FreeVars: cls, register
                                                   NeedsCellFrame: False
-                                                  FrameDescriptor: 4 slots [f, cls, register, <return_val>]
+                                                  FrameDescriptor: 4 slots [<return_val>, cls, f, register]
                                                   ExecutionSlots:
-                                                    FreeVarsSlots: cls, , register, 
+                                                    FreeVarsSlots: cls, register
                                                     CellVarsSlots: None
                                                   InnerRootNode SourceSection: [30964,30990]`lambda f: register(c...`
                                                     ReturnTargetNode SourceSection: [30964,30990]`lambda f: register(c...`
@@ -7420,11 +7294,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                               ReadLocalCellNodeGen SourceSection: [30974,30982]`register`
                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [2,register,Illegal]
-                                                                ReadFromCellNodeGen SourceSection: None
                                                               ReadLocalCellNodeGen SourceSection: [30983,30986]`cls`
                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [1,cls,Illegal]
-                                                                ReadFromCellNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [30988,30989]`f`
                                                                 Frame: [0,f,Illegal]
                                                       Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7440,7 +7312,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [31017,31020]`cls`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [0,cls,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [31022,31039]`'__annotations__'`
                                               EmptyDictLiteralNode SourceSection: [31041,31043]`{}`
                                                 PythonObjectFactoryNodeGen SourceSection: None
@@ -7463,7 +7334,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalCellNodeGen SourceSection: [31341,31344]`cls`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [0,cls,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                           ImportFromNode SourceSection: [31426,31459]`from typing import g...`
                                             Importee: typing
                                             Level: 0
@@ -7520,7 +7390,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalCellNodeGen SourceSection: [31558,31561]`cls`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [0,cls,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31563,31567]`type`
                                                   Identifier: type
                                             FormatStringLiteralNode SourceSection: [31588,31650]`f"Invalid annotation...`
@@ -7530,11 +7399,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [5,registry,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [31682,31685]`cls`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [0,cls,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [31689,31693]`func`
                                           Frame: [1,func,Illegal]
                                       IfNode SourceSection: [31702,31818]`if cache_token is No...`
@@ -7544,7 +7411,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [31705,31716]`cache_token`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [7,cache_token,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [31720,31724]`None`
                                             PythonCallBinary SourceSection: [31729,31764]`hasattr(cls, '__abst...`
                                               CallBinaryMethodNodeGen SourceSection: None
@@ -7553,7 +7419,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalCellNodeGen SourceSection: [31737,31740]`cls`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [0,cls,Illegal]
-                                                ReadFromCellNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [31742,31763]`'__abstractmethods__...`
                                             YesNodeGen SourceSection: None
                                         WriteLocalCellNodeGen SourceSection: [31778,31809]`cache_token = get_ca...`
@@ -7572,7 +7437,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalCellNodeGen SourceSection: [31818,31832]`dispatch_cache`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [6,dispatch_cache,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [31849,31860]`return func`
                                         ReadLocalVariableNodeGen SourceSection: [31856,31860]`func`
                                           Frame: [1,func,Illegal]
@@ -7585,9 +7449,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: dispatch, 
+                            FreeVarSlots: dispatch
                             ExecutionSlots:
-                              FreeVarsSlots: dispatch, 
+                              FreeVarsSlots: dispatch
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [31866,31953]`def wrapper(*args, *...`
                               Name: wrapper
@@ -7596,9 +7460,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               CelVars: None
                               FreeVars: dispatch
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [args, kw, dispatch, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, args, dispatch, kw]
                               ExecutionSlots:
-                                FreeVarsSlots: dispatch, 
+                                FreeVarsSlots: dispatch
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [31866,31953]`def wrapper(*args, *...`
                                 ReturnTargetNode SourceSection: [31866,31953]`def wrapper(*args, *...`
@@ -7633,7 +7497,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalCellNodeGen SourceSection: [31907,31915]`dispatch`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [2,dispatch,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [31916,31933]`args[0].__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
@@ -7650,7 +7513,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadLocalCellNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [3,registry,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [31962,31968]`object`
                             Identifier: object
                           ReadLocalVariableNodeGen SourceSection: [31972,31976]`func`
@@ -7662,7 +7524,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadLocalCellNodeGen SourceSection: [32000,32008]`register`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [7,register,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                         SetAttributeNodeGen SourceSection: [32013,32040]`wrapper.dispatch = d...`
                           Attribute: dispatch
                           ReadLocalVariableNodeGen SourceSection: [32013,32020]`wrapper`
@@ -7670,7 +7531,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadLocalCellNodeGen SourceSection: [32032,32040]`dispatch`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [6,dispatch,Illegal]
-                            ReadFromCellNodeGen SourceSection: None
                         SetAttributeNodeGen SourceSection: [32045,32096]`wrapper.registry = t...`
                           Attribute: registry
                           ReadLocalVariableNodeGen SourceSection: [32045,32052]`wrapper`
@@ -7683,7 +7543,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ReadLocalCellNodeGen SourceSection: [32087,32095]`registry`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [3,registry,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                         SetAttributeNodeGen SourceSection: [32101,32144]`wrapper._clear_cache...`
                           Attribute: _clear_cache
                           ReadLocalVariableNodeGen SourceSection: [32101,32108]`wrapper`
@@ -7696,7 +7555,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ReadLocalCellNodeGen SourceSection: [32124,32138]`dispatch_cache`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [4,dispatch_cache,Illegal]
-                              ReadFromCellNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [32149,32178]`update_wrapper(wrapp...`
                           PythonCallBinary SourceSection: [32149,32178]`update_wrapper(wrapp...`
                             CallBinaryMethodNodeGen SourceSection: None

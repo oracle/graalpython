@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
@@ -246,7 +248,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             String inputFilePath = context.getOption(PythonOptions.InputFilePath);
             PythonModule sysModule = context.getSysModule();
-            boolean needsMainImporter = getImporter(sysModule, inputFilePath);
+            boolean needsMainImporter = !inputFilePath.isEmpty() && getImporter(sysModule, inputFilePath);
             if (needsMainImporter) {
                 Object sysPath = sysModule.getAttribute("path");
                 PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, inputFilePath);
@@ -264,11 +266,19 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        // Equivalent of CPython's pymain_run_file
+        // Equivalent of CPython's pymain_run_file and pymain_run_stdin
         private void runFile(PythonContext context, String inputFilePath) {
             Source source;
             try {
-                source = Source.newBuilder(PythonLanguage.ID, context.getPublicTruffleFileRelaxed(inputFilePath)).mimeType(PythonLanguage.MIME_TYPE).build();
+                Source.SourceBuilder builder;
+                if (inputFilePath.isEmpty()) {
+                    // Reading from stdin
+                    builder = Source.newBuilder(PythonLanguage.ID, new InputStreamReader(context.getStandardIn()), "<stdin>");
+                } else {
+                    TruffleFile file = context.getPublicTruffleFileRelaxed(inputFilePath);
+                    builder = Source.newBuilder(PythonLanguage.ID, file);
+                }
+                source = builder.mimeType(PythonLanguage.MIME_TYPE).build();
                 // TODO we should handle non-IO errors better
             } catch (IOException e) {
                 ErrorAndMessagePair error = OSErrorEnum.fromException(e);
@@ -536,6 +546,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tdebug", takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class DebugNode extends PythonBuiltinNode {
+
+        public abstract Object execute(Object[] args);
+
         @Specialization
         @TruffleBoundary
         public Object doIt(Object[] args) {
@@ -545,6 +558,10 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
             stdout.flush();
             return PNone.NONE;
+        }
+
+        public static DebugNode create() {
+            return DebugNodeFactory.create(null);
         }
     }
 
@@ -810,26 +827,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
             PythonUtils.dumpHeap(tempFile.getPath());
             return tempFile.getPath();
-        }
-    }
-
-    @Builtin(name = "register_import_func", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class RegisterImportFunc extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doit(PFunction func) {
-            getContext().registerImportFunc(func);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "register_importlib", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class RegisterImportlib extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doit(PythonModule lib) {
-            getContext().registerImportlib(lib);
-            return PNone.NONE;
         }
     }
 }
