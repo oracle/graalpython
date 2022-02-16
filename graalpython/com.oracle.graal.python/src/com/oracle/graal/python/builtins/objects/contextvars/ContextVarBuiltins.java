@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,9 +38,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.objects.contextvars;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.CONTEXTVARS;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupError;
 
 import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
@@ -49,60 +49,68 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.statement.ImportNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(defineModule = CONTEXTVARS)
-public class ContextvarsModuleBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVar)
+public final class ContextVarBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return ContextvarsModuleBuiltinsFactory.getFactories();
+        return ContextVarBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "copy_context", minNumOfPositionalArgs = 0)
+    @Builtin(name = "get", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
+    public abstract static class GetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected Object copyCtx() {
-            throw raise(PythonBuiltinClassType.NotImplementedError);
-        }
-    }
-
-    @Builtin(name = "ContextVar", minNumOfPositionalArgs = 2, parameterNames = {"cls", "name", "default"}, constructsClass = PythonBuiltinClassType.ContextVar)
-    @GenerateNodeFactory
-    public abstract static class ContextVarNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        protected Object construct(VirtualFrame frame, Object cls, String name, PNone def,
-                        @Cached("createImportThreading()") ImportNode.ImportExpression threadingImport,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached CallNode callNode) {
-            return constructDef(frame, cls, name, PContextVar.NO_DEFAULT, threadingImport, lookupAttrNode, callNode);
+        Object get(VirtualFrame frame, PContextVar self, PNone def,
+                        @Cached PyObjectLookupAttr lookupAtrrNode) {
+            return get(frame, self, PContextVar.NO_DEFAULT, lookupAtrrNode);
         }
 
         @Specialization(guards = "!isPNone(def)")
-        protected Object constructDef(VirtualFrame frame, Object cls, String name, Object def,
-                        @Cached("createImportThreading()") ImportNode.ImportExpression threadingImport,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached CallNode callNode) {
-            Object threading = threadingImport.execute(frame);
-            Object localCallable = lookupAttrNode.execute(frame, threading, "local");
-            Object local = callNode.execute(frame, localCallable);
-            return factory().createContextVar(name, def, local);
+        Object get(VirtualFrame frame, PContextVar self, Object def,
+                        @Cached PyObjectLookupAttr lookupAtrrNode) {
+            Object value = lookupAtrrNode.execute(frame, self.getLocal(), "value");
+            if (value != PNone.NO_VALUE) {
+                return value;
+            }
+            if (def != PContextVar.NO_DEFAULT) {
+                return def;
+            }
+            if (self.getDefault() != PContextVar.NO_DEFAULT) {
+                return self.getDefault();
+            }
+            throw raise(LookupError);
         }
+    }
 
-        protected ImportNode.ImportExpression createImportThreading() {
-            return ImportNode.createAsExpression("threading");
+    @Builtin(name = "set", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SetNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object get(VirtualFrame frame, PContextVar self, Object value,
+                        @Cached PyObjectSetAttr setAtrrNode) {
+            setAtrrNode.execute(frame, self.getLocal(), "value", value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "reset", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ResetNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        static Object reset(PContextVar self, Object token) {
+            return PNone.NONE;
         }
     }
 
