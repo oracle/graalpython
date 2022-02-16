@@ -140,15 +140,15 @@ def python(args, **kwargs):
     do_run_python(args, **kwargs)
 
 
-def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, minimal=False, **kwargs):
+def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, minimal=True, **kwargs):
     experimental_opt_added = False
-    if not any(arg.startswith("--python.CAPI") for arg in args):
+    if not minimal and not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
         args.insert(0, "--python.CAPI=%s" % capi_home)
         args.insert(0, "--experimental-options")
         experimental_opt_added = True
 
-    if not any(arg.startswith("--python.JNIHome") for arg in args):
+    if not minimal and not any(arg.startswith("--python.JNIHome") for arg in args):
         args.insert(0, "--python.JNIHome=" + _get_jni_home())
         if not experimental_opt_added:
             args.insert(0, "--experimental-options")
