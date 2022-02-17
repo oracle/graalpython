@@ -204,7 +204,7 @@ suite = {
         "com.oracle.graal.python.pegparser": {
             "subDir": "graalpython",
             "sourceDirs": ["src/main/java"],
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "dependencies": [
                 "truffle:ICU4J",
                 "truffle:ICU4J-CHARSET",

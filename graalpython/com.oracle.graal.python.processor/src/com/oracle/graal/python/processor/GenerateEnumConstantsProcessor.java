@@ -58,7 +58,7 @@ import javax.tools.Diagnostic.Kind;
 import javax.tools.JavaFileObject;
 
 @SupportedAnnotationTypes("com.oracle.graal.python.annotations.GenerateEnumConstants")
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class GenerateEnumConstantsProcessor extends AbstractProcessor {
     @Override
     @SuppressWarnings({"try", "unused"})
