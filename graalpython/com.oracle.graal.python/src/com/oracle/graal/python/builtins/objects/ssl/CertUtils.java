@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -670,9 +671,15 @@ public final class CertUtils {
          * of data.
          */
         try {
-            Signature sign = Signature.getInstance(String.format("SHA1with%s", privateKey.getAlgorithm()));
+            Signature sign;
+            try {
+                sign = Signature.getInstance(String.format("SHA256with%s", privateKey.getAlgorithm()));
+            } catch (NoSuchAlgorithmException e) {
+                sign = Signature.getInstance(String.format("SHA1with%s", privateKey.getAlgorithm()));
+            }
             sign.initSign(privateKey);
-            byte data = 123;
+            byte[] data = new byte[128];
+            PythonContext.get(constructAndRaiseNode).getSecureRandom().nextBytes(data);
             sign.update(data);
             byte[] signature = sign.sign();
             sign.initVerify(publicKey);
