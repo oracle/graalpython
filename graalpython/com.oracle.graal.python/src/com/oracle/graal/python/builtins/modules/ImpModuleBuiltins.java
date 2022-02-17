@@ -716,7 +716,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // There was no error.
                 break;
             default:
-                throw CompilerDirectives.shouldNotReachHere("Unknown FrozenStatus " + status);
+                throw CompilerDirectives.shouldNotReachHere("unknown frozen status");
         }
     }
 
