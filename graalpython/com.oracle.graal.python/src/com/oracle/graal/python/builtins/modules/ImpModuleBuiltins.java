@@ -595,9 +595,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
 
             Object[] returnValues = new Object[]{
-                data == null ? PNone.NONE : data,
-                info.isPackage,
-                info.origName == null ? PNone.NONE : info.origName
+                            data == null ? PNone.NONE : data,
+                            info.isPackage,
+                            info.origName == null ? PNone.NONE : info.origName
             };
 
             return factory().createTuple(returnValues);

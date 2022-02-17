@@ -49,15 +49,15 @@ public final class PythonFrozenModule {
     private final boolean isPackage;
 
     private static byte[] getByteCode(String symbol) {
-       try {
-           InputStream resourceAsStream = PythonFrozenModule.class.getResourceAsStream("Frozen" + symbol + ".bin");
-           if (resourceAsStream != null) {
-               return resourceAsStream.readAllBytes();
-           }
-       } catch (IOException e) {
-           // fall-through
-       }
-       return null;
+        try {
+            InputStream resourceAsStream = PythonFrozenModule.class.getResourceAsStream("Frozen" + symbol + ".bin");
+            if (resourceAsStream != null) {
+                return resourceAsStream.readAllBytes();
+            }
+        } catch (IOException e) {
+            // fall-through
+        }
+        return null;
     }
 
     public PythonFrozenModule(String symbol, String name, boolean isPackage) {

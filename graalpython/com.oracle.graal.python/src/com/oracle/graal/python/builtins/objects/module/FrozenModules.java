@@ -1,42 +1,43 @@
-/* Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
-* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-*
-* The Universal Permissive License (UPL), Version 1.0
-*
-* Subject to the condition set forth below, permission is hereby granted to any
-* person obtaining a copy of this software, associated documentation and/or
-* data (collectively the "Software"), free of charge and under any and all
-* copyright rights in the Software, and any and all patent rights owned or
-* freely licensable by each licensor hereunder covering either (i) the
-* unmodified Software as contributed to or provided by such licensor, or (ii)
-* the Larger Works (as defined below), to deal in both
-*
-* (a) the Software, and
-*
-* (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-* one is included with the Software each a "Larger Work" to which the Software
-* is contributed by such licensors),
-*
-* without restriction, including without limitation the rights to copy, create
-* derivative works of, display, perform, and distribute the Software and make,
-* use, sell, offer for sale, import, export, have made, and have sold the
-* Software and the Larger Work(s), and to sublicense the foregoing rights on
-* either these or other terms.
-*
-* This license is subject to the following condition:
-*
-* The above copyright notice and either this complete permission notice or at a
-* minimum a reference to the UPL must be included in all copies or substantial
-* portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*/
+/*
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.oracle.graal.python.builtins.objects.module;
 
 public final class FrozenModules {
@@ -200,168 +201,330 @@ public final class FrozenModules {
 
     public static final PythonFrozenModule lookup(String name) {
         switch (name) {
-            case "abc": return Map.ABC;
-            case "codecs": return Map.CODECS;
-            case "encodings": return Map.ENCODINGS;
-            case "encodings.__init__": return Map.ENCODINGS.asPackage(false);
-            case "encodings.aliases": return Map.ENCODINGS_ALIASES;
-            case "encodings.ascii": return Map.ENCODINGS_ASCII;
-            case "encodings.base64_codec": return Map.ENCODINGS_BASE64_CODEC;
-            case "encodings.big5": return Map.ENCODINGS_BIG5;
-            case "encodings.big5hkscs": return Map.ENCODINGS_BIG5HKSCS;
-            case "encodings.bz2_codec": return Map.ENCODINGS_BZ2_CODEC;
-            case "encodings.charmap": return Map.ENCODINGS_CHARMAP;
-            case "encodings.cp037": return Map.ENCODINGS_CP037;
-            case "encodings.cp1006": return Map.ENCODINGS_CP1006;
-            case "encodings.cp1026": return Map.ENCODINGS_CP1026;
-            case "encodings.cp1125": return Map.ENCODINGS_CP1125;
-            case "encodings.cp1140": return Map.ENCODINGS_CP1140;
-            case "encodings.cp1250": return Map.ENCODINGS_CP1250;
-            case "encodings.cp1251": return Map.ENCODINGS_CP1251;
-            case "encodings.cp1252": return Map.ENCODINGS_CP1252;
-            case "encodings.cp1253": return Map.ENCODINGS_CP1253;
-            case "encodings.cp1254": return Map.ENCODINGS_CP1254;
-            case "encodings.cp1255": return Map.ENCODINGS_CP1255;
-            case "encodings.cp1256": return Map.ENCODINGS_CP1256;
-            case "encodings.cp1257": return Map.ENCODINGS_CP1257;
-            case "encodings.cp1258": return Map.ENCODINGS_CP1258;
-            case "encodings.cp273": return Map.ENCODINGS_CP273;
-            case "encodings.cp424": return Map.ENCODINGS_CP424;
-            case "encodings.cp437": return Map.ENCODINGS_CP437;
-            case "encodings.cp500": return Map.ENCODINGS_CP500;
-            case "encodings.cp720": return Map.ENCODINGS_CP720;
-            case "encodings.cp737": return Map.ENCODINGS_CP737;
-            case "encodings.cp775": return Map.ENCODINGS_CP775;
-            case "encodings.cp850": return Map.ENCODINGS_CP850;
-            case "encodings.cp852": return Map.ENCODINGS_CP852;
-            case "encodings.cp855": return Map.ENCODINGS_CP855;
-            case "encodings.cp856": return Map.ENCODINGS_CP856;
-            case "encodings.cp857": return Map.ENCODINGS_CP857;
-            case "encodings.cp858": return Map.ENCODINGS_CP858;
-            case "encodings.cp860": return Map.ENCODINGS_CP860;
-            case "encodings.cp861": return Map.ENCODINGS_CP861;
-            case "encodings.cp862": return Map.ENCODINGS_CP862;
-            case "encodings.cp863": return Map.ENCODINGS_CP863;
-            case "encodings.cp864": return Map.ENCODINGS_CP864;
-            case "encodings.cp865": return Map.ENCODINGS_CP865;
-            case "encodings.cp866": return Map.ENCODINGS_CP866;
-            case "encodings.cp869": return Map.ENCODINGS_CP869;
-            case "encodings.cp874": return Map.ENCODINGS_CP874;
-            case "encodings.cp875": return Map.ENCODINGS_CP875;
-            case "encodings.cp932": return Map.ENCODINGS_CP932;
-            case "encodings.cp949": return Map.ENCODINGS_CP949;
-            case "encodings.cp950": return Map.ENCODINGS_CP950;
-            case "encodings.euc_jis_2004": return Map.ENCODINGS_EUC_JIS_2004;
-            case "encodings.euc_jisx0213": return Map.ENCODINGS_EUC_JISX0213;
-            case "encodings.euc_jp": return Map.ENCODINGS_EUC_JP;
-            case "encodings.euc_kr": return Map.ENCODINGS_EUC_KR;
-            case "encodings.gb18030": return Map.ENCODINGS_GB18030;
-            case "encodings.gb2312": return Map.ENCODINGS_GB2312;
-            case "encodings.gbk": return Map.ENCODINGS_GBK;
-            case "encodings.hex_codec": return Map.ENCODINGS_HEX_CODEC;
-            case "encodings.hp_roman8": return Map.ENCODINGS_HP_ROMAN8;
-            case "encodings.hz": return Map.ENCODINGS_HZ;
-            case "encodings.idna": return Map.ENCODINGS_IDNA;
-            case "encodings.iso2022_jp": return Map.ENCODINGS_ISO2022_JP;
-            case "encodings.iso2022_jp_1": return Map.ENCODINGS_ISO2022_JP_1;
-            case "encodings.iso2022_jp_2": return Map.ENCODINGS_ISO2022_JP_2;
-            case "encodings.iso2022_jp_2004": return Map.ENCODINGS_ISO2022_JP_2004;
-            case "encodings.iso2022_jp_3": return Map.ENCODINGS_ISO2022_JP_3;
-            case "encodings.iso2022_jp_ext": return Map.ENCODINGS_ISO2022_JP_EXT;
-            case "encodings.iso2022_kr": return Map.ENCODINGS_ISO2022_KR;
-            case "encodings.iso8859_1": return Map.ENCODINGS_ISO8859_1;
-            case "encodings.iso8859_10": return Map.ENCODINGS_ISO8859_10;
-            case "encodings.iso8859_11": return Map.ENCODINGS_ISO8859_11;
-            case "encodings.iso8859_13": return Map.ENCODINGS_ISO8859_13;
-            case "encodings.iso8859_14": return Map.ENCODINGS_ISO8859_14;
-            case "encodings.iso8859_15": return Map.ENCODINGS_ISO8859_15;
-            case "encodings.iso8859_16": return Map.ENCODINGS_ISO8859_16;
-            case "encodings.iso8859_2": return Map.ENCODINGS_ISO8859_2;
-            case "encodings.iso8859_3": return Map.ENCODINGS_ISO8859_3;
-            case "encodings.iso8859_4": return Map.ENCODINGS_ISO8859_4;
-            case "encodings.iso8859_5": return Map.ENCODINGS_ISO8859_5;
-            case "encodings.iso8859_6": return Map.ENCODINGS_ISO8859_6;
-            case "encodings.iso8859_7": return Map.ENCODINGS_ISO8859_7;
-            case "encodings.iso8859_8": return Map.ENCODINGS_ISO8859_8;
-            case "encodings.iso8859_9": return Map.ENCODINGS_ISO8859_9;
-            case "encodings.johab": return Map.ENCODINGS_JOHAB;
-            case "encodings.koi8_r": return Map.ENCODINGS_KOI8_R;
-            case "encodings.koi8_t": return Map.ENCODINGS_KOI8_T;
-            case "encodings.koi8_u": return Map.ENCODINGS_KOI8_U;
-            case "encodings.kz1048": return Map.ENCODINGS_KZ1048;
-            case "encodings.latin_1": return Map.ENCODINGS_LATIN_1;
-            case "encodings.mac_arabic": return Map.ENCODINGS_MAC_ARABIC;
-            case "encodings.mac_centeuro": return Map.ENCODINGS_MAC_CENTEURO;
-            case "encodings.mac_croatian": return Map.ENCODINGS_MAC_CROATIAN;
-            case "encodings.mac_cyrillic": return Map.ENCODINGS_MAC_CYRILLIC;
-            case "encodings.mac_farsi": return Map.ENCODINGS_MAC_FARSI;
-            case "encodings.mac_greek": return Map.ENCODINGS_MAC_GREEK;
-            case "encodings.mac_iceland": return Map.ENCODINGS_MAC_ICELAND;
-            case "encodings.mac_latin2": return Map.ENCODINGS_MAC_LATIN2;
-            case "encodings.mac_roman": return Map.ENCODINGS_MAC_ROMAN;
-            case "encodings.mac_romanian": return Map.ENCODINGS_MAC_ROMANIAN;
-            case "encodings.mac_turkish": return Map.ENCODINGS_MAC_TURKISH;
-            case "encodings.mbcs": return Map.ENCODINGS_MBCS;
-            case "encodings.oem": return Map.ENCODINGS_OEM;
-            case "encodings.palmos": return Map.ENCODINGS_PALMOS;
-            case "encodings.ptcp154": return Map.ENCODINGS_PTCP154;
-            case "encodings.punycode": return Map.ENCODINGS_PUNYCODE;
-            case "encodings.quopri_codec": return Map.ENCODINGS_QUOPRI_CODEC;
-            case "encodings.raw_unicode_escape": return Map.ENCODINGS_RAW_UNICODE_ESCAPE;
-            case "encodings.rot_13": return Map.ENCODINGS_ROT_13;
-            case "encodings.shift_jis": return Map.ENCODINGS_SHIFT_JIS;
-            case "encodings.shift_jis_2004": return Map.ENCODINGS_SHIFT_JIS_2004;
-            case "encodings.shift_jisx0213": return Map.ENCODINGS_SHIFT_JISX0213;
-            case "encodings.tis_620": return Map.ENCODINGS_TIS_620;
-            case "encodings.undefined": return Map.ENCODINGS_UNDEFINED;
-            case "encodings.unicode_escape": return Map.ENCODINGS_UNICODE_ESCAPE;
-            case "encodings.utf_16": return Map.ENCODINGS_UTF_16;
-            case "encodings.utf_16_be": return Map.ENCODINGS_UTF_16_BE;
-            case "encodings.utf_16_le": return Map.ENCODINGS_UTF_16_LE;
-            case "encodings.utf_32": return Map.ENCODINGS_UTF_32;
-            case "encodings.utf_32_be": return Map.ENCODINGS_UTF_32_BE;
-            case "encodings.utf_32_le": return Map.ENCODINGS_UTF_32_LE;
-            case "encodings.utf_7": return Map.ENCODINGS_UTF_7;
-            case "encodings.utf_8": return Map.ENCODINGS_UTF_8;
-            case "encodings.utf_8_sig": return Map.ENCODINGS_UTF_8_SIG;
-            case "encodings.uu_codec": return Map.ENCODINGS_UU_CODEC;
-            case "encodings.zlib_codec": return Map.ENCODINGS_ZLIB_CODEC;
-            case "io": return Map.IO;
-            case "_py_abc": return Map._PY_ABC;
-            case "_weakrefset": return Map._WEAKREFSET;
-            case "types": return Map.TYPES;
-            case "enum": return Map.ENUM;
-            case "sre_constants": return Map.SRE_CONSTANTS;
-            case "sre_parse": return Map.SRE_PARSE;
-            case "sre_compile": return Map.SRE_COMPILE;
-            case "operator": return Map.OPERATOR;
-            case "keyword": return Map.KEYWORD;
-            case "heapq": return Map.HEAPQ;
-            case "reprlib": return Map.REPRLIB;
-            case "collections": return Map.COLLECTIONS;
-            case "collections.__init__": return Map.COLLECTIONS.asPackage(false);
-            case "collections.abc": return Map.COLLECTIONS_ABC;
-            case "functools": return Map.FUNCTOOLS;
-            case "copyreg": return Map.COPYREG;
-            case "re": return Map.RE;
-            case "locale": return Map.LOCALE;
-            case "rlcompleter": return Map.RLCOMPLETER;
-            case "_collections_abc": return Map._COLLECTIONS_ABC;
-            case "_sitebuiltins": return Map._SITEBUILTINS;
-            case "genericpath": return Map.GENERICPATH;
-            case "ntpath": return Map.NTPATH;
-            case "posixpath": return Map.POSIXPATH;
-            case "os": return Map.OS;
-            case "site": return Map.SITE;
-            case "stat": return Map.STAT;
-            case "__hello__": return Map.__HELLO__;
-            case "__hello_alias__": return Map.__HELLO__;
-            case "__phello_alias__": return Map.__HELLO__.asPackage(true);
-            case "__phello_alias__.spam": return Map.__HELLO__;
-            case "__phello__": return Map.__HELLO__.asPackage(true);
-            case "__phello__.spam": return Map.__HELLO__;
-            case "__hello_only__": return Map.FROZEN_ONLY;
-            default: return null;
+            case "abc":
+                return Map.ABC;
+            case "codecs":
+                return Map.CODECS;
+            case "encodings":
+                return Map.ENCODINGS;
+            case "encodings.__init__":
+                return Map.ENCODINGS.asPackage(false);
+            case "encodings.aliases":
+                return Map.ENCODINGS_ALIASES;
+            case "encodings.ascii":
+                return Map.ENCODINGS_ASCII;
+            case "encodings.base64_codec":
+                return Map.ENCODINGS_BASE64_CODEC;
+            case "encodings.big5":
+                return Map.ENCODINGS_BIG5;
+            case "encodings.big5hkscs":
+                return Map.ENCODINGS_BIG5HKSCS;
+            case "encodings.bz2_codec":
+                return Map.ENCODINGS_BZ2_CODEC;
+            case "encodings.charmap":
+                return Map.ENCODINGS_CHARMAP;
+            case "encodings.cp037":
+                return Map.ENCODINGS_CP037;
+            case "encodings.cp1006":
+                return Map.ENCODINGS_CP1006;
+            case "encodings.cp1026":
+                return Map.ENCODINGS_CP1026;
+            case "encodings.cp1125":
+                return Map.ENCODINGS_CP1125;
+            case "encodings.cp1140":
+                return Map.ENCODINGS_CP1140;
+            case "encodings.cp1250":
+                return Map.ENCODINGS_CP1250;
+            case "encodings.cp1251":
+                return Map.ENCODINGS_CP1251;
+            case "encodings.cp1252":
+                return Map.ENCODINGS_CP1252;
+            case "encodings.cp1253":
+                return Map.ENCODINGS_CP1253;
+            case "encodings.cp1254":
+                return Map.ENCODINGS_CP1254;
+            case "encodings.cp1255":
+                return Map.ENCODINGS_CP1255;
+            case "encodings.cp1256":
+                return Map.ENCODINGS_CP1256;
+            case "encodings.cp1257":
+                return Map.ENCODINGS_CP1257;
+            case "encodings.cp1258":
+                return Map.ENCODINGS_CP1258;
+            case "encodings.cp273":
+                return Map.ENCODINGS_CP273;
+            case "encodings.cp424":
+                return Map.ENCODINGS_CP424;
+            case "encodings.cp437":
+                return Map.ENCODINGS_CP437;
+            case "encodings.cp500":
+                return Map.ENCODINGS_CP500;
+            case "encodings.cp720":
+                return Map.ENCODINGS_CP720;
+            case "encodings.cp737":
+                return Map.ENCODINGS_CP737;
+            case "encodings.cp775":
+                return Map.ENCODINGS_CP775;
+            case "encodings.cp850":
+                return Map.ENCODINGS_CP850;
+            case "encodings.cp852":
+                return Map.ENCODINGS_CP852;
+            case "encodings.cp855":
+                return Map.ENCODINGS_CP855;
+            case "encodings.cp856":
+                return Map.ENCODINGS_CP856;
+            case "encodings.cp857":
+                return Map.ENCODINGS_CP857;
+            case "encodings.cp858":
+                return Map.ENCODINGS_CP858;
+            case "encodings.cp860":
+                return Map.ENCODINGS_CP860;
+            case "encodings.cp861":
+                return Map.ENCODINGS_CP861;
+            case "encodings.cp862":
+                return Map.ENCODINGS_CP862;
+            case "encodings.cp863":
+                return Map.ENCODINGS_CP863;
+            case "encodings.cp864":
+                return Map.ENCODINGS_CP864;
+            case "encodings.cp865":
+                return Map.ENCODINGS_CP865;
+            case "encodings.cp866":
+                return Map.ENCODINGS_CP866;
+            case "encodings.cp869":
+                return Map.ENCODINGS_CP869;
+            case "encodings.cp874":
+                return Map.ENCODINGS_CP874;
+            case "encodings.cp875":
+                return Map.ENCODINGS_CP875;
+            case "encodings.cp932":
+                return Map.ENCODINGS_CP932;
+            case "encodings.cp949":
+                return Map.ENCODINGS_CP949;
+            case "encodings.cp950":
+                return Map.ENCODINGS_CP950;
+            case "encodings.euc_jis_2004":
+                return Map.ENCODINGS_EUC_JIS_2004;
+            case "encodings.euc_jisx0213":
+                return Map.ENCODINGS_EUC_JISX0213;
+            case "encodings.euc_jp":
+                return Map.ENCODINGS_EUC_JP;
+            case "encodings.euc_kr":
+                return Map.ENCODINGS_EUC_KR;
+            case "encodings.gb18030":
+                return Map.ENCODINGS_GB18030;
+            case "encodings.gb2312":
+                return Map.ENCODINGS_GB2312;
+            case "encodings.gbk":
+                return Map.ENCODINGS_GBK;
+            case "encodings.hex_codec":
+                return Map.ENCODINGS_HEX_CODEC;
+            case "encodings.hp_roman8":
+                return Map.ENCODINGS_HP_ROMAN8;
+            case "encodings.hz":
+                return Map.ENCODINGS_HZ;
+            case "encodings.idna":
+                return Map.ENCODINGS_IDNA;
+            case "encodings.iso2022_jp":
+                return Map.ENCODINGS_ISO2022_JP;
+            case "encodings.iso2022_jp_1":
+                return Map.ENCODINGS_ISO2022_JP_1;
+            case "encodings.iso2022_jp_2":
+                return Map.ENCODINGS_ISO2022_JP_2;
+            case "encodings.iso2022_jp_2004":
+                return Map.ENCODINGS_ISO2022_JP_2004;
+            case "encodings.iso2022_jp_3":
+                return Map.ENCODINGS_ISO2022_JP_3;
+            case "encodings.iso2022_jp_ext":
+                return Map.ENCODINGS_ISO2022_JP_EXT;
+            case "encodings.iso2022_kr":
+                return Map.ENCODINGS_ISO2022_KR;
+            case "encodings.iso8859_1":
+                return Map.ENCODINGS_ISO8859_1;
+            case "encodings.iso8859_10":
+                return Map.ENCODINGS_ISO8859_10;
+            case "encodings.iso8859_11":
+                return Map.ENCODINGS_ISO8859_11;
+            case "encodings.iso8859_13":
+                return Map.ENCODINGS_ISO8859_13;
+            case "encodings.iso8859_14":
+                return Map.ENCODINGS_ISO8859_14;
+            case "encodings.iso8859_15":
+                return Map.ENCODINGS_ISO8859_15;
+            case "encodings.iso8859_16":
+                return Map.ENCODINGS_ISO8859_16;
+            case "encodings.iso8859_2":
+                return Map.ENCODINGS_ISO8859_2;
+            case "encodings.iso8859_3":
+                return Map.ENCODINGS_ISO8859_3;
+            case "encodings.iso8859_4":
+                return Map.ENCODINGS_ISO8859_4;
+            case "encodings.iso8859_5":
+                return Map.ENCODINGS_ISO8859_5;
+            case "encodings.iso8859_6":
+                return Map.ENCODINGS_ISO8859_6;
+            case "encodings.iso8859_7":
+                return Map.ENCODINGS_ISO8859_7;
+            case "encodings.iso8859_8":
+                return Map.ENCODINGS_ISO8859_8;
+            case "encodings.iso8859_9":
+                return Map.ENCODINGS_ISO8859_9;
+            case "encodings.johab":
+                return Map.ENCODINGS_JOHAB;
+            case "encodings.koi8_r":
+                return Map.ENCODINGS_KOI8_R;
+            case "encodings.koi8_t":
+                return Map.ENCODINGS_KOI8_T;
+            case "encodings.koi8_u":
+                return Map.ENCODINGS_KOI8_U;
+            case "encodings.kz1048":
+                return Map.ENCODINGS_KZ1048;
+            case "encodings.latin_1":
+                return Map.ENCODINGS_LATIN_1;
+            case "encodings.mac_arabic":
+                return Map.ENCODINGS_MAC_ARABIC;
+            case "encodings.mac_centeuro":
+                return Map.ENCODINGS_MAC_CENTEURO;
+            case "encodings.mac_croatian":
+                return Map.ENCODINGS_MAC_CROATIAN;
+            case "encodings.mac_cyrillic":
+                return Map.ENCODINGS_MAC_CYRILLIC;
+            case "encodings.mac_farsi":
+                return Map.ENCODINGS_MAC_FARSI;
+            case "encodings.mac_greek":
+                return Map.ENCODINGS_MAC_GREEK;
+            case "encodings.mac_iceland":
+                return Map.ENCODINGS_MAC_ICELAND;
+            case "encodings.mac_latin2":
+                return Map.ENCODINGS_MAC_LATIN2;
+            case "encodings.mac_roman":
+                return Map.ENCODINGS_MAC_ROMAN;
+            case "encodings.mac_romanian":
+                return Map.ENCODINGS_MAC_ROMANIAN;
+            case "encodings.mac_turkish":
+                return Map.ENCODINGS_MAC_TURKISH;
+            case "encodings.mbcs":
+                return Map.ENCODINGS_MBCS;
+            case "encodings.oem":
+                return Map.ENCODINGS_OEM;
+            case "encodings.palmos":
+                return Map.ENCODINGS_PALMOS;
+            case "encodings.ptcp154":
+                return Map.ENCODINGS_PTCP154;
+            case "encodings.punycode":
+                return Map.ENCODINGS_PUNYCODE;
+            case "encodings.quopri_codec":
+                return Map.ENCODINGS_QUOPRI_CODEC;
+            case "encodings.raw_unicode_escape":
+                return Map.ENCODINGS_RAW_UNICODE_ESCAPE;
+            case "encodings.rot_13":
+                return Map.ENCODINGS_ROT_13;
+            case "encodings.shift_jis":
+                return Map.ENCODINGS_SHIFT_JIS;
+            case "encodings.shift_jis_2004":
+                return Map.ENCODINGS_SHIFT_JIS_2004;
+            case "encodings.shift_jisx0213":
+                return Map.ENCODINGS_SHIFT_JISX0213;
+            case "encodings.tis_620":
+                return Map.ENCODINGS_TIS_620;
+            case "encodings.undefined":
+                return Map.ENCODINGS_UNDEFINED;
+            case "encodings.unicode_escape":
+                return Map.ENCODINGS_UNICODE_ESCAPE;
+            case "encodings.utf_16":
+                return Map.ENCODINGS_UTF_16;
+            case "encodings.utf_16_be":
+                return Map.ENCODINGS_UTF_16_BE;
+            case "encodings.utf_16_le":
+                return Map.ENCODINGS_UTF_16_LE;
+            case "encodings.utf_32":
+                return Map.ENCODINGS_UTF_32;
+            case "encodings.utf_32_be":
+                return Map.ENCODINGS_UTF_32_BE;
+            case "encodings.utf_32_le":
+                return Map.ENCODINGS_UTF_32_LE;
+            case "encodings.utf_7":
+                return Map.ENCODINGS_UTF_7;
+            case "encodings.utf_8":
+                return Map.ENCODINGS_UTF_8;
+            case "encodings.utf_8_sig":
+                return Map.ENCODINGS_UTF_8_SIG;
+            case "encodings.uu_codec":
+                return Map.ENCODINGS_UU_CODEC;
+            case "encodings.zlib_codec":
+                return Map.ENCODINGS_ZLIB_CODEC;
+            case "io":
+                return Map.IO;
+            case "_py_abc":
+                return Map._PY_ABC;
+            case "_weakrefset":
+                return Map._WEAKREFSET;
+            case "types":
+                return Map.TYPES;
+            case "enum":
+                return Map.ENUM;
+            case "sre_constants":
+                return Map.SRE_CONSTANTS;
+            case "sre_parse":
+                return Map.SRE_PARSE;
+            case "sre_compile":
+                return Map.SRE_COMPILE;
+            case "operator":
+                return Map.OPERATOR;
+            case "keyword":
+                return Map.KEYWORD;
+            case "heapq":
+                return Map.HEAPQ;
+            case "reprlib":
+                return Map.REPRLIB;
+            case "collections":
+                return Map.COLLECTIONS;
+            case "collections.__init__":
+                return Map.COLLECTIONS.asPackage(false);
+            case "collections.abc":
+                return Map.COLLECTIONS_ABC;
+            case "functools":
+                return Map.FUNCTOOLS;
+            case "copyreg":
+                return Map.COPYREG;
+            case "re":
+                return Map.RE;
+            case "locale":
+                return Map.LOCALE;
+            case "rlcompleter":
+                return Map.RLCOMPLETER;
+            case "_collections_abc":
+                return Map._COLLECTIONS_ABC;
+            case "_sitebuiltins":
+                return Map._SITEBUILTINS;
+            case "genericpath":
+                return Map.GENERICPATH;
+            case "ntpath":
+                return Map.NTPATH;
+            case "posixpath":
+                return Map.POSIXPATH;
+            case "os":
+                return Map.OS;
+            case "site":
+                return Map.SITE;
+            case "stat":
+                return Map.STAT;
+            case "__hello__":
+                return Map.__HELLO__;
+            case "__hello_alias__":
+                return Map.__HELLO__;
+            case "__phello_alias__":
+                return Map.__HELLO__.asPackage(true);
+            case "__phello_alias__.spam":
+                return Map.__HELLO__;
+            case "__phello__":
+                return Map.__HELLO__.asPackage(true);
+            case "__phello__.spam":
+                return Map.__HELLO__;
+            case "__hello_only__":
+                return Map.FROZEN_ONLY;
+            default:
+                return null;
         }
     }
 }

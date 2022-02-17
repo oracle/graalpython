@@ -133,7 +133,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyUnicode_FromObject", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-     abstract static class PyUnicodeFromObjectNode extends PythonBuiltinNode {
+    abstract static class PyUnicodeFromObjectNode extends PythonBuiltinNode {
         @Specialization
         public static String fromObject(String s) {
             return s;
