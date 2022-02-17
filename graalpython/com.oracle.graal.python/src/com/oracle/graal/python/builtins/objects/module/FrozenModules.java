@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.module;
 public final class FrozenModules {
 
     private static final class Map {
+        private static final PythonFrozenModule IMPORTLIB__BOOTSTRAP = new PythonFrozenModule("IMPORTLIB__BOOTSTRAP", "importlib._bootstrap", false);
+        private static final PythonFrozenModule IMPORTLIB__BOOTSTRAP_EXTERNAL = new PythonFrozenModule("IMPORTLIB__BOOTSTRAP_EXTERNAL", "importlib._bootstrap_external", false);
         private static final PythonFrozenModule ABC = new PythonFrozenModule("ABC", "abc", false);
         private static final PythonFrozenModule CODECS = new PythonFrozenModule("CODECS", "codecs", false);
         private static final PythonFrozenModule ENCODINGS = new PythonFrozenModule("ENCODINGS", "encodings", true);
@@ -201,6 +203,10 @@ public final class FrozenModules {
 
     public static final PythonFrozenModule lookup(String name) {
         switch (name) {
+            case "_frozen_importlib":
+                return Map.IMPORTLIB__BOOTSTRAP;
+            case "_frozen_importlib_external":
+                return Map.IMPORTLIB__BOOTSTRAP_EXTERNAL;
             case "abc":
                 return Map.ABC;
             case "codecs":
@@ -502,6 +508,8 @@ public final class FrozenModules {
             case "ntpath":
                 return Map.NTPATH;
             case "posixpath":
+                return Map.POSIXPATH;
+            case "os.path":
                 return Map.POSIXPATH;
             case "os":
                 return Map.OS;

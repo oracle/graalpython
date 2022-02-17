@@ -441,82 +441,52 @@ def lower_camel_case(str):
     return str[0].lower() + str[1:] if str[1:] else ""
 
 
-# Adapted from PEP 257: strips a uniform amount of indentation from the lines of the multiline string.
-# This allows us to use multiline strings with pythonic identation which produce the same identation in the written file
-def trim(str):
-    if not str:
-        return ""
-    # Convert tabs to spaces (following the normal Python rules)
-    # and split into a list of lines:
-    lines = str.expandtabs().splitlines()
-    # Determine minimum indentation (first line doesn't count):
-    indent = sys.maxsize
-    for line in lines:
-
-        stripped = line.lstrip()
-        if stripped:
-            indent = min(indent, len(line) - len(stripped))
-    # Remove indentation (first line is special):
-    trimmed = []
-    if indent < sys.maxsize:
-        for line in lines:
-            trimmed.append(line[indent:].rstrip())
-    # Strip off trailing and leading blank lines:
-    while trimmed and not trimmed[-1]:
-        trimmed.pop()
-    while trimmed and not trimmed[0]:
-        trimmed.pop(0)
-    # Return a single string:
-    return "\n".join(trimmed)
-
-
 #############################################
 # write frozen files
 
-FROZEN_MODULES_HEADER = """
-   /*
-    * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
-    * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-    *
-    * The Universal Permissive License (UPL), Version 1.0
-    *
-    * Subject to the condition set forth below, permission is hereby granted to any
-    * person obtaining a copy of this software, associated documentation and/or
-    * data (collectively the "Software"), free of charge and under any and all
-    * copyright rights in the Software, and any and all patent rights owned or
-    * freely licensable by each licensor hereunder covering either (i) the
-    * unmodified Software as contributed to or provided by such licensor, or (ii)
-    * the Larger Works (as defined below), to deal in both
-    *
-    * (a) the Software, and
-    *
-    * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-    * one is included with the Software each a "Larger Work" to which the Software
-    * is contributed by such licensors),
-    *
-    * without restriction, including without limitation the rights to copy, create
-    * derivative works of, display, perform, and distribute the Software and make,
-    * use, sell, offer for sale, import, export, have made, and have sold the
-    * Software and the Larger Work(s), and to sublicense the foregoing rights on
-    * either these or other terms.
-    *
-    * This license is subject to the following condition:
-    *
-    * The above copyright notice and either this complete permission notice or at a
-    * minimum a reference to the UPL must be included in all copies or substantial
-    * portions of the Software.
-    *
-    * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    * SOFTWARE.
-    */
-    package com.oracle.graal.python.builtins.objects.module;
+FROZEN_MODULES_HEADER = """/*
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.oracle.graal.python.builtins.objects.module;
 
-    public final class FrozenModules {"""
+public final class FrozenModules {"""
 
 def freeze_module(src):
     with open(src.pyfile, "r") as src_file, open(src.binaryfile, "wb") as binary_file:
@@ -543,10 +513,13 @@ def write_frozen_lookup(out_file, modules):
     out_file.write("        switch (name) {\n")
     for module in modules:
         if module.source and (module.source.ispkg != module.ispkg):
-            out_file.write(f'            case "{module.name}": return Map.{module.symbol}.asPackage({"true" if module.ispkg else "false"});\n')
+            out_file.write(f'            case "{module.name}":\n')
+            out_file.write(f'                return Map.{module.symbol}.asPackage({"true" if module.ispkg else "false"});\n')
         else:
-            out_file.write(f'            case "{module.name}": return Map.{module.symbol};\n')
-    out_file.write("            default: return null;\n")
+            out_file.write(f'            case "{module.name}":\n')
+            out_file.write(f'                return Map.{module.symbol};\n')
+    out_file.write("            default:\n")
+    out_file.write("                return null;\n")
     out_file.write("        }\n")
     out_file.write("    }\n")
 
@@ -561,7 +534,7 @@ def write_frozen_module_file(file, modules):
         content = None
     os.makedirs(os.path.dirname(file), exist_ok=True)
     with open(file, "w") as out_file:
-        out_file.write(trim(FROZEN_MODULES_HEADER))
+        out_file.write(FROZEN_MODULES_HEADER)
         out_file.write("\n\n")
         write_frozen_modules_map(out_file, modules)
         out_file.write("\n")
@@ -575,6 +548,7 @@ def write_frozen_module_file(file, modules):
         os.utime(file, (atime, mtime))
     else:
         print(f"{file} modified, rebuild needed!")
+        sys.exit(1)
 
 def add_tabs(str, number):
     lines = str.splitlines()
