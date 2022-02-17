@@ -63,6 +63,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -990,7 +991,7 @@ public final class PythonContext extends Python3Core {
         return importLock;
     }
 
-    public PMethod importFunc() {
+    public PFunction importFunc() {
         return getImportFunc();
     }
 

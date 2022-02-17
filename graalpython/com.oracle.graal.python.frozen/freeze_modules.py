@@ -23,16 +23,17 @@ TESTS_SECTION = "Test module"
 FROZEN = [
     # See parse_frozen_spec() for the format.
     # In cases where the frozenid is duplicated, the first one is re-used.
-    # TODO: Enable freezing import system.
-    #     ('import system', [
-    #         # These frozen modules are necessary for bootstrapping
-    #         # the import system.
-    #         'importlib._bootstrap : _frozen_importlib',
-    #         'importlib._bootstrap_external : _frozen_importlib_external',
-    #         # This module is important because some Python builds rely
-    #         # on a builtin zip file instead of a filesystem.
-    #         'zipimport',
-    #         ]),
+    (
+        'import system',
+        [
+            # These frozen modules are necessary for bootstrapping the import
+            # system.
+            'importlib._bootstrap : _frozen_importlib',
+            'importlib._bootstrap_external : _frozen_importlib_external',
+            # CPython freezes zipimport, but we have it entirely intrinsified
+            # 'zipimport',
+        ]
+    ),
     (
         "stdlib - startup, without site (python -S)",
         [
@@ -67,6 +68,8 @@ FROZEN = [
             "genericpath",
             "ntpath",
             "posixpath",
+            # We must explicitly mark os.path as a frozen module
+            ("ntpath" if os.name == "nt" else "posixpath") + " : os.path",
             "os",
             "site",
             "stat",
@@ -524,7 +527,10 @@ def freeze_module(src):
 def write_frozen_modules_map(out_file, modules):
     out_file.write("    private static final class Map {\n")
     for module in modules:
-        if not module.isalias or not module.orig:
+        if (not module.isalias or
+            not module.orig or
+            not any(module.orig == m.orig for m in modules if m != module)
+        ):
             ispkg = "true" if module.ispkg else "false"
             out_file.write(
                 f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", "{module.frozenid}", {ispkg});\n'

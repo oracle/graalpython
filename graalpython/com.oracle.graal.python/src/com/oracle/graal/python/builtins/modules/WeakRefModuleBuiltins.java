@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -119,7 +120,9 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         PythonModule weakrefModule = core.lookupBuiltinModule("_weakref");
         weakrefModule.setAttribute(weakRefQueueKey, weakRefQueue);
-        core.lookupType(PythonBuiltinClassType.PReferenceType).setAttribute(weakRefQueueKey, weakRefQueue);
+        PythonBuiltinClass refType = core.lookupType(PythonBuiltinClassType.PReferenceType);
+        weakrefModule.setAttribute("ref", refType);
+        refType.setAttribute(weakRefQueueKey, weakRefQueue);
         final PythonContext ctx = core.getContext();
         core.getContext().registerAsyncAction(() -> {
             if (!ctx.isGcEnabled()) {

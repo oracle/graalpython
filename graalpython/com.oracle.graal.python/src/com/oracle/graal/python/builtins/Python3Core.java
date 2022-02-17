@@ -26,12 +26,13 @@
 package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
 import static com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -225,6 +226,7 @@ import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltin
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins;
@@ -268,7 +270,6 @@ import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.InstancemethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
@@ -309,8 +310,11 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -354,9 +358,6 @@ public abstract class Python3Core extends ParserErrorCallback {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
                         "type",
-                        "_imp",
-                        "function",
-                        "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
                         "faulthandler",
@@ -383,8 +384,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                 }
             }
         }
-        // must be last
-        coreFiles.add("final_patches");
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
 
@@ -716,7 +715,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     @CompilationFinal private PythonModule builtinsModule;
     @CompilationFinal private PythonModule sysModule;
     @CompilationFinal private PDict sysModules;
-    @CompilationFinal private PMethod importFunc;
+    @CompilationFinal private PFunction importFunc;
     @CompilationFinal private PythonModule importlib;
 
     @CompilationFinal private PInt pyTrue;
@@ -811,6 +810,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     public final void initialize(PythonContext context) {
         objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter(), context.getLanguage());
         initializeJavaCore();
+        initializeImportlib();
         initializePython3Core(context.getCoreHomeOrFail());
         assert SpecialMethodSlot.checkSlotOverrides(this);
         initialized = true;
@@ -822,6 +822,42 @@ public abstract class Python3Core extends ParserErrorCallback {
         SpecialMethodSlot.initializeBuiltinsSpecialMethodSlots(this);
         publishBuiltinModules();
         builtinsModule = builtinModules.get(BuiltinNames.BUILTINS);
+    }
+
+    private void initializeImportlib() {
+        PythonModule bootstrap = (PythonModule) ImpModuleBuiltins.importFrozenModuleObject(this, "_frozen_importlib", false);
+
+        PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
+        WriteAttributeToDynamicObjectNode writeNode = WriteAttributeToDynamicObjectNode.getUncached();
+        ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
+
+        if (bootstrap == null) {
+            // true when the frozen module is not available
+            PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
+            writeNode.execute(bootstrapExternal, __PACKAGE__, "importlib");
+            addBuiltinModule("_frozen_importlib_external", bootstrapExternal);
+            bootstrap = createModule("importlib._bootstrap");
+            writeNode.execute(bootstrap, __PACKAGE__, "importlib");
+            addBuiltinModule("_frozen_importlib", bootstrap);
+            loadFile("importlib/_bootstrap_external", getContext().getStdlibHome(), bootstrapExternal);
+            loadFile("importlib/_bootstrap", getContext().getStdlibHome(), bootstrap);
+        }
+
+        callNode.execute(null, bootstrap, "_install", getSysModule(), lookupBuiltinModule("_imp"));
+        writeNode.execute(getBuiltins(), "__import__", readNode.execute(bootstrap, "__import__"));
+        callNode.execute(null, bootstrap, "_install_external_importers");
+        importFunc = (PFunction) readNode.execute(bootstrap, "__import__");
+        importlib = bootstrap;
+
+        PythonBuiltinClass moduleType = lookupType(PythonBuiltinClassType.PythonModule);
+        writeNode.execute(moduleType, __REPR__, readNode.execute(bootstrap, "_module_repr"));
+        SpecialMethodSlot.reinitializeSpecialMethodSlots(moduleType, getLanguage());
+
+        // __package__ needs to be set and doesn't get set by _bootstrap setup
+        writeNode.execute(bootstrap, __PACKAGE__, "importlib");
+
+        PythonModule bootstrapExternal = (PythonModule) getSysModules().getItem("_frozen_importlib_external");
+        writeNode.execute(bootstrapExternal, __PACKAGE__, "importlib");
     }
 
     private void initializePython3Core(String coreHome) {
@@ -890,22 +926,8 @@ public abstract class Python3Core extends ParserErrorCallback {
         return importlib;
     }
 
-    public final void registerImportlib(PythonModule mod) {
-        if (importlib != null) {
-            throw new IllegalStateException("importlib cannot be registered more than once");
-        }
-        importlib = mod;
-    }
-
-    public final PMethod getImportFunc() {
+    public final PFunction getImportFunc() {
         return importFunc;
-    }
-
-    public final void registerImportFunc(PMethod func) {
-        if (importFunc != null) {
-            throw new IllegalStateException("__import__ func cannot be registered more than once");
-        }
-        importFunc = func;
     }
 
     @Override
@@ -1005,13 +1027,6 @@ public abstract class Python3Core extends ParserErrorCallback {
         // core machinery
         sysModule = builtinModules.get("sys");
         sysModules = (PDict) sysModule.getAttribute(MODULES);
-
-        PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
-        bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
-        addBuiltinModule("_frozen_importlib_external", bootstrapExternal);
-        PythonModule bootstrap = createModule("importlib._bootstrap");
-        bootstrap.setAttribute(__PACKAGE__, "importlib");
-        addBuiltinModule("_frozen_importlib", bootstrap);
     }
 
     public PythonModule createModule(String name) {
@@ -1087,16 +1102,20 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     private void loadFile(String s, String prefix) {
-        Supplier<CallTarget> getCode = () -> {
-            Source source = getInternalSource(s, prefix);
-            return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));
-        };
-        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
             mod = factory().createPythonModule("__anonymous__");
         }
+        loadFile(s, prefix, mod);
+    }
+
+    private void loadFile(String s, String prefix, PythonModule mod) {
+        Supplier<CallTarget> getCode = () -> {
+            Source source = getInternalSource(s, prefix);
+            return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));
+        };
+        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 

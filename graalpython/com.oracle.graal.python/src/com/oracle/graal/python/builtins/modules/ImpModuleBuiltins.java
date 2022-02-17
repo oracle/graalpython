@@ -114,7 +114,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -466,8 +465,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean run(String name) {
-            PythonFrozenModule mod = FrozenModules.lookup(name);
-            return mod != null && mod.getCode() != null;
+            return findFrozen(name).status == FROZEN_OKAY;
         }
     }
 
@@ -619,16 +617,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(String name) {
-            return importFrozenModuleObject(getCore(), name);
+            return importFrozenModuleObject(getCore(), name, true);
         }
     }
 
     /**
      * Equivalent to CPythons PyImport_FrozenModuleObject. Initialize a frozen module. Returns the
-     * imported module or raises a Python exception.
+     * imported module, null, or raises a Python exception.
      */
     @TruffleBoundary
-    private static Object importFrozenModuleObject(Python3Core core, String name) {
+    public static Object importFrozenModuleObject(Python3Core core, String name, boolean doRaise) {
         FrozenResult result = findFrozen(name);
         FrozenStatus status = result.status;
         FrozenInfo info = result.info;
@@ -637,9 +635,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             case FROZEN_NOT_FOUND:
             case FROZEN_DISABLED:
             case FROZEN_BAD_NAME:
-                return 0;
+                return null;
             default:
-                raiseFrozenError(status, name, PRaiseNode.getUncached());
+                if (doRaise) {
+                    raiseFrozenError(status, name, PRaiseNode.getUncached());
+                } else {
+                    return null;
+                }
         }
 
         PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(info.data, info.size);
