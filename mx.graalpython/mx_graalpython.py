@@ -164,9 +164,16 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         elif check_vm_env == '0':
             check_vm()
 
-    dists = [f'{"BOOTSTRAP_" if minimal else ""}GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
+    if minimal:
+        x, *__ = *[x for x in SUITE.dists if x.name == "GRAALPYTHON"],
+        dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution()]
+    else:
+        dists = ['GRAALPYTHON']
+    dists += ['TRUFFLE_NFI', 'SULONG_NATIVE']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
+    if minimal:
+        vm_args.insert(0, f"-Dorg.graalvm.language.python.home={_dev_pythonhome()}")
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
     dists += additional_dists
 
@@ -1880,6 +1887,9 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         return 'Building project {}'.format(self.subject.name)
 
     def build(self):
+        if not self.args.force and not self.args.all and not self.needsBuild(None)[0]:
+            mx.log(f"Refusing build of {self.subject.name}. Use e.g. `mx -f --only {self.subject.name}' to force a build.")
+            return True
         args = [mx_subst.path_substitutions.substitute(a, dependency=self) for a in self.subject.args]
         return self.run(args)
 
@@ -1938,7 +1948,7 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         if tsOldest == sys.maxsize:
             tsOldest = 0
         if tsOldest < tsNewest:
-            self.clean() # we clean here, because setuptools doesn't check timestamps
+            self.clean(forBuild="reallyForBuild") # we clean here, because setuptools doesn't check timestamps
             if newestFile and oldestFile:
                 return (True, "rebuild needed, %s newer than %s" % (newestFile, oldestFile))
             else:
@@ -1950,12 +1960,12 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         return None
 
     def clean(self, forBuild=False):
-        try:
-            shutil.rmtree(self.subject.get_output_root())
-        except BaseException:
-            return 1
-        else:
-            return 0
+        if forBuild == "reallyForBuild":
+            try:
+                shutil.rmtree(self.subject.get_output_root())
+            except BaseException:
+                return 1
+        return 0
 
 
 class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
@@ -1983,23 +1993,18 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
 
     def build(self):
         self._prepare_headers()
-
         # n.b.: we do the following to ensure that there's a directory when the
         # importlib PathFinder initializes it's directory finders
         mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
-
-        args = [
-            os.path.join(self.src_dir(), "setup.py"),
-            self.subject.get_output_root()
-        ]
-        return self.run(args)
+        return super().build()
 
     def clean(self, forBuild=False):
         result = 0
-        try:
-            shutil.rmtree(self._dev_headers_dir())
-        except BaseException:
-            result = 1
+        if not forBuild:
+            try:
+                shutil.rmtree(self._dev_headers_dir())
+            except BaseException:
+                result = 1
         return max(result, super().clean(forBuild=forBuild))
 
 

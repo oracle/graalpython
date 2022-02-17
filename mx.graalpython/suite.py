@@ -254,7 +254,7 @@ suite = {
             ],
             "platformDependent": False,
             "buildDependencies": [
-                "BOOTSTRAP_GRAALPYTHON",
+                "com.oracle.graal.python",
             ],
         },
 
@@ -366,8 +366,12 @@ suite = {
             "vpath": True,
             "type": "GraalpythonCAPIProject",
             "platformDependent": False,
+            "args": [
+                "<src_dir:com.oracle.graal.python.cext>/setup.py",
+                "<output_root:com.oracle.graal.python.cext>",
+            ],
             "buildDependencies": [
-                "BOOTSTRAP_GRAALPYTHON",
+                "com.oracle.graal.python",
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
@@ -467,9 +471,10 @@ suite = {
             "maven": True,
         },
 
-        "BOOTSTRAP_GRAALPYTHON": {
+        "GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
+                "com.oracle.graal.python.frozen",
             ],
             "distDependencies": [
                 "GRAALPYTHON-LAUNCHER",
@@ -484,14 +489,6 @@ suite = {
                 "truffle:ICU4J-CHARSET",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
-            ],
-            "description": "GraalPython engine during build time",
-        },
-
-        "GRAALPYTHON": {
-            "dependencies": [
-                "BOOTSTRAP_GRAALPYTHON",
-                "com.oracle.graal.python.frozen",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"

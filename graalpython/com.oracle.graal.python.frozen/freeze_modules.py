@@ -552,6 +552,7 @@ def write_frozen_module_file(file, modules):
         atime, mtime = stat_result.st_atime, stat_result.st_mtime
     else:
         content = None
+    os.makedirs(os.path.dirname(file), exist_ok=True)
     with open(file, "w") as out_file:
         out_file.write(trim(FROZEN_MODULES_HEADER))
         out_file.write("\n\n")
