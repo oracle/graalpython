@@ -123,6 +123,8 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_recv_send
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_recv_zero
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_rude_shutdown
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_selected_alpn_protocol
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_selected_alpn_protocol_if_server_uses_alpn
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_selected_npn_protocol
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sendfile
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_server_accept
@@ -133,6 +135,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback_wrong_return_type
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_socketserver
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_ssl_cert_verify_error
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_starttls
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_tls1_3
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_tls_unique_channel_binding
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_version_basic

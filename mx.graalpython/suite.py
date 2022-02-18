@@ -114,6 +114,24 @@ suite = {
             "packedResource": True,
             "sha1": "fa2ae4db119f639a01b02f99f1ba671ece2828eb",
         },
+        "BOUNCYCASTLE-PROVIDER": {
+            "sha1": "46a080368d38b428d237a59458f9bc915222894d",
+            "sourceSha1": "c092c4f5af620ea5fd40a48d844c556826bebb63",
+            "maven": {
+              "groupId": "org.bouncycastle",
+              "artifactId": "bcprov-jdk15on",
+              "version": "1.68",
+            },
+        },
+        "BOUNCYCASTLE-PKIX": {
+            "sha1": "81da950604ff0b2652348cbd2b48fde46ced9867",
+            "sourceSha1": "a5407438fed5d271f129d85e3f92cc027fa246a9",
+            "maven": {
+                "groupId": "org.bouncycastle",
+                "artifactId": "bcpkix-jdk15on",
+                "version": "1.68",
+            },
+        },
         "BZIP2": {
             "urls": [
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/graalpython/bzip2-1.0.8.tar.gz",
@@ -257,7 +275,8 @@ suite = {
                 "truffle:ICU4J",
                 "truffle:ICU4J-CHARSET",
                 "regex:TREGEX",
-                "sdk:JLINE3",
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
             ],
             "requires": [
                 "java.management",
@@ -460,11 +479,17 @@ suite = {
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
-                "truffle:ANTLR4",
-                "truffle:ICU4J",
-                "truffle:ICU4J-CHARSET",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+            ],
+            "exclude": [
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+                "XZ-1.8",
+                "truffle:ANTLR4",
+                "truffle:ICU4J",
+                # TODO this fails native image build for some reason
+                # "truffle:ICU4J-CHARSET",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"

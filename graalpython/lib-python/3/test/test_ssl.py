@@ -26,8 +26,6 @@ try:
     import ctypes
 except ImportError:
     ctypes = None
-# XXX GraalVM change - our ctypes is just a stub, pretend it's not there at all
-ctypes = None
 
 ssl = support.import_module("ssl")
 
@@ -1327,61 +1325,60 @@ class ContextTests(unittest.TestCase):
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         with self.assertRaisesRegex(ssl.SSLError, "key values mismatch"):
             ctx.load_cert_chain(CAFILE_CACERT, ONLYKEY)
-        # XXX GraalVM change - password protected certfiles not supported
         # Password protected key and cert
-        # ctx.load_cert_chain(CERTFILE_PROTECTED, password=KEY_PASSWORD)
-        # ctx.load_cert_chain(CERTFILE_PROTECTED, password=KEY_PASSWORD.encode())
-        # ctx.load_cert_chain(CERTFILE_PROTECTED,
-        #                     password=bytearray(KEY_PASSWORD.encode()))
-        # ctx.load_cert_chain(ONLYCERT, ONLYKEY_PROTECTED, KEY_PASSWORD)
-        # ctx.load_cert_chain(ONLYCERT, ONLYKEY_PROTECTED, KEY_PASSWORD.encode())
-        # ctx.load_cert_chain(ONLYCERT, ONLYKEY_PROTECTED,
-        #                     bytearray(KEY_PASSWORD.encode()))
-        # with self.assertRaisesRegex(TypeError, "should be a string"):
-        #     ctx.load_cert_chain(CERTFILE_PROTECTED, password=True)
-        # with self.assertRaises(ssl.SSLError):
-        #     ctx.load_cert_chain(CERTFILE_PROTECTED, password="badpass")
-        # with self.assertRaisesRegex(ValueError, "cannot be longer"):
+        ctx.load_cert_chain(CERTFILE_PROTECTED, password=KEY_PASSWORD)
+        ctx.load_cert_chain(CERTFILE_PROTECTED, password=KEY_PASSWORD.encode())
+        ctx.load_cert_chain(CERTFILE_PROTECTED,
+                            password=bytearray(KEY_PASSWORD.encode()))
+        ctx.load_cert_chain(ONLYCERT, ONLYKEY_PROTECTED, KEY_PASSWORD)
+        ctx.load_cert_chain(ONLYCERT, ONLYKEY_PROTECTED, KEY_PASSWORD.encode())
+        ctx.load_cert_chain(ONLYCERT, ONLYKEY_PROTECTED,
+                            bytearray(KEY_PASSWORD.encode()))
+        with self.assertRaisesRegex(TypeError, "should be a string"):
+            ctx.load_cert_chain(CERTFILE_PROTECTED, password=True)
+        with self.assertRaises(ssl.SSLError):
+            ctx.load_cert_chain(CERTFILE_PROTECTED, password="badpass")
+        with self.assertRaisesRegex(ValueError, "cannot be longer"):
             # openssl has a fixed limit on the password buffer.
             # PEM_BUFSIZE is generally set to 1kb.
             # Return a string larger than this.
-            # ctx.load_cert_chain(CERTFILE_PROTECTED, password=b'a' * 102400)
+            ctx.load_cert_chain(CERTFILE_PROTECTED, password=b'a' * 102400)
         # Password callback
-        # def getpass_unicode():
-        #     return KEY_PASSWORD
-        # def getpass_bytes():
-        #     return KEY_PASSWORD.encode()
-        # def getpass_bytearray():
-        #     return bytearray(KEY_PASSWORD.encode())
-        # def getpass_badpass():
-        #     return "badpass"
-        # def getpass_huge():
-        #     return b'a' * (1024 * 1024)
-        # def getpass_bad_type():
-        #     return 9
-        # def getpass_exception():
-        #     raise Exception('getpass error')
-        # class GetPassCallable:
-        #     def __call__(self):
-        #         return KEY_PASSWORD
-        #     def getpass(self):
-        #         return KEY_PASSWORD
-        # ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_unicode)
-        # ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_bytes)
-        # ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_bytearray)
-        # ctx.load_cert_chain(CERTFILE_PROTECTED, password=GetPassCallable())
-        # ctx.load_cert_chain(CERTFILE_PROTECTED,
-        #                     password=GetPassCallable().getpass)
-        # with self.assertRaises(ssl.SSLError):
-        #     ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_badpass)
-        # with self.assertRaisesRegex(ValueError, "cannot be longer"):
-        #     ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_huge)
-        # with self.assertRaisesRegex(TypeError, "must return a string"):
-        #     ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_bad_type)
-        # with self.assertRaisesRegex(Exception, "getpass error"):
-        #     ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_exception)
-        # # Make sure the password function isn't called if it isn't needed
-        # ctx.load_cert_chain(CERTFILE, password=getpass_exception)
+        def getpass_unicode():
+            return KEY_PASSWORD
+        def getpass_bytes():
+            return KEY_PASSWORD.encode()
+        def getpass_bytearray():
+            return bytearray(KEY_PASSWORD.encode())
+        def getpass_badpass():
+            return "badpass"
+        def getpass_huge():
+            return b'a' * (1024 * 1024)
+        def getpass_bad_type():
+            return 9
+        def getpass_exception():
+            raise Exception('getpass error')
+        class GetPassCallable:
+            def __call__(self):
+                return KEY_PASSWORD
+            def getpass(self):
+                return KEY_PASSWORD
+        ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_unicode)
+        ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_bytes)
+        ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_bytearray)
+        ctx.load_cert_chain(CERTFILE_PROTECTED, password=GetPassCallable())
+        ctx.load_cert_chain(CERTFILE_PROTECTED,
+                            password=GetPassCallable().getpass)
+        with self.assertRaises(ssl.SSLError):
+            ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_badpass)
+        with self.assertRaisesRegex(ValueError, "cannot be longer"):
+            ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_huge)
+        with self.assertRaisesRegex(TypeError, "must return a string"):
+            ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_bad_type)
+        with self.assertRaisesRegex(Exception, "getpass error"):
+            ctx.load_cert_chain(CERTFILE_PROTECTED, password=getpass_exception)
+        # Make sure the password function isn't called if it isn't needed
+        ctx.load_cert_chain(CERTFILE, password=getpass_exception)
 
     def test_load_verify_locations(self):
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

@@ -435,7 +435,7 @@ def update_unittest_tags(args):
         mx.warn("Potential regressions:\n" + '\n'.join(x[1] for x in diff))
 
 
-AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py"]
+AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_integration.py"]
 
 
 class GraalPythonTags(object):
@@ -1524,6 +1524,9 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     },
     truffle_jars=[
         'graalpython:GRAALPYTHON',
+        'graalpython:BOUNCYCASTLE-PROVIDER',
+        'graalpython:BOUNCYCASTLE-PKIX',
+        'graalpython:XZ-1.8',
     ],
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
