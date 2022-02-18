@@ -165,4 +165,8 @@ public interface NodeFactory {
     public StmtTy createImportFrom(String fromName, AliasTy[] names, int level, int startOffset, int endOffset);
 
     public AliasTy createAlias(String name, String asName, int startOffset, int endOffset);
+
+    public StmtTy createTry(StmtTy[] body, StmtTy.Try.ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, int startOffset, int endOffset);
+
+    public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, int startOffset, int endOffset);
 }

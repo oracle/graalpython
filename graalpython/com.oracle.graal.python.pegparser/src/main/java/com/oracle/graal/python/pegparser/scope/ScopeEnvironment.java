@@ -996,7 +996,11 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.Try.ExceptHandler node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (node.type != null) {
+                node.type.accept(this);
+            }
+            visitSequence(node.body);
+            return null;
         }
 
         @Override
