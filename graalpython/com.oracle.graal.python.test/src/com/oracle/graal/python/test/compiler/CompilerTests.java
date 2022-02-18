@@ -100,23 +100,89 @@ public class CompilerTests extends PythonTests {
         doTest("while False: pass", "<module>");
     }
 
-    // @Test
-    // public void testExcept() {
-    //     String s;
-    //     s = "try:\n" +
-    //         "  print(1)\n" +
-    //         "except BaseException as e:\n" +
-    //         "  print(e)\n" +
-    //         "except ValueError:\n" +
-    //         "  print('ValueError')\n" +
-    //         "except:\n" +
-    //         "  pass\n" +
-    //         "else:\n" +
-    //         "  print('else')\n" +
-    //         "finally:\n" +
-    //         "  print('finally')\n";
-    //     doTest(s, null);
-    // }
+    @Test
+    public void testTryExcept() {
+        String s = "print('before')\n" +
+                "try:\n" +
+                "  print('try')\n" +
+                "except TypeError as e:\n" +
+                "  print('except1')\n" +
+                "except ValueError as e:\n" +
+                "  print('except2')\n" +
+                "print('after')\n";
+        doTest(s, null);
+    }
+
+    @Test
+    public void testTryExceptBare() {
+        String s = "print('before')\n" +
+                "try:\n" +
+                "  print('try')\n" +
+                "except TypeError as e:\n" +
+                "  print('except1')\n" +
+                "except:\n" +
+                "  print('except bare')\n" +
+                "print('after')\n";
+        doTest(s, null);
+    }
+
+    @Test
+    public void testTryFinally() {
+        String s = "print('before')\n" +
+                "try:\n" +
+                "  print('try')\n" +
+                "finally:\n" +
+                "  print('finally')\n" +
+                "print('after')\n";
+        doTest(s, null);
+    }
+
+    @Test
+    public void testTryExceptFinally() {
+        String s = "print('before')\n" +
+                "try:\n" +
+                "  print('try')\n" +
+                "except TypeError as e:\n" +
+                "  print('except1')\n" +
+                "except ValueError as e:\n" +
+                "  print('except2')\n" +
+                "finally:\n" +
+                "  print('finally')\n" +
+                "print('after')\n";
+        doTest(s, null);
+    }
+
+    @Test
+    public void testTryExceptElse() {
+        String s = "print('before')\n" +
+                "try:\n" +
+                "  print('try')\n" +
+                "except TypeError as e:\n" +
+                "  print('except1')\n" +
+                "except ValueError as e:\n" +
+                "  print('except2')\n" +
+                "else:\n" +
+                "  print('else')\n" +
+                "print('after')\n";
+        doTest(s, null);
+    }
+
+    @Test
+    public void testTryExceptElseFinally() {
+        String s = "print('before')\n" +
+                "try:\n" +
+                "  print('try')\n" +
+                "except TypeError as e:\n" +
+                "  print('except1')\n" +
+                "except ValueError as e:\n" +
+                "  print('except2')\n" +
+                "else:\n" +
+                "  print('else')\n" +
+                "finally:\n" +
+                "  print('finally')\n" +
+                "print('after')\n";
+        doTest(s, null);
+    }
 
     @Test
     public void testDefun() {

@@ -202,10 +202,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.currentBlock.instr.add(Instruction.START_OF_FINALLY_MARKER);
     }
 
-    private void addEndOfFinallyMarker() {
-        unit.currentBlock.instr.add(Instruction.END_OF_FINALLY_MARKER);
-    }
-
     private void addOpName(OpCodes code, HashMap<String, Integer> dict, String name) {
         String mangled = ScopeEnvironment.mangle(unit.privateName, name);
         addOpObject(code, dict, mangled);
@@ -1353,11 +1349,16 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.Try node) {
         Block tryBody = new Block();
         Block end = new Block();
-        Block finalBlock = node.finalBody != null && node.finalBody.length > 0 ? new Block() : null;
-        Block elseBlock = node.orElse != null && node.orElse.length > 0 ? new Block() : null;
+        Block finalBlock = node.finalBody != null ? new Block() : null;
+        Block elseBlock = node.orElse != null ? new Block() : null;
+        boolean hasHandlers = node.handlers != null && node.handlers.length > 0;
 
         // try block
         addStartOfTryMarker();
+        if (finalBlock != null && hasHandlers) {
+            // For try-except-finally, we need an outer try that would catch exceptions from except+else blocks
+            addStartOfTryMarker();
+        }
         unit.useNextBlock(tryBody);
         visitSequence(node.body);
         if (elseBlock != null) {
@@ -1368,11 +1369,15 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
 
         // except clauses
-        if (node.handlers != null && node.handlers.length > 0) {
-            addStartOfExceptHandlers();
+        if (hasHandlers) {
+            boolean hasBareExcept = false;
             Block nextHandler = new Block();
             for (int i = 0; i < node.handlers.length; i++) {
+                assert !hasBareExcept;
                 unit.useNextBlock(nextHandler);
+                if (i == 0) {
+                    addStartOfExceptHandlers();
+                }
 
                 if (i < node.handlers.length - 1) {
                     nextHandler = new Block();
@@ -1384,12 +1389,17 @@ public class Compiler implements SSTreeVisitor<Void> {
                     }
                 }
 
-                node.handlers[i].type.accept(this);
-                addOp(MATCH_EXC_OR_JUMP, nextHandler);
-                if (node.handlers[i].name != null) {
-                    setOffset(node.handlers[i].type.getEndOffset() + 1);
-                    addNameOp(node.handlers[i].name, ExprContext.Store);
+                if (node.handlers[i].type != null) {
+                    node.handlers[i].type.accept(this);
+                    addOp(MATCH_EXC_OR_JUMP, nextHandler);
+                    if (node.handlers[i].name != null) {
+                        setOffset(node.handlers[i].type.getEndOffset() + 1);
+                        addNameOp(node.handlers[i].name, ExprContext.Store);
+                    } else {
+                        addOp(POP_TOP);
+                    }
                 } else {
+                    hasBareExcept = true;
                     addOp(POP_TOP);
                 }
                 visitSequence(node.handlers[i].body);
@@ -1397,27 +1407,26 @@ public class Compiler implements SSTreeVisitor<Void> {
                 setOffset(node.handlers[i].getEndOffset());
                 jumpToFinally(finalBlock, end);
             }
-            if (nextHandler != finalBlock) {
+            if (nextHandler != finalBlock && !hasBareExcept) {
                 // there's no finally block, so when we fall off the except clauses, we re-raise
                 unit.useNextBlock(nextHandler);
                 addOp(END_FINALLY);
-                addEndOfFinallyMarker();
             }
         }
 
         if (elseBlock != null) {
+            unit.useNextBlock(elseBlock);
             visitSequence(node.orElse);
             setOffset(node.orElse[node.orElse.length - 1].getEndOffset());
             jumpToFinally(finalBlock, end);
         }
 
         if (finalBlock != null) {
-            addStartOfFinallyMarker();
             unit.useNextBlock(finalBlock);
+            addStartOfFinallyMarker();
             visitSequence(node.finalBody);
             setOffset(node.finalBody[node.finalBody.length - 1].getEndOffset());
             addOp(END_FINALLY);
-            addEndOfFinallyMarker();
         }
 
         unit.useNextBlock(end);

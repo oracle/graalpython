@@ -53,6 +53,8 @@ public final class CodeUnit {
     public static final byte IS_GENERATOR = 0x20;
     public static final byte IS_ASYNC = 0x40;
 
+    public static final int DISASSEMBLY_NUM_COLUMNS = 7;
+
     public final String name;
     public final String filename;
 
@@ -184,7 +186,7 @@ public final class CodeUnit {
             int bc = Byte.toUnsignedInt(code[bci++]);
             OpCodes opcode = codeForBC(bc);
 
-            String[] line = lines.computeIfAbsent(bcBCI, k -> new String[6]);
+            String[] line = lines.computeIfAbsent(bcBCI, k -> new String[DISASSEMBLY_NUM_COLUMNS]);
 
             int srcOffset = bciToSrcOffset(bcBCI);
             offset = srcOffset;
@@ -291,11 +293,12 @@ public final class CodeUnit {
                 case JUMP_IF_FALSE_OR_POP:
                 case JUMP_IF_FALSE_OR_POP_FAR:
                 case JUMP_IF_TRUE_OR_POP:
-                case JUMP_IF_TRUE_OR_POP_FAR: {
-                    lines.computeIfAbsent(bcBCI + arg, k -> new String[6])[1] = ">>";
+                case JUMP_IF_TRUE_OR_POP_FAR:
+                case MATCH_EXC_OR_JUMP:
+                case MATCH_EXC_OR_JUMP_FAR:
+                    lines.computeIfAbsent(bcBCI + arg, k -> new String[DISASSEMBLY_NUM_COLUMNS])[1] = ">>";
                     line[5] = String.format("to %d", bcBCI + arg);
                     break;
-                }
             }
         }
 
@@ -305,18 +308,16 @@ public final class CodeUnit {
             int stackAtHandler = exceptionHandlerRanges[i + 2];
             String[] line = lines.get(stop);
             assert line != null;
-            line[5] = String.format("exc handler %d--%d; stack: %d", start, stop - 1, stackAtHandler);
+            line[6] = String.format("exc handler %d - %d; stack: %d", start, stop, stackAtHandler);
         }
 
         for (bci = 0; bci < code.length; bci++) {
             String[] line = lines.get(bci);
             if (line != null) {
-                String firstPart = String.format("%-8s %2s %4s %-32s %-3s", (Object[])line);
-                if (line[5] != null) {
-                    sb.append(firstPart).append(String.format("   (%s)", line[5]));
-                } else {
-                    sb.append(firstPart.stripTrailing());
-                }
+                line[5] = line[5] == null ? "" :String.format("(%s)", line[5]);
+                line[6] = line[6] == null ? "" :String.format("(%s)", line[6]);
+                String formatted = String.format("%-8s %2s %4s %-32s %-3s   %-32s %s", (Object[])line);
+                sb.append(formatted.stripTrailing());
                 sb.append('\n');
             }
         }

@@ -45,7 +45,6 @@ final class Instruction {
     static Instruction START_OF_TRY_MARKER = new Instruction(OpCodes.NOP, 0, null, 0);
     static Instruction START_OF_EXCEPT_MARKER = new Instruction(OpCodes.NOP, 0, null, 0);
     static Instruction START_OF_FINALLY_MARKER = new Instruction(OpCodes.NOP, 0, null, 0);
-    static Instruction END_OF_FINALLY_MARKER = new Instruction(OpCodes.NOP, 0, null, 0);
 
     OpCodes opcode;
     int arg;

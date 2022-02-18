@@ -1,0 +1,38 @@
+Disassembly of <module>:
+000000         0 LOAD_NAME                         0    (print)
+000006         2 LOAD_STRING                       0    (before)
+000015         4 CALL_FUNCTION                     1
+000015         6 POP_TOP
+000023         7 LOAD_NAME                         0    (print)
+000029         9 LOAD_STRING                       1    (try)
+000035        11 CALL_FUNCTION                     1
+000035        13 POP_TOP
+000035        14 JUMP_FORWARD                      33   (to 47)
+000043        16 LOAD_NAME                         1    (TypeError)                      (exc handler 7 - 16; stack: 0)
+000043        18 MATCH_EXC_OR_JUMP                 13   (to 31)
+000053        20 STORE_NAME                        2    (e)
+000061        22 LOAD_NAME                         0    (print)
+000067        24 LOAD_STRING                       2    (except1)
+000077        26 CALL_FUNCTION                     1
+000077        28 POP_TOP
+000042        29 JUMP_FORWARD                      27   (to 56)
+000085   >>   31 LOAD_NAME                         3    (ValueError)
+000085        33 MATCH_EXC_OR_JUMP                 13   (to 46)
+000096        35 STORE_NAME                        2    (e)
+000104        37 LOAD_NAME                         0    (print)
+000110        39 LOAD_STRING                       3    (except2)
+000120        41 CALL_FUNCTION                     1
+000120        43 POP_TOP
+000084        44 JUMP_FORWARD                      12   (to 56)
+000084   >>   46 END_FINALLY
+000129   >>   47 LOAD_NAME                         0    (print)
+000135        49 LOAD_STRING                       4    (else)
+000142        51 CALL_FUNCTION                     1
+000142        53 POP_TOP
+000142        54 JUMP_FORWARD                      2    (to 56)
+000143   >>   56 LOAD_NAME                         0    (print)
+000149        58 LOAD_STRING                       5    (after)
+000157        60 CALL_FUNCTION                     1
+000157        62 POP_TOP
+000157        63 LOAD_NONE
+000157        64 RETURN_VALUE

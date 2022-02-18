@@ -178,12 +178,23 @@ public final class CompilationUnit {
         int maxStackSize = 0;
 
         Block b = startBlock;
-
+        boolean jumpedUnconditionally = false;
         int lastSrcOffset = 0;
         while (b != null) {
-            assert !stackAtBlock.containsKey(b) || stacksize == stackAtBlock.get(b);
+            Instruction firstInstruction = b.instr.isEmpty()? null: b.instr.get(0);
+            if (firstInstruction == Instruction.START_OF_EXCEPT_MARKER || firstInstruction == Instruction.START_OF_FINALLY_MARKER) {
+                // Except block starts with the stack unwound and the exception pushed
+                stacksize = exceptionHandlerStack.peek()[2] + 1;
+            } else if (jumpedUnconditionally) {
+                stacksize = stackAtBlock.get(b);
+            } else {
+                assert !stackAtBlock.containsKey(b) || stacksize == stackAtBlock.get(b);
+            }
+
+            jumpedUnconditionally = false;
 
             for (Instruction i : b.instr) {
+                assert !jumpedUnconditionally;
                 if (handleMarker(i, buf, exceptionHandlerStack, finishedExceptionHandlerRanges, stacksize)) {
                     continue;
                 }
@@ -192,6 +203,8 @@ public final class CompilationUnit {
 
                 stacksize = calculateStackEffect(i, stackAtBlock, stacksize);
                 maxStackSize = Math.max(stacksize, maxStackSize);
+                jumpedUnconditionally = i.opcode == OpCodes.JUMP_FORWARD || i.opcode == OpCodes.JUMP_FORWARD_FAR ||
+                        i.opcode == OpCodes.JUMP_BACKWARD || i.opcode == OpCodes.JUMP_BACKWARD_FAR || i.opcode == OpCodes.RETURN_VALUE;
 
                 insertSrcOffsetTable(i.srcOffset, lastSrcOffset, srcOffsets);
                 lastSrcOffset = i.srcOffset;
@@ -319,35 +332,16 @@ public final class CompilationUnit {
 
     private boolean handleMarker(Instruction i, ByteArrayOutputStream buf, Stack<short[]> exceptionHandlerStack, ArrayList<short[]> finishedExceptionHandlerRanges, int stacksize) {
         if (i == Instruction.START_OF_TRY_MARKER) {
-            assert buf.size() + 1 == (short)(buf.size() + 1);
-            exceptionHandlerStack.push(new short[]{(short)(buf.size() + 1), -1, -1});
+            assert buf.size() == (short)buf.size();
+            assert stacksize == (short)stacksize;
+            exceptionHandlerStack.push(new short[]{(short)buf.size(), -1, (short) stacksize});
             return true;
-        } else if (i == Instruction.START_OF_EXCEPT_MARKER) {
+        } else if (i == Instruction.START_OF_EXCEPT_MARKER || i == Instruction.START_OF_FINALLY_MARKER) {
             short[] range = exceptionHandlerStack.pop();
             assert range[1] == -1;
-            assert buf.size() + 1 == (short)(buf.size() + 1);
-            range[1] = (short)(buf.size() + 1);
-            assert stacksize == (short)stacksize;
-            range[2] = (short)stacksize;
+            assert buf.size()== (short)buf.size();
+            range[1] = (short)buf.size();
             finishedExceptionHandlerRanges.add(range);
-            return true;
-        } else if (i == Instruction.START_OF_FINALLY_MARKER) {
-            short[] exceptRange = exceptionHandlerStack.pop();
-            short[] finallyRange = exceptRange.clone();
-            assert buf.size() + 1 == (short)(buf.size() + 1);
-            if (exceptRange[1] != -1) {
-                // there was an except handler which should handle any exception in the try
-                // block. this range is only used directly for exceptions in try blocks themselves
-                // and the else block
-                finallyRange[0] = finallyRange[1];
-            }
-            finallyRange[1] = (short)(buf.size() + 1);
-            assert stacksize == (short)stacksize;
-            finallyRange[2] = (short)stacksize;
-            finishedExceptionHandlerRanges.add(finallyRange);
-            return true;
-        } else if (i == Instruction.END_OF_FINALLY_MARKER) {
-            exceptionHandlerStack.pop();
             return true;
         }
         return false;
@@ -364,9 +358,9 @@ public final class CompilationUnit {
                 stackAtBlock.put(i.getTarget(), stacksizeAtTarget);
             }
         }
-        stacksize += i.opcode.getStackEffect(i.arg, false);
-        assert stacksize >= 0;
-        return stacksize;
+        int newStacksize = stacksize + i.opcode.getStackEffect(i.arg, false);
+        assert newStacksize >= 0;
+        return newStacksize;
     }
 
     private <T> T[] orderedKeys(HashMap<T, Integer> map, T[] template, int offset) {
