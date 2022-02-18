@@ -198,7 +198,7 @@ yield_stmt[stmt_ty]: y=yield_expr { factory.createExpression(y) }
 assert_stmt[stmt_ty]: 'assert' a=expression b=[',' z=expression { z }] { factory.createAssert(a, b, startToken.startOffset, endToken.endOffset) }
 
 del_stmt[stmt_ty]:
-    | 'del' a=del_targets &(';' | NEWLINE) { _PyAST_Delete(a, EXTRA) }
+    | 'del' a=del_targets &(';' | NEWLINE) { factory.createDelete(a, startToken.startOffset, endToken.endOffset) }
     | invalid_del_stmt
 
 import_stmt[stmt_ty]: import_name | import_from
@@ -788,10 +788,10 @@ del_target[expr_ty] (memo):
     | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, ExprContext.Delete, startToken.startOffset, startToken.endOffset) }
     | del_t_atom
 del_t_atom[expr_ty]:
-    | a=NAME { _PyPegen_set_expr_context(p, a, Del) }
-    | '(' a=del_target ')' { _PyPegen_set_expr_context(p, a, Del) }
-    | '(' a=[del_targets] ')' { _PyAST_Tuple(a, Del, EXTRA) }
-    | '[' a=[del_targets] ']' { _PyAST_List(a, Del, EXTRA) }
+    | a=NAME { this.setExprContext(a, ExprContext.Delete) }
+    | '(' a=del_target ')' { this.setExprContext(a, ExprContext.Delete) }
+    | '(' a=[del_targets] ')' { factory.createTuple(a, ExprContext.Delete, startToken.startOffset, startToken.endOffset) }
+    | '[' a=[del_targets] ']' { factory.createList(a, ExprContext.Delete, startToken.startOffset, startToken.endOffset) }
 
 targets[asdl_expr_seq*]: a[asdl_expr_seq*]=','.target+ [','] { a }
 target[expr_ty] (memo):

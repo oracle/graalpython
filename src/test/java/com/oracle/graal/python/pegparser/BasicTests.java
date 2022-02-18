@@ -133,10 +133,10 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("'ahoj'; 2");
     }
 
-//    @Test
-//    public void simpleExpression03() throws Exception {
-//        checkTreeResult("'ahoj'; 2; 1.0");
-//    }
+    @Test
+    public void simpleExpression03() throws Exception {
+        checkTreeResult("'ahoj'; 2; 1.0");
+    }
 
     @Test
     public void simpleExpression04() throws Exception {
@@ -391,20 +391,25 @@ public class BasicTests extends ParserTestBase {
 //        checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "SyntaxError: keyword argument repeated");
 //    }
 //
-//    @Test
-//    public void del01() throws Exception {
-//        checkTreeResult("del x");
-//    }
-//
-//    @Test
-//    public void del02() throws Exception {
-//        checkTreeResult("del x, y, z");
-//    }
-//
-//    @Test
-//    public void del03() throws Exception {
-//        checkTreeResult("del (x, y, z)");
-//    }
+    @Test
+    public void del01() throws Exception {
+        checkTreeResult("del x");
+    }
+
+    @Test
+    public void del02() throws Exception {
+        checkTreeResult("del x, y, z");
+    }
+
+    @Test
+    public void del03() throws Exception {
+        checkTreeResult("del (x, y, z)");
+    }
+    
+    @Test
+    public void del04() throws Exception {
+        checkTreeResult("del [x, y, z]");
+    }
 
    @Test
    public void for01() throws Exception {
@@ -416,22 +421,22 @@ public class BasicTests extends ParserTestBase {
        checkTreeResult("for i in range(210):\n" + "  print(i)");
    }
 
-//    @Test
-//    public void for03() throws Exception {
-//        checkScopeAndTree(
-//                        "for x in xrange(3):\n" +
-//                                        "  if x == 1:\n" +
-//                                        "    break\n");
-//    }
-//
-//    @Test
-//    public void for04() throws Exception {
-//        checkScopeAndTree(
-//                        "def fn():\n" +
-//                                        "  for x in xrange(3):\n" +
-//                                        "    if x == 1:\n" +
-//                                        "      break\n");
-//    }
+    @Test
+    public void for03() throws Exception {
+        checkScopeAndTree(
+                        "for x in xrange(3):\n" +
+                                        "  if x == 1:\n" +
+                                        "    break\n");
+    }
+
+    @Test
+    public void for04() throws Exception {
+        checkScopeAndTree(
+                        "def fn():\n" +
+                                        "  for x in xrange(3):\n" +
+                                        "    if x == 1:\n" +
+                                        "      break\n");
+    }
 //
 //    @Test
 //    public void for05() throws Exception {

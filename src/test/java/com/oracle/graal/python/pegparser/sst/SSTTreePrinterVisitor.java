@@ -718,8 +718,15 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(StmtTy.Delete node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        sb.append('\n').append(indent()).append("Targets:");
+        level++;
+        for (SSTNode n : node.targets) {
+            sb.append('\n').append(indent()).append(n.accept(this));
+        }
+        level--;
+        level--;
         return sb.toString();
-
     }
 
     @Override

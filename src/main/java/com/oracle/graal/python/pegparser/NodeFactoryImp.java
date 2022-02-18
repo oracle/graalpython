@@ -137,6 +137,11 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy createContinue(int startOffset, int endOffset) {
         return new StmtTy.Continue(startOffset, endOffset);
     }
+    
+    @Override
+    public StmtTy createDelete(ExprTy[] targets, int startOffset, int endOffset) {
+        return new StmtTy.Delete(targets, startOffset, endOffset);
+    }
 
     @Override
     public ExprTy createYield(ExprTy value, boolean isFrom, int startOffset, int endOffset) {
