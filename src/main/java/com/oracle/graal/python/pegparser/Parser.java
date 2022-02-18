@@ -2940,6 +2940,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, TRY_STMT_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'try' &&':' block finally_block
             Token _keyword;
             Token _literal;
@@ -2955,9 +2956,7 @@ public final class Parser extends AbstractParser {
                 (f = finally_block_rule()) != null  // finally_block
             )
             {
-                // TODO: node.action: _PyAST_Try ( b , NULL , NULL , f , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Try ( b , NULL , NULL , f , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createTry(b,null,null,f,startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, TRY_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -2984,9 +2983,7 @@ public final class Parser extends AbstractParser {
                 ((f = _tmp_64_rule()) != null || true)  // finally_block?
             )
             {
-                // TODO: node.action: _PyAST_Try ( b , ex , el , f , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Try ( b , ex , el , f , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createTry(b,ex,el,f,startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, TRY_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -3009,6 +3006,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy.Try.ExceptHandler)cache.getResult(_mark, EXCEPT_BLOCK_ID);
             return (StmtTy.Try.ExceptHandler)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'except' expression ['as' NAME] ':' block
             Token _keyword;
             Token _literal;
@@ -3027,9 +3025,7 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: _PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createExceptHandler(e,t != null ?((ExprTy.Name)t).id : null,b,startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
                 return (StmtTy.Try.ExceptHandler)_res;
             }
@@ -3047,9 +3043,7 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: _PyAST_ExceptHandler ( NULL , NULL , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ExceptHandler ( NULL , NULL , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createExceptHandler(null,null,b,startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
                 return (StmtTy.Try.ExceptHandler)_res;
             }

@@ -270,12 +270,12 @@ with_item[withitem_ty]:
     | e=expression { _PyAST_withitem(e, NULL, p->arena) }
 
 try_stmt[stmt_ty]:
-    | 'try' &&':' b=block f=finally_block { _PyAST_Try(b, NULL, NULL, f, EXTRA) }
-    | 'try' &&':' b=block ex[asdl_excepthandler_seq*]=except_block+ el=[else_block] f=[finally_block] { _PyAST_Try(b, ex, el, f, EXTRA) }
+    | 'try' &&':' b=block f=finally_block { factory.createTry(b, null, null, f, startToken.startOffset, startToken.endOffset) }
+    | 'try' &&':' b=block ex[asdl_excepthandler_seq*]=except_block+ el=[else_block] f=[finally_block] { factory.createTry(b, ex, el, f, startToken.startOffset, startToken.endOffset) }
 except_block[excepthandler_ty]:
     | 'except' e=expression t=['as' z=NAME { z }] ':' b=block {
-        _PyAST_ExceptHandler(e, (t) ? ((expr_ty) t)->v.Name.id : NULL, b, EXTRA) }
-    | 'except' ':' b=block { _PyAST_ExceptHandler(NULL, NULL, b, EXTRA) }
+        factory.createExceptHandler(e, t != null ? ((ExprTy.Name)t).id : null, b, startToken.startOffset, startToken.endOffset) }
+    | 'except' ':' b=block { factory.createExceptHandler(null, null, b, startToken.startOffset, startToken.endOffset) }
     | invalid_except_block
 finally_block[asdl_stmt_seq*]: 'finally' ':' a=block { a }
 

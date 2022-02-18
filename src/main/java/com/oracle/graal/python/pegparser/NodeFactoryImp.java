@@ -497,4 +497,13 @@ public class NodeFactoryImp implements NodeFactory{
         return new AliasTy(name, asName, startOffset, endOffset);
     }
 
+    @Override
+    public StmtTy createTry(StmtTy[] body, StmtTy.Try.ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, int startOffset, int endOffset) {
+        return new StmtTy.Try(body, handlers, orElse, finalBody, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, int startOffset, int endOffset) {
+        return new StmtTy.Try.ExceptHandler(type, name, body, startOffset, endOffset);
+    }
 }
