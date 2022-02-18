@@ -47,6 +47,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 
+import java.math.BigInteger;
+import java.util.Arrays;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -60,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -81,6 +83,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
@@ -110,7 +113,6 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.SubNodeG
 import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.TrueDivNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
-import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.InvertNode;
@@ -122,6 +124,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.PosNodeGe
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
@@ -131,7 +134,6 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -146,10 +148,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
-import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -160,8 +159,6 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import java.math.BigInteger;
-import java.util.Arrays;
 
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
@@ -232,6 +229,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectIsTrueNode> NODE_OBJECT_IS_TRUE = PyObjectIsTrueNode::create;
     private static final PyObjectIsTrueNode UNCACHED_OBJECT_IS_TRUE = PyObjectIsTrueNode.getUncached();
     private static final NodeSupplier<GetItemNode> NODE_GET_ITEM = GetItemNode::create;
+    private static final ExceptMatchNode UNCACHED_EXCEPT_MATCH_NODE = ExceptMatchNode.getUncached();
+    private static final NodeSupplier<ExceptMatchNode> EXCEPT_MATCH_NODE = ExceptMatchNode::create;
 
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
@@ -1331,6 +1330,40 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeMakeFunction(frame, globals, stackTop, bci, oparg);
                         break;
                     }
+                    case MATCH_EXC_OR_JUMP: {
+                        Object exception = frame.getObject(stackTop - 1);
+                        Object matchType = frame.getObject(stackTop);
+                        frame.setObject(stackTop--, null);
+                        ExceptMatchNode matchNode = insertChildNode(localNodes[bci], UNCACHED_EXCEPT_MATCH_NODE, EXCEPT_MATCH_NODE, bci);
+                        if (!matchNode.executeMatch(frame, exception, matchType)) {
+                            bci += Byte.toUnsignedInt(localBC[bci + 1]);
+                            continue;
+                        }
+                        bci++;
+                        break;
+                    }
+                    // TODO MATCH_EXC_OR_JUMP_FAR
+                    case UNWRAP_EXC: {
+                        Object exception = frame.getObject(stackTop);
+                        if (exception instanceof PException) {
+                            frame.setObject(stackTop, ((PException) exception).getEscapedException());
+                        }
+                        // Let interop exceptions be
+                        break;
+                    }
+                    case END_FINALLY: {
+                        Object exception = frame.getObject(stackTop);
+                        frame.setObject(stackTop--, null);
+                        if (exception != PNone.NONE) {
+                            if (exception instanceof AbstractTruffleException) {
+                                throw (AbstractTruffleException) exception;
+                            } else {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "expected exception on the stack");
+                            }
+                        }
+                        break;
+                    }
                     default:
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "not implemented bytecode %s", OpCodes.VALUES[bc]);
@@ -1668,20 +1701,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int targetBCI = -1;
         int targetStackTop = -1;
         for (int i = 0; i < exceptionHandlerRanges.length; i += 3) {
-            if (bci < exceptionHandlerRanges[i]) {
-                // all following try-blocks start after this bci
-                break;
-            } else if (bci >= exceptionHandlerRanges[i + 1]) {
-                // bci is after this try-block entry starts, but also after it ends. Assuming
-                // non-overlapping and sorted by begin bci, this means that there cannot be an
-                // entry after this that would match, since that would have to have a higher start
-                // bci and also a higher end bci, which would make it overlap with the current
-                // block
-                break;
-            } else {
+            // The ranges are ordered by their end bci, so the first one found is the most specific one
+            if (bci >= exceptionHandlerRanges[i] && bci < exceptionHandlerRanges[i + 1]) {
                 // bci is inside this try-block range. get the target stack size
                 targetBCI = exceptionHandlerRanges[i + 1];
                 targetStackTop = exceptionHandlerRanges[i + 2] & 0xffff;
+                break;
             }
         }
         if (targetBCI == -1) {

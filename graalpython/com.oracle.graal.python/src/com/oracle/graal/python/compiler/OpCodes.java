@@ -186,6 +186,7 @@ public enum OpCodes {
     MATCH_EXC_OR_JUMP(         1,   -1),
     MATCH_EXC_OR_JUMP_FAR(     2,   -1),
     END_FINALLY(               0,   -1),
+    UNWRAP_EXC(                0,    0),
 
     // dynamic bytecodes, only emitted at runtime for quickening
     STORE_FAST_BOOLEAN(        1,   -1),

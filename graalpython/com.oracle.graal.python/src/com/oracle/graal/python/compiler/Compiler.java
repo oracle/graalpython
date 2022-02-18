@@ -1393,6 +1393,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     node.handlers[i].type.accept(this);
                     addOp(MATCH_EXC_OR_JUMP, nextHandler);
                     if (node.handlers[i].name != null) {
+                        addOp(UNWRAP_EXC);
                         setOffset(node.handlers[i].type.getEndOffset() + 1);
                         addNameOp(node.handlers[i].name, ExprContext.Store);
                     } else {

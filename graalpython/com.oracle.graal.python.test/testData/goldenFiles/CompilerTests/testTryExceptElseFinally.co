@@ -7,39 +7,41 @@ Disassembly of <module>:
 000029         9 LOAD_STRING                       1    (try)
 000035        11 CALL_FUNCTION                     1
 000035        13 POP_TOP
-000035        14 JUMP_FORWARD                      34   (to 48)
+000035        14 JUMP_FORWARD                      36   (to 50)
 000043        16 LOAD_NAME                         1    (TypeError)                      (exc handler 7 - 16; stack: 0)
-000043        18 MATCH_EXC_OR_JUMP                 14   (to 32)
-000053        20 STORE_NAME                        2    (e)
-000061        22 LOAD_NAME                         0    (print)
-000067        24 LOAD_STRING                       2    (except1)
-000077        26 CALL_FUNCTION                     1
-000077        28 POP_TOP
-000042        29 LOAD_NONE
-000042        30 JUMP_FORWARD                      28   (to 58)
-000085   >>   32 LOAD_NAME                         3    (ValueError)
-000085        34 MATCH_EXC_OR_JUMP                 24   (to 58)
-000096        36 STORE_NAME                        2    (e)
-000104        38 LOAD_NAME                         0    (print)
-000110        40 LOAD_STRING                       3    (except2)
-000120        42 CALL_FUNCTION                     1
-000120        44 POP_TOP
-000084        45 LOAD_NONE
-000084        46 JUMP_FORWARD                      12   (to 58)
-000129   >>   48 LOAD_NAME                         0    (print)
-000135        50 LOAD_STRING                       4    (else)
-000142        52 CALL_FUNCTION                     1
-000142        54 POP_TOP
-000142        55 LOAD_NONE
-000142        56 JUMP_FORWARD                      2    (to 58)
-000154   >>   58 LOAD_NAME                         0    (print)                          (exc handler 7 - 58; stack: 0)
-000160        60 LOAD_STRING                       5    (finally)
-000170        62 CALL_FUNCTION                     1
-000170        64 POP_TOP
-000170        65 END_FINALLY
-000171        66 LOAD_NAME                         0    (print)
-000177        68 LOAD_STRING                       6    (after)
-000185        70 CALL_FUNCTION                     1
-000185        72 POP_TOP
-000185        73 LOAD_NONE
-000185        74 RETURN_VALUE
+000043        18 MATCH_EXC_OR_JUMP                 15   (to 33)
+000043        20 UNWRAP_EXC
+000053        21 STORE_NAME                        2    (e)
+000061        23 LOAD_NAME                         0    (print)
+000067        25 LOAD_STRING                       2    (except1)
+000077        27 CALL_FUNCTION                     1
+000077        29 POP_TOP
+000042        30 LOAD_NONE
+000042        31 JUMP_FORWARD                      29   (to 60)
+000085   >>   33 LOAD_NAME                         3    (ValueError)
+000085        35 MATCH_EXC_OR_JUMP                 25   (to 60)
+000085        37 UNWRAP_EXC
+000096        38 STORE_NAME                        2    (e)
+000104        40 LOAD_NAME                         0    (print)
+000110        42 LOAD_STRING                       3    (except2)
+000120        44 CALL_FUNCTION                     1
+000120        46 POP_TOP
+000084        47 LOAD_NONE
+000084        48 JUMP_FORWARD                      12   (to 60)
+000129   >>   50 LOAD_NAME                         0    (print)
+000135        52 LOAD_STRING                       4    (else)
+000142        54 CALL_FUNCTION                     1
+000142        56 POP_TOP
+000142        57 LOAD_NONE
+000142        58 JUMP_FORWARD                      2    (to 60)
+000154   >>   60 LOAD_NAME                         0    (print)                          (exc handler 7 - 60; stack: 0)
+000160        62 LOAD_STRING                       5    (finally)
+000170        64 CALL_FUNCTION                     1
+000170        66 POP_TOP
+000170        67 END_FINALLY
+000171        68 LOAD_NAME                         0    (print)
+000177        70 LOAD_STRING                       6    (after)
+000185        72 CALL_FUNCTION                     1
+000185        74 POP_TOP
+000185        75 LOAD_NONE
+000185        76 RETURN_VALUE
