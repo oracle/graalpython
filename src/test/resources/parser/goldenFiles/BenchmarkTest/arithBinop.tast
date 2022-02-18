@@ -7,10 +7,11 @@ Module[0, 357]
         ---- Function body of docompute ----
         For[24, 184]
             Target: Name[28, 29] Value: "i" Store
-            Iter: Call[33, 43]
-                Target: Name[33, 38] Value: "range"
-                Args:
-                    Name[39, 42] Value: "num"
+            Iter: 
+                Call[33, 43]
+                    Target: Name[33, 38] Value: "range"
+                    Args:
+                        Name[39, 42] Value: "num"
             Body:
                 Assign[53, 63]
                     LHS: Name[53, 57] Value: "sum_" Store
@@ -66,10 +67,11 @@ Module[0, 357]
         ---- Function body of measure ----
         For[226, 280]
             Target: Name[230, 233] Value: "run" Store
-            Iter: Call[237, 247]
-                Target: Name[237, 242] Value: "range"
-                Args:
-                    Name[243, 246] Value: "num"
+            Iter: 
+                Call[237, 247]
+                    Target: Name[237, 242] Value: "range"
+                    Args:
+                        Name[243, 246] Value: "num"
             Body:
                 Assign[257, 280]
                     LHS: Name[257, 261] Value: "sum_" Store

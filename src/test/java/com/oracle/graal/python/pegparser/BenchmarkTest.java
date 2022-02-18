@@ -41,10 +41,6 @@
 
 package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
-import com.oracle.graal.python.pegparser.sst.ModTy;
-import com.oracle.graal.python.pegparser.sst.SSTTreePrinterVisitor;
-import java.io.File;
 import org.junit.jupiter.api.Test;
 
 public class BenchmarkTest extends ParserTestBase {

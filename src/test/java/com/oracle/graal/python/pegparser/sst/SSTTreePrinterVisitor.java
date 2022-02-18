@@ -444,6 +444,20 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Slice node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        sb.append('\n').append(indent()).append("Start: ");
+        if (node.lower != null) {
+            putOnSameLineIfShort(sb, node.lower);
+        }
+        sb.append('\n').append(indent()).append("Stop: ");
+        if (node.upper != null) {
+            putOnSameLineIfShort(sb, node.upper);
+        }
+        sb.append('\n').append(indent()).append("Step: ");
+        if (node.step != null) {
+            putOnSameLineIfShort(sb, node.step);
+        }
+        level--;
         return sb.toString();
 
     }
@@ -451,7 +465,14 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.Starred node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node)).append(" Expr: ").append(node.value.accept(this));
+        sb.append(addHeader(node));
+        level++;
+        if (node.context != null) {
+            sb.append('\n').append(indent()).append(" Context: ").append(node.context);
+        }
+        sb.append('\n').append(indent()).append(" Expr: ");
+        putOnSameLineIfShort(sb, node.value);
+        level--;
         return sb.toString();
     }
 
@@ -739,8 +760,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         level++;
-        sb.append('\n').append(indent()).append("Target: ").append(node.target.accept(this));
-        sb.append('\n').append(indent()).append("Iter: ").append(node.iter.accept(this));
+        sb.append('\n').append(indent()).append("Target: ");
+        putOnSameLineIfShort(sb, node.target);
+        sb.append('\n').append(indent()).append("Iter: ");
+        putOnSameLineIfShort(sb, node.iter);
         sb.append('\n').append(indent()).append("Body:");
         level++;
         for (StmtTy s : node.body) {

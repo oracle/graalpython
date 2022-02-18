@@ -430,7 +430,7 @@ public class NodeFactoryImp implements NodeFactory{
 
     @Override
     public ExprTy createSlice(ExprTy start, ExprTy stop, ExprTy step, int startOffset, int endOffset) {
-        return new ExprTy.Slice(step, step, step, startOffset, endOffset);
+        return new ExprTy.Slice(start, stop, step, startOffset, endOffset);
     }
 
     @Override

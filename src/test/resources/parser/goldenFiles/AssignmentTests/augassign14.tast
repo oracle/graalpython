@@ -1,0 +1,17 @@
+Module[0, 61]
+    FunctionDef[0, 61]
+        Name:_method
+        ArgumentsTy[0, 0]
+            VarArg: ArgTy[13, 17] args
+            Kwarg: ArgTy[21, 29] keywords
+        ---- Function body of _method ----
+        Assign[36, 61]
+            LHS: 
+                Tuple[36, 54] Context: Store
+                    Values:
+                        Name[36, 47] Value: "cls_or_self" Store
+                        Starred[49, 54]
+                             Context: Store
+                             Expr: Name[50, 54] Value: "rest" Store
+            RHS: Name[57, 61] Value: "args"
+        ---- End of _method function ----

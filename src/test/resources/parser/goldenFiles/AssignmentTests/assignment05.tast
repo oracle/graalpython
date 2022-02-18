@@ -1,0 +1,14 @@
+Module[0, 17]
+    Assign[0, 17]
+        LHS: 
+            Tuple[0, 7] Context: Store
+                Values:
+                    Name[0, 1] Value: "a" Store
+                    Name[3, 4] Value: "b" Store
+                    Name[6, 7] Value: "c" Store
+        RHS: 
+            Tuple[10, 17]
+                Values:
+                    LONG[10, 11] Value: 1
+                    LONG[13, 14] Value: 2
+                    LONG[16, 17] Value: 3

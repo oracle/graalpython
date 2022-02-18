@@ -1,0 +1,21 @@
+Module[0, 16]
+    Call[0, 16]
+        Target: 
+            Attribute[0, 1] 
+                Receiver: 
+                    Attribute[0, 1] 
+                        Receiver: 
+                            Call[0, 10]
+                                Target: 
+                                    Attribute[0, 1] 
+                                        Receiver: 
+                                            Attribute[0, 1] 
+                                                Receiver: 
+                                                    Call[0, 3]
+                                                        Target: Name[0, 1] Value: "a"
+                                                Attr: b
+                                        Attr: c
+                                Args:
+                                    Name[8, 9] Value: "x"
+                        Attr: d
+                Attr: f
