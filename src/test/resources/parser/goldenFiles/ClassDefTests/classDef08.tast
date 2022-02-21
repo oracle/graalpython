@@ -23,7 +23,8 @@ Module[0, 128]
                 Call[109, 128]
                     Target: Name[109, 113] Value: "self"
                     Args:
-                        Starred[114, 119] Expr: Name[115, 119] Value: "args"
+                        Starred[114, 119]
+                             Expr: Name[115, 119] Value: "args"
                     KWArgs:
                         KeywordTy[121, 127]
                             null: Name[123, 127] Value: "kwds"

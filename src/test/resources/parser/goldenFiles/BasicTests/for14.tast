@@ -20,6 +20,9 @@ Module[0, 165]
                                 RHS: 
                                     Subscript[104, 106]
                                         Slice: Slice[107, 109]
+                                            Start: LONG[107, 108] Value: 1
+                                            Stop: 
+                                            Step: 
                                         Value: Name[104, 106] Value: "s2"
                             Then:
                                 Break[128, 133]
@@ -31,6 +34,9 @@ Module[0, 165]
                                 RHS: 
                                     Subscript[104, 106]
                                         Slice: Slice[107, 109]
+                                            Start: LONG[107, 108] Value: 1
+                                            Stop: 
+                                            Step: 
                                         Value: Name[104, 106] Value: "s2"
                             Then:
                                 Break[128, 133]

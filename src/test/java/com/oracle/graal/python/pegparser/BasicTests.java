@@ -133,10 +133,10 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("'ahoj'; 2");
     }
 
-//    @Test
-//    public void simpleExpression03() throws Exception {
-//        checkTreeResult("'ahoj'; 2; 1.0");
-//    }
+    @Test
+    public void simpleExpression03() throws Exception {
+        checkTreeResult("'ahoj'; 2; 1.0");
+    }
 
     @Test
     public void simpleExpression04() throws Exception {
@@ -370,12 +370,12 @@ public class BasicTests extends ParserTestBase {
     public void call17() throws Exception {
         checkScopeAndTree("def fn(): foo(arg = 1)");
     }
-//
-//    @Test
-//    public void call18() throws Exception {
-//        checkScopeAndTree("def fn(arg = [1,2]): foo(arg = [1])");
-//    }
-//
+
+    @Test
+    public void call18() throws Exception {
+        checkScopeAndTree("def fn(arg = [1,2]): foo(arg = [1])");
+    }
+
     @Test
     public void call19() throws Exception {
         checkScopeAndTree("def fn(): \"in\".format(name=\"Baf\")");
@@ -391,20 +391,25 @@ public class BasicTests extends ParserTestBase {
 //        checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "SyntaxError: keyword argument repeated");
 //    }
 //
-//    @Test
-//    public void del01() throws Exception {
-//        checkTreeResult("del x");
-//    }
-//
-//    @Test
-//    public void del02() throws Exception {
-//        checkTreeResult("del x, y, z");
-//    }
-//
-//    @Test
-//    public void del03() throws Exception {
-//        checkTreeResult("del (x, y, z)");
-//    }
+    @Test
+    public void del01() throws Exception {
+        checkTreeResult("del x");
+    }
+
+    @Test
+    public void del02() throws Exception {
+        checkTreeResult("del x, y, z");
+    }
+
+    @Test
+    public void del03() throws Exception {
+        checkTreeResult("del (x, y, z)");
+    }
+    
+    @Test
+    public void del04() throws Exception {
+        checkTreeResult("del [x, y, z]");
+    }
 
    @Test
    public void for01() throws Exception {
@@ -416,22 +421,22 @@ public class BasicTests extends ParserTestBase {
        checkTreeResult("for i in range(210):\n" + "  print(i)");
    }
 
-//    @Test
-//    public void for03() throws Exception {
-//        checkScopeAndTree(
-//                        "for x in xrange(3):\n" +
-//                                        "  if x == 1:\n" +
-//                                        "    break\n");
-//    }
-//
-//    @Test
-//    public void for04() throws Exception {
-//        checkScopeAndTree(
-//                        "def fn():\n" +
-//                                        "  for x in xrange(3):\n" +
-//                                        "    if x == 1:\n" +
-//                                        "      break\n");
-//    }
+    @Test
+    public void for03() throws Exception {
+        checkScopeAndTree(
+                        "for x in xrange(3):\n" +
+                                        "  if x == 1:\n" +
+                                        "    break\n");
+    }
+
+    @Test
+    public void for04() throws Exception {
+        checkScopeAndTree(
+                        "def fn():\n" +
+                                        "  for x in xrange(3):\n" +
+                                        "    if x == 1:\n" +
+                                        "      break\n");
+    }
 //
 //    @Test
 //    public void for05() throws Exception {
@@ -443,48 +448,49 @@ public class BasicTests extends ParserTestBase {
 //        checkScopeAndTree();
 //    }
 //
-//    @Test
-//    public void for07() throws Exception {
-//        // TODO: the line 25 in for07.tast should have SourceSection None according the old parser
-//        // result.
-//        checkTreeResult(
-//                        "for x in range(10):\n" +
-//                                        "    if x % 2 == 0:\n" +
-//                                        "        continue\n" +
-//                                        "    print(x)");
-//    }
-//
-//    @Test
-//    public void for08() throws Exception {
-//        checkTreeResult(
-//                        "for x in range(10):\n" +
-//                                        "    if call01() == 0:\n" +
-//                                        "        continue\n" +
-//                                        "    print(x)");
-//    }
-//
-//    @Test
-//    public void for09() throws Exception {
-//        checkTreeResult(
-//                        "for i in range(1, 10):\n" +
-//                                        "    if call01(i)==0:\n" +
-//                                        "        break\n" +
-//                                        "    print(i)\n" +
-//                                        "else:\n" +
-//                                        "    print(\"test\")");
-//    }
-//
-//    @Test
-//    public void for10() throws Exception {
-//        checkScopeAndTree(
-//                        "for num in range(10,20):\n" +
-//                                        "   for i in range(2,num):\n" +
-//                                        "      if True:\n" +
-//                                        "         break\n" +
-//                                        "   else:\n" +
-//                                        "      pass");
-//    }
-//
+    @Test
+    public void for07() throws Exception {
+        // TODO: the line 25 in for07.tast should have SourceSection None according the old parser
+        // result.
+        checkTreeResult(
+                        "for x in range(10):\n" +
+                                        "    if x % 2 == 0:\n" +
+                                        "        continue\n" +
+                                        "    print(x)");
+    }
+
+    @Test
+    public void for08() throws Exception {
+        checkTreeResult(
+                        "for x in range(10):\n" +
+                                        "    if call01() == 0:\n" +
+                                        "        continue\n" +
+                                        "    print(x)");
+    }
+
+
+    @Test
+    public void for09() throws Exception {
+        checkTreeResult(
+                        "for i in range(1, 10):\n" +
+                                        "    if call01(i)==0:\n" +
+                                        "        break\n" +
+                                        "    print(i)\n" +
+                                        "else:\n" +
+                                        "    print(\"test\")");
+    }
+
+    @Test
+    public void for10() throws Exception {
+        checkScopeAndTree(
+                        "for num in range(10,20):\n" +
+                                        "   for i in range(2,num):\n" +
+                                        "      if True:\n" +
+                                        "         break\n" +
+                                        "   else:\n" +
+                                        "      pass");
+    }
+
    @Test
    public void for11() throws Exception {
        checkTreeResult("for i, b in (): pass");
@@ -498,18 +504,18 @@ public class BasicTests extends ParserTestBase {
                                        "    print(a)");
    }
 
-//    @Test
-//    public void for13() throws Exception {
-//        checkScopeAndTree(
-//                        "def format(self):\n" +
-//                                        "    for frame in self:\n" +
-//                                        "        count += 1\n" +
-//                                        "        if count >= 3:\n" +
-//                                        "            continue\n" +
-//                                        "        if count == 4:\n" +
-//                                        "            for name, value in a:\n" +
-//                                        "                count = 1");
-//    }
+    @Test
+    public void for13() throws Exception {
+        checkScopeAndTree(
+                        "def format(self):\n" +
+                                        "    for frame in self:\n" +
+                                        "        count += 1\n" +
+                                        "        if count >= 3:\n" +
+                                        "            continue\n" +
+                                        "        if count == 4:\n" +
+                                        "            for name, value in a:\n" +
+                                        "                count = 1");
+    }
 
    @Test
    public void for14() throws Exception {
@@ -826,17 +832,15 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("a.b");
     }
 
-//    @Test
-//    public void getAttr02() throws Exception {
-//        // TODO: old parser doesn't generate source section for a()
-//        checkTreeResult("a().b");
-//    }
-//
-//    @Test
-//    public void getAttr03() throws Exception {
-//        // TODO: old parser generates only source section for all expression
-//        checkTreeResult("a().b.c(x).d.f()");
-//    }
+    @Test
+    public void getAttr02() throws Exception {
+        checkTreeResult("a().b");
+    }
+
+    @Test
+    public void getAttr03() throws Exception {
+        checkTreeResult("a().b.c(x).d.f()");
+    }
 
    @Test
    public void while01() throws Exception {

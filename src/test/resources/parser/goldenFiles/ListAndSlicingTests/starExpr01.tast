@@ -1,0 +1,11 @@
+Module[0, 10]
+    List[0, 10]
+        Values:
+            Starred[1, 9]
+                 Context: Load
+                 Expr: 
+                    List[2, 9]
+                        Values:
+                            LONG[3, 4] Value: 1
+                            LONG[5, 6] Value: 2
+                            LONG[7, 8] Value: 3

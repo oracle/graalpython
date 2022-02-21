@@ -1,0 +1,10 @@
+Module[0, 16]
+    Assign[0, 16]
+        LHS: Name[0, 4] Value: "list" Store
+        RHS: 
+            List[7, 16]
+                Values:
+                    LONG[8, 9] Value: 1
+                    LONG[10, 11] Value: 2
+                    LONG[12, 13] Value: 3
+                    LONG[14, 15] Value: 4

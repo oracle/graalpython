@@ -1,0 +1,12 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      _method: [DefLocal, Local]
+    Scope _method Function
+        Flags: [HasVarArgs, HasVarKeywords]
+        Varnames: args, keywords
+        Symbols:
+            args: [DefParam, Use, Local]
+            cls_or_self: [DefLocal, Local]
+            keywords: [DefParam, Local]
+            rest: [DefLocal, Local]

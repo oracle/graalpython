@@ -1,0 +1,6 @@
+Module[0, 11]
+    Delete[0, 11]
+        Targets:
+            Name[4, 5] Value: "x" Delete
+            Name[7, 8] Value: "y" Delete
+            Name[10, 11] Value: "z" Delete
