@@ -1,0 +1,11 @@
+Module[0, 53]
+    Try[0, 3]
+        Body:
+            Pass[9, 13]
+        Except:
+            ExceptHandler[14, 20]
+                Type: Name[21, 28] Value: "OSError"
+                Body:
+                    Pass[34, 38]
+        Else:
+            Pass[49, 53]

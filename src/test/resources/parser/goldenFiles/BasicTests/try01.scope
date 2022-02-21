@@ -1,0 +1,4 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      ValueError: [Use, GlobalImplicit]
