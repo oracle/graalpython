@@ -24,14 +24,5 @@ Module[0, 165]
                             Then:
                                 Break[128, 133]
                     Else:
-                        If[88, 133]
-                            Test: Compare[91, 110]
-                                LHS: Name[91, 100] Value: "candidate"
-                                Op: IN
-                                RHS: 
-                                    Subscript[104, 106]
-                                        Slice: Slice[107, 109]
-                                        Value: Name[104, 106] Value: "s2"
-                            Then:
-                                Break[128, 133]
+                        Break[160, 165]
         ---- End of merge function ----

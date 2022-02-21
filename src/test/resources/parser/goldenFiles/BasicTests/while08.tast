@@ -12,12 +12,7 @@ Module[0, 86]
                     Continue[49, 57]
             Pass[60, 64]
         Else:
-            If[14, 33]
-                Test: BOOLEAN[17, 22] Value: false
-                Then:
-                    Break[28, 33]
-            If[36, 57]
-                Test: BOOLEAN[39, 43] Value: true
-                Then:
-                    Continue[49, 57]
-            Pass[60, 64]
+            Call[73, 86]
+                Target: Name[73, 78] Value: "print"
+                Args:
+                    RAW[79, 85] Value: done
