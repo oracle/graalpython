@@ -622,123 +622,123 @@ public class BasicTests extends ParserTestBase {
        checkTreeResult("raise NameError('Pavel') from exc");
    }
 
-//    @Test
-//    public void try01() throws Exception {
-//        checkScopeAndTree(
-//                        "try:\n" +
-//                                        "  pass\n" +
-//                                        "except ValueError:\n" +
-//                                        "  pass");
-//    }
-//
-//    @Test
-//    public void try02() throws Exception {
-//        checkScopeAndTree(
-//                        "try:\n" +
-//                                        "  pass\n" +
-//                                        "except ValueError as va:\n" +
-//                                        "  pass");
-//    }
-//
-//    @Test
-//    public void try03() throws Exception {
-//        checkScopeAndTree(
-//                        "def fn():\n" +
-//                                        "  try:\n" +
-//                                        "    pass\n" +
-//                                        "  except ValueError as va:\n" +
-//                                        "    pass");
-//    }
-//
-//    @Test
-//    public void try04() throws Exception {
-//        checkTreeResult(
-//                        "try:\n" +
-//                                        "  pass\n" +
-//                                        "except (RuntimeError, TypeError, NameError):\n" +
-//                                        "  pass");
-//    }
-//
-//    @Test
-//    public void try05() throws Exception {
-//        checkTreeResult(
-//                        "try:\n" +
-//                                        "  pass\n" +
-//                                        "except:\n" +
-//                                        "  pass");
-//    }
-//
-//    @Test
-//    public void try06() throws Exception {
-//        checkTreeResult(
-//                        "for cls in (B, C, D):\n" +
-//                                        "    try:\n" +
-//                                        "        pass\n" +
-//                                        "    except D:\n" +
-//                                        "        pass\n" +
-//                                        "    except C:\n" +
-//                                        "        pass\n" +
-//                                        "    except B:\n" +
-//                                        "        pass");
-//    }
-//
-//    @Test
-//    public void try07() throws Exception {
-//        checkTreeResult(
-//                        "try:\n" +
-//                                        "    pass\n" +
-//                                        "except OSError as err:\n" +
-//                                        "    pass\n" +
-//                                        "except ValueError:\n" +
-//                                        "    pass\n" +
-//                                        "except:\n" +
-//                                        "    raise");
-//    }
-//
-//    @Test
-//    public void try08() throws Exception {
-//        checkTreeResult(
-//                        "try:\n" +
-//                                        "    pass\n" +
-//                                        "except OSError:\n" +
-//                                        "    pass\n" +
-//                                        "else:\n" +
-//                                        "    pass");
-//    }
-//
-//    @Test
-//    public void try09() throws Exception {
-//        checkTreeResult(
-//                        "try:\n" +
-//                                        "   raise KeyboardInterrupt\n" +
-//                                        "finally:\n" +
-//                                        "   print('Goodbye, world!')");
-//    }
-//
-//    @Test
-//    public void try10() throws Exception {
-//        checkScopeAndTree(
-//                        "def divide(x, y):\n" +
-//                                        "    try:\n" +
-//                                        "        result = x / y\n" +
-//                                        "    except ZeroDivisionError:\n" +
-//                                        "        print(\"division by zero!\")\n" +
-//                                        "    else:\n" +
-//                                        "        print(\"result is\", result)\n" +
-//                                        "    finally:\n" +
-//                                        "        print(\"executing finally clause\")");
-//    }
-//
-//    @Test
-//    public void try11() throws Exception {
-//        checkScopeAndTree(
-//                        "def fn():\n" +
-//                                        "    try:\n" +
-//                                        "        pass\n" +
-//                                        "    except Exception as err:\n" +
-//                                        "        print(err)");
-//    }
-//
+    @Test
+    public void try01() throws Exception {
+        checkScopeAndTree(
+                        "try:\n" +
+                                        "  pass\n" +
+                                        "except ValueError:\n" +
+                                        "  pass");
+    }
+
+    @Test
+    public void try02() throws Exception {
+        checkScopeAndTree(
+                        "try:\n" +
+                                        "  pass\n" +
+                                        "except ValueError as va:\n" +
+                                        "  pass");
+    }
+
+    @Test
+    public void try03() throws Exception {
+        checkScopeAndTree(
+                        "def fn():\n" +
+                                        "  try:\n" +
+                                        "    pass\n" +
+                                        "  except ValueError as va:\n" +
+                                        "    pass");
+    }
+
+    @Test
+    public void try04() throws Exception {
+        checkTreeResult(
+                        "try:\n" +
+                                        "  pass\n" +
+                                        "except (RuntimeError, TypeError, NameError):\n" +
+                                        "  pass");
+    }
+
+    @Test
+    public void try05() throws Exception {
+        checkTreeResult(
+                        "try:\n" +
+                                        "  pass\n" +
+                                        "except:\n" +
+                                        "  pass");
+    }
+
+    @Test
+    public void try06() throws Exception {
+        checkTreeResult(
+                        "for cls in (B, C, D):\n" +
+                                        "    try:\n" +
+                                        "        pass\n" +
+                                        "    except D:\n" +
+                                        "        pass\n" +
+                                        "    except C:\n" +
+                                        "        pass\n" +
+                                        "    except B:\n" +
+                                        "        pass");
+    }
+
+    @Test
+    public void try07() throws Exception {
+        checkTreeResult(
+                        "try:\n" +
+                                        "    pass\n" +
+                                        "except OSError as err:\n" +
+                                        "    pass\n" +
+                                        "except ValueError:\n" +
+                                        "    pass\n" +
+                                        "except:\n" +
+                                        "    raise");
+    }
+
+    @Test
+    public void try08() throws Exception {
+        checkTreeResult(
+                        "try:\n" +
+                                        "    pass\n" +
+                                        "except OSError:\n" +
+                                        "    pass\n" +
+                                        "else:\n" +
+                                        "    pass");
+    }
+
+    @Test
+    public void try09() throws Exception {
+        checkTreeResult(
+                        "try:\n" +
+                                        "   raise KeyboardInterrupt\n" +
+                                        "finally:\n" +
+                                        "   print('Goodbye, world!')");
+    }
+
+    @Test
+    public void try10() throws Exception {
+        checkScopeAndTree(
+                        "def divide(x, y):\n" +
+                                        "    try:\n" +
+                                        "        result = x / y\n" +
+                                        "    except ZeroDivisionError:\n" +
+                                        "        print(\"division by zero!\")\n" +
+                                        "    else:\n" +
+                                        "        print(\"result is\", result)\n" +
+                                        "    finally:\n" +
+                                        "        print(\"executing finally clause\")");
+    }
+
+    @Test
+    public void try11() throws Exception {
+        checkScopeAndTree(
+                        "def fn():\n" +
+                                        "    try:\n" +
+                                        "        pass\n" +
+                                        "    except Exception as err:\n" +
+                                        "        print(err)");
+    }
+
    @Test
    public void tuple01() throws Exception {
        checkTreeResult("(1, 2, 3)");

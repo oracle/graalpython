@@ -1,0 +1,25 @@
+Module[0, 124]
+    For[0, 124]
+        Target: Name[4, 7] Value: "cls" Store
+        Iter: Tuple[11, 20]
+            Values:
+                Name[12, 13] Value: "B"
+                Name[15, 16] Value: "C"
+                Name[18, 19] Value: "D"
+        Body:
+            Try[26, 29]
+                Body:
+                    Pass[39, 43]
+                Except:
+                    ExceptHandler[48, 54]
+                        Type: Name[55, 56] Value: "D"
+                        Body:
+                            Pass[66, 70]
+                    ExceptHandler[75, 81]
+                        Type: Name[82, 83] Value: "C"
+                        Body:
+                            Pass[93, 97]
+                    ExceptHandler[102, 108]
+                        Type: Name[109, 110] Value: "B"
+                        Body:
+                            Pass[120, 124]
