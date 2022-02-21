@@ -46,6 +46,36 @@ import java.util.EnumSet;
 final class Block {
     ArrayList<Instruction> instr = new ArrayList<>();
     Block next;
+    Block exceptionHandler;
+    Block finallyHandler;
+    Block handlesExceptionFrom;
+    int stackLevel = -1;
+
+    public Block() {
+    }
+
+    /**
+     * Create a beginning block of the exception handling code, should be used for the first except
+     * block.
+     */
+    public static Block createExceptionHandler(Block tryBlock) {
+        Block handler = new Block();
+        handler.handlesExceptionFrom = tryBlock;
+        assert tryBlock.exceptionHandler == null;
+        tryBlock.exceptionHandler = handler;
+        return handler;
+    }
+
+    /**
+     * Create a beginning block of the finally handler.
+     */
+    public static Block createFinallyHandler(Block tryBlock) {
+        Block handler = new Block();
+        handler.handlesExceptionFrom = tryBlock;
+        assert tryBlock.finallyHandler == null;
+        tryBlock.finallyHandler = handler;
+        return handler;
+    }
 
     private static final EnumSet<OpCodes> RETURN_OPCODES = EnumSet.of(OpCodes.RETURN_VALUE, OpCodes.RAISE_VARARGS);
 

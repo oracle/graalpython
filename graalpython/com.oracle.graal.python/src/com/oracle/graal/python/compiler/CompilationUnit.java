@@ -44,8 +44,7 @@ import static com.oracle.graal.python.compiler.CompilationScope.AsyncFunction;
 import static com.oracle.graal.python.compiler.CompilationScope.Class;
 import static com.oracle.graal.python.compiler.CompilationScope.Function;
 import static com.oracle.graal.python.compiler.CompilationScope.Lambda;
-import com.oracle.graal.python.pegparser.scope.Scope;
-import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
+
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +52,9 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+
+import com.oracle.graal.python.pegparser.scope.Scope;
+import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 
 public final class CompilationUnit {
     final String name;
@@ -76,11 +78,13 @@ public final class CompilationUnit {
     final Stack<BlockInfo> blockInfoStack = new Stack<>();
 
     Block currentBlock = startBlock;
+    int maxStackSize = 0;
 
     int startOffset;
     int endOffset;
 
-    CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs, boolean takesVarKeywordArgs, int startOffset, int endOffset) {
+    CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs,
+                    boolean takesVarKeywordArgs, int startOffset, int endOffset) {
         this.scopeType = scopeType;
         this.scope = scope;
         this.name = name;
@@ -99,8 +103,7 @@ public final class CompilationUnit {
                 privateName = parent.privateName;
             }
             if (!(EnumSet.of(Function, AsyncFunction, Class).contains(scopeType) &&
-                  parent.scope.getUseOfName(ScopeEnvironment.mangle(parent.privateName, name)).
-                                            contains(Scope.DefUse.GlobalExplicit))) {
+                            parent.scope.getUseOfName(ScopeEnvironment.mangle(parent.privateName, name)).contains(Scope.DefUse.GlobalExplicit))) {
                 String base;
                 if (EnumSet.of(Function, AsyncFunction, Lambda).contains(parent.scopeType)) {
                     base = parent.qualName + ".<locals>";
@@ -168,44 +171,30 @@ public final class CompilationUnit {
         // The actual bytecodes
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
-        // stackdepth
-        HashMap<Block, Integer> stackAtBlock = new HashMap<>();
+        computeStackLevels(startBlock, 0);
 
-        Stack<short[]> exceptionHandlerStack = new Stack<>();
+        Map<Block, Integer> tryBlockBcis = new HashMap<>();
         ArrayList<short[]> finishedExceptionHandlerRanges = new ArrayList<>();
 
-        int stacksize = 0;
-        int maxStackSize = 0;
-
         Block b = startBlock;
-        boolean jumpedUnconditionally = false;
         int lastSrcOffset = 0;
         while (b != null) {
-            Instruction firstInstruction = b.instr.isEmpty()? null: b.instr.get(0);
-            if (firstInstruction == Instruction.START_OF_EXCEPT_MARKER || firstInstruction == Instruction.START_OF_FINALLY_MARKER) {
-                // Except block starts with the stack unwound and the exception pushed
-                stacksize = exceptionHandlerStack.peek()[2] + 1;
-            } else if (jumpedUnconditionally) {
-                stacksize = stackAtBlock.get(b);
-            } else {
-                assert !stackAtBlock.containsKey(b) || stacksize == stackAtBlock.get(b);
+            if (b.exceptionHandler != null || b.finallyHandler != null) {
+                tryBlockBcis.put(b, buf.size());
             }
-
-            jumpedUnconditionally = false;
-
-            for (Instruction i : b.instr) {
-                assert !jumpedUnconditionally;
-                if (handleMarker(i, buf, exceptionHandlerStack, finishedExceptionHandlerRanges, stacksize)) {
-                    continue;
+            if (b.handlesExceptionFrom != null) {
+                int start = tryBlockBcis.get(b.handlesExceptionFrom);
+                int end = buf.size();
+                int stackLevel = b.handlesExceptionFrom.stackLevel;
+                assert stackLevel != -1;
+                short[] range = {(short) start, (short) end, (short) stackLevel};
+                if (range[0] != start || range[1] != end || range[2] != stackLevel) {
+                    throw new IllegalStateException("Exception handler range doesn't fit into 16 bit int");
                 }
-
+                finishedExceptionHandlerRanges.add(range);
+            }
+            for (Instruction i : b.instr) {
                 emitBytecode(i, buf);
-
-                stacksize = calculateStackEffect(i, stackAtBlock, stacksize);
-                maxStackSize = Math.max(stacksize, maxStackSize);
-                jumpedUnconditionally = i.opcode == OpCodes.JUMP_FORWARD || i.opcode == OpCodes.JUMP_FORWARD_FAR ||
-                        i.opcode == OpCodes.JUMP_BACKWARD || i.opcode == OpCodes.JUMP_BACKWARD_FAR || i.opcode == OpCodes.RETURN_VALUE;
-
                 insertSrcOffsetTable(i.srcOffset, lastSrcOffset, srcOffsets);
                 lastSrcOffset = i.srcOffset;
             }
@@ -215,8 +204,6 @@ public final class CompilationUnit {
         assert flags < 256;
         flags |= takesVarArgs ? CodeUnit.HAS_VAR_ARGS : 0;
         flags |= takesVarKeywordArgs ? CodeUnit.HAS_VAR_KW_ARGS : 0;
-
-        assert exceptionHandlerStack.isEmpty();
 
         short[] exceptionHandlerRanges = new short[finishedExceptionHandlerRanges.size() * 3];
         for (int i = 0; i < finishedExceptionHandlerRanges.size(); i++) {
@@ -228,7 +215,7 @@ public final class CompilationUnit {
         return new CodeUnit(qualName == null ? name : qualName, filename,
                         argCount, kwOnlyArgCount, positionalOnlyArgCount,
                         varnames.size(), maxStackSize,
-                        buf.toByteArray(), srcOffsets.toByteArray(), (byte)flags,
+                        buf.toByteArray(), srcOffsets.toByteArray(), (byte) flags,
                         orderedKeys(names, new String[0]),
                         orderedKeys(varnames, new String[0]),
                         orderedKeys(cellvars, new String[0]),
@@ -237,6 +224,40 @@ public final class CompilationUnit {
                         orderedLong(primitiveConstants),
                         exceptionHandlerRanges,
                         startOffset, endOffset);
+    }
+
+    private static final EnumSet<OpCodes> UNCONDITIONAL_JUMP_OPCODES = EnumSet.of(OpCodes.JUMP_BACKWARD, OpCodes.JUMP_BACKWARD_FAR, OpCodes.JUMP_FORWARD, OpCodes.JUMP_FORWARD_FAR,
+                    OpCodes.RETURN_VALUE, OpCodes.RAISE_VARARGS);
+
+    private void computeStackLevels(Block block, int startLevel) {
+        int level = startLevel;
+        if (block.stackLevel != -1) {
+            assert block.stackLevel == level;
+            return;
+        }
+        maxStackSize = Math.max(maxStackSize, level);
+        block.stackLevel = level;
+        if (block.exceptionHandler != null) {
+            computeStackLevels(block.exceptionHandler, level + 1);
+        }
+        if (block.finallyHandler != null) {
+            computeStackLevels(block.finallyHandler, level + 1);
+        }
+        for (Instruction i : block.instr) {
+            Block target = i.getTarget();
+            if (target != null) {
+                int jumpLevel = level + i.opcode.getStackEffect(i.arg, true);
+                computeStackLevels(target, jumpLevel);
+                if (UNCONDITIONAL_JUMP_OPCODES.contains(i.opcode)) {
+                    return;
+                }
+            }
+            level += i.opcode.getStackEffect(i.arg, false);
+            maxStackSize = Math.max(maxStackSize, level);
+        }
+        if (block.next != null) {
+            computeStackLevels(block.next, level);
+        }
     }
 
     private void calculateJumpInstructionArguments() {
@@ -286,39 +307,39 @@ public final class CompilationUnit {
         srcDelta = Math.abs(srcDelta);
         if (srcDelta > 127) {
             while (srcDelta > 127) {
-                srcOffsets.write((byte)0x80);
+                srcOffsets.write((byte) 0x80);
                 srcDelta -= 0x80;
             }
             assert srcDelta >= 0;
             if (!negative) {
-                srcOffsets.write((byte)srcDelta);
+                srcOffsets.write((byte) srcDelta);
             } else {
                 if (srcDelta == 127) {
-                    srcOffsets.write((byte)0x80);
-                    srcOffsets.write((byte)-1);
+                    srcOffsets.write((byte) 0x80);
+                    srcOffsets.write((byte) -1);
                 } else {
                     srcDelta = -srcDelta - 1;
-                    srcOffsets.write((byte)srcDelta);
+                    srcOffsets.write((byte) srcDelta);
                 }
             }
         } else {
             if (!negative) {
-                srcOffsets.write((byte)srcDelta);
+                srcOffsets.write((byte) srcDelta);
             } else {
-                srcOffsets.write((byte)-srcDelta);
+                srcOffsets.write((byte) -srcDelta);
             }
         }
     }
 
     private void emitBytecode(Instruction i, ByteArrayOutputStream buf) throws IllegalStateException {
         assert i.opcode.ordinal() < 256;
-        buf.write((byte)i.opcode.ordinal());
+        buf.write((byte) i.opcode.ordinal());
         switch (i.opcode.argLength) {
             case 0:
                 break;
             case 1:
                 assert i.arg <= 0xff;
-                buf.write((byte)i.arg);
+                buf.write((byte) i.arg);
                 break;
             case 2:
                 assert i.arg <= 0xffff;
@@ -328,39 +349,6 @@ public final class CompilationUnit {
             default:
                 throw new IllegalStateException("unsupported length");
         }
-    }
-
-    private boolean handleMarker(Instruction i, ByteArrayOutputStream buf, Stack<short[]> exceptionHandlerStack, ArrayList<short[]> finishedExceptionHandlerRanges, int stacksize) {
-        if (i == Instruction.START_OF_TRY_MARKER) {
-            assert buf.size() == (short)buf.size();
-            assert stacksize == (short)stacksize;
-            exceptionHandlerStack.push(new short[]{(short)buf.size(), -1, (short) stacksize});
-            return true;
-        } else if (i == Instruction.START_OF_EXCEPT_MARKER || i == Instruction.START_OF_FINALLY_MARKER) {
-            short[] range = exceptionHandlerStack.pop();
-            assert range[1] == -1;
-            assert buf.size()== (short)buf.size();
-            range[1] = (short)buf.size();
-            finishedExceptionHandlerRanges.add(range);
-            return true;
-        }
-        return false;
-    }
-
-    private int calculateStackEffect(Instruction i, HashMap<Block, Integer> stackAtBlock, int stacksize) {
-        // calculate stack effect
-        if (i.getTarget() != null) {
-            Integer sz = stackAtBlock.get(i.getTarget());
-            int stacksizeAtTarget = stacksize + i.opcode.getStackEffect(i.arg, true);
-            if (sz != null) {
-                assert stacksizeAtTarget == sz;
-            } else {
-                stackAtBlock.put(i.getTarget(), stacksizeAtTarget);
-            }
-        }
-        int newStacksize = stacksize + i.opcode.getStackEffect(i.arg, false);
-        assert newStacksize >= 0;
-        return newStacksize;
     }
 
     private <T> T[] orderedKeys(HashMap<T, Integer> map, T[] template, int offset) {

@@ -40,9 +40,16 @@
  */
 package com.oracle.graal.python.compiler;
 
-import com.oracle.graal.python.pegparser.ExprContext;
 import static com.oracle.graal.python.compiler.OpCodes.*;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Stack;
+
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
@@ -55,11 +62,6 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Stack;
 
 public class Compiler implements SSTreeVisitor<Void> {
     String filename;
@@ -190,18 +192,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         b.instr.add(new Instruction(code, arg, null, srcOffset));
     }
 
-    private void addStartOfTryMarker() {
-        unit.currentBlock.instr.add(Instruction.START_OF_TRY_MARKER);
-    }
-
-    private void addStartOfExceptHandlers() {
-        unit.currentBlock.instr.add(Instruction.START_OF_EXCEPT_MARKER);
-    }
-
-    private void addStartOfFinallyMarker() {
-        unit.currentBlock.instr.add(Instruction.START_OF_FINALLY_MARKER);
-    }
-
     private void addOpName(OpCodes code, HashMap<String, Integer> dict, String name) {
         String mangled = ScopeEnvironment.mangle(unit.privateName, name);
         addOpObject(code, dict, mangled);
@@ -317,7 +307,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 if (expr instanceof ExprTy.Constant) {
                     Object value = ((ExprTy.Constant) expr).value;
                     if (value instanceof String) {
-                        return (String)value;
+                        return (String) value;
                     }
                 }
             }
@@ -374,7 +364,6 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(COLLECTION_ADD_STACK, bits | cnt);
         }
     }
-
 
     private void collectIntoArray(SSTNode[] nodes, int bits) {
         collectIntoArray(nodes, bits, 0);
@@ -678,8 +667,8 @@ public class Compiler implements SSTreeVisitor<Void> {
             case BOOLEAN:
                 return addOp(node.value == Boolean.TRUE ? LOAD_TRUE : LOAD_FALSE);
             case LONG:
-                if (node.longValue == (byte)node.longValue) {
-                    return addOp(LOAD_BYTE, (byte)node.longValue);
+                if (node.longValue == (byte) node.longValue) {
+                    return addOp(LOAD_BYTE, (byte) node.longValue);
                 } else {
                     return addOp(LOAD_LONG, addObject(unit.primitiveConstants, node.longValue));
                 }
@@ -1349,16 +1338,12 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.Try node) {
         Block tryBody = new Block();
         Block end = new Block();
-        Block finalBlock = node.finalBody != null ? new Block() : null;
+        Block finalBlock = node.finalBody != null ? Block.createFinallyHandler(tryBody) : null;
         Block elseBlock = node.orElse != null ? new Block() : null;
         boolean hasHandlers = node.handlers != null && node.handlers.length > 0;
+        assert finalBlock != null || hasHandlers;
 
         // try block
-        addStartOfTryMarker();
-        if (finalBlock != null && hasHandlers) {
-            // For try-except-finally, we need an outer try that would catch exceptions from except+else blocks
-            addStartOfTryMarker();
-        }
         unit.useNextBlock(tryBody);
         visitSequence(node.body);
         if (elseBlock != null) {
@@ -1371,13 +1356,10 @@ public class Compiler implements SSTreeVisitor<Void> {
         // except clauses
         if (hasHandlers) {
             boolean hasBareExcept = false;
-            Block nextHandler = new Block();
+            Block nextHandler = Block.createExceptionHandler(tryBody);
             for (int i = 0; i < node.handlers.length; i++) {
                 assert !hasBareExcept;
                 unit.useNextBlock(nextHandler);
-                if (i == 0) {
-                    addStartOfExceptHandlers();
-                }
 
                 if (i < node.handlers.length - 1) {
                     nextHandler = new Block();
@@ -1424,7 +1406,6 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         if (finalBlock != null) {
             unit.useNextBlock(finalBlock);
-            addStartOfFinallyMarker();
             visitSequence(node.finalBody);
             setOffset(node.finalBody[node.finalBody.length - 1].getEndOffset());
             addOp(END_FINALLY);
