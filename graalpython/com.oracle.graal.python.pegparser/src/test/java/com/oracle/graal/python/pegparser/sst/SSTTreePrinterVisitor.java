@@ -658,9 +658,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         appendNode(sb, "Target", node.target);
         appendNode(sb, "Iter", node.iter);
         appendNodes(sb, "Body", node.body);
-        // XXX
-        if (node.orElse != null)
-        appendNodes(sb, "Else", node.body);
+        appendNodes(sb, "Else", node.orElse);
         level--;
         return sb.toString();
     }
@@ -894,10 +892,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         level++;
         appendNode(sb, "Condition", node.test);
         appendNodes(sb, "Body", node.body);
-        if (node.orElse != null) {
-            // XXX
-            appendNodes(sb, "Else", node.body);
-        }
+        appendNodes(sb, "Else", node.orElse);
         level--;
         return sb.toString();
     }

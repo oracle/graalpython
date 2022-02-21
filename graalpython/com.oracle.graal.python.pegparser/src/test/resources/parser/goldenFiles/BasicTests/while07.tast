@@ -12,12 +12,4 @@ Module[0, 74]
                     Break[49, 54]
             Pass[57, 61]
         Else:
-            If[14, 33]
-                Test: BOOLEAN[17, 22] Value: false
-                Then:
-                    Break[28, 33]
-            If[36, 54]
-                Test: BOOLEAN[39, 43] Value: true
-                Then:
-                    Break[49, 54]
-            Pass[57, 61]
+            Pass[70, 74]
