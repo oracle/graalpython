@@ -261,11 +261,11 @@ def test_iter_unpack():
     assert lh(it) == 0
 
 
-# def test_pack_varargs():
-#     assert struct.Struct(">B").pack(3) == b'\x03'
-#     raised = False
-#     try:
-#         struct.Struct(">B").pack(3, kw=1)
-#     except TypeError:
-#         raised = True
-#     assert raised
+def test_pack_varargs():
+    assert struct.Struct(">B").pack(3) == b'\x03'
+    raised = False
+    try:
+        struct.Struct(">B").pack(3, kw=1)
+    except TypeError:
+        raised = True
+    assert raised
