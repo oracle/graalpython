@@ -5,5 +5,5 @@ ScopeEnvironment
     Scope fn Function
         Symbols:
             Exception: [Use, GlobalImplicit]
-            err: [Use, GlobalImplicit]
+            err: [Use, Local, GlobalImplicit]
             print: [Use, GlobalImplicit]
