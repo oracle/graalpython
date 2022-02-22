@@ -1996,6 +1996,12 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         # n.b.: we do the following to ensure that there's a directory when the
         # importlib PathFinder initializes it's directory finders
         mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
+        # TODO: backwards compat, remove once EE is updated
+        if not hasattr(self.subject, "args"):
+            self.subject.args = [
+                os.path.join(self.src_dir(), "setup.py"),
+                self.subject.get_output_root()
+            ]
         return super().build()
 
     def clean(self, forBuild=False):
