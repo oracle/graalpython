@@ -1,0 +1,39 @@
+Module[0, 186]
+    FunctionDef[0, 186]
+        Name:format
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[11, 15] self
+        ---- Function body of format ----
+        For[22, 186]
+            Target: Name[26, 31] Value: "frame" Store
+            Iter: Name[35, 39] Value: "self"
+            Body:
+                AugAssign[49, 59]
+                    Op: ADD
+                    LHS: Name[49, 54] Value: "count" Store
+                    RHS: LONG[58, 59] Value: 1
+                If[68, 103]
+                    Test: Compare[71, 81]
+                        LHS: Name[71, 76] Value: "count"
+                        Op: GTE
+                        RHS: LONG[80, 81] Value: 3
+                    Then:
+                        Continue[95, 103]
+                If[112, 186]
+                    Test: Compare[115, 125]
+                        LHS: Name[115, 120] Value: "count"
+                        Op: EQ
+                        RHS: LONG[124, 125] Value: 4
+                    Then:
+                        For[139, 186]
+                            Target: Tuple[143, 154] Context: Store
+                                Values:
+                                    Name[143, 147] Value: "name" Store
+                                    Name[149, 154] Value: "value" Store
+                            Iter: Name[158, 159] Value: "a"
+                            Body:
+                                Assign[177, 186]
+                                    LHS: Name[177, 182] Value: "count" Store
+                                    RHS: LONG[185, 186] Value: 1
+        ---- End of format function ----

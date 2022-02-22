@@ -1,0 +1,26 @@
+Module[0, 52]
+    For[0, 52]
+        Target: Tuple[4, 9] Context: Store
+            Values:
+                Name[4, 5] Value: "a" Store
+                Starred[7, 9]
+                     Context: Store
+                     Expr: Name[8, 9] Value: "b" Store
+        Iter: List[13, 38]
+            Values:
+                Tuple[14, 23]
+                    Values:
+                        LONG[15, 16] Value: 1
+                        LONG[18, 19] Value: 2
+                        LONG[21, 22] Value: 3
+                Tuple[25, 37]
+                    Values:
+                        LONG[26, 27] Value: 4
+                        LONG[29, 30] Value: 5
+                        LONG[32, 33] Value: 6
+                        LONG[35, 36] Value: 7
+        Body:
+            Call[44, 52]
+                Target: Name[44, 49] Value: "print"
+                Args:
+                    Name[50, 51] Value: "b"

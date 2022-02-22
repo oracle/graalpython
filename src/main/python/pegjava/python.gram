@@ -198,7 +198,7 @@ yield_stmt[stmt_ty]: y=yield_expr { factory.createExpression(y) }
 assert_stmt[stmt_ty]: 'assert' a=expression b=[',' z=expression { z }] { factory.createAssert(a, b, startToken.startOffset, endToken.endOffset) }
 
 del_stmt[stmt_ty]:
-    | 'del' a=del_targets &(';' | NEWLINE) { _PyAST_Delete(a, EXTRA) }
+    | 'del' a=del_targets &(';' | NEWLINE) { factory.createDelete(a, startToken.startOffset, endToken.endOffset) }
     | invalid_del_stmt
 
 import_stmt[stmt_ty]: import_name | import_from
@@ -359,7 +359,7 @@ maybe_star_pattern[expr_ty]:
     | pattern
 star_pattern[expr_ty]:
     | '*' value=(capture_pattern | wildcard_pattern) {
-        _PyAST_Starred(value, Store, EXTRA) }
+        factory.createStarred(value, ExprContext.Store, startToken.startOffset, endToken.endOffset) }
 
 mapping_pattern[expr_ty]:
     | '{' items=items_pattern? '}' {
@@ -499,12 +499,12 @@ star_expressions[expr_ty]:
     | a=star_expression ',' { factory.createTuple(this.singletonSequence(a), ExprContext.Load, startToken.startOffset, endToken.endOffset) }
     | star_expression
 star_expression[expr_ty] (memo):
-    | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
+    | '*' a=bitwise_or { factory.createStarred(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
     | expression
 
 star_named_expressions[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_named_expression+ [','] { a }
 star_named_expression[expr_ty]:
-    | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
+    | '*' a=bitwise_or { factory.createStarred(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
     | named_expression
 
 named_expression[expr_ty]:
@@ -762,7 +762,7 @@ star_targets_tuple_seq[asdl_expr_seq*]:
     | a=star_target ',' { this.singletonSequence(a) }
 star_target[expr_ty] (memo):
     | '*' a=(!'*' star_target) {
-        _PyAST_Starred(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), Store, EXTRA) }
+        factory.createStarred(this.setExprContext(a, ExprContext.Store), ExprContext.Store, startToken.startOffset, endToken.endOffset)}
     | target_with_star_atom
 target_with_star_atom[expr_ty] (memo):
     | a=t_primary '.' b=NAME !t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Store, startToken.startOffset, startToken.endOffset) }
@@ -788,10 +788,10 @@ del_target[expr_ty] (memo):
     | a=t_primary '[' b=slices ']' !t_lookahead { factory.createSubscript(a, b, ExprContext.Delete, startToken.startOffset, startToken.endOffset) }
     | del_t_atom
 del_t_atom[expr_ty]:
-    | a=NAME { _PyPegen_set_expr_context(p, a, Del) }
-    | '(' a=del_target ')' { _PyPegen_set_expr_context(p, a, Del) }
-    | '(' a=[del_targets] ')' { _PyAST_Tuple(a, Del, EXTRA) }
-    | '[' a=[del_targets] ']' { _PyAST_List(a, Del, EXTRA) }
+    | a=NAME { this.setExprContext(a, ExprContext.Delete) }
+    | '(' a=del_target ')' { this.setExprContext(a, ExprContext.Delete) }
+    | '(' a=[del_targets] ')' { factory.createTuple(a, ExprContext.Delete, startToken.startOffset, startToken.endOffset) }
+    | '[' a=[del_targets] ']' { factory.createList(a, ExprContext.Delete, startToken.startOffset, startToken.endOffset) }
 
 targets[asdl_expr_seq*]: a[asdl_expr_seq*]=','.target+ [','] { a }
 target[expr_ty] (memo):

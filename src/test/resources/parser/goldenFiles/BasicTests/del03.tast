@@ -1,0 +1,8 @@
+Module[0, 13]
+    Delete[0, 13]
+        Targets:
+            Tuple[4, 5] Context: Delete
+                Values:
+                    Name[5, 6] Value: "x" Delete
+                    Name[8, 9] Value: "y" Delete
+                    Name[11, 12] Value: "z" Delete

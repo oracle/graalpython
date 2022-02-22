@@ -70,21 +70,21 @@ public class AssignmentTests extends ParserTestBase {
         checkTreeResult("a = b = c = d = e");
     }
 
-//    @Test
-//    public void assignment05() throws Exception {
-//        checkTreeResult("a, b, c = 1, 2, 3");
-//    }
+    @Test
+    public void assignment05() throws Exception {
+        checkTreeResult("a, b, c = 1, 2, 3");
+    }
 
     @Test
     public void assignment06() throws Exception {
         checkScopeAndTree("def fn():\n  a = b = c = d = e");
     }
 
-//    @Test
-//    public void assignment07() throws Exception {
-//        checkScopeAndTree("def fn():\n  a, b, c = 1, 2, 3");
-//    }
-//
+    @Test
+    public void assignment07() throws Exception {
+        checkScopeAndTree("def fn():\n  a, b, c = 1, 2, 3");
+    }
+
     @Test
     public void assignment08() throws Exception {
         checkTreeResult("a.b = 1");
@@ -169,13 +169,13 @@ public class AssignmentTests extends ParserTestBase {
     public void augassign13() throws Exception {
         checkScopeAndTree("def fn (): x += 3");
     }
-//
-//    @Test
-//    public void augassign14() throws Exception {
-//        checkScopeAndTree(
-//                        "def _method(*args, **keywords):\n" +
-//                                        "    cls_or_self, *rest = args");
-//    }
+
+    @Test
+    public void augassign14() throws Exception {
+        checkScopeAndTree(
+                        "def _method(*args, **keywords):\n" +
+                                        "    cls_or_self, *rest = args");
+    }
 //
 //    @Test
 //    public void nonLocal01() throws Exception {

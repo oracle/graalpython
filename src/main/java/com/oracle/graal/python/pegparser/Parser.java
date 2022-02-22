@@ -1896,6 +1896,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, DEL_STMT_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'del' del_targets &(';' | NEWLINE)
             Token _keyword;
             ExprTy[] a;
@@ -1907,9 +1908,11 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_34_rule(true)
             )
             {
-                // TODO: node.action: _PyAST_Delete ( a , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Delete ( a , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createDelete(a,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, DEL_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -4088,6 +4091,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, STAR_PATTERN_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '*' (capture_pattern | wildcard_pattern)
             Token _literal;
             ExprTy value;
@@ -4097,9 +4101,11 @@ public final class Parser extends AbstractParser {
                 (value = _tmp_74_rule()) != null  // capture_pattern | wildcard_pattern
             )
             {
-                // TODO: node.action: _PyAST_Starred ( value , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Starred ( value , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createStarred(value,ExprContext.Store,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, STAR_PATTERN_ID, _res);
                 return (ExprTy)_res;
             }
@@ -5611,6 +5617,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, STAR_EXPRESSION_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '*' bitwise_or
             Token _literal;
             ExprTy a;
@@ -5620,9 +5627,11 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Starred ( a , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createStarred(a,ExprContext.Load,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, STAR_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -5683,6 +5692,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, STAR_NAMED_EXPRESSION_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '*' bitwise_or
             Token _literal;
             ExprTy a;
@@ -5692,9 +5702,11 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Starred ( a , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createStarred(a,ExprContext.Load,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, STAR_NAMED_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9507,6 +9519,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, STAR_TARGET_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '*' (!'*' star_target)
             Token _literal;
             ExprTy a;
@@ -9516,9 +9529,11 @@ public final class Parser extends AbstractParser {
                 (a = _tmp_186_rule()) != null  // !'*' star_target
             )
             {
-                // TODO: node.action: _PyAST_Starred ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Starred ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createStarred(this.setExprContext(a,ExprContext.Store),ExprContext.Store,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, STAR_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9934,15 +9949,14 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, DEL_T_ATOM_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME
             ExprTy a;
             if (
                 (a = name_token()) != null  // NAME
             )
             {
-                // TODO: node.action: _PyPegen_set_expr_context ( p , a , Del )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Del ) to Java !!![0m");
-                _res = null;
+                _res = this.setExprContext(a,ExprContext.Delete);
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9960,9 +9974,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: _PyPegen_set_expr_context ( p , a , Del )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Del ) to Java !!![0m");
-                _res = null;
+                _res = this.setExprContext(a,ExprContext.Delete);
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9980,9 +9992,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: _PyAST_Tuple ( a , Del , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( a , Del , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createTuple(a,ExprContext.Delete,startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -10000,9 +10010,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
-                // TODO: node.action: _PyAST_List ( a , Del , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_List ( a , Del , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createList(a,ExprContext.Delete,startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
