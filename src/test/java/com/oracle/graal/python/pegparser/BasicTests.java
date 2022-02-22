@@ -914,52 +914,52 @@ public class BasicTests extends ParserTestBase {
 //                                     "        break");
 // }
 //
-//    @Test
-//    public void with01() throws Exception {
-//        checkTreeResult(
-//                        "with A() as a:\n" +
-//                                        "  pass");
-//    }
-//
-//    @Test
-//    public void with02() throws Exception {
-//        checkTreeResult(
-//                        "with A() as a, B() as b:\n" +
-//                                        "  pass");
-//    }
-//
-//    @Test
-//    public void with03() throws Exception {
-//        checkScopeAndTree(
-//                        "def fn():\n" +
-//                                        "  with A() as a:\n" +
-//                                        "    pass");
-//    }
-//
-//    @Test
-//    public void with04() throws Exception {
-//        checkScopeAndTree(
-//                        "def fn():\n" +
-//                                        "  with A() as a, B() as b:\n" +
-//                                        "    pass");
-//    }
-//
-//    @Test
-//    public void with05() throws Exception {
-//        checkScopeAndTree(
-//                        "def fn():\n" +
-//                                        "  with open('x'):\n" +
-//                                        "    pass");
-//    }
-//
-//    @Test
-//    public void with06() throws Exception {
-//        checkScopeAndTree(
-//                        "def fn():\n" +
-//                                        "  with A() as a:\n" +
-//                                        "    with B() as b:\n" +
-//                                        "      pass");
-//    }
+    @Test
+    public void with01() throws Exception {
+        checkTreeResult(
+                        "with A() as a:\n" +
+                                        "  pass");
+    }
+
+    @Test
+    public void with02() throws Exception {
+        checkTreeResult(
+                        "with A() as a, B() as b:\n" +
+                                        "  pass");
+    }
+
+    @Test
+    public void with03() throws Exception {
+        checkScopeAndTree(
+                        "def fn():\n" +
+                                        "  with A() as a:\n" +
+                                        "    pass");
+    }
+
+    @Test
+    public void with04() throws Exception {
+        checkScopeAndTree(
+                        "def fn():\n" +
+                                        "  with A() as a, B() as b:\n" +
+                                        "    pass");
+    }
+
+    @Test
+    public void with05() throws Exception {
+        checkScopeAndTree(
+                        "def fn():\n" +
+                                        "  with open('x'):\n" +
+                                        "    pass");
+    }
+
+    @Test
+    public void with06() throws Exception {
+        checkScopeAndTree(
+                        "def fn():\n" +
+                                        "  with A() as a:\n" +
+                                        "    with B() as b:\n" +
+                                        "      pass");
+    }
 
     @Test
     public void spaceEnd() throws Exception {

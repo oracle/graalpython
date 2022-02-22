@@ -255,9 +255,9 @@ for_stmt[stmt_ty]:
 
 with_stmt[stmt_ty]:
     | 'with' '(' a[asdl_withitem_seq*]=','.with_item+ ','? ')' ':' b=block {
-        _PyAST_With(a, b, NULL, EXTRA) }
+        factory.createWith(a, b, null, startToken.startOffset, endToken.endOffset) }
     | 'with' a[asdl_withitem_seq*]=','.with_item+ ':' tc=[TYPE_COMMENT] b=block {
-        _PyAST_With(a, b, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+        factory.createWith(a, b, newTypeComment(tc), startToken.startOffset, endToken.endOffset) }
     | ASYNC 'with' '(' a[asdl_withitem_seq*]=','.with_item+ ','? ')' ':' b=block {
        CHECK_VERSION(stmt_ty, 5, "Async with statements are", _PyAST_AsyncWith(a, b, NULL, EXTRA)) }
     | ASYNC 'with' a[asdl_withitem_seq*]=','.with_item+ ':' tc=[TYPE_COMMENT] b=block {
@@ -265,9 +265,9 @@ with_stmt[stmt_ty]:
     | invalid_with_stmt
 
 with_item[withitem_ty]:
-    | e=expression 'as' t=star_target &(',' | ')' | ':') { _PyAST_withitem(e, t, p->arena) }
+    | e=expression 'as' t=star_target &(',' | ')' | ':') { factory.createWithItem(e, t, startToken.startOffset,endToken.endOffset) }
     | invalid_with_item
-    | e=expression { _PyAST_withitem(e, NULL, p->arena) }
+    | e=expression { factory.createWithItem(e, null, startToken.startOffset,endToken.endOffset) }
 
 try_stmt[stmt_ty]:
     | 'try' &&':' b=block f=finally_block { factory.createTry(b, null, null, f, startToken.startOffset, startToken.endOffset) }

@@ -1026,7 +1026,11 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.With.Item node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.contextExpr.accept(this);
+            if (node.optionalVars != null) {
+                node.optionalVars.accept(this);
+            }
+            return null;
         }
 
         @Override
