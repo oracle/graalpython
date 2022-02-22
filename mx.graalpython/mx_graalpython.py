@@ -1185,12 +1185,12 @@ def update_import_cmd(args):
     # update vm-tests.json vm version
     with open(join(overlaydir, "python", "graal-common.json"), 'r') as fp:
         d = json.load(fp)
-        oraclejdk8_ver = d['jdks']['oraclejdk8']['version']
+        oraclejdk17_ver = d['jdks']['oraclejdk17']['version']
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'r') as fp:
         d = json.load(fp)
         for job in d:
-            job['downloads']['JAVA_HOME']['version'] = oraclejdk8_ver
+            job['downloads']['JAVA_HOME']['version'] = oraclejdk17_ver
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'w') as fp:
         json.dump(d, fp, indent=2)
