@@ -165,7 +165,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
             check_vm()
 
     if minimal:
-        x, *__ = *[x for x in SUITE.dists if x.name == "GRAALPYTHON"],
+        x, *__ = *[x for x in SUITE.dists if x.name == "GRAALPYTHON"] # pylint: disable=unused-variable;
         dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution()]
     else:
         dists = ['GRAALPYTHON']
@@ -2018,7 +2018,7 @@ class GraalpythonProject(mx.ArchivableProject):
     def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
         context = 'project ' + name
         self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
-        mx.Project.__init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
+        mx.Project.__init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs) # pylint: disable=super-init-not-called;
 
     def getOutput(self, replaceVar=mx_subst.results_substitutions):
         return self.get_output_root()
