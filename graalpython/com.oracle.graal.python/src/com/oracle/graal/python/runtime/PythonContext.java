@@ -147,8 +147,6 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 public final class PythonContext extends Python3Core {
-    private static final String INITIALIZE_DATETIME_CAPI = "initialize_datetime_capi";
-
     private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
     private static final Source FORCE_IMPORTS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build();
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);

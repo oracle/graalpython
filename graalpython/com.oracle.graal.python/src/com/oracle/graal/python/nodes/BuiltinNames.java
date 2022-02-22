@@ -172,6 +172,7 @@ public abstract class BuiltinNames {
     public static final String WRAPPER_DESCRIPTOR = "wrapper_descriptor";
     public static final String SIMPLE_QUEUE = "SimpleQueue";
     public static final String EMPTY = "Empty";
+    public static final String CONTEXTVARS = "_contextvars";
 
     public static final String DICT_KEYITERATOR = "dict_keyiterator";
     public static final String DICT_VALUEITERATOR = "dict_valueiterator";

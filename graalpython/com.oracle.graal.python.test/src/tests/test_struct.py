@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -259,3 +259,13 @@ def test_iter_unpack():
     assert lh(it) == 0
     assert_raises(StopIteration, next, it)
     assert lh(it) == 0
+
+
+# def test_pack_varargs():
+#     assert struct.Struct(">B").pack(3) == b'\x03'
+#     raised = False
+#     try:
+#         struct.Struct(">B").pack(3, kw=1)
+#     except TypeError:
+#         raised = True
+#     assert raised

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,47 +38,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import java.security.Security;
 
-@ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class, BuiltinNames.class})
-public abstract class PNodeWithContext extends Node {
+import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.hosted.Feature;
+import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
-    /**
-     * @return {@code true} if this node can be shared statically.
-     */
-    protected boolean isUncached() {
-        return !isAdoptable();
-    }
+import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
 
-    @TruffleBoundary
-    public void printStack() {
-        // a convenience methods for debugging
-        ExceptionUtils.printPythonLikeStackTrace();
-    }
-
-    public final PythonLanguage getLanguage() {
-        return PythonLanguage.get(this);
-    }
-
-    public final PythonContext getContext() {
-        return PythonContext.get(this);
-    }
-
-    public final boolean isSingleContext() {
-        return getLanguage().isSingleContext();
-    }
-
-    public ValueProfile createValueIdentityProfile() {
-        return getLanguage().isSingleContext() ? ValueProfile.createIdentityProfile() : ValueProfile.createClassProfile();
+public class BouncyCastleFeature implements Feature {
+    @Override
+    public void afterRegistration(AfterRegistrationAccess access) {
+        RuntimeClassInitializationSupport support = ImageSingletons.lookup(RuntimeClassInitializationSupport.class);
+        support.initializeAtBuildTime("org.bouncycastle", "security provider");
+        support.rerunInitialization("org.bouncycastle.jcajce.provider.drbg.DRBG$Default", "RNG");
+        support.rerunInitialization("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV", "RNG");
+        Security.addProvider(CertUtils.BOUNCYCASTLE_PROVIDER);
     }
 }

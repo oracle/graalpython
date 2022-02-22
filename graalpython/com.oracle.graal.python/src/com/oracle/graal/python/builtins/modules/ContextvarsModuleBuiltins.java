@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,20 +40,70 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.Collections;
+import static com.oracle.graal.python.nodes.BuiltinNames.CONTEXTVARS;
+
+import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.statement.ImportNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(defineModule = "_contextvars")
+@CoreFunctions(defineModule = CONTEXTVARS)
 public class ContextvarsModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return Collections.emptyList();
+        return ContextvarsModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "copy_context", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object copyCtx() {
+            throw raise(PythonBuiltinClassType.NotImplementedError);
+        }
+    }
+
+    @Builtin(name = "ContextVar", minNumOfPositionalArgs = 2, parameterNames = {"cls", "name", "default"}, constructsClass = PythonBuiltinClassType.ContextVar)
+    @GenerateNodeFactory
+    public abstract static class ContextVarNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        protected Object construct(VirtualFrame frame, Object cls, String name, PNone def,
+                        @Cached("createImportThreading()") ImportNode.ImportExpression threadingImport,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached CallNode callNode) {
+            return constructDef(frame, cls, name, PContextVar.NO_DEFAULT, threadingImport, lookupAttrNode, callNode);
+        }
+
+        @Specialization(guards = "!isPNone(def)")
+        protected Object constructDef(VirtualFrame frame, Object cls, String name, Object def,
+                        @Cached("createImportThreading()") ImportNode.ImportExpression threadingImport,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached CallNode callNode) {
+            Object threading = threadingImport.execute(frame);
+            Object localCallable = lookupAttrNode.execute(frame, threading, "local");
+            Object local = callNode.execute(frame, localCallable);
+            return factory().createContextVar(name, def, local);
+        }
+
+        protected ImportNode.ImportExpression createImportThreading() {
+            return ImportNode.createAsExpression("threading");
+        }
     }
 
 }

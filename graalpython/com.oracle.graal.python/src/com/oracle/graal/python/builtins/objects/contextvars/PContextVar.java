@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,47 +38,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python.builtins.objects.contextvars;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
 
-@ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class, BuiltinNames.class})
-public abstract class PNodeWithContext extends Node {
+public final class PContextVar extends PythonBuiltinObject {
+    private final String name;
+    private final Object def;
+    private final Object local;
 
-    /**
-     * @return {@code true} if this node can be shared statically.
-     */
-    protected boolean isUncached() {
-        return !isAdoptable();
+    public static final Object NO_DEFAULT = new Object();
+
+    public PContextVar(Object cls, Shape instanceShape, String name, Object def, Object local) {
+        super(cls, instanceShape);
+        this.name = name;
+        this.def = def;
+        this.local = local;
     }
 
-    @TruffleBoundary
-    public void printStack() {
-        // a convenience methods for debugging
-        ExceptionUtils.printPythonLikeStackTrace();
+    public String getName() {
+        return name;
     }
 
-    public final PythonLanguage getLanguage() {
-        return PythonLanguage.get(this);
+    public Object getDefault() {
+        return def;
     }
 
-    public final PythonContext getContext() {
-        return PythonContext.get(this);
+    public Object getLocal() {
+        return local;
     }
 
-    public final boolean isSingleContext() {
-        return getLanguage().isSingleContext();
-    }
-
-    public ValueProfile createValueIdentityProfile() {
-        return getLanguage().isSingleContext() ? ValueProfile.createIdentityProfile() : ValueProfile.createClassProfile();
-    }
 }

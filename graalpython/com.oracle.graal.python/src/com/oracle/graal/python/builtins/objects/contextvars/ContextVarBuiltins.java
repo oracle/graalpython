@@ -38,55 +38,80 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules.cext;
+package com.oracle.graal.python.builtins.objects.contextvars;
+
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupError;
 
 import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
+
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextClassBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVar)
+public final class ContextVarBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextClassBuiltinsFactory.getFactories();
+        return ContextVarBuiltinsFactory.getFactories();
     }
 
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyInstanceMethod_New", minNumOfPositionalArgs = 1)
+    @Builtin(name = "get", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class PyInstancemethodNewNode extends PythonUnaryBuiltinNode {
+    public abstract static class GetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object staticmethod(Object func) {
-            PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
-            res.setCallable(func);
-            return res;
+        Object get(VirtualFrame frame, PContextVar self, PNone def,
+                        @Cached PyObjectLookupAttr lookupAtrrNode) {
+            return get(frame, self, PContextVar.NO_DEFAULT, lookupAtrrNode);
+        }
+
+        @Specialization(guards = "!isPNone(def)")
+        Object get(VirtualFrame frame, PContextVar self, Object def,
+                        @Cached PyObjectLookupAttr lookupAtrrNode) {
+            Object value = lookupAtrrNode.execute(frame, self.getLocal(), "value");
+            if (value != PNone.NO_VALUE) {
+                return value;
+            }
+            if (def != PContextVar.NO_DEFAULT) {
+                return def;
+            }
+            if (self.getDefault() != PContextVar.NO_DEFAULT) {
+                return self.getDefault();
+            }
+            throw raise(LookupError);
         }
     }
 
-    @Builtin(name = "PyMethod_New", minNumOfPositionalArgs = 2)
+    @Builtin(name = "set", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyMethodNew extends PythonBinaryBuiltinNode {
+    public abstract static class SetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object methodNew(Object func, Object self) {
-            // Note: CPython also constructs the object directly, without running the constructor or
-            // checking the inputs
-            return factory().createMethod(self, func);
+        static Object get(VirtualFrame frame, PContextVar self, Object value,
+                        @Cached PyObjectSetAttr setAtrrNode) {
+            setAtrrNode.execute(frame, self.getLocal(), "value", value);
+            return PNone.NONE;
         }
     }
+
+    @Builtin(name = "reset", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ResetNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        static Object reset(PContextVar self, Object token) {
+            return PNone.NONE;
+        }
+    }
+
 }

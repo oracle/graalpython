@@ -41,19 +41,15 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.nodes.ErrorMessages.LIST_CANNOT_BE_CONVERTED_TO_DICT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
-import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -77,13 +73,10 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -101,23 +94,15 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CextUpcallNo
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CharPtrToJavaObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.DirectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseErrorResult;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObjectUpcallNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VoidPtrToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
@@ -125,10 +110,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.HandleCache;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCacheFactory.ResolveNativeReferenceNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalRestoreThread;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalSaveThread;
@@ -154,27 +136,19 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTargetNode;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeSignatureNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -187,44 +161,27 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.lib.PyMemoryViewFromObject;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
-import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -234,7 +191,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -243,7 +199,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -254,7 +209,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -271,7 +225,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -373,42 +326,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "Py_NotImplemented")
-    @GenerateNodeFactory
-    public abstract static class PyNotImplementedNode extends PythonBuiltinNode {
-        @Specialization
-        static Object run() {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = "Py_True")
-    @GenerateNodeFactory
-    public abstract static class PyTrueNode extends PythonBuiltinNode {
-        @Specialization
-        static Object run() {
-            return true;
-        }
-    }
-
-    @Builtin(name = "Py_False")
-    @GenerateNodeFactory
-    public abstract static class PyFalseNode extends PythonBuiltinNode {
-        @Specialization
-        static Object run() {
-            return false;
-        }
-    }
-
-    @Builtin(name = "Py_Ellipsis")
-    @GenerateNodeFactory
-    public abstract static class PyEllipsisNode extends PythonBuiltinNode {
-        @Specialization
-        static Object run() {
-            return PEllipsis.INSTANCE;
-        }
-    }
-
     @Builtin(name = "PyTruffle_Dict_From_List", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DictFromListNode extends PythonUnaryBuiltinNode {
@@ -439,19 +356,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
             }
-        }
-    }
-
-    @Builtin(name = "Py_DECREF", minNumOfPositionalArgs = 1)
-    @Builtin(name = "Py_INCREF", minNumOfPositionalArgs = 1)
-    @Builtin(name = "Py_XINCREF", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyChangeREFNode extends PythonUnaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        public static Object values(Object obj) {
-            // pass
-            return PNone.NONE;
         }
     }
 
@@ -727,24 +631,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 }
             }
             return l.toArray();
-        }
-    }
-
-    @Builtin(name = "Py_NoValue")
-    @GenerateNodeFactory
-    abstract static class PyNoValue extends PythonBuiltinNode {
-        @Specialization
-        static PNone doNoValue() {
-            return PNone.NO_VALUE;
-        }
-    }
-
-    @Builtin(name = "Py_None")
-    @GenerateNodeFactory
-    abstract static class PyNoneNode extends PythonBuiltinNode {
-        @Specialization
-        static PNone doNativeNone() {
-            return PNone.NONE;
         }
     }
 
@@ -1034,15 +920,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyHash_Imag")
-    @GenerateNodeFactory
-    abstract static class PyHashImagNode extends PythonBuiltinNode {
-        @Specialization
-        static long getHash() {
-            return SysModuleBuiltins.HASH_IMAG;
-        }
-    }
-
     @Builtin(name = "PyTruffleHash_InitSecret", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleHashGetSecret extends PythonUnaryBuiltinNode {
@@ -1078,56 +955,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTraceBack_Here", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTraceBackHereNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        int tbHere(PFrame frame,
-                        @Cached GetTracebackNode getTracebackNode) {
-            PythonLanguage language = getLanguage();
-            PythonThreadState threadState = getContext().getThreadState(language);
-            PException currentException = threadState.getCurrentException();
-            if (currentException != null) {
-                PTraceback traceback = null;
-                if (currentException.getTraceback() != null) {
-                    traceback = getTracebackNode.execute(currentException.getTraceback());
-                }
-                PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
-                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-                threadState.setCurrentException(PException.fromExceptionInfo(currentException.getUnreifiedException(), newTraceback, withJavaStacktrace));
-            }
-
-            return 0;
-        }
-    }
-
-    @Builtin(name = "PyCode_NewEmpty", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyCodeNewEmpty extends PythonTernaryBuiltinNode {
-        public abstract PCode execute(String filename, String funcname, int lineno);
-
-        @Specialization
-        static PCode newEmpty(String filename, String funcname, int lineno,
-                        @Cached CodeNodes.CreateCodeNode createCodeNode) {
-            return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
-                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY,
-                            filename, funcname, lineno, EMPTY_BYTE_ARRAY);
-        }
-    }
-
-    @Builtin(name = "_PyTraceback_Add", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTracebackAdd extends PythonTernaryBuiltinNode {
-        @Specialization
-        Object tbHere(String funcname, String filename, int lineno,
-                        @Cached PyCodeNewEmpty newCode,
-                        @Cached PyTraceBackHereNode pyTraceBackHereNode) {
-            PFrame frame = factory().createPFrame(null, newCode.execute(filename, funcname, lineno), factory().createDict(), factory().createDict());
-            pyTraceBackHereNode.execute(null, frame);
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = "PyTruffle_Set_SulongType", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffleSetSulongTypeNode extends NativeBuiltin {
@@ -1137,21 +964,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLibrary("klass") PythonNativeWrapperLibrary lib) {
             ((PythonManagedClass) lib.getDelegate(klass)).setSulongType(ptr);
             return ptr;
-        }
-    }
-
-    @Builtin(name = "PyMemoryView_FromObject", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTruffleMemoryViewFromObject extends NativeBuiltin {
-        @Specialization
-        Object wrap(VirtualFrame frame, Object object,
-                        @Cached PyMemoryViewFromObject memoryViewNode) {
-            try {
-                return memoryViewNode.execute(frame, object);
-            } catch (PException e) {
-                transformToNative(frame, e);
-                return getContext().getNativeNull();
-            }
         }
     }
 
@@ -1222,16 +1034,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
-        }
-    }
-
-    @Builtin(name = "PyThreadState_Get")
-    @GenerateNodeFactory
-    abstract static class PyThreadStateGet extends NativeBuiltin {
-
-        @Specialization
-        PThreadState get() {
-            return PThreadState.getThreadState(getLanguage(), getContext());
         }
     }
 
@@ -1483,52 +1285,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    /**
-     * Inserts a {@link MayRaiseNode} that wraps the body of the function. This will return a new
-     * function object with a rewritten AST. However, we use a cache for the call targets and thus
-     * the rewritten-ASTs will also be shared if appropriate.
-     */
-    @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        Object make(PFunction func, Object errorResultObj) {
-            RootCallTarget originalCallTarget = GetCallTargetNode.getUncached().execute(func);
-
-            // Replace the first expression node with the MayRaiseNode
-            RootCallTarget wrapperCallTarget = getLanguage().createCachedCallTarget(
-                            l -> ((FunctionRootNode) originalCallTarget.getRootNode()).rewriteWithNewSignature(GetSignatureNode.getUncached().execute(func), node -> false,
-                                            body -> MayRaiseNode.create(body, convertToEnum(errorResultObj))),
-                            MakeMayRaiseWrapperNode.class, originalCallTarget);
-
-            // Although we could theoretically re-use the old function instance, we create a new one
-            // to be on the safe side.
-            return factory().createFunction(func.getName(), func.getQualname(), func.getEnclosingClassName(), factory().createCode(wrapperCallTarget), func.getGlobals(), func.getDefaults(),
-                            func.getKwDefaults(), func.getClosure(), func.getCodeStableAssumption(), func.getCodeStableAssumption());
-        }
-
-        private MayRaiseErrorResult convertToEnum(Object object) {
-            if (PGuards.isNone(object)) {
-                return MayRaiseErrorResult.NONE;
-            } else if (object instanceof Integer) {
-                int i = (int) object;
-                if (i == -1) {
-                    return MayRaiseErrorResult.INT;
-                }
-            } else if (object instanceof Double) {
-                double i = (double) object;
-                if (i == -1.0) {
-                    return MayRaiseErrorResult.FLOAT;
-                }
-            } else if (object instanceof PythonNativeNull || PGuards.isNoValue(object)) {
-                return MayRaiseErrorResult.NATIVE_NULL;
-            }
-            throw raise(PythonErrorType.TypeError, "invalid error result value");
-        }
-    }
-
     @Builtin(name = "to_long", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AsLong extends PythonUnaryBuiltinNode {
@@ -1592,50 +1348,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         static PyCFunctionDecorator decorate(Object fun0, Object fun1) {
             return new PyCFunctionDecorator(fun0, fun1);
-        }
-    }
-
-    @Builtin(name = "PyType_IsSubtype", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @ImportStatic(PythonOptions.class)
-    abstract static class PyTypeIsSubtypeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(guards = {"isSingleContext()", "a == cachedA", "b == cachedB"})
-        static int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
-                        @Cached(value = "a", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedA,
-                        @Cached(value = "b", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedB,
-                        @Cached("doSlow(frame, a, b)") int result) {
-            return result;
-        }
-
-        protected static Class<?> getClazz(Object v) {
-            return v.getClass();
-        }
-
-        @Specialization(replaces = "doCached", guards = {"cachedClassA == getClazz(a)", "cachedClassB == getClazz(b)"}, limit = "getVariableArgumentInlineCacheLimit()")
-        static int doCachedClass(VirtualFrame frame, Object a, Object b,
-                        @Cached("getClazz(a)") Class<?> cachedClassA,
-                        @Cached("getClazz(b)") Class<?> cachedClassB,
-                        @Cached ToJavaNode leftToJavaNode,
-                        @Cached ToJavaNode rightToJavaNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            Object ua = leftToJavaNode.execute(cachedClassA.cast(a));
-            Object ub = rightToJavaNode.execute(cachedClassB.cast(b));
-            return isSubtypeNode.execute(frame, ua, ub) ? 1 : 0;
-        }
-
-        @Specialization(replaces = {"doCached", "doCachedClass"})
-        static int doGeneric(VirtualFrame frame, Object a, Object b,
-                        @Cached ToJavaNode leftToJavaNode,
-                        @Cached ToJavaNode rightToJavaNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            Object ua = leftToJavaNode.execute(a);
-            Object ub = rightToJavaNode.execute(b);
-            return isSubtypeNode.execute(frame, ua, ub) ? 1 : 0;
-        }
-
-        static int doSlow(VirtualFrame frame, Object derived, Object cls) {
-            return doGeneric(frame, derived, cls, ToJavaNodeGen.getUncached(), ToJavaNodeGen.getUncached(), IsSubtypeNodeGen.getUncached());
         }
     }
 
@@ -2407,27 +2119,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyCFunction_NewEx", minNumOfPositionalArgs = 8, parameterNames = {"method_def_ptr", "name", "cfunc", "flags", "wrapper", "self", "module", "doc"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
-    @GenerateNodeFactory
-    abstract static class PyCFunctionNewExMethod extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.PyCFunctionNewExMethodClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object doNativeCallable(Object methodDefPtr, String name, Object methObj, int flags, int wrapper, Object selfO, Object moduleO, Object doc,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode,
-                        @Cached ToNewRefNode newRefNode) {
-            Object self = asPythonObjectNode.execute(selfO);
-            Object module = asPythonObjectNode.execute(moduleO);
-            Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, self, module, doc, factory());
-            return newRefNode.execute(func);
-        }
-    }
-
     // directly called without landing function
     @Builtin(name = "PyTruffle_Unicode_FromFormat", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
@@ -2639,355 +2330,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "_PyObject_Dump", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyObjectDump extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        int doGeneric(Object ptrObject) {
-            PythonContext context = getContext();
-            PrintWriter stderr = new PrintWriter(context.getStandardErr());
-            CApiContext cApiContext = context.getCApiContext();
-            InteropLibrary lib = InteropLibrary.getUncached(ptrObject);
-            PCallCapiFunction callNode = PCallCapiFunction.getUncached();
-
-            // There are three cases we need to distinguish:
-            // 1) The pointer object is a native pointer and is NOT a handle
-            // 2) The pointer object is a native pointer and is a handle
-            // 3) The pointer object is one of our native wrappers
-
-            boolean isWrapper = CApiGuards.isNativeWrapper(ptrObject);
-            boolean pointsToHandleSpace = !isWrapper && (boolean) callNode.call(NativeCAPISymbol.FUN_POINTS_TO_HANDLE_SPACE, ptrObject);
-            boolean isValidHandle = pointsToHandleSpace && (boolean) callNode.call(NativeCAPISymbol.FUN_IS_HANDLE, ptrObject);
-
-            /*
-             * If the pointer points to the handle space but it's not a valid handle or if we do
-             * memory tracing and we know that the pointer is not allocated (was free'd), we assumed
-             * it's a use-after-free.
-             */
-            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
-            if (pointsToHandleSpace && !isValidHandle || traceNativeMemory && !isWrapper && !cApiContext.isAllocated(ptrObject)) {
-                stderr.println(String.format("<object at %s is freed>", CApiContext.asPointer(ptrObject, lib)));
-                stderr.flush();
-                return 0;
-            }
-
-            /*
-             * At this point we don't know if the pointer is invalid, so we try to resolve it to an
-             * object.
-             */
-            Object resolved = isWrapper ? ptrObject : ResolveHandleNodeGen.getUncached().execute(ptrObject);
-            Object pythonObject;
-            long refCnt;
-            // We need again check if 'resolved' is a wrapper in case we resolved a handle.
-            if (CApiGuards.isNativeWrapper(resolved)) {
-                PythonNativeWrapper wrapper = (PythonNativeWrapper) resolved;
-                refCnt = wrapper.getRefCount();
-                pythonObject = AsPythonObjectNodeGen.getUncached().execute(wrapper);
-            } else {
-                long obRefCnt = GetRefCntNodeGen.getUncached().execute(cApiContext, ptrObject);
-                /*
-                 * The upper 32-bits of the native field 'ob_refcnt' encode an ID into the native
-                 * object reference table. We mask them out to get the real reference count.
-                 */
-                refCnt = obRefCnt & (CApiContext.REFERENCE_COUNT_MARKER - 1);
-                pythonObject = AsPythonObjectNodeGen.getUncached().execute(ResolveNativeReferenceNodeGen.getUncached().execute(resolved, obRefCnt, false));
-            }
-
-            // first, write fields which are the least likely to crash
-            stderr.println("ptrObject address  : " + ptrObject);
-            stderr.println("ptrObject refcount : " + refCnt);
-            stderr.flush();
-
-            Object type = GetClassNode.getUncached().execute(pythonObject);
-            stderr.println("object type     : " + type);
-            stderr.println("object type name: " + GetNameNode.getUncached().execute(type));
-
-            // the most dangerous part
-            stderr.println("object repr     : ");
-            stderr.flush();
-            try {
-                Object reprObj = PyObjectCallMethodObjArgs.getUncached().execute(null, context.getBuiltins(), BuiltinNames.REPR, pythonObject);
-                stderr.println(CastToJavaStringNode.getUncached().execute(reprObj));
-            } catch (PException | CannotCastException e) {
-                // errors are ignored at this point
-            }
-            stderr.flush();
-            return 0;
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "Py_AtExit", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyAtExit extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        int doGeneric(Object funcPtr) {
-            getContext().registerAtexitHook(new ShutdownHook() {
-                @Override
-                public void call(@SuppressWarnings("unused") PythonContext context) {
-                    try {
-                        InteropLibrary.getUncached().execute(funcPtr);
-                    } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                        // ignored
-                    }
-                }
-            });
-            return 0;
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class PyStructSequenceInitType2 extends NativeBuiltin {
-
-        @Specialization(limit = "1")
-        static int doGeneric(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @CachedLibrary("fieldNamesObj") InteropLibrary lib,
-                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
-            return initializeStructType(asPythonObjectNode.execute(klass), fieldNamesObj, fieldDocsObj, nInSequence, PythonLanguage.get(lib), lib, clearNewNode);
-        }
-
-        static int initializeStructType(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
-                        PythonLanguage language,
-                        InteropLibrary lib,
-                        WriteAttributeToObjectNode clearNewNode) {
-            // 'fieldNames' and 'fieldDocs' must be of same type; they share the interop lib
-            assert fieldNamesObj.getClass() == fieldDocsObj.getClass();
-
-            try {
-                int n = PInt.intValueExact(lib.getArraySize(fieldNamesObj));
-                if (n != lib.getArraySize(fieldDocsObj)) {
-                    // internal error: the C function must type the object correctly
-                    throw CompilerDirectives.shouldNotReachHere("len(fieldNames) != len(fieldDocs)");
-                }
-                String[] fieldNames = new String[n];
-                String[] fieldDocs = new String[n];
-                for (int i = 0; i < n; i++) {
-                    fieldNames[i] = cast(lib.readArrayElement(fieldNamesObj, i));
-                    fieldDocs[i] = cast(lib.readArrayElement(fieldDocsObj, i));
-                }
-                clearNewNode.execute(klass, __NEW__, PNone.NO_VALUE);
-                Descriptor d = new Descriptor(null, nInSequence, fieldNames, fieldDocs);
-                StructSequence.initType(language, klass, d);
-                return 0;
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            } catch (OverflowException e) {
-                // fall through
-            }
-            return -1;
-        }
-
-        private static String cast(Object object) {
-            if (object instanceof String) {
-                return (String) object;
-            }
-            throw CompilerDirectives.shouldNotReachHere("object is expected to be a Java string");
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyStructSequence_NewType", minNumOfPositionalArgs = 5)
-    @GenerateNodeFactory
-    abstract static class PyStructSequenceNewType extends NativeBuiltin {
-
-        @Specialization(limit = "1")
-        Object doGeneric(VirtualFrame frame, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
-                        @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
-                        @Cached CallNode callTypeNewNode,
-                        @CachedLibrary("fieldNamesObj") InteropLibrary lib,
-                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
-                        @Cached ToNewRefNode toNewRefNode) {
-            try {
-                Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.TYPE);
-                PTuple bases = factory().createTuple(new Object[]{PythonBuiltinClassType.PTuple});
-                PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.__DOC__, typeDoc)});
-                Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
-                PyStructSequenceInitType2.initializeStructType(cls, fieldNamesObj, fieldDocsObj, nInSequence, getLanguage(), lib, clearNewNode);
-                return toNewRefNode.execute(cls);
-            } catch (PException e) {
-                transformToNative(frame, e);
-                return getContext().getNativeNull();
-            }
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyStructSequence_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyStructSequenceNew extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        Object doGeneric(Object clsPtr,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readRealSizeNode,
-                        @Cached CastToJavaIntExactNode castToIntNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached ToNewRefNode toNewRefNode) {
-            try {
-                Object cls = asPythonObjectNode.execute(clsPtr);
-                Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.N_FIELDS);
-                Object res;
-                if (realSizeObj == PNone.NO_VALUE) {
-                    PRaiseNativeNode.raiseNative(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY, getRaiseNode(), transformExceptionToNativeNode);
-                    res = getContext().getNativeNull();
-                } else {
-                    int realSize = castToIntNode.execute(realSizeObj);
-                    res = factory().createTuple(cls, new Object[realSize]);
-                }
-                return toNewRefNode.execute(res);
-            } catch (CannotCastException e) {
-                throw CompilerDirectives.shouldNotReachHere("attribute 'n_fields' is expected to be a Java int");
-            }
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyState_FindModule", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyStateFindModule extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        Object doGeneric(long mIndex,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            Object result;
-            try {
-                int i = PInt.intValueExact(mIndex);
-                result = getContext().getCApiContext().getModuleByIndex(i);
-                if (result == null) {
-                    result = getContext().getNativeNull();
-                }
-            } catch (CannotCastException | OverflowException e) {
-                result = getContext().getNativeNull();
-            }
-            return toSulongNode.execute(result);
-        }
-    }
-
-    @Builtin(name = "PyType_Lookup", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTypeLookup extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object doGeneric(Object type, Object name,
-                        @Cached AsPythonObjectNode typeAsPythonObjectNode,
-                        @Cached AsPythonObjectNode nameAsPythonObjectNode,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttributeInMRONode,
-                        @Cached ToBorrowedRefNode toBorrowedRefNode) {
-            Object result = lookupAttributeInMRONode.execute(typeAsPythonObjectNode.execute(type), nameAsPythonObjectNode.execute(name));
-            if (result == PNone.NO_VALUE) {
-                return getContext().getNativeNull();
-            }
-            return toBorrowedRefNode.execute(result);
-        }
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyEval_EvalCodeEx", minNumOfPositionalArgs = 9, needsFrame = true)
-    @GenerateNodeFactory
-    abstract static class PyEvalEvalCodeEx extends PythonBuiltinNode {
-        @Specialization
-        Object doGeneric(VirtualFrame frame, Object codeWrapper, Object globalsWrapper, Object localsWrapper,
-                        Object argumentArrayPtr, Object kwnamesPtr, Object keywordArrayPtr, Object defaultValueArrayPtr,
-                        Object kwdefaultsWrapper, Object closureWrapper,
-                        @CachedLibrary(limit = "2") InteropLibrary ptrLib,
-                        @Cached AsPythonObjectNode codeAsPythonObjectNode,
-                        @Cached AsPythonObjectNode globalsAsPythonObjectNode,
-                        @Cached AsPythonObjectNode localsAsPythonObjectNode,
-                        @Cached AsPythonObjectNode kwdefaultsAsPythonObjectNode,
-                        @Cached AsPythonObjectNode closureAsPythonObjectNode,
-                        @Cached ToJavaNode elementToJavaNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Cached GetCodeSignatureNode getSignatureNode,
-                        @Cached GetCodeCallTargetNode getCallTargetNode,
-                        @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                        @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached ToNewRefNode toNewRefNode,
-                        @Cached GenericInvokeNode invokeNode) {
-            PCode code = (PCode) codeAsPythonObjectNode.execute(codeWrapper);
-            Object globals = globalsAsPythonObjectNode.execute(globalsWrapper);
-            Object locals = localsAsPythonObjectNode.execute(localsWrapper);
-            Object[] defaults = unwrapArray(defaultValueArrayPtr, ptrLib, elementToJavaNode);
-            PKeyword[] kwdefaults = expandKeywordStarargsNode.execute(kwdefaultsAsPythonObjectNode.execute(kwdefaultsWrapper));
-            PCell[] closure = null;
-            Object closureObj = closureAsPythonObjectNode.execute(closureWrapper);
-            if (closureObj != PNone.NO_VALUE) {
-                // CPython also just accesses the object as tuple without further checks.
-                closure = PCell.toCellArray(getObjectArrayNode.execute(closureObj));
-            }
-            Object[] keywordNames = unwrapArray(kwnamesPtr, ptrLib, elementToJavaNode);
-            Object[] keywordArguments = unwrapArray(keywordArrayPtr, ptrLib, elementToJavaNode);
-
-            // The two arrays 'kwnamesPtr' and 'keywordArrayPtr' are expected to have the same size.
-            if (keywordNames.length != keywordArguments.length) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-
-            PKeyword[] keywords = new PKeyword[keywordNames.length];
-            for (int i = 0; i < keywordNames.length; i++) {
-                String keywordName = castToJavaStringNode.execute(keywordNames[i]);
-                keywords[i] = new PKeyword(keywordName, keywordArguments[i]);
-            }
-
-            // prepare Python frame arguments
-            Object[] userArguments = unwrapArray(argumentArrayPtr, ptrLib, elementToJavaNode);
-            Signature signature = getSignatureNode.execute(code);
-            Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, defaults, kwdefaults, false);
-
-            // set custom locals
-            if (!(locals instanceof PNone)) {
-                PArguments.setSpecialArgument(pArguments, locals);
-                PArguments.setCustomLocals(pArguments, locals);
-            }
-            PArguments.setClosure(pArguments, closure);
-            // TODO(fa): set builtins in globals
-            // PythonModule builtins = getContext().getBuiltins();
-            // setBuiltinsInGlobals(frame, globals, setBuiltins, builtins, lib);
-            if (globals instanceof PythonObject) {
-                PArguments.setGlobals(pArguments, (PythonObject) globals);
-            } else {
-                // TODO(fa): raise appropriate exception
-            }
-
-            try {
-                RootCallTarget rootCallTarget = getCallTargetNode.execute(code);
-                Object result = invokeNode.execute(frame, rootCallTarget, pArguments);
-                return toNewRefNode.execute(result);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return getContext().getNativeNull();
-            }
-        }
-
-        private static Object[] unwrapArray(Object ptr, InteropLibrary ptrLib, ToJavaNode elementToJavaNode) {
-            if (ptrLib.hasArrayElements(ptr)) {
-                try {
-                    int size = PInt.intValueExact(ptrLib.getArraySize(ptr));
-                    Object[] result = new Object[size];
-                    for (int i = 0; i < result.length; i++) {
-                        result[i] = elementToJavaNode.execute(ptrLib.readArrayElement(ptr, i));
-                    }
-                    return result;
-                } catch (UnsupportedMessageException | OverflowException | InvalidArrayIndexException e) {
-                    // fall through
-                }
-            }
-            /*
-             * Whenever some access goes wrong then this would basically be a segfault in CPython.
-             * So, we just throw a fatal exception which is not a Python exception.
-             */
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
     @Builtin(name = "PyTruffle_tss_create")
     @GenerateNodeFactory
     abstract static class PyTruffleTssCreate extends PythonBuiltinNode {
@@ -3031,17 +2373,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CastToJavaLongLossyNode cast) {
             getContext().getCApiContext().tssDelete(cast.execute(key));
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "PyMethod_New", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyMethodNew extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object methodNew(Object func, Object self) {
-            // Note: CPython also constructs the object directly, without running the constructor or
-            // checking the inputs
-            return factory().createMethod(self, func);
         }
     }
 

@@ -38,7 +38,9 @@
 *graalpython.lib-python.3.test.test_ftplib.TestIPv6Environment.test_makepasv
 *graalpython.lib-python.3.test.test_ftplib.TestIPv6Environment.test_makeport
 *graalpython.lib-python.3.test.test_ftplib.TestIPv6Environment.test_transfer
+*graalpython.lib-python.3.test.test_ftplib.TestMain.test_main
 *graalpython.lib-python.3.test.test_ftplib.TestTLS_FTPClass.test_auth_issued_twice
+*graalpython.lib-python.3.test.test_ftplib.TestTLS_FTPClass.test_ccc
 *graalpython.lib-python.3.test.test_ftplib.TestTLS_FTPClass.test_check_hostname
 *graalpython.lib-python.3.test.test_ftplib.TestTLS_FTPClass.test_context
 *graalpython.lib-python.3.test.test_ftplib.TestTLS_FTPClass.test_control_connection

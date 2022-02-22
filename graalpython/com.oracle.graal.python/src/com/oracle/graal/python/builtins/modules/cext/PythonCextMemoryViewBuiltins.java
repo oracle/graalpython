@@ -135,4 +135,19 @@ public final class PythonCextMemoryViewBuiltins extends PythonBuiltins {
             }
         }
     }
+
+    @Builtin(name = "PyMemoryView_FromObject", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleMemoryViewFromObject extends PythonCextBuiltins.NativeBuiltin {
+        @Specialization
+        Object wrap(VirtualFrame frame, Object object,
+                        @Cached PyMemoryViewFromObject memoryViewNode) {
+            try {
+                return memoryViewNode.execute(frame, object);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return getContext().getNativeNull();
+            }
+        }
+    }
 }

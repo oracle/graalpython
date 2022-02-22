@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+
 import com.oracle.graal.python.builtins.Builtin;
 
 import java.util.List;
@@ -48,9 +51,12 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -107,6 +113,20 @@ public final class PythonCextCodeBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
             }
+        }
+    }
+
+    @Builtin(name = "PyCode_NewEmpty", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyCodeNewEmpty extends PythonTernaryBuiltinNode {
+        public abstract PCode execute(String filename, String funcname, int lineno);
+
+        @Specialization
+        static PCode newEmpty(String filename, String funcname, int lineno,
+                        @Cached CodeNodes.CreateCodeNode createCodeNode) {
+            return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
+                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY,
+                            filename, funcname, lineno, EMPTY_BYTE_ARRAY);
         }
     }
 }
