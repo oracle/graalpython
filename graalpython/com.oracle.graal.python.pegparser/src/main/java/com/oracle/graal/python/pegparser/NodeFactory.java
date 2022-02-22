@@ -49,7 +49,7 @@ public interface NodeFactory {
     public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, int startOffset, int endOffset);
 
     public StmtTy createAssert(ExprTy test, ExprTy msg, int startOffset, int endOffset);
-    
+
     public StmtTy createAssignment(ExprTy[] lhs, ExprTy rhs, String typeComment, int startOffset, int endOffset);
 
     public StmtTy createAugAssignment(ExprTy lhs, ExprTy.BinOp.Operator operation, ExprTy rhs, int startOffset, int endOffset);
@@ -171,4 +171,8 @@ public interface NodeFactory {
     public StmtTy createTry(StmtTy[] body, StmtTy.Try.ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, int startOffset, int endOffset);
 
     public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, int startOffset, int endOffset);
+
+    public StmtTy createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset);
+
+    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset);
 }

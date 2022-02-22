@@ -42,6 +42,9 @@ package com.oracle.graal.python.pegparser;
 
 // TODO this class has to be moved to impl package and from this package we need to do api.
 
+import java.math.BigInteger;
+import java.util.Arrays;
+
 import com.oracle.graal.python.pegparser.AbstractParser.NameDefaultPair;
 import com.oracle.graal.python.pegparser.AbstractParser.SlashWithDefault;
 import com.oracle.graal.python.pegparser.AbstractParser.StarEtc;
@@ -54,11 +57,8 @@ import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
-import java.math.BigInteger;
-import java.util.Arrays;
 
-
-public class NodeFactoryImp implements NodeFactory{
+public class NodeFactoryImp implements NodeFactory {
     @Override
     public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, int startOffset, int endOffset) {
         return new StmtTy.AnnAssign(target, annotation, rhs, isSimple, startOffset, endOffset);
@@ -67,11 +67,11 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public StmtTy createAssert(ExprTy test, ExprTy msg, int startOffset, int endOffset) {
         if (test == null) {
-            // TODO Handle error if the field is null. 
+            // TODO Handle error if the field is null.
         }
         return new StmtTy.Assert(test, msg, startOffset, endOffset);
     }
-    
+
     @Override
     public StmtTy createAssignment(ExprTy[] lhs, ExprTy rhs, String typeComment, int startOffset, int endOffset) {
         return new StmtTy.Assign(lhs, rhs, typeComment, startOffset, endOffset);
@@ -126,7 +126,6 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy createExpression(ExprTy expr) {
         return new StmtTy.Expr(expr);
     }
-
 
     @Override
     public ExprTy createCall(ExprTy target, ExprTy[] args, KeywordTy[] kwargs, int startOffset, int endOffset) {
@@ -274,7 +273,7 @@ public class NodeFactoryImp implements NodeFactory{
         } else if (slashWithDefault != null) {
             posOnlyArgs = Arrays.copyOf(slashWithDefault.plainNames,
                             slashWithDefault.plainNames.length +
-                            slashWithDefault.namesWithDefaults.length);
+                                            slashWithDefault.namesWithDefaults.length);
             int i = slashWithDefault.plainNames.length;
             for (NameDefaultPair p : slashWithDefault.namesWithDefaults) {
                 posOnlyArgs[i++] = p.name;
@@ -289,7 +288,7 @@ public class NodeFactoryImp implements NodeFactory{
             if (paramWithoutDefault != null) {
                 posArgs = Arrays.copyOf(paramWithoutDefault,
                                 paramWithoutDefault.length +
-                                paramWithDefault.length);
+                                                paramWithDefault.length);
                 i = paramWithoutDefault.length;
             } else {
                 posArgs = new ArgTy[paramWithDefault.length];
@@ -510,5 +509,15 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, int startOffset, int endOffset) {
         return new StmtTy.Try.ExceptHandler(type, name, body, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset) {
+        return new StmtTy.With(items, body, typeComment, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset) {
+        return new StmtTy.With.Item(contextExpr, optionalVars, startOffset, endOffset);
     }
 }
