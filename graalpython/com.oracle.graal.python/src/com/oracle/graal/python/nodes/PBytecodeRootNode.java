@@ -78,12 +78,13 @@ import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
+import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
+import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
@@ -124,7 +125,6 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.PosNodeGe
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
@@ -231,6 +231,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<GetItemNode> NODE_GET_ITEM = GetItemNode::create;
     private static final ExceptMatchNode UNCACHED_EXCEPT_MATCH_NODE = ExceptMatchNode.getUncached();
     private static final NodeSupplier<ExceptMatchNode> EXCEPT_MATCH_NODE = ExceptMatchNode::create;
+    private static final SetupWithNode UNCACHED_SETUP_WITH_NODE = SetupWithNode.getUncached();
+    private static final NodeSupplier<SetupWithNode> NODE_SETUP_WITH = SetupWithNode::create;
+    private static final ExitWithNode UNCACHED_EXIT_WITH_NODE = ExitWithNode.getUncached();
+    private static final NodeSupplier<ExitWithNode> NODE_EXIT_WITH = ExitWithNode::create;
 
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
@@ -326,7 +330,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     @CompilationFinal private Object osrMetadata;
-
 
     private static final Node MARKER_NODE = new Node() {
         @Override
@@ -658,7 +661,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         frame.setObject(++stackTop, false);
                         break;
                     case LOAD_BYTE:
-                        frame.setObject(++stackTop, (int)localBC[++bci]); // signed!
+                        frame.setObject(++stackTop, (int) localBC[++bci]); // signed!
                         break;
                     case LOAD_LONG: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
@@ -682,12 +685,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case LOAD_BYTES: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        frame.setObject(++stackTop, factory.createBytes((byte[])localConsts[oparg]));
+                        frame.setObject(++stackTop, factory.createBytes((byte[]) localConsts[oparg]));
                         break;
                     }
                     case MAKE_COMPLEX: {
-                        double imag = (double)frame.getObject(stackTop--);
-                        double real = (double)frame.getObject(stackTop);
+                        double imag = (double) frame.getObject(stackTop--);
+                        double real = (double) frame.getObject(stackTop);
                         frame.setObject(stackTop, factory.createComplex(real, imag));
                         break;
                     }
@@ -1320,7 +1323,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
                         Object callable = frame.getObject(stackTop - 2);
                         Object[] args = (Object[]) frame.getObject(stackTop - 1);
-                        frame.setObject(stackTop - 2, callNode.execute(frame, callable, args, (PKeyword[])frame.getObject(stackTop)));
+                        frame.setObject(stackTop - 2, callNode.execute(frame, callable, args, (PKeyword[]) frame.getObject(stackTop)));
                         frame.setObject(--stackTop, null);
                         frame.setObject(--stackTop, null);
                         break;
@@ -1349,6 +1352,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             frame.setObject(stackTop, ((PException) exception).getEscapedException());
                         }
                         // Let interop exceptions be
+                        break;
+                    }
+                    case SETUP_WITH: {
+                        SetupWithNode setupWithNode = insertChildNode(localNodes[bci], UNCACHED_SETUP_WITH_NODE, NODE_SETUP_WITH, bci);
+                        stackTop = setupWithNode.execute(frame, stackTop);
+                        break;
+                    }
+                    case EXIT_WITH: {
+                        ExitWithNode exitWithNode = insertChildNode(localNodes[bci], UNCACHED_EXIT_WITH_NODE, NODE_EXIT_WITH, bci);
+                        stackTop = exitWithNode.execute(frame, stackTop);
                         break;
                     }
                     case END_FINALLY: {
@@ -1701,7 +1714,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int targetBCI = -1;
         int targetStackTop = -1;
         for (int i = 0; i < exceptionHandlerRanges.length; i += 3) {
-            // The ranges are ordered by their end bci, so the first one found is the most specific one
+            // The ranges are ordered by their end bci, so the first one found is the most specific
+            // one
             if (bci >= exceptionHandlerRanges[i] && bci < exceptionHandlerRanges[i + 1]) {
                 // bci is inside this try-block range. get the target stack size
                 targetBCI = exceptionHandlerRanges[i + 1];
@@ -1730,13 +1744,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // Object[] fastlocals = (Object[]) FrameUtil.getObjectSafe(frameToSync, FAST_SLOT);
         // assert fastlocals.length == varnames.length;
         // for (int i = 0; i < varnames.length; i++) {
-        //     Object v = frame.getObject(i);
-        //     String n = varnames[i];
-        //     if (v == null) {
-        //         delItem.execute(frameToSync, localsObject, n);
-        //     } else {
-        //         setItem.execute(frameToSync, localsObject, n, v);
-        //     }
+        // Object v = frame.getObject(i);
+        // String n = varnames[i];
+        // if (v == null) {
+        // delItem.execute(frameToSync, localsObject, n);
+        // } else {
+        // setItem.execute(frameToSync, localsObject, n, v);
+        // }
         // }
     }
 
