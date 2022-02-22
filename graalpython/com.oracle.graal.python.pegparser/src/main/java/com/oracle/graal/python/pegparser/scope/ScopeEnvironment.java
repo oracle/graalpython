@@ -40,6 +40,13 @@
  */
 package com.oracle.graal.python.pegparser.scope;
 
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map.Entry;
+import java.util.Stack;
+
 import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
@@ -54,12 +61,6 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map.Entry;
-import java.util.Stack;
 
 /**
  * Roughly plays the role of CPython's {@code symtable}.
@@ -165,7 +166,8 @@ public class ScopeEnvironment {
         }
     }
 
-    private void analyzeName(Scope scope, HashMap<String, DefUse> scopes, String name, EnumSet<DefUse> flags, HashSet<String> bound, HashSet<String> local, HashSet<String> free, HashSet<String> global) {
+    private void analyzeName(Scope scope, HashMap<String, DefUse> scopes, String name, EnumSet<DefUse> flags, HashSet<String> bound, HashSet<String> local, HashSet<String> free,
+                    HashSet<String> global) {
         if (flags.contains(DefUse.DefGlobal)) {
             if (flags.contains(DefUse.DefNonLocal)) {
                 // TODO: SyntaxError:
@@ -324,7 +326,8 @@ public class ScopeEnvironment {
             if (scope.flags.contains(ScopeFlags.IsVisitingIterTarget)) {
                 if (flags.contains(DefUse.DefGlobal) || flags.contains(DefUse.DefNonLocal)) {
                     // TODO: raises SyntaxError:
-                    // "comprehension inner loop cannot rebind assignment expression target '%s'", name
+                    // "comprehension inner loop cannot rebind assignment expression target '%s'",
+                    // name
                 }
                 flags.add(DefUse.DefCompIter);
             }
@@ -599,7 +602,7 @@ public class ScopeEnvironment {
             }
             if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
                 // symtable_extend_namedexpr_scope
-                String targetName = ((ExprTy.Name)node.target).id;
+                String targetName = ((ExprTy.Name) node.target).id;
                 for (int i = stack.size() - 1; i >= 0; i--) {
                     Scope s = stack.get(i);
                     // If we find a comprehension scope, check for conflict
@@ -998,6 +1001,9 @@ public class ScopeEnvironment {
         public Void visit(StmtTy.Try.ExceptHandler node) {
             if (node.type != null) {
                 node.type.accept(this);
+            }
+            if (node.name != null) {
+                addDef(node.name, DefUse.Local);
             }
             visitSequence(node.body);
             return null;

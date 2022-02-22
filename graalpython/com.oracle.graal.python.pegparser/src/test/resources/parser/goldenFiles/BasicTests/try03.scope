@@ -5,3 +5,4 @@ ScopeEnvironment
     Scope fn Function
         Symbols:
             ValueError: [Use, GlobalImplicit]
+            va: [Local, GlobalImplicit]
