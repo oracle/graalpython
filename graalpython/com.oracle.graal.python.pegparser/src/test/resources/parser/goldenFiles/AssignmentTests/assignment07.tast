@@ -1,0 +1,18 @@
+Module[0, 29]
+    FunctionDef[0, 29]
+        Name:fn
+        ---- Function body of fn ----
+        Assign[12, 29]
+            LHS: 
+                Tuple[12, 19] Context: Store
+                    Values:
+                        Name[12, 13] Value: "a" Store
+                        Name[15, 16] Value: "b" Store
+                        Name[18, 19] Value: "c" Store
+            RHS: 
+                Tuple[22, 29]
+                    Values:
+                        LONG[22, 23] Value: 1
+                        LONG[25, 26] Value: 2
+                        LONG[28, 29] Value: 3
+        ---- End of fn function ----

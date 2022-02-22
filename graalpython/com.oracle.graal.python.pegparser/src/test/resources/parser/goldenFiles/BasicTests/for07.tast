@@ -1,0 +1,23 @@
+Module[0, 68]
+    For[0, 68]
+        Target: Name[4, 5] Value: "x" Store
+        Iter: Call[9, 18]
+            Target: Name[9, 14] Value: "range"
+            Args:
+                LONG[15, 17] Value: 10
+        Body:
+            If[24, 55]
+                Test: Compare[27, 37]
+                    LHS: 
+                        BinOp[27, 32]
+                            Op: MOD
+                            LHS: Name[27, 28] Value: "x"
+                            RHS: LONG[31, 32] Value: 2
+                    Op: EQ
+                    RHS: LONG[36, 37] Value: 0
+                Then:
+                    Continue[47, 55]
+            Call[60, 68]
+                Target: Name[60, 65] Value: "print"
+                Args:
+                    Name[66, 67] Value: "x"
