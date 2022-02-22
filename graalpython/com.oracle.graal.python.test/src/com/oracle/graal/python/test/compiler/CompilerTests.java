@@ -185,6 +185,24 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testWith() {
+        String s = "print('before')\n" +
+                "with open('/dev/null') as f:\n" +
+                "  f.write('foo')\n" +
+                "print('after')";
+        doTest(s, null);
+    }
+
+    @Test
+    public void testWithMultiple() {
+        String s = "print('before')\n" +
+                "with open('/dev/null') as f, open('/tmp/foo'):\n" +
+                "  f.write('foo')\n" +
+                "print('after')";
+        doTest(s, null);
+    }
+
+    @Test
     public void testDefun() {
         String s;
         s = "def docompute(num, num2=5):\n" +

@@ -1449,12 +1449,44 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.With node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        visitWith(node, 0);
+        unit.useNextBlock(new Block());
+        return null;
+    }
+
+    private void visitWith(StmtTy.With node, int itemIndex) {
+        Block body = new Block();
+        Block handler = Block.createFinallyHandler(body);
+
+        StmtTy.With.Item item = node.items[itemIndex];
+        item.contextExpr.accept(this);
+        addOp(SETUP_WITH);
+
+        unit.useNextBlock(body);
+        /*
+         * Unwind one more stack item than it normally would to get rid of the context manager that
+         * is not needed in the finally block
+         */
+        handler.unwindOffset = -1;
+        if (item.optionalVars != null) {
+            item.optionalVars.accept(this);
+        } else {
+            addOp(POP_TOP);
+        }
+        if (itemIndex < node.items.length - 1) {
+            visitWith(node, itemIndex + 1);
+        } else {
+            visitSequence(node.body);
+        }
+        addOp(LOAD_NONE);
+
+        unit.useNextBlock(handler);
+        addOp(EXIT_WITH);
     }
 
     @Override
     public Void visit(StmtTy.With.Item node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        throw new UnsupportedOperationException("should not reach here");
     }
 
     @Override

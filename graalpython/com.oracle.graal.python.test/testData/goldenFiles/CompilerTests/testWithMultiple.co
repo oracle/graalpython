@@ -1,0 +1,29 @@
+Disassembly of <module>:
+000000         0 LOAD_NAME                         0    (print)
+000006         2 LOAD_STRING                       0    (before)
+000015         4 CALL_FUNCTION                     1
+000015         6 POP_TOP
+000021         7 LOAD_NAME                         1    (open)
+000026         9 LOAD_STRING                       1    (/dev/null)
+000038        11 CALL_FUNCTION                     1
+000038        13 SETUP_WITH
+000042        14 STORE_NAME                        2    (f)
+000045        16 LOAD_NAME                         1    (open)
+000050        18 LOAD_STRING                       2    (/tmp/foo)
+000061        20 CALL_FUNCTION                     1
+000061        22 SETUP_WITH
+000061        23 POP_TOP
+000065        24 LOAD_NAME                         2    (f)
+000073        26 LOAD_STRING                       3    (foo)
+000079        28 CALL_METHOD                       259
+000079        31 POP_TOP
+000079        32 LOAD_NONE
+000079        33 EXIT_WITH                                                               (exc handler 23 - 33; stack: 2)
+000079        34 LOAD_NONE
+000079        35 EXIT_WITH                                                               (exc handler 14 - 35; stack: 1)
+000080        36 LOAD_NAME                         0    (print)
+000086        38 LOAD_STRING                       4    (after)
+000094        40 CALL_FUNCTION                     1
+000094        42 POP_TOP
+000094        43 LOAD_NONE
+000094        44 RETURN_VALUE

@@ -185,7 +185,7 @@ public final class CompilationUnit {
             if (b.handlesExceptionFrom != null) {
                 int start = tryBlockBcis.get(b.handlesExceptionFrom);
                 int end = buf.size();
-                int stackLevel = b.handlesExceptionFrom.stackLevel;
+                int stackLevel = b.handlesExceptionFrom.stackLevel + b.unwindOffset;
                 assert stackLevel != -1;
                 short[] range = {(short) start, (short) end, (short) stackLevel};
                 if (range[0] != start || range[1] != end || range[2] != stackLevel) {
@@ -238,10 +238,10 @@ public final class CompilationUnit {
         maxStackSize = Math.max(maxStackSize, level);
         block.stackLevel = level;
         if (block.exceptionHandler != null) {
-            computeStackLevels(block.exceptionHandler, level + 1);
+            computeStackLevels(block.exceptionHandler, level + block.exceptionHandler.unwindOffset + 1);
         }
         if (block.finallyHandler != null) {
-            computeStackLevels(block.finallyHandler, level + 1);
+            computeStackLevels(block.finallyHandler, level + block.finallyHandler.unwindOffset + 1);
         }
         for (Instruction i : block.instr) {
             Block target = i.getTarget();

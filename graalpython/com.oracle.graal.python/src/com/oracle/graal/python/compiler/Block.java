@@ -50,6 +50,11 @@ final class Block {
     Block finallyHandler;
     Block handlesExceptionFrom;
     int stackLevel = -1;
+    /*
+     * For exception handlers: allows to unwind more stack items than usual. Useful to rollback to a
+     * mid-instruction stack state. Used by `with` statements.
+     */
+    int unwindOffset;
 
     public Block() {
     }

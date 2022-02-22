@@ -188,6 +188,10 @@ public enum OpCodes {
     END_FINALLY(               0,   -1),
     UNWRAP_EXC(                0,    0),
 
+    // with statements
+    SETUP_WITH(                0,    2),
+    EXIT_WITH(                 0,   -3),
+
     // dynamic bytecodes, only emitted at runtime for quickening
     STORE_FAST_BOOLEAN(        1,   -1),
     STORE_FAST_INT(            1,   -1),
