@@ -737,10 +737,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
-        return cachedCode.computeIfAbsent(filename, f -> {
-            LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+        if (!singleContext) {
+            return cachedCode.computeIfAbsent(filename, f -> {
+                LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+                return createCode.get();
+            });
+        } else {
             return createCode.get();
-        });
+        }
     }
 
     @Override
@@ -827,7 +831,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
         CompilerAsserts.neverPartOfCompilation();
-        return cachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
+        if (!singleContext) {
+            return cachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
+        } else {
+            return PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this));
+        }
     }
 
     /**
