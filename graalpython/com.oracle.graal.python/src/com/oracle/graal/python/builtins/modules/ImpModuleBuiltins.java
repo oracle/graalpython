@@ -646,7 +646,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(info.data, info.size);
 
-        PythonModule module = core.createModule(name);
+        PythonModule module = core.factory().createPythonModule(name);
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */
