@@ -2020,10 +2020,10 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
 
 
 class GraalpythonProject(mx.ArchivableProject):
-    def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
+    def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs): # pylint: disable=super-init-not-called
         context = 'project ' + name
         self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
-        mx.Project.__init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs) # pylint: disable=super-init-not-called;
+        mx.Project.__init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
 
     def getOutput(self, replaceVar=mx_subst.results_substitutions):
         return self.get_output_root()
