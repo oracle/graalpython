@@ -320,6 +320,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
+import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -842,22 +843,30 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     private void initializeImportlib() {
-        PythonModule bootstrap = (PythonModule) ImpModuleBuiltins.importFrozenModuleObject(this, "_frozen_importlib", false);
+        String importlibName = "_frozen_importlib";
+        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, importlibName, false);
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
         WriteAttributeToDynamicObjectNode writeNode = WriteAttributeToDynamicObjectNode.getUncached();
         ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
+        PyDictSetItem setItem = PyDictSetItem.getUncached();
+
+        // first, a workaround since postInitialize hasn't run yet for the _weakref module aliases
+        writeNode.execute(lookupBuiltinModule("_weakref"), "ref", lookupType(PythonBuiltinClassType.PReferenceType));
 
         if (bootstrap == null) {
             // true when the frozen module is not available
             PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
             writeNode.execute(bootstrapExternal, __PACKAGE__, "importlib");
-            addBuiltinModule("_frozen_importlib_external", bootstrapExternal);
+            setItem.execute(null, sysModules, "_frozen_importlib_external", bootstrapExternal);
             bootstrap = createModule("importlib._bootstrap");
             writeNode.execute(bootstrap, __PACKAGE__, "importlib");
-            addBuiltinModule("_frozen_importlib", bootstrap);
+            setItem.execute(null, sysModules, importlibName, bootstrap);
             loadFile("importlib/_bootstrap_external", getContext().getStdlibHome(), bootstrapExternal);
             loadFile("importlib/_bootstrap", getContext().getStdlibHome(), bootstrap);
+        } else {
+            setItem.execute(null, sysModules, importlibName, bootstrap);
+            LOGGER.log(Level.FINE, () -> "import '_frozen_importlib' # <frozen>");
         }
 
         callNode.execute(null, bootstrap, "_install", getSysModule(), lookupBuiltinModule("_imp"));
@@ -1128,6 +1137,10 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     private void loadFile(String s, String prefix, PythonModule mod) {
+        if (ImpModuleBuiltins.importFrozenModuleObject(this, "graalpython." + s, false, mod) != null) {
+            LOGGER.log(Level.FINE, () -> "import '" + s + "' # <frozen>");
+            return;
+        }
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
             return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));

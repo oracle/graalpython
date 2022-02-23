@@ -16,7 +16,7 @@ import sys
 import textwrap
 import shutil
 
-FROZEN_ONLY = os.path.join(os.path.dirname(__file__), 'flag.py')
+FROZEN_ONLY = os.path.join(os.path.dirname(__file__), "flag.py")
 
 # These are modules that get frozen.
 TESTS_SECTION = "Test module"
@@ -24,22 +24,22 @@ FROZEN = [
     # See parse_frozen_spec() for the format.
     # In cases where the frozenid is duplicated, the first one is re-used.
     (
-        'import system',
+        "import system",
         [
             # These frozen modules are necessary for bootstrapping the import
             # system.
-            'importlib._bootstrap : _frozen_importlib',
-            'importlib._bootstrap_external : _frozen_importlib_external',
+            "importlib._bootstrap : _frozen_importlib",
+            "importlib._bootstrap_external : _frozen_importlib_external",
             # CPython freezes zipimport, but we have it entirely intrinsified
             # 'zipimport',
-        ]
+        ],
     ),
     (
         "stdlib - startup, without site (python -S)",
         [
             "abc",
             "codecs",
-            '<encodings.*>',
+            "<encodings.*>",
             "io",
         ],
     ),
@@ -79,13 +79,13 @@ FROZEN = [
         TESTS_SECTION,
         [
             "__hello__",
-            '__hello__ : __hello_alias__',
-            '__hello__ : <__phello_alias__>',
-            '__hello__ : __phello_alias__.spam',
-            '__hello__ : <__phello__>',
-            '__hello__ : __phello__.spam',
+            "__hello__ : __hello_alias__",
+            "__hello__ : <__phello_alias__>",
+            "__hello__ : __phello_alias__.spam",
+            "__hello__ : <__phello__>",
+            "__hello__ : __phello__.spam",
             # '<__phello__.**.*>',
-            f'frozen_only : __hello_only__ = {FROZEN_ONLY}',
+            f"frozen_only : __hello_only__ = {FROZEN_ONLY}",
         ],
     ),
 ]
@@ -94,6 +94,42 @@ BOOTSTRAP = {
     "importlib._bootstrap_external",
     "zipimport",
 }
+
+# add graalpython modules and core files
+def add_graalpython_core():
+    lib_graalpython = os.path.join(os.path.dirname(__file__), "..", "lib-graalpython")
+    l = []
+    for name in [
+        "modules/_sysconfigdata",
+        "modules/ginstall",
+    ]:
+        modname = os.path.basename(name)
+        modpath = os.path.join(lib_graalpython, f"{name}.py")
+        l.append(f"{modname} : {modname} = {modpath}")
+    for name in [
+        "__graalpython__",
+        "_sre",
+        "_struct",
+        "_sysconfig",
+        "_weakref",
+        "builtins",
+        "bytearray",
+        "ctypes",
+        "function",
+        "java",
+        "pip_hook",
+        "type",
+        "unicodedata",
+        "zipimport",
+    ]:
+        modname = f"graalpython.{os.path.basename(name)}"
+        modpath = os.path.join(lib_graalpython, f"{name}.py")
+        l.append(f"{modname} : {modname} = {modpath}")
+    FROZEN.append(("graalpython-lib", l))
+
+
+add_graalpython_core()
+
 
 #######################################
 # specs
@@ -110,7 +146,12 @@ def parse_frozen_specs(stdlib_path, output_path):
             try:
                 source = seen[frozenid]
             except KeyError:
-                source = FrozenSource.from_id(stdlib_path=stdlib_path, output_path=output_path, frozenid=frozenid, pyfile=pyfile)
+                source = FrozenSource.from_id(
+                    stdlib_path=stdlib_path,
+                    output_path=output_path,
+                    frozenid=frozenid,
+                    pyfile=pyfile,
+                )
                 seen[frozenid] = source
             else:
                 assert not pyfile or pyfile == source.pyfile, item
@@ -488,6 +529,7 @@ package com.oracle.graal.python.builtins.objects.module;
 
 public final class FrozenModules {"""
 
+
 def freeze_module(src):
     with open(src.pyfile, "r") as src_file, open(src.binaryfile, "wb") as binary_file:
         code_obj = compile(src_file.read(), src.id, "exec")
@@ -497,9 +539,10 @@ def freeze_module(src):
 def write_frozen_modules_map(out_file, modules):
     out_file.write("    private static final class Map {\n")
     for module in modules:
-        if (not module.isalias or
-            not module.orig or
-            not any(module.orig == m.orig for m in modules if m != module)
+        if (
+            not module.isalias
+            or not module.orig
+            or not any(module.orig == m.orig for m in modules if m != module)
         ):
             ispkg = "true" if module.ispkg else "false"
             out_file.write(
@@ -514,10 +557,12 @@ def write_frozen_lookup(out_file, modules):
     for module in modules:
         if module.source and (module.source.ispkg != module.ispkg):
             out_file.write(f'            case "{module.name}":\n')
-            out_file.write(f'                return Map.{module.symbol}.asPackage({"true" if module.ispkg else "false"});\n')
+            out_file.write(
+                f'                return Map.{module.symbol}.asPackage({"true" if module.ispkg else "false"});\n'
+            )
         else:
             out_file.write(f'            case "{module.name}":\n')
-            out_file.write(f'                return Map.{module.symbol};\n')
+            out_file.write(f"                return Map.{module.symbol};\n")
     out_file.write("            default:\n")
     out_file.write("                return null;\n")
     out_file.write("        }\n")
@@ -550,6 +595,7 @@ def write_frozen_module_file(file, modules):
         print(f"{file} modified, rebuild needed!")
         sys.exit(1)
 
+
 def add_tabs(str, number):
     lines = str.splitlines()
     tabbed_lines = []
@@ -562,10 +608,11 @@ def add_tabs(str, number):
 
 def main(args):
     from argparse import ArgumentParser
+
     parser = ArgumentParser()
-    parser.add_argument('--python-lib', required=True)
-    parser.add_argument('--binary-dir', required=True)
-    parser.add_argument('--sources-dir', required=True)
+    parser.add_argument("--python-lib", required=True)
+    parser.add_argument("--binary-dir", required=True)
+    parser.add_argument("--sources-dir", required=True)
     parsed_args = parser.parse_args(args)
 
     # create module specs
@@ -579,7 +626,9 @@ def main(args):
         freeze_module(src)
 
     # write frozen modules class used for storing frozen modules byte code arrays
-    write_frozen_module_file(os.path.join(parsed_args.sources_dir, "FrozenModules.java"), modules)
+    write_frozen_module_file(
+        os.path.join(parsed_args.sources_dir, "FrozenModules.java"), modules
+    )
 
 
 if __name__ == "__main__":

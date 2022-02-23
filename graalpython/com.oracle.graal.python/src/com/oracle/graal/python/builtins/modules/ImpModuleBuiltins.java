@@ -616,7 +616,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(String name) {
+        PythonModule run(String name) {
             return importFrozenModuleObject(getCore(), name, true);
         }
     }
@@ -626,7 +626,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
      * imported module, null, or raises a Python exception.
      */
     @TruffleBoundary
-    public static Object importFrozenModuleObject(Python3Core core, String name, boolean doRaise) {
+    public static PythonModule importFrozenModuleObject(Python3Core core, String name, boolean doRaise) {
+        return importFrozenModuleObject(core, name, doRaise, null);
+    }
+
+    /**
+     * @see importFrozenModuleObject
+     *
+     * Uses {@code globals} if given as the globals for execution.
+     */
+    @TruffleBoundary
+    public static PythonModule importFrozenModuleObject(Python3Core core, String name, boolean doRaise, PythonModule globals) {
         FrozenResult result = findFrozen(name);
         FrozenStatus status = result.status;
         FrozenInfo info = result.info;
@@ -639,14 +649,14 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             default:
                 if (doRaise) {
                     raiseFrozenError(status, name, PRaiseNode.getUncached());
-                } else {
+                } else if (status != FROZEN_OKAY) {
                     return null;
                 }
         }
 
         PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(info.data, info.size);
 
-        PythonModule module = core.factory().createPythonModule(name);
+        PythonModule module = globals == null ? core.factory().createPythonModule(name) : globals;
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */
@@ -656,18 +666,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(module));
 
-        PythonModule importedModule = core.lookupBuiltinModule(name);
-
-        if (importedModule == null) {
-            throw PRaiseNode.getUncached().raise(ImportError, ErrorMessages.MODULE_NOT_FOUND, name);
-        }
-
-        /* Set __origname__ (consumed in FrozenImporter._setup_module()). */
         Object origName = info.origName == null ? PNone.NONE : info.origName;
+        WriteAttributeToDynamicObjectNode.getUncached().execute(module, "__origname__", origName);
 
-        WriteAttributeToDynamicObjectNode.getUncached().execute(importedModule, "__origname__", origName);
-
-        return importedModule;
+        return module;
     }
 
     /*
