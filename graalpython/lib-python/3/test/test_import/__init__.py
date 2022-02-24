@@ -86,11 +86,12 @@ class ImportTests(unittest.TestCase):
             from importlib import something_that_should_not_exist_anywhere
 
     def test_from_import_missing_attr_has_name_and_path(self):
+        # truffle change: replace usage of frozen os module with something else
         with self.assertRaises(ImportError) as cm:
-            from os import i_dont_exist
-        self.assertEqual(cm.exception.name, 'os')
-        self.assertEqual(cm.exception.path, os.__file__)
-        self.assertRegex(str(cm.exception), r"cannot import name 'i_dont_exist' from 'os' \(.*os.py\)")
+            from test.support import i_dont_exist
+        self.assertEqual(cm.exception.name, 'test.support')
+        self.assertEqual(cm.exception.path, test.support.__file__)
+        self.assertRegex(str(cm.exception), r"cannot import name 'i_dont_exist' from 'test.support' \(.*test/support/__init__.py\)")
 
     @cpython_only
     def test_from_import_missing_attr_has_name_and_so_path(self):
