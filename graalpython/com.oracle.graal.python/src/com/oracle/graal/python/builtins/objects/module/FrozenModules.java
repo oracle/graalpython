@@ -200,7 +200,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule __HELLO__ = new PythonFrozenModule("__HELLO__", "__hello__", false);
         private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", "frozen_only", false);
         private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", "_sysconfigdata", false);
-        private static final PythonFrozenModule GINSTALL = new PythonFrozenModule("GINSTALL", "ginstall", false);
         private static final PythonFrozenModule GRAALPYTHON___GRAALPYTHON__ = new PythonFrozenModule("GRAALPYTHON___GRAALPYTHON__", "graalpython.__graalpython__", false);
         private static final PythonFrozenModule GRAALPYTHON__SRE = new PythonFrozenModule("GRAALPYTHON__SRE", "graalpython._sre", false);
         private static final PythonFrozenModule GRAALPYTHON__STRUCT = new PythonFrozenModule("GRAALPYTHON__STRUCT", "graalpython._struct", false);
@@ -549,8 +548,6 @@ public final class FrozenModules {
                 return Map.FROZEN_ONLY;
             case "_sysconfigdata":
                 return Map._SYSCONFIGDATA;
-            case "ginstall":
-                return Map.GINSTALL;
             case "graalpython.__graalpython__":
                 return Map.GRAALPYTHON___GRAALPYTHON__;
             case "graalpython._sre":

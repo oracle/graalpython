@@ -101,7 +101,6 @@ def add_graalpython_core():
     l = []
     for name in [
         "modules/_sysconfigdata",
-        "modules/ginstall",
     ]:
         modname = os.path.basename(name)
         modpath = os.path.join(lib_graalpython, f"{name}.py")
