@@ -130,8 +130,10 @@ int32_t call_dup(int32_t fd) {
 
 int32_t call_dup2(int32_t oldfd, int32_t newfd, int32_t inheritable) {
 #ifdef __gnu_linux__
-    return dup3(oldfd, newfd, inheritable ? 0 : O_CLOEXEC);
-#else
+    if (!inheritable) {
+        return dup3(oldfd, newfd, O_CLOEXEC);
+    }
+#endif
     int res = dup2(oldfd, newfd);
     if (res < 0) {
         return res;
@@ -143,7 +145,6 @@ int32_t call_dup2(int32_t oldfd, int32_t newfd, int32_t inheritable) {
         }
     }
     return res;
-#endif
 }
 
 int32_t call_pipe2(int32_t *pipefd) {
