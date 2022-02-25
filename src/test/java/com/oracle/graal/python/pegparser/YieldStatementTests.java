@@ -152,43 +152,42 @@ public class YieldStatementTests extends ParserTestBase {
         checkScopeAndTree("generator = type((lambda: (yield))())");
     }
 
-//    @Test
-//    public void with01() throws Exception {
-//        checkScopeAndTree(
-//                        "def gen():\n" +
-//                                        "  with fn():\n" +
-//                                        "    yield 12\n" +
-//                                        "    yield 13");
-//    }
+    @Test
+    public void with01() throws Exception {
+        checkScopeAndTree(
+                        "def gen():\n" +
+                                        "  with fn():\n" +
+                                        "    yield 12\n" +
+                                        "    yield 13");
+    }
 
-//    @Test
-//    public void with02() throws Exception {
-//        checkScopeAndTree(
-//                        "def gen(a):\n" +
-//                                        "  with a:\n" +
-//                                        "    bla(p1, p2, p3)\n" +
-//                                        "  with fn():\n" +
-//                                        "    yield 12\n" +
-//                                        "    yield 13");
-//    }
+    @Test
+    public void with02() throws Exception {
+        checkScopeAndTree(
+                        "def gen(a):\n" +
+                                        "  with a:\n" +
+                                        "    bla(p1, p2, p3)\n" +
+                                        "  with fn():\n" +
+                                        "    yield 12\n" +
+                                        "    yield 13");
+    }
 
-//    @Test
-//    public void with03() throws Exception {
-//        checkScopeAndTree(
-//                        "def gen(a):\n" +
-//                                        "  with a:\n" +
-//                                        "    yield 12\n" +
-//                                        "    yield 13");
-//    }
+    @Test
+    public void with03() throws Exception {
+        checkScopeAndTree(
+                        "def gen(a):\n" +
+                                        "  with a:\n" +
+                                        "    yield 12\n" +
+                                        "    yield 13");
+    }
 
-//    @Test
-//    public void with04() throws Exception {
-//        // TODO the golden is different from the old parser
-//        checkScopeAndTree(
-//                        "def gen():\n" +
-//                                        "  with A() as a, B() as b:\n" +
-//                                        "    yield a");
-//    }
+    @Test
+    public void with04() throws Exception {
+        checkScopeAndTree(
+                        "def gen():\n" +
+                                        "  with A() as a, B() as b:\n" +
+                                        "    yield a");
+    }
 
     @Test
     public void if01() throws Exception {

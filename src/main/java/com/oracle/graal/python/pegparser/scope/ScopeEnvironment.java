@@ -1030,7 +1030,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.With.Item node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            return null;
         }
 
         @Override

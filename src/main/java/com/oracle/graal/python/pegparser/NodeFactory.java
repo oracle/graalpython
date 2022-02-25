@@ -171,4 +171,8 @@ public interface NodeFactory {
     public StmtTy createTry(StmtTy[] body, StmtTy.Try.ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, int startOffset, int endOffset);
 
     public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, int startOffset, int endOffset);
+    
+    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset);
+    
+    public StmtTy.With createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset);
 }

@@ -1,0 +1,8 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      gen: [DefLocal, Local]
+    Scope gen Function
+        Flags: [IsGenerator]
+        Symbols:
+            a: [Use, GlobalImplicit]

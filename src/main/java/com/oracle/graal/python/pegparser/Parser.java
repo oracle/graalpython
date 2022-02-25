@@ -2728,6 +2728,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, WITH_STMT_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'with' '(' ','.with_item+ ','? ')' ':' block
             Token _keyword;
             Token _literal;
@@ -2752,9 +2753,7 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: _PyAST_With ( a , b , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_With ( a , b , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createWith(a,b,null,startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, WITH_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -2778,9 +2777,7 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: _PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createWith(a,b,newTypeComment((Token)tc),startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, WITH_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -2879,6 +2876,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy.With.Item)cache.getResult(_mark, WITH_ITEM_ID);
             return (StmtTy.With.Item)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // expression 'as' star_target &(',' | ')' | ':')
             Token _keyword;
             ExprTy e;
@@ -2893,9 +2891,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_61_rule(true)
             )
             {
-                // TODO: node.action: _PyAST_withitem ( e , t , p -> arena )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_withitem ( e , t , p -> arena ) to Java !!![0m");
-                _res = null;
+                _res = factory.createWithItem(e,t,startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, WITH_ITEM_ID, _res);
                 return (StmtTy.With.Item)_res;
             }
@@ -2919,9 +2915,7 @@ public final class Parser extends AbstractParser {
                 (e = expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: _PyAST_withitem ( e , NULL , p -> arena )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_withitem ( e , NULL , p -> arena ) to Java !!![0m");
-                _res = null;
+                _res = factory.createWithItem(e,null,startToken.startOffset,startToken.endOffset);
                 cache.putResult(_mark, WITH_ITEM_ID, _res);
                 return (StmtTy.With.Item)_res;
             }
