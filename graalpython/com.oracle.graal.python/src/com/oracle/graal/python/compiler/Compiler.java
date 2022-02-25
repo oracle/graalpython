@@ -151,12 +151,15 @@ public class Compiler implements SSTreeVisitor<Void> {
             } else if (stmt instanceof StmtTy.With) {
                 return containsAnnotations(((StmtTy.With) stmt).body);
             } else if (stmt instanceof StmtTy.Try) {
-                for (StmtTy.Try.ExceptHandler h : ((StmtTy.Try) stmt).handlers) {
-                    if (containsAnnotations(h.body)) {
-                        return true;
+                StmtTy.Try tryStmt = (StmtTy.Try) stmt;
+                if (tryStmt.handlers != null) {
+                    for (StmtTy.Try.ExceptHandler h : tryStmt.handlers) {
+                        if (containsAnnotations(h.body)) {
+                            return true;
+                        }
                     }
                 }
-                return containsAnnotations(((StmtTy.Try) stmt).body) || containsAnnotations(((StmtTy.Try) stmt).finalBody) || containsAnnotations(((StmtTy.Try) stmt).orElse);
+                return containsAnnotations(tryStmt.body) || containsAnnotations(tryStmt.finalBody) || containsAnnotations(tryStmt.orElse);
             } else {
                 return false;
             }
