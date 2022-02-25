@@ -1,0 +1,10 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      gen: [DefLocal, Local]
+    Scope gen Function
+        Flags: [IsGenerator]
+        Varnames: x
+        Symbols:
+            ValueError: [Use, GlobalImplicit]
+            x: [DefParam, Local]

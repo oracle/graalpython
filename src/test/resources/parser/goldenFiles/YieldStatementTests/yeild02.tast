@@ -1,0 +1,6 @@
+Module[0, 14]
+    FunctionDef[0, 14]
+        Name:f
+        ---- Function body of f ----
+        Yield[9, 14]
+        ---- End of f function ----

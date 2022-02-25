@@ -1,0 +1,14 @@
+Module[0, 48]
+    FunctionDef[0, 48]
+        Name:f
+        ---- Function body of f ----
+        For[13, 48]
+            Target: Name[17, 18] Value: "x" Store
+            Iter: Call[22, 31]
+                Target: Name[22, 27] Value: "range"
+                Args:
+                    LONG[28, 30] Value: 30
+            Body:
+                Yield[41, 48]
+                    Name[47, 48] Value: "x"
+        ---- End of f function ----

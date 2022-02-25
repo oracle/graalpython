@@ -1,0 +1,16 @@
+Module[0, 15]
+    Set[0, 15]
+        Values:
+            Starred[1, 5]
+                 Context: Load
+                 Expr: 
+                    Set[2, 5]
+                        Values:
+                            LONG[3, 4] Value: 2
+            LONG[7, 8] Value: 3
+            Starred[10, 14]
+                 Context: Load
+                 Expr: 
+                    List[11, 14]
+                        Values:
+                            LONG[12, 13] Value: 4

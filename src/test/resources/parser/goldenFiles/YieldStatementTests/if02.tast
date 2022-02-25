@@ -1,0 +1,23 @@
+Module[0, 72]
+    FunctionDef[0, 72]
+        Name:gen
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[8, 9] c
+                ArgTy[11, 12] b
+        ---- Function body of gen ----
+        If[17, 30]
+            Test: Name[20, 21] Value: "c"
+            Then:
+                Assign[27, 30]
+                    LHS: Name[27, 28] Value: "b" Store
+                    RHS: LONG[29, 30] Value: 1
+        If[33, 72]
+            Test: Name[36, 37] Value: "b"
+            Then:
+                Yield[43, 51]
+                    LONG[49, 51] Value: 12
+            Else:
+                Yield[64, 72]
+                    LONG[70, 72] Value: 13
+        ---- End of gen function ----
