@@ -72,7 +72,6 @@ public class Compiler implements SSTreeVisitor<Void> {
     int nestingLevel = 0;
     CompilationUnit unit;
     Stack<CompilationUnit> stack = new Stack<>();
-    ByteBuffer buffer;
 
     public enum Flags {
     }
@@ -85,7 +84,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         mod.accept(this);
         CompilationUnit topUnit = unit;
         if (!unit.currentBlock.isReturn()) {
-            setOffset(mod.getEndOffset());
             if (!(mod instanceof ModTy.Expression)) {
                 // add a none return at the end
                 addOp(LOAD_NONE);
@@ -109,7 +107,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             stack.add(unit);
         }
         unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, argc, pargc, kwargc,
-                        hasSplat, hasKwSplat, node.getStartOffset(), node.getEndOffset());
+                        hasSplat, hasKwSplat, node.getStartOffset());
         nestingLevel++;
     }
 
@@ -173,21 +171,13 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void addOp(OpCodes code, Block target) {
-        addOp(code, unit.startOffset, target);
-    }
-
-    private Void addOp(OpCodes code, int argOrSrcOffset) {
-        if (code.hasArg()) {
-            addOp(code, argOrSrcOffset, unit.startOffset);
-        } else {
-            addOp(code, 0, unit.startOffset);
-        }
-        return null;
-    }
-
-    private void addOp(OpCodes code, int srcOffset, Block target) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, 0, target, srcOffset));
+        b.instr.add(new Instruction(code, 0, target, unit.startOffset));
+    }
+
+    private Void addOp(OpCodes code, int arg) {
+        addOp(code, arg, unit.startOffset);
+        return null;
     }
 
     private void addOp(OpCodes code, int arg, int srcOffset) {
@@ -318,12 +308,14 @@ public class Compiler implements SSTreeVisitor<Void> {
         return null;
     }
 
-    private void setOffset(SSTNode node) {
-        setOffset(node.getStartOffset());
+    private int setLocation(int offset) {
+        int savedOffset = unit.startOffset;
+        unit.startOffset = offset;
+        return savedOffset;
     }
 
-    private void setOffset(int offset) {
-        unit.startOffset = offset;
+    private int setLocation(SSTNode node) {
+        return setLocation(node.getStartOffset());
     }
 
     private void collectIntoArray(SSTNode[] nodes, int bits, int alreadyOnStack) {
@@ -336,18 +328,15 @@ public class Compiler implements SSTreeVisitor<Void> {
                 if (!collectionOnStack && cnt > 0) {
                     addOp(COLLECTION_FROM_STACK, bits | cnt);
                     e.accept(this);
-                    setOffset(e.getEndOffset());
                     addOp(COLLECTION_ADD_COLLECTION, bits);
                 } else {
                     e.accept(this);
-                    setOffset(e.getEndOffset());
                     addOp(COLLECTION_FROM_COLLECTION, bits);
                 }
                 collectionOnStack = true;
                 cnt = 0;
             } else {
                 e.accept(this);
-                setOffset(e.getEndOffset());
             }
             if (cnt > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
                 if (!collectionOnStack) {
@@ -394,6 +383,14 @@ public class Compiler implements SSTreeVisitor<Void> {
     // visiting
 
     private void visitBody(StmtTy[] stmts) {
+        if (unit.scope.isModule() && stmts.length > 0) {
+            /*
+             * Set current line number to the line number of first statement. This way line number
+             * for SETUP_ANNOTATIONS will always coincide with the line number of first "real"
+             * statement in module. If body is empty, then lineno will be set later in assemble.
+             */
+            setLocation(stmts[0]);
+        }
         if (containsAnnotations(stmts)) {
             // addOp(SETUP_ANNOTATIONS);
         }
@@ -462,86 +459,104 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Attribute node) {
-        setOffset(node);
-        node.value.accept(this);
-        int idx = addObject(unit.names, node.attr);
-        switch (node.context) {
-            case Store:
-                return addOp(STORE_ATTR, idx);
-            case Delete:
-                return addOp(DELETE_ATTR, idx);
-            case Load:
-            default:
-                return addOp(LOAD_ATTR, idx);
+        int savedOffset = setLocation(node);
+        try {
+            node.value.accept(this);
+            int idx = addObject(unit.names, node.attr);
+            switch (node.context) {
+                case Store:
+                    return addOp(STORE_ATTR, idx);
+                case Delete:
+                    return addOp(DELETE_ATTR, idx);
+                case Load:
+                default:
+                    return addOp(LOAD_ATTR, idx);
+            }
+        } finally {
+            setLocation(savedOffset);
         }
     }
 
     @Override
     public Void visit(ExprTy.Await node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.BinOp node) {
-        node.left.accept(this);
-        node.right.accept(this);
-        setOffset(node.left.getEndOffset());
-        switch (node.op) {
-            case ADD:
-                return addOp(BINARY_ADD);
-            case SUB:
-                return addOp(BINARY_SUBTRACT);
-            case MULT:
-                return addOp(BINARY_MULTIPLY);
-            case MATMULT:
-                return addOp(BINARY_MATRIX_MULTIPLY);
-            case DIV:
-                return addOp(BINARY_TRUE_DIVIDE);
-            case MOD:
-                return addOp(BINARY_MODULO);
-            case POW:
-                return addOp(BINARY_POWER);
-            case LSHIFT:
-                return addOp(BINARY_LSHIFT);
-            case RSHIFT:
-                return addOp(BINARY_RSHIFT);
-            case BITOR:
-                return addOp(BINARY_OR);
-            case BITXOR:
-                return addOp(BINARY_XOR);
-            case BITAND:
-                return addOp(BINARY_AND);
-            case FLOORDIV:
-                return addOp(BINARY_FLOOR_DIVIDE);
-            default:
-                throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            node.left.accept(this);
+            node.right.accept(this);
+            switch (node.op) {
+                case ADD:
+                    return addOp(BINARY_ADD);
+                case SUB:
+                    return addOp(BINARY_SUBTRACT);
+                case MULT:
+                    return addOp(BINARY_MULTIPLY);
+                case MATMULT:
+                    return addOp(BINARY_MATRIX_MULTIPLY);
+                case DIV:
+                    return addOp(BINARY_TRUE_DIVIDE);
+                case MOD:
+                    return addOp(BINARY_MODULO);
+                case POW:
+                    return addOp(BINARY_POWER);
+                case LSHIFT:
+                    return addOp(BINARY_LSHIFT);
+                case RSHIFT:
+                    return addOp(BINARY_RSHIFT);
+                case BITOR:
+                    return addOp(BINARY_OR);
+                case BITXOR:
+                    return addOp(BINARY_XOR);
+                case BITAND:
+                    return addOp(BINARY_AND);
+                case FLOORDIV:
+                    return addOp(BINARY_FLOOR_DIVIDE);
+                default:
+                    throw new UnsupportedOperationException("Not supported yet.");
+            }
+        } finally {
+            setLocation(savedOffset);
         }
     }
 
     @Override
     public Void visit(ExprTy.BoolOp node) {
-        Block end = new Block();
-        for (ExprTy v : node.values) {
-            v.accept(this);
+        int savedOffset = setLocation(node);
+        try {
+            Block end = new Block();
+            for (ExprTy v : node.values) {
+                v.accept(this);
+                switch (node.op) {
+                    case And:
+                        addOp(JUMP_IF_FALSE_OR_POP, end);
+                        break;
+                    case Or:
+                    default:
+                        addOp(JUMP_IF_TRUE_OR_POP, end);
+                }
+            }
             switch (node.op) {
                 case And:
-                    addOp(JUMP_IF_FALSE_OR_POP, end);
+                    addOp(LOAD_TRUE);
                     break;
                 case Or:
                 default:
-                    addOp(JUMP_IF_TRUE_OR_POP, end);
+                    addOp(LOAD_FALSE);
             }
+            unit.useNextBlock(end);
+            return null;
+        } finally {
+            setLocation(savedOffset);
         }
-        switch (node.op) {
-            case And:
-                addOp(LOAD_TRUE);
-                break;
-            case Or:
-            default:
-                addOp(LOAD_FALSE);
-        }
-        unit.useNextBlock(end);
-        return null;
     }
 
     private boolean isAttributeLoad(ExprTy node) {
@@ -562,44 +577,45 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Call node) {
-        // n.b.: we do things completely different from python for calls
-        ExprTy func = node.func;
-        OpCodes op = CALL_FUNCTION_VARARGS;
-        int oparg = 0;
-        boolean shortCall = false;
-        if (isAttributeLoad(func) && node.keywords.length == 0) {
-            ((ExprTy.Attribute) func).value.accept(this);
-            op = CALL_METHOD_VARARGS;
-            oparg = addObject(unit.names, ((ExprTy.Attribute) func).attr);
-            shortCall = node.args.length <= 3;
-        } else {
-            func.accept(this);
-            shortCall = node.args.length <= 4;
-        }
-        setOffset(func.getEndOffset());
-        if (hasOnlyPlainArgs(node) && shortCall) {
-            if (op == CALL_METHOD_VARARGS) {
-                oparg = (node.args.length << 8) | oparg;
-                op = CALL_METHOD;
+        int savedOffset = setLocation(node);
+        try {
+            // n.b.: we do things completely different from python for calls
+            ExprTy func = node.func;
+            OpCodes op = CALL_FUNCTION_VARARGS;
+            int oparg = 0;
+            boolean shortCall = false;
+            if (isAttributeLoad(func) && node.keywords.length == 0) {
+                ((ExprTy.Attribute) func).value.accept(this);
+                op = CALL_METHOD_VARARGS;
+                oparg = addObject(unit.names, ((ExprTy.Attribute) func).attr);
+                shortCall = node.args.length <= 3;
             } else {
-                oparg = node.args.length;
-                op = CALL_FUNCTION;
+                func.accept(this);
+                shortCall = node.args.length <= 4;
             }
-            // fast calls without extra arguments array
-            visitSequence(node.args);
-            setOffset(node.getEndOffset());
-            return addOp(op, oparg);
-        } else {
-            collectIntoArray(node.args, CollectionBits.OBJECT, op == CALL_METHOD_VARARGS ? 1 : 0);
-            if (node.keywords.length > 0) {
-                assert op == CALL_FUNCTION_VARARGS;
-                collectIntoArray(node.keywords, CollectionBits.KWORDS);
-                setOffset(node.getEndOffset());
-                return addOp(CALL_FUNCTION_KW);
-            } else {
-                setOffset(node.getEndOffset());
+            if (hasOnlyPlainArgs(node) && shortCall) {
+                if (op == CALL_METHOD_VARARGS) {
+                    oparg = (node.args.length << 8) | oparg;
+                    op = CALL_METHOD;
+                } else {
+                    oparg = node.args.length;
+                    op = CALL_FUNCTION;
+                }
+                // fast calls without extra arguments array
+                visitSequence(node.args);
                 return addOp(op, oparg);
+            } else {
+                collectIntoArray(node.args, CollectionBits.OBJECT, op == CALL_METHOD_VARARGS ? 1 : 0);
+                if (node.keywords.length > 0) {
+                    assert op == CALL_FUNCTION_VARARGS;
+                    collectIntoArray(node.keywords, CollectionBits.KWORDS);
+                    return addOp(CALL_FUNCTION_KW);
+                } else {
+                    return addOp(op, oparg);
+                }
             }
+        } finally {
+            setLocation(savedOffset);
         }
     }
 
@@ -630,101 +646,144 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Compare node) {
-        setOffset(node);
-        node.left.accept(this);
-        if (node.comparators.length == 1) {
-            visitSequence(node.comparators);
-            addCompareOp(node.ops[0]);
-        } else {
-            Block cleanup = new Block();
-            int i;
-            for (i = 0; i < node.comparators.length - 1; i++) {
+        int savedOffset = setLocation(node);
+        try {
+            node.left.accept(this);
+            if (node.comparators.length == 1) {
+                visitSequence(node.comparators);
+                addCompareOp(node.ops[0]);
+            } else {
+                Block cleanup = new Block();
+                int i;
+                for (i = 0; i < node.comparators.length - 1; i++) {
+                    node.comparators[i].accept(this);
+                    addOp(DUP_TOP);
+                    addOp(ROT_THREE);
+                    addCompareOp(node.ops[i]);
+                    addOp(JUMP_IF_FALSE_OR_POP, cleanup);
+                }
                 node.comparators[i].accept(this);
-                addOp(DUP_TOP);
-                addOp(ROT_THREE);
                 addCompareOp(node.ops[i]);
-                addOp(JUMP_IF_FALSE_OR_POP, cleanup);
+                Block end = new Block();
+                addOp(JUMP_FORWARD, end);
+                unit.useNextBlock(cleanup);
+                addOp(ROT_TWO);
+                addOp(POP_TOP);
+                unit.useNextBlock(end);
             }
-            node.comparators[i].accept(this);
-            addCompareOp(node.ops[i]);
-            Block end = new Block();
-            addOp(JUMP_FORWARD, end);
-            unit.useNextBlock(cleanup);
-            addOp(ROT_TWO);
-            addOp(POP_TOP);
-            unit.useNextBlock(end);
+            return null;
+        } finally {
+            setLocation(savedOffset);
         }
-        return null;
     }
 
     @Override
     public Void visit(ExprTy.Constant node) {
-        setOffset(node);
-        switch (node.kind) {
-            case OBJECT:
-                return addOp(LOAD_CONST, addObject(unit.constants, node.value));
-            case NONE:
-                return addOp(LOAD_NONE);
-            case ELLIPSIS:
-                return addOp(LOAD_ELLIPSIS);
-            case BOOLEAN:
-                return addOp(node.value == Boolean.TRUE ? LOAD_TRUE : LOAD_FALSE);
-            case LONG:
-                if (node.longValue == (byte) node.longValue) {
-                    return addOp(LOAD_BYTE, (byte) node.longValue);
-                } else {
-                    return addOp(LOAD_LONG, addObject(unit.primitiveConstants, node.longValue));
-                }
-            case DOUBLE:
-                return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.longValue));
-            case COMPLEX:
-                addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.getReal()));
-                addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.getImaginary()));
-                return addOp(MAKE_COMPLEX);
-            case BIGINTEGER:
-                return addOp(LOAD_BIGINT, addObject(unit.constants, node.value));
-            case RAW:
-                return addOp(LOAD_STRING, addObject(unit.constants, node.value));
-            case BYTES:
-                return addOp(LOAD_BYTES, addObject(unit.constants, node.value));
-            default:
-                throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            switch (node.kind) {
+                case OBJECT:
+                    return addOp(LOAD_CONST, addObject(unit.constants, node.value));
+                case NONE:
+                    return addOp(LOAD_NONE);
+                case ELLIPSIS:
+                    return addOp(LOAD_ELLIPSIS);
+                case BOOLEAN:
+                    return addOp(node.value == Boolean.TRUE ? LOAD_TRUE : LOAD_FALSE);
+                case LONG:
+                    if (node.longValue == (byte) node.longValue) {
+                        return addOp(LOAD_BYTE, (byte) node.longValue);
+                    } else {
+                        return addOp(LOAD_LONG, addObject(unit.primitiveConstants, node.longValue));
+                    }
+                case DOUBLE:
+                    return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.longValue));
+                case COMPLEX:
+                    addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.getReal()));
+                    addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.getImaginary()));
+                    return addOp(MAKE_COMPLEX);
+                case BIGINTEGER:
+                    return addOp(LOAD_BIGINT, addObject(unit.constants, node.value));
+                case RAW:
+                    return addOp(LOAD_STRING, addObject(unit.constants, node.value));
+                case BYTES:
+                    return addOp(LOAD_BYTES, addObject(unit.constants, node.value));
+                default:
+                    throw new UnsupportedOperationException("Not supported yet.");
+            }
+        } finally {
+            setLocation(savedOffset);
         }
     }
 
     @Override
     public Void visit(ExprTy.Dict node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.DictComp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.FormattedValue node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.GeneratorExp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.IfExp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.JoinedStr node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.Lambda node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     private Void unpackInto(ExprTy[] elements) {
@@ -771,120 +830,179 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.List node) {
-        setOffset(node);
-        switch (node.context) {
-            case Store:
-                return unpackInto(node.elements);
-            case Load:
-                collectIntoArray(node.elements, CollectionBits.LIST);
-                return null;
-            case Delete:
-            default:
-                return visitSequence(node.elements);
+        int savedOffset = setLocation(node);
+        try {
+            switch (node.context) {
+                case Store:
+                    return unpackInto(node.elements);
+                case Load:
+                    collectIntoArray(node.elements, CollectionBits.LIST);
+                    return null;
+                case Delete:
+                default:
+                    return visitSequence(node.elements);
+            }
+        } finally {
+            setLocation(savedOffset);
         }
     }
 
     @Override
     public Void visit(ExprTy.ListComp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.Name node) {
-        setOffset(node);
-        addNameOp(node.id, node.context);
-        return null;
+        int savedOffset = setLocation(node);
+        try {
+            addNameOp(node.id, node.context);
+            return null;
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.NamedExpr node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.Set node) {
-        setOffset(node);
-        collectIntoArray(node.elements, CollectionBits.SET);
-        return null;
+        int savedOffset = setLocation(node);
+        try {
+            collectIntoArray(node.elements, CollectionBits.SET);
+            return null;
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.SetComp node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.Slice node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.Starred node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.Subscript node) {
-        node.value.accept(this);
-        node.slice.accept(this);
-        setOffset(node);
-        switch (node.context) {
-            case Load:
-                return addOp(BINARY_SUBSCR);
-            case Store:
-                return addOp(STORE_SUBSCR);
-            case Delete:
-            default:
-                return addOp(DELETE_SUBSCR);
+        int savedOffset = setLocation(node);
+        try {
+            node.value.accept(this);
+            node.slice.accept(this);
+            switch (node.context) {
+                case Load:
+                    return addOp(BINARY_SUBSCR);
+                case Store:
+                    return addOp(STORE_SUBSCR);
+                case Delete:
+                default:
+                    return addOp(DELETE_SUBSCR);
+            }
+        } finally {
+            setLocation(savedOffset);
         }
     }
 
     @Override
     public Void visit(ExprTy.Tuple node) {
-        setOffset(node);
-        switch (node.context) {
-            case Store:
-                return unpackInto(node.elements);
-            case Load:
-                collectIntoArray(node.elements, CollectionBits.TUPLE);
-                return null;
-            case Delete:
-            default:
-                return visitSequence(node.elements);
+        int savedOffset = setLocation(node);
+        try {
+            switch (node.context) {
+                case Store:
+                    return unpackInto(node.elements);
+                case Load:
+                    collectIntoArray(node.elements, CollectionBits.TUPLE);
+                    return null;
+                case Delete:
+                default:
+                    return visitSequence(node.elements);
+            }
+        } finally {
+            setLocation(savedOffset);
         }
     }
 
     @Override
     public Void visit(ExprTy.UnaryOp node) {
-        node.operand.accept(this);
-        setOffset(node);
-        switch (node.op) {
-            case ADD:
-                return addOp(UNARY_POSITIVE);
-            case INVERT:
-                return addOp(UNARY_INVERT);
-            case NOT:
-                return addOp(UNARY_NOT);
-            case SUB:
-            default:
-                return addOp(UNARY_NEGATIVE);
+        int savedOffset = setLocation(node);
+        try {
+            node.operand.accept(this);
+            switch (node.op) {
+                case ADD:
+                    return addOp(UNARY_POSITIVE);
+                case INVERT:
+                    return addOp(UNARY_INVERT);
+                case NOT:
+                    return addOp(UNARY_NOT);
+                case SUB:
+                default:
+                    return addOp(UNARY_NEGATIVE);
+            }
+        } finally {
+            setLocation(savedOffset);
         }
     }
 
     @Override
     public Void visit(ExprTy.Yield node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(ExprTy.YieldFrom node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int savedOffset = setLocation(node);
+        try {
+            throw new UnsupportedOperationException("Not supported yet.");
+        } finally {
+            setLocation(savedOffset);
+        }
     }
 
     @Override
     public Void visit(KeywordTy node) {
         node.value.accept(this);
-        setOffset(node);
+        setLocation(node);
         return addOp(MAKE_KEYWORD, addObject(unit.constants, node.arg));
     }
 
@@ -905,7 +1023,6 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ModTy.Module node) {
-        setOffset(node);
         visitBody(node.body);
         return null;
     }
@@ -917,21 +1034,21 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AnnAssign node) {
+        setLocation(node);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public Void visit(StmtTy.Assert node) {
+        setLocation(node);
         Block end = new Block();
         node.test.accept(this);
-        setOffset(node);
         addOp(POP_AND_JUMP_IF_TRUE, end);
         addOp(LOAD_ASSERTION_ERROR);
         if (node.msg != null) {
             node.msg.accept(this);
             addOp(CALL_FUNCTION, 1);
         }
-        setOffset(node.getEndOffset());
         addOp(RAISE_VARARGS, 1);
         unit.useNextBlock(end);
         return null;
@@ -939,6 +1056,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Assign node) {
+        setLocation(node);
         node.value.accept(this);
         for (int i = 0; i < node.targets.length; i++) {
             if (i != node.targets.length - 1) {
@@ -951,24 +1069,29 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AsyncFor node) {
+        setLocation(node);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public Void visit(StmtTy.AsyncFunctionDef node) {
+        setLocation(node);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public Void visit(StmtTy.AsyncWith node) {
+        setLocation(node);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public Void visit(StmtTy.AugAssign node) {
+        int savedOffset = setLocation(node);
         node.target.copyWithContext(ExprContext.Load).accept(this);
+        setLocation(savedOffset);
         node.value.accept(this);
-        setOffset(node.target.getEndOffset());
+        setLocation(node);
         switch (node.op) {
             case ADD:
                 addOp(INPLACE_ADD);
@@ -1017,10 +1140,10 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.ClassDef node) {
+        setLocation(node);
         visitSequence(node.decoratorList);
 
         enterScope(node.name, CompilationScope.Class, node, 0, 0, 0, false, false);
-        setOffset(node.body[0]);
         addNameOp("__name__", ExprContext.Load);
         addNameOp("__module__", ExprContext.Store);
         addOp(LOAD_CONST, addObject(unit.constants, unit.qualName));
@@ -1028,7 +1151,6 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         visitBody(node.body);
 
-        setOffset(node.getEndOffset());
         if (unit.scope.needsClassClosure()) {
             int idx = unit.cellvars.get("__class__");
             addOp(LOAD_CLOSURE, idx);
@@ -1041,7 +1163,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         CodeUnit co = unit.assemble(filename, 0);
         exitScope();
 
-        setOffset(node);
         addOp(LOAD_BUILD_CLASS);
         makeClosure(co, 0, 0);
         addOp(LOAD_CONST, addObject(unit.constants, node.name));
@@ -1060,12 +1181,10 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         if (node.decoratorList != null) {
             for (ExprTy decorator : node.decoratorList) {
-                setOffset(decorator.getEndOffset());
                 addOp(CALL_FUNCTION, 1);
             }
         }
 
-        setOffset(node);
         addNameOp(node.name, ExprContext.Store);
 
         return null;
@@ -1073,14 +1192,15 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Delete node) {
+        setLocation(node);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public Void visit(StmtTy.Expr node) {
+        setLocation(node);
         if (!(node.value instanceof ExprTy.Constant)) {
             node.value.accept(this);
-            setOffset(node.value.getEndOffset());
             addOp(POP_TOP);
         }
         return null;
@@ -1088,6 +1208,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.For node) {
+        setLocation(node);
         Block head = new Block();
         Block body = new Block();
         Block end = new Block();
@@ -1097,7 +1218,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         addOp(GET_ITER);
 
         unit.useNextBlock(head);
-        setOffset(node);
         addOp(FOR_ITER, orelse);
 
         unit.useNextBlock(body);
@@ -1105,7 +1225,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         try {
             node.target.accept(this);
             visitSequence(node.body);
-            setOffset(node.body[node.body.length - 1].getEndOffset());
             addOp(JUMP_BACKWARD, head);
         } finally {
             unit.blockInfoStack.pop();
@@ -1122,6 +1241,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.FunctionDef node) {
+        setLocation(node);
         if (node.args != null) {
             if (node.args.posOnlyArgs != null) {
                 for (ArgTy arg : node.args.posOnlyArgs) {
@@ -1199,12 +1319,10 @@ public class Compiler implements SSTreeVisitor<Void> {
             exitScope();
         }
 
-        setOffset(node);
         makeClosure(code, hasDefaults > 0 ? 1 : 0, hasKwDefaults > 0 ? 1 : 0);
 
         if (node.decoratorList != null) {
             for (ExprTy decorator : node.decoratorList) {
-                setOffset(decorator.getEndOffset());
                 addOp(CALL_FUNCTION, 1);
             }
         }
@@ -1215,22 +1333,22 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Global node) {
+        setLocation(node);
         return null;
     }
 
     @Override
     public Void visit(StmtTy.If node) {
+        setLocation(node);
         node.test.accept(this);
         Block then = new Block();
         Block end = new Block();
         Block alt = node.orElse != null && node.orElse.length > 0 ? new Block() : end;
 
-        setOffset(node.test.getEndOffset());
         addOp(POP_AND_JUMP_IF_FALSE, alt);
         unit.useNextBlock(then);
         visitSequence(node.body);
         if (alt != end) {
-            setOffset(node.body[node.body.length - 1].getEndOffset());
             addOp(JUMP_FORWARD, end);
             unit.useNextBlock(alt);
             visitSequence(node.orElse);
@@ -1241,16 +1359,19 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Import node) {
+        setLocation(node);
         return visitSequence(node.names);
     }
 
     @Override
     public Void visit(StmtTy.ImportFrom node) {
+        setLocation(node);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public Void visit(StmtTy.Match node) {
+        setLocation(node);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
@@ -1301,11 +1422,13 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.NonLocal node) {
+        setLocation(node);
         return null;
     }
 
     @Override
     public Void visit(StmtTy.Raise node) {
+        setLocation(node);
         int argc = 0;
         if (node.exc != null) {
             argc++;
@@ -1315,7 +1438,6 @@ public class Compiler implements SSTreeVisitor<Void> {
                 node.cause.accept(this);
             }
         }
-        setOffset(node);
         addOp(RAISE_VARARGS, argc);
         unit.useNextBlock(new Block());
         return null;
@@ -1323,8 +1445,8 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Return node) {
+        setLocation(node);
         node.value.accept(this);
-        setOffset(node);
         return addOp(RETURN_VALUE);
     }
 
@@ -1339,6 +1461,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Try node) {
+        setLocation(node);
         Block tryBody = new Block();
         Block end = new Block();
         Block finalBlock = node.finalBody != null ? Block.createFinallyHandler(tryBody) : null;
@@ -1352,7 +1475,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (elseBlock != null) {
             addOp(JUMP_FORWARD, elseBlock);
         } else {
-            setOffset(node.body[node.body.length - 1].getEndOffset());
             jumpToFinally(finalBlock, end);
         }
 
@@ -1362,6 +1484,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             Block nextHandler = Block.createExceptionHandler(tryBody);
             for (int i = 0; i < node.handlers.length; i++) {
                 assert !hasBareExcept;
+                setLocation(node.handlers[i]);
                 unit.useNextBlock(nextHandler);
 
                 if (i < node.handlers.length - 1) {
@@ -1379,7 +1502,6 @@ public class Compiler implements SSTreeVisitor<Void> {
                     addOp(MATCH_EXC_OR_JUMP, nextHandler);
                     if (node.handlers[i].name != null) {
                         addOp(UNWRAP_EXC);
-                        setOffset(node.handlers[i].type.getEndOffset() + 1);
                         addNameOp(node.handlers[i].name, ExprContext.Store);
                     } else {
                         addOp(POP_TOP);
@@ -1390,7 +1512,6 @@ public class Compiler implements SSTreeVisitor<Void> {
                 }
                 visitSequence(node.handlers[i].body);
 
-                setOffset(node.handlers[i].getEndOffset());
                 jumpToFinally(finalBlock, end);
             }
             if (nextHandler != finalBlock && !hasBareExcept) {
@@ -1403,14 +1524,12 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (elseBlock != null) {
             unit.useNextBlock(elseBlock);
             visitSequence(node.orElse);
-            setOffset(node.orElse[node.orElse.length - 1].getEndOffset());
             jumpToFinally(finalBlock, end);
         }
 
         if (finalBlock != null) {
             unit.useNextBlock(finalBlock);
             visitSequence(node.finalBody);
-            setOffset(node.finalBody[node.finalBody.length - 1].getEndOffset());
             addOp(END_FINALLY);
         }
 
@@ -1426,6 +1545,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.While node) {
+        setLocation(node);
         Block test = new Block();
         Block body = new Block();
         Block end = new Block();
@@ -1437,7 +1557,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.blockInfoStack.push(new BlockInfo(test, end, BlockInfo.Type.WHILE_LOOP));
         try {
             visitSequence(node.body);
-            setOffset(node.body[node.body.length - 1].getEndOffset());
             addOp(JUMP_BACKWARD, test);
         } finally {
             unit.blockInfoStack.pop();
@@ -1452,6 +1571,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.With node) {
+        setLocation(node);
         visitWith(node, 0);
         unit.useNextBlock(new Block());
         return null;
@@ -1484,6 +1604,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         addOp(LOAD_NONE);
 
         unit.useNextBlock(handler);
+        setLocation(node);
         addOp(EXIT_WITH);
     }
 
@@ -1493,12 +1614,14 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Break aThis) {
+    public Void visit(StmtTy.Break node) {
+        setLocation(node);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public Void visit(StmtTy.Continue aThis) {
+    public Void visit(StmtTy.Continue node) {
+        setLocation(node);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

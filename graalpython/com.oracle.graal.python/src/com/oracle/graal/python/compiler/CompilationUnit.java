@@ -81,10 +81,9 @@ public final class CompilationUnit {
     int maxStackSize = 0;
 
     int startOffset;
-    int endOffset;
 
     CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs,
-                    boolean takesVarKeywordArgs, int startOffset, int endOffset) {
+                    boolean takesVarKeywordArgs, int startOffset) {
         this.scopeType = scopeType;
         this.scope = scope;
         this.name = name;
@@ -94,7 +93,6 @@ public final class CompilationUnit {
         this.takesVarArgs = takesVarArgs;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.startOffset = startOffset;
-        this.endOffset = endOffset;
 
         if (parent != null) {
             if (scopeType == Class) {
@@ -223,7 +221,7 @@ public final class CompilationUnit {
                         orderedKeys(constants, new Object[0]),
                         orderedLong(primitiveConstants),
                         exceptionHandlerRanges,
-                        startOffset, endOffset);
+                        startOffset);
     }
 
     private static final EnumSet<OpCodes> UNCONDITIONAL_JUMP_OPCODES = EnumSet.of(OpCodes.JUMP_BACKWARD, OpCodes.JUMP_BACKWARD_FAR, OpCodes.JUMP_FORWARD, OpCodes.JUMP_FORWARD_FAR,

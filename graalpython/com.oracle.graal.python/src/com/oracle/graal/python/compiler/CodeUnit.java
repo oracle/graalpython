@@ -40,9 +40,10 @@
  */
 package com.oracle.graal.python.compiler;
 
-import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import java.util.HashMap;
 import java.util.Objects;
+
+import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 
 public final class CodeUnit {
     public static final byte HAS_DEFAULTS = 0x1;
@@ -80,14 +81,13 @@ public final class CodeUnit {
     public final short[] exceptionHandlerRanges;
 
     public final int startOffset;
-    public final int endOffset;
 
     CodeUnit(String name, String filename,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int nlocals, int stacksize,
                     byte[] code, byte[] linetable, byte flags,
                     String[] names, String[] varnames, String[] cellvars, String[] freevars,
                     Object[] constants, long[] primitiveConstants,
-                    short[] exceptionHandlerRanges, int startOffset, int endOffset) {
+                    short[] exceptionHandlerRanges, int startOffset) {
         this.name = name;
         this.filename = filename;
         this.argCount = argCount;
@@ -106,7 +106,6 @@ public final class CodeUnit {
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.startOffset = startOffset;
-        this.endOffset = endOffset;
     }
 
     OpCodes codeForBC(int bc) {
@@ -131,10 +130,10 @@ public final class CodeUnit {
         for (int i = 0; i < srcOffsetTable.length; i++) {
             byte diff = srcOffsetTable[i];
             int intDiff = diff;
-            if (diff != (byte)0x80) {
+            if (diff != (byte) 0x80) {
                 currentOffset += diff;
             } else {
-                while (diff == (byte)0x80) {
+                while (diff == (byte) 0x80) {
                     intDiff -= 0x80;
                     diff = srcOffsetTable[++i];
                 }
@@ -210,16 +209,15 @@ public final class CodeUnit {
                 case LOAD_CONST:
                 case LOAD_BIGINT:
                 case LOAD_STRING:
-                case LOAD_BYTES:
-                    {
-                        Object constant = constants[arg];
-                        if (constant instanceof CodeUnit) {
-                            line[5] = ((CodeUnit) constant).name + " from " + ((CodeUnit) constant).filename;
-                        } else {
-                            line[5] = Objects.toString(constant);
-                        }
-                        break;
+                case LOAD_BYTES: {
+                    Object constant = constants[arg];
+                    if (constant instanceof CodeUnit) {
+                        line[5] = ((CodeUnit) constant).name + " from " + ((CodeUnit) constant).filename;
+                    } else {
+                        line[5] = Objects.toString(constant);
                     }
+                    break;
+                }
                 case LOAD_LONG:
                     line[5] = Objects.toString(primitiveConstants[arg]);
                     break;
@@ -314,9 +312,9 @@ public final class CodeUnit {
         for (bci = 0; bci < code.length; bci++) {
             String[] line = lines.get(bci);
             if (line != null) {
-                line[5] = line[5] == null ? "" :String.format("(%s)", line[5]);
-                line[6] = line[6] == null ? "" :String.format("(%s)", line[6]);
-                String formatted = String.format("%-8s %2s %4s %-32s %-3s   %-32s %s", (Object[])line);
+                line[5] = line[5] == null ? "" : String.format("(%s)", line[5]);
+                line[6] = line[6] == null ? "" : String.format("(%s)", line[6]);
+                String formatted = String.format("%-8s %2s %4s %-32s %-3s   %-32s %s", (Object[]) line);
                 sb.append(formatted.stripTrailing());
                 sb.append('\n');
             }
