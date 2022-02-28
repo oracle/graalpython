@@ -90,6 +90,11 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
                 throw PRaiseNode.raiseUncached(this, NameError, ErrorMessages.NAME_NOT_DEFINED, name);
             }
         }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
     };
 
     @CompilationFinal private boolean wasReadFromModule = false;
