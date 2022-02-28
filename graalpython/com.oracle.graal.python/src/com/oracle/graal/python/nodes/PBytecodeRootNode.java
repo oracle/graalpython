@@ -304,6 +304,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final int celloffset;
     private final int freeoffset;
     private final int stackoffset;
+    private final int tracebackOffset;
 
     private final CodeUnit co;
 
@@ -338,8 +339,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     };
 
-    // XXX: hack for MaterializeFrameNode
-    public static final Object FRAME_MARKER = new Object();
+    public static final Object ROOT_NODE_SLOT_INFO = new Object();
+    public static final Object BCI_SLOT_INFO = new Object();
 
     private static FrameDescriptor makeFrameDescriptor(CodeUnit co) {
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(4);
@@ -351,8 +352,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         newBuilder.addSlots(co.freevars.length, FrameSlotKind.Illegal);
         // stack
         newBuilder.addSlots(co.stacksize, FrameSlotKind.Illegal);
-        // XXX: hack for MaterializeFrameNode
-        newBuilder.addSlot(FrameSlotKind.Illegal, "marker", FRAME_MARKER);
+        // traceback data, filled when unwinding to be accessed when materializing stacktrace
+        // elements
+        newBuilder.addSlot(FrameSlotKind.Object, null, ROOT_NODE_SLOT_INFO);
+        newBuilder.addSlot(FrameSlotKind.Int, null, BCI_SLOT_INFO);
         return newBuilder.build();
     }
 
@@ -365,6 +368,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.celloffset = co.varnames.length;
         this.freeoffset = this.celloffset + co.cellvars.length;
         this.stackoffset = this.freeoffset + co.freevars.length;
+        this.tracebackOffset = this.stackoffset + co.stacksize;
         this.source = source;
         this.signature = sign;
         this.bytecode = co.code;
@@ -1368,7 +1372,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object exception = frame.getObject(stackTop);
                         frame.setObject(stackTop--, null);
                         if (exception != PNone.NONE) {
-                            if (exception instanceof AbstractTruffleException) {
+                            if (exception instanceof PException) {
+                                throw ((PException) exception).getExceptionForReraise();
+                            } else if (exception instanceof AbstractTruffleException) {
                                 throw (AbstractTruffleException) exception;
                             } else {
                                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1386,9 +1392,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             } catch (PException e) {
                 long newTarget = findHandler(bci);
                 CompilerAsserts.partialEvaluationConstant(newTarget);
+                e.markAsOriginatingFromBytecode();
                 if (newTarget == -1) {
+                    frame.setObject(tracebackOffset, this);
+                    frame.setInt(tracebackOffset + 1, bci);
                     throw e;
                 } else {
+                    e.setCatchingFrameReference(frame, this, bci);
                     int stackSizeOnEntry = decodeStackTop((int) newTarget);
                     stackTop = unwindBlock(frame, stackTop, stackSizeOnEntry + stackoffset);
                     // handler range encodes the stacksize, not the top of stack. so the stackTop is
@@ -1756,6 +1766,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     public int getStartOffset() {
         return co.startOffset;
+    }
+
+    public int bciToLine(int bci) {
+        if (source != null) {
+            return source.createSection(co.bciToSrcOffset(bci), 0).getStartLine();
+        }
+        return -1;
     }
 
     @Override

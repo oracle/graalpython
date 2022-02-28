@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -136,33 +137,60 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     continue;
                 }
                 if (LazyTraceback.elementWantedForTraceback(element)) {
+                    /*
+                     * Bytecode tracebacks pull location data from corresponding stacktrace element.
+                     * AST tracebacks pull locations from the call node of the element "above".
+                     */
+                    if (pException.originatesFromBytecode()) {
+                        if (LazyTraceback.elementWantedForTraceback(element)) {
+                            nextElement = element;
+                            PFrame pFrame = materializeFrame(element, materializeFrameNode);
+                            next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                        }
+                    } else {
+                        if (nextElement != null) {
+                            PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
+                            next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                        }
+                        nextElement = element;
+                    }
+                }
+            }
+            if (pException.getCatchLocation() instanceof PBytecodeRootNode) {
+                // caught in bytecode
+                if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
+                    PBytecodeRootNode rootNode = (PBytecodeRootNode) pException.getCatchLocation();
+                    tb.setLineno(rootNode.bciToLine(pException.getCatchBci()));
+                    tb.setNext(next);
+                } else {
+                    assert next != null;
+                    tb.setLineno(next.getLineno());
+                    tb.setFrame(next.getFrame());
+                    tb.setNext(next.getNext());
+                }
+            } else {
+                if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
+                    // We already have a pFrame as tb_frame, so what we compute here is the tb_next
+                    // chain.
                     if (nextElement != null) {
                         PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
                         next = factory.createTraceback(pFrame, pFrame.getLine(), next);
                     }
-                    nextElement = element;
-                }
-            }
-            if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
-                // We already have a pFrame as tb_frame, so what we compute here is the tb_next
-                // chain.
-                if (nextElement != null) {
+                    // Additionally, we obtained tb_lineno from the "fake current" frame element
+                    tb.setLineno(lineno);
+                } else {
+                    // GetTracebackNode is responsible for making sure that an "empty" PTraceback
+                    // with
+                    // no PFrame[Ref] and no usable stacktrace elements is never constructed
+                    assert nextElement != null;
+                    // We don't have a pFrame, so the first element (now in nextElement) needs to go
+                    // into tb_frame and the rest into tb_next.
                     PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
-                    next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                    tb.setFrame(pFrame);
+                    tb.setLineno(pFrame.getLine());
                 }
-                // Additionally, we obtained tb_lineno from the "fake current" frame element
-                tb.setLineno(lineno);
-            } else {
-                // GetTracebackNode is responsible for making sure that an "empty" PTraceback with
-                // no PFrame[Ref] and no usable stacktrace elements is never constructed
-                assert nextElement != null;
-                // We don't have a pFrame, so the first element (now in nextElement) needs to go
-                // into tb_frame and the rest into tb_next.
-                PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
-                tb.setFrame(pFrame);
-                tb.setLineno(pFrame.getLine());
+                tb.setNext(next);
             }
-            tb.setNext(next);
             tb.markMaterialized(); // Marks the Truffle stacktrace part as materialized
         }
 
@@ -178,8 +206,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
 
         private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
+            Node location = element.getLocation();
+            if (element.getTarget().getRootNode() instanceof PBytecodeRootNode) {
+                location = element.getLocation().getRootNode();
+            }
             // create the PFrame and refresh frame values
-            return materializeFrameNode.execute(null, element.getLocation(), false, true, element.getFrame());
+            return materializeFrameNode.execute(null, location, false, true, element.getFrame());
         }
     }
 

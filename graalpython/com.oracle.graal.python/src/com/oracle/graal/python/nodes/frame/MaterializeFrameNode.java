@@ -167,6 +167,26 @@ public abstract class MaterializeFrameNode extends Node {
         return doEscapeFrame(frame, frameToMaterialize, escapedFrame, location, markAsEscaped, forceSync && !inModuleRoot(location) && !inClassBody(location), syncValuesNode);
     }
 
+    public static boolean isBytecodeFrame(Frame frameToSync) {
+        FrameDescriptor fd = frameToSync.getFrameDescriptor();
+        int sc = fd.getNumberOfSlots();
+        return fd.getSlotInfo(sc - 1) == PBytecodeRootNode.BCI_SLOT_INFO;
+    }
+
+    private static void processBytecodeFrame(Frame frameToMaterialize, PFrame pyFrame) {
+        if (isBytecodeFrame(frameToMaterialize)) {
+            FrameDescriptor fd = frameToMaterialize.getFrameDescriptor();
+            int sc = fd.getNumberOfSlots();
+            PBytecodeRootNode rootNode = (PBytecodeRootNode) frameToMaterialize.getObject(sc - 2);
+            if (rootNode != null) {
+                int bci = frameToMaterialize.getInt(sc - 1);
+                pyFrame.setLocation(rootNode);
+                pyFrame.setLasti(bci);
+                pyFrame.setLine(rootNode.bciToLine(bci));
+            }
+        }
+    }
+
     @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).isAssociated()"})
     static PFrame alreadyEscapedFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
@@ -180,6 +200,7 @@ public abstract class MaterializeFrameNode extends Node {
         }
         // update the location so the line number is correct
         pyFrame.setLocation(location);
+        processBytecodeFrame(frameToMaterialize, pyFrame);
         return pyFrame;
     }
 
@@ -204,7 +225,8 @@ public abstract class MaterializeFrameNode extends Node {
         }
     }
 
-    private static PFrame doEscapeFrame(VirtualFrame frame, Frame frameToMaterialize, PFrame escapedFrame, Node location, boolean markAsEscaped, boolean forceSync, SyncFrameValuesNode syncValuesNode) {
+    private static PFrame doEscapeFrame(VirtualFrame frame, Frame frameToMaterialize, PFrame escapedFrame, Node location, boolean markAsEscaped, boolean forceSync,
+                    SyncFrameValuesNode syncValuesNode) {
         PFrame.Reference topFrameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
         topFrameRef.setPyFrame(escapedFrame);
 
@@ -216,6 +238,7 @@ public abstract class MaterializeFrameNode extends Node {
         if (markAsEscaped) {
             topFrameRef.markAsEscaped();
         }
+        processBytecodeFrame(frameToMaterialize, escapedFrame);
         return escapedFrame;
     }
 
@@ -467,18 +490,17 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
+        // @ImportStatic doesn't work on this for some reason
         protected static boolean isBytecodeFrame(Frame frameToSync) {
-            FrameDescriptor fd = frameToSync.getFrameDescriptor();
-            int sc = fd.getNumberOfSlots();
-            return fd.getSlotInfo(sc - 1) == PBytecodeRootNode.FRAME_MARKER;
+            return MaterializeFrameNode.isBytecodeFrame(frameToSync);
         }
 
         @Specialization(guards = { //
-                            "!isBytecodeFrame(frameToSync)",
-                            "isDictWithCustomStorage(pyFrame)",
-                            "frameToSync.getFrameDescriptor() == cachedFd",
-                            "isAdoptable()",
-                        }, //
+                        "!isBytecodeFrame(frameToSync)",
+                        "isDictWithCustomStorage(pyFrame)",
+                        "frameToSync.getFrameDescriptor() == cachedFd",
+                        "isAdoptable()",
+        }, //
                         limit = "1")
         @ExplodeLoop
         static void doGenericDictAdoptableCached(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,

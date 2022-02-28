@@ -168,7 +168,7 @@ public abstract class GetTracebackNode extends Node {
     }
 
     protected static boolean mayBeEmpty(LazyTraceback tb) {
-        return !tb.catchingFrameWantedForTraceback() || tb.getException().shouldHideLocation();
+        return !tb.catchingFrameWantedForTraceback() || tb.getException().shouldHideLocation() || tb.getException().originatesFromBytecode();
     }
 
     public static GetTracebackNode create() {

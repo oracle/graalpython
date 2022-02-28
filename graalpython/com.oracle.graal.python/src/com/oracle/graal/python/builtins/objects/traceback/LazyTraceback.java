@@ -141,7 +141,7 @@ public class LazyTraceback {
     public static boolean elementWantedForTraceback(TruffleStackTraceElement element) {
         Frame frame = element.getFrame();
         // only include frames of non-builtin python functions
-        return PArguments.isPythonFrame(frame) && locationWantedForTraceback(element.getLocation());
+        return PArguments.isPythonFrame(frame) && locationWantedForTraceback(element.getTarget().getRootNode());
     }
 
     public boolean catchingFrameWantedForTraceback() {

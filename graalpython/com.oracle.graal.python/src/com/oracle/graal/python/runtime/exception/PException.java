@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CallTarget;
@@ -87,8 +88,10 @@ public final class PException extends AbstractTruffleException {
     private CallTarget tracebackCutoffTarget;
     private PFrame.Reference frameInfo;
     private Node catchLocation;
+    private int catchBci;
     private LazyTraceback traceback;
     private boolean reified = false;
+    private boolean originatesFromBytecode;
 
     private PException(PBaseException actual, Node node) {
         super(node);
@@ -147,6 +150,14 @@ public final class PException extends AbstractTruffleException {
         return pException;
     }
 
+    public void markAsOriginatingFromBytecode() {
+        originatesFromBytecode = true;
+    }
+
+    public boolean originatesFromBytecode() {
+        return originatesFromBytecode;
+    }
+
     @Override
     public String getMessage() {
         if (message == null) {
@@ -178,6 +189,10 @@ public final class PException extends AbstractTruffleException {
 
     public Node getCatchLocation() {
         return catchLocation;
+    }
+
+    public int getCatchBci() {
+        return catchBci;
     }
 
     /**
@@ -266,6 +281,11 @@ public final class PException extends AbstractTruffleException {
      */
     public void setCatchingFrameReference(VirtualFrame frame, Node catchLocation) {
         setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
+    }
+
+    public void setCatchingFrameReference(VirtualFrame frame, PBytecodeRootNode catchLocation, int catchBci) {
+        setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
+        this.catchBci = catchBci;
     }
 
     /**
