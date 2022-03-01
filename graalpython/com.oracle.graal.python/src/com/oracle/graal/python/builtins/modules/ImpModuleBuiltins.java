@@ -633,7 +633,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     /**
      * @see importFrozenModuleObject
      *
-     * Uses {@code globals} if given as the globals for execution.
+     *      Uses {@code globals} if given as the globals for execution.
      */
     @TruffleBoundary
     public static PythonModule importFrozenModuleObject(Python3Core core, String name, boolean doRaise, PythonModule globals) {
