@@ -273,6 +273,7 @@ suite = {
             "platformDependent": False,
             "buildDependencies": [
                 "com.oracle.graal.python",
+                "GRAALPYTHON-LAUNCHER",
             ],
         },
 
@@ -391,6 +392,7 @@ suite = {
             ],
             "buildDependencies": [
                 "com.oracle.graal.python",
+                "GRAALPYTHON-LAUNCHER",
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
