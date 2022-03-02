@@ -52,8 +52,8 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
- * Equivalent of CPython's {@code _Py_convert_optional_to_ssize_t} function.
- * If value is {@code None}, {@code defaultValue} is returned.
+ * Equivalent of CPython's {@code _Py_convert_optional_to_ssize_t} function. If value is
+ * {@code None}, {@code defaultValue} is returned.
  */
 @GenerateUncached
 public abstract class PyConvertOptionalToSizeNode extends PNodeWithContext {
