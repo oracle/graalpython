@@ -44,7 +44,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
+
 import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -180,31 +182,15 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyTupleSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public static int size(PTuple tuple,
+        public static int size(VirtualFrame frame, Object tuple,
+                        @Cached com.oracle.graal.python.lib.PyTupleSizeNode pyTupleSizeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return tuple.getSequenceStorage().length();
-        }
-
-        @Specialization(guards = {"!isPTuple(obj)", "isTupleSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public static Object sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "tuple");
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isPTuple(obj)", "!isTupleSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public static Object size(VirtualFrame frame, Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
-        }
-
-        protected boolean isTupleSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PTuple);
+            try {
+                return pyTupleSizeNode.execute(tuple);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
         }
     }
 
