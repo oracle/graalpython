@@ -7,41 +7,51 @@ Disassembly of <module>:
 000029         9 LOAD_STRING                       1    (try)
 000023        11 CALL_FUNCTION                     1
 000023        13 POP_TOP
-000023        14 JUMP_FORWARD                      36   (to 50)
-000043        16 LOAD_NAME                         1    (TypeError)                      (exc handler 7 - 16; stack: 0)
-000036        18 MATCH_EXC_OR_JUMP                 15   (to 33)
-000036        20 UNWRAP_EXC
-000036        21 STORE_NAME                        2    (e)
-000061        23 LOAD_NAME                         0    (print)
-000067        25 LOAD_STRING                       2    (except1)
-000061        27 CALL_FUNCTION                     1
-000061        29 POP_TOP
-000061        30 LOAD_NONE
-000061        31 JUMP_FORWARD                      29   (to 60)
-000085   >>   33 LOAD_NAME                         3    (ValueError)
-000078        35 MATCH_EXC_OR_JUMP                 25   (to 60)
-000078        37 UNWRAP_EXC
-000078        38 STORE_NAME                        2    (e)
-000104        40 LOAD_NAME                         0    (print)
-000110        42 LOAD_STRING                       3    (except2)
-000104        44 CALL_FUNCTION                     1
-000104        46 POP_TOP
-000104        47 LOAD_NONE
-000104        48 JUMP_FORWARD                      12   (to 60)
-000129   >>   50 LOAD_NAME                         0    (print)
-000135        52 LOAD_STRING                       4    (else)
-000129        54 CALL_FUNCTION                     1
-000129        56 POP_TOP
-000129        57 LOAD_NONE
-000129        58 JUMP_FORWARD                      2    (to 60)
-000154   >>   60 LOAD_NAME                         0    (print)                          (exc handler 7 - 60; stack: 0)
-000160        62 LOAD_STRING                       5    (finally)
-000154        64 CALL_FUNCTION                     1
-000154        66 POP_TOP
-000154        67 END_FINALLY
-000171        68 LOAD_NAME                         0    (print)
-000177        70 LOAD_STRING                       6    (after)
-000171        72 CALL_FUNCTION                     1
-000171        74 POP_TOP
-000171        75 LOAD_NONE
-000171        76 RETURN_VALUE
+000023        14 JUMP_FORWARD                      41   (to 55)
+000023        16 PUSH_EXC_INFO                                                           (exc handler 7 - 16; stack: 0)
+000043        17 LOAD_NAME                         1    (TypeError)
+000036        19 MATCH_EXC_OR_JUMP                 15   (to 34)
+000036        21 UNWRAP_EXC
+000036        22 STORE_NAME                        2    (e)
+000061        24 LOAD_NAME                         0    (print)
+000067        26 LOAD_STRING                       2    (except1)
+000061        28 CALL_FUNCTION                     1
+000061        30 POP_TOP
+000061        31 POP_EXCEPT
+000061        32 JUMP_FORWARD                      43   (to 75)
+000085   >>   34 LOAD_NAME                         3    (ValueError)
+000078        36 MATCH_EXC_OR_JUMP                 29   (to 65)
+000078        38 UNWRAP_EXC
+000078        39 STORE_NAME                        2    (e)
+000104        41 LOAD_NAME                         0    (print)
+000110        43 LOAD_STRING                       3    (except2)
+000104        45 CALL_FUNCTION                     1
+000104        47 POP_TOP
+000104        48 POP_EXCEPT
+000104        49 JUMP_FORWARD                      26   (to 75)
+000104        51 ROT_TWO                                                                 (exc handler 17 - 51; stack: 1)
+000104        52 POP_EXCEPT
+000104        53 JUMP_FORWARD                      11   (to 64)
+000129   >>   55 LOAD_NAME                         0    (print)
+000135        57 LOAD_STRING                       4    (else)
+000129        59 CALL_FUNCTION                     1
+000129        61 POP_TOP
+000129        62 JUMP_FORWARD                      13   (to 75)
+000129   >>   64 PUSH_EXC_INFO                                                           (exc handler 7 - 64; stack: 0)
+000154   >>   65 LOAD_NAME                         0    (print)
+000160        67 LOAD_STRING                       5    (finally)
+000154        69 CALL_FUNCTION                     1
+000154        71 POP_TOP
+000154        72 ROT_TWO                                                                 (exc handler 65 - 72; stack: 1)
+000154        73 POP_EXCEPT
+000154        74 RERAISE
+000154   >>   75 LOAD_NAME                         0    (print)
+000160        77 LOAD_STRING                       5    (finally)
+000154        79 CALL_FUNCTION                     1
+000154        81 POP_TOP
+000171        82 LOAD_NAME                         0    (print)
+000177        84 LOAD_STRING                       6    (after)
+000171        86 CALL_FUNCTION                     1
+000171        88 POP_TOP
+000171        89 LOAD_NONE
+000171        90 RETURN_VALUE

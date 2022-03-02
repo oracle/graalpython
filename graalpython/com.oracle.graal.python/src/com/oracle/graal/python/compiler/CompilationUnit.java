@@ -225,7 +225,7 @@ public final class CompilationUnit {
     }
 
     private static final EnumSet<OpCodes> UNCONDITIONAL_JUMP_OPCODES = EnumSet.of(OpCodes.JUMP_BACKWARD, OpCodes.JUMP_BACKWARD_FAR, OpCodes.JUMP_FORWARD, OpCodes.JUMP_FORWARD_FAR,
-                    OpCodes.RETURN_VALUE, OpCodes.RAISE_VARARGS);
+                    OpCodes.RETURN_VALUE, OpCodes.RAISE_VARARGS, OpCodes.END_EXC_HANDLER);
 
     private void computeStackLevels(Block block, int startLevel) {
         int level = startLevel;
@@ -246,9 +246,9 @@ public final class CompilationUnit {
             if (target != null) {
                 int jumpLevel = level + i.opcode.getStackEffect(i.arg, true);
                 computeStackLevels(target, jumpLevel);
-                if (UNCONDITIONAL_JUMP_OPCODES.contains(i.opcode)) {
-                    return;
-                }
+            }
+            if (UNCONDITIONAL_JUMP_OPCODES.contains(i.opcode)) {
+                return;
             }
             level += i.opcode.getStackEffect(i.arg, false);
             maxStackSize = Math.max(maxStackSize, level);

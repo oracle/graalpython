@@ -7,16 +7,22 @@ Disassembly of <module>:
 000029         9 LOAD_STRING                       1    (try)
 000023        11 CALL_FUNCTION                     1
 000023        13 POP_TOP
-000023        14 LOAD_NONE
-000023        15 JUMP_FORWARD                      2    (to 17)
-000047   >>   17 LOAD_NAME                         0    (print)                          (exc handler 7 - 17; stack: 0)
+000023        14 JUMP_FORWARD                      13   (to 27)
+000023        16 PUSH_EXC_INFO                                                           (exc handler 7 - 16; stack: 0)
+000047        17 LOAD_NAME                         0    (print)
 000053        19 LOAD_STRING                       2    (finally)
 000047        21 CALL_FUNCTION                     1
 000047        23 POP_TOP
-000047        24 END_FINALLY
-000064        25 LOAD_NAME                         0    (print)
-000070        27 LOAD_STRING                       3    (after)
-000064        29 CALL_FUNCTION                     1
-000064        31 POP_TOP
-000064        32 LOAD_NONE
-000064        33 RETURN_VALUE
+000047        24 ROT_TWO                                                                 (exc handler 17 - 24; stack: 1)
+000047        25 POP_EXCEPT
+000047        26 RERAISE
+000047   >>   27 LOAD_NAME                         0    (print)
+000053        29 LOAD_STRING                       2    (finally)
+000047        31 CALL_FUNCTION                     1
+000047        33 POP_TOP
+000064        34 LOAD_NAME                         0    (print)
+000070        36 LOAD_STRING                       3    (after)
+000064        38 CALL_FUNCTION                     1
+000064        40 POP_TOP
+000064        41 LOAD_NONE
+000064        42 RETURN_VALUE

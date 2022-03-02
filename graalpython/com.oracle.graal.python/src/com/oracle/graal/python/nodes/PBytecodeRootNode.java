@@ -1368,20 +1368,42 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = exitWithNode.execute(frame, stackTop);
                         break;
                     }
-                    case END_FINALLY: {
+                    case PUSH_EXC_INFO: {
+                        Object exception = frame.getObject(stackTop);
+                        if (!(exception instanceof PException)) {
+                            throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
+                        }
+                        frame.setObject(stackTop++, PArguments.getException(frame));
+                        PArguments.setException(frame, (PException) exception);
+                        frame.setObject(stackTop, exception);
+                        break;
+                    }
+                    case POP_EXCEPT: {
+                        Object savedException = frame.getObject(stackTop);
+                        if (!(savedException instanceof PException)) {
+                            throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
+                        }
+                        frame.setObject(stackTop--, null);
+                        PArguments.setException(frame, (PException) savedException);
+                        break;
+                    }
+                    case END_EXC_HANDLER: {
                         Object exception = frame.getObject(stackTop);
                         frame.setObject(stackTop--, null);
-                        if (exception != PNone.NONE) {
-                            if (exception instanceof PException) {
-                                throw ((PException) exception).getExceptionForReraise();
-                            } else if (exception instanceof AbstractTruffleException) {
-                                throw (AbstractTruffleException) exception;
-                            } else {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "expected exception on the stack");
-                            }
+                        Object savedException = frame.getObject(stackTop);
+                        frame.setObject(stackTop--, null);
+                        if (!(savedException instanceof PException)) {
+                            throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
                         }
-                        break;
+                        PArguments.setException(frame, (PException) savedException);
+                        if (exception instanceof PException) {
+                            throw ((PException) exception).getExceptionForReraise();
+                        } else if (exception instanceof AbstractTruffleException) {
+                            throw (AbstractTruffleException) exception;
+                        } else {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "expected exception on the stack");
+                        }
                     }
                     default:
                         CompilerDirectives.transferToInterpreterAndInvalidate();

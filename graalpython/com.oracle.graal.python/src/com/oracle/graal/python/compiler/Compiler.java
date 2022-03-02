@@ -1452,7 +1452,6 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void jumpToFinally(Block finalBlock, Block end) {
         if (finalBlock != null) {
-            addOp(LOAD_NONE);
             addOp(JUMP_FORWARD, finalBlock);
         } else {
             addOp(JUMP_FORWARD, end);
@@ -1464,10 +1463,18 @@ public class Compiler implements SSTreeVisitor<Void> {
         setLocation(node);
         Block tryBody = new Block();
         Block end = new Block();
-        Block finalBlock = node.finalBody != null ? Block.createFinallyHandler(tryBody) : null;
-        Block elseBlock = node.orElse != null ? new Block() : null;
+        boolean hasFinally = node.finalBody != null;
         boolean hasHandlers = node.handlers != null && node.handlers.length > 0;
-        assert finalBlock != null || hasHandlers;
+        Block finallyBlockNormal = null;
+        Block finallyBlockExcept = null;
+        Block finallyBlockExceptWithSavedExc = null;
+        if (hasFinally) {
+            finallyBlockNormal = new Block();
+            finallyBlockExcept = Block.createFinallyHandler(tryBody);
+            finallyBlockExceptWithSavedExc = new Block();
+        }
+        Block elseBlock = node.orElse != null ? new Block() : null;
+        assert hasFinally || hasHandlers;
 
         // try block
         unit.useNextBlock(tryBody);
@@ -1475,13 +1482,27 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (elseBlock != null) {
             addOp(JUMP_FORWARD, elseBlock);
         } else {
-            jumpToFinally(finalBlock, end);
+            jumpToFinally(finallyBlockNormal, end);
         }
 
         // except clauses
         if (hasHandlers) {
+            unit.useNextBlock(Block.createExceptionHandler(tryBody));
+            /* This puts saved exception under the current exception */
+            addOp(PUSH_EXC_INFO);
+            /* The stack is now [*, savedException, currentException] */
             boolean hasBareExcept = false;
-            Block nextHandler = Block.createExceptionHandler(tryBody);
+            Block nextHandler = new Block();
+            /*
+             * We need to save and restore the outer exception state. In order to restore it even in
+             * case of an exception, we need an internal finally handler for this.
+             */
+            Block cleanupHandler = Block.createFinallyHandler(nextHandler);
+            /*
+             * We use this offset to unwind the exception from the except block, we don't need it on
+             * the stack
+             */
+            cleanupHandler.unwindOffset = -1;
             for (int i = 0; i < node.handlers.length; i++) {
                 assert !hasBareExcept;
                 setLocation(node.handlers[i]);
@@ -1490,10 +1511,11 @@ public class Compiler implements SSTreeVisitor<Void> {
                 if (i < node.handlers.length - 1) {
                     nextHandler = new Block();
                 } else {
-                    if (finalBlock != null) {
-                        nextHandler = finalBlock;
+                    if (hasFinally) {
+                        // Keep the save state, it's the same
+                        nextHandler = finallyBlockExceptWithSavedExc;
                     } else {
-                        nextHandler = new Block();
+                        nextHandler = cleanupHandler;
                     }
                 }
 
@@ -1511,26 +1533,54 @@ public class Compiler implements SSTreeVisitor<Void> {
                     addOp(POP_TOP);
                 }
                 visitSequence(node.handlers[i].body);
-
-                jumpToFinally(finalBlock, end);
+                addOp(POP_EXCEPT);
+                jumpToFinally(finallyBlockNormal, end);
             }
-            if (nextHandler != finalBlock && !hasBareExcept) {
-                // there's no finally block, so when we fall off the except clauses, we re-raise
-                unit.useNextBlock(nextHandler);
-                addOp(END_FINALLY);
+            unit.useNextBlock(cleanupHandler);
+            if (hasFinally) {
+                addOp(ROT_TWO);
+                /*
+                 * POP the saved exception state, the finally block needs to push a new one. The
+                 * saved state will be the same, but PUSH_EXC_INFO also updates the current
+                 * exception info which is now different.
+                 */
+                addOp(POP_EXCEPT);
+                addOp(JUMP_FORWARD, finallyBlockExcept);
+            } else {
+                /*
+                 * We can also reach this code by falling off the except handlers if no types
+                 * matched and there is no finally
+                 */
+                addOp(END_EXC_HANDLER);
             }
         }
 
         if (elseBlock != null) {
             unit.useNextBlock(elseBlock);
             visitSequence(node.orElse);
-            jumpToFinally(finalBlock, end);
+            jumpToFinally(finallyBlockNormal, end);
         }
 
-        if (finalBlock != null) {
-            unit.useNextBlock(finalBlock);
+        /*
+         * We emit two copies of the finally block, one that is executed when there is no exception
+         * and one that is executed when an exception occurs. The latter needs to deal with the
+         * exception state. We start with the latter.
+         */
+        if (hasFinally) {
+            unit.useNextBlock(finallyBlockExcept);
+            /* This puts saved exception under the current exception */
+            addOp(PUSH_EXC_INFO);
+            Block cleanupHandler = Block.createFinallyHandler(finallyBlockExceptWithSavedExc);
+            cleanupHandler.unwindOffset = -1;
+            /* The stack is [*, savedException, currentException] */
+            unit.useNextBlock(finallyBlockExceptWithSavedExc);
             visitSequence(node.finalBody);
-            addOp(END_FINALLY);
+            unit.useNextBlock(cleanupHandler);
+            addOp(END_EXC_HANDLER);
+
+            /* Now emit the finally for the no-exception case */
+            unit.useNextBlock(finallyBlockNormal);
+            visitSequence(node.finalBody);
         }
 
         unit.useNextBlock(end);

@@ -185,7 +185,9 @@ public enum OpCodes {
     // exceptions
     MATCH_EXC_OR_JUMP(         1,   -1),
     MATCH_EXC_OR_JUMP_FAR(     2,   -1),
-    END_FINALLY(               0,   -1),
+    PUSH_EXC_INFO(             0,    1),
+    POP_EXCEPT(                0,   -1),
+    END_EXC_HANDLER(           0,   -2),
     UNWRAP_EXC(                0,    0),
 
     // with statements
