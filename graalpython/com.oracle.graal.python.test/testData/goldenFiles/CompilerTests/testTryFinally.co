@@ -1,22 +1,22 @@
 Disassembly of <module>:
 000000         0 LOAD_NAME                         0    (print)
 000006         2 LOAD_STRING                       0    (before)
-000015         4 CALL_FUNCTION                     1
-000015         6 POP_TOP
+000000         4 CALL_FUNCTION                     1
+000000         6 POP_TOP
 000023         7 LOAD_NAME                         0    (print)
 000029         9 LOAD_STRING                       1    (try)
-000035        11 CALL_FUNCTION                     1
-000035        13 POP_TOP
-000035        14 LOAD_NONE
-000035        15 JUMP_FORWARD                      2    (to 17)
+000023        11 CALL_FUNCTION                     1
+000023        13 POP_TOP
+000023        14 LOAD_NONE
+000023        15 JUMP_FORWARD                      2    (to 17)
 000047   >>   17 LOAD_NAME                         0    (print)                          (exc handler 7 - 17; stack: 0)
 000053        19 LOAD_STRING                       2    (finally)
-000063        21 CALL_FUNCTION                     1
-000063        23 POP_TOP
-000063        24 END_FINALLY
+000047        21 CALL_FUNCTION                     1
+000047        23 POP_TOP
+000047        24 END_FINALLY
 000064        25 LOAD_NAME                         0    (print)
 000070        27 LOAD_STRING                       3    (after)
-000078        29 CALL_FUNCTION                     1
-000078        31 POP_TOP
-000078        32 LOAD_NONE
-000078        33 RETURN_VALUE
+000064        29 CALL_FUNCTION                     1
+000064        31 POP_TOP
+000064        32 LOAD_NONE
+000064        33 RETURN_VALUE

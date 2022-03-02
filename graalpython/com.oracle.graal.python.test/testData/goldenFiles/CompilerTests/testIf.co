@@ -1,14 +1,14 @@
 Disassembly of <module>:
 000003         0 LOAD_FALSE
-000008         1 POP_AND_JUMP_IF_FALSE             10   (to 11)
+000000         1 POP_AND_JUMP_IF_FALSE             10   (to 11)
 000013         3 LOAD_NAME                         0    (print)
 000019         5 LOAD_TRUE
-000024         6 CALL_FUNCTION                     1
-000024         8 POP_TOP
-000024         9 JUMP_FORWARD                      8    (to 17)
+000013         6 CALL_FUNCTION                     1
+000013         8 POP_TOP
+000013         9 JUMP_FORWARD                      8    (to 17)
 000034   >>   11 LOAD_NAME                         0    (print)
 000040        13 LOAD_FALSE
-000046        14 CALL_FUNCTION                     1
-000046        16 POP_TOP
-000046   >>   17 LOAD_NONE
-000046        18 RETURN_VALUE
+000034        14 CALL_FUNCTION                     1
+000034        16 POP_TOP
+000034   >>   17 LOAD_NONE
+000034        18 RETURN_VALUE

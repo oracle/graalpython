@@ -1,7 +1,7 @@
 Disassembly of <module>:
 000000         0 LOAD_NAME                         0    (a)
 000005         2 LOAD_DOUBLE                       0    (12.0)
-000001         4 INPLACE_ADD
+000000         4 INPLACE_ADD
 000000         5 STORE_NAME                        0    (a)
-000009         7 LOAD_NONE
-000009         8 RETURN_VALUE
+000000         7 LOAD_NONE
+000000         8 RETURN_VALUE

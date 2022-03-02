@@ -1,68 +1,68 @@
 Disassembly of <module>:
 000003         0 LOAD_NAME                         0    (__name__)
 000015         2 LOAD_STRING                       0    (__main__)
-000015         4 COMPARE_OP                        0
-000025         6 POP_AND_JUMP_IF_FALSE             115   (to 121)
-000025         8 LOAD_BYTE                         0
-000025        10 LOAD_NONE
-000025        11 IMPORT_NAME                       1
-000025        13 STORE_NAME                        1    (sys)
+000003         4 COMPARE_OP                        0
+000000         6 POP_AND_JUMP_IF_FALSE             115   (to 121)
+000031         8 LOAD_BYTE                         0
+000031        10 LOAD_NONE
+000031        11 IMPORT_NAME                       1
+000031        13 STORE_NAME                        1    (sys)
 000054        15 LOAD_NAME                         2    (len)
 000058        17 LOAD_NAME                         1    (sys)
 000058        19 LOAD_ATTR                         3    (argv)
-000067        21 CALL_FUNCTION                     1
+000054        21 CALL_FUNCTION                     1
 000071        23 LOAD_BYTE                         1
-000071        25 COMPARE_OP                        0
-000071        27 JUMP_IF_FALSE_OR_POP              16   (to 43)
+000054        25 COMPARE_OP                        0
+000054        27 JUMP_IF_FALSE_OR_POP              16   (to 43)
 000077        29 LOAD_NAME                         1    (sys)
 000077        31 LOAD_ATTR                         3    (argv)
 000086        33 LOAD_BYTE                         0
 000077        35 BINARY_SUBSCR
 000092        36 LOAD_STRING                       1    (java_embedding_bench)
-000092        38 COMPARE_OP                        0
-000092        40 JUMP_IF_FALSE_OR_POP              3    (to 43)
-000092        42 LOAD_TRUE
+000077        38 COMPARE_OP                        0
+000054        40 JUMP_IF_FALSE_OR_POP              3    (to 43)
+000054        42 LOAD_TRUE
 000049   >>   43 UNARY_NOT
-000115        44 POP_AND_JUMP_IF_FALSE             77   (to 121)
-000115        46 LOAD_BYTE                         0
-000115        48 LOAD_NONE
-000115        49 IMPORT_NAME                       4
-000115        51 STORE_NAME                        4    (time)
+000046        44 POP_AND_JUMP_IF_FALSE             77   (to 121)
+000125        46 LOAD_BYTE                         0
+000125        48 LOAD_NONE
+000125        49 IMPORT_NAME                       4
+000125        51 STORE_NAME                        4    (time)
 000153        53 LOAD_NAME                         4    (time)
-000164        55 CALL_METHOD                       4
+000153        55 CALL_METHOD                       4
 000145        58 STORE_NAME                        5    (start)
 000176        60 LOAD_NAME                         2    (len)
 000180        62 LOAD_NAME                         1    (sys)
 000180        64 LOAD_ATTR                         3    (argv)
-000189        66 CALL_FUNCTION                     1
+000176        66 CALL_FUNCTION                     1
 000193        68 LOAD_BYTE                         2
-000193        70 COMPARE_OP                        5
-000194        72 POP_AND_JUMP_IF_FALSE             24   (to 96)
+000176        70 COMPARE_OP                        5
+000173        72 POP_AND_JUMP_IF_FALSE             24   (to 96)
 000214        74 LOAD_NAME                         6    (int)
 000218        76 LOAD_NAME                         1    (sys)
 000218        78 LOAD_ATTR                         3    (argv)
 000227        80 LOAD_BYTE                         1
 000218        82 BINARY_SUBSCR
-000230        83 CALL_FUNCTION                     1
+000214        83 CALL_FUNCTION                     1
 000208        85 STORE_NAME                        7    (num)
 000243        87 LOAD_NAME                         8    (__benchmark__)
 000257        89 LOAD_NAME                         7    (num)
-000261        91 CALL_FUNCTION                     1
-000261        93 POP_TOP
-000261        94 JUMP_FORWARD                      7    (to 101)
+000243        91 CALL_FUNCTION                     1
+000243        93 POP_TOP
+000243        94 JUMP_FORWARD                      7    (to 101)
 000288   >>   96 LOAD_NAME                         8    (__benchmark__)
-000303        98 CALL_FUNCTION                     0
-000303       100 POP_TOP
+000288        98 CALL_FUNCTION                     0
+000288       100 POP_TOP
 000312   >>  101 LOAD_NAME                         9    (print)
 000318       103 LOAD_STRING                       2    (%s took %s s)
 000336       105 LOAD_NAME                         10   (__file__)
 000346       107 LOAD_NAME                         4    (time)
-000357       109 CALL_METHOD                       4
+000346       109 CALL_METHOD                       4
 000360       112 LOAD_NAME                         5    (start)
-000357       114 BINARY_SUBTRACT
-000365       115 COLLECTION_FROM_STACK             2    (tuple)
-000332       117 BINARY_MODULO
-000367       118 CALL_FUNCTION                     1
-000367       120 POP_TOP
-000367   >>  121 LOAD_NONE
-000367       122 RETURN_VALUE
+000346       114 BINARY_SUBTRACT
+000335       115 COLLECTION_FROM_STACK             2    (tuple)
+000318       117 BINARY_MODULO
+000312       118 CALL_FUNCTION                     1
+000312       120 POP_TOP
+000312   >>  121 LOAD_NONE
+000312       122 RETURN_VALUE
