@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -67,11 +67,11 @@ import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
-import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -178,17 +178,9 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int doManaged(PTuple self,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(self.getSequenceStorage());
-        }
-
-        @Specialization
-        public int doNative(PythonNativeObject self,
-                        @Cached PCallCapiFunction callSizeNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached PyLongAsIntNode asIntNode) {
-            return asIntNode.execute(null, callSizeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self)));
+        public int len(Object self,
+                        @Cached PyTupleSizeNode pyTupleSizeNode) {
+            return pyTupleSizeNode.execute(self);
         }
     }
 
