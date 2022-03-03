@@ -47,6 +47,14 @@ def test_lineno():
     assert sys._getframe(0).f_lineno == 47
 
 
+# IMPORTANT: DO NOT MOVE!
+def test_nested_lineno():
+    def test_nested():
+        return sys._getframe(0)
+    f = test_nested()
+    assert f.f_lineno == 53
+
+
 def test_read_and_write_locals():
     a = 1
     b = ''
