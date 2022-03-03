@@ -333,10 +333,25 @@ public class PythonTests {
         }
     }
 
+    private static org.graalvm.polyglot.Source.Builder configureBuilder(org.graalvm.polyglot.Source.Builder builder) {
+        if (System.getProperty("useBytecodeCompiler") != null) {
+            return builder.mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE);
+        }
+        return builder;
+    }
+
+    public static org.graalvm.polyglot.Source createSource(String source) {
+        return configureBuilder(org.graalvm.polyglot.Source.newBuilder("python", source, "Unnamed")).buildLiteral();
+    }
+
+    public static org.graalvm.polyglot.Source createSource(File path) throws IOException {
+        return configureBuilder(org.graalvm.polyglot.Source.newBuilder("python", path)).build();
+    }
+
     public static Value runScript(String[] args, File path, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
-            return context.eval(org.graalvm.polyglot.Source.newBuilder("python", path).build());
+            return context.eval(createSource(path));
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -349,7 +364,7 @@ public class PythonTests {
     public static Value runScript(Map<String, String> options, String[] args, String source, OutputStream out, OutputStream err) {
         try {
             enterContext(options, args);
-            return context.eval(org.graalvm.polyglot.Source.create("python", source));
+            return context.eval(createSource(source));
         } finally {
             flush(out, err);
             closeContext();
@@ -359,7 +374,7 @@ public class PythonTests {
     public static Value runScript(String[] args, String source, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
-            return context.eval(org.graalvm.polyglot.Source.create("python", source));
+            return context.eval(createSource(source));
         } finally {
             flush(out, err);
             closeContext();
@@ -383,7 +398,7 @@ public class PythonTests {
     public static Value runScript(Map<String, String> options, String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
         try {
             enterContext(options, args);
-            return context.eval(org.graalvm.polyglot.Source.create("python", source));
+            return context.eval(createSource(source));
         } finally {
             cb.run();
             flush(out, err);
@@ -394,7 +409,7 @@ public class PythonTests {
     public static void runThrowableScript(String[] args, String source, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
-            context.eval(org.graalvm.polyglot.Source.create("python", source));
+            context.eval(createSource(source));
         } catch (PolyglotException t) {
             Object e;
             try {

@@ -131,13 +131,13 @@ public class InteropLibraryTest extends PythonTests {
 
     @Test
     public void testPListInsertable() {
-        org.graalvm.polyglot.Source source = org.graalvm.polyglot.Source.create("python", "import polyglot\nmutableObj = [1,2,3,4]\nprint(polyglot.__element_info__(mutableObj, 0, \"insertable\"))");
+        String source = "import polyglot\nmutableObj = [1,2,3,4]\nprint(polyglot.__element_info__(mutableObj, 0, \"insertable\"))";
         assertPrints("False\n", source);
     }
 
     @Test
     public void testPListRemovable() {
-        org.graalvm.polyglot.Source source = org.graalvm.polyglot.Source.create("python", "import polyglot\nmutableObj = [1,2,3,4]\nprint(polyglot.__element_info__(mutableObj, 0, \"removable\"))");
+        String source = "import polyglot\nmutableObj = [1,2,3,4]\nprint(polyglot.__element_info__(mutableObj, 0, \"removable\"))";
         assertPrints("True\n", source);
     }
 

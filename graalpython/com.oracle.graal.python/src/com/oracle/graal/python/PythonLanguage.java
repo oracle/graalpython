@@ -27,6 +27,7 @@ package com.oracle.graal.python;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -44,18 +45,29 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.CompilationUnit;
+import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.nodes.HiddenAttributes;
+import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.NodeFactoryImp;
+import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserErrorCallback;
+import com.oracle.graal.python.pegparser.ParserTokenizer;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -106,7 +118,7 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = {PythonLanguage.MIME_TYPE,
                                 PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2,
-                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2}, //
+                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE}, //
                 byteMimeTypes = {PythonLanguage.MIME_TYPE_BYTECODE}, //
                 defaultMimeType = PythonLanguage.MIME_TYPE, //
                 dependentLanguages = {"nfi", "llvm"}, //
@@ -174,6 +186,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     static final String MIME_TYPE_EVAL1 = "text/x-python-eval1";
     static final String MIME_TYPE_EVAL2 = "text/x-python-eval2";
     public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
+    // XXX Temporary mime type to force bytecode compiler
+    public static final String MIME_TYPE_SOURCE_FOR_BYTECODE = "application/x-python-source-for-bytecode";
     public static final String EXTENSION = ".py";
     public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
@@ -424,6 +438,31 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 assert !source.isInteractive();
                 return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.File, optimize, context, source, null, null));
             }
+        }
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
+            ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
+            com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
+            ParserErrorCallback errorCb = (ParserErrorCallback.ErrorType type, int start, int end, String message) -> {
+                System.err.printf("TODO: %s[%d:%d]: %s%n", type.name(), start, end, message);
+            };
+            FExprParser fexpParser = new FExprParser() {
+                @Override
+                public ExprTy parse(String code) {
+                    ParserTokenizer tok = new ParserTokenizer(code);
+                    return new Parser(tok, factory, this, errorCb).fstring_rule();
+                }
+            };
+            Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
+            Compiler compiler = new Compiler();
+            CompilationUnit cu = compiler.compile(parser.file_rule(), source.getName(), EnumSet.noneOf(Compiler.Flags.class), 2);
+            CodeUnit co = cu.assemble(source.getPath(), 0);
+
+            Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
+                            co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, false,
+                            Arrays.copyOf(co.varnames, co.argCount), // parameter names
+                            Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
+            PBytecodeRootNode rootNode = new PBytecodeRootNode(this, signature, co, source);
+            return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, rootNode, source));
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
