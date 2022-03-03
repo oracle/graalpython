@@ -7,7 +7,7 @@ Disassembly of <module>:
 000029         9 LOAD_STRING                       1    (try)
 000023        11 CALL_FUNCTION                     1
 000023        13 POP_TOP
-000023        14 JUMP_FORWARD                      40   (to 54)
+000023        14 JUMP_FORWARD                      38   (to 52)
 000023        16 PUSH_EXC_INFO                                                           (exc handler 7 - 16; stack: 0)
 000043        17 LOAD_NAME                         1    (TypeError)
 000036        19 MATCH_EXC_OR_JUMP                 15   (to 34)
@@ -18,7 +18,7 @@ Disassembly of <module>:
 000061        28 CALL_FUNCTION                     1
 000061        30 POP_TOP
 000061        31 POP_EXCEPT
-000061        32 JUMP_FORWARD                      22   (to 54)
+000061        32 JUMP_FORWARD                      20   (to 52)
 000085   >>   34 LOAD_NAME                         3    (ValueError)
 000078        36 MATCH_EXC_OR_JUMP                 15   (to 51)
 000078        38 UNWRAP_EXC
@@ -28,13 +28,11 @@ Disassembly of <module>:
 000104        45 CALL_FUNCTION                     1
 000104        47 POP_TOP
 000104        48 POP_EXCEPT
-000104        49 JUMP_FORWARD                      5    (to 54)
-000104   >>   51 ROT_TWO                                                                 (exc handler 17 - 51; stack: 1)
-000104        52 POP_EXCEPT
-000104        53 RERAISE
-000121   >>   54 LOAD_NAME                         0    (print)
-000127        56 LOAD_STRING                       4    (after)
-000121        58 CALL_FUNCTION                     1
-000121        60 POP_TOP
-000121        61 LOAD_NONE
-000121        62 RETURN_VALUE
+000104        49 JUMP_FORWARD                      3    (to 52)
+000104   >>   51 END_EXC_HANDLER                                                         (exc handler 17 - 51; stack: 1)
+000121   >>   52 LOAD_NAME                         0    (print)
+000127        54 LOAD_STRING                       4    (after)
+000121        56 CALL_FUNCTION                     1
+000121        58 POP_TOP
+000121        59 LOAD_NONE
+000121        60 RETURN_VALUE

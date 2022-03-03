@@ -2,16 +2,16 @@ Disassembly of <module>:
 000000         0 LOAD_CONST                        0    (<module>.docompute from <module>)
 000000         2 MAKE_FUNCTION                     1
 000000         4 STORE_NAME                        0    (docompute)
-000332         6 LOAD_CONST                        1    (<module>.measure from <module>)
-000332         8 MAKE_FUNCTION                     1
-000332        10 STORE_NAME                        1    (measure)
-000593        12 LOAD_BYTE                         5
-000571        14 COLLECTION_FROM_STACK             1    (Object[])
-000571        16 LOAD_CONST                        2    (<module>.__benchmark__ from <module>)
-000571        18 MAKE_FUNCTION                     2
-000571        20 STORE_NAME                        2    (__benchmark__)
-000571        22 LOAD_NONE
-000571        23 RETURN_VALUE
+000204         6 LOAD_CONST                        1    (<module>.measure from <module>)
+000204         8 MAKE_FUNCTION                     1
+000204        10 STORE_NAME                        1    (measure)
+000337        12 LOAD_BYTE                         5
+000315        14 COLLECTION_FROM_STACK             1    (Object[])
+000315        16 LOAD_CONST                        2    (<module>.__benchmark__ from <module>)
+000315        18 MAKE_FUNCTION                     2
+000315        20 STORE_NAME                        2    (__benchmark__)
+000315        22 LOAD_NONE
+000315        23 RETURN_VALUE
 
 Disassembly of <module>.docompute:
 000033         0 LOAD_GLOBAL                       0    (range)
@@ -58,29 +58,29 @@ Disassembly of <module>.docompute:
 000190        71 RETURN_VALUE
 
 Disassembly of <module>.measure:
-000365         0 LOAD_GLOBAL                       0    (range)
-000371         2 LOAD_FAST                         0    (num)
-000365         4 CALL_FUNCTION                     1
-000354         6 GET_ITER
-000354   >>    7 FOR_ITER                          14   (to 21)
-000358         9 STORE_FAST                        1    (run)
-000392        11 LOAD_GLOBAL                       1    (docompute)
-000402        13 LOAD_LONG                         0    (10000)
-000392        15 CALL_FUNCTION                     1
-000385        17 STORE_FAST                        2    (sum_)
-000385        19 JUMP_BACKWARD                     12   (to 7)
-000422   >>   21 LOAD_GLOBAL                       2    (print)
-000428        23 LOAD_STRING                       1    (sum)
-000435        25 LOAD_FAST                         2    (sum_)
-000422        27 CALL_FUNCTION                     2
-000422        29 POP_TOP
+000237         0 LOAD_GLOBAL                       0    (range)
+000243         2 LOAD_FAST                         0    (num)
+000237         4 CALL_FUNCTION                     1
+000226         6 GET_ITER
+000226   >>    7 FOR_ITER                          14   (to 21)
+000230         9 STORE_FAST                        1    (run)
+000264        11 LOAD_GLOBAL                       1    (docompute)
+000274        13 LOAD_LONG                         0    (10000)
+000264        15 CALL_FUNCTION                     1
+000257        17 STORE_FAST                        2    (sum_)
+000257        19 JUMP_BACKWARD                     12   (to 7)
+000294   >>   21 LOAD_GLOBAL                       2    (print)
+000300        23 LOAD_STRING                       1    (sum)
+000307        25 LOAD_FAST                         2    (sum_)
+000294        27 CALL_FUNCTION                     2
+000294        29 POP_TOP
 000000        30 LOAD_NONE
 000000        31 RETURN_VALUE
 
 Disassembly of <module>.__benchmark__:
-000473         0 LOAD_GLOBAL                       0    (measure)
-000481         2 LOAD_FAST                         0    (num)
-000473         4 CALL_FUNCTION                     1
-000473         6 POP_TOP
+000345         0 LOAD_GLOBAL                       0    (measure)
+000353         2 LOAD_FAST                         0    (num)
+000345         4 CALL_FUNCTION                     1
+000345         6 POP_TOP
 000000         7 LOAD_NONE
 000000         8 RETURN_VALUE
