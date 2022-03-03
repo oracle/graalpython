@@ -1050,6 +1050,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         frame.setObject(++stackTop, read.read(frame, globals, __BUILD_CLASS__));
                         break;
                     }
+                    case LOAD_ASSERTION_ERROR: {
+                        frame.setObject(++stackTop, PythonBuiltinClassType.AssertionError);
+                        break;
+                    }
                     case STORE_NAME: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeStoreName(frame, lang, globals, locals, stackTop, bci, oparg, localNames, localNodes);
