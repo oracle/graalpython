@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,14 @@ import sys
 # it MUST stay on this line!
 def test_lineno():
     assert sys._getframe(0).f_lineno == 47
+
+
+# IMPORTANT: DO NOT MOVE!
+def test_nested_lineno():
+    def test_nested():
+        return sys._getframe(0)
+    f = test_nested()
+    assert f.f_lineno == 53
 
 
 def test_read_and_write_locals():

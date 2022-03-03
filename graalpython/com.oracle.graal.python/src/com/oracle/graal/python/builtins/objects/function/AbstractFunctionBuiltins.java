@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -181,10 +182,15 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             if (module == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreter();
                 PythonObject globals = self.getGlobals();
-                if (globals instanceof PythonModule) {
-                    module = globals.getAttribute(__NAME__);
-                } else {
-                    module = getItem.execute(frame, globals, __NAME__);
+                // __module__: If module name is in globals, use it. Otherwise, use None.
+                try {
+                    if (globals instanceof PythonModule) {
+                        module = globals.getAttribute(__NAME__);
+                    } else {
+                        module = getItem.execute(frame, globals, __NAME__);
+                    }
+                } catch (PException pe) {
+                    module = PNone.NONE;
                 }
                 writeObject.execute(self, __MODULE__, module);
             }

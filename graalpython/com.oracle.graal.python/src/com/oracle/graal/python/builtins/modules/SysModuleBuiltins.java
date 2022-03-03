@@ -1045,29 +1045,32 @@ public class SysModuleBuiltins extends PythonBuiltins {
             final int lineNo;
             final int offset;
             final Object text;
+            final boolean err;
 
-            SyntaxErrData(Object message, Object fileName, int lineNo, int offset, Object text) {
+            SyntaxErrData(Object message, Object fileName, int lineNo, int offset, Object text, boolean err) {
                 this.message = message;
                 this.fileName = fileName;
                 this.lineNo = lineNo;
                 this.offset = offset;
                 this.text = text;
+                this.err = err;
             }
         }
 
         private SyntaxErrData parseSyntaxError(VirtualFrame frame, Object err) {
-            String msg, fileName = null, text = null;
-            int lineNo = 0, offset = 0, hold = 0;
+            Object v, msg;
+            String fileName = null, text = null;
+            int lineNo = 0, offset = 0, hold;
 
             // new style errors. `err' is an instance
-            msg = objectLookupAttrAsString(frame, err, ATTR_MSG);
-            if (msg == null) {
-                return new SyntaxErrData(msg, fileName, lineNo, offset, text);
+            msg = objectLookupAttr(frame, err, ATTR_MSG);
+            if (msg == PNone.NO_VALUE) {
+                return new SyntaxErrData(null, fileName, lineNo, offset, text, true);
             }
 
-            Object v = objectLookupAttr(frame, err, ATTR_FILENAME);
+            v = objectLookupAttr(frame, err, ATTR_FILENAME);
             if (v == PNone.NO_VALUE) {
-                return new SyntaxErrData(msg, fileName, lineNo, offset, text);
+                return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
             if (v == PNone.NONE) {
                 fileName = VALUE_STRING;
@@ -1077,19 +1080,19 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
             v = objectLookupAttr(frame, err, ATTR_LINENO);
             if (v == PNone.NO_VALUE) {
-                return new SyntaxErrData(msg, fileName, lineNo, offset, text);
+                return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
             try {
                 hold = longAsInt(frame, v);
             } catch (PException pe) {
-                return new SyntaxErrData(msg, fileName, lineNo, offset, text);
+                return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
 
             lineNo = hold;
 
             v = objectLookupAttr(frame, err, ATTR_OFFSET);
             if (v == PNone.NO_VALUE) {
-                return new SyntaxErrData(msg, fileName, lineNo, offset, text);
+                return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
             if (v == PNone.NONE) {
                 offset = -1;
@@ -1097,14 +1100,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 try {
                     hold = longAsInt(frame, v);
                 } catch (PException pe) {
-                    return new SyntaxErrData(msg, fileName, lineNo, offset, text);
+                    return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
                 }
                 offset = hold;
             }
 
             v = objectLookupAttr(frame, err, ATTR_TEXT);
             if (v == PNone.NO_VALUE) {
-                return new SyntaxErrData(msg, fileName, lineNo, offset, text);
+                return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
             if (v == PNone.NONE) {
                 text = null;
@@ -1112,7 +1115,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 text = castToString(v);
             }
 
-            return new SyntaxErrData(msg, fileName, lineNo, offset, text);
+            return new SyntaxErrData(msg, fileName, lineNo, offset, text, false);
         }
 
         private void printErrorText(VirtualFrame frame, Object out, SyntaxErrData syntaxErrData) {
@@ -1200,14 +1203,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
             if (objectHasAttr(frame, value, ATTR_PRINT_FILE_AND_LINE)) {
                 // SyntaxError case
                 final SyntaxErrData syntaxErrData = parseSyntaxError(frame, value);
-                value = syntaxErrData.message;
-                StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
-                PythonUtils.append(sb, castToString(objectStr(frame, syntaxErrData.fileName)), "\", line ", syntaxErrData.lineNo, "\n");
-                fileWriteString(frame, out, PythonUtils.sbToString(sb));
+                if (!syntaxErrData.err) {
+                    value = syntaxErrData.message;
+                    StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
+                    PythonUtils.append(sb, castToString(objectStr(frame, syntaxErrData.fileName)), "\", line ", syntaxErrData.lineNo, "\n");
+                    fileWriteString(frame, out, PythonUtils.sbToString(sb));
 
-                // Can't be bothered to check all those PyFile_WriteString() calls
-                if (syntaxErrData.text != null) {
-                    printErrorText(frame, out, syntaxErrData);
+                    // Can't be bothered to check all those PyFile_WriteString() calls
+                    if (syntaxErrData.text != null) {
+                        printErrorText(frame, out, syntaxErrData);
+                    }
                 }
             }
 

@@ -57,9 +57,9 @@ public abstract class ErrorMessages {
     public static final String ARG_IS_EMPTY_SEQ = "%s() arg is an empty sequence";
     public static final String ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD = "argument must be an int, or have a fileno() method.";
     public static final String ARG_MUST_BE_NUMBER = "%s argument must be a number, not '%p'";
-    public static final String ARG_MUST_BE_S_NOT_P = "%s argument must be a %s, not %p";
+    public static final String ARG_MUST_BE_S_NOT_P = "%s argument must be %s, not %p";
     public static final String ARGUMENTS_MUST_BE_ITERATORS = "Arguments must be iterators";
-    public static final String S_BRACKETS_ARG_MUST_BE_S_NOT_P = "%s() argument must be a %s, not %p";
+    public static final String S_BRACKETS_ARG_MUST_BE_S_NOT_P = "%s() argument must be %s, not %p";
     public static final String S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P = "%s() argument must be read-write bytes-like object, not %p";
     public static final String ARG_MUST_BE_CALLABLE = "argument must be callable";
     public static final String S_ARG_MUST_BE_CALLABLE = "%s argument must be callable";
