@@ -1,7 +1,7 @@
-diff --git a/src/_pytest/_code/code.py b/src/_pytest/_code/code.py
+diff --git a/_pytest/_code/code.py b/_pytest/_code/code.py
 index 4230693..1c9bab8 100644
---- a/src/_pytest/_code/code.py
-+++ b/src/_pytest/_code/code.py
+--- a/_pytest/_code/code.py
++++ b/_pytest/_code/code.py
 @@ -248,15 +248,17 @@ class TracebackEntry:
              if key is not None:
                  astnode = astcache.get(key, None)
@@ -29,18 +29,16 @@ index 4230693..1c9bab8 100644
          return source[start:end]
 
      source = property(getsource)
-diff --git a/src/_pytest/assertion/__init__.py b/src/_pytest/assertion/__init__.py
-index a18cf19..bd7523c 100644
---- a/src/_pytest/assertion/__init__.py
-+++ b/src/_pytest/assertion/__init__.py
-@@ -26,7 +26,8 @@ def pytest_addoption(parser: Parser) -> None:
+diff --git a/_pytest/assertion/__init__.py b/_pytest/assertion/__init__.py
+index a18cf19..787dd09 100644
+--- a/_pytest/assertion/__init__.py
++++ b/_pytest/assertion/__init__.py
+@@ -26,7 +26,7 @@ def pytest_addoption(parser: Parser) -> None:
          action="store",
          dest="assertmode",
          choices=("rewrite", "plain"),
 -        default="rewrite",
-+        # default="rewrite",
 +        default="plain",
          metavar="MODE",
          help=(
              "Control assertion debugging tools.\n"
-
