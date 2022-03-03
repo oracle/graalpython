@@ -1810,7 +1810,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 min = Math.min(min, offset);
                 max = Math.max(max, offset);
             }
-            sourceSection = source.createSection(max, min);
+            sourceSection = source.createSection(min, max - min);
             return sourceSection;
         }
     }

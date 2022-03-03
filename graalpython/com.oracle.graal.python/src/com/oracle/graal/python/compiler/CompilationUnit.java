@@ -301,32 +301,15 @@ public final class CompilationUnit {
 
     private void insertSrcOffsetTable(int srcOffset, int lastSrcOffset, ByteArrayOutputStream srcOffsets) {
         int srcDelta = srcOffset - lastSrcOffset;
-        boolean negative = srcDelta < 0;
-        srcDelta = Math.abs(srcDelta);
-        if (srcDelta > 127) {
-            while (srcDelta > 127) {
-                srcOffsets.write((byte) 0x80);
-                srcDelta -= 0x80;
-            }
-            assert srcDelta >= 0;
-            if (!negative) {
-                srcOffsets.write((byte) srcDelta);
-            } else {
-                if (srcDelta == 127) {
-                    srcOffsets.write((byte) 0x80);
-                    srcOffsets.write((byte) -1);
-                } else {
-                    srcDelta = -srcDelta - 1;
-                    srcOffsets.write((byte) srcDelta);
-                }
-            }
-        } else {
-            if (!negative) {
-                srcOffsets.write((byte) srcDelta);
-            } else {
-                srcOffsets.write((byte) -srcDelta);
-            }
+        while (srcDelta > 127) {
+            srcOffsets.write((byte) 128);
+            srcDelta -= 127;
         }
+        while (srcDelta < -127) {
+            srcOffsets.write((byte) 128);
+            srcDelta += 127;
+        }
+        srcOffsets.write((byte) srcDelta);
     }
 
     private void emitBytecode(Instruction i, ByteArrayOutputStream buf) throws IllegalStateException {

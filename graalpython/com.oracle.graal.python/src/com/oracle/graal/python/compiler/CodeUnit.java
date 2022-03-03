@@ -129,21 +129,15 @@ public final class CodeUnit {
 
         for (int i = 0; i < srcOffsetTable.length; i++) {
             byte diff = srcOffsetTable[i];
-            int intDiff = diff;
-            if (diff != (byte) 0x80) {
-                currentOffset += diff;
-            } else {
-                while (diff == (byte) 0x80) {
-                    intDiff -= 0x80;
-                    diff = srcOffsetTable[++i];
-                }
-                assert intDiff < 0;
-                if (diff >= 0) {
-                    currentOffset += -intDiff + diff;
-                } else {
-                    currentOffset += intDiff + diff + 1;
-                }
+            int overflow = 0;
+            while (diff == (byte) 128) {
+                overflow += 127;
+                diff = srcOffsetTable[++i];
             }
+            if (diff < 0) {
+                overflow = -overflow;
+            }
+            currentOffset += overflow + diff;
             if (diffIdx == bytecodeNumber) {
                 break;
             }
