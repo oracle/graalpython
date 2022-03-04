@@ -120,4 +120,19 @@ public class WithTests {
         assertPrints("In __enter__()\nExecute without asName\nIn __exit__()\n1\n", source);
     }
 
+    @Test
+    public void withExceptionInfo() {
+        String source = "import sys\n" +
+                        "class CM:\n" +
+                        "    def __enter__(self):\n" +
+                        "        return self\n" +
+                        "    def __exit__(self, et, e, tb):\n" +
+                        "        print(repr(sys.exc_info()[1]))\n" +
+                        "        return True\n" +
+                        "with CM():\n" +
+                        "    raise NameError\n" +
+                        "print(repr(sys.exc_info()[1]))\n";
+
+        assertPrints("NameError()\nNone\n", source);
+    }
 }

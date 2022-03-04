@@ -4,6 +4,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -42,20 +43,26 @@ public abstract class ExitWithNode extends PNodeWithContext {
         if (exception == PNone.NONE) {
             callExit.execute(frame, exit, contextManager, PNone.NONE, PNone.NONE, PNone.NONE);
         } else {
-            Object pythonException = exception;
-            if (exception instanceof PException) {
-                pythonException = ((PException) exception).getEscapedException();
-            }
-            Object excType = getClassNode.execute(pythonException);
-            Object excTraceback = getTracebackNode.execute(pythonException);
-            Object result = callExit.execute(frame, exit, contextManager, excType, pythonException, excTraceback);
-            if (!isTrueNode.execute(frame, result)) {
-                if (exception instanceof AbstractTruffleException) {
-                    throw (AbstractTruffleException) exception;
-                } else {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(SystemError, "expected exception on the stack");
+            PException savedExcState = PArguments.getException(frame);
+            try {
+                Object pythonException = exception;
+                if (exception instanceof PException) {
+                    PArguments.setException(frame, (PException) exception);
+                    pythonException = ((PException) exception).getEscapedException();
                 }
+                Object excType = getClassNode.execute(pythonException);
+                Object excTraceback = getTracebackNode.execute(pythonException);
+                Object result = callExit.execute(frame, exit, contextManager, excType, pythonException, excTraceback);
+                if (!isTrueNode.execute(frame, result)) {
+                    if (exception instanceof AbstractTruffleException) {
+                        throw (AbstractTruffleException) exception;
+                    } else {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raiseNode.raise(SystemError, "expected exception on the stack");
+                    }
+                }
+            } finally {
+                PArguments.setException(frame, savedExcState);
             }
         }
         return stackTop;
