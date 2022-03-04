@@ -208,7 +208,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
             Node location = element.getLocation();
             if (element.getTarget().getRootNode() instanceof PBytecodeRootNode) {
-                location = element.getLocation().getRootNode();
+                location = element.getTarget().getRootNode();
             }
             // create the PFrame and refresh frame values
             return materializeFrameNode.execute(null, location, false, true, element.getFrame());
