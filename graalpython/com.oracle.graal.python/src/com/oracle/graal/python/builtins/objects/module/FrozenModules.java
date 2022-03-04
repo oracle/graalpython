@@ -528,7 +528,7 @@ public final class FrozenModules {
                 return Map.POSIXPATH;
             case "os":
                 return Map.OS;
-            case "site":
+            case "graalpython.site":
                 return Map.SITE;
             case "stat":
                 return Map.STAT;

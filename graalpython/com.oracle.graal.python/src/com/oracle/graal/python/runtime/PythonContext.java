@@ -69,6 +69,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -98,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -1180,7 +1182,16 @@ public final class PythonContext extends Python3Core {
     }
 
     private void importSiteIfForced() {
-        if (getOption(PythonOptions.ForceImportSite)) {
+        PythonModule siteModule;
+        if (getOption(PythonOptions.ForceImportSite) &&
+            getOption(PythonOptions.PythonPath).isEmpty() &&
+            (siteModule = ImpModuleBuiltins.importFrozenModuleObject(this, "graalpython.site", true)) != null) {
+            // assume we can use the frozen site module
+            // TODO: rename graalpython.site again to just site when we upgrade to Python 3.10+
+            // or newer and remove this hack
+            PyDictSetItem.getUncached().execute(null, getSysModules(), "site", siteModule);
+            LOGGER.log(Level.FINE, () -> "import 'site' # <frozen>");
+        } else {
             CallTarget site = env.parsePublic(FORCE_IMPORTS_SOURCE);
             site.call();
         }

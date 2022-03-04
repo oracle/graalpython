@@ -71,7 +71,7 @@ FROZEN = [
             # We must explicitly mark os.path as a frozen module
             ("ntpath" if os.name == "nt" else "posixpath") + " : os.path",
             "os",
-            "site",
+            "site : graalpython.site",
             "stat",
         ],
     ),
