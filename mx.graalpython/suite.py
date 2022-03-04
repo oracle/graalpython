@@ -400,8 +400,7 @@ suite = {
                 "<output_root:com.oracle.graal.python.cext>",
             ],
             "buildDependencies": [
-                "com.oracle.graal.python",
-                "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON",
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
