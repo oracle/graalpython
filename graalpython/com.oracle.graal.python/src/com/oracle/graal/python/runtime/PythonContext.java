@@ -1184,8 +1184,8 @@ public final class PythonContext extends Python3Core {
     private void importSiteIfForced() {
         PythonModule siteModule;
         if (getOption(PythonOptions.ForceImportSite) &&
-            getOption(PythonOptions.PythonPath).isEmpty() &&
-            (siteModule = ImpModuleBuiltins.importFrozenModuleObject(this, "graalpython.site", true)) != null) {
+                        getOption(PythonOptions.PythonPath).isEmpty() &&
+                        (siteModule = ImpModuleBuiltins.importFrozenModuleObject(this, "graalpython.site", true)) != null) {
             // assume we can use the frozen site module
             // TODO: rename graalpython.site again to just site when we upgrade to Python 3.10+
             // or newer and remove this hack
