@@ -40,6 +40,17 @@
  */
 package com.oracle.graal.python.test.compiler;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.EnumSet;
+
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
@@ -53,17 +64,6 @@ import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.test.PythonTests;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.EnumSet;
-
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-
 public class CompilerTests extends PythonTests {
     public CompilerTests() {
     }
@@ -72,152 +72,157 @@ public class CompilerTests extends PythonTests {
 
     @Test
     public void testBinaryOp() {
-        doTest("1 + 1", "<module>");
+        doTest("1 + 1");
     }
 
     @Test
     public void testAssignment() {
-        doTest("a = 12", "<module>");
+        doTest("a = 12");
     }
 
     @Test
     public void testAugAssignment() {
-        doTest("a += 12.0", "<module>");
+        doTest("a += 12.0");
     }
 
     @Test
     public void testCall() {
-        doTest("range(num)", "<module>");
+        doTest("range(num)");
+    }
+
+    @Test
+    public void testCallKeyword() {
+        doTest("print('test', end=';')");
     }
 
     @Test
     public void testFor() {
-        doTest("for i in [1,2]:\n pass", "<module>");
+        doTest("for i in [1,2]:\n pass");
     }
 
     @Test
     public void testWhile() {
-        doTest("while False: pass", "<module>");
+        doTest("while False: pass");
     }
 
     @Test
     public void testTryExcept() {
         String s = "print('before')\n" +
-                "try:\n" +
-                "  print('try')\n" +
-                "except TypeError as e:\n" +
-                "  print('except1')\n" +
-                "except ValueError as e:\n" +
-                "  print('except2')\n" +
-                "print('after')\n";
-        doTest(s, null);
+                        "try:\n" +
+                        "  print('try')\n" +
+                        "except TypeError as e:\n" +
+                        "  print('except1')\n" +
+                        "except ValueError as e:\n" +
+                        "  print('except2')\n" +
+                        "print('after')\n";
+        doTest(s);
     }
 
     @Test
     public void testTryExceptBare() {
         String s = "print('before')\n" +
-                "try:\n" +
-                "  print('try')\n" +
-                "except TypeError as e:\n" +
-                "  print('except1')\n" +
-                "except:\n" +
-                "  print('except bare')\n" +
-                "print('after')\n";
-        doTest(s, null);
+                        "try:\n" +
+                        "  print('try')\n" +
+                        "except TypeError as e:\n" +
+                        "  print('except1')\n" +
+                        "except:\n" +
+                        "  print('except bare')\n" +
+                        "print('after')\n";
+        doTest(s);
     }
 
     @Test
     public void testTryFinally() {
         String s = "print('before')\n" +
-                "try:\n" +
-                "  print('try')\n" +
-                "finally:\n" +
-                "  print('finally')\n" +
-                "print('after')\n";
-        doTest(s, null);
+                        "try:\n" +
+                        "  print('try')\n" +
+                        "finally:\n" +
+                        "  print('finally')\n" +
+                        "print('after')\n";
+        doTest(s);
     }
 
     @Test
     public void testTryExceptFinally() {
         String s = "print('before')\n" +
-                "try:\n" +
-                "  print('try')\n" +
-                "except TypeError as e:\n" +
-                "  print('except1')\n" +
-                "except ValueError as e:\n" +
-                "  print('except2')\n" +
-                "finally:\n" +
-                "  print('finally')\n" +
-                "print('after')\n";
-        doTest(s, null);
+                        "try:\n" +
+                        "  print('try')\n" +
+                        "except TypeError as e:\n" +
+                        "  print('except1')\n" +
+                        "except ValueError as e:\n" +
+                        "  print('except2')\n" +
+                        "finally:\n" +
+                        "  print('finally')\n" +
+                        "print('after')\n";
+        doTest(s);
     }
 
     @Test
     public void testTryExceptElse() {
         String s = "print('before')\n" +
-                "try:\n" +
-                "  print('try')\n" +
-                "except TypeError as e:\n" +
-                "  print('except1')\n" +
-                "except ValueError as e:\n" +
-                "  print('except2')\n" +
-                "else:\n" +
-                "  print('else')\n" +
-                "print('after')\n";
-        doTest(s, null);
+                        "try:\n" +
+                        "  print('try')\n" +
+                        "except TypeError as e:\n" +
+                        "  print('except1')\n" +
+                        "except ValueError as e:\n" +
+                        "  print('except2')\n" +
+                        "else:\n" +
+                        "  print('else')\n" +
+                        "print('after')\n";
+        doTest(s);
     }
 
     @Test
     public void testTryExceptElseFinally() {
         String s = "print('before')\n" +
-                "try:\n" +
-                "  print('try')\n" +
-                "except TypeError as e:\n" +
-                "  print('except1')\n" +
-                "except ValueError as e:\n" +
-                "  print('except2')\n" +
-                "else:\n" +
-                "  print('else')\n" +
-                "finally:\n" +
-                "  print('finally')\n" +
-                "print('after')\n";
-        doTest(s, null);
+                        "try:\n" +
+                        "  print('try')\n" +
+                        "except TypeError as e:\n" +
+                        "  print('except1')\n" +
+                        "except ValueError as e:\n" +
+                        "  print('except2')\n" +
+                        "else:\n" +
+                        "  print('else')\n" +
+                        "finally:\n" +
+                        "  print('finally')\n" +
+                        "print('after')\n";
+        doTest(s);
     }
 
     @Test
     public void testWith() {
         String s = "print('before')\n" +
-                "with open('/dev/null') as f:\n" +
-                "  f.write('foo')\n" +
-                "print('after')";
-        doTest(s, null);
+                        "with open('/dev/null') as f:\n" +
+                        "  f.write('foo')\n" +
+                        "print('after')";
+        doTest(s);
     }
 
     @Test
     public void testWithMultiple() {
         String s = "print('before')\n" +
-                "with open('/dev/null') as f, open('/tmp/foo'):\n" +
-                "  f.write('foo')\n" +
-                "print('after')";
-        doTest(s, null);
+                        "with open('/dev/null') as f, open('/tmp/foo'):\n" +
+                        "  f.write('foo')\n" +
+                        "print('after')";
+        doTest(s);
     }
 
     @Test
     public void testDefun() {
         String s;
         s = "def docompute(num, num2=5):\n" +
-            "   return (num, num2)\n";
-        doTest(s, null);
+                        "   return (num, num2)\n";
+        doTest(s);
     }
 
     @Test
     public void testIf() {
         String source = "" +
-            "if False:\n" +
-            "   print(True)\n" +
-            "else:\n" +
-            "   print(False)\n";
-        doTest(source, null);
+                        "if False:\n" +
+                        "   print(True)\n" +
+                        "else:\n" +
+                        "   print(False)\n";
+        doTest(source);
     }
 
     @Test
@@ -234,46 +239,50 @@ public class CompilerTests extends PythonTests {
                         "\n" +
                         "\n" +
                         "def measure(num):\n" +
-                       "    for run in range(num):\n" +
+                        "    for run in range(num):\n" +
                         "        sum_ = docompute(10000)  # 10000\n" +
                         "    print('sum', sum_)\n" +
                         "\n" +
                         "\n" +
                         "def __benchmark__(num=5):\n" +
                         "    measure(num)\n";
-        doTest(source, "<module>");
+        doTest(source);
     }
 
     @Test
     public void testBenchmark2() {
         String source = "" +
-            "class HandlerTask(Task):\n" +
-            "    def __init__(self,i,p,w,s,r):\n" +
-            "        global Task\n" +
-            "        x = 0\n" +
-            "        raise ValueError\n" +
-            // "        def f():\n" +
-            // "          nonlocal x\n" +
-            // "          x = 1\n" +
-            "        Task.__init__(self,i,p,w,s,r)\n";
-        doTest(source, "<module>");
+                        "class HandlerTask(Task):\n" +
+                        "    def __init__(self,i,p,w,s,r):\n" +
+                        "        global Task\n" +
+                        "        x = 0\n" +
+                        "        raise ValueError\n" +
+                        // " def f():\n" +
+                        // " nonlocal x\n" +
+                        // " x = 1\n" +
+                        "        Task.__init__(self,i,p,w,s,r)\n";
+        doTest(source);
     }
 
     @Test
     public void testImport() {
         String source = "" +
-            "if __name__ == '__main__':\n" +
-            "    import sys\n" +
-            "    if not (len(sys.argv) == 1 and sys.argv[0] == 'java_embedding_bench'):\n" +
-            "        import time\n" +
-            "        start = time.time()\n" +
-            "        if len(sys.argv) >= 2:\n" +
-            "            num = int(sys.argv[1])\n" +
-            "            __benchmark__(num)\n" +
-            "        else:\n" +
-            "            __benchmark__()\n" +
-            "        print(\"%s took %s s\" % (__file__, time.time() - start))\n";
-        doTest(source, "<module>");
+                        "if __name__ == '__main__':\n" +
+                        "    import sys\n" +
+                        "    if not (len(sys.argv) == 1 and sys.argv[0] == 'java_embedding_bench'):\n" +
+                        "        import time\n" +
+                        "        start = time.time()\n" +
+                        "        if len(sys.argv) >= 2:\n" +
+                        "            num = int(sys.argv[1])\n" +
+                        "            __benchmark__(num)\n" +
+                        "        else:\n" +
+                        "            __benchmark__()\n" +
+                        "        print(\"%s took %s s\" % (__file__, time.time() - start))\n";
+        doTest(source);
+    }
+
+    private void doTest(String src) {
+        doTest(src, null);
     }
 
     private void doTest(String src, String moduleName) {

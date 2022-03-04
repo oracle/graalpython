@@ -702,6 +702,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         frame.setObject(stackTop, factory.createComplex(real, imag));
                         break;
                     }
+                    case MAKE_KEYWORD: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        String key = (String) localConsts[oparg];
+                        Object value = frame.getObject(stackTop);
+                        frame.setObject(stackTop, new PKeyword(key, value));
+                        break;
+                    }
                     case COLLECTION_FROM_STACK: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeCollectionFromStack(frame, oparg, stackTop, localNodes, bci);

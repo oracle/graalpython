@@ -203,7 +203,8 @@ public final class CodeUnit {
                 case LOAD_CONST:
                 case LOAD_BIGINT:
                 case LOAD_STRING:
-                case LOAD_BYTES: {
+                case LOAD_BYTES:
+                case MAKE_KEYWORD: {
                     Object constant = constants[arg];
                     if (constant instanceof CodeUnit) {
                         line[5] = ((CodeUnit) constant).name + " from " + ((CodeUnit) constant).filename;
