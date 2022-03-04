@@ -46,77 +46,77 @@ import org.junit.jupiter.api.Test;
 public class YieldStatementTests extends ParserTestBase {
 
     @Test
-    public void yeild01() throws Exception {
+    public void yield01() throws Exception {
         checkScopeAndTree("def f(): yield 1");
     }
 
     @Test
-    public void yeild02() throws Exception {
+    public void yield02() throws Exception {
         checkScopeAndTree("def f(): yield");
     }
 
     @Test
-    public void yeild03() throws Exception {
+    public void yield03() throws Exception {
         checkScopeAndTree("def f(): x += yield");
     }
 
     @Test
-    public void yeild04() throws Exception {
+    public void yield04() throws Exception {
         checkScopeAndTree("def f(): x = yield 1");
     }
 
     @Test
-    public void yeild05() throws Exception {
+    public void yield05() throws Exception {
         checkScopeAndTree("def f(): x = y = yield 1");
     }
 
     @Test
-    public void yeild06() throws Exception {
+    public void yield06() throws Exception {
         checkScopeAndTree("def f(): x = yield");
     }
 
     @Test
-    public void yeild07() throws Exception {
+    public void yield07() throws Exception {
         checkScopeAndTree("def f(): x = y = yield");
     }
 
     @Test
-    public void yeild08() throws Exception {
+    public void yield08() throws Exception {
         checkScopeAndTree("def f(): 1 + (yield)*2");
     }
 
     @Test
-    public void yeild09() throws Exception {
+    public void yield09() throws Exception {
         checkScopeAndTree("def f(): (yield 1)*2");
     }
 
     @Test
-    public void yeild10() throws Exception {
+    public void yield10() throws Exception {
         checkScopeAndTree("def f(): return; yield 1");
     }
 
     @Test
-    public void yeild11() throws Exception {
+    public void yield11() throws Exception {
         checkScopeAndTree("def f(): yield 1; return");
     }
 
     @Test
-    public void yeild12() throws Exception {
+    public void yield12() throws Exception {
         checkScopeAndTree("def f(): yield from 1");
     }
 
     @Test
-    public void yeild13() throws Exception {
+    public void yield13() throws Exception {
         checkScopeAndTree("def f(): f((yield from 1))");
     }
 
     @Test
-    public void yeild14() throws Exception {
+    public void yield14() throws Exception {
         checkScopeAndTree("def f(): yield 1; return 1");
     }
 
     @Test
-    public void yeild15() throws Exception {
+    public void yield15() throws Exception {
         checkScopeAndTree(
                         "def f():\n" +
                                         "    for x in range(30):\n" +
@@ -124,7 +124,7 @@ public class YieldStatementTests extends ParserTestBase {
     }
 
     @Test
-    public void yeild16() throws Exception {
+    public void yield16() throws Exception {
         checkScopeAndTree(
                         "def f():\n" +
                                         "    if (yield):\n" +
@@ -148,7 +148,7 @@ public class YieldStatementTests extends ParserTestBase {
     }
 
     @Test
-    public void yeild17() throws Exception {
+    public void yield17() throws Exception {
         checkScopeAndTree("generator = type((lambda: (yield))())");
     }
 
