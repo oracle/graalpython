@@ -419,6 +419,86 @@ abstract class AbstractParser {
     }
     
     /**
+    * _PyPegen_get_expr_name
+    */
+    public String getExprName(ExprTy e) {
+        if (e instanceof ExprTy.Attribute
+                || e instanceof ExprTy.Subscript
+                || e instanceof ExprTy.Starred
+                || e instanceof ExprTy.Name
+                || e instanceof ExprTy.List) {
+            return e.getClass().getName().toLowerCase();
+        }
+        if (e instanceof ExprTy.Call) {
+            return "function call";
+        }
+        if (e instanceof ExprTy.BoolOp
+                || e instanceof ExprTy.BinOp
+                || e instanceof ExprTy.UnaryOp) {
+            return "expression";
+        }
+        if (e instanceof ExprTy.GeneratorExp) {
+            return "generator expression";
+        }
+        if (e instanceof ExprTy.Yield
+                || e instanceof ExprTy.YieldFrom) {
+            return "yield expresssion";
+        }
+        if (e instanceof ExprTy.Await) {
+            return "await expresssion";
+        }
+        if (e instanceof ExprTy.ListComp) {
+            return "list comprehension";
+        }
+        if (e instanceof ExprTy.SetComp) {
+            return "set comprehension";
+        }
+        if (e instanceof ExprTy.DictComp) {
+            return "dict comprehension";
+        }
+        if (e instanceof ExprTy.Dict) {
+            return "dict literal";
+        }
+        if (e instanceof ExprTy.Set) {
+            return "set display";
+        }
+        if (e instanceof ExprTy.JoinedStr
+                || e instanceof ExprTy.FormattedValue) {
+            return "f-string expression";
+        }
+        if (e instanceof ExprTy.Constant) {
+            ExprTy.Constant constant = (ExprTy.Constant)e;
+            switch(constant.kind) {
+                case NONE:
+                    return "None";
+                case BOOLEAN:
+                    Boolean value = (Boolean)constant.value;
+                    if (value.booleanValue()) {
+                        return "True";
+                    }
+                    return "False";
+                case ELLIPSIS:
+                    return "Ellipsis";
+            }
+            return "literal";
+        }
+        if (e instanceof ExprTy.Compare) {
+            return "comparision";
+        }
+        if (e instanceof ExprTy.IfExp) {
+            return "conditional expression";
+        }
+        if (e instanceof ExprTy.NamedExpr) {
+            return "named expression";
+        }
+        // TODO Rise system error 
+//         PyErr_Format(PyExc_SystemError,
+//                         "unexpected expression in assignment %d (line %d)",
+//                         e->kind, e->lineno);
+        return null;
+    } 
+    
+    /**
      * equivalent to initialize_token
      */
     private Token initializeToken(Token token) {

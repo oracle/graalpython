@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.ParserErrorCallback.ErrorType;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 
 @FunctionalInterface
