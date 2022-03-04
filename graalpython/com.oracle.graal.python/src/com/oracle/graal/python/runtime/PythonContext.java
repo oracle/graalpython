@@ -69,7 +69,6 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -94,18 +93,17 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -149,8 +147,6 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 public final class PythonContext extends Python3Core {
-    private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
-    private static final Source FORCE_IMPORTS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build();
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
@@ -1182,24 +1178,12 @@ public final class PythonContext extends Python3Core {
     }
 
     private void importSiteIfForced() {
-        PythonModule siteModule;
         if (getOption(PythonOptions.ForceImportSite)) {
-            if (getOption(PythonOptions.PythonPath).isEmpty() &&
-                (siteModule = ImpModuleBuiltins.importFrozenModuleObject(this, "graalpython.site", true)) != null) {
-                // assume we can use the frozen site module
-                // TODO: rename graalpython.site again to just site when we upgrade to Python 3.10+
-                // or newer and remove this hack
-                PyDictSetItem.getUncached().execute(null, getSysModules(), "site", siteModule);
-                LOGGER.log(Level.FINE, () -> "import 'site' # <frozen>");
-            } else {
-                CallTarget site = env.parsePublic(FORCE_IMPORTS_SOURCE);
-                site.call();
-            }
+            AbstractImportNode.importModule("site");
         }
         if (!getOption(PythonOptions.WarnOptions).isEmpty()) {
             // we must force an import of the warnings module here if warnings were passed
-            CallTarget site = env.parsePublic(IMPORT_WARNINGS_SOURCE);
-            site.call();
+            AbstractImportNode.importModule("warnings");
         }
         if (getOption(PythonOptions.InputFilePath).isEmpty()) {
             // When InputFilePath is set, this is handled by __graalpython__.run_path
