@@ -129,6 +129,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
 import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
+import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -157,6 +158,7 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -329,6 +331,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Children private final Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+    @CompilationFinal private LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.createCountingProfile();
+    @CompilationFinal private LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.createCountingProfile();
 
     @CompilationFinal private Object osrMetadata;
 
@@ -1419,6 +1423,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 long newTarget = findHandler(bci);
                 CompilerAsserts.partialEvaluationConstant(newTarget);
                 e.markAsOriginatingFromBytecode();
+                PException exceptionState = PArguments.getException(frame);
+                if (exceptionState != null) {
+                    ExceptionHandlingStatementNode.chainExceptions(e.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                }
                 if (newTarget == -1) {
                     frame.setObject(tracebackOffset, this);
                     frame.setInt(tracebackOffset + 1, bci);
