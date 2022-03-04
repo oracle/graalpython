@@ -511,4 +511,15 @@ public class NodeFactoryImp implements NodeFactory{
     public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, int startOffset, int endOffset) {
         return new StmtTy.Try.ExceptHandler(type, name, body, startOffset, endOffset);
     }
+    
+    @Override
+    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset) {
+        // TODO check if context expr is not null -> throw error
+        return new StmtTy.With.Item(contextExpr, optionalVars, startOffset, endOffset);
+    }
+
+    @Override
+    public StmtTy.With createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset) {
+        return new StmtTy.With(items, body, typeComment, startOffset, endOffset);
+    }
 }

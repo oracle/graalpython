@@ -1,0 +1,9 @@
+Module[0, 19]
+    FunctionDef[0, 19]
+        Name:f
+        ---- Function body of f ----
+        AugAssign[9, 19]
+            Op: ADD
+            LHS: Name[9, 10] Value: "x" Store
+            RHS: Yield[14, 19]
+        ---- End of f function ----

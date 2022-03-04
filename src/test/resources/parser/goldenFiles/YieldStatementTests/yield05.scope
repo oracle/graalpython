@@ -1,0 +1,9 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      f: [DefLocal, Local]
+    Scope f Function
+        Flags: [IsGenerator]
+        Symbols:
+            x: [DefLocal, Local]
+            y: [DefLocal, Local]

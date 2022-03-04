@@ -1,0 +1,15 @@
+Module[0, 49]
+    FunctionDef[0, 49]
+        Name:gen
+        ---- Function body of gen ----
+        With[13, 17]
+            Items:
+                Item[18, 20]
+                    Context Expr: Call[18, 22]
+                        Target: Name[18, 20] Value: "fn"
+            Body:
+                Yield[28, 36]
+                    LONG[34, 36] Value: 12
+                Yield[41, 49]
+                    LONG[47, 49] Value: 13
+        ---- End of gen function ----

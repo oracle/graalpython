@@ -929,6 +929,13 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(StmtTy.With node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNodes(sb, "Items", node.items);
+        appendNodes(sb, "Body", node.body);
+        if (node.typeComment != null) {
+            appendString(sb, "Type Comment", node.typeComment);
+        }
+        level--;
         return sb.toString();
 
     }
@@ -937,6 +944,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(StmtTy.With.Item node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNode(sb, "Context Expr", node.contextExpr);
+        appendNode(sb, "OptionalVars", node.optionalVars);
+        level--;
         return sb.toString();
 
     }

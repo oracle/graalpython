@@ -1,0 +1,8 @@
+Module[0, 18]
+    FunctionDef[0, 18]
+        Name:f
+        ---- Function body of f ----
+        Assign[9, 18]
+            LHS: Name[9, 10] Value: "x" Store
+            RHS: Yield[13, 18]
+        ---- End of f function ----

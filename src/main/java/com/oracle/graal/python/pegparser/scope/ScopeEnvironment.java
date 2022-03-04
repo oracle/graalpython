@@ -557,11 +557,15 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.Lambda node) {
-            visitSequence(node.args.defaults);
-            visitSequence(node.args.kwDefaults);
+            if (node.args != null) {
+                visitSequence(node.args.defaults);
+                visitSequence(node.args.kwDefaults);
+            }
             enterBlock("lambda", ScopeType.Function, node);
             try {
-                node.args.accept(this);
+                if (node.args != null) {
+                    node.args.accept(this);
+                }
                 node.body.accept(this);
             } finally {
                 exitBlock();
@@ -1026,7 +1030,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.With.Item node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            return null;
         }
 
         @Override

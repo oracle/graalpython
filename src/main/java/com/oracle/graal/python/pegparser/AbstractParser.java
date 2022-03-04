@@ -526,16 +526,18 @@ abstract class AbstractParser {
     }
 
     static ExprTy[] extractKeys(KeyValuePair[] l) {
-        ExprTy[] keys = new ExprTy[l.length];
-        for (int i = 0; i < l.length; i++) {
+        int len = l == null ? 0 : l.length;
+        ExprTy[] keys = new ExprTy[len];
+        for (int i = 0; i < len; i++) {
             keys[i] = l[i].key;
         }
         return keys;
     }
 
     static ExprTy[] extractValues(KeyValuePair[] l) {
-        ExprTy[] values = new ExprTy[l.length];
-        for (int i = 0; i < l.length; i++) {
+        int len = l == null ? 0 : l.length;
+        ExprTy[] values = new ExprTy[len];
+        for (int i = 0; i < len; i++) {
             values[i] = l[i].value;
         }
         return values;
