@@ -170,10 +170,8 @@ public final class CodeUnit {
         HashMap<Integer, String[]> lines = new HashMap<>();
 
         sb.append("Disassembly of ").append(name).append(":\n");
-        int offset = -1;
 
         int bci = 0;
-        int bytecodeCount = 0;
         while (bci < code.length) {
             int bcBCI = bci;
             int bc = Byte.toUnsignedInt(code[bci++]);
@@ -181,8 +179,7 @@ public final class CodeUnit {
 
             String[] line = lines.computeIfAbsent(bcBCI, k -> new String[DISASSEMBLY_NUM_COLUMNS]);
 
-            int srcOffset = bciToSrcOffset(bcBCI);
-            offset = srcOffset;
+            int offset = bciToSrcOffset(bcBCI);
             line[0] = String.format("%06d", offset);
             if (line[1] == null) {
                 line[1] = "";
@@ -219,6 +216,7 @@ public final class CodeUnit {
                 case LOAD_DOUBLE:
                     line[5] = Objects.toString(Double.longBitsToDouble(primitiveConstants[arg]));
                     break;
+                case LOAD_CLOSURE:
                 case LOAD_DEREF:
                 case STORE_DEREF:
                 case DELETE_DEREF:

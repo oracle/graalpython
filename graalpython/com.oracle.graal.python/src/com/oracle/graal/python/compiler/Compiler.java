@@ -367,7 +367,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             for (String fv : code.freevars) {
                 // special case for class scopes
                 int arg;
-                if (unit.scopeType == CompilationScope.Class && "__class__".equals(fv)) {
+                if (unit.scope.getUseOfName(fv).contains(Scope.DefUse.Cell) || unit.scopeType == CompilationScope.Class && "__class__".equals(fv)) {
                     arg = unit.cellvars.get(fv);
                 } else {
                     arg = unit.freevars.get(fv);

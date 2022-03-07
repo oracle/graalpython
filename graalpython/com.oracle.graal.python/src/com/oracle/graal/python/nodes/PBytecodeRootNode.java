@@ -140,11 +140,13 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitchBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
@@ -321,6 +323,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) private final String[] freevars;
     @CompilationFinal(dimensions = 1) private final String[] cellvars;
 
+    @CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
+
     @CompilationFinal(dimensions = 1) private final short[] exceptionHandlerRanges;
 
     /**
@@ -391,6 +395,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.co = co;
         assert stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
         assert bytecode.length < Math.pow(2, 16) : "bytecode cannot be longer than 16-bit range";
+        cellEffectivelyFinalAssumptions = new Assumption[cellvars.length];
+        for (int i = 0; i < cellvars.length; i++) {
+            cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
+        }
     }
 
     @Override
@@ -548,14 +556,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (node != null) {
             return (T) node;
         }
-        return doInsertChildNode(node, nodeSupplier, bytecodeIndex);
+        return doInsertChildNode(nodeSupplier, bytecodeIndex);
     }
 
     @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
-    private <T extends Node> T doInsertChildNode(Node node, NodeSupplier<T> nodeSupplier, int bytecodeIndex) {
+    private <T extends Node> T doInsertChildNode(NodeSupplier<T> nodeSupplier, int bytecodeIndex) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        assert node == null;
         T newNode = nodeSupplier.get();
         adoptedNodes[bytecodeIndex] = insert(newNode);
         return newNode;
@@ -636,6 +643,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int loopCount = 0;
         int stackTop = decodeStackTop(target);
         int bci = decodeBCI(target);
+        for (int i = 0; i < cellvars.length; i++) {
+            frame.setObject(celloffset + i, new PCell(cellEffectivelyFinalAssumptions[i]));
+        }
+        if (freevars.length > 0) {
+            PCell[] closure = PArguments.getClosure((Object[]) originalArgs);
+            for (int i = 0; i < freevars.length; i++) {
+                frame.setObject(freeoffset + i, closure[i]);
+            }
+        }
 
         byte[] localBC = bytecode;
         int[] localArgs = extraArgs;
@@ -686,7 +702,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         frame.setObject(++stackTop, factory.createInt((BigInteger) localConsts[oparg]));
                         break;
                     }
-                    case LOAD_STRING: {
+                    case LOAD_STRING:
+                    case LOAD_CONST: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         frame.setObject(++stackTop, localConsts[oparg]);
                         break;
@@ -745,9 +762,46 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         frame.setObject(++stackTop, value);
                         break;
                     }
-                    case LOAD_CONST: {
+                    case LOAD_CLOSURE: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        frame.setObject(++stackTop, localConsts[oparg]);
+                        PCell cell = (PCell) frame.getObject(celloffset + oparg);
+                        frame.setObject(++stackTop, cell);
+                        break;
+                    }
+                    case CLOSURE_FROM_STACK: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        PCell[] closure = new PCell[oparg];
+                        moveFromStack(frame, stackTop - oparg + 1, stackTop + 1, closure);
+                        stackTop -= oparg - 1;
+                        frame.setObject(stackTop, closure);
+                        break;
+                    }
+                    case LOAD_DEREF: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        PCell cell = (PCell) frame.getObject(celloffset + oparg);
+                        Object value = cell.getRef();
+                        if (value == null) {
+                            raiseUnboundCell(localNodes[bci], bci, oparg);
+                        }
+                        frame.setObject(++stackTop, value);
+                        break;
+                    }
+                    case STORE_DEREF: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        PCell cell = (PCell) frame.getObject(celloffset + oparg);
+                        Object value = frame.getObject(stackTop);
+                        frame.setObject(stackTop--, null);
+                        cell.setRef(value);
+                        break;
+                    }
+                    case DELETE_DEREF: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        PCell cell = (PCell) frame.getObject(celloffset + oparg);
+                        Object value = cell.getRef();
+                        if (value == null) {
+                            raiseUnboundCell(localNodes[bci], bci, oparg);
+                        }
+                        cell.clearRef();
                         break;
                     }
                     case STORE_FAST: {
@@ -1604,6 +1658,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
         raiseNode.execute(frame, exception, cause);
         return stackTop;
+    }
+
+    private void raiseUnboundCell(Node node, int bci, int oparg) {
+        PRaiseNode raiseNode = insertChildNode(node, UNCACHED_RAISE, NODE_RAISE, bci);
+        if (oparg < freeoffset) {
+            int varIdx = oparg - celloffset;
+            throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, cellvars[varIdx]);
+        } else {
+            int varIdx = oparg - freeoffset;
+            throw raiseNode.raise(PythonBuiltinClassType.NameError, ErrorMessages.UNBOUNDFREEVAR, freevars[varIdx]);
+        }
     }
 
     private int bytecodeImportName(VirtualFrame frame, PythonContext context, PythonModule builtins, Object globals, int stackTop, int bci, int oparg, String[] localNames,

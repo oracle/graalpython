@@ -216,6 +216,20 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testClosure() {
+        String s = "def foo():\n" +
+                "    x = 1\n" +
+                "    def bar():\n" +
+                "        nonlocal x\n" +
+                "        print(x)\n" +
+                "        x = 2\n" +
+                "    bar()\n" +
+                "    print(x)\n" +
+                "    x = 3\n";
+        doTest(s);
+    }
+
+    @Test
     public void testIf() {
         String source = "" +
                         "if False:\n" +

@@ -409,6 +409,7 @@ public abstract class ErrorMessages {
     public static final String LIST_INDEX_OUT_OF_RANGE = "list index out of range";
     public static final String LIST_LENGTH_OUT_OF_RANGE = "list length out of range";
     public static final String LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT = "local variable '%s' referenced before assignment";
+    public static final String UNBOUNDFREEVAR = "cannot access free variable '%s' where it is not associated with a value in enclosing scope";
     public static final String LOCALS_MUST_BE_MAPPING = "%s() locals must be a mapping or None, not %p";
     public static final String LOST_SYSBREAKPOINTHOOK = "lost sys.breakpointhook";
     public static final String LOST_SYSDISPLAYHOOK = "lost sys.displayhook";
