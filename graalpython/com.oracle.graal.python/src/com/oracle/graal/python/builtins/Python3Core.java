@@ -1055,7 +1055,7 @@ public abstract class Python3Core extends ParserErrorCallback {
         sysModules = (PDict) sysModule.getAttribute(MODULES);
     }
 
-    public PythonModule createModule(String name) {
+    private PythonModule createModule(String name) {
         return createModule(name, null);
     }
 
