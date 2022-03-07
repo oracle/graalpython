@@ -71,9 +71,7 @@ FROZEN = [
             # We must explicitly mark os.path as a frozen module
             ("ntpath" if os.name == "nt" else "posixpath") + " : os.path",
             "os",
-            # TODO: freeze site when we upgrade to Python 3.9+ where the stdlib
-            # and setuptools can deal with a frozen site module
-            # "site",
+            "site",
             "stat",
         ],
     ),

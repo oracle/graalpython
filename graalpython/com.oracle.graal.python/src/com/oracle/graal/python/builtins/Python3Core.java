@@ -842,9 +842,12 @@ public abstract class Python3Core extends ParserErrorCallback {
         builtinsModule = builtinModules.get(BuiltinNames.BUILTINS);
     }
 
+    private static final String IMPORTLIB_NAME = "_frozen_importlib";
+    private static final String IMPORTLIB_EXTERNAL_NAME = "_frozen_importlib_external";
+
     private void initializeImportlib() {
-        String importlibName = "_frozen_importlib";
-        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, importlibName, false);
+        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, IMPORTLIB_NAME, false);
+        PythonModule bootstrapExternal;
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
         WriteAttributeToDynamicObjectNode writeNode = WriteAttributeToDynamicObjectNode.getUncached();
@@ -856,18 +859,21 @@ public abstract class Python3Core extends ParserErrorCallback {
 
         if (bootstrap == null) {
             // true when the frozen module is not available
-            PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
-            writeNode.execute(bootstrapExternal, __PACKAGE__, "importlib");
-            setItem.execute(null, sysModules, "_frozen_importlib_external", bootstrapExternal);
+            bootstrapExternal = createModule("importlib._bootstrap_external");
             bootstrap = createModule("importlib._bootstrap");
-            writeNode.execute(bootstrap, __PACKAGE__, "importlib");
-            setItem.execute(null, sysModules, importlibName, bootstrap);
             loadFile("importlib/_bootstrap_external", getContext().getStdlibHome(), bootstrapExternal);
             loadFile("importlib/_bootstrap", getContext().getStdlibHome(), bootstrap);
         } else {
-            setItem.execute(null, sysModules, importlibName, bootstrap);
-            LOGGER.log(Level.FINE, () -> "import '_frozen_importlib' # <frozen>");
+            bootstrapExternal = ImpModuleBuiltins.importFrozenModuleObject(this, IMPORTLIB_EXTERNAL_NAME, true);
+            LOGGER.log(Level.FINE, () -> "import '" + IMPORTLIB_NAME + "' # <frozen>");
+            LOGGER.log(Level.FINE, () -> "import '" + IMPORTLIB_EXTERNAL_NAME + "' # <frozen>");
         }
+        setItem.execute(null, sysModules, IMPORTLIB_NAME, bootstrap);
+        setItem.execute(null, sysModules, IMPORTLIB_EXTERNAL_NAME, bootstrapExternal);
+
+        // __package__ needs to be set and doesn't get set by _bootstrap setup
+        writeNode.execute(bootstrap, __PACKAGE__, "importlib");
+        writeNode.execute(bootstrapExternal, __PACKAGE__, "importlib");
 
         callNode.execute(null, bootstrap, "_install", getSysModule(), lookupBuiltinModule("_imp"));
         writeNode.execute(getBuiltins(), "__import__", readNode.execute(bootstrap, "__import__"));
@@ -878,12 +884,6 @@ public abstract class Python3Core extends ParserErrorCallback {
         PythonBuiltinClass moduleType = lookupType(PythonBuiltinClassType.PythonModule);
         writeNode.execute(moduleType, __REPR__, readNode.execute(bootstrap, "_module_repr"));
         SpecialMethodSlot.reinitializeSpecialMethodSlots(moduleType, getLanguage());
-
-        // __package__ needs to be set and doesn't get set by _bootstrap setup
-        writeNode.execute(bootstrap, __PACKAGE__, "importlib");
-
-        PythonModule bootstrapExternal = (PythonModule) getSysModules().getItem("_frozen_importlib_external");
-        writeNode.execute(bootstrapExternal, __PACKAGE__, "importlib");
     }
 
     private void initializePython3Core(String coreHome) {

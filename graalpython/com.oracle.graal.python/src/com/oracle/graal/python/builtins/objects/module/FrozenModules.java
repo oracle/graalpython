@@ -195,6 +195,7 @@ public final class FrozenModules {
         private static final PythonFrozenModule NTPATH = new PythonFrozenModule("NTPATH", "ntpath", false);
         private static final PythonFrozenModule POSIXPATH = new PythonFrozenModule("POSIXPATH", "posixpath", false);
         private static final PythonFrozenModule OS = new PythonFrozenModule("OS", "os", false);
+        private static final PythonFrozenModule SITE = new PythonFrozenModule("SITE", "site", false);
         private static final PythonFrozenModule STAT = new PythonFrozenModule("STAT", "stat", false);
         private static final PythonFrozenModule __HELLO__ = new PythonFrozenModule("__HELLO__", "__hello__", false);
         private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", "frozen_only", false);
@@ -527,6 +528,8 @@ public final class FrozenModules {
                 return Map.POSIXPATH;
             case "os":
                 return Map.OS;
+            case "site":
+                return Map.SITE;
             case "stat":
                 return Map.STAT;
             case "__hello__":
