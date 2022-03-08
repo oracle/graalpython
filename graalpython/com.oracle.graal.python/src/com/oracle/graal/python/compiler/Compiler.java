@@ -42,7 +42,6 @@ package com.oracle.graal.python.compiler;
 
 import static com.oracle.graal.python.compiler.OpCodes.*;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -367,7 +366,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             for (String fv : code.freevars) {
                 // special case for class scopes
                 int arg;
-                if (unit.scope.getUseOfName(fv).contains(Scope.DefUse.Cell) || unit.scopeType == CompilationScope.Class && "__class__".equals(fv)) {
+                if (unit.scopeType == CompilationScope.Class && "__class__".equals(fv) || unit.scope.getUseOfName(fv).contains(Scope.DefUse.Cell)) {
                     arg = unit.cellvars.get(fv);
                 } else {
                     arg = unit.freevars.get(fv);

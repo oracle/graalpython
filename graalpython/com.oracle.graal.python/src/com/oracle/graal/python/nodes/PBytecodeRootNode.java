@@ -42,10 +42,12 @@ package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.compiler.OpCodesConstants.*;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -152,6 +154,7 @@ import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlotKind;
+import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -308,7 +311,79 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final int celloffset;
     private final int freeoffset;
     private final int stackoffset;
-    private final int tracebackOffset;
+    private final int bcioffset;
+    private final int classcellIndex;
+
+    public static final class FrameInfo {
+        private final CodeUnit code;
+        private final Source source;
+
+        public FrameInfo(CodeUnit code, Source source) {
+            this.code = code;
+            this.source = source;
+        }
+
+        public int getCellOffset() {
+            return code.varnames.length;
+        }
+
+        public int getFreeOffset() {
+            return getCellOffset() + code.cellvars.length;
+        }
+
+        public int getStackOffset() {
+            return getFreeOffset() + code.freevars.length;
+        }
+
+        public int getBciOffset() {
+            return getStackOffset() + code.stacksize;
+        }
+
+        public int bciToLine(int bci) {
+            return PBytecodeRootNode.bciToLine(code, source, bci);
+        }
+
+        public int getBci(Frame frame) {
+            int bciOffset = getBciOffset();
+            try {
+                return frame.getInt(bciOffset);
+            } catch (FrameSlotTypeException e) {
+                return -1;
+            }
+        }
+
+        public int getLineno(Frame frame) {
+            return bciToLine(getBci(frame));
+        }
+
+        public void syncLocals(VirtualFrame frame, Object localsObject, Frame frameToSync, PyObjectSetItem setItem, PyObjectDelItem delItem, IsBuiltinClassProfile errorProfile) {
+            for (int i = 0; i < code.varnames.length; i++) {
+                setVar(frame, localsObject, setItem, delItem, errorProfile, code.varnames[i], frameToSync.getObject(i));
+            }
+            int cellOffset = getCellOffset();
+            for (int i = 0; i < code.cellvars.length; i++) {
+                PCell cell = (PCell) frameToSync.getObject(cellOffset + i);
+                setVar(frame, localsObject, setItem, delItem, errorProfile, code.cellvars[i], cell.getRef());
+            }
+            int freeOffset = getFreeOffset();
+            for (int i = 0; i < code.freevars.length; i++) {
+                PCell cell = (PCell) frameToSync.getObject(freeOffset + i);
+                setVar(frame, localsObject, setItem, delItem, errorProfile, code.freevars[i], cell.getRef());
+            }
+        }
+
+        private void setVar(VirtualFrame frame, Object localsObject, PyObjectSetItem setItem, PyObjectDelItem delItem, IsBuiltinClassProfile errorProfile, String name, Object value) {
+            if (value == null) {
+                try {
+                    delItem.execute(frame, localsObject, name);
+                } catch (PException e) {
+                    e.expect(KeyError, errorProfile);
+                }
+            } else {
+                setItem.execute(frame, localsObject, name, value);
+            }
+        }
+    }
 
     private final CodeUnit co;
 
@@ -347,11 +422,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     };
 
-    public static final Object ROOT_NODE_SLOT_INFO = new Object();
-    public static final Object BCI_SLOT_INFO = new Object();
-
-    private static FrameDescriptor makeFrameDescriptor(CodeUnit co) {
+    private static FrameDescriptor makeFrameDescriptor(CodeUnit co, Source source) {
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(4);
+        newBuilder.info(new FrameInfo(co, source));
         // locals
         newBuilder.addSlots(co.varnames.length, FrameSlotKind.Illegal);
         // cells
@@ -360,23 +433,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         newBuilder.addSlots(co.freevars.length, FrameSlotKind.Illegal);
         // stack
         newBuilder.addSlots(co.stacksize, FrameSlotKind.Illegal);
-        // traceback data, filled when unwinding to be accessed when materializing stacktrace
-        // elements
-        newBuilder.addSlot(FrameSlotKind.Object, null, ROOT_NODE_SLOT_INFO);
-        newBuilder.addSlot(FrameSlotKind.Int, null, BCI_SLOT_INFO);
+        // BCI filled when unwinding the stack to note the location for tracebacks
+        newBuilder.addSlot(FrameSlotKind.Int, null, null);
         return newBuilder.build();
     }
 
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, CodeUnit co, Source source) {
-        this(language, makeFrameDescriptor(co), sign, co, source);
+        this(language, makeFrameDescriptor(co, source), sign, co, source);
     }
 
     public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source) {
         super(language, fd);
-        this.celloffset = co.varnames.length;
-        this.freeoffset = this.celloffset + co.cellvars.length;
-        this.stackoffset = this.freeoffset + co.freevars.length;
-        this.tracebackOffset = this.stackoffset + co.stacksize;
+        FrameInfo info = (FrameInfo) fd.getInfo();
+        this.celloffset = info.getCellOffset();
+        this.freeoffset = info.getFreeOffset();
+        this.stackoffset = info.getStackOffset();
+        this.bcioffset = info.getBciOffset();
         this.source = source;
         this.signature = sign;
         this.bytecode = co.code;
@@ -399,6 +471,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         for (int i = 0; i < cellvars.length; i++) {
             cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
         }
+        int classcellIndex = -1;
+        for (int i = 0; i < this.freevars.length; i++) {
+            if (__CLASS__.equals(this.freevars[i])) {
+                classcellIndex = this.freeoffset + i;
+                break;
+            }
+        }
+        this.classcellIndex = classcellIndex;
     }
 
     @Override
@@ -643,15 +723,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int loopCount = 0;
         int stackTop = decodeStackTop(target);
         int bci = decodeBCI(target);
-        for (int i = 0; i < cellvars.length; i++) {
-            frame.setObject(celloffset + i, new PCell(cellEffectivelyFinalAssumptions[i]));
-        }
-        if (freevars.length > 0) {
-            PCell[] closure = PArguments.getClosure((Object[]) originalArgs);
-            for (int i = 0; i < freevars.length; i++) {
-                frame.setObject(freeoffset + i, closure[i]);
-            }
-        }
+        initCellVars(frame);
+        initFreeVars(frame, (Object[]) originalArgs);
 
         byte[] localBC = bytecode;
         int[] localArgs = extraArgs;
@@ -1489,8 +1562,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     ExceptionHandlingStatementNode.chainExceptions(e.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                 }
                 if (newTarget == -1) {
-                    frame.setObject(tracebackOffset, this);
-                    frame.setInt(tracebackOffset + 1, bci);
+                    frame.setObject(bcioffset, bci);
                     throw e;
                 } else {
                     e.setCatchingFrameReference(frame, this, bci);
@@ -1695,6 +1767,52 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    private void initCellVars(VirtualFrame frame) {
+        if (cellvars.length <= 32) {
+            initCellVarsExploded(frame);
+        } else {
+            initCellVarsLoop(frame);
+        }
+    }
+
+    @ExplodeLoop
+    private void initCellVarsExploded(VirtualFrame frame) {
+        for (int i = 0; i < cellvars.length; i++) {
+            frame.setObject(celloffset + i, new PCell(cellEffectivelyFinalAssumptions[i]));
+        }
+    }
+
+    private void initCellVarsLoop(VirtualFrame frame) {
+        for (int i = 0; i < cellvars.length; i++) {
+            frame.setObject(celloffset + i, new PCell(cellEffectivelyFinalAssumptions[i]));
+        }
+    }
+
+    private void initFreeVars(VirtualFrame frame, Object[] originalArgs) {
+        if (freevars.length > 0) {
+            if (freevars.length <= 32) {
+                initFreeVarsExploded(frame, originalArgs);
+            } else {
+                initFreeVarsLoop(frame, originalArgs);
+            }
+        }
+    }
+
+    @ExplodeLoop
+    private void initFreeVarsExploded(VirtualFrame frame, Object[] originalArgs) {
+        PCell[] closure = PArguments.getClosure(originalArgs);
+        for (int i = 0; i < freevars.length; i++) {
+            frame.setObject(freeoffset + i, closure[i]);
+        }
+    }
+
+    private void initFreeVarsLoop(VirtualFrame frame, Object[] originalArgs) {
+        PCell[] closure = PArguments.getClosure(originalArgs);
+        for (int i = 0; i < freevars.length; i++) {
+            frame.setObject(freeoffset + i, closure[i]);
+        }
+    }
+
     private void verifyInLoop(int stackTop, int bci, final byte bc) {
         CompilerAsserts.partialEvaluationConstant(bc);
         CompilerAsserts.partialEvaluationConstant(bci);
@@ -1856,29 +1974,33 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTopBeforeBlock;
     }
 
-    public void syncFastToLocals(Object localsObject, Frame frameToSync, PyObjectSetItem setItem, PyObjectDelItem delItem) {
-        // Object[] fastlocals = (Object[]) FrameUtil.getObjectSafe(frameToSync, FAST_SLOT);
-        // assert fastlocals.length == varnames.length;
-        // for (int i = 0; i < varnames.length; i++) {
-        // Object v = frame.getObject(i);
-        // String n = varnames[i];
-        // if (v == null) {
-        // delItem.execute(frameToSync, localsObject, n);
-        // } else {
-        // setItem.execute(frameToSync, localsObject, n, v);
-        // }
-        // }
+    public PCell readClassCell(Frame frame) {
+        if (classcellIndex < 0) {
+            return null;
+        }
+        return (PCell) frame.getObject(classcellIndex);
+    }
+
+    public Object readSelf(Frame frame) {
+        if (signature.takesNoArguments()) {
+            return null;
+        }
+        return frame.getObject(0);
     }
 
     public int getStartOffset() {
         return co.startOffset;
     }
 
-    public int bciToLine(int bci) {
-        if (source != null) {
-            return source.createSection(co.bciToSrcOffset(bci), 0).getStartLine();
+    public static int bciToLine(CodeUnit code, Source source, int bci) {
+        if (source != null && bci >= 0) {
+            return source.createSection(code.bciToSrcOffset(bci), 0).getStartLine();
         }
         return -1;
+    }
+
+    public int bciToLine(int bci) {
+        return bciToLine(co, source, bci);
     }
 
     @Override

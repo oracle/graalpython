@@ -125,7 +125,7 @@ public final class CompilationUnit {
             assert cellvars.isEmpty();
             cellvars.put("__class__", 0);
         }
-        freevars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.DefFreeClass), cellvars.size());
+        freevars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.Free, Scope.DefUse.DefFreeClass), cellvars.size());
     }
 
     void useNextBlock(Block b) {

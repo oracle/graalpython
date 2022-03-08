@@ -218,14 +218,14 @@ public class CompilerTests extends PythonTests {
     @Test
     public void testClosure() {
         String s = "def foo():\n" +
-                "    x = 1\n" +
-                "    def bar():\n" +
-                "        nonlocal x\n" +
-                "        print(x)\n" +
-                "        x = 2\n" +
-                "    bar()\n" +
-                "    print(x)\n" +
-                "    x = 3\n";
+                        "    x = 1\n" +
+                        "    def bar():\n" +
+                        "        nonlocal x\n" +
+                        "        print(x)\n" +
+                        "        x = 2\n" +
+                        "    bar()\n" +
+                        "    print(x)\n" +
+                        "    x = 3\n";
         doTest(s);
     }
 
@@ -236,6 +236,26 @@ public class CompilerTests extends PythonTests {
                         "   print(True)\n" +
                         "else:\n" +
                         "   print(False)\n";
+        doTest(source);
+    }
+
+    @Test
+    public void testClass() {
+        String source = "class Foo:\n" +
+                        "    c = 64\n" +
+                        "    def __init__(self, arg):\n" +
+                        "        self.var = arg\n";
+        doTest(source);
+    }
+
+    @Test
+    public void testSuper() {
+        String source = "class Foo:\n" +
+                        "    def boo(self):\n" +
+                        "        print('boo')\n" +
+                        "class Bar(Foo):\n" +
+                        "    def boo(self):\n" +
+                        "        super().boo()\n";
         doTest(source);
     }
 

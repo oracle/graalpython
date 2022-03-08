@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -179,22 +180,14 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     public static boolean isBytecodeFrame(Frame frameToSync) {
-        FrameDescriptor fd = frameToSync.getFrameDescriptor();
-        int sc = fd.getNumberOfSlots();
-        return fd.getSlotInfo(sc - 1) == PBytecodeRootNode.BCI_SLOT_INFO;
+        return frameToSync.getFrameDescriptor().getInfo() instanceof PBytecodeRootNode.FrameInfo;
     }
 
     private static void processBytecodeFrame(Frame frameToMaterialize, PFrame pyFrame) {
         if (isBytecodeFrame(frameToMaterialize)) {
-            FrameDescriptor fd = frameToMaterialize.getFrameDescriptor();
-            int sc = fd.getNumberOfSlots();
-            PBytecodeRootNode rootNode = (PBytecodeRootNode) frameToMaterialize.getObject(sc - 2);
-            if (rootNode != null) {
-                int bci = frameToMaterialize.getInt(sc - 1);
-                pyFrame.setLocation(rootNode);
-                pyFrame.setLasti(bci);
-                pyFrame.setLine(rootNode.bciToLine(bci));
-            }
+            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) frameToMaterialize.getFrameDescriptor().getInfo();
+            pyFrame.setLasti(info.getBci(frameToMaterialize));
+            pyFrame.setLine(info.getLineno(frameToMaterialize));
         }
     }
 
@@ -635,12 +628,12 @@ public abstract class MaterializeFrameNode extends Node {
 
         @Specialization(guards = "isBytecodeFrame(frameToSync)")
         @SuppressWarnings("unused")
-        static void doBytecodeFrame(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Cached PyObjectSetItem setItem,
-                        @Cached PyObjectDelItem delItem) {
-            // TODO: locals sync for bytecode frames
-            // PBytecodeRootNode rootNode = (PBytecodeRootNode) location.getRootNode();
-            // rootNode.syncFastToLocals(pyFrame.getLocalsDict(), frameToSync, setItem, delItem);
+        static void doBytecodeFrame(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
+                                    @Cached PyObjectSetItem setItem,
+                                    @Cached PyObjectDelItem delItem,
+                                    @Cached IsBuiltinClassProfile errorProfile) {
+            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) frameToSync.getFrameDescriptor().getInfo();
+            info.syncLocals(frame, pyFrame.getLocalsDict(), frameToSync, setItem, delItem, errorProfile);
         }
 
         protected static ConditionProfile[] getProfiles(int n) {
