@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,11 +41,18 @@
 package com.oracle.graal.python.builtins.objects.namespace;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_POSITIONAL_ARGUMENTS_EXPECTED;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -65,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -79,10 +87,9 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -94,6 +101,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSimpleNamespace)
 public class SimpleNamespaceBuiltins extends PythonBuiltins {
@@ -102,7 +111,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         return SimpleNamespaceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class SimpleNamespaceInitNode extends PythonVarargsBuiltinNode {
         @Specialization(limit = "1")
@@ -118,7 +127,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class SimpleNamespaceDictNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -128,7 +137,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SimpleNamespaceEqNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -145,7 +154,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class SimpleNamespaceReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -158,13 +167,16 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SimpleNamespaceReprNode extends PythonUnaryBuiltinNode {
+        private static final TruffleString T_RECURSE = tsLiteral("...)");
+        private static final TruffleString T_NAMESPACE = tsLiteral("namespace");
+
         @CompilerDirectives.ValueType
         protected static final class NSReprState {
             private final HashingStorage dictStorage;
-            private final List<Pair<String, String>> items;
+            private final List<Pair<TruffleString, TruffleString>> items;
 
             @CompilerDirectives.TruffleBoundary
             NSReprState(HashingStorage dictStorage) {
@@ -172,21 +184,22 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                 this.items = new ArrayList<>();
             }
 
-            @Override
             @CompilerDirectives.TruffleBoundary
-            public String toString() {
-                StringBuilder sb = new StringBuilder();
-                items.sort(Comparator.comparing(Pair::getLeft));
+            private void sortItemsByKey() {
+                items.sort(Comparator.comparing(Pair::getLeft, StringUtils::compareStringsUncached));
+            }
+
+            public void appendToTruffleStringBuilder(TruffleStringBuilder sb, TruffleStringBuilder.AppendStringNode appendStringNode) {
+                sortItemsByKey();
                 for (int i = 0; i < items.size(); i++) {
-                    Pair<String, String> item = items.get(i);
+                    Pair<TruffleString, TruffleString> item = items.get(i);
                     if (i > 0) {
-                        sb.append(", ");
+                        appendStringNode.execute(sb, T_COMMA_SPACE);
                     }
-                    sb.append(item.getLeft());
-                    sb.append("=");
-                    sb.append(item.getRight());
+                    appendStringNode.execute(sb, item.getLeft());
+                    appendStringNode.execute(sb, T_EQ);
+                    appendStringNode.execute(sb, item.getRight());
                 }
-                return sb.toString();
             }
         }
 
@@ -202,12 +215,12 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                 return limit;
             }
 
-            protected static String getReprString(Object obj,
+            protected static TruffleString getReprString(Object obj,
                             LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode reprNode,
-                            CastToJavaStringNode castStr,
+                            CastToTruffleStringNode castStr,
                             BranchProfile nullBranch,
                             PRaiseNode raiseNode) {
-                Object reprObj = reprNode.executeObject(obj, __REPR__);
+                Object reprObj = reprNode.executeObject(obj, T___REPR__);
                 try {
                     return castStr.execute(reprObj);
                 } catch (CannotCastException e) {
@@ -222,27 +235,28 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             @Specialization
             public static NSReprState doPStringKey(PString key, NSReprState state,
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
-                            @Cached CastToJavaStringNode castStr,
+                            @Cached CastToTruffleStringNode castStrKey,
+                            @Cached CastToTruffleStringNode castStrValue,
                             @Cached PRaiseNode raiseNode,
                             @Cached BranchProfile valueNullBranch,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
-                return doStringKey(key.getValue(), state, valueReprNode, castStr, raiseNode, valueNullBranch, lib);
+                return doStringKey(castStrKey.execute(key), state, valueReprNode, castStrValue, raiseNode, valueNullBranch, lib);
             }
 
             @Specialization
-            public static NSReprState doStringKey(String key, NSReprState state,
+            public static NSReprState doStringKey(TruffleString key, NSReprState state,
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
-                            @Cached CastToJavaStringNode castStr,
+                            @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
                             @Cached BranchProfile valueNullBranch,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
-                String valueReprString = getReprString(lib.getItem(state.dictStorage, key), valueReprNode, castStr, valueNullBranch, raiseNode);
+                TruffleString valueReprString = getReprString(lib.getItem(state.dictStorage, key), valueReprNode, castStr, valueNullBranch, raiseNode);
                 appendItem(state, key, valueReprString);
                 return state;
             }
 
             @CompilerDirectives.TruffleBoundary
-            private static void appendItem(NSReprState state, String key, String valueReprString) {
+            private static void appendItem(NSReprState state, TruffleString key, TruffleString valueReprString) {
                 state.items.add(Pair.create(key, valueReprString));
             }
 
@@ -259,23 +273,26 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached("create(3)") ForEachNSRepr consumerNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             final Object klass = getClassNode.execute(ns);
-            final String name = clsProfile.profileClass(klass, PythonBuiltinClassType.PSimpleNamespace) ? "namespace" : getNameNode.execute(klass);
-            StringBuilder sb = PythonUtils.newStringBuilder(name);
-            PythonUtils.append(sb, "(");
+            final TruffleString name = clsProfile.profileClass(klass, PythonBuiltinClassType.PSimpleNamespace) ? T_NAMESPACE : getNameNode.execute(klass);
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(sb, name);
+            appendStringNode.execute(sb, T_LPAREN);
             PythonContext ctxt = PythonContext.get(lib);
             if (!ctxt.reprEnter(ns)) {
-                PythonUtils.append(sb, "...)");
-                return PythonUtils.sbToString(sb);
+                appendStringNode.execute(sb, T_RECURSE);
+                return toStringNode.execute(sb);
             }
             try {
                 HashingStorage dictStorage = getDict.execute(ns).getDictStorage();
                 final NSReprState state = new NSReprState(dictStorage);
                 lib.forEach(dictStorage, consumerNode, state);
-                PythonUtils.append(sb, state.toString());
-                PythonUtils.append(sb, ")");
-                return PythonUtils.sbToString(sb);
+                state.appendToTruffleStringBuilder(sb, appendStringNode);
+                appendStringNode.execute(sb, T_RPAREN);
+                return toStringNode.execute(sb);
             } finally {
                 ctxt.reprLeave(ns);
             }

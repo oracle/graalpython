@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,11 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -54,13 +58,14 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
@@ -76,28 +81,22 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object object);
 
     @Specialization
-    static Object str(String obj) {
+    static Object str(TruffleString obj) {
         return obj;
     }
 
     @Specialization
-    static String str(boolean object) {
-        return object ? "True" : "False";
+    static TruffleString str(boolean object) {
+        return object ? T_TRUE : T_FALSE;
     }
 
     @Specialization
-    @TruffleBoundary
-    static String str(int object) {
-        return Integer.toString(object);
+    TruffleString str(long object,
+                    @Cached TruffleString.FromLongNode fromLongNode) {
+        return fromLongNode.execute(object, TS_ENCODING, getContext().getOption(PythonOptions.LazyStrings));
     }
 
-    @Specialization
-    @TruffleBoundary
-    static String str(long object) {
-        return Long.toString(object);
-    }
-
-    @Specialization(guards = "!isJavaString(obj)")
+    @Specialization(guards = "!isTruffleString(obj)")
     static Object str(VirtualFrame frame, Object obj,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Str") LookupSpecialMethodSlotNode lookupStr,
@@ -110,10 +109,11 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
         // All our objects should have __str__
         assert strDescr != PNone.NO_VALUE;
         Object result = callStr.executeObject(frame, strDescr, obj);
-        if (result instanceof String || isSubtypeNode.execute(getResultClassNode.execute(result), PythonBuiltinClassType.PString)) {
+        result = assertNoJavaString(result);
+        if (result instanceof TruffleString || isSubtypeNode.execute(getResultClassNode.execute(result), PythonBuiltinClassType.PString)) {
             return result;
         } else {
-            throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, __STR__, result);
+            throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, T___STR__, result);
         }
     }
 

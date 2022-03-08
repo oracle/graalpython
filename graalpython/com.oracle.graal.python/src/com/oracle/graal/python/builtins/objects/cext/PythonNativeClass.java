@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.HiddenKey;
 
 /**
@@ -56,7 +57,7 @@ public interface PythonNativeClass extends PythonAbstractClass {
     Object getPtr();
 
     default String getName() {
-        return String.format("PythonNativeClass(%s)", getPtr());
+        return PythonUtils.format("PythonNativeClass(%s)", getPtr());
     }
 
     static boolean isInstance(Object object) {

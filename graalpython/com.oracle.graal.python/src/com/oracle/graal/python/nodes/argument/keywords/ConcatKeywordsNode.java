@@ -72,6 +72,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
+
 public abstract class ConcatKeywordsNode extends ExpressionNode {
 
     @Children final ExpressionNode[] mappables;
@@ -147,7 +149,7 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
                         @Cached PyObjectGetItem getItem) {
             HashingStorage result = dest;
             try {
-                PSequence keys = asList.execute(frame, callKeys.execute(frame, other, "keys"));
+                PSequence keys = asList.execute(frame, callKeys.execute(frame, other, T_KEYS));
                 SequenceStorage keysStorage = getSequenceStorage.execute(keys);
                 int keysLen = lenNode.execute(keysStorage);
                 for (int i = 0; i < keysLen; i++) {

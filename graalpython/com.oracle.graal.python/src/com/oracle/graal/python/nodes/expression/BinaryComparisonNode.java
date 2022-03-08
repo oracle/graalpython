@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -47,6 +48,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class BinaryComparisonNode extends BinaryOpNode {
@@ -63,6 +65,8 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         protected abstract String operator();
+
+        public abstract boolean cmp(TruffleString l, TruffleString r, TruffleString.CompareIntsUTF32Node compareIntsUTF32Node);
     }
 
     private abstract static class FallbackNode extends BinaryComparisonNode {
@@ -75,6 +79,8 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             }
             return isNode;
         }
+
+        public abstract boolean cmp(TruffleString l, TruffleString r, TruffleString.EqualNode equalNode);
     }
 
     public abstract boolean cmp(int l, int r);
@@ -86,8 +92,6 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     public abstract boolean cmp(byte l, byte r);
 
     public abstract boolean cmp(double l, double r);
-
-    public abstract boolean cmp(String l, String r);
 
     public abstract boolean executeBool(VirtualFrame frame, Object left, Object right) throws UnexpectedResultException;
 
@@ -125,8 +129,9 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
 
         @Specialization
         @Override
-        public final boolean cmp(String l, String r) {
-            return StringUtils.compareToUnicodeAware(l, r) <= 0;
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) <= 0;
         }
 
         @Specialization
@@ -197,8 +202,9 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
 
         @Specialization
         @Override
-        public final boolean cmp(String l, String r) {
-            return StringUtils.compareToUnicodeAware(l, r) < 0;
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) < 0;
         }
 
         @Specialization
@@ -269,8 +275,9 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
 
         @Specialization
         @Override
-        public final boolean cmp(String l, String r) {
-            return StringUtils.compareToUnicodeAware(l, r) >= 0;
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) >= 0;
         }
 
         @Specialization
@@ -341,8 +348,9 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
 
         @Specialization
         @Override
-        public final boolean cmp(String l, String r) {
-            return StringUtils.compareToUnicodeAware(l, r) > 0;
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) > 0;
         }
 
         @Specialization
@@ -413,8 +421,9 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
 
         @Specialization
         @Override
-        public final boolean cmp(String l, String r) {
-            return l.equals(r);
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.EqualNode equalNode) {
+            return equalNode.execute(l, r, TS_ENCODING);
         }
 
         @Specialization
@@ -482,8 +491,9 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
 
         @Specialization
         @Override
-        public final boolean cmp(String l, String r) {
-            return !l.equals(r);
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.EqualNode equalNode) {
+            return !equalNode.execute(l, r, TS_ENCODING);
         }
 
         @Specialization

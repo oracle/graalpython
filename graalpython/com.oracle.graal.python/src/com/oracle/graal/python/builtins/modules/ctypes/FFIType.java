@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,17 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import com.oracle.graal.python.util.PythonUtils;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 final class FFIType {
+
+    private static final TruffleString T_LEFT_PAREN_COLON = tsLiteral("):");
 
     protected static final FFIType ffi_type_pointer = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_POINTER);
     // Arrays
@@ -91,28 +99,28 @@ final class FFIType {
          *
          * The return value of managed callback functions with return type VOID will be ignored.
          */
-        FFI_TYPE_VOID("VOID", 0, null), // `void`
+        FFI_TYPE_VOID(tsLiteral("VOID"), 0, null), // `void`
 
-        FFI_TYPE_UINT8("UINT8", Byte.BYTES, (byte) 0),
-        FFI_TYPE_SINT8("SINT8", Byte.BYTES, (byte) 0),
-        FFI_TYPE_UINT16("UINT16", Short.BYTES, (short) 0),
-        FFI_TYPE_SINT16("SINT16", Short.BYTES, (short) 0),
-        FFI_TYPE_UINT32("UINT32", Integer.BYTES, 0),
-        FFI_TYPE_SINT32("SINT32", Integer.BYTES, 0),
-        FFI_TYPE_UINT64("UINT64", Long.BYTES, 0L),
-        FFI_TYPE_SINT64("SINT64", Long.BYTES, 0L),
-        FFI_TYPE_FLOAT("FLOAT", Float.BYTES, 0.0f),
-        FFI_TYPE_DOUBLE("DOUBLE", Double.BYTES, 0.0),
-        FFI_TYPE_UINT8_ARRAY("[UINT8]", Long.BYTES, true),
-        FFI_TYPE_SINT8_ARRAY("[SINT8]", Long.BYTES, true),
-        FFI_TYPE_UINT16_ARRAY("[UINT16]", Long.BYTES, true),
-        FFI_TYPE_SINT16_ARRAY("[SINT16]", Long.BYTES, true),
-        FFI_TYPE_UINT32_ARRAY("[UINT32]", Long.BYTES, true),
-        FFI_TYPE_SINT32_ARRAY("[SINT32]", Long.BYTES, true),
-        FFI_TYPE_UINT64_ARRAY("[UINT64]", Long.BYTES, true),
-        FFI_TYPE_SINT64_ARRAY("[SINT64]", Long.BYTES, true),
-        FFI_TYPE_FLOAT_ARRAY("[FLOAT]", Long.BYTES, true),
-        FFI_TYPE_DOUBLE_ARRAY("[DOUBLE]", Long.BYTES, true),
+        FFI_TYPE_UINT8(tsLiteral("UINT8"), Byte.BYTES, (byte) 0),
+        FFI_TYPE_SINT8(tsLiteral("SINT8"), Byte.BYTES, (byte) 0),
+        FFI_TYPE_UINT16(tsLiteral("UINT16"), Short.BYTES, (short) 0),
+        FFI_TYPE_SINT16(tsLiteral("SINT16"), Short.BYTES, (short) 0),
+        FFI_TYPE_UINT32(tsLiteral("UINT32"), Integer.BYTES, 0),
+        FFI_TYPE_SINT32(tsLiteral("SINT32"), Integer.BYTES, 0),
+        FFI_TYPE_UINT64(tsLiteral("UINT64"), Long.BYTES, 0L),
+        FFI_TYPE_SINT64(tsLiteral("SINT64"), Long.BYTES, 0L),
+        FFI_TYPE_FLOAT(tsLiteral("FLOAT"), Float.BYTES, 0.0f),
+        FFI_TYPE_DOUBLE(tsLiteral("DOUBLE"), Double.BYTES, 0.0),
+        FFI_TYPE_UINT8_ARRAY(tsLiteral("[UINT8]"), Long.BYTES, true),
+        FFI_TYPE_SINT8_ARRAY(tsLiteral("[SINT8]"), Long.BYTES, true),
+        FFI_TYPE_UINT16_ARRAY(tsLiteral("[UINT16]"), Long.BYTES, true),
+        FFI_TYPE_SINT16_ARRAY(tsLiteral("[SINT16]"), Long.BYTES, true),
+        FFI_TYPE_UINT32_ARRAY(tsLiteral("[UINT32]"), Long.BYTES, true),
+        FFI_TYPE_SINT32_ARRAY(tsLiteral("[SINT32]"), Long.BYTES, true),
+        FFI_TYPE_UINT64_ARRAY(tsLiteral("[UINT64]"), Long.BYTES, true),
+        FFI_TYPE_SINT64_ARRAY(tsLiteral("[SINT64]"), Long.BYTES, true),
+        FFI_TYPE_FLOAT_ARRAY(tsLiteral("[FLOAT]"), Long.BYTES, true),
+        FFI_TYPE_DOUBLE_ARRAY(tsLiteral("[DOUBLE]"), Long.BYTES, true),
 
         /*
          * This type is a generic pointer argument. On the native side, it does not matter what
@@ -130,14 +138,15 @@ final class FFIType {
          * the user’s responsibility to ensure that the pointer really points to a function with a
          * matching signature.
          */
-        FFI_TYPE_POINTER("POINTER", Long.BYTES, true), // `void *`
+        FFI_TYPE_POINTER(tsLiteral("POINTER"), Long.BYTES, true), // `void *`
 
         /*
          * The STRING values passed from native functions to managed code behave like POINTER return
          * values, but in addition they have isString == true.
          */
 
-        FFI_TYPE_STRING("STRING", Long.BYTES, true), // `char *` (zero-terminated UTF-8 string)
+        FFI_TYPE_STRING(tsLiteral("STRING"), Long.BYTES, true), // `char *` (zero-terminated UTF-8
+                                                                // string)
 
         /*
          * `TruffleObject` (Arbitrary object which Native code can do nothing with values of type
@@ -145,27 +154,27 @@ final class FFIType {
          * passing them to callback function pointers..
          */
         // (mq) This is not something we will be using for the time being.
-        FFI_TYPE_OBJECT("OBJECT", Long.BYTES, null), // `TruffleObject`
+        FFI_TYPE_OBJECT(tsLiteral("OBJECT"), Long.BYTES, null), // `TruffleObject`
 
-        FFI_TYPE_STRUCT("POINTER", Long.BYTES, true);
+        FFI_TYPE_STRUCT(tsLiteral("POINTER"), Long.BYTES, true);
 
-        private final String nfiType;
+        private final TruffleString nfiType;
         private final int size;
         private final boolean isArray;
         private final Object initValue;
 
-        FFI_TYPES(String str, int size, Object value, boolean isArray) {
+        FFI_TYPES(TruffleString str, int size, Object value, boolean isArray) {
             this.nfiType = str;
             this.size = size;
             this.isArray = isArray;
             this.initValue = value;
         }
 
-        FFI_TYPES(String str, int size, boolean isArray) {
+        FFI_TYPES(TruffleString str, int size, boolean isArray) {
             this(str, size, null, isArray);
         }
 
-        FFI_TYPES(String str, int size, Object value) {
+        FFI_TYPES(TruffleString str, int size, Object value) {
             this(str, size, value, false);
         }
 
@@ -177,7 +186,7 @@ final class FFIType {
             return isArray;
         }
 
-        protected String getNFIType() {
+        protected TruffleString getNFIType() {
             return nfiType;
         }
 
@@ -229,29 +238,30 @@ final class FFIType {
         return asArray;
     }
 
-    private static String getNFIType(FFIType type) {
-        return type.type.isArray ? "[UINT8]" : type.type.getNFIType();
+    private static TruffleString getNFIType(FFIType type) {
+        return type.type.isArray ? FFI_TYPES.FFI_TYPE_UINT8_ARRAY.getNFIType() : type.type.getNFIType();
     }
 
-    private static String getNFIReturnType(FFIType type) {
-        return type.type.isArray ? "POINTER" : type.type.getNFIType();
+    private static TruffleString getNFIReturnType(FFIType type) {
+        return type.type.isArray ? FFI_TYPES.FFI_TYPE_POINTER.getNFIType() : type.type.getNFIType();
     }
 
-    protected static String buildNFISignature(FFIType[] atypes, FFIType restype) {
-        StringBuilder sb = PythonUtils.newStringBuilder();
+    protected static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype,
+                    TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
         boolean first = true;
-        PythonUtils.append(sb, "(");
+        appendStringNode.execute(sb, T_LPAREN);
         for (FFIType type : atypes) {
             if (first) {
                 first = false;
             } else {
-                PythonUtils.append(sb, ", ");
+                appendStringNode.execute(sb, T_COMMA_SPACE);
             }
-            PythonUtils.append(sb, getNFIType(type));
+            appendStringNode.execute(sb, getNFIType(type));
         }
-        PythonUtils.append(sb, "):");
-        PythonUtils.append(sb, getNFIReturnType(restype));
-        return PythonUtils.sbToString(sb);
+        appendStringNode.execute(sb, T_LEFT_PAREN_COLON);
+        appendStringNode.execute(sb, getNFIReturnType(restype));
+        return toStringNode.execute(sb);
     }
 
     enum FieldSet {

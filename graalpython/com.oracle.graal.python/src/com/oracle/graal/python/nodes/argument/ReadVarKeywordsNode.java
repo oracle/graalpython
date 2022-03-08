@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -41,27 +41,30 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 @NodeInfo(shortName = "**kwargs")
 public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
-    @CompilationFinal(dimensions = 1) private final String[] keywordNames;
+    @CompilationFinal(dimensions = 1) private final TruffleString[] keywordNames;
     @Child private PythonObjectFactory factory;
 
     public abstract PKeyword[] executePKeyword(VirtualFrame frame);
 
     public static ReadVarKeywordsNode create() {
-        return ReadVarKeywordsNodeGen.create(PythonUtils.EMPTY_STRING_ARRAY, false);
+        return ReadVarKeywordsNodeGen.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, false);
     }
 
-    public static ReadVarKeywordsNode create(String[] keywordNames) {
+    public static ReadVarKeywordsNode create(TruffleString[] keywordNames) {
         return ReadVarKeywordsNodeGen.create(keywordNames, false);
     }
 
-    public static ReadVarKeywordsNode createForUserFunction(String[] names) {
+    public static ReadVarKeywordsNode createForUserFunction(TruffleString[] names) {
         return ReadVarKeywordsNodeGen.create(names, true);
     }
 
-    ReadVarKeywordsNode(String[] keywordNames, boolean doWrap) {
+    ReadVarKeywordsNode(TruffleString[] keywordNames, boolean doWrap) {
         this.keywordNames = keywordNames;
         this.factory = doWrap ? PythonObjectFactory.create() : null;
     }
@@ -100,15 +103,16 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     @Specialization(guards = {"getKwargLen(frame) == cachedLen"}, limit = "getLimit()")
     @ExplodeLoop
     Object extractKwargs(VirtualFrame frame,
-                    @Cached("getAndCheckKwargLen(frame)") int cachedLen) {
+                    @Cached("getAndCheckKwargLen(frame)") int cachedLen,
+                    @Cached TruffleString.EqualNode equalNode) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
         PKeyword[] remArguments = new PKeyword[cachedLen];
         CompilerAsserts.compilationConstant(keywordNames.length);
         int i = 0;
         for (int j = 0; j < cachedLen; j++) {
             PKeyword keyword = keywordArguments[j];
-            String kwName = keyword.getName();
-            boolean kwFound = searchKeyword(kwName);
+            TruffleString kwName = keyword.getName();
+            boolean kwFound = searchKeyword(kwName, equalNode);
             if (!kwFound) {
                 remArguments[i] = keyword;
                 i++;
@@ -122,9 +126,9 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    private boolean searchKeyword(String kwName) {
-        for (String name : keywordNames) {
-            if (kwName.equals(name)) {
+    private boolean searchKeyword(TruffleString kwName, TruffleString.EqualNode equalNode) {
+        for (TruffleString name : keywordNames) {
+            if (equalNode.execute(kwName, name, TS_ENCODING)) {
                 return true;
             }
         }
@@ -132,14 +136,15 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     }
 
     @Specialization(replaces = "extractKwargs")
-    Object extractVariableKwargs(VirtualFrame frame) {
+    Object extractVariableKwargs(VirtualFrame frame,
+                    @Cached TruffleString.EqualNode equalNode) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
         PKeyword[] remArguments = new PKeyword[keywordArguments.length];
         int i = 0;
         outer: for (PKeyword keyword : keywordArguments) {
-            String kwName = keyword.getName();
-            for (String name : keywordNames) {
-                if (kwName.equals(name)) {
+            TruffleString kwName = keyword.getName();
+            for (TruffleString name : keywordNames) {
+                if (equalNode.execute(kwName, name, TS_ENCODING)) {
                     continue outer;
                 }
             }

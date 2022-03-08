@@ -44,9 +44,12 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberTyp
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.POINTER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.PRIMITIVE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum NativeMember {
     // PyObject_VAR_HEAD
@@ -289,21 +292,29 @@ public enum NativeMember {
     // PyStopIterationObject
     VALUE("value", OBJECT);
 
-    private final String memberName;
+    private final String jMemberName;
+    private final TruffleString tMemberName;
     private final NativeMemberType type;
 
-    NativeMember(String name) {
-        this.memberName = name;
+    private NativeMember(String name) {
+        this.jMemberName = name;
+        this.tMemberName = toTruffleStringUncached(name);
         this.type = POINTER;
     }
 
-    NativeMember(String name, NativeMemberType type) {
-        this.memberName = name;
+    private NativeMember(String name, NativeMemberType type) {
+        this.jMemberName = name;
+        this.tMemberName = toTruffleStringUncached(name);
         this.type = type;
     }
 
-    public String getMemberName() {
-        return memberName;
+    public TruffleString getMemberNameTruffleString() {
+        return tMemberName;
+    }
+
+    public String getMemberNameJavaString() {
+        // TODO GR-37896: needed because sulong and interop do not yet support TruffleString
+        return jMemberName;
     }
 
     public NativeMemberType getType() {
@@ -312,14 +323,27 @@ public enum NativeMember {
 
     @CompilationFinal(dimensions = 1) private static final NativeMember[] VALUES = values();
 
-    @ExplodeLoop
     public static NativeMember byName(String name) {
         for (NativeMember nativeMember : VALUES) {
-            if (nativeMember.memberName.equals(name)) {
+            if (name.equals(nativeMember.jMemberName)) {
                 return nativeMember;
             }
         }
         return null;
+    }
+
+    @ExplodeLoop
+    public static NativeMember byName(TruffleString name, TruffleString.EqualNode eqNode) {
+        for (NativeMember nativeMember : VALUES) {
+            if (eqNode.execute(nativeMember.tMemberName, name, TS_ENCODING)) {
+                return nativeMember;
+            }
+        }
+        return null;
+    }
+
+    public static boolean isValid(TruffleString name, TruffleString.EqualNode eqNode) {
+        return byName(name, eqNode) != null;
     }
 
     public static boolean isValid(String name) {

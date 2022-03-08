@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,9 +46,11 @@ import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.D
 import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.Z_NO_FLUSH;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_OK;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_STREAM_ERROR;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_D_S_S;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -61,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -129,7 +132,7 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
         PBytes error(ZLibCompObject self, Object data) {
-            throw raise(ZLibError, "Error %d %s: %s", Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
+            throw raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
         }
     }
 
@@ -165,14 +168,14 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.isInitialized()", "!self.canCopy()"})
         PNone error(ZLibCompObject.JavaZlibCompObject self, PythonContext ctxt, PythonObjectFactory factory,
                         @Cached.Shared("r") @Cached PRaiseNode raise) {
-            throw raise.raise(NotImplementedError, "JDK based zlib doesn't support copying");
+            throw raise.raise(NotImplementedError, toTruffleStringUncached("JDK based zlib doesn't support copying"));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
         PNone error(ZLibCompObject self, PythonContext ctxt, PythonObjectFactory factory,
                         @Cached.Shared("r") @Cached PRaiseNode raise) {
-            throw raise.raise(ValueError, "Inconsistent stream state");
+            throw raise.raise(ValueError, ErrorMessages.INCONSISTENT_STREAM_STATE);
         }
     }
 
@@ -186,7 +189,7 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __COPY__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___COPY__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UndescoreCopyNode extends CopyNode {
     }
@@ -260,7 +263,7 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
         PNone error(ZLibCompObject self, int mode) {
-            throw raise(ZLibError, "Error %d %s: %s", Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
+            throw raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
         }
     }
 

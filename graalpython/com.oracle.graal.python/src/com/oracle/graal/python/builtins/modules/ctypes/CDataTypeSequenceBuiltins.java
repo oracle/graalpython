@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuiltins.T__LENGTH_;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArray;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArrayType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtrType;
@@ -49,7 +51,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructT
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_LENGTH_MUST_BE_0_NOT_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_A_TYPE_OBJECT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -62,19 +64,20 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.Ctyp
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {
                 PyCStructType,
@@ -91,7 +94,7 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
         return CDataTypeSequenceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RepeatNode extends PythonBinaryBuiltinNode {
         // TODO: weakref ctypes.cache values
@@ -100,7 +103,8 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached CallNode callNode,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached GetNameNode getNameNode) {
+                        @Cached GetNameNode getNameNode,
+                        @Cached SimpleTruffleStringFormatNode simpleFormatNode) {
             Object key = factory().createTuple(new Object[]{itemtype, length});
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
             Object result = hlib.getItem(ctypes.cache, key);
@@ -111,8 +115,8 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
             if (!isTypeNode.execute(itemtype)) {
                 throw raise(TypeError, EXPECTED_A_TYPE_OBJECT);
             }
-            String name = PythonUtils.format("%s_Array_%d", getNameNode.execute(itemtype), length);
-            PDict dict = factory().createDict(new PKeyword[]{new PKeyword("_length_", length), new PKeyword("_type_", itemtype)});
+            TruffleString name = simpleFormatNode.format("%s_Array_%d", getNameNode.execute(itemtype), length);
+            PDict dict = factory().createDict(new PKeyword[]{new PKeyword(T__LENGTH_, length), new PKeyword(T__TYPE_, itemtype)});
             PTuple tuple = factory().createTuple(new Object[]{PyCArray});
             result = callNode.execute(frame, PyCArrayType, name, tuple, dict);
             hlib.setItem(ctypes.cache, key, result);

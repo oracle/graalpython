@@ -50,7 +50,9 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_GetContainer;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.FFI_TYPE_STRUCT;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins.PyCFuncPtrFromDllNode.strchr;
-import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins._type_;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S;
@@ -66,8 +68,12 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MINIMUM_SIZE_IS_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_A_CTYPES_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPES_TYPE_OR_OBJECT;
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_ALIGNMENT_INFO;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_SYMBOL_IS_MISSING;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_TYPE_HAS_NO_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DEFAULT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_GLOBAL;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_LOCAL;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_NOW;
@@ -77,9 +83,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.append;
-import static com.oracle.graal.python.util.PythonUtils.newStringBuilder;
-import static com.oracle.graal.python.util.PythonUtils.sbToString;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -102,11 +108,11 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectS
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
@@ -115,6 +121,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -128,6 +136,10 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.StringLiterals;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32;
+
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -141,7 +153,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -175,10 +187,16 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
-@CoreFunctions(defineModule = "_ctypes")
+@CoreFunctions(defineModule = J__CTYPES)
 public class CtypesModuleBuiltins extends PythonBuiltins {
+
+    private static final TruffleString T_DL_ERROR = tsLiteral("dlerror");
+    private static final TruffleString T_DL_OPEN_ERROR = tsLiteral("dlopen() error");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CtypesModuleBuiltinsFactory.getFactories();
@@ -187,7 +205,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     @CompilationFinal private Object strlenFunction;
     @CompilationFinal private Object memcpyFunction;
 
-    private static final String NFI_LANGUAGE = "nfi";
+    private static final String J_NFI_LANGUAGE = "nfi";
 
     protected static final int FUNCFLAG_STDCALL = 0x0;
     protected static final int FUNCFLAG_CDECL = 0x1;
@@ -206,34 +224,36 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("_pointer_type_cache", core.factory().createDict());
-        builtinConstants.put("FUNCFLAG_CDECL", FUNCFLAG_CDECL);
-        builtinConstants.put("FUNCFLAG_USE_ERRNO", FUNCFLAG_USE_ERRNO);
-        builtinConstants.put("FUNCFLAG_USE_LASTERROR", FUNCFLAG_USE_LASTERROR);
-        builtinConstants.put("FUNCFLAG_PYTHONAPI", FUNCFLAG_PYTHONAPI);
-        builtinConstants.put("__version__", "1.1.0");
-        builtinConstants.put("CFuncPtr", core.lookupType(PyCFuncPtr));
-        builtinConstants.put("ArgumentError", core.lookupType(ArgError));
+        addBuiltinConstant("_pointer_type_cache", core.factory().createDict());
+        addBuiltinConstant("FUNCFLAG_CDECL", FUNCFLAG_CDECL);
+        addBuiltinConstant("FUNCFLAG_USE_ERRNO", FUNCFLAG_USE_ERRNO);
+        addBuiltinConstant("FUNCFLAG_USE_LASTERROR", FUNCFLAG_USE_LASTERROR);
+        addBuiltinConstant("FUNCFLAG_PYTHONAPI", FUNCFLAG_PYTHONAPI);
+        addBuiltinConstant("__version__", "1.1.0");
+        addBuiltinConstant("CFuncPtr", core.lookupType(PyCFuncPtr));
+        addBuiltinConstant("ArgumentError", core.lookupType(ArgError));
     }
 
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonObjectFactory factory = core.factory();
-        PythonModule ctypesModule = core.lookupBuiltinModule("_ctypes");
-        ctypesModule.setAttribute("_string_at_addr", factory.createNativeVoidPtr(StringAtFunction.create()));
-        ctypesModule.setAttribute("_cast_addr", factory.createNativeVoidPtr(CastFunction.create()));
-        ctypesModule.setAttribute("_wstring_at_addr", factory.createNativeVoidPtr(WStringAtFunction.create()));
+        PythonModule ctypesModule = core.lookupBuiltinModule(T__CTYPES);
+        ctypesModule.setAttribute(tsLiteral("_string_at_addr"), factory.createNativeVoidPtr(StringAtFunction.create()));
+        ctypesModule.setAttribute(tsLiteral("_cast_addr"), factory.createNativeVoidPtr(CastFunction.create()));
+        ctypesModule.setAttribute(tsLiteral("_wstring_at_addr"), factory.createNativeVoidPtr(WStringAtFunction.create()));
         int rtldLocal = RTLD_LOCAL.getValueIfDefined();
-        ctypesModule.setAttribute("RTLD_LOCAL", rtldLocal);
-        ctypesModule.setAttribute("RTLD_GLOBAL", RTLD_GLOBAL.getValueIfDefined());
+        ctypesModule.setAttribute(tsLiteral("RTLD_LOCAL"), rtldLocal);
+        ctypesModule.setAttribute(tsLiteral("RTLD_GLOBAL"), RTLD_GLOBAL.getValueIfDefined());
 
-        DLHandler handle = DlOpenNode.loadNFILibrary(core.getContext(), NFIBackend.NATIVE, "", rtldLocal);
+        DLHandler handle = DlOpenNode.loadNFILibrary(core.getContext(), NFIBackend.NATIVE, T_EMPTY_STRING, rtldLocal,
+                        TruffleString.CodePointLengthNode.getUncached(), StringUtils.SimpleTruffleStringFormatNode.getUncached(),
+                        TruffleString.ParseLongNode.getUncached(), TruffleString.SubstringNode.getUncached(), TruffleString.SwitchEncodingNode.getUncached());
         setCtypeNFIHelpers(this, core.getContext(), handle);
         NativeFunction memmove = MemMoveFunction.create(handle, core.getContext());
-        ctypesModule.setAttribute("_memmove_addr", factory.createNativeVoidPtr(memmove, memmove.adr));
+        ctypesModule.setAttribute(tsLiteral("_memmove_addr"), factory.createNativeVoidPtr(memmove, memmove.adr));
         NativeFunction memset = MemSetFunction.create(handle, core.getContext());
-        ctypesModule.setAttribute("_memset_addr", factory.createNativeVoidPtr(memset, memset.adr));
+        ctypesModule.setAttribute(tsLiteral("_memset_addr"), factory.createNativeVoidPtr(memset, memset.adr));
     }
 
     Object getStrlenFunction() {
@@ -252,7 +272,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     private static Object createNFIHelperFunction(PythonContext context, DLHandler h, String name, String signature) {
         try {
             Object symbol = InteropLibrary.getUncached().readMember(h.library, name);
-            Source source = Source.newBuilder(NFI_LANGUAGE, signature, name).build();
+            Source source = Source.newBuilder(J_NFI_LANGUAGE, signature, name).build();
             Object nfiSignature = context.getEnv().parseInternal(source).call();
             return SignatureLibrary.getUncached().bind(nfiSignature, symbol);
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -261,15 +281,16 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    protected static final String UNPICKLE = "_unpickle";
+    protected static final String J_UNPICKLE = "_unpickle";
+    protected static final TruffleString T_UNPICKLE = tsLiteral(J_UNPICKLE);
 
     enum NFIBackend {
-        NATIVE(""),
-        LLVM("with llvm ");
+        NATIVE(StringLiterals.T_EMPTY_STRING),
+        LLVM(tsLiteral("with llvm "));
 
-        private final String withClause;
+        private final TruffleString withClause;
 
-        NFIBackend(String withClause) {
+        NFIBackend(TruffleString withClause) {
             this.withClause = withClause;
         }
     }
@@ -278,14 +299,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     protected static final class NativeFunction implements TruffleObject {
         final Object sym;
         final long adr;
-        final String name;
+        final TruffleString name;
 
         Object function;
-        String signature;
+        TruffleString signature;
 
         final boolean isManaged;
 
-        NativeFunction(Object sym, long adr, String name, boolean isManaged) {
+        NativeFunction(Object sym, long adr, TruffleString name, boolean isManaged) {
             this.sym = sym;
             this.adr = adr;
             this.name = name;
@@ -310,12 +331,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     @ExportLibrary(value = InteropLibrary.class, delegateTo = "library")
     protected static final class DLHandler implements TruffleObject {
         final Object library;
-        final String name;
+        final TruffleString name;
         final long adr;
         final boolean isManaged;
         boolean isClosed;
 
-        private DLHandler(Object library, long adr, String name, boolean isManaged) {
+        private DLHandler(Object library, long adr, TruffleString name, boolean isManaged) {
             this.library = library;
             this.adr = adr;
             this.name = name;
@@ -446,7 +467,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached IsTypeNode isTypeNode,
                         @Cached CallNode callNode,
                         @Cached GetNameNode getNameNode,
-                        @Cached CastToJavaStringNode toJavaStringNode) {
+                        @Cached CastToTruffleStringNode toTruffleStringNode,
+                        @Cached StringUtils.SimpleTruffleStringFormatNode formatNode) {
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
             Object result = hlib.getItem(ctypes.ptrtype_cache, cls);
             if (result != null) {
@@ -454,15 +476,15 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             Object key;
             if (PGuards.isString(cls)) {
-                String name = toJavaStringNode.execute(cls);
-                String buf = PythonUtils.format("LP_%s", name);
+                TruffleString name = toTruffleStringNode.execute(cls);
+                TruffleString buf = formatNode.format("LP_%s", name);
                 Object[] args = new Object[]{buf, PyCPointer, factory().createDict()};
                 result = callNode.execute(frame, PyCPointerType, args, PKeyword.EMPTY_KEYWORDS);
                 key = factory().createNativeVoidPtr(result);
             } else if (isTypeNode.execute(cls)) {
-                String buf = PythonUtils.format("LP_%s", getNameNode.execute(cls));
+                TruffleString buf = formatNode.format("LP_%s", getNameNode.execute(cls));
                 PTuple bases = factory().createTuple(new Object[]{PyCPointer});
-                Object[] args = new Object[]{buf, bases, factory().createDict(new PKeyword[]{new PKeyword(_type_, cls)})};
+                Object[] args = new Object[]{buf, bases, factory().createDict(new PKeyword[]{new PKeyword(T__TYPE_, cls)})};
                 result = callNode.execute(frame, PyCPointerType, args, PKeyword.EMPTY_KEYWORDS);
                 key = cls;
             } else {
@@ -494,7 +516,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(SpecialMethodNames.class)
-    @Builtin(name = UNPICKLE, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_UNPICKLE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class UnpickleNode extends PythonBinaryBuiltinNode {
 
@@ -502,7 +524,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         Object unpickle(VirtualFrame frame, Object typ, PTuple state,
                         @Cached CallNode callNode,
                         @Cached("create(New)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
-                        @Cached("create(__SETSTATE__)") GetAttributeNode setStateAttr) {
+                        @Cached("create(T___SETSTATE__)") GetAttributeNode setStateAttr) {
             Object obj = lookupAndCallUnaryNode.executeObject(frame, typ);
             Object meth = setStateAttr.executeObject(frame, obj);
             callNode.execute(frame, meth, state);
@@ -585,21 +607,23 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "dlopen", minNumOfPositionalArgs = 1, parameterNames = {"name", "mode"})
     // TODO: 'name' might need to be processed using FSConverter.
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String, defaultValue = "\"\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString, defaultValue = "T_EMPTY_STRING", useDefaultForNone = true)
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "Integer.MIN_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     protected abstract static class DlOpenNode extends PythonBinaryClinicBuiltinNode {
 
-        private static final String MACOS_Security_LIB = "/System/Library/Frameworks/Security.framework/Security";
-        private static final String MACOS_CoreFoundation_LIB = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
+        private static final TruffleString MACOS_Security_LIB = tsLiteral("/System/Library/Frameworks/Security.framework/Security");
+        private static final TruffleString MACOS_CoreFoundation_LIB = tsLiteral("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation");
         // "LibFFILibrary(" + handle + ")"
-        private static final String LIBFFI_ADR_FORMAT_PREFIX = "LibFFILibrary";
-        private static final int LIBFFI_ADR_FORMAT_START = LIBFFI_ADR_FORMAT_PREFIX.length() + 1;
+        private static final int LIBFFI_ADR_FORMAT_START = "LibFFILibrary".length() + 1;
+
+        private static final TruffleString T_RTLD_LOCAL = tsLiteral("RTLD_LOCAL|RTLD_NOW");
+        private static final TruffleString T_RTLD_GLOBAL = tsLiteral("RTLD_GLOBAL|RTLD_NOW");
 
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(DlOpenNode.class);
 
-        protected static String flagsToString(int flag) {
-            return (flag & RTLD_LOCAL.getValueIfDefined()) != 0 ? "RTLD_LOCAL|RTLD_NOW" : "RTLD_GLOBAL|RTLD_NOW";
+        protected static TruffleString flagsToString(int flag) {
+            return (flag & RTLD_LOCAL.getValueIfDefined()) != 0 ? T_RTLD_LOCAL : T_RTLD_GLOBAL;
         }
 
         @Override
@@ -607,45 +631,70 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             return CtypesModuleBuiltinsClinicProviders.DlOpenNodeClinicProviderGen.INSTANCE;
         }
 
-        @TruffleBoundary
-        protected static DLHandler loadNFILibrary(PythonContext context, NFIBackend backendType, String name, int flags) {
-            CompilerAsserts.neverPartOfCompilation();
-            String src;
-            if (PString.length(name) > 0) {
-                src = PythonUtils.format("%sload (%s) \"%s\"", backendType.withClause, flagsToString(flags), name);
+        protected static DLHandler loadNFILibrary(PythonContext context, NFIBackend backendType, TruffleString name, int flags,
+                        TruffleString.CodePointLengthNode codePointLengthNode, StringUtils.SimpleTruffleStringFormatNode formatNode,
+                        TruffleString.ParseLongNode parseLongNode, TruffleString.SubstringNode substringNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
+            TruffleString src;
+            if (!name.isEmpty()) {
+                src = formatNode.format("%sload (%s) \"%s\"", backendType.withClause, flagsToString(flags), name);
             } else {
-                src = "default";
+                src = T_DEFAULT;
             }
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(String.format("Loading native library %s %s", name, backendType.withClause));
+                LOGGER.fine(formatNode.format("Loading native library %s %s", name, backendType.withClause).toJavaStringUncached());
             }
-            Source loadSrc = Source.newBuilder(NFI_LANGUAGE, src, "load:" + name).internal(true).build();
-            Object handler = context.getEnv().parseInternal(loadSrc).call();
-            String handleStr = (String) InteropLibrary.getUncached().toDisplayString(handler);
-            long adr = Long.parseLong(handleStr.substring(LIBFFI_ADR_FORMAT_START, handleStr.length() - 1));
-            return new DLHandler(handler, adr, name, false);
+            Object handler = load(context, src, name);
+            InteropLibrary lib = InteropLibrary.getUncached();
+            TruffleString handleStr;
+            try {
+                handleStr = switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(handler)), TS_ENCODING);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
+            }
+            TruffleString adrStr = substringNode.execute(handleStr, LIBFFI_ADR_FORMAT_START, codePointLengthNode.execute(handleStr, TS_ENCODING) - LIBFFI_ADR_FORMAT_START - 1, TS_ENCODING, false);
+            try {
+                long adr = parseLongNode.execute(adrStr, 10);
+                return new DLHandler(handler, adr, name, false);
+            } catch (TruffleString.NumberFormatException e) {
+                // TODO handle exception [GR-38101]
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
 
         @TruffleBoundary
-        protected static Object loadLLVMLibrary(PythonContext context, String path) throws Exception {
+        private static Object load(PythonContext context, TruffleString src, TruffleString name) {
             CompilerAsserts.neverPartOfCompilation();
-            Source loadSrc = Source.newBuilder(PythonLanguage.LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path)).build();
+            Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src.toJavaStringUncached(), "load:" + name.toJavaStringUncached()).internal(true).build();
             return context.getEnv().parseInternal(loadSrc).call();
         }
 
         @TruffleBoundary
-        private static String getErrMsg(Exception e) {
+        protected static Object loadLLVMLibrary(PythonContext context, TruffleString path) throws Exception {
+            CompilerAsserts.neverPartOfCompilation();
+            Source loadSrc = Source.newBuilder(J_LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path)).build();
+            return context.getEnv().parseInternal(loadSrc).call();
+        }
+
+        @TruffleBoundary
+        private static TruffleString getErrMsg(Exception e) {
             String errmsg = e != null ? e.getMessage() : null;
-            if (errmsg == null || PString.length(errmsg) == 0) {
-                return "dlopen() error";
+            if (errmsg == null || errmsg.isEmpty()) {
+                return T_DL_OPEN_ERROR;
             }
-            return errmsg;
+            return toTruffleStringUncached(errmsg);
         }
 
         @Specialization
-        Object py_dl_open(VirtualFrame frame, String name_str, int m,
+        Object py_dl_open(VirtualFrame frame, TruffleString name_str, int m,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached AuditNode auditNode) {
+                        @Cached AuditNode auditNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached EndsWithNode endsWithNode,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
+                        @Cached TruffleString.ParseLongNode parseLongNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             int mode = m != Integer.MIN_VALUE ? m : RTLD_LOCAL.getValueIfDefined();
             mode |= RTLD_NOW.getValueIfDefined();
             auditNode.audit("ctypes.dlopen", name_str);
@@ -653,7 +702,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             DLHandler handle;
             Exception exception = null;
             try {
-                if (PString.endsWith(name_str, getContext().getSoAbi())) {
+                if (endsWithNode.executeBoolean(frame, name_str, getContext().getSoAbi(), 0, codePointLengthNode.execute(name_str, TS_ENCODING))) {
                     Object handler = loadLLVMLibrary(getContext(), name_str);
                     long adr = hashNode.execute(frame, handler);
                     handle = new DLHandler(handler, adr, name_str, true);
@@ -661,10 +710,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                     return factory().createNativeVoidPtr(handle);
                 } else {
                     /*-
-                     TODO: (mq) cryptography in macos isn't always compatible with ctypes. 
+                     TODO: (mq) cryptography in macos isn't always compatible with ctypes.
                      */
-                    if (!PString.equals(name_str, MACOS_Security_LIB) && !PString.equals(name_str, MACOS_CoreFoundation_LIB)) {
-                        handle = loadNFILibrary(getContext(), ctypes.backendType, name_str, mode);
+                    if (!eqNode.execute(name_str, MACOS_Security_LIB, TS_ENCODING) && !eqNode.execute(name_str, MACOS_CoreFoundation_LIB, TS_ENCODING)) {
+                        handle = loadNFILibrary(getContext(), ctypes.backendType, name_str, mode, codePointLengthNode, formatNode, parseLongNode, substringNode, switchEncodingNode);
                         registerAddress(getContext(), handle.adr, handle);
                         return factory().createNativeVoidPtr(handle, handle.adr);
                     }
@@ -675,10 +724,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             throw raise(OSError, getErrMsg(exception));
         }
 
-    }
-
-    static String ctypes_dlerror() {
-        return "dlerror";
     }
 
     static DLHandler getHandler(Object ptr, PythonContext context) {
@@ -722,7 +767,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             Object handle = asVoidPtr.execute(h);
 
             if (!dlclose(handle, getContext())) {
-                throw raise(OSError, ctypes_dlerror());
+                throw raise(OSError, T_DL_ERROR);
             }
             return PNone.NONE;
         }
@@ -760,14 +805,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         protected Object ctypes_dlsym(VirtualFrame frame, DLHandler handle, Object n, PythonContext context, PythonObjectFactory factory, PythonBuiltinClassType error,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached CastToJavaStringNode asString,
+                        @Cached CastToTruffleStringNode asString,
                         @CachedLibrary(limit = "1") InteropLibrary ilib) {
-            String name = asString.execute(n);
+            TruffleString name = asString.execute(n);
             if (handle == null || handle.isClosed) {
-                throw raise(error, ctypes_dlerror());
+                throw raise(error, T_DL_ERROR);
             }
             try {
-                Object sym = ilib.readMember(handle.library, name);
+                Object sym = ilib.readMember(handle.library, name.toJavaStringUncached());
                 boolean isManaged = handle.isManaged;
                 long adr = isManaged ? hashNode.execute(frame, sym) : ilib.asPointer(sym);
                 sym = isManaged ? CallLLVMFunction.create(sym, ilib) : sym;
@@ -831,8 +876,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object py_dyld_shared_pstring(VirtualFrame frame, PString ppath,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
-            return py_dyld_shared_cache_contains_path(frame, ppath.getValue(), ilib);
+                        @CachedLibrary(limit = "1") InteropLibrary ilib,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
+                        @Cached TruffleString.ParseLongNode parseLongNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            return py_dyld_shared_cache_contains_path(frame, ppath.getValueUncached().toJavaStringUncached(), ilib, codePointLengthNode, formatNode, parseLongNode, substringNode, switchEncodingNode);
         }
 
         @CompilationFinal Object cachedFunction = null;
@@ -840,19 +890,25 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         // TODO: 'path' might need to be processed using FSConverter.
         @Specialization
         Object py_dyld_shared_cache_contains_path(VirtualFrame frame, String path,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+                        @CachedLibrary(limit = "1") InteropLibrary ilib,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
+                        @Cached TruffleString.ParseLongNode parseLongNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (!hasDynamicLoaderCache()) {
-                throw raise(NotImplementedError, "_dyld_shared_cache_contains_path symbol is missing");
+                throw raise(NotImplementedError, S_SYMBOL_IS_MISSING, "_dyld_shared_cache_contains_path");
             }
 
             try {
                 if (cachedFunction == null) {
                     String name = "_dyld_shared_cache_contains_path";
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    DLHandler handle = DlOpenNode.loadNFILibrary(getContext(), NFIBackend.NATIVE, "", RTLD_LOCAL.getValueIfDefined());
+                    DLHandler handle = DlOpenNode.loadNFILibrary(getContext(), NFIBackend.NATIVE, T_EMPTY_STRING, RTLD_LOCAL.getValueIfDefined(), codePointLengthNode, formatNode, parseLongNode,
+                                    substringNode, switchEncodingNode);
                     Object sym = ilib.readMember(handle.getLibrary(), name);
                     // bool _dyld_shared_cache_contains_path(const char* path)
-                    Source source = Source.newBuilder(NFI_LANGUAGE, "(string):sint32", name).build();
+                    Source source = Source.newBuilder(J_NFI_LANGUAGE, "(string):sint32", name).build();
                     Object nfiSignature = getContext().getEnv().parseInternal(source).call();
                     cachedFunction = SignatureLibrary.getUncached().bind(nfiSignature, sym);
                     assert ilib.isExecutable(cachedFunction);
@@ -943,7 +999,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @Fallback
         Object error(VirtualFrame frame, Object obj, Object off) {
             Object clazz = GetClassNode.getUncached().execute(obj);
-            String name = GetNameNode.getUncached().execute(clazz);
+            TruffleString name = GetNameNode.getUncached().execute(clazz);
             throw raise(TypeError, BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S, name);
         }
     }
@@ -1081,7 +1137,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CallNode callNode,
                         @Cached GetResultNode getResultNode,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+                        @CachedLibrary(limit = "1") InteropLibrary ilib,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             int argcount = argarray.length;
             if (argcount > CTYPES_MAX_ARGCOUNT) {
                 throw raise(ArgError, TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D, argcount, CTYPES_MAX_ARGCOUNT);
@@ -1143,7 +1201,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (isLLVM) {
                 result = callManagedFunction(pProc, avalues, ilib);
             } else {
-                result = callNativeFunction(pProc, avalues, atypes, rtype, context, ilib);
+                result = callNativeFunction(pProc, avalues, atypes, rtype, context, ilib, appendStringNode, toStringNode);
             }
             if (rtype.type.isArray()) {
                 if (ilib.hasArrayElements(result)) {
@@ -1166,7 +1224,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 } else if (ilib.isNull(result)) {
                     return PNone.NONE;
                 } else {
-                    throw raise(NotImplementedError, "Returned object is not supported.");
+                    throw raise(NotImplementedError, toTruffleStringUncached("Returned object is not supported."));
                 }
             } else {
                 try {
@@ -1195,7 +1253,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
             if (!PGuards.isPNone(checker)) {
                 if (rtype.type.isArray()) {
-                    throw raise(NotImplementedError, "Array checker is not implemented.");
+                    throw raise(NotImplementedError, toTruffleStringUncached("Array checker is not implemented."));
                 }
                 return callNode.execute(checker, result);
             }
@@ -1230,13 +1288,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw raise(RuntimeError, FFI_CALL_FAILED);
             } catch (UnsupportedSpecializationException ee) {
-                throw raise(NotImplementedError, "require backend support."); // TODO: llvm/GR-???
+                throw raise(NotImplementedError, toTruffleStringUncached("require backend support.")); // TODO:
+                                                                                                       // llvm/GR-???
             }
         }
 
         @TruffleBoundary
-        protected static Object getFunction(NativeFunction pProc, String signature, PythonContext context) throws Exception {
-            Source source = Source.newBuilder(NFI_LANGUAGE, signature, pProc.name).build();
+        protected static Object getFunction(NativeFunction pProc, TruffleString signature, PythonContext context) throws Exception {
+            Source source = Source.newBuilder(J_NFI_LANGUAGE, signature.toJavaStringUncached(), pProc.name.toJavaStringUncached()).build();
             Object nfiSignature = context.getEnv().parseInternal(source).call();
             return SignatureLibrary.getUncached().bind(nfiSignature, pProc.sym);
         }
@@ -1257,10 +1316,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
          * NFI compatible native function calls (temporary replacement)
          */
         Object callNativeFunction(NativeFunction pProc, Object[] avalues, FFIType[] atypes, FFIType restype,
-                        PythonContext context,
-                        InteropLibrary ilib) {
+                        PythonContext context, InteropLibrary ilib, TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
             if (pProc.function == null) {
-                String signature = FFIType.buildNFISignature(atypes, restype);
+                TruffleString signature = FFIType.buildNFISignature(atypes, restype, appendStringNode, toStringNode);
                 Object function;
                 try {
                     function = getFunction(pProc, signature, context);
@@ -1270,7 +1328,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 pProc.function = function;
                 pProc.signature = signature;
             } else {
-                assert PString.equals(pProc.signature, FFIType.buildNFISignature(atypes, restype));
+                assert pProc.signature.equalsUncached(FFIType.buildNFISignature(atypes, restype, appendStringNode, toStringNode), TS_ENCODING);
             }
             try {
                 return ilib.execute(pProc.function, avalues);
@@ -1420,7 +1478,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile profile,
                         @Cached PyNumberAsSizeNode asInt,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             pa.keep = null; /* so we cannot forget it later */
 
             StgDictObject dict = pyObjectStgDictNode.execute(obj);
@@ -1428,7 +1487,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (dict != null) {
                 assert dict.paramfunc != -1;
                 /* If it has an stgdict, it is a CDataObject */
-                PyCArgObject carg = paramFunc(dict.paramfunc, (CDataObject) obj, dict, factory);
+                PyCArgObject carg = paramFunc(dict.paramfunc, (CDataObject) obj, dict, factory, codePointAtIndexNode);
                 pa.ffi_type = carg.pffi_type;
                 // memcpy(&pa.value, &carg.value, sizeof(pa.value)); TODO
                 assert carg.value.offset == 0 : "TODO";
@@ -1483,14 +1542,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             */
 
-            Object arg = lookupAttr.execute(obj, CDataTypeBuiltins._as_parameter_);
+            Object arg = lookupAttr.execute(obj, CDataTypeBuiltins.T__AS_PARAMETER_);
 
             /*
              * Which types should we exactly allow here? integers are required for using Python
              * classes as parameters (they have to expose the '_as_parameter_' attribute)
              */
             if (arg != null) {
-                ConvParam(frame, arg, index, pa, factory, context, bufferLib, longCheckNode, profile, asInt, lookupAttr, pyObjectStgDictNode);
+                ConvParam(frame, arg, index, pa, factory, context, bufferLib, longCheckNode, profile, asInt, lookupAttr, pyObjectStgDictNode, codePointAtIndexNode);
                 return;
             }
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
@@ -1592,8 +1651,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @ExportMessage
         Object execute(Object[] arguments,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @CachedLibrary("this.llvmSym") InteropLibrary ilib) {
             try {
+                for (int i = 0; i < arguments.length; i++) {
+                    if (arguments[i] instanceof TruffleString) {
+                        arguments[i] = toJavaStringNode.execute((TruffleString) arguments[i]);
+                    }
+                }
                 return ilib.execute(llvmSym, arguments);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw PRaiseNode.getUncached().raise(RuntimeError, e);
@@ -1604,6 +1669,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     protected abstract static class CastFunctionNode extends Node {
+
+        private static final char[] sPzUZXO = "sPzUZXO".toCharArray();
 
         abstract Object execute(Object ptr, Object src, Object ctype);
 
@@ -1617,8 +1684,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode) {
-            cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode);
+                        @Cached GetNameNode getNameNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode, codePointAtIndexNode);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
             /*
@@ -1660,8 +1728,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode) {
-            cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode);
+                        @Cached GetNameNode getNameNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode, codePointAtIndexNode);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
             /* Should we assert that result is a pointer type? */
@@ -1676,7 +1745,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         PyTypeStgDictNode pyTypeStgDictNode,
                         IsTypeNode isTypeNode,
                         GetClassNode getClassNode,
-                        GetNameNode getNameNode) {
+                        GetNameNode getNameNode,
+                        TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             if (pyTypeCheck.isPyCPointerTypeObject(arg)) {
                 return;
             }
@@ -1685,9 +1755,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             StgDictObject dict = pyTypeStgDictNode.execute(arg);
             if (dict != null && dict.proto != null) {
-                if (PGuards.isString(dict.proto) && (strchr("sPzUZXO", PString.charAt((String) dict.proto, 0)))) {
-                    /* simple pointer types, c_void_p, c_wchar_p, BSTR, ... */
-                    return;
+                if (PGuards.isTruffleString(dict.proto)) {
+                    int code = codePointAtIndexNode.execute((TruffleString) dict.proto, 0, TS_ENCODING);
+                    if (strchr(sPzUZXO, code)) {
+                        /* simple pointer types, c_void_p, c_wchar_p, BSTR, ... */
+                        return;
+                    }
                 }
             }
             Object clazz = isTypeNode.execute(arg) ? arg : getClassNode.execute(arg);
@@ -1701,7 +1774,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         protected static NativeFunction create() {
             Object f = new CastFunction();
-            return new NativeFunction(f, PyObjectHashNodeGen.getUncached().execute(null, f), "cast", true);
+            return new NativeFunction(f, PyObjectHashNodeGen.getUncached().execute(null, f), NativeCAPISymbol.FUN_CAST.getName(), true);
         }
 
         @ExportMessage
@@ -1755,11 +1828,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         protected static NativeFunction create(DLHandler handle, PythonContext context) {
-            String name = "memset";
+            TruffleString name = NativeCAPISymbol.FUN_MEMSET.getName();
             Object sym, f;
             long adr;
             try {
-                sym = InteropLibrary.getUncached().readMember(handle.library, name);
+                sym = InteropLibrary.getUncached().readMember(handle.library, name.toJavaStringUncached());
                 adr = InteropLibrary.getUncached().asPointer(sym);
                 f = new MemMoveFunction(sym);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -1789,7 +1862,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             @SuppressWarnings("unused")
             @Specialization(guards = "isNative(arguments)")
             static Object nativeMove(@SuppressWarnings("unused") MemMoveFunction self, Object[] arguments) {
-                throw PRaiseNode.getUncached().raise(NotImplementedError, "memmove doesn't support native types yet.");
+                throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("memmove doesn't support native types yet."));
             }
 
             private static boolean isNativePtr(Object o) {
@@ -1833,11 +1906,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         protected static NativeFunction create(DLHandler handle, PythonContext context) {
-            String name = "memset";
+            TruffleString name = NativeCAPISymbol.FUN_MEMSET.getName();
             Object sym, f;
             long adr;
             try {
-                sym = InteropLibrary.getUncached().readMember(handle.library, name);
+                sym = InteropLibrary.getUncached().readMember(handle.library, name.toJavaStringUncached());
                 adr = InteropLibrary.getUncached().asPointer(sym);
                 f = new MemSetFunction(sym);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -1867,7 +1940,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             @SuppressWarnings("unused")
             @Specialization(guards = "isNative(arguments)")
             static Object nativeSet(@SuppressWarnings("unused") MemSetFunction self, Object[] arguments) {
-                throw PRaiseNode.getUncached().raise(NotImplementedError, "memset doesn't support native types yet.");
+                throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("memset doesn't support native types yet."));
             }
 
             private static boolean isNativePtr(Object o) {
@@ -1886,18 +1959,24 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object size);
 
         @Specialization
-        static Object string_at(String ptr, int size,
+        static Object string_at(TruffleString ptr, int size,
                         @Cached PythonObjectFactory factory,
-                        @Cached AuditNode auditNode) {
+                        @Cached AuditNode auditNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
             auditNode.audit("ctypes.string_at", ptr, size);
-            byte[] bytes;
+            // TODO GR-38502: Review and add negative/out-of-bounds checks for the size argument
+            assert TS_ENCODING == UTF_32;
+            byte[] bytes = new byte[ptr.byteLength(TS_ENCODING)];
+            copyToByteArrayNode.execute(ptr, 0, bytes, 0, bytes.length, TS_ENCODING);
+            int len = 0;
             if (size == -1) {
-                // PyBytes_FromStringAndSize(ptr, strlen(ptr));
-                bytes = BytesUtils.utf8StringToBytes(ptr);
+                while (len < bytes.length && bytes[len] != 0) {
+                    ++len;
+                }
             } else {
-                bytes = BytesUtils.utf8StringToBytes(PString.substring(ptr, 0, size));
+                len = size;
             }
-            return factory.createBytes(bytes);
+            return factory.createBytes(bytes, 0, len);
         }
 
         @Specialization
@@ -1915,7 +1994,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 }
                 // else PyBytes_FromStringAndSize(ptr, strlen(ptr));
             } else {
-                throw raiseNode.raise(NotImplementedError, "string_at doesn't support some storage types yet.");
+                throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("string_at doesn't support some storage types yet."));
             }
             return factory.createBytes(bytes);
         }
@@ -1923,7 +2002,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Fallback
         static Object error(@SuppressWarnings("unused") Object ptr, @SuppressWarnings("unused") Object size) {
-            throw PRaiseNode.getUncached().raise(NotImplementedError, "string_at doesn't support some storage types yet.");
+            throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("string_at doesn't support some storage types yet."));
         }
     }
 
@@ -1933,7 +2012,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         protected static NativeFunction create() {
             Object f = new StringAtFunction();
-            return new NativeFunction(f, PyObjectHashNodeGen.getUncached().execute(null, f), "string_at", true);
+            return new NativeFunction(f, PyObjectHashNodeGen.getUncached().execute(null, f), NativeCAPISymbol.FUN_STRING_AT.getName(), true);
         }
 
         @ExportMessage
@@ -1955,20 +2034,25 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object size);
 
         @Specialization
-        static Object wstring_at(String ptr, int size,
-                        @Cached AuditNode auditNode) {
+        static TruffleString wstring_at(TruffleString ptr, int size,
+                        @Cached AuditNode auditNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SubstringNode substringNode) {
             int ssize = size;
             auditNode.audit("ctypes.wstring_at", ptr, ssize);
             if (ssize == -1) {
-                ssize = PString.length(ptr); // wcslen(ptr);
+                ssize = codePointLengthNode.execute(ptr, TS_ENCODING); // wcslen(ptr);
             }
-            return PString.substring(ptr, 0, ssize); // PyUnicode_FromWideChar(ptr, ssize);
+            return substringNode.execute(ptr, 0, ssize, TS_ENCODING, false); // PyUnicode_FromWideChar(ptr,
+                                                                             // ssize);
         }
 
         @Specialization
-        static Object wstring_at(CDataObject ptr, int size,
+        static TruffleString wstring_at(CDataObject ptr, int size,
                         @Cached PRaiseNode raiseNode,
-                        @Cached AuditNode auditNode) {
+                        @Cached AuditNode auditNode,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             auditNode.audit("ctypes.wstring_at", ptr, size);
             byte[] bytes;
             if (ptr.b_ptr.isManagedBytes()) {
@@ -1979,15 +2063,16 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 }
                 // else wcslen(ptr);
             } else {
-                throw raiseNode.raise(NotImplementedError, "wstring_at doesn't support some storage types yet.");
+                throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("wstring_at doesn't support some storage types yet."));
             }
-            return BytesUtils.createUTF8String(bytes);
+            TruffleString s = fromByteArrayNode.execute(bytes, TruffleString.Encoding.UTF_8);
+            return switchEncodingNode.execute(s, TS_ENCODING);
         }
 
         @TruffleBoundary
         @Fallback
         static Object error(@SuppressWarnings("unused") Object ptr, @SuppressWarnings("unused") Object size) {
-            throw PRaiseNode.getUncached().raise(NotImplementedError, "wstring_at doesn't support some storage types yet.");
+            throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("wstring_at doesn't support some storage types yet."));
         }
     }
 
@@ -1997,7 +2082,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         protected static NativeFunction create() {
             Object f = new WStringAtFunction();
-            return new NativeFunction(f, PyObjectHashNodeGen.getUncached().execute(null, f), "wstring_at", true);
+            return new NativeFunction(f, PyObjectHashNodeGen.getUncached().execute(null, f), NativeCAPISymbol.FUN_WSTRING_AT.getName(), true);
         }
 
         @ExportMessage
@@ -2012,30 +2097,36 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    private static final TruffleString T_PLACEHOLDER_D_COMMA = tsLiteral("%d,");
+    private static final TruffleString T_PLACEHOLDER_D_RPAREN = tsLiteral("%d)");
+
     /*
      * Allocate a memory block for a pep3118 format string, adding the given prefix (if non-null),
      * an additional shape prefix, and a suffix. Returns NULL on failure, with the error indicator
      * set. If called with a suffix of NULL the error indicator must already be set.
      */
-    static String _ctypes_alloc_format_string_with_shape(int ndim, int[] shape, String prefix, String suffix) {
-        StringBuilder buf = newStringBuilder();
+    static TruffleString _ctypes_alloc_format_string_with_shape(int ndim, int[] shape,
+                    TruffleString prefix, TruffleString suffix, TruffleStringBuilder.AppendStringNode appendStringNode,
+                    TruffleStringBuilder.ToStringNode toStringNode, StringUtils.SimpleTruffleStringFormatNode formatNode) {
+        TruffleStringBuilder buf = TruffleStringBuilder.create(TS_ENCODING);
         if (prefix != null) {
-            append(buf, prefix);
+            appendStringNode.execute(buf, prefix);
         }
         if (ndim > 0) {
             /* Add the prefix "(shape[0],shape[1],...,shape[ndim-1])" */
-            append(buf, "(");
-            String fmt = "%d,";
+            appendStringNode.execute(buf, T_LPAREN);
+            TruffleString fmt = T_PLACEHOLDER_D_COMMA;
             for (int k = 0; k < ndim; ++k) {
                 if (k == ndim - 1) {
-                    fmt = "%d)";
+                    fmt = T_PLACEHOLDER_D_RPAREN;
                 }
-                append(buf, PythonUtils.format(fmt, shape[k]));
+                appendStringNode.execute(buf, formatNode.format(fmt, shape[k]));
             }
         }
         if (suffix != null) {
-            append(buf, suffix);
+            appendStringNode.execute(buf, suffix);
         }
-        return sbToString(buf);
+        return toStringNode.execute(buf);
     }
+
 }

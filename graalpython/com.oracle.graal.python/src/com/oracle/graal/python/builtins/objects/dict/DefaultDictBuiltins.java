@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,10 @@
 package com.oracle.graal.python.builtins.objects.dict;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MISSING__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -56,19 +56,19 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -76,6 +76,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDefaultDict)
 public final class DefaultDictBuiltins extends PythonBuiltins {
@@ -84,29 +85,25 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         return DefaultDictBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reprFunction(VirtualFrame frame, PDefaultDict self,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
-                        @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode reprNode,
-                        @Cached DictReprBuiltin.ReprNode dictReprNode) {
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached DictReprBuiltin.ReprNode dictReprNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             final Object klass = getClassNode.execute(self);
-            final String name = getNameNode.execute(klass);
-            final Object factoryRepr = reprNode.executeObject(self.getDefaultFactory(), __REPR__);
-            final Object dictRepr = dictReprNode.execute(frame, self);
-            return getDefaultDictReprInternal(name, factoryRepr, dictRepr);
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        private static String getDefaultDictReprInternal(String name, Object factoryRepr, Object dictRepr) {
-            return String.format("%s(%s, %s)", name, factoryRepr, dictRepr);
+            final TruffleString name = getNameNode.execute(klass);
+            final TruffleString factoryRepr = reprNode.execute(frame, self.getDefaultFactory());
+            final TruffleString dictRepr = dictReprNode.execute(frame, self);
+            return simpleTruffleStringFormatNode.format("%s(%s, %s)", name, factoryRepr, dictRepr);
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -131,12 +128,12 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MISSING__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MISSING__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MissingNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNone(self.getDefaultFactory())")
         Object doNoFactory(@SuppressWarnings("unused") PDefaultDict self, Object key) {
-            throw raise(PythonBuiltinClassType.KeyError, key);
+            throw raise(PythonBuiltinClassType.KeyError, new Object[]{key});
         }
 
         @Specialization(guards = "!isNone(self.getDefaultFactory())", limit = "getCallSiteInlineCacheMaxDepth()")
@@ -151,7 +148,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization

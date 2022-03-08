@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Custom formatter adding Python-specific conversions often required in error messages.
@@ -71,6 +72,11 @@ public class ErrorMessageFormatter {
     private static final String formatSpecifier = "%(\\d+\\$)?([-#+ 0,(\\<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])";
 
     private static Pattern fsPattern = Pattern.compile(formatSpecifier);
+
+    @TruffleBoundary
+    public String format(TruffleString format, Object... args) {
+        return format(format.toJavaStringUncached(), args);
+    }
 
     @TruffleBoundary
     public String format(String format, Object... args) {
@@ -130,7 +136,7 @@ public class ErrorMessageFormatter {
     }
 
     private static String getClassNameOfClass(Object obj) {
-        return GetNameNode.doSlowPath(obj);
+        return GetNameNode.doSlowPath(obj).toJavaStringUncached();
     }
 
     /**

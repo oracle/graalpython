@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.util;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
@@ -85,6 +86,8 @@ import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 import sun.misc.Unsafe;
 
@@ -110,14 +113,107 @@ public final class PythonUtils {
         // no instances
     }
 
-    public static final String EMPTY_STRING = "";
-    public static final String NEW_LINE = "\n";
+    /**
+     * Encoding of all {@link TruffleString} instances.
+     */
+    public static final TruffleString.Encoding TS_ENCODING = TruffleString.Encoding.UTF_32;
+
     public static final String[] EMPTY_STRING_ARRAY = new String[0];
+    public static final TruffleString[] EMPTY_TRUFFLESTRING_ARRAY = new TruffleString[0];
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final int[] EMPTY_INT_ARRAY = new int[0];
     public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
     public static final char[] EMPTY_CHAR_ARRAY = new char[0];
+
+    /**
+     * Returns an estimate for the initial capacity of a
+     * {@link com.oracle.truffle.api.strings.TruffleStringBuilder}.
+     *
+     * @param cpCount the initial capacity in code points
+     * @return the estimate in bytes
+     */
+    public static int tsbCapacity(int cpCount) {
+        assert TS_ENCODING == Encoding.UTF_32;
+        return 4 * cpCount;
+    }
+
+    /**
+     * Uncached conversion of {@link String} to {@link TruffleString}. The intended use of this
+     * method is in static initializers where the argument is a string literal (or a static final
+     * constant).
+     */
+    @TruffleBoundary
+    public static TruffleString tsLiteral(String s) {
+        assert s != null;
+        return TruffleString.fromJavaStringUncached(s, TS_ENCODING);
+    }
+
+    /**
+     * Uncached conversion of {@link String} to {@link TruffleString}. The intended use of this
+     * method is in slow-path where the argument is a variable as a shortcut for
+     * {@link TruffleString#fromJavaStringUncached(String, Encoding)}.
+     */
+    @TruffleBoundary
+    public static TruffleString toTruffleStringUncached(String s) {
+        return s == null ? null : TruffleString.fromJavaStringUncached(s, TS_ENCODING);
+    }
+
+    /**
+     * Creates an array of {@link TruffleString}s using uncached conversion. The intended use of
+     * this method is in static initializers where the arguments are string literals as a shortcut
+     * for {@code TruffleString[] X = {tsLiteral("a"), tsLiteral("b")};}
+     */
+    @TruffleBoundary
+    public static TruffleString[] tsArray(String... s) {
+        TruffleString[] result = new TruffleString[s.length];
+        for (int i = 0; i < result.length; ++i) {
+            result[i] = tsLiteral(s[i]);
+        }
+        return result;
+    }
+
+    /**
+     * Creates an array of {@link TruffleString}s using uncached conversion. The intended use of
+     * this method is in slow-path where the argument is a variable.
+     */
+    @TruffleBoundary
+    public static TruffleString[] toTruffleStringArrayUncached(String[] s) {
+        if (s == null) {
+            return null;
+        }
+        if (s.length == 0) {
+            return EMPTY_TRUFFLESTRING_ARRAY;
+        }
+        TruffleString[] result = new TruffleString[s.length];
+        for (int i = 0; i < result.length; ++i) {
+            result[i] = toTruffleStringUncached(s[i]);
+        }
+        return result;
+    }
+
+    /**
+     * Creates an array of {@link Object}'s. The intended use of this method is in slow-path in
+     * calls to methods like {@link PythonObjectFactory#createTuple(Object[])}.
+     */
+    public static Object[] convertToObjectArray(TruffleString[] src) {
+        if (src == null) {
+            return null;
+        }
+        if (src.length == 0) {
+            return EMPTY_OBJECT_ARRAY;
+        }
+        Object[] result = new Object[src.length];
+        for (int i = 0; i < src.length; ++i) {
+            result[i] = src[i];
+        }
+        return result;
+    }
+
+    @TruffleBoundary
+    public static TruffleString getMessage(Exception ex) {
+        return toTruffleStringUncached(ex.getMessage());
+    }
 
     /**
      * Executes System.arraycopy and puts all exceptions on the slow path.
@@ -249,14 +345,6 @@ public final class PythonUtils {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw t;
         }
-    }
-
-    /**
-     * Executes {@code String.getChars} and puts all exceptions on the slow path.
-     */
-    @TruffleBoundary
-    public static void getChars(String str, int srcBegin, int srcEnd, char[] dst, int dstBegin) {
-        str.getChars(srcBegin, srcEnd, dst, dstBegin);
     }
 
     /*
@@ -393,179 +481,13 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static String replace(String self, String old, String with) {
-        return self.replace(old, with);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String newString(byte[] bytes) {
-        return new String(bytes);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String newString(byte[] bytes, int offset, int length) {
-        return new String(bytes, offset, length);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String newString(char[] chars) {
-        return new String(chars);
-    }
-
-    @TruffleBoundary
-    public static String newString(int[] codePoints, int offset, int count) {
-        return new String(codePoints, offset, count);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder newStringBuilder() {
-        return new StringBuilder();
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder newStringBuilder(String str) {
-        return new StringBuilder(str);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder newStringBuilder(int capacity) {
-        return new StringBuilder(capacity);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String sbToString(StringBuilder sb) {
-        return sb.toString();
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String substring(StringBuilder sb, int start, int end) {
-        return sb.substring(start, end);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static int indexOf(StringBuilder sb, String str, int start) {
-        return sb.indexOf(str, start);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String substring(String s, int start, int end) {
-        return s.substring(start, end);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String substring(String s, int start) {
-        return s.substring(start);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static int indexOf(String s, char chr) {
-        return s.indexOf(chr);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static int indexOf(String s, String sep) {
-        return s.indexOf(sep);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static int lastIndexOf(String s, char chr) {
-        return s.lastIndexOf(chr);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static int lastIndexOf(String s, String sep) {
-        return s.lastIndexOf(sep);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder append(StringBuilder sb, char c) {
-        return sb.append(c);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder append(StringBuilder sb, Object... args) {
-        for (Object arg : args) {
-            sb.append(arg);
-        }
-        return sb;
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder append(StringBuilder sb, String s) {
-        return sb.append(s);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder append(StringBuilder sb, int i) {
-        return sb.append(i);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder append(StringBuilder sb, String s, int start, int end) {
-        return sb.append(s, start, end);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder append(StringBuilder sb, StringBuilder s) {
-        return sb.append(s);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static StringBuilder appendCodePoint(StringBuilder sb, int codePoint) {
-        return sb.appendCodePoint(codePoint);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String toString(CharSequence sequence) {
-        return sequence.toString();
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String trim(String s) {
-        return s.trim();
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String trim(CharSequence sequence) {
-        return sequence.toString().trim();
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String trimLeft(CharSequence sequence) {
-        int len = sequence.length();
-        int st = 0;
-
-        while ((st < len) && (sequence.charAt(st) <= ' ')) {
-            st++;
-        }
-
-        final String s = sequence.toString();
-        return (st > 0) ? substring(s, st, len) : s;
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String toLowerCase(String s) {
-        return s.toLowerCase();
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static String toUpperCase(String s) {
-        return s.toUpperCase();
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static int sbLength(StringBuilder sb) {
-        return sb.length();
-    }
-
-    @TruffleBoundary
-    public static String getPythonArch() {
+    public static TruffleString getPythonArch() {
         String arch = System.getProperty("os.arch", "");
         if (arch.equals("amd64")) {
             // be compatible with CPython's designation
             arch = "x86_64";
         }
-        return arch;
+        return toTruffleStringUncached(arch);
     }
 
     @TruffleBoundary
@@ -670,12 +592,12 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, String name, String doc, int idx,
+    public static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, TruffleString name, TruffleString doc, int idx,
                     Function<PythonLanguage, RootNode> rootNodeSupplier) {
         RootCallTarget callTarget = language.createCachedCallTarget(rootNodeSupplier, nodeClass, idx);
         PBuiltinFunction getter = factory.createGetSetBuiltinFunction(name, klass, 0, callTarget);
         GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
-        callable.setAttribute(__DOC__, doc);
+        callable.setAttribute(T___DOC__, doc);
         WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
     }
 
@@ -695,9 +617,10 @@ public final class PythonUtils {
             return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true);
         }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), type, numDefaults, flags, callTarget);
+        TruffleString name = toTruffleStringUncached(builtin.name());
+        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(name, type, numDefaults, flags, callTarget);
         if (klass != null) {
-            WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+            WriteAttributeToObjectNode.getUncached(true).execute(klass, name, function);
         }
         return function;
     }
@@ -706,15 +629,15 @@ public final class PythonUtils {
     public static void createConstructor(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier,
                     Object... callTargetCacheKeys) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        assert __NEW__.equals(builtin.name());
+        assert J___NEW__.equals(builtin.name());
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
         RootCallTarget callTarget = language.createCachedCallTarget(l -> {
             NodeFactory<PythonBuiltinBaseNode> nodeFactory = new BuiltinFunctionRootNode.StandaloneBuiltinFactory<>(nodeSupplier.get());
             return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true, PythonBuiltinClassType.PTuple);
         }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = factory.createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, __NEW__, function);
+        PBuiltinFunction function = factory.createBuiltinFunction(toTruffleStringUncached(builtin.name()), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
+        WriteAttributeToObjectNode.getUncached(true).execute(klass, T___NEW__, function);
     }
 
     private static Object[] createCalltargetKeys(Object[] callTargetCacheKeys, Class<?> nodeClass) {

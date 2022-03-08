@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -65,6 +67,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -108,6 +111,8 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyComplexRealAsDoubleNode extends PythonUnaryBuiltinNode {
 
+        public static final TruffleString T_REAL = tsLiteral("real");
+
         @Specialization
         static double asDouble(PComplex d) {
             return d.getReal();
@@ -121,7 +126,7 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return callNode.execute(getAttr.execute(frame, obj, "real"));
+                return callNode.execute(getAttr.execute(frame, obj, T_REAL));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1.0;
@@ -136,7 +141,7 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return callNode.execute(getAttr.execute(frame, obj, __FLOAT__));
+                return callNode.execute(getAttr.execute(frame, obj, T___FLOAT__));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1.0;
@@ -152,6 +157,8 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyComplexImagAsDoubleNode extends PythonUnaryBuiltinNode {
 
+        public static final TruffleString T_IMAG = tsLiteral("imag");
+
         @Specialization
         static double asDouble(PComplex d) {
             return d.getImag();
@@ -165,7 +172,7 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return callNode.execute(getAttr.execute(frame, obj, "imag"));
+                return callNode.execute(getAttr.execute(frame, obj, T_IMAG));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;

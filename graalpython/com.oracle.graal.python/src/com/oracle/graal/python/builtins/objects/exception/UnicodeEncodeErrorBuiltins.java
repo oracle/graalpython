@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,8 +48,10 @@ import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBui
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.UNICODE_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsInt;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsString;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -58,18 +60,20 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeEncodeError)
 public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
@@ -78,62 +82,65 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         return UnicodeEncodeErrorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class UnicodeEncodeErrorInitNode extends PythonBuiltinNode {
         public abstract Object execute(PBaseException self, Object[] args);
 
         @Specialization
         Object initNoArgs(PBaseException self, Object[] args,
-                        @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UUnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
-                            getArgAsString(args, 0, this, toJavaStringNode),
-                            getArgAsString(args, 1, this, toJavaStringNode),
+                            getArgAsString(args, 0, this, toStringNode),
+                            getArgAsString(args, 1, this, toStringNode),
                             getArgAsInt(args, 2, this, toJavaIntExactNode),
                             getArgAsInt(args, 3, this, toJavaIntExactNode),
-                            getArgAsString(args, 4, this, toJavaStringNode)
+                            getArgAsString(args, 4, this, toStringNode)
             });
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class UnicodeEncodeErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object str(VirtualFrame frame, PBaseException self,
+        TruffleString str(VirtualFrame frame, PBaseException self,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached CastToJavaStringNode toJavaStringNode,
-                        @Cached PyObjectStrAsJavaStringNode strNode) {
+                        @Cached CastToTruffleStringNode toTruffleStringNode,
+                        @Cached PyObjectStrAsTruffleStringNode strNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             if (self.getExceptionAttributes() == null) {
                 // Not properly initialized.
-                return "";
+                return T_EMPTY_STRING;
             }
 
             // Get reason and encoding as strings, which they might not be if they've been
             // modified after we were constructed.
-            final String object = toJavaStringNode.execute(attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY));
+            final TruffleString object = toTruffleStringNode.execute(attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY));
             final int start = attrNode.getInt(self, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
             final int end = attrNode.getInt(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
-            final String encoding = strNode.execute(frame, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
-            final String reason = strNode.execute(frame, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
-            if (start < object.length() && end == start + 1) {
-                String fmt;
-                final int badChar = object.codePointAt(start);
+            final TruffleString encoding = strNode.execute(frame, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
+            final TruffleString reason = strNode.execute(frame, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
+            if (start < codePointLengthNode.execute(object, TS_ENCODING) && end == start + 1) {
+                final int badChar = codePointAtIndexNode.execute(object, start, TS_ENCODING);
+                String badCharStr;
                 if (badChar <= 0xFF) {
-                    fmt = "'%s' codec can't encode character '\\x%02x' in position %d: %s";
+                    badCharStr = PythonUtils.format("\\x%02x", badChar);
                 } else if (badChar <= 0xFFFF) {
-                    fmt = "'%s' codec can't encode character '\\u%04x' in position %d: %s";
+                    badCharStr = PythonUtils.format("\\u%04x", badChar);
                 } else {
-                    fmt = "'%s' codec can't encode character '\\U%08x' in position %d: %s";
+                    badCharStr = PythonUtils.format("\\U%08x", badChar);
                 }
-                return PythonUtils.format(fmt, encoding, badChar, start, reason);
+                return simpleTruffleStringFormatNode.format("'%s' codec can't encode character '%s' in position %d: %s", encoding, badCharStr, start, reason);
             } else {
-                return PythonUtils.format("'%s' codec can't encode characters in position %d-%d: %s", encoding, start, end - 1, reason);
+                return simpleTruffleStringFormatNode.format("'%s' codec can't encode characters in position %d-%d: %s", encoding, start, end - 1, reason);
             }
         }
     }

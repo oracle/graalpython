@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -71,7 +82,7 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.Redu
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReprNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -100,6 +111,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 /**
  * Allows definitions of tuple-like structs with named fields (like structseq.c in CPython).
@@ -109,26 +122,26 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public class StructSequence {
 
     /** The <it>visible</it> length (excludes unnamed fields) of the structseq type. */
-    public static final String N_SEQUENCE_FIELDS = "n_sequence_fields";
+    public static final TruffleString T_N_SEQUENCE_FIELDS = tsLiteral("n_sequence_fields");
 
     /** The <it>real</it> length (includes unnamed fields) of the structseq type. */
-    public static final String N_FIELDS = "n_fields";
+    public static final TruffleString T_N_FIELDS = tsLiteral("n_fields");
 
     /** The number of unnamed fields. */
-    public static final String N_UNNAMED_FIELDS = "n_unnamed_fields";
+    public static final TruffleString T_N_UNNAMED_FIELDS = tsLiteral("n_unnamed_fields");
 
     /**
      * The equivalent of {@code PyStructSequence_Desc} except of the {@code name}. We don't need the
      * type's name in the descriptor and this will improve code sharing.
      */
     public static class Descriptor {
-        public final String docString;
+        public final TruffleString docString;
         public final int inSequence;
-        public final String[] fieldNames;
-        public final String[] fieldDocStrings;
+        public final TruffleString[] fieldNames;
+        public final TruffleString[] fieldDocStrings;
         public final boolean allowInstances;
 
-        public Descriptor(String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
+        public Descriptor(TruffleString docString, int inSequence, TruffleString[] fieldNames, TruffleString[] fieldDocStrings, boolean allowInstances) {
             assert fieldNames.length == fieldDocStrings.length;
             this.docString = docString;
             this.inSequence = inSequence;
@@ -137,7 +150,7 @@ public class StructSequence {
             this.allowInstances = allowInstances;
         }
 
-        public Descriptor(String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
+        public Descriptor(TruffleString docString, int inSequence, TruffleString[] fieldNames, TruffleString[] fieldDocStrings) {
             this(docString, inSequence, fieldNames, fieldDocStrings, true);
         }
 
@@ -150,8 +163,8 @@ public class StructSequence {
         //
         // note that st_atime accessed by name returns float (index 10), but in repr the same label
         // is assigned to the int value at index 7
-        String[] getFieldsForRepr() {
-            String[] fieldNamesForRepr = new String[inSequence];
+        TruffleString[] getFieldsForRepr() {
+            TruffleString[] fieldNamesForRepr = new TruffleString[inSequence];
             int k = 0;
             for (int idx = 0; idx < fieldNames.length && k < inSequence; ++idx) {
                 if (fieldNames[idx] != null) {
@@ -193,7 +206,7 @@ public class StructSequence {
         public final PythonBuiltinClassType type;
 
         public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
-            super(docString, inSequence, fieldNames, fieldDocStrings, allowInstances);
+            super(docString == null ? null : toTruffleStringUncached(docString), inSequence, toTruffleStringArrayUncached(fieldNames), toTruffleStringArrayUncached(fieldDocStrings), allowInstances);
             assert type.getBase() == PythonBuiltinClassType.PTuple;
             assert !type.isAcceptableBase();
             this.type = type;
@@ -257,13 +270,13 @@ public class StructSequence {
          * where 'tp_doc' is set in native code already.
          */
         if (desc.docString != null) {
-            writeAttrNode.execute(klass, __DOC__, desc.docString);
+            writeAttrNode.execute(klass, T___DOC__, desc.docString);
         }
-        writeAttrNode.execute(klass, N_SEQUENCE_FIELDS, desc.inSequence);
-        writeAttrNode.execute(klass, N_FIELDS, desc.fieldNames.length);
-        writeAttrNode.execute(klass, N_UNNAMED_FIELDS, unnamedFields);
+        writeAttrNode.execute(klass, T_N_SEQUENCE_FIELDS, desc.inSequence);
+        writeAttrNode.execute(klass, T_N_FIELDS, desc.fieldNames.length);
+        writeAttrNode.execute(klass, T_N_UNNAMED_FIELDS, unnamedFields);
 
-        if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, __NEW__) == PNone.NO_VALUE) {
+        if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, T___NEW__) == PNone.NO_VALUE) {
             if (desc.allowInstances) {
                 createConstructor(factory, language, klass, desc, NewNode.class, NewNodeGen::create);
             } else {
@@ -272,7 +285,7 @@ public class StructSequence {
         }
     }
 
-    private static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, String name, String doc, int idx) {
+    private static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, TruffleString name, TruffleString doc, int idx) {
         PythonUtils.createMember(factory, language, klass, GetStructMemberNode.class, name, doc, idx, (l) -> new GetStructMemberNode(l, idx));
     }
 
@@ -286,7 +299,7 @@ public class StructSequence {
         PythonUtils.createConstructor(factory, language, klass, nodeClass, () -> nodeSupplier.apply(desc), desc);
     }
 
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     public abstract static class DisabledNewNode extends PythonVarargsBuiltinNode {
 
         @Override
@@ -306,10 +319,10 @@ public class StructSequence {
         }
     }
 
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "sequence", "dict"})
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "sequence", "dict"})
     public abstract static class NewNode extends PythonTernaryBuiltinNode {
 
-        @CompilationFinal(dimensions = 1) private final String[] fieldNames;
+        @CompilationFinal(dimensions = 1) private final TruffleString[] fieldNames;
         private final int inSequence;
 
         NewNode(Descriptor desc) {
@@ -399,10 +412,10 @@ public class StructSequence {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
-        @CompilationFinal(dimensions = 1) private final String[] fieldNames;
+        @CompilationFinal(dimensions = 1) private final TruffleString[] fieldNames;
         private final int inSequence;
 
         ReduceNode(Descriptor desc) {
@@ -435,42 +448,44 @@ public class StructSequence {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
-        @CompilationFinal(dimensions = 1) private final String[] fieldNames;
+        @CompilationFinal(dimensions = 1) private final TruffleString[] fieldNames;
 
         ReprNode(Descriptor desc) {
             this.fieldNames = desc.getFieldsForRepr();
         }
 
         @Specialization
-        public String repr(VirtualFrame frame, PTuple self,
+        public TruffleString repr(VirtualFrame frame, PTuple self,
                         @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached PyObjectReprAsJavaStringNode reprNode) {
-            StringBuilder buf = PythonUtils.newStringBuilder();
-            PythonUtils.append(buf, getFullyQualifiedClassNameNode.execute(frame, self));
-            PythonUtils.append(buf, '(');
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(sb, getFullyQualifiedClassNameNode.execute(frame, self));
+            appendStringNode.execute(sb, T_LPAREN);
             SequenceStorage tupleStore = self.getSequenceStorage();
             if (fieldNames.length > 0) {
-                PythonUtils.append(buf, fieldNames[0]);
-                PythonUtils.append(buf, '=');
-                PythonUtils.append(buf, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, 0)));
+                appendStringNode.execute(sb, fieldNames[0]);
+                appendStringNode.execute(sb, T_EQ);
+                appendStringNode.execute(sb, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, 0)));
                 for (int i = 1; i < fieldNames.length; i++) {
-                    PythonUtils.append(buf, ", ");
-                    PythonUtils.append(buf, fieldNames[i]);
-                    PythonUtils.append(buf, '=');
-                    PythonUtils.append(buf, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, i)));
+                    appendStringNode.execute(sb, T_COMMA_SPACE);
+                    appendStringNode.execute(sb, fieldNames[i]);
+                    appendStringNode.execute(sb, T_EQ);
+                    appendStringNode.execute(sb, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, i)));
                 }
             }
-            PythonUtils.append(buf, ')');
-            return PythonUtils.sbToString(buf);
+            appendStringNode.execute(sb, T_RPAREN);
+            return toStringNode.execute(sb);
         }
     }
 
     private static class GetStructMemberNode extends PRootNode {
-        public static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"$self"}, PythonUtils.EMPTY_STRING_ARRAY);
+        public static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("$self"), EMPTY_TRUFFLESTRING_ARRAY);
         private final int fieldIdx;
 
         GetStructMemberNode(PythonLanguage language, int fieldIdx) {
@@ -500,7 +515,7 @@ public class StructSequence {
         }
     }
 
-    static String getTpName(Object cls) {
+    static TruffleString getTpName(Object cls) {
         if (cls instanceof PythonBuiltinClassType) {
             return ((PythonBuiltinClassType) cls).getPrintName();
         } else if (cls instanceof PythonBuiltinClass) {

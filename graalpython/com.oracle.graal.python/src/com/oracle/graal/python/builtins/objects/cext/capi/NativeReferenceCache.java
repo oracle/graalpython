@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -68,6 +69,7 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.IntValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class NativeReferenceCache implements TruffleObject {
@@ -205,7 +207,7 @@ public final class NativeReferenceCache implements TruffleObject {
                     return object;
                 }
             } else if (idx < 0) {
-                LOGGER.warning(() -> String.format("negative native reference ID %d for object %s", idx, CApiContext.asHex(pointerObject)));
+                LOGGER.warning(() -> PythonUtils.format("negative native reference ID %d for object %s", idx, CApiContext.asHex(pointerObject)));
             }
             return pointerObject;
         }
@@ -230,7 +232,8 @@ public final class NativeReferenceCache implements TruffleObject {
         }
 
         static boolean isResolved(Object object) {
-            return CApiGuards.isNativeWrapper(object) || object instanceof String;
+            // TODO review with GR-37896
+            return CApiGuards.isNativeWrapper(object) || object instanceof String || object instanceof TruffleString;
         }
 
         static boolean isNoRefCnt(Object refCnt) {

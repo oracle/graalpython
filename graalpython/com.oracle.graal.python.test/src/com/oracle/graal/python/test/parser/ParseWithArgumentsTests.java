@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,15 @@
  */
 package com.oracle.graal.python.test.parser;
 
+import static com.oracle.graal.python.test.PythonTests.ts;
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.source.Source;
-import static org.junit.Assert.assertEquals;
-import org.junit.Test;
 
 public class ParseWithArgumentsTests extends ParserTestBase {
 
@@ -55,7 +58,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
         CallTarget target = context.getEnv().parsePublic(source, "arg1");
         assertEquals(66, target.call(66));
         assertEquals(false, target.call(false));
-        assertEquals("Ahoj", target.call("Ahoj"));
+        assertEquals(ts("Ahoj"), target.call(ts("Ahoj")));
     }
 
     @Test
@@ -63,7 +66,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
         Source source = createSource("arg1 + arg2");
         CallTarget target = context.getEnv().parsePublic(source, "arg1", "arg2");
         assertEquals(11, target.call(5, 6));
-        assertEquals("AhojHello", target.call("Ahoj", "Hello"));
+        assertEquals(ts("AhojHello"), target.call(ts("Ahoj"), ts("Hello")));
     }
 
     @Test
@@ -71,7 +74,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
         Source source = createSource("tmp = arg1 + arg2\n" + "2 * tmp");
         CallTarget target = context.getEnv().parsePublic(source, "arg1", "arg2");
         assertEquals(22, target.call(5, 6));
-        assertEquals("AhojHelloAhojHello", target.call("Ahoj", "Hello"));
+        assertEquals(ts("AhojHelloAhojHello"), target.call(ts("Ahoj"), ts("Hello")));
     }
 
     @Test
@@ -79,7 +82,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
         Source source = createSource("tmp = arg1 + arg2\n" + "return 2 * tmp");
         CallTarget target = context.getEnv().parsePublic(source, "arg1", "arg2");
         assertEquals(22, target.call(5, 6));
-        assertEquals("AhojHelloAhojHello", target.call("Ahoj", "Hello"));
+        assertEquals(ts("AhojHelloAhojHello"), target.call(ts("Ahoj"), ts("Hello")));
     }
 
     @Test
@@ -87,7 +90,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
         Source source = createSource("tmp = arg1 + arg2\n");
         CallTarget target = context.getEnv().parsePublic(source, "arg1", "arg2");
         assertEquals(PNone.NONE, target.call(5, 6));
-        assertEquals(PNone.NONE, target.call("Ahoj", "Hello"));
+        assertEquals(PNone.NONE, target.call(ts("Ahoj"), ts("Hello")));
     }
 
     @Test
@@ -96,7 +99,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
         CallTarget targetWithout = context.getEnv().parsePublic(source);
         CallTarget targetWith = context.getEnv().parsePublic(source, "arg1");
         assertEquals(22, targetWithout.call());
-        assertEquals(22, targetWith.call("Hello"));
+        assertEquals(22, targetWith.call(ts("Hello")));
     }
 
     @Test
@@ -110,7 +113,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
     public void testObjectMethods() throws Exception {
         Source source = createSource("arg1.upper()");
         CallTarget target = context.getEnv().parsePublic(source, "arg1");
-        assertEquals("AHOJ", target.call("ahoj"));
+        assertEquals(ts("AHOJ"), target.call(ts("ahoj")));
     }
 
     @Test

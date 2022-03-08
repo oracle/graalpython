@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,10 +53,13 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENO
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ESRCH;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ETIMEDOUT;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_TAKES_NO_KEYWORD_ARGS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -70,13 +73,16 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyArgCheckPositionalNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -118,8 +124,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        core.registerTypeInBuiltins("EnvironmentError", PythonBuiltinClassType.OSError);
-        core.registerTypeInBuiltins("IOError", PythonBuiltinClassType.OSError);
+        core.registerTypeInBuiltins(tsLiteral("EnvironmentError"), PythonBuiltinClassType.OSError);
+        core.registerTypeInBuiltins(tsLiteral("IOError"), PythonBuiltinClassType.OSError);
     }
 
     static boolean osErrorUseInit(VirtualFrame frame, Python3Core core, Object type, PyObjectGetAttr getAttr) {
@@ -131,10 +137,10 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         //
         // (see http://bugs.python.org/issue12555#msg148829 )
         final PythonBuiltinClass osErrorType = core.lookupType(PythonBuiltinClassType.OSError);
-        final Object tpInit = getAttr.execute(frame, type, __INIT__);
-        final Object tpNew = getAttr.execute(frame, type, __NEW__);
-        final Object osErrInit = getAttr.execute(frame, osErrorType, __INIT__);
-        final Object osErrNew = getAttr.execute(frame, osErrorType, __NEW__);
+        final Object tpInit = getAttr.execute(frame, type, T___INIT__);
+        final Object tpNew = getAttr.execute(frame, type, T___NEW__);
+        final Object osErrInit = getAttr.execute(frame, osErrorType, T___INIT__);
+        final Object osErrNew = getAttr.execute(frame, osErrorType, T___NEW__);
         return tpInit != osErrInit && tpNew == osErrNew;
     }
 
@@ -251,7 +257,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         return parsed;
     }
 
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class OSErrorNewNode extends PythonBuiltinNode {
         @Specialization
@@ -291,7 +297,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class OSErrorInitNode extends PythonBuiltinNode {
         public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds);
@@ -385,7 +391,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = "isInvalid(self)")
         @SuppressWarnings("unused")
         Object generic(PBaseException self, Object value) {
-            throw raise(PythonBuiltinClassType.AttributeError, "characters_written");
+            throw raise(PythonBuiltinClassType.AttributeError, ErrorMessages.CHARACTERS_WRITTEN);
         }
 
         @Specialization(guards = "!isInvalid(self)")
@@ -400,14 +406,16 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class OSErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached BaseExceptionBuiltins.StrNode baseStrNode,
-                        @Cached PyObjectReprAsJavaStringNode reprNode) {
+                        @Cached PyObjectStrAsTruffleStringNode strNode,
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             // TODO: missing windows code
             final Object filename = attrNode.get(self, IDX_FILENAME, OS_ERROR_ATTR_FACTORY);
             final Object filename2 = attrNode.get(self, IDX_FILENAME2, OS_ERROR_ATTR_FACTORY);
@@ -415,26 +423,26 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             final Object strerror = attrNode.get(self, IDX_STRERROR, OS_ERROR_ATTR_FACTORY);
             if (filename != PNone.NONE) {
                 if (filename2 != PNone.NONE) {
-                    return PythonUtils.format("[Errno %s] %s: %s -> %s",
-                                    errno != null ? errno : PNone.NONE,
-                                    strerror != null ? strerror : PNone.NONE,
+                    return simpleTruffleStringFormatNode.format("[Errno %s] %s: %s -> %s",
+                                    strNode.execute(frame, errno != null ? errno : PNone.NONE),
+                                    strNode.execute(frame, strerror != null ? strerror : PNone.NONE),
                                     reprNode.execute(frame, filename),
                                     reprNode.execute(frame, filename2));
                 } else {
-                    return PythonUtils.format("[Errno %s] %s: %s",
-                                    errno != null ? errno : PNone.NONE,
-                                    strerror != null ? strerror : PNone.NONE,
+                    return simpleTruffleStringFormatNode.format("[Errno %s] %s: %s",
+                                    strNode.execute(frame, errno != null ? errno : PNone.NONE),
+                                    strNode.execute(frame, strerror != null ? strerror : PNone.NONE),
                                     reprNode.execute(frame, filename));
                 }
             }
             if (errno != PNone.NONE && strerror != PNone.NONE) {
-                return PythonUtils.format("[Errno %s] %s", errno, strerror);
+                return simpleTruffleStringFormatNode.format("[Errno %s] %s", strNode.execute(frame, errno), strNode.execute(frame, strerror));
             }
             return baseStrNode.execute(frame, self);
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class OSErrorReduceNode extends PythonUnaryBuiltinNode {
         @Specialization

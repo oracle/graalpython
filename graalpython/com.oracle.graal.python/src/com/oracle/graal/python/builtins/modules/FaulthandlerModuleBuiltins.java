@@ -71,6 +71,10 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(defineModule = "faulthandler")
 public class FaulthandlerModuleBuiltins extends PythonBuiltins {
@@ -101,6 +105,9 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "all_threads", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
     abstract static class DumpTracebackNode extends PythonClinicBuiltinNode {
+
+        public static final TruffleString T_PRINT_STACK = tsLiteral("print_stack");
+
         @Specialization
         PNone doit(VirtualFrame frame, Object file, boolean allThreads) {
             PythonLanguage language = PythonLanguage.get(this);
@@ -119,8 +126,8 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
         private static void dump(PythonLanguage language, PythonContext context, Object file, boolean allThreads) {
             Object printStackFunc;
             try {
-                Object tracebackModule = AbstractImportNode.importModule("traceback");
-                printStackFunc = PyObjectLookupAttr.getUncached().execute(null, tracebackModule, "print_stack");
+                Object tracebackModule = AbstractImportNode.importModule(toTruffleStringUncached("traceback"));
+                printStackFunc = PyObjectLookupAttr.getUncached().execute(null, tracebackModule, T_PRINT_STACK);
             } catch (PException e) {
                 return;
             }

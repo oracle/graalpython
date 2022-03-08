@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,14 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.from_param;
+import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.J_FROM_PARAM;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_pointer;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_uint8_array;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRONG_TYPE;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -62,13 +64,11 @@ import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCSimpleTypeBuiltins
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -87,6 +88,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
 
@@ -118,20 +120,20 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static void addClassMethod(PythonObjectSlowPathFactory pythonObjectFactory, PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
-        String name = builtin.name();
+        TruffleString name = toTruffleStringUncached(builtin.name());
         Object builtinDoc = PNone.NONE;
         RootCallTarget callTarget = language.createCachedCallTarget(
                         l -> new BuiltinFunctionRootNode(l, builtin, factory, true),
                         factory.getNodeClass(),
                         builtin.name());
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = pythonObjectFactory.createBuiltinFunction(builtin.name(), type, 1, flags, callTarget);
-        function.setAttribute(__DOC__, builtinDoc);
+        PBuiltinFunction function = pythonObjectFactory.createBuiltinFunction(name, type, 1, flags, callTarget);
+        function.setAttribute(T___DOC__, builtinDoc);
         WriteAttributeToObjectNode.getUncached(true).execute(type, name, function);
     }
 
     @ImportStatic(CDataTypeBuiltins.class)
-    @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = J_FROM_PARAM, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class CWCharPFromParamNode extends PythonBinaryBuiltinNode {
 
@@ -150,7 +152,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CWCharPFromParamNode cwCharPFromParamNode,
-                        @Cached("create(_as_parameter_)") LookupAttributeInMRONode lookupAsParam) {
+                        @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam) {
             if (PGuards.isString(value)) {
                 PyCArgObject parg = factory().createCArgObject();
                 parg.pffi_type = ffi_type_uint8_array;
@@ -191,7 +193,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(CDataTypeBuiltins.class)
-    @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = J_FROM_PARAM, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class CVoidPFromParamNode extends PythonBinaryBuiltinNode {
 
@@ -234,13 +236,20 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object string(@SuppressWarnings("unused") Object type, String value) { // PyUnicode_Check
+        Object string(@SuppressWarnings("unused") Object type, TruffleString tvalue,
+                        @Cached CastToTruffleStringNode toTruffleStringNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) { // PyUnicode_Check
             /* unicode */
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_uint8_array;
             parg.tag = 'Z';
-            parg.value = PtrValue.bytes(parg.pffi_type, BytesUtils.utf8StringToBytes(value));
-            parg.obj = value;
+            TruffleString str = switchEncodingNode.execute(tvalue, TruffleString.Encoding.UTF_8);
+            int len = str.byteLength(TruffleString.Encoding.UTF_8);
+            byte[] b = new byte[len];
+            copyToByteArrayNode.execute(str, 0, b, 0, len, TruffleString.Encoding.UTF_8);
+            parg.value = PtrValue.bytes(parg.pffi_type, b);
+            parg.obj = tvalue;
             return parg;
         }
 
@@ -251,7 +260,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CVoidPFromParamNode cVoidPFromParamNode,
-                        @Cached("create(_as_parameter_)") LookupAttributeInMRONode lookupAsParam) {
+                        @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             /* c_void_p instance (or subclass) */
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
@@ -283,8 +293,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             }
             /* c_char_p, c_wchar_p */
             StgDictObject stgd = pyObjectStgDictNode.execute(value);
-            if (stgd != null && pyTypeCheck.isCDataObject(value) && PGuards.isString(stgd.proto)) { // PyUnicode_Check
-                char code = PString.charAt((String) stgd.proto, 0);
+            if (stgd != null && pyTypeCheck.isCDataObject(value) && PGuards.isTruffleString(stgd.proto)) { // PyUnicode_Check
+                int code = codePointAtIndexNode.execute((TruffleString) stgd.proto, 0, TS_ENCODING);
                 switch (code) {
                     case 'z': /* c_char_p */
                     case 'Z': /* c_wchar_p */
@@ -308,7 +318,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(CDataTypeBuiltins.class)
-    @Builtin(name = from_param, minNumOfPositionalArgs = 2) // , declaresExplicitSelf = true)
+    @Builtin(name = J_FROM_PARAM, minNumOfPositionalArgs = 2) // , declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class CCharPFromParamNode extends PythonBinaryBuiltinNode {
 
@@ -337,7 +347,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CCharPFromParamNode cCharPFromParamNode,
-                        @Cached("create(_as_parameter_)") LookupAttributeInMRONode lookupAsParam) {
+                        @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam) {
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
                 return value;

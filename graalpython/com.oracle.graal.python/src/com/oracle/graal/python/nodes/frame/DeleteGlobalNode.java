@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,15 +49,16 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class DeleteGlobalNode extends StatementNode implements GlobalNode {
-    private final String attributeId;
+    private final TruffleString attributeId;
 
-    DeleteGlobalNode(String attributeId) {
+    DeleteGlobalNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
-    public static DeleteGlobalNode create(String attributeId) {
+    public static DeleteGlobalNode create(TruffleString attributeId) {
         return DeleteGlobalNodeGen.create(attributeId);
     }
 
@@ -99,7 +100,7 @@ public abstract class DeleteGlobalNode extends StatementNode implements GlobalNo
     }
 
     @Override
-    public String getAttributeId() {
+    public TruffleString getAttributeId() {
         return attributeId;
     }
 }

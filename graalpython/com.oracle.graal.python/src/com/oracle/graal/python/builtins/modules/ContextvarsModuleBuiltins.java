@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.CONTEXTVARS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
 
 import java.util.List;
 
@@ -57,8 +57,9 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = CONTEXTVARS)
+@CoreFunctions(defineModule = J__CONTEXTVARS)
 public class ContextvarsModuleBuiltins extends PythonBuiltins {
 
     @Override
@@ -79,12 +80,12 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContextVarNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected Object construct(VirtualFrame frame, Object cls, String name, PNone def) {
+        protected Object construct(VirtualFrame frame, Object cls, TruffleString name, PNone def) {
             return constructDef(frame, cls, name, PContextVar.NO_DEFAULT);
         }
 
         @Specialization(guards = "!isPNone(def)")
-        protected Object constructDef(VirtualFrame frame, Object cls, String name, Object def) {
+        protected Object constructDef(VirtualFrame frame, Object cls, TruffleString name, Object def) {
             return factory().createContextVar(name, def);
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,10 +46,12 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ANONYMOUS_MUST_BE_A_SE
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_IS_SPECIFIED_IN_ANONYMOUS_BUT_NOT_IN_FIELDS;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNEXPECTED_TYPE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -62,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -95,6 +96,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.StgDict)
 public class StgDictBuiltins extends PythonBuiltins {
@@ -104,9 +106,9 @@ public class StgDictBuiltins extends PythonBuiltins {
         return StgDictBuiltinsFactory.getFactories();
     }
 
-    protected static final String _anonymous_ = "_anonymous_";
+    protected static final TruffleString T__anonymous_ = tsLiteral("_anonymous_");
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class InitNode extends PythonBuiltinNode {
 
@@ -114,7 +116,7 @@ public class StgDictBuiltins extends PythonBuiltins {
         Object init(VirtualFrame frame, StgDictObject self, Object[] args, PKeyword[] kwargs,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached CallNode callNode) {
-            Object initMethod = lookup.execute(frame, PythonBuiltinClassType.PDict, SpecialMethodNames.__INIT__);
+            Object initMethod = lookup.execute(frame, PythonBuiltinClassType.PDict, SpecialMethodNames.T___INIT__);
             Object[] dictArgs;
             if (args.length > 0) {
                 dictArgs = new Object[args.length + 1];
@@ -131,7 +133,7 @@ public class StgDictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SIZEOF__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___SIZEOF__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class SizeOfNode extends PythonUnaryBuiltinNode {
 
@@ -139,11 +141,12 @@ public class StgDictBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, StgDictObject self,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached ObjectBuiltins.SizeOfNode sizeOfNode,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             long size = asSizeNode.executeLossy(frame, sizeOfNode.execute(frame, getDict.execute(self)));
             // size += sizeof(StgDictObject) - sizeof(PyDictObject);
             if (self.format != null) {
-                size += PString.length(self.format) + 1;
+                size += codePointLengthNode.execute(self.format, TS_ENCODING) + 1;
             }
             size += self.ndim * Integer.BYTES;
             if (self.ffi_type_pointer.elements != null) {
@@ -172,7 +175,7 @@ public class StgDictBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetItemNode getItemNode,
                         @Cached GetInternalObjectArrayNode getArray,
-                        @Cached("create(_fields_)") GetAttributeNode getAttrString) {
+                        @Cached("create(T__fields_)") GetAttributeNode getAttrString) {
             Object fields = getAttrString.executeObject(frame, descr.proto);
             if (!sequenceCheckNode.execute(fields)) {
                 throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE);
@@ -278,7 +281,7 @@ public class StgDictBuiltins extends PythonBuiltins {
                         @Cached MakeFieldsNode makeFieldsNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttr,
-                        @Cached(parameters = "_anonymous_") LookupAttributeInMRONode lookupAnon) {
+                        @Cached(parameters = "T__anonymous_") LookupAttributeInMRONode lookupAnon) {
             Object anon = lookupAnon.execute(type);
             if (PGuards.isPNone(anon)) {
                 return;

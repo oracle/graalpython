@@ -116,6 +116,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -178,6 +179,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SequenceStorageNodes {
 
@@ -431,10 +433,10 @@ public abstract class SequenceStorageNodes {
         @Child private GetItemScalarNode getItemScalarNode;
         @Child private GetItemSliceNode getItemSliceNode;
         @Child private PRaiseNode raiseNode;
-        private final String keyTypeErrorMessage;
+        private final TruffleString keyTypeErrorMessage;
         private final BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod;
 
-        public GetItemNode(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
+        public GetItemNode(NormalizeIndexNode normalizeIndexNode, TruffleString keyTypeErrorMessage, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
             super(normalizeIndexNode);
             this.keyTypeErrorMessage = keyTypeErrorMessage;
             this.factoryMethod = factoryMethod;
@@ -526,19 +528,19 @@ public abstract class SequenceStorageNodes {
             return GetItemNodeGen.create(NormalizeIndexNode.create(), ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
         }
 
-        public static GetItemNode createNotNormalized(String keyTypeErrorMessage) {
+        public static GetItemNode createNotNormalized(TruffleString keyTypeErrorMessage) {
             return GetItemNodeGen.create(null, keyTypeErrorMessage, null);
         }
 
-        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage) {
+        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, TruffleString keyTypeErrorMessage) {
             return GetItemNodeGen.create(normalizeIndexNode, keyTypeErrorMessage, null);
         }
 
-        public static GetItemNode create(String keyTypeErrorMessage) {
+        public static GetItemNode create(TruffleString keyTypeErrorMessage) {
             return GetItemNodeGen.create(NormalizeIndexNode.create(), keyTypeErrorMessage, null);
         }
 
-        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
+        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, TruffleString keyTypeErrorMessage, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
             return GetItemNodeGen.create(normalizeIndexNode, keyTypeErrorMessage, factoryMethod);
         }
 
@@ -1121,11 +1123,11 @@ public abstract class SequenceStorageNodes {
             return SetItemNodeGen.create(normalizeIndexNode, generalizationNodeProvider);
         }
 
-        public static SetItemNode create(NormalizeIndexNode normalizeIndexNode, String invalidItemErrorMessage) {
+        public static SetItemNode create(NormalizeIndexNode normalizeIndexNode, TruffleString invalidItemErrorMessage) {
             return SetItemNodeGen.create(normalizeIndexNode, () -> NoGeneralizationCustomMessageNode.create(invalidItemErrorMessage));
         }
 
-        public static SetItemNode create(String invalidItemErrorMessage) {
+        public static SetItemNode create(TruffleString invalidItemErrorMessage) {
             return SetItemNodeGen.create(NormalizeIndexNode.create(), () -> NoGeneralizationCustomMessageNode.create(invalidItemErrorMessage));
         }
 
@@ -2073,7 +2075,7 @@ public abstract class SequenceStorageNodes {
      * result to the new storage.
      */
     public abstract static class ConcatNode extends SequenceStorageBaseNode {
-        private static final String DEFAULT_ERROR_MSG = ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
+        private static final TruffleString DEFAULT_ERROR_MSG = ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 
         @Child private ConcatBaseNode concatBaseNode = ConcatBaseNodeGen.create();
         @Child private CreateEmptyNode createEmptyNode = CreateEmptyNode.create();
@@ -2154,7 +2156,7 @@ public abstract class SequenceStorageNodes {
             return create(() -> NoGeneralizationCustomMessageNode.create(DEFAULT_ERROR_MSG), OverflowError);
         }
 
-        public static ConcatNode create(String msg) {
+        public static ConcatNode create(TruffleString msg) {
             return create(() -> NoGeneralizationCustomMessageNode.create(msg), MemoryError);
         }
 
@@ -2261,7 +2263,6 @@ public abstract class SequenceStorageNodes {
     }
 
     public abstract static class RepeatNode extends SequenceStorageBaseNode {
-        private static final String ERROR_MSG = "can't multiply sequence by non-int of type '%p'";
 
         @Child private GetItemScalarNode getItemNode;
         @Child private RepeatNode recursive;
@@ -2465,7 +2466,7 @@ public abstract class SequenceStorageNodes {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (!indexCheckNode.execute(times)) {
-                throw raiseNode.raise(TypeError, ERROR_MSG, times);
+                throw raiseNode.raise(TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, times);
             }
             int i = asSizeNode.executeExact(frame, times);
             if (recursive == null) {
@@ -2616,25 +2617,25 @@ public abstract class SequenceStorageNodes {
             throw raiseNode.raise(TypeError, getErrorMessage());
         }
 
-        protected String getErrorMessage() {
-            return "";
+        protected TruffleString getErrorMessage() {
+            return StringLiterals.T_EMPTY_STRING;
         }
     }
 
     public abstract static class NoGeneralizationCustomMessageNode extends NoGeneralizationNode {
 
-        private final String errorMessage;
+        private final TruffleString errorMessage;
 
-        public NoGeneralizationCustomMessageNode(String errorMessage) {
+        public NoGeneralizationCustomMessageNode(TruffleString errorMessage) {
             this.errorMessage = errorMessage;
         }
 
         @Override
-        protected final String getErrorMessage() {
+        protected final TruffleString getErrorMessage() {
             return errorMessage;
         }
 
-        public static NoGeneralizationCustomMessageNode create(String msg) {
+        public static NoGeneralizationCustomMessageNode create(TruffleString msg) {
             return NoGeneralizationCustomMessageNodeGen.create(msg);
         }
     }

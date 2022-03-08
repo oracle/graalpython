@@ -43,12 +43,21 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.LIST_CANNOT_BE_CONVERTED_TO_DICT;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -196,7 +205,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -209,6 +218,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -242,6 +252,8 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
 
@@ -250,6 +262,7 @@ import com.oracle.truffle.llvm.api.Toolchain;
 public final class PythonCextBuiltins extends PythonBuiltins {
 
     public static final String PYTHON_CEXT = "python_cext";
+    public static final TruffleString T_PYTHON_CEXT = tsLiteral(PYTHON_CEXT);
 
     /*
      * Native pointer to the PyMethodDef struct for functions created in C. We need to keep it
@@ -266,18 +279,18 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("PyEval_SaveThread", new PyEvalSaveThread());
-        builtinConstants.put("PyEval_RestoreThread", new PyEvalRestoreThread());
-        builtinConstants.put("PyGILState_Ensure", new PyGILStateEnsure());
-        builtinConstants.put("PyGILState_Release", new PyGILStateRelease());
+        addBuiltinConstant("PyEval_SaveThread", new PyEvalSaveThread());
+        addBuiltinConstant("PyEval_RestoreThread", new PyEvalRestoreThread());
+        addBuiltinConstant("PyGILState_Ensure", new PyGILStateEnsure());
+        addBuiltinConstant("PyGILState_Release", new PyGILStateRelease());
     }
 
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         if (!core.getContext().getOption(PythonOptions.EnableDebuggingBuiltins)) {
-            PythonModule mod = core.lookupBuiltinModule(PYTHON_CEXT);
-            mod.setAttribute("PyTruffle_ToNative", PNone.NO_VALUE);
+            PythonModule mod = core.lookupBuiltinModule(T_PYTHON_CEXT);
+            mod.setAttribute(toTruffleStringUncached("PyTruffle_ToNative"), PNone.NO_VALUE);
         }
     }
 
@@ -392,29 +405,30 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleTypeNode extends NativeBuiltin {
 
-        private static final String[] LOOKUP_MODULES = new String[]{
-                        PythonCextBuiltins.PYTHON_CEXT,
-                        "_weakref",
-                        "builtins"
+        private static final TruffleString[] LOOKUP_MODULES = new TruffleString[]{
+                        PythonCextBuiltins.T_PYTHON_CEXT,
+                        T__WEAKREF,
+                        T_BUILTINS
         };
 
         @Specialization
-        @TruffleBoundary
-        Object doI(Object typeNameObject) {
-            String typeName = CastToJavaStringNode.getUncached().execute(typeNameObject);
+        Object doI(Object typeNameObject,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached TruffleString.EqualNode eqNode) {
+            TruffleString typeName = castToTruffleStringNode.execute(typeNameObject);
             Python3Core core = getCore();
             for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
-                if (type.getName().equals(typeName)) {
+                if (eqNode.execute(type.getName(), typeName, TS_ENCODING)) {
                     return core.lookupType(type);
                 }
             }
-            for (String module : LOOKUP_MODULES) {
+            for (TruffleString module : LOOKUP_MODULES) {
                 Object attribute = core.lookupBuiltinModule(module).getAttribute(typeName);
                 if (attribute != PNone.NO_VALUE) {
                     return attribute;
                 }
             }
-            throw raise(PythonErrorType.KeyError, "'%s'", typeName);
+            throw raise(PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
         }
     }
 
@@ -429,7 +443,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "import_c_func", minNumOfPositionalArgs = 2, parameterNames = {"name", "capi_library"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class ImportCExtFunction extends PythonBinaryClinicBuiltinNode {
 
@@ -439,10 +453,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object importCExtFunction(String name, Object capiLibrary,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+        Object importCExtFunction(TruffleString name, Object capiLibrary,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             try {
-                Object member = lib.readMember(capiLibrary, name);
+                Object member = lib.readMember(capiLibrary, toJavaStringNode.execute(name));
                 return PExternalFunctionWrapper.createWrapperFunction(name, member, null, 0,
                                 PExternalFunctionWrapper.DIRECT, getLanguage(), factory(), true);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -454,10 +469,10 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @GenerateUncached
     abstract static class CreateFunctionNode extends PNodeWithContext {
 
-        abstract Object execute(String name, Object callable, Object wrapper, Object type, Object flags, PythonObjectFactory factory);
+        abstract Object execute(TruffleString name, Object callable, Object wrapper, Object type, Object flags, PythonObjectFactory factory);
 
         @Specialization(guards = {"isTypeNode.execute(type)", "isNoValue(wrapper)"}, limit = "3")
-        static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") String name, PythonNativeWrapper callable,
+        static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") TruffleString name, PythonNativeWrapper callable,
                         @SuppressWarnings("unused") PNone wrapper,
                         @SuppressWarnings("unused") Object type,
                         @SuppressWarnings("unused") Object flags,
@@ -472,7 +487,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
         @TruffleBoundary
-        Object doPythonCallable(String name, PythonNativeWrapper callable, int signature, Object type, int flags, PythonObjectFactory factory,
+        Object doPythonCallable(TruffleString name, PythonNativeWrapper callable, int signature, Object type, int flags, PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
@@ -484,7 +499,8 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(type)", "isDecoratedManagedFunction(callable)", "isNoValue(wrapper)"}, limit = "1")
         @SuppressWarnings("unused")
-        static Object doDecoratedManagedWithoutWrapper(@SuppressWarnings("unused") String name, PyCFunctionDecorator callable, PNone wrapper, Object type, Object flags, PythonObjectFactory factory,
+        static Object doDecoratedManagedWithoutWrapper(@SuppressWarnings("unused") TruffleString name, PyCFunctionDecorator callable, PNone wrapper, Object type, Object flags,
+                        PythonObjectFactory factory,
                         @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary,
                         @Cached TypeNodes.IsTypeNode isTypeNode) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
@@ -497,7 +513,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isDecoratedManagedFunction(callable)")
         @TruffleBoundary
-        static Object doDecoratedManaged(String name, PyCFunctionDecorator callable, int signature, Object type, int flags, PythonObjectFactory factory,
+        static Object doDecoratedManaged(TruffleString name, PyCFunctionDecorator callable, int signature, Object type, int flags, PythonObjectFactory factory,
                         @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
@@ -519,7 +535,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(type)", "!isNativeWrapper(callable)"}, limit = "1")
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithType(String name, Object callable, int signature, Object type, int flags, PythonObjectFactory factory,
+        PBuiltinFunction doNativeCallableWithType(TruffleString name, Object callable, int signature, Object type, int flags, PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
             return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, flags,
                             signature, getLanguage(), factory, true);
@@ -527,13 +543,13 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutType(String name, Object callable, int signature, @SuppressWarnings("unused") PNone type, int flags, PythonObjectFactory factory) {
+        PBuiltinFunction doNativeCallableWithoutType(TruffleString name, Object callable, int signature, @SuppressWarnings("unused") PNone type, int flags, PythonObjectFactory factory) {
             return doNativeCallableWithType(name, callable, signature, null, flags, factory, null);
         }
 
         @Specialization(guards = {"isTypeNode.execute(type)", "isNoValue(wrapper)", "!isNativeWrapper(callable)"}, limit = "1")
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, Object type,
+        PBuiltinFunction doNativeCallableWithoutWrapper(TruffleString name, Object callable, Object type,
                         @SuppressWarnings("unused") PNone wrapper,
                         @SuppressWarnings("unused") Object flags, PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
@@ -543,7 +559,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type, Object flags, PythonObjectFactory factory) {
+        PBuiltinFunction doNativeCallableWithoutWrapperAndType(TruffleString name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type, Object flags, PythonObjectFactory factory) {
             return doNativeCallableWithoutWrapper(name, callable, null, wrapper, flags, factory, null);
         }
 
@@ -560,24 +576,24 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectSetAttrNode extends PythonTernaryBuiltinNode {
 
-        abstract Object execute(Object object, String key, Object value);
+        abstract Object execute(Object object, TruffleString key, Object value);
 
         @Specialization
-        static Object doBuiltinClass(PythonBuiltinClass object, String key, Object value,
+        static Object doBuiltinClass(PythonBuiltinClass object, TruffleString key, Object value,
                         @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
             return PNone.NONE;
         }
 
         @Specialization
-        static Object doNativeClass(PythonNativeClass object, String key, Object value,
+        static Object doNativeClass(PythonNativeClass object, TruffleString key, Object value,
                         @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
-        static Object doObject(PythonObject object, String key, Object value,
+        static Object doObject(PythonObject object, TruffleString key, Object value,
                         @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
             writeAttrToDynamicObjectNode.execute(object.getStorage(), key, value);
             return PNone.NONE;
@@ -607,6 +623,9 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         private static final int INDEX_GETSETS = 0;
         private static final int INDEX_MEMBERS = 1;
 
+        private static final TruffleString T_MEMBERS = tsLiteral("members");
+        private static final TruffleString T_GETSETS = tsLiteral("getsets");
+
         /**
          * A native class may inherit from a managed class. However, the managed class may define
          * custom slots at a time where the C API is not yet loaded. So we need to check if any of
@@ -614,12 +633,13 @@ public final class PythonCextBuiltins extends PythonBuiltins {
          * slots and add the native member slot descriptors.
          */
         @Specialization
-        Object slots(Object pythonClass, String subKey,
-                        @Cached GetMroStorageNode getMroStorageNode) {
+        Object slots(Object pythonClass, TruffleString subKey,
+                        @Cached GetMroStorageNode getMroStorageNode,
+                        @Cached TruffleString.EqualNode eqNode) {
             int idx;
-            if ("getsets".equals(subKey)) {
+            if (eqNode.execute(T_GETSETS, subKey, TS_ENCODING)) {
                 idx = INDEX_GETSETS;
-            } else if ("members".equals(subKey)) {
+            } else if (eqNode.execute(T_MEMBERS, subKey, TS_ENCODING)) {
                 idx = INDEX_MEMBERS;
             } else {
                 return getContext().getNativeNull();
@@ -660,7 +680,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             transformExceptionToNativeNode.execute(frame, p);
         }
 
-        protected Object raiseNative(VirtualFrame frame, Object defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+        protected Object raiseNative(VirtualFrame frame, Object defaultValue, PythonBuiltinClassType errType, TruffleString fmt, Object... args) {
             return ensureRaiseNativeNode().execute(frame, defaultValue, errType, fmt, args);
         }
 
@@ -694,13 +714,13 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        protected static String toString(CharBuffer cb) {
+        protected static TruffleString toString(CharBuffer cb) {
             int len = cb.position();
             if (len > 0) {
                 cb.rewind();
-                return cb.subSequence(0, len).toString();
+                return toTruffleStringUncached(cb.subSequence(0, len).toString());
             }
-            return "";
+            return T_EMPTY_STRING;
         }
 
         @TruffleBoundary
@@ -762,31 +782,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_FromUTF8", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTruffleUnicodeFromUTF8Node extends NativeBuiltin {
-
-        @Specialization
-        Object doBytes(VirtualFrame frame, Object o, Object errorMarker,
-                        @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
-            try {
-                return decodeUTF8(getByteArrayNode.execute(o, -1));
-            } catch (CharacterCodingException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeError, "%m", e);
-            } catch (InteropException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
-            } catch (OverflowException e) {
-                return raiseNative(frame, errorMarker, OverflowError, ErrorMessages.INPUT_TOO_LONG);
-            }
-        }
-
-        @TruffleBoundary
-        private static String decodeUTF8(byte[] data) throws CharacterCodingException {
-            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-            return decoder.decode(wrap(data)).toString();
-        }
-    }
-
     abstract static class NativeEncoderNode extends NativeBuiltin {
         private final Charset charset;
 
@@ -797,11 +792,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(errors)")
         Object doUnicode(VirtualFrame frame, PString s, @SuppressWarnings("unused") PNone errors, Object error_marker,
                         @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode) {
-            return doUnicode(frame, s, "strict", error_marker, encodeNativeStringNode);
+            return doUnicode(frame, s, T_STRICT, error_marker, encodeNativeStringNode);
         }
 
         @Specialization
-        Object doUnicode(VirtualFrame frame, PString s, String errors, Object error_marker,
+        Object doUnicode(VirtualFrame frame, PString s, TruffleString errors, Object error_marker,
                         @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode) {
             try {
                 return factory().createBytes(encodeNativeStringNode.execute(charset, s, errors));
@@ -838,8 +833,9 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleUnicodeAsUnicodeAndSizeNode extends NativeBuiltin {
         @Specialization
         @TruffleBoundary
-        Object doUnicode(PString s) {
-            char[] charArray = s.getValue().toCharArray();
+        Object doUnicode(PString s,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            char[] charArray = toJavaStringNode.execute(s.getValueUncached()).toCharArray();
             // stuff into byte[]
             ByteBuffer allocate = ByteBuffer.allocate(charArray.length * 2);
             for (int i = 0; i < charArray.length; i++) {
@@ -855,39 +851,29 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleUnicodeDecodeUTF32Node extends NativeUnicodeBuiltin {
 
         @Specialization
-        Object doUnicodeStringErrors(VirtualFrame frame, Object o, long size, String errors, int byteorder, Object errorMarker,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
+        Object doUnicodeStringErrors(VirtualFrame frame, Object o, long size, TruffleString errors, int byteorder, Object errorMarker,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached GetByteArrayNode getByteArrayNode) {
             try {
                 return toSulongNode.execute(decodeUTF32(getByteArrayNode.execute(o, size), (int) size, errors, byteorder));
             } catch (CharacterCodingException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeEncodeError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeEncodeError, ErrorMessages.M, e);
             } catch (IllegalArgumentException e) {
-                String csName = Charsets.getUTF32Name(byteorder);
+                TruffleString csName = Charsets.getUTF32Name(byteorder);
                 return raiseNative(frame, errorMarker, PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ENCODING, csName);
             } catch (InteropException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
                 return raiseNative(frame, errorMarker, OverflowError, ErrorMessages.INPUT_TOO_LONG);
             }
         }
 
-        @Specialization(replaces = "doUnicodeStringErrors")
-        Object doUnicode(VirtualFrame frame, Object o, long size, Object errors, int byteorder, Object errorMarker,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
-            Object perrors = asPythonObjectNode.execute(errors);
-            assert perrors == PNone.NO_VALUE || perrors instanceof String;
-            return doUnicodeStringErrors(frame, o, size, perrors == PNone.NO_VALUE ? "strict" : (String) perrors, byteorder, errorMarker, toSulongNode, getByteArrayNode);
-        }
-
         @TruffleBoundary
-        private String decodeUTF32(byte[] data, int size, String errors, int byteorder) throws CharacterCodingException {
+        private TruffleString decodeUTF32(byte[] data, int size, TruffleString errors, int byteorder) throws CharacterCodingException {
             CharsetDecoder decoder = Charsets.getUTF32Charset(byteorder).newDecoder();
-            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
+            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this, TruffleString.EqualNode.getUncached());
             CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(data, 0, size));
-            return decode.toString();
+            return toTruffleStringUncached(decode.toString());
         }
     }
 
@@ -898,7 +884,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doUnicode(VirtualFrame frame, Object s, long elementSize, Object errorMarker,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
-                        @Cached CastToJavaStringNode castStr) {
+                        @Cached CastToTruffleStringNode castStr) {
             try {
                 PBytes wchars = asWideCharNode.executeLittleEndian(castStr.execute(s), elementSize);
                 if (wchars != null) {
@@ -908,7 +894,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 }
             } catch (IllegalArgumentException e) {
                 // TODO
-                return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "%m", e);
+                return raiseNative(frame, errorMarker, PythonErrorType.LookupError, ErrorMessages.M, e);
             }
         }
     }
@@ -922,8 +908,9 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doUnicode(PString str, @SuppressWarnings("unused") Object errorMarker) {
-            return new CStringWrapper(str.getValue());
+        static Object doUnicode(PString str, @SuppressWarnings("unused") Object errorMarker,
+                        @Cached CastToTruffleStringNode castToStringNode) {
+            return new CStringWrapper(castToStringNode.execute(str));
         }
 
         @Fallback
@@ -993,13 +980,15 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached ToNewRefNode toNewRefNode) {
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached TruffleString.CodePointLengthNode lengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
             try {
                 int ndim = castToIntNode.execute(ndimObj);
                 int itemsize = castToIntNode.execute(itemsizeObj);
                 int len = castToIntNode.execute(lenObj);
                 boolean readonly = castToIntNode.execute(readonlyObj) != 0;
-                String format = (String) asPythonObjectNode.execute(formatObj);
+                TruffleString format = (TruffleString) asPythonObjectNode.execute(formatObj);
                 Object owner = lib.isNull(ownerObj) ? null : asPythonObjectNode.execute(ownerObj);
                 int[] shape = null;
                 int[] strides = null;
@@ -1037,7 +1026,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
                 }
                 PMemoryView memoryview = factory().createMemoryView(getContext(), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
-                                BufferFormat.forMemoryView(format),
+                                BufferFormat.forMemoryView(format, lengthNode, atIndexNode),
                                 format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);
             } catch (PException e) {
@@ -1369,7 +1358,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyTruffleComputeMroNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNativeObject(self)")
-        Object doIt(Object self, String className) {
+        Object doIt(Object self, TruffleString className) {
             PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(PythonNativeClass.cast(self));
             return factory().createTuple(new MroSequenceStorage(className, doSlowPath));
         }
@@ -1397,10 +1386,10 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization(guards = {"isNativeClass(clazz)", "isNoValue(mroTuple)"})
-        Object doIt(Object clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
+        Object doIt(Object clazz, TruffleString name, @SuppressWarnings("unused") PNone mroTuple) {
             CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption((PythonNativeClass) clazz, false);
             if (nativeClassStableAssumption != null) {
-                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") (without MRO) called");
+                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name.toJavaStringUncached() + "\") (without MRO) called");
             }
             SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), getLanguage());
             return PNone.NONE;
@@ -1408,18 +1397,18 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization(guards = "isNativeClass(clazz)")
-        Object doIt(Object clazz, String name, PTuple mroTuple,
+        Object doIt(Object clazz, TruffleString name, PTuple mroTuple,
                         @Cached("createClassProfile()") ValueProfile profile) {
             CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption((PythonNativeClass) clazz, false);
             if (nativeClassStableAssumption != null) {
-                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") called");
+                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name.toJavaStringUncached() + "\") called");
             }
             SequenceStorage sequenceStorage = profile.profile(mroTuple.getSequenceStorage());
             if (sequenceStorage instanceof MroSequenceStorage) {
                 ((MroSequenceStorage) sequenceStorage).lookupChanged();
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("invalid MRO object for native type \"" + name + "\"");
+                throw new IllegalStateException("invalid MRO object for native type \"" + name.toJavaStringUncached() + "\"");
             }
             SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), getLanguage());
             return PNone.NONE;
@@ -1433,15 +1422,15 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object doStrings(String msg, int status) {
-            CExtCommonNodes.fatalError(this, PythonContext.get(this), "", msg, status);
+        Object doStrings(TruffleString msg, int status) {
+            CExtCommonNodes.fatalError(this, PythonContext.get(this), T_EMPTY_STRING, msg, status);
             return PNone.NONE;
         }
 
         @Specialization
         @TruffleBoundary
         Object doGeneric(Object msgObj, int status) {
-            String msg = msgObj == PNone.NO_VALUE ? null : (String) msgObj;
+            TruffleString msg = msgObj == PNone.NO_VALUE ? null : (TruffleString) msgObj;
             return doStrings(msg, status);
         }
     }
@@ -1451,17 +1440,17 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleOSStringToDoubleNode extends NativeBuiltin {
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, String source, int reportPos) {
-
+        Object doGeneric(VirtualFrame frame, TruffleString source, int reportPos,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             if (reportPos != 0) {
                 ParsePosition pp = new ParsePosition(0);
-                Number parse = parse(source, pp);
+                Number parse = parse(toJavaStringNode.execute(source), pp);
                 if (parse != null) {
                     return factory().createTuple(new Object[]{doubleValue(parse), pp.getIndex()});
                 }
             } else {
                 try {
-                    Number parse = parse(source);
+                    Number parse = parse(toJavaStringNode.execute(source));
                     return factory().createTuple(new Object[]{doubleValue(parse)});
                 } catch (ParseException e) {
                     // ignore
@@ -1471,17 +1460,19 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static double doubleValue(Number parse) {
-            return parse.doubleValue();
+        private static double doubleValue(Number number) {
+            return number.doubleValue();
         }
 
         @TruffleBoundary
         private static Number parse(String source, ParsePosition pp) {
+            // TODO TruffleString does not return BigDecimal [GR-38106]
             return DecimalFormat.getInstance().parse(source, pp);
         }
 
         @TruffleBoundary
         private static Number parse(String source) throws ParseException {
+            // TODO TruffleString does not return BigDecimal
             return DecimalFormat.getInstance().parse(source);
         }
     }
@@ -1499,7 +1490,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "isReprFormatCode(formatCode)")
         PTuple doRepr(VirtualFrame frame, double val, @SuppressWarnings("unused") int formatCode, @SuppressWarnings("unused") int precision, @SuppressWarnings("unused") int flags,
                         @Cached("create(Repr)") LookupAndCallUnaryNode callReprNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
+                        @Cached CastToTruffleStringNode castToStringNode) {
             Object reprString = callReprNode.executeObject(frame, val);
             try {
                 return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
@@ -1512,9 +1503,14 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isReprFormatCode(formatCode)")
         Object doGeneric(VirtualFrame frame, double val, int formatCode, int precision, @SuppressWarnings("unused") int flags,
                         @Cached("create(Format)") LookupAndCallBinaryNode callReprNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached TruffleStringBuilder.AppendIntNumberNode appendIntNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodepointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             try {
-                Object reprString = callReprNode.executeObject(frame, val, joinFormatCode(formatCode, precision));
+                Object reprString = callReprNode.executeObject(frame, val,
+                                joinFormatCode(formatCode, precision, appendIntNode, appendStringNode, appendCodepointNode, toStringNode));
                 try {
                     return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
                 } catch (CannotCastException e) {
@@ -1527,9 +1523,13 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
-        private static String joinFormatCode(int formatCode, int precision) {
-            return "." + precision + (char) formatCode;
+        private static TruffleString joinFormatCode(int formatCode, int precision, TruffleStringBuilder.AppendIntNumberNode appendIntNode, TruffleStringBuilder.AppendStringNode appendStringNode,
+                        TruffleStringBuilder.AppendCodePointNode appendCodepointNode, TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(sb, T_DOT);
+            appendIntNode.execute(sb, precision);
+            appendCodepointNode.execute(sb, formatCode, 1, true);
+            return toStringNode.execute(sb);
         }
 
         private PTuple createResult(Object str, double val) {
@@ -1618,11 +1618,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         ConditionProfile kwdsProfile,
                         ConditionProfile kwdnamesProfile,
                         CExtAsPythonObjectNode kwdsToJavaNode,
-                        CastToJavaStringNode castToStringNode,
+                        CastToTruffleStringNode castToStringNode,
                         CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
 
             // force 'format' to be a String
-            String[] split;
+            TruffleString[] split;
             try {
                 split = splitFormatStringNode.execute(castToStringNode.execute(nativeFormat));
                 assert split.length == 2;
@@ -1631,8 +1631,8 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 throw new IllegalStateException();
             }
 
-            String format = split[0];
-            String functionName = split[1];
+            TruffleString format = split[0];
+            TruffleString functionName = split[1];
 
             // sort out if kwds is native NULL
             Object kwds;
@@ -1670,7 +1670,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile kwdnamesProfile,
                         @Cached AsPythonObjectNode argvToJavaNode,
                         @Cached AsPythonObjectNode kwdsToJavaNode,
-                        @Cached CastToJavaStringNode castToStringNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
             CExtContext nativeContext = PythonContext.get(splitFormatStringNode).getCApiContext();
             Object argv = argvToJavaNode.execute(arguments[0]);
@@ -1683,13 +1683,16 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Create_Lightweight_Upcall", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleCreateLightweightUpcall extends PythonUnaryBuiltinNode {
+        private static final TruffleString T_PY_TRUFFLE_OBJECT_ALLOC = tsLiteral("PyTruffle_Object_Alloc");
+        private static final TruffleString T_PY_TRUFFLE_OBJECT_FREE = tsLiteral("PyTruffle_Object_Free");
+
         @Specialization
-        static Object doGeneric(String key) {
-            switch (key) {
-                case "PyTruffle_Object_Alloc":
-                    return new PyTruffleObjectAlloc();
-                case "PyTruffle_Object_Free":
-                    return new PyTruffleObjectFree();
+        static Object doGeneric(TruffleString key,
+                        @Cached TruffleString.EqualNode eqNode) {
+            if (eqNode.execute(key, T_PY_TRUFFLE_OBJECT_ALLOC, TS_ENCODING)) {
+                return new PyTruffleObjectAlloc();
+            } else if (eqNode.execute(key, T_PY_TRUFFLE_OBJECT_FREE, TS_ENCODING)) {
+                return new PyTruffleObjectFree();
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalArgumentException("");
@@ -1712,7 +1715,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             cApiContext.getTraceMallocDomain(cachedDomainIdx).track(pointerObject, size);
             cApiContext.increaseMemoryPressure(frame, getThreadStateNode, this, size);
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(() -> String.format("Tracking memory (size: %d): %s", size, CApiContext.asHex(pointerObject)));
+                LOGGER.fine(() -> PythonUtils.format("Tracking memory (size: %d): %s", size, CApiContext.asHex(pointerObject)));
             }
             return 0;
         }
@@ -1743,7 +1746,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(pointerObject);
             cApiContext.reduceMemoryPressure(trackedMemorySize);
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(() -> String.format("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(pointerObject)));
+                LOGGER.fine(() -> PythonUtils.format("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(pointerObject)));
             }
             return 0;
         }
@@ -1805,7 +1808,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
+        protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("should not reach");
         }
@@ -1817,8 +1820,8 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleGcUntrack.class);
 
         @Override
-        protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
-            LOGGER.fine(() -> String.format("Untracking container object at %s", CApiContext.asHex(ptr)));
+        protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
+            LOGGER.fine(() -> PythonUtils.format("Untracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().untrackObject(ptr, ref, className);
         }
     }
@@ -1829,8 +1832,8 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleGcTrack.class);
 
         @Override
-        protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
-            LOGGER.fine(() -> String.format("Tracking container object at %s", CApiContext.asHex(ptr)));
+        protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
+            LOGGER.fine(() -> PythonUtils.format("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
         }
     }
@@ -1878,7 +1881,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     }
                     AllocInfo allocLocation = cApiContext.traceFree(CApiContext.asPointer(ptr, lib), ref, null);
                     if (allocLocation != null) {
-                        LOGGER.finer(() -> String.format("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
+                        LOGGER.finer(() -> PythonUtils.format("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
 
                         if (traceNativeMemoryCalls) {
                             Reference left = allocLocation.allocationSite;
@@ -1889,13 +1892,13 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                             }
                             if (pyFrame != null) {
                                 final PFrame f = pyFrame;
-                                LOGGER.finer(() -> String.format("Free'd pointer was allocated at: %s", f.getTarget()));
+                                LOGGER.finer(() -> PythonUtils.format("Free'd pointer was allocated at: %s", f.getTarget()));
                             }
                         }
                     }
                 } else {
                     assert isLoggable;
-                    LOGGER.finer(() -> String.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
+                    LOGGER.finer(() -> PythonUtils.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
                 }
             }
             return 0;
@@ -1926,11 +1929,12 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         int trace(Object ptr, Object classNameObj,
                         @CachedLibrary("ptr") InteropLibrary ptrLib,
-                        @CachedLibrary("classNameObj") InteropLibrary nameLib) {
-            final String className;
+                        @CachedLibrary("classNameObj") InteropLibrary nameLib,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            final TruffleString className;
             if (nameLib.isString(classNameObj)) {
                 try {
-                    className = nameLib.asString(classNameObj);
+                    className = switchEncodingNode.execute(nameLib.asTruffleString(classNameObj), TS_ENCODING);
                 } catch (UnsupportedMessageException e) {
                     CompilerDirectives.transferToInterpreter();
                     throw new IllegalStateException();
@@ -1941,7 +1945,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             Object primitivePtr = CApiContext.asPointer(ptr, ptrLib);
             context.getCApiContext().traceStaticMemory(primitivePtr, null, className);
-            LOGGER.fine(() -> String.format("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
+            LOGGER.fine(() -> PythonUtils.format("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
             return 0;
         }
     }
@@ -1949,11 +1953,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @ImportStatic(CExtContext.class)
     abstract static class NewClassMethodNode extends Node {
 
-        abstract Object execute(Object methodDefPtr, String name, Object methObj, Object flags, Object wrapper, Object type, Object doc,
+        abstract Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object type, Object doc,
                         PythonObjectFactory factory);
 
         @Specialization(guards = "isClassOrStaticMethod(flags)")
-        static Object classOrStatic(Object methodDefPtr, String name, Object methObj, int flags, int wrapper, Object type,
+        static Object classOrStatic(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type,
                         Object doc, PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Shared("cf") @Cached CreateFunctionNode createFunctionNode,
@@ -1965,22 +1969,22 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             } else {
                 function = factory.createStaticmethodFromCallableObj(func);
             }
-            dylib.put(function, __NAME__, name);
-            dylib.put(function, __DOC__, cstrPtr.execute(doc));
+            dylib.put(function, T___NAME__, name);
+            dylib.put(function, T___DOC__, cstrPtr.execute(doc));
             dylib.put(function, METHOD_DEF_PTR, methodDefPtr);
             return function;
         }
 
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
-        static Object doNativeCallable(Object methodDefPtr, String name, Object methObj, int flags, int wrapper, Object type,
+        static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type,
                         Object doc, PythonObjectFactory factory,
                         @Cached PyObjectSetAttrNode setattr,
                         @Cached WriteAttributeToObjectNode write,
                         @Shared("cf") @Cached CreateFunctionNode createFunctionNode,
                         @Shared("cstr") @Cached CharPtrToJavaObjectNode cstrPtr) {
             Object func = createFunctionNode.execute(name, methObj, wrapper, type, flags, factory);
-            setattr.execute(func, __NAME__, name);
-            setattr.execute(func, __DOC__, cstrPtr.execute(doc));
+            setattr.execute(func, T___NAME__, name);
+            setattr.execute(func, T___DOC__, cstrPtr.execute(doc));
             write.execute(func, METHOD_DEF_PTR, methodDefPtr);
             return func;
         }
@@ -1988,7 +1992,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     // directly called without landing function
     @Builtin(name = "AddFunctionToType", parameterNames = {"method_def_ptr", "primary", "tpDict", "name", "cfunc", "flags", "wrapper", "doc"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "wrapper", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
@@ -2000,7 +2004,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object classMethod(VirtualFrame frame, Object methodDefPtr, Object primary,
-                        Object tpDict, String name, Object cfunc, int flags, int wrapper, Object doc,
+                        Object tpDict, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Cached DictBuiltins.SetItemNode setItemNode) {
@@ -2014,7 +2018,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     // directly called without landing function
     @Builtin(name = "AddFunctionToModule", parameterNames = {"method_def_ptr", "primary", "name", "cfunc", "flags", "wrapper", "doc"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "wrapper", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
@@ -2026,13 +2030,13 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object moduleFunction(VirtualFrame frame, Object methodDefPtr, Object primary,
-                        String name, Object cfunc, int flags, int wrapper, Object doc,
+                        TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
             PythonModule mod = (PythonModule) asPythonObjectNode.execute(primary);
-            Object modName = dylib.getOrDefault(mod.getStorage(), __NAME__, null);
+            Object modName = dylib.getOrDefault(mod.getStorage(), T___NAME__, null);
             assert modName != null : "module name is missing!";
             Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc, factory());
             setattrNode.execute(frame, mod, name, func);
@@ -2062,7 +2066,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "add_slot", 7, arguments.length);
                 }
                 addSlot(arguments[0], arguments[1], arguments[2], arguments[3], castInt(arguments[4]), castInt(arguments[5]), arguments[6],
-                                AsPythonObjectNodeGen.getUncached(), CastToJavaStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
+                                AsPythonObjectNodeGen.getUncached(), CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
                                 CreateFunctionNodeGen.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
                 return 0;
             } catch (PException e) {
@@ -2074,7 +2078,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static void addSlot(Object clsPtr, Object tpDictPtr, Object namePtr, Object cfunc, int flags, int wrapper, Object docPtr,
                         AsPythonObjectNode asPythonObjectNode,
-                        CastToJavaStringNode castToJavaStringNode,
+                        CastToTruffleStringNode castToJavaStringNode,
                         FromCharPointerNode fromCharPointerNode,
                         InteropLibrary docPtrLib,
                         CreateFunctionNode createFunctionNode,
@@ -2083,7 +2087,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             Object clazz = asPythonObjectNode.execute(clsPtr);
             PDict tpDict = castPDict(asPythonObjectNode.execute(tpDictPtr));
 
-            String memberName;
+            TruffleString memberName;
             try {
                 memberName = castToJavaStringNode.execute(asPythonObjectNode.execute(namePtr));
             } catch (CannotCastException e) {
@@ -2094,7 +2098,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
             // create wrapper descriptor
             Object wrapperDescriptor = createFunctionNode.execute(memberName, cfunc, wrapper, clazz, flags, PythonObjectFactory.getUncached());
-            writeDocNode.execute(wrapperDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
+            writeDocNode.execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add wrapper descriptor to tp_dict
             HashingStorage dictStorage = tpDict.getDictStorage();
@@ -2107,11 +2111,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     abstract static class CFunctionNewExMethodNode extends Node {
 
-        abstract Object execute(Object methodDefPtr, String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
+        abstract Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
                         PythonObjectFactory factory);
 
         @Specialization
-        static Object doNativeCallable(Object methodDefPtr, String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
+        static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
                         PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CreateFunctionNode createFunctionNode,
@@ -2120,11 +2124,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             Object f = createFunctionNode.execute(name, methObj, wrapper, PNone.NO_VALUE, flags, factory);
             assert f instanceof PBuiltinFunction;
             PBuiltinFunction func = (PBuiltinFunction) f;
-            dylib.put(func.getStorage(), __NAME__, name);
+            dylib.put(func.getStorage(), T___NAME__, name);
             Object strDoc = charPtrToJavaObjectNode.execute(doc);
-            dylib.put(func.getStorage(), __DOC__, strDoc);
+            dylib.put(func.getStorage(), T___DOC__, strDoc);
             PBuiltinMethod method = factory.createBuiltinMethod(self, func);
-            dylib.put(method.getStorage(), __MODULE__, module);
+            dylib.put(method.getStorage(), T___MODULE__, module);
             dylib.put(method.getStorage(), METHOD_DEF_PTR, methodDefPtr);
             return method;
         }
@@ -2135,7 +2139,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleUnicodeFromFromat extends PythonBuiltinNode {
         @Specialization
-        Object doGeneric(VirtualFrame frame, String format, Object vaList,
+        Object doGeneric(VirtualFrame frame, TruffleString format, Object vaList,
                         @Cached UnicodeFromFormatNode unicodeFromFormatNode,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -2191,7 +2195,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "AddMember", 7, arguments.length);
                 }
                 addMember(getLanguage(), arguments[0], arguments[1], arguments[2], castInt(arguments[3]), castInt(arguments[4]), castInt(arguments[5]), arguments[6],
-                                AsPythonObjectNodeGen.getUncached(), CastToJavaStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
+                                AsPythonObjectNodeGen.getUncached(), CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
                                 PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
                 return 0;
             } catch (PException e) {
@@ -2203,7 +2207,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static void addMember(PythonLanguage language, Object clsPtr, Object tpDictPtr, Object namePtr, int memberType, int offset, int canSet, Object docPtr,
                         AsPythonObjectNode asPythonObjectNode,
-                        CastToJavaStringNode castToJavaStringNode,
+                        CastToTruffleStringNode castToTruffleStringNode,
                         FromCharPointerNode fromCharPointerNode,
                         InteropLibrary docPtrLib,
                         PythonObjectFactory factory,
@@ -2212,9 +2216,9 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
             Object clazz = asPythonObjectNode.execute(clsPtr);
             PDict tpDict = castPDict(asPythonObjectNode.execute(tpDictPtr));
-            String memberName;
+            TruffleString memberName;
             try {
-                memberName = castToJavaStringNode.execute(asPythonObjectNode.execute(namePtr));
+                memberName = castToTruffleStringNode.execute(asPythonObjectNode.execute(namePtr));
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
             }
@@ -2229,7 +2233,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
             // create member descriptor
             GetSetDescriptor memberDescriptor = factory.createMemberDescriptor(getterObject, setterObject, memberName, clazz);
-            writeDocNode.execute(memberDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
+            writeDocNode.execute(memberDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add member descriptor to tp_dict
             HashingStorage dictStorage = tpDict.getDictStorage();
@@ -2261,12 +2265,12 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     abstract static class CreateGetSetNode extends Node {
 
-        abstract GetSetDescriptor execute(String name, Object cls, Object getter, Object setter, Object doc, Object closure,
+        abstract GetSetDescriptor execute(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
                         PythonLanguage language,
                         PythonObjectFactory factory);
 
         @Specialization
-        static GetSetDescriptor createGetSet(String name, Object clazz, Object getter, Object setter, Object doc, Object closure,
+        static GetSetDescriptor createGetSet(TruffleString name, Object clazz, Object getter, Object setter, Object doc, Object closure,
                         PythonLanguage language,
                         PythonObjectFactory factory,
                         @Cached AsPythonObjectNode asPythonObjectNode,
@@ -2291,18 +2295,18 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             // create get-set descriptor
             GetSetDescriptor descriptor = factory.createGetSetDescriptor(get, set, name, cls, hasSetter);
             Object memberDoc = fromCharPointerNode.execute(doc);
-            dylib.put(descriptor.getStorage(), __DOC__, memberDoc);
+            dylib.put(descriptor.getStorage(), T___DOC__, memberDoc);
             return descriptor;
         }
 
         @TruffleBoundary
-        private static RootCallTarget getterCallTarget(String name, PythonLanguage lang) {
+        private static RootCallTarget getterCallTarget(TruffleString name, PythonLanguage lang) {
             Function<PythonLanguage, RootNode> rootNodeFunction = l -> new GetterRoot(l, name, PExternalFunctionWrapper.GETTER);
             return lang.createCachedCallTarget(rootNodeFunction, GetterRoot.class, PExternalFunctionWrapper.GETTER, name, true);
         }
 
         @TruffleBoundary
-        private static RootCallTarget setterCallTarget(String name, PythonLanguage lang) {
+        private static RootCallTarget setterCallTarget(TruffleString name, PythonLanguage lang) {
             Function<PythonLanguage, RootNode> rootNodeFunction = l -> new SetterRoot(l, name, PExternalFunctionWrapper.SETTER);
             return lang.createCachedCallTarget(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true);
         }
@@ -2310,7 +2314,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     // directly called without landing function
     @Builtin(name = "AddGetSet", minNumOfPositionalArgs = 7, parameterNames = {"cls", "tpDict", "name", "getter", "setter", "doc", "closure"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class AddGetSetNode extends PythonClinicBuiltinNode {
 
@@ -2320,7 +2324,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int doGeneric(Object cls, Object tpDict, String name, Object getter, Object setter, Object doc, Object closure,
+        int doGeneric(Object cls, Object tpDict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CreateGetSetNode createGetSetNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary dictStorageLib,
@@ -2408,7 +2412,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object doIt(Object object) {
             Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             if ("native".equals(toolchain.getIdentifier())) {
                 InteropLibrary.getUncached().toNative(object);

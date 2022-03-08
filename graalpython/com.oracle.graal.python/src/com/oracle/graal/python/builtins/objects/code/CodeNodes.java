@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,10 +49,12 @@ import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -71,6 +75,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CodeNodes {
 
@@ -93,7 +98,7 @@ public abstract class CodeNodes {
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
-                        String filename, String name, int firstlineno,
+                        TruffleString filename, TruffleString name, int firstlineno,
                         byte[] lnotab) {
 
             PythonLanguage language = PythonLanguage.get(this);
@@ -114,7 +119,7 @@ public abstract class CodeNodes {
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
-                        String filename, String name, int firstlineno,
+                        TruffleString filename, TruffleString name, int firstlineno,
                         byte[] lnotab) {
 
             RootCallTarget ct;
@@ -133,13 +138,13 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        public static PCode createCode(PythonContext context, int flags, byte[] codedata, String filename, int firstlineno, byte[] lnotab) {
+        public static PCode createCode(PythonContext context, int flags, byte[] codedata, TruffleString filename, int firstlineno, byte[] lnotab) {
             boolean isNotAModule = (flags & PCode.FLAG_MODULE) == 0;
-
+            String jFilename = filename.toJavaStringUncached();
             PythonLanguage language = context.getLanguage();
             Supplier<CallTarget> createCode = () -> {
                 ByteSequence bytes = ByteSequence.create(codedata);
-                Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).cached(!language.isSingleContext()).build();
+                Source source = Source.newBuilder(PythonLanguage.ID, bytes, jFilename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).cached(!language.isSingleContext()).build();
                 return context.getEnv().parsePublic(source);
             };
 
@@ -156,8 +161,12 @@ public abstract class CodeNodes {
         private static String[] toStringArray(Object[] array) {
             List<String> list = new ArrayList<>(array.length);
             for (Object item : array) {
-                if (item instanceof String) {
-                    list.add((String) item);
+                item = assertNoJavaString(item);
+                if (item instanceof TruffleString) {
+                    list.add(((TruffleString) item).toJavaStringUncached());
+                }
+                if (item instanceof PString) {
+                    list.add(CastToJavaStringNode.getUncached().execute(item));
                 }
             }
             return list.toArray(new String[list.size()]);

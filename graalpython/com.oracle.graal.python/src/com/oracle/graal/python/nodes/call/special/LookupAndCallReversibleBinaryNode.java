@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 // cpython://Objects/abstract.c#binary_op1
 // Order operations are tried until either a valid result or error: w.op(v,w)[*], v.op(v,w), w.op(v,w)
@@ -344,11 +345,11 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
                         type == PythonBuiltinClassType.PTuple;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return slot.getName();
     }
 
-    public String getRname() {
+    public TruffleString getRname() {
         return rslot.getName();
     }
 

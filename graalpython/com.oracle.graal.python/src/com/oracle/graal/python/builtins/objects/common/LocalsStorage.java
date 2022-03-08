@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.isUserFrameSlot;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -73,6 +75,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public final class LocalsStorage extends HashingStorage {
@@ -135,15 +138,15 @@ public final class LocalsStorage extends HashingStorage {
     @ImportStatic(PGuards.class)
     static class GetItemWithState {
         @Specialization(guards = {"key == cachedKey", "desc == self.frame.getFrameDescriptor()"}, limit = "3")
-        static Object getItemCached(LocalsStorage self, String key, ThreadState state,
-                        @Cached("key") String cachedKey,
+        static Object getItemCached(LocalsStorage self, TruffleString key, ThreadState state,
+                        @Cached("key") TruffleString cachedKey,
                         @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
                         @Cached("findSlot(desc, key)") int slot) {
             return self.getValue(slot);
         }
 
         @Specialization(replaces = "getItemCached")
-        static Object string(LocalsStorage self, String key, ThreadState state) {
+        static Object string(LocalsStorage self, TruffleString key, ThreadState state) {
             if (!isUserFrameSlot(key)) {
                 return null;
             }
@@ -153,8 +156,9 @@ public final class LocalsStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(LocalsStorage self, PString key, ThreadState state,
-                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile) {
-            return string(self, key.getValue(), state);
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @Cached CastToTruffleStringNode castToStringNode) {
+            return string(self, castToStringNode.execute(key), state);
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
@@ -169,7 +173,7 @@ public final class LocalsStorage extends HashingStorage {
             FrameDescriptor descriptor = self.frame.getFrameDescriptor();
             for (int slot = 0; slot < descriptor.getNumberOfSlots(); slot++) {
                 Object currentKey = descriptor.getSlotName(slot);
-                if (currentKey instanceof String) {
+                if (currentKey instanceof TruffleString) {
                     long keyHash = hashNode.execute(frame, currentKey);
                     if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
                         return self.getValue(slot);
@@ -180,9 +184,10 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @TruffleBoundary
-        static int findSlot(FrameDescriptor descriptor, Object key) {
+        static int findSlot(FrameDescriptor descriptor, TruffleString key) {
             for (int slot = 0; slot < descriptor.getNumberOfSlots(); slot++) {
-                if (key.equals(descriptor.getSlotName(slot))) {
+                Object slotName = descriptor.getSlotName(slot);
+                if (slotName instanceof TruffleString && key.equalsUncached((TruffleString) slotName, TS_ENCODING)) {
                     return slot;
                 }
             }
@@ -194,7 +199,7 @@ public final class LocalsStorage extends HashingStorage {
     HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage result = generalize(lib, key instanceof String, length() + 1);
+        HashingStorage result = generalize(lib, key instanceof TruffleString, length() + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(result, key, value, state);
         } else {
@@ -228,12 +233,10 @@ public final class LocalsStorage extends HashingStorage {
         FrameDescriptor fd = this.frame.getFrameDescriptor();
         for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
             Object identifier = fd.getSlotName(slot);
-            if (identifier instanceof String) {
-                if (isUserFrameSlot(identifier)) {
-                    Object value = getValue(slot);
-                    if (value != null) {
-                        result = node.execute(identifier, result);
-                    }
+            if (isUserFrameSlot(identifier)) {
+                Object value = getValue(slot);
+                if (value != null) {
+                    result = node.execute(identifier, result);
                 }
             }
         }
@@ -322,12 +325,10 @@ public final class LocalsStorage extends HashingStorage {
         protected final boolean loadNext() {
             while (nextIndex()) {
                 Object identifier = frame.getFrameDescriptor().getSlotName(index);
-                if (identifier instanceof String) {
-                    if (isUserFrameSlot(identifier)) {
-                        Object nextValue = getValue(this.frame, index);
-                        if (nextValue != null) {
-                            return true;
-                        }
+                if (isUserFrameSlot(identifier)) {
+                    Object nextValue = getValue(this.frame, index);
+                    if (nextValue != null) {
+                        return true;
                     }
                 }
             }

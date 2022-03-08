@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Check if the object supports conversion to index (integer). Equivalent of CPython's
@@ -71,7 +72,7 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     // Contrary to intuition, String is a very common receiver due to all the file builtins that
     // accept both FD ids and paths
     @Specialization
-    static boolean doString(@SuppressWarnings("unused") String object) {
+    static boolean doString(@SuppressWarnings("unused") TruffleString object) {
         return false;
     }
 

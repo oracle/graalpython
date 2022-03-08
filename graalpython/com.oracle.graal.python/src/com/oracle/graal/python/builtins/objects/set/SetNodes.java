@@ -41,13 +41,13 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -67,6 +67,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class SetNodes {
 
@@ -79,12 +81,18 @@ public abstract class SetNodes {
         }
 
         @Specialization
-        static PSet setString(VirtualFrame frame, Object cls, String arg,
+        static PSet setString(VirtualFrame frame, Object cls, TruffleString arg,
                         @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Shared("setItem") @Cached HashingCollectionNodes.SetItemNode setItemNode) {
+                        @Shared("setItem") @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
             PSet set = factory.createSet(cls);
-            for (int i = 0; i < PString.length(arg); i++) {
-                setItemNode.execute(frame, set, PString.valueOf(PString.charAt(arg, i)), PNone.NONE);
+            TruffleStringIterator it = createCodePointIteratorNode.execute(arg, TS_ENCODING);
+            while (it.hasNext()) {
+                int cp = nextNode.execute(it);
+                TruffleString s = fromCodePointNode.execute(cp, TS_ENCODING, true);
+                setItemNode.execute(frame, set, s, PNone.NONE);
             }
             return set;
         }

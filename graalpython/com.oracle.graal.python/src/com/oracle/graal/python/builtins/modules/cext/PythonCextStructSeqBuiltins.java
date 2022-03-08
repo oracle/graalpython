@@ -41,12 +41,13 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+
+import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -84,6 +86,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -108,14 +111,13 @@ public final class PythonCextStructSeqBuiltins extends PythonBuiltins {
         static int doGeneric(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
-                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
-            return initializeStructType(asPythonObjectNode.execute(klass), fieldNamesObj, fieldDocsObj, nInSequence, PythonLanguage.get(lib), lib, clearNewNode);
+                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+            return initializeStructType(asPythonObjectNode.execute(klass), fieldNamesObj, fieldDocsObj, nInSequence, PythonLanguage.get(lib), lib, clearNewNode, fromJavaStringNode);
         }
 
-        static int initializeStructType(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
-                        PythonLanguage language,
-                        InteropLibrary lib,
-                        WriteAttributeToObjectNode clearNewNode) {
+        static int initializeStructType(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence, PythonLanguage language, InteropLibrary lib, WriteAttributeToObjectNode clearNewNode,
+                        TruffleString.FromJavaStringNode fromJavaStringNode) {
             // 'fieldNames' and 'fieldDocs' must be of same type; they share the interop lib
             assert fieldNamesObj.getClass() == fieldDocsObj.getClass();
 
@@ -125,13 +127,13 @@ public final class PythonCextStructSeqBuiltins extends PythonBuiltins {
                     // internal error: the C function must type the object correctly
                     throw CompilerDirectives.shouldNotReachHere("len(fieldNames) != len(fieldDocs)");
                 }
-                String[] fieldNames = new String[n];
-                String[] fieldDocs = new String[n];
+                TruffleString[] fieldNames = new TruffleString[n];
+                TruffleString[] fieldDocs = new TruffleString[n];
                 for (int i = 0; i < n; i++) {
-                    fieldNames[i] = cast(lib.readArrayElement(fieldNamesObj, i));
-                    fieldDocs[i] = cast(lib.readArrayElement(fieldDocsObj, i));
+                    fieldNames[i] = cast(lib.readArrayElement(fieldNamesObj, i), fromJavaStringNode);
+                    fieldDocs[i] = cast(lib.readArrayElement(fieldDocsObj, i), fromJavaStringNode);
                 }
-                clearNewNode.execute(klass, __NEW__, PNone.NO_VALUE);
+                clearNewNode.execute(klass, T___NEW__, PNone.NO_VALUE);
                 StructSequence.Descriptor d = new StructSequence.Descriptor(null, nInSequence, fieldNames, fieldDocs);
                 StructSequence.initType(language, klass, d);
                 return 0;
@@ -143,9 +145,12 @@ public final class PythonCextStructSeqBuiltins extends PythonBuiltins {
             return -1;
         }
 
-        private static String cast(Object object) {
+        private static TruffleString cast(Object object, TruffleString.FromJavaStringNode fromJavaStringNode) {
             if (object instanceof String) {
-                return (String) object;
+                return fromJavaStringNode.execute((String) object, TS_ENCODING);
+            }
+            if (object instanceof TruffleString) {
+                return (TruffleString) object;
             }
             throw CompilerDirectives.shouldNotReachHere("object is expected to be a Java string");
         }
@@ -157,18 +162,19 @@ public final class PythonCextStructSeqBuiltins extends PythonBuiltins {
     abstract static class PyStructSequenceNewType extends PythonCextBuiltins.NativeBuiltin {
 
         @Specialization(limit = "1")
-        Object doGeneric(VirtualFrame frame, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+        Object doGeneric(VirtualFrame frame, TruffleString typeName, TruffleString typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
                         @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
                         @Cached CallNode callTypeNewNode,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
                         @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
-                        @Cached ToNewRefNode toNewRefNode) {
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             try {
-                Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.TYPE);
+                Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.T_TYPE);
                 PTuple bases = factory().createTuple(new Object[]{PythonBuiltinClassType.PTuple});
-                PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.__DOC__, typeDoc)});
+                PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
                 Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
-                PyStructSequenceInitType2.initializeStructType(cls, fieldNamesObj, fieldDocsObj, nInSequence, getLanguage(), lib, clearNewNode);
+                PyStructSequenceInitType2.initializeStructType(cls, fieldNamesObj, fieldDocsObj, nInSequence, getLanguage(), lib, clearNewNode, fromJavaStringNode);
                 return toNewRefNode.execute(cls);
             } catch (PException e) {
                 transformToNative(frame, e);
@@ -191,7 +197,7 @@ public final class PythonCextStructSeqBuiltins extends PythonBuiltins {
                         @Cached ToNewRefNode toNewRefNode) {
             try {
                 Object cls = asPythonObjectNode.execute(clsPtr);
-                Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.N_FIELDS);
+                Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.T_N_FIELDS);
                 Object res;
                 if (realSizeObj == PNone.NO_VALUE) {
                     PRaiseNativeNode.raiseNative(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY, getRaiseNode(), transformExceptionToNativeNode);

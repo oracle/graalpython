@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,25 +45,25 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBytesIOBu
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.GETBUFFER;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.GETVALUE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ISATTY;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ1;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINES;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITELINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_GETBUFFER;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_GETVALUE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_ISATTY;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READLINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TRUNCATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITELINES;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_CLOSED;
@@ -74,10 +74,10 @@ import static com.oracle.graal.python.nodes.ErrorMessages.POSITION_VALUE_CANNOT_
 import static com.oracle.graal.python.nodes.ErrorMessages.P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.BufferError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -172,7 +172,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
 
     protected static final byte[] EMPTY_BYTE_ARRAY = PythonUtils.EMPTY_BYTE_ARRAY;
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_bytes"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_bytes"})
     @ArgumentClinic(name = "initial_bytes", conversionClass = BytesBuiltins.ExpectByteLikeNode.class, defaultValue = "BytesIOBuiltins.EMPTY_BYTE_ARRAY")
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryClinicBuiltinNode {
@@ -226,7 +226,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         return output;
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
@@ -253,7 +253,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READ1, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READ1, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class Read1Node extends ReadNode {
@@ -299,7 +299,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         return len;
     }
 
-    @Builtin(name = READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadlineNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
@@ -317,7 +317,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READLINES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READLINES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadlinesNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
@@ -350,7 +350,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @Builtin(name = J_READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
@@ -386,7 +386,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TRUNCATE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_TRUNCATE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -452,8 +452,8 @@ public class BytesIOBuiltins extends PythonBuiltins {
 
     protected static void unshareBuffer(PBytesIO self, int size, byte[] buf,
                     PythonObjectFactory factory) {
-        /*- (mq) This method is only used when `self.buf.refcnt > 1`. 
-                 `refcnt` is not available in our managed storage. 
+        /*- (mq) This method is only used when `self.buf.refcnt > 1`.
+                 `refcnt` is not available in our managed storage.
                  Therefore, we always create a new storage in this case.
          */
         byte[] newBuf = new byte[size];
@@ -481,7 +481,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         // else resize self.buf
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class WriteNode extends ClosedCheckPythonBinaryBuiltinNode {
 
@@ -530,7 +530,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITELINES, minNumOfPositionalArgs = 2, parameterNames = {"$self", "lines"})
+    @Builtin(name = J_WRITELINES, minNumOfPositionalArgs = 2, parameterNames = {"$self", "lines"})
     @GenerateNodeFactory
     abstract static class WriteLinesNode extends ClosedCheckPythonBinaryBuiltinNode {
         @Specialization(guards = {"self.hasBuf()", "checkExports(self)"})
@@ -564,7 +564,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = ISATTY, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ISATTY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsAttyNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -575,7 +575,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TELL, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_TELL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TellNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -585,7 +585,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "pos", "whence"})
+    @Builtin(name = J_SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "pos", "whence"})
     @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Index)
     @ArgumentClinic(name = "whence", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedIOUtil.SEEK_SET", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -612,8 +612,8 @@ public class BytesIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.hasBuf()", "isSupportedWhence(whence)", "validPos(self, pos, whence)"})
         static Object seek(PBytesIO self, int pos, int whence) {
             /*-
-             * whence = 0: offset relative to beginning of the string. 
-             * whence = 1: offset relative to current position. 
+             * whence = 0: offset relative to beginning of the string.
+             * whence = 1: offset relative to current position.
              * whence = 2: offset relative the end of the string.
              */
             int p = pos;
@@ -659,7 +659,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = GETBUFFER, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_GETBUFFER, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetBufferNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
@@ -675,7 +675,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = GETVALUE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_GETVALUE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetValueNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -710,7 +710,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETSTATE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___GETSTATE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetStateNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
@@ -723,7 +723,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "checkExports(self)")
@@ -794,7 +794,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = FLUSH, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_FLUSH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FlushNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -804,7 +804,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SEEKABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_SEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SeekableNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -814,7 +814,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_READABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadableNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -824,7 +824,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_WRITABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class WritableNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -834,7 +834,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryBuiltinNode {
 
@@ -844,7 +844,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = CLOSE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_CLOSE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
 
@@ -865,7 +865,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IternextNode extends ClosedCheckPythonUnaryBuiltinNode {
 

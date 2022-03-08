@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.ITER;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ITER;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
@@ -77,7 +77,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
         return GrouperBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -86,7 +86,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -117,7 +117,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "currValueIsSelf(self)")
@@ -131,8 +131,8 @@ public final class GrouperBuiltins extends PythonBuiltins {
         @Specialization(guards = "!currValueIsSelf(self)")
         Object reduceCurrNotSelf(VirtualFrame frame, @SuppressWarnings("unused") PGrouper self,
                         @Cached PyObjectGetAttr getAttrNode) {
-            PythonModule builtins = getContext().getCore().lookupBuiltinModule(BuiltinNames.BUILTINS);
-            Object iterCallable = getAttrNode.execute(frame, builtins, ITER);
+            PythonModule builtins = getContext().getCore().lookupBuiltinModule(BuiltinNames.T_BUILTINS);
+            Object iterCallable = getAttrNode.execute(frame, builtins, T_ITER);
             // return Py_BuildValue("N(())", _PyEval_GetBuiltinId(&PyId_iter));
             return factory().createTuple(new Object[]{iterCallable, factory().createTuple(new Object[]{factory().createEmptyTuple()})});
         }

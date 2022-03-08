@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,8 +63,8 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyComplexWrapper extends PythonNativeWrapper {
 
-    public static final String REAL = "real";
-    public static final String IMAG = "imag";
+    public static final String J_REAL = "real";
+    public static final String J_IMAG = "imag";
 
     public PyComplexWrapper(PComplex delegate) {
         super(delegate);
@@ -83,22 +83,22 @@ public final class PyComplexWrapper extends PythonNativeWrapper {
     @ExportMessage
     @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new Object[]{REAL, IMAG});
+        return new PythonAbstractObject.Keys(new Object[]{J_REAL, J_IMAG});
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean isMemberReadable(String key) {
-        return REAL.equals(key) || IMAG.equals(key);
+        return J_REAL.equals(key) || J_IMAG.equals(key);
     }
 
     @ExportMessage
     Object readMember(String key,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws UnknownIdentifierException {
         switch (key) {
-            case REAL:
+            case J_REAL:
                 return getPComplex(lib).getReal();
-            case IMAG:
+            case J_IMAG:
                 return getPComplex(lib).getImag();
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,19 +25,23 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+
 public final class PKeyword {
 
     public static final PKeyword[] EMPTY_KEYWORDS = new PKeyword[0];
 
-    private final String name;
+    private final TruffleString name;
     private final Object value;
 
-    public PKeyword(String name, Object value) {
+    public PKeyword(TruffleString name, Object value) {
         this.name = name;
-        this.value = value;
+        this.value = assertNoJavaString(value);
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 

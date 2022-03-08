@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -91,6 +91,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
 public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
@@ -244,7 +245,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             int[] fdsToKeep = convertFdSequence(frame, fdsToKeepTuple, lenNode, tupleGetItem, castToIntNode);
             Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
 
-            byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable));
+            byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable).toJavaStringUncached());
+
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
             int length = sizeNode.execute(frame, executableList);
             Object[] executables = new Object[length];
@@ -254,10 +256,10 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     if (length != 1) {
                         throw raise(ValueError, ErrorMessages.UNSUPPORTED_USE_OF_SYS_EXECUTABLE);
                     }
-                    String[] additionalArgs = PythonOptions.getExecutableList(getContext());
+                    TruffleString[] additionalArgs = PythonOptions.getExecutableList(getContext());
                     Object[] extendedArgs = new Object[additionalArgs.length + (processArgs.length == 0 ? 0 : processArgs.length - 1)];
                     for (int j = 0; j < additionalArgs.length; ++j) {
-                        extendedArgs[j] = createPathFromBytes(fsEncode(additionalArgs[j]), posixLib);
+                        extendedArgs[j] = createPathFromBytes(fsEncode(additionalArgs[j].toJavaStringUncached()), posixLib);
                     }
                     if (processArgs.length > 1) {
                         PythonUtils.arraycopy(processArgs, 1, extendedArgs, additionalArgs.length, processArgs.length - 1);

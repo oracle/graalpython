@@ -239,7 +239,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @Cached PyLongAsLongNode asLongNode) {
 
             long len = mmap.getLength();
-            Object attrGetItem = lookupGetItemNode.execute(mmap, SpecialMethodNames.__GETITEM__);
+            Object attrGetItem = lookupGetItemNode.execute(mmap, SpecialMethodNames.T___GETITEM__);
 
             int i = (int) byteIdx;
             long result = 0;
@@ -258,7 +258,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
                         @Exclusive @Cached CallNode callGetItemNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            Object attrGetItem = lookupGetItemNode.execute(object, SpecialMethodNames.__GETITEM__);
+            Object attrGetItem = lookupGetItemNode.execute(object, SpecialMethodNames.T___GETITEM__);
             return toSulongNode.execute(callGetItemNode.execute(attrGetItem, object, idx));
         }
 

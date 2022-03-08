@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,31 +40,32 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class ClassDefinitionPrologueNode extends StatementNode {
-    @Child private ReadGlobalOrBuiltinNode readGlobalNameNode = ReadGlobalOrBuiltinNode.create(__NAME__);
-    @Child private WriteNameNode writeModuleNode = WriteNameNode.create(__MODULE__, null);
-    @Child private WriteNameNode writeQualnameNode = WriteNameNode.create(__QUALNAME__, null);
+    @Child private ReadGlobalOrBuiltinNode readGlobalNameNode = ReadGlobalOrBuiltinNode.create(T___NAME__);
+    @Child private WriteNameNode writeModuleNode = WriteNameNode.create(T___MODULE__, null);
+    @Child private WriteNameNode writeQualnameNode = WriteNameNode.create(T___QUALNAME__, null);
 
-    private final String qualName;
+    private final TruffleString qualName;
 
     public ClassDefinitionPrologueNode() {
         this(null);
     }
 
-    public ClassDefinitionPrologueNode(String qualName) {
+    public ClassDefinitionPrologueNode(TruffleString qualName) {
         this.qualName = qualName;
     }
 
-    public String getQualName() {
+    public TruffleString getQualName() {
         return qualName;
     }
 

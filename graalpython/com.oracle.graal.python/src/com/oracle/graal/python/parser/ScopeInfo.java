@@ -25,8 +25,9 @@
  */
 package com.oracle.graal.python.parser;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -47,6 +48,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameDescriptor.Builder;
 import com.oracle.truffle.api.frame.FrameSlotKind;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class ScopeInfo {
 
@@ -127,6 +129,9 @@ public final class ScopeInfo {
         this.frameContents = new LinkedHashMap<>();
         if (frameDescriptor != null) {
             for (Object identifier : PythonFrame.getIdentifiers(frameDescriptor)) {
+                if (identifier instanceof TruffleString) {
+                    identifier = ((TruffleString) identifier).toJavaStringUncached();
+                }
                 this.frameContents.put(identifier, identifiers.size());
                 this.identifiers.add(identifier);
             }
@@ -214,6 +219,12 @@ public final class ScopeInfo {
     }
 
     public void replaceFrameIdentifier(Object identifier, Object newIdentifier) {
+        if (newIdentifier instanceof TruffleString) {
+            newIdentifier = ((TruffleString) newIdentifier).toJavaStringUncached();
+        }
+        if (identifier instanceof TruffleString) {
+            identifier = ((TruffleString) identifier).toJavaStringUncached();
+        }
         Integer index = frameContents.get(identifier);
         assert index != null;
         identifiers.set(index, newIdentifier);
@@ -226,6 +237,9 @@ public final class ScopeInfo {
         int i = 0;
         for (Object id : identifiers) {
             FrameSlotKind kind = id == RETURN_SLOT_ID ? FrameSlotKind.Object : FrameSlotKind.Illegal;
+            if (id instanceof String) {
+                id = toTruffleStringUncached((String) id);
+            }
             int idx = frameBuilder.addSlot(kind, id, null);
             assert idx == i;
             i++;
@@ -358,7 +372,7 @@ public final class ScopeInfo {
         }
         freeVars.add(identifier);
         if (createFrameSlot) {
-            if (scopeKind == ScopeKind.Class && __CLASS__.equals(identifier)) {
+            if (scopeKind == ScopeKind.Class && J___CLASS__.equals(identifier)) {
                 // This is preventing corner situation, when body of class has two variables with
                 // the same name __class__. The first one is __class__ freevar coming from outer
                 // scope
@@ -431,7 +445,7 @@ public final class ScopeInfo {
         int i = 0;
         for (String identifier : freeVars) {
             slots[i] = findFrameSlot(identifier);
-            if (scopeKind == ScopeKind.Class && __CLASS__.equals(identifier)) {
+            if (scopeKind == ScopeKind.Class && J___CLASS__.equals(identifier)) {
                 /*
                  * If __class__ is freevar in the class scope, then is stored in frameslot with
                  * different name. This is preventing corner situation, when body of class has two

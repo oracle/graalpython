@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -49,19 +52,22 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.DebugHandle)
 public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
@@ -103,7 +109,7 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class HPyDebugHandleEqNode extends PythonBinaryBuiltinNode {
 
@@ -123,32 +129,38 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HPyDebugHandleReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, PDebugHandle self) {
+        Object doGeneric(VirtualFrame frame, PDebugHandle self,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode) {
             PythonLanguage language = getLanguage();
             PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return format(self);
+                return format(self, simpleTruffleStringFormatNode, castToTruffleStringNode);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
         }
 
-        @TruffleBoundary
-        private static Object format(PDebugHandle self) {
+        private static Object format(PDebugHandle self, SimpleTruffleStringFormatNode simpleTruffleStringFormatNode, CastToTruffleStringNode castToTruffleStringNode) {
             long id = self.getId();
             if (self.isClosed()) {
-                return String.format("<DebugHandle 0x%s CLOSED>", Long.toHexString(id));
+                return simpleTruffleStringFormatNode.format("<DebugHandle 0x%s CLOSED>", toHex(id));
             } else {
-                Object objRepr = LookupAndCallUnaryDynamicNode.getUncached().executeObject(self.getObj(), SpecialMethodNames.__REPR__);
-                String reprStr = CastToJavaStringNode.getUncached().execute(objRepr);
-                return String.format("<DebugHandle 0x%s for %s>", Long.toHexString(id), reprStr);
+                Object objRepr = LookupAndCallUnaryDynamicNode.getUncached().executeObject(self.getObj(), SpecialMethodNames.T___REPR__);
+                TruffleString reprStr = castToTruffleStringNode.execute(objRepr);
+                return simpleTruffleStringFormatNode.format("<DebugHandle 0x%s for %s>", toHex(id), reprStr);
             }
+        }
+
+        @TruffleBoundary
+        private static String toHex(long id) {
+            return Long.toHexString(id);
         }
     }
 

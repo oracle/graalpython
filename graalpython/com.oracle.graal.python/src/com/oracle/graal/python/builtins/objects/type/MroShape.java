@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_NO_VALUE_PROPERTIES;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -57,6 +57,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Mirrors MRO sequence, but contains only {@link Shape}s of the {@link PythonManagedClass}es in the
@@ -110,7 +111,7 @@ public final class MroShape {
         return mroShape;
     }
 
-    public MroShapeLookupResult lookup(String attrName) {
+    public MroShapeLookupResult lookup(TruffleString attrName) {
         CompilerAsserts.neverPartOfCompilation();
         int index = 0;
         MroShape curr = this;
@@ -160,7 +161,7 @@ public final class MroShape {
     private static boolean hasNoNoValueProperties(PythonManagedClass klass) {
         DynamicObjectLibrary lib = DynamicObjectLibrary.getFactory().getUncached(klass);
         for (Object key : klass.getShape().getKeyList()) {
-            if (key instanceof String && lib.getOrDefault(klass, key, null) == PNone.NO_VALUE) {
+            if (key instanceof TruffleString && lib.getOrDefault(klass, key, null) == PNone.NO_VALUE) {
                 // The MROShape machinery makes the assumption that shapes are enough to determine
                 // MRO lookup results, in the presence of properties with NO_VALUE shape is not
                 // enough, such shapes should be marked with the HAS_NO_VALUE_PROPERTIES flag
@@ -221,7 +222,7 @@ public final class MroShape {
                 diff.removeIf(x -> klsShapeProps.contains(x) && currMroShapeProps.contains(x));
                 // We ignore difference for special attributes that should not influence the MRO
                 // lookup results
-                diff.remove(__BASICSIZE__);
+                diff.remove(T___BASICSIZE__);
                 if (diff.size() > 0) {
                     HashSet<String> sDiff = new HashSet<>(diff.size());
                     for (Object o : diff) {

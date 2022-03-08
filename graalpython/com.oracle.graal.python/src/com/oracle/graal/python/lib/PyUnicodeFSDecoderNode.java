@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -48,55 +49,61 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 /**
  * Equivalent of CPython's {@code PyUnicode_FSDecoder}. Converts a string, bytes or path-like object
- * to a string path.
+ * to a TruffleString path.
  */
 @GenerateUncached
 public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
-    public abstract String execute(Frame frame, Object object);
+    public abstract TruffleString execute(Frame frame, Object object);
 
     @Specialization
-    String doString(String object) {
-        return checkString(object);
+    TruffleString doString(TruffleString object,
+                    @Shared("byteIndexOfCP") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
+        return checkString(object, byteIndexOfCodePointNode);
     }
 
     @Specialization
-    String doPString(PString object,
-                    @Cached CastToJavaStringNode cast) {
-        return checkString(cast.execute(object));
+    TruffleString doPString(PString object,
+                    @Cached CastToTruffleStringNode cast,
+                    @Shared("byteIndexOfCP") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
+        return checkString(cast.execute(object), byteIndexOfCodePointNode);
     }
 
     @Specialization(limit = "1")
-    String doBytes(PBytes object,
-                    @CachedLibrary("object") PythonBufferAccessLibrary bufferLib) {
+    TruffleString doBytes(PBytes object,
+                    @CachedLibrary("object") PythonBufferAccessLibrary bufferLib,
+                    @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                    @Shared("byteIndexOfCP") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
         // TODO PyUnicode_DecodeFSDefault
-        return checkString(PythonUtils.newString(bufferLib.getInternalOrCopiedByteArray(object), 0, bufferLib.getBufferLength(object)));
+        TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getCopiedByteArray(object), Encoding.UTF_8, false);
+        return checkString(switchEncodingNode.execute(utf8, TS_ENCODING), byteIndexOfCodePointNode);
     }
 
     @Fallback
-    String doPathLike(VirtualFrame frame, Object object,
+    TruffleString doPathLike(VirtualFrame frame, Object object,
                     @Cached PyOSFSPathNode fspathNode,
                     @Cached PyUnicodeFSDecoderNode recursive) {
         Object path = fspathNode.execute(frame, object);
-        assert path instanceof String || path instanceof PString || path instanceof PBytes;
+        assert path instanceof TruffleString || path instanceof PString || path instanceof PBytes;
         return recursive.execute(frame, path);
     }
 
-    @TruffleBoundary
-    private String checkString(String str) {
-        if (str.indexOf(0) > 0) {
+    private TruffleString checkString(TruffleString str, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
+        if (byteIndexOfCodePointNode.execute(str, 0, 0, str.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
             throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
         }
         return str;

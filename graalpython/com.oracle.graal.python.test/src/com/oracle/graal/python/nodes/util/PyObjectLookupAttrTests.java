@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,8 @@ import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 public class PyObjectLookupAttrTests {
 
     @Before
@@ -76,7 +78,7 @@ public class PyObjectLookupAttrTests {
 
             @Override
             public Object execute(VirtualFrame frame) {
-                return lookupNode.execute(frame, PythonBuiltinClassType.Boolean, "real");
+                return lookupNode.execute(frame, PythonBuiltinClassType.Boolean, tsLiteral("real"));
             }
         }.getCallTarget().call();
         Assert.assertNotSame(PNone.NO_VALUE, v);

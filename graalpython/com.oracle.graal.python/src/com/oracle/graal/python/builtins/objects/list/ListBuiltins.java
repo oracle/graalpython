@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,32 +25,40 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.SORT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J_SORT;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_BRACKETS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACKET;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -84,13 +92,13 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -102,7 +110,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -113,7 +121,6 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -126,6 +133,10 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PList)
 public class ListBuiltins extends PythonBuiltins {
@@ -133,12 +144,12 @@ public class ListBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put(__DOC__, //
+        addBuiltinConstant(T___DOC__, //
                         "Built-in mutable sequence.\n" + //
                                         "\n" + //
                                         "If no argument is given, the constructor creates a new empty list.\n" + //
                                         "The argument must be an iterable if specified.");
-        this.builtinConstants.put(__HASH__, PNone.NONE);
+        this.addBuiltinConstant(T___HASH__, PNone.NONE);
     }
 
     @Override
@@ -146,75 +157,76 @@ public class ListBuiltins extends PythonBuiltins {
         return ListBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object repr(VirtualFrame frame, PList self,
-                        @Cached("create(Repr)") LookupAndCallUnaryNode repr,
+        public TruffleString repr(VirtualFrame frame, PList self,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItem) {
+                        @Cached SequenceStorageNodes.GetItemNode getItem,
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             SequenceStorage storage = self.getSequenceStorage();
             int length = lenNode.execute(storage);
             if (length == 0) {
-                return "[]";
+                return T_EMPTY_BRACKETS;
             }
             if (!PythonContext.get(this).reprEnter(self)) {
-                return "[...]";
+                return T_ELLIPSIS_IN_BRACKETS;
             }
             try {
-                StringBuilder result = PythonUtils.newStringBuilder();
-                PythonUtils.append(result, "[");
+                TruffleStringBuilder buf = TruffleStringBuilder.create(TS_ENCODING);
+                appendStringNode.execute(buf, T_LBRACKET);
                 boolean initial = true;
-                Object value;
-                Object reprString;
                 for (int index = 0; index < length; index++) {
-                    value = getItem.execute(frame, storage, index);
-                    reprString = repr.executeObject(frame, value);
-                    if (reprString instanceof PString) {
-                        reprString = ((PString) reprString).getValue();
-                    }
-                    if (reprString instanceof String) {
-                        if (initial) {
-                            initial = false;
-                        } else {
-                            PythonUtils.append(result, ", ");
-                        }
-                        PythonUtils.append(result, (String) reprString);
+                    if (initial) {
+                        initial = false;
                     } else {
-                        raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprString);
+                        appendStringNode.execute(buf, T_COMMA_SPACE);
                     }
+                    Object value = getItem.execute(frame, storage, index);
+                    appendStringNode.execute(buf, reprNode.execute(frame, value));
                 }
-                return PythonUtils.sbToString(PythonUtils.append(result, "]"));
+                appendStringNode.execute(buf, T_RBRACKET);
+                return toStringNode.execute(buf);
             } finally {
                 PythonContext.get(this).reprLeave(self);
             }
         }
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ListInitNode extends PythonBinaryBuiltinNode {
 
         public abstract PNone execute(VirtualFrame frame, PList list, Object source);
 
         @Specialization
-        static PNone initString(PList list, String value,
+        static PNone initTruffleString(PList list, TruffleString value,
+                        @Shared("cpIt") @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared("cpItNext") @Cached TruffleStringIterator.NextNode nextNode,
+                        @Shared("fromCp") @Cached TruffleString.FromCodePointNode fromCodePointNode,
                         @Shared("appendNode") @Cached AppendNode appendNode) {
             clearStorage(list);
-            char[] chars = value.toCharArray();
-            for (char c : chars) {
-                appendNode.execute(list, Character.toString(c));
+            TruffleStringIterator iterator = createCodePointIteratorNode.execute(value, TS_ENCODING);
+            while (iterator.hasNext()) {
+                // TODO: GR-37219: use SubstringNode with lazy=true?
+                int cp = nextNode.execute(iterator);
+                appendNode.execute(list, fromCodePointNode.execute(cp, TS_ENCODING, true));
             }
             return PNone.NONE;
         }
 
         @Specialization
         static PNone initPString(PList list, PString value,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToTruffleStringNode castStr,
+                        @Shared("cpIt") @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared("cpItNext") @Cached TruffleStringIterator.NextNode nextNode,
+                        @Shared("fromCp") @Cached TruffleString.FromCodePointNode fromCodePointNode,
                         @Shared("appendNode") @Cached AppendNode appendNode) {
-            return initString(list, castStr.execute(value), appendNode);
+            return initTruffleString(list, castStr.execute(value), createCodePointIteratorNode, nextNode, fromCodePointNode, appendNode);
         }
 
         @Specialization(guards = "isNoValue(none)")
@@ -244,6 +256,7 @@ public class ListBuiltins extends PythonBuiltins {
         static PNone listPGenerator(VirtualFrame frame, PList list, PGenerator iterable,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
+                        @Cached("createClassProfile()") ValueProfile elementProfile,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) throws UnexpectedResultException {
             clearStorage(list);
@@ -256,7 +269,7 @@ public class ListBuiltins extends PythonBuiltins {
             if (estimatedMaxLen > 0) {
                 Object value = null;
                 try {
-                    value = getNextNode.execute(frame, iterObj);
+                    value = elementProfile.profile(getNextNode.execute(frame, iterObj));
                     realLen++;
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
@@ -303,7 +316,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
@@ -321,7 +334,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
@@ -348,7 +361,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
@@ -384,7 +397,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.append(x)
-    @Builtin(name = "append", minNumOfPositionalArgs = 2)
+    @Builtin(name = J_APPEND, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ListAppendNode extends PythonBinaryBuiltinNode {
 
@@ -397,7 +410,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.extend(L)
-    @Builtin(name = "extend", minNumOfPositionalArgs = 2)
+    @Builtin(name = J_EXTEND, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ListExtendNode extends PythonBinaryBuiltinNode {
 
@@ -445,7 +458,7 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = "insert", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class ListInsertNode extends PythonTernaryBuiltinNode {
-        protected static final String ERROR_MSG = ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER;
+        protected static final TruffleString ERROR_MSG = ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER;
 
         @Child private SequenceStorageNodes.LenNode lenNode;
 
@@ -563,8 +576,6 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListRemoveNode extends PythonBinaryBuiltinNode {
 
-        private static final String NOT_IN_LIST_MESSAGE = "list.index(x): x not in list";
-
         @Specialization
         PNone remove(VirtualFrame frame, PList list, Object value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
@@ -580,7 +591,7 @@ public class ListBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+            throw raise(PythonErrorType.ValueError, ErrorMessages.NOT_IN_LIST_MESSAGE);
         }
     }
 
@@ -588,8 +599,6 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = "pop", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ListPopNode extends PythonBinaryBuiltinNode {
-
-        private static final String POP_INDEX_OUT_OF_RANGE = "pop index out of range";
 
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
 
@@ -629,7 +638,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         private static NormalizeIndexNode createNormalize() {
-            return NormalizeIndexNode.create(POP_INDEX_OUT_OF_RANGE);
+            return NormalizeIndexNode.create(ErrorMessages.POP_INDEX_OUT_OF_RANGE);
         }
     }
 
@@ -639,7 +648,7 @@ public class ListBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class ListIndexNode extends PythonBuiltinNode {
-        protected static final String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
+        protected static final TruffleString ERROR_TYPE_MESSAGE = ErrorMessages.SLICE_INDICES_TYPE_ERROR;
 
         @Child private SequenceStorageNodes.ItemIndexNode itemIndexNode;
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -832,7 +841,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.sort(key=None, reverse=False)
-    @Builtin(name = SORT, minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {"key", "reverse"})
+    @Builtin(name = J_SORT, minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {"key", "reverse"})
     @ArgumentClinic(name = "reverse", conversion = ArgumentClinic.ClinicConversion.IntToBoolean, defaultValue = "false")
     @GenerateNodeFactory
     public abstract static class ListSortNode extends PythonClinicBuiltinNode {
@@ -851,7 +860,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 sortSequenceStorageNode.execute(frame, storage, keyfunc, reverse);
                 if (list.getSequenceStorage() != EmptySequenceStorage.INSTANCE) {
-                    throw raise(ValueError, "list modified during sort");
+                    throw raise(ValueError, ErrorMessages.LIST_MODIFIED_DURING_SOFT);
                 }
             } finally {
                 list.setSequenceStorage(storage);
@@ -869,7 +878,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
@@ -880,7 +889,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -901,7 +910,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __IADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___IADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -924,8 +933,8 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
 
@@ -947,7 +956,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __IMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___IMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IMulNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -968,7 +977,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
@@ -1012,7 +1021,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
 
@@ -1029,7 +1038,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends PythonBinaryBuiltinNode {
 
@@ -1047,7 +1056,7 @@ public class ListBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
 
@@ -1065,7 +1074,7 @@ public class ListBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends PythonBinaryBuiltinNode {
 
@@ -1081,7 +1090,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -1096,7 +1105,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -1107,7 +1116,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -1141,7 +1150,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REVERSED__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REVERSED__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReverseNode extends PythonUnaryBuiltinNode {
         @Specialization

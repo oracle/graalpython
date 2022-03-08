@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_READLINE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_READLINE;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -50,6 +54,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -62,8 +67,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -71,8 +76,9 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "readline")
+@CoreFunctions(defineModule = J_READLINE)
 public class ReadlineModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey DATA = new HiddenKey("__data__");
 
@@ -83,16 +89,16 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
 
     private static final class LocalData {
         private final HashMap<String, String> bindings = new HashMap<>();
-        private final List<String> history = new ArrayList<>();
+        private final List<TruffleString> history = new ArrayList<>();
         protected Object completer = null;
         protected boolean autoHistory = true;
-        protected String completerDelims = null;
+        protected TruffleString completerDelims = null;
     }
 
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        core.lookupBuiltinModule("readline").setAttribute(DATA, new LocalData());
+        core.lookupBuiltinModule(T_READLINE).setAttribute(DATA, new LocalData());
     }
 
     @Builtin(name = "get_completer", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
@@ -127,14 +133,15 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ParseAndBindNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        PNone setCompleter(PythonModule self, String spec,
+        PNone setCompleter(PythonModule self, TruffleString tspec,
                         @Cached ReadAttributeFromObjectNode readNode) {
+            String spec = tspec.toJavaStringUncached();
             if (spec.startsWith("tab:")) {
                 LocalData data = (LocalData) readNode.execute(self, DATA);
                 data.bindings.put("tab", spec.split(":")[1].trim());
                 return PNone.NONE;
             } else {
-                throw raise(PythonBuiltinClassType.NotImplementedError, "any other binding than 'tab'");
+                throw raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("any other binding than 'tab'"));
             }
         }
     }
@@ -144,7 +151,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ReadInitNode extends PythonUnaryBuiltinNode {
         @Specialization
         PNone setCompleter(@SuppressWarnings("unused") PythonModule self) {
-            throw raise(PythonErrorType.OSError, "not implemented");
+            throw raise(PythonErrorType.OSError, ErrorMessages.NOT_IMPLEMENTED);
         }
     }
 
@@ -165,7 +172,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class SetHistoryLengthNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        String setCompleter(PythonModule self, int index,
+        TruffleString setCompleter(PythonModule self, int index,
                         @Cached ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
@@ -180,14 +187,15 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReplaceItemNode extends PythonTernaryBuiltinNode {
         @Specialization
-        String setCompleter(PythonModule self, int index, PString string,
+        TruffleString setCompleter(PythonModule self, int index, PString string,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached ReadAttributeFromObjectNode readNode) {
-            return setCompleter(self, index, string.getValue(), readNode);
+            return setCompleter(self, index, castToStringNode.execute(string), readNode);
         }
 
         @Specialization
         @TruffleBoundary
-        String setCompleter(PythonModule self, int index, String string,
+        TruffleString setCompleter(PythonModule self, int index, TruffleString string,
                         @Cached ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
@@ -203,7 +211,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class DeleteItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        String setCompleter(PythonModule self, int index,
+        TruffleString setCompleter(PythonModule self, int index,
                         @Cached ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
@@ -219,13 +227,14 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class AddHistoryNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone addHistory(PythonModule self, PString item,
-                        @Cached ReadAttributeFromObjectNode readNode) {
-            return addHistory(self, item.getValue(), readNode);
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached CastToTruffleStringNode castToStringNode) {
+            return addHistory(self, castToStringNode.execute(item), readNode);
         }
 
         @Specialization
         @TruffleBoundary
-        PNone addHistory(PythonModule self, String item,
+        PNone addHistory(PythonModule self, TruffleString item,
                         @Cached ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             data.history.add(item);
@@ -238,21 +247,22 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ReadHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone setCompleter(PythonModule self, PString path,
-                        @Cached ReadAttributeFromObjectNode readNode) {
-            return setCompleter(self, path.getValue(), readNode);
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached CastToTruffleStringNode castToStringNode) {
+            return setCompleter(self, castToStringNode.execute(path), readNode);
         }
 
         @Specialization
         @TruffleBoundary
         @SuppressWarnings("try")
-        PNone setCompleter(PythonModule self, String path,
+        PNone setCompleter(PythonModule self, TruffleString path,
                         @Cached ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-                BufferedReader reader = getContext().getEnv().getPublicTruffleFile(path).newBufferedReader();
+                BufferedReader reader = getContext().getEnv().getPublicTruffleFile(path.toJavaStringUncached()).newBufferedReader();
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    data.history.add(line);
+                    data.history.add(toTruffleStringUncached(line));
                 }
                 reader.close();
             } catch (IOException e) {
@@ -267,19 +277,20 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class WriteHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone setCompleter(PythonModule self, PString path,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached ReadAttributeFromObjectNode readNode) {
-            return setCompleter(self, path.getValue(), readNode);
+            return setCompleter(self, castToStringNode.execute(path), readNode);
         }
 
         @Specialization
         @TruffleBoundary
-        PNone setCompleter(PythonModule self, String path,
+        PNone setCompleter(PythonModule self, TruffleString path,
                         @Cached ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
-                BufferedWriter writer = getContext().getEnv().getPublicTruffleFile(path).newBufferedWriter(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-                for (String l : data.history) {
-                    writer.write(l);
+                BufferedWriter writer = getContext().getEnv().getPublicTruffleFile(path.toJavaStringUncached()).newBufferedWriter(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                for (TruffleString l : data.history) {
+                    writer.write(l.toJavaStringUncached());
                     writer.newLine();
                 }
                 writer.close();
@@ -348,7 +359,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetCompleterDelimsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PNone setCompleterDelims(PythonModule self, String completerDelims,
+        PNone setCompleterDelims(PythonModule self, TruffleString completerDelims,
                         @Cached ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             data.completerDelims = completerDelims;

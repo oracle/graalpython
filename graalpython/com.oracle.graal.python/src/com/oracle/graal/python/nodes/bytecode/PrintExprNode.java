@@ -66,7 +66,7 @@ public abstract class PrintExprNode extends PNodeWithContext {
                     @Cached PyObjectLookupAttr lookupAttr,
                     @Cached CallNode callNode) {
         PythonModule sysModule = getContext().getSysModule();
-        Object displayhook = lookupAttr.execute(frame, sysModule, BuiltinNames.DISPLAYHOOK);
+        Object displayhook = lookupAttr.execute(frame, sysModule, BuiltinNames.T_DISPLAYHOOK);
         if (displayhook == PNone.NO_VALUE) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.LOST_SYSDISPLAYHOOK);

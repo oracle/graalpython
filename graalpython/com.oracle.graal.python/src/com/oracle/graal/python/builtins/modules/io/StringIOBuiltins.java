@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,21 +44,22 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrement
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.GETVALUE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.LINE_BUFFERING;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.NEWLINES;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
-import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.findLineEnding;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_GETVALUE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_LINE_BUFFERING;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_NEWLINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TRUNCATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_NEWLINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READLINE;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.validateNewline;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2;
@@ -72,14 +73,17 @@ import static com.oracle.graal.python.nodes.ErrorMessages.P_SETSTATE_ARGUMENT_SH
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_MUST_BE_AN_INTEGER_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -88,11 +92,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.FindLineEndingNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -110,19 +115,23 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PStringIO)
 public final class StringIOBuiltins extends PythonBuiltins {
+
+    private static final TruffleString T_NIL = TruffleString.fromCodePointUncached(0, TS_ENCODING);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -159,27 +168,28 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @CompilerDirectives.TruffleBoundary
-    private static String replaceNewline(String decoded, String newline) {
-        return decoded.replace("\n", newline);
-    }
-
-    static void writeString(VirtualFrame frame, PStringIO self, String obj,
+    static void writeString(VirtualFrame frame, PStringIO self, TruffleString obj,
                     PRaiseNode raise,
-                    IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode) {
+                    IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
+                    StringReplaceNode replaceNode,
+                    TruffleString.CodePointLengthNode codePointLengthNode,
+                    TruffleString.RepeatNode repeatNode,
+                    TruffleString.SubstringNode substringNode,
+                    TruffleStringBuilder.AppendStringNode appendStringNode,
+                    TruffleStringBuilder.ToStringNode toStringNode) {
         assert (self.getPos() >= 0);
-        String decoded;
+        TruffleString decoded;
         if (self.getDecoder() != null) {
-            // (mq) IncrementalNewlineDecoderBuiltins.DecodeNode always returns a String
-            decoded = (String) decodeNode.execute(frame, self.getDecoder(), obj, true /*- always final */);
+            // (mq) IncrementalNewlineDecoderBuiltins.DecodeNode always returns a TruffleString
+            decoded = (TruffleString) decodeNode.execute(frame, self.getDecoder(), obj, true /*- always final */);
         } else {
             decoded = obj;
         }
         if (self.hasWriteNewline()) {
-            decoded = replaceNewline(decoded, self.getWriteNewline());
+            decoded = replaceNode.execute(decoded, T_NEWLINE, self.getWriteNewline(), -1);
         }
 
-        int len = PString.length(decoded);
+        int len = codePointLengthNode.execute(decoded, TS_ENCODING);
 
         /*
          * This overflow check is not strictly necessary. However, it avoids us to deal with funky
@@ -189,41 +199,47 @@ public final class StringIOBuiltins extends PythonBuiltins {
             throw raise.raise(OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
-        if (self.isAccumlating()) {
+        if (self.isAccumulating()) {
             if (self.getStringSize() == self.getPos()) {
-                self.append(decoded);
+                self.append(decoded, appendStringNode);
                 self.incPos(len);
                 if (self.getStringSize() < self.getPos()) {
                     self.setStringsize(self.getPos());
                 }
                 return;
             }
-            self.realize();
+            self.realize(toStringNode);
         }
 
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
         if (self.getPos() > self.getStringSize()) {
             /*
              * In case of overseek, pad with null bytes the buffer region between the end of stream
              * and the current position.
              */
-            String nil = PythonUtils.newString(new char[self.getPos() - self.getStringSize()]);
-            self.setBuf(PString.cat(self.getBuf(), nil, decoded));
+            appendStringNode.execute(sb, self.getBuf());
+            // TODO GR-37214: append repeated codepoint
+            TruffleString nil = repeatNode.execute(T_NIL, self.getPos() - self.getStringSize(), TS_ENCODING);
+            appendStringNode.execute(sb, nil);
+            appendStringNode.execute(sb, decoded);
         } else if (self.getPos() < self.getStringSize()) {
             /*
              * Copy the data to the internal buffer, overwriting some of the existing data if
              * self.getPos() < self.getStringSize().
              */
-            int diff = self.getStringSize() - self.getPos();
-            String left = PString.substring(self.getBuf(), 0, self.getPos());
-            if (diff <= len) {
-                self.setBuf(PString.cat(left, decoded));
-            } else {
-                String right = PString.substring(self.getBuf(), len, self.getStringSize());
-                self.setBuf(PString.cat(left, decoded, right));
+            TruffleString left = substringNode.execute(self.getBuf(), 0, self.getPos(), TS_ENCODING, true);
+            appendStringNode.execute(sb, left);
+            appendStringNode.execute(sb, decoded);
+            int end = self.getPos() + len;
+            if (end < self.getStringSize()) {
+                TruffleString right = substringNode.execute(self.getBuf(), end, self.getStringSize() - end, TS_ENCODING, true);
+                appendStringNode.execute(sb, right);
             }
         } else {
-            self.setBuf(PString.cat(self.getBuf(), decoded));
+            appendStringNode.execute(sb, self.getBuf());
+            appendStringNode.execute(sb, decoded);
         }
+        self.setBuf(toStringNode.execute(sb));
 
         /* Set the new length of the internal string if it has changed. */
         self.incPos(len);
@@ -232,8 +248,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_value", "newline"})
-    @ArgumentClinic(name = "initial_value", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"\"", useDefaultForNone = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_value", "newline"})
+    @ArgumentClinic(name = "initial_value", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_EMPTY_STRING", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonTernaryClinicBuiltinNode {
 
@@ -243,22 +259,29 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone init(VirtualFrame frame, PStringIO self, String initialValue, Object newlineArg,
+        PNone init(VirtualFrame frame, PStringIO self, TruffleString initialValue, Object newlineArg,
                         @Cached IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
                         @Cached IncrementalNewlineDecoderBuiltins.InitNode initNode,
-                        @Cached IONodes.ToStringNode toStringNode) {
-            String newline;
+                        @Cached StringReplaceNode replaceNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.RepeatNode repeatNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached IONodes.ToTruffleStringNode toTruffleStringNode) {
+            TruffleString newline;
 
             if (newlineArg == PNone.NO_VALUE) {
-                newline = "\n";
+                newline = T_NEWLINE;
             } else if (newlineArg == PNone.NONE) {
                 newline = null;
             } else {
-                newline = toStringNode.execute(newlineArg);
+                newline = toTruffleStringNode.execute(newlineArg);
             }
 
             if (newline != null) {
-                validateNewline(newline, getRaiseNode());
+                validateNewline(newline, getRaiseNode(), codePointLengthNode, codePointAtIndexNode);
             }
             self.setOK(false);
             self.clearAll();
@@ -266,15 +289,15 @@ public final class StringIOBuiltins extends PythonBuiltins {
             if (newline != null) {
                 self.setReadNewline(newline);
             }
-            self.setReadUniversal(newline == null || PString.length(newline) == 0 || newline.charAt(0) == '\0');
+            self.setReadUniversal(newline == null || newline.isEmpty() || codePointAtIndexNode.execute(newline, 0, TS_ENCODING) == '\0');
             self.setReadTranslate(newline == null);
-            /*- 
+            /*-
                 If newline == "", we don't translate anything.
                 If newline == "\n" or newline == None, we translate to "\n", which is a no-op.
                 (for newline == None, TextIOWrapper translates to os.linesep, but it
                 is pointless for StringIO)
             */
-            if (newline != null && PString.length(newline) > 0 && newline.charAt(0) == '\r') {
+            if (newline != null && !newline.isEmpty() && codePointAtIndexNode.execute(newline, 0, TS_ENCODING) == '\r') {
                 self.setWriteNewline(self.getReadNewline());
             }
 
@@ -288,17 +311,13 @@ public final class StringIOBuiltins extends PythonBuiltins {
              * Now everything is set up, resize buffer to size of initial value, and copy it
              */
             self.setStringsize(0);
-            int valueLen = PString.length(initialValue);
-            if (valueLen > 0) {
-                /*
-                 * This is a heuristic, for newline translation might change the string length.
-                 */
+            if (!initialValue.isEmpty()) {
                 self.setRealized();
                 self.setPos(0);
-                writeString(frame, self, initialValue, getRaiseNode(), decodeNode);
+                writeString(frame, self, initialValue, getRaiseNode(), decodeNode, replaceNode, codePointLengthNode, repeatNode, substringNode, appendStringNode, toStringNode);
             } else {
                 /* Empty stringio object, we can start by accumulating */
-                self.setAccumlating();
+                self.setAccumulating();
             }
             self.setPos(0);
 
@@ -308,7 +327,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
@@ -319,7 +338,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
-        static Object read(PStringIO self, int len) {
+        static TruffleString read(PStringIO self, int len,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             int size = len;
             /* adjust invalid sizes */
             int n = self.getStringSize() - self.getPos();
@@ -331,26 +352,26 @@ public final class StringIOBuiltins extends PythonBuiltins {
             }
 
             if (size == 0) {
-                return "";
+                return T_EMPTY_STRING;
             }
 
-            if (self.isAccumlating() && self.getPos() == 0 && size == n) {
+            if (self.isAccumulating() && self.getPos() == 0 && size == n) {
                 self.setPos(self.getStringSize());
-                return self.makeIntermediate();
+                return self.makeIntermediate(toStringNode);
             }
 
-            self.realize();
+            self.realize(toStringNode);
             int newPos = self.getPos() + size;
-            String output = PString.substring(self.getBuf(), self.getPos(), newPos);
+            TruffleString output = substringNode.execute(self.getBuf(), self.getPos(), size, TS_ENCODING, false);
             self.setPos(newPos);
             return output;
         }
     }
 
-    static String stringioReadline(PStringIO self, int lim) {
+    static TruffleString stringioReadline(PStringIO self, int lim, FindLineEndingNode findLineEndingNode, TruffleString.SubstringNode substringNode) {
         /* In case of overseek, return the empty string */
         if (self.getPos() >= self.getStringSize()) {
-            return "";
+            return T_EMPTY_STRING;
         }
 
         int limit = lim;
@@ -359,7 +380,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
             limit = self.getStringSize() - self.getPos();
         }
 
-        int len = findLineEnding(self, self.getBuf(), start);
+        int[] consumed = new int[1];
+        int len = findLineEndingNode.execute(self, self.getBuf(), start, consumed);
         /*
          * If we haven't found any line ending, we just return everything (`consumed` is ignored).
          */
@@ -367,10 +389,10 @@ public final class StringIOBuiltins extends PythonBuiltins {
             len = limit;
         }
         self.incPos(len);
-        return PString.substring(self.getBuf(), start, start + len);
+        return substringNode.execute(self.getBuf(), start, len, TS_ENCODING, false);
     }
 
-    @Builtin(name = READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadlineNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
@@ -381,13 +403,16 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
-        static Object readline(PStringIO self, int size) {
-            self.realize();
-            return stringioReadline(self, size);
+        static TruffleString readline(PStringIO self, int size,
+                        @Cached FindLineEndingNode findLineEndingNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            self.realize(toStringNode);
+            return stringioReadline(self, size, findLineEndingNode, substringNode);
         }
     }
 
-    @Builtin(name = TRUNCATE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_TRUNCATE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -399,14 +424,18 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
-        static Object truncate(PStringIO self, @SuppressWarnings("unused") PNone size) {
-            return truncate(self, self.getPos());
+        static Object truncate(PStringIO self, @SuppressWarnings("unused") PNone size,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            return truncate(self, self.getPos(), substringNode, toStringNode);
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "size >= 0", "size < self.getStringSize()"})
-        static Object truncate(PStringIO self, int size) {
-            self.realize();
-            self.setBuf(PString.substring(self.getBuf(), 0, size));
+        static Object truncate(PStringIO self, int size,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            self.realize(toStringNode);
+            self.setBuf(substringNode.execute(self.getBuf(), 0, size, TS_ENCODING, false));
             self.setStringsize(size);
             return size;
         }
@@ -419,11 +448,13 @@ public final class StringIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isInteger(arg)", "!isPNone(arg)"})
         Object obj(VirtualFrame frame, PStringIO self, Object arg,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PyNumberIndexNode indexNode) {
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             int size = asSizeNode.executeExact(frame, indexNode.execute(frame, arg), OverflowError);
             if (size >= 0) {
                 if (size < self.getStringSize()) {
-                    return truncate(self, size);
+                    return truncate(self, size, substringNode, toStringNode);
                 }
                 return size;
             }
@@ -436,8 +467,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 2, parameterNames = {"self", "s"})
-    @ArgumentClinic(name = "s", conversion = ArgumentClinic.ClinicConversion.String)
+    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 2, parameterNames = {"self", "s"})
+    @ArgumentClinic(name = "s", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class WriteNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
 
@@ -447,17 +478,23 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
-        Object doWrite(VirtualFrame frame, PStringIO self, String s,
-                        @Cached IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode) {
-            int size = PString.length(s);
+        Object doWrite(VirtualFrame frame, PStringIO self, TruffleString s,
+                        @Cached IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
+                        @Cached StringReplaceNode replaceNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.RepeatNode repeatNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            int size = codePointLengthNode.execute(s, TS_ENCODING);
             if (size > 0) {
-                writeString(frame, self, s, getRaiseNode(), decodeNode);
+                writeString(frame, self, s, getRaiseNode(), decodeNode, replaceNode, codePointLengthNode, repeatNode, substringNode, appendStringNode, toStringNode);
             }
             return size;
         }
     }
 
-    @Builtin(name = TELL, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_TELL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TellNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -467,7 +504,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "pos", "whence"})
+    @Builtin(name = J_SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "pos", "whence"})
     @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Index)
     @ArgumentClinic(name = "whence", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedIOUtil.SEEK_SET", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -491,7 +528,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             /*-
                whence = 0: offset relative to beginning of the string.
                whence = 1: no change to current position.
-               whence = 2: change position to end of file. 
+               whence = 2: change position to end of file.
             */
             if (whence == 1) {
                 p = self.getPos();
@@ -530,22 +567,23 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = GETVALUE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_GETVALUE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetValueNode extends ClosedCheckPythonUnaryBuiltinNode {
 
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "self.isAccumlating()"})
-        static Object copy(PStringIO self) {
-            return self.makeIntermediate();
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "self.isAccumulating()"})
+        static Object copy(PStringIO self,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            return self.makeIntermediate(toStringNode);
         }
 
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!self.isAccumlating()"})
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!self.isAccumulating()"})
         static Object doit(PStringIO self) {
             return self.getBuf();
         }
     }
 
-    @Builtin(name = __GETSTATE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___GETSTATE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetStateNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -560,7 +598,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
@@ -568,10 +606,11 @@ public final class StringIOBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, PStringIO self, PTuple state,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached InitNode initNode,
-                        @Cached CastToJavaStringNode toString,
+                        @Cached CastToTruffleStringNode toString,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetOrCreateDictNode getDict,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
             Object[] array = getArray.execute(state.getSequenceStorage());
             if (array.length < 4) {
@@ -586,11 +625,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
              * object's buffer completely.
              */
 
-            String buf;
-            int bufsize;
-
-            buf = toString.execute(array[0]);
-            bufsize = PString.length(buf);
+            TruffleString buf = toString.execute(array[0]);
+            int bufsize = codePointLengthNode.execute(buf, TS_ENCODING);
+            self.setRealized();
             self.setBuf(buf);
             self.setStringsize(bufsize);
 
@@ -635,7 +672,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SEEKABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_SEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SeekableNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -645,7 +682,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_READABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadableNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -655,7 +692,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_WRITABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class WritableNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -665,7 +702,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = LINE_BUFFERING, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_LINE_BUFFERING, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class LineBufferingNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
@@ -674,7 +711,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NewlinesNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!self.hasDecoder()"})
@@ -685,11 +722,11 @@ public final class StringIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "self.hasDecoder()"})
         static Object doit(VirtualFrame frame, PStringIO self,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getDecoder(), NEWLINES);
+            return getAttr.execute(frame, self.getDecoder(), T_NEWLINES);
         }
     }
 
-    @Builtin(name = CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryBuiltinNode {
 
@@ -704,7 +741,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = CLOSE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_CLOSE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
 
@@ -716,7 +753,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IternextNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -724,32 +761,36 @@ public final class StringIOBuiltins extends PythonBuiltins {
             return profile.profileObject(self, PythonBuiltinClassType.PStringIO);
         }
 
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(self, profile)"})
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(self, profile)"}, limit = "1")
         Object builtin(PStringIO self,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile) {
-            self.realize();
-            String line = stringioReadline(self, -1);
-            if (PString.length(line) == 0) {
+                        @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinClassProfile profile,
+                        @Shared("sbToString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached FindLineEndingNode findLineEndingNode,
+                        @Cached TruffleString.SubstringNode substringNode) {
+            self.realize(toStringNode);
+            TruffleString line = stringioReadline(self, -1, findLineEndingNode, substringNode);
+            if (line.isEmpty()) {
                 throw raiseStopIteration();
             }
             return line;
         }
 
         /*
-         * This path is rearly executed.
+         * This path is rarely executed.
          */
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(self, profile)"})
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(self, profile)"}, limit = "1")
         Object slowpath(VirtualFrame frame, PStringIO self,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinClassProfile profile,
                         @Cached PyObjectCallMethodObjArgs callMethodReadline,
-                        @Cached CastToJavaStringNode toString) {
-            self.realize();
-            Object res = callMethodReadline.execute(frame, self, READLINE);
+                        @Cached CastToTruffleStringNode toString,
+                        @Shared("sbToString") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            self.realize(toStringNode);
+            Object res = callMethodReadline.execute(frame, self, T_READLINE);
             if (!PGuards.isString(res)) {
-                throw raise(OSError, S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P, READLINE, res);
+                throw raise(OSError, S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P, T_READLINE, res);
             }
-            String line = toString.execute(res);
-            if (PString.length(line) == 0) {
+            TruffleString line = toString.execute(res);
+            if (line.isEmpty()) {
                 throw raiseStopIteration();
             }
             return line;

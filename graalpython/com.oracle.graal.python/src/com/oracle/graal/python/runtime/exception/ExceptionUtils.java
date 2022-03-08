@@ -70,6 +70,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+
 public final class ExceptionUtils {
     private ExceptionUtils() {
     }
@@ -160,7 +162,7 @@ public final class ExceptionUtils {
         Object type = GetClassNode.getUncached().execute(pythonException);
         Object tb = GetExceptionTracebackNode.getUncached().execute(pythonException);
 
-        Object hook = context.lookupBuiltinModule("sys").getAttribute(BuiltinNames.EXCEPTHOOK);
+        Object hook = context.lookupBuiltinModule(T_SYS).getAttribute(BuiltinNames.T_EXCEPTHOOK);
         if (hook != PNone.NO_VALUE) {
             try {
                 // Note: it is important to pass frame 'null' because that will cause the

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.List;
 import java.util.logging.Level;
 
@@ -71,6 +74,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class GraalHPyObjectBuiltins {
     public static class HPyObjectNewNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
@@ -114,9 +118,9 @@ public abstract class GraalHPyObjectBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     abstract static class HPyObjectNewNode extends PythonVarargsBuiltinNode {
-        private static final String KW_SUPER_CONSTRUCTOR = "$supercons";
+        private static final TruffleString KW_SUPER_CONSTRUCTOR = tsLiteral("$supercons");
 
         private static PKeyword[] createKwDefaults(Object superConstructor) {
             if (superConstructor != null) {
@@ -233,7 +237,7 @@ public abstract class GraalHPyObjectBuiltins {
             RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyObjectNewNodeFactory<>(HPyObjectNewNodeGen.create()), true),
                             HPyObjectNewNode.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(SpecialMethodNames.__NEW__, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(superConstructor), flags, callTarget);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(SpecialMethodNames.T___NEW__, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(superConstructor), flags, callTarget);
         }
     }
 }

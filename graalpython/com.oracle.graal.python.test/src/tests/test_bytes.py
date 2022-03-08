@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -350,6 +350,9 @@ def test_eq():
     assert NotImplemented == bytes.__eq__(b'1', '1')
     assert_raises(TypeError, lambda: bytes.__eq__('1', bytearray(b'1')))
 
+def test_upper_lower():
+    assert b'AA\xc1\xe1' == b'aA\xc1\xe1'.upper()
+    assert b'aa\xc1\xe1' == b'aA\xc1\xe1'.lower()
 
 class ByteArraySubclass(bytearray):
     pass

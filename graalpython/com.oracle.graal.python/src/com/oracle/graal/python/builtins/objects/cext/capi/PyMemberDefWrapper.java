@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
@@ -63,6 +66,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -72,8 +76,10 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ImportStatic(SpecialMethodNames.class)
 public class PyMemberDefWrapper extends PythonNativeWrapper {
-    public static final String NAME = "name";
-    public static final String DOC = "doc";
+    public static final String J_NAME = "name";
+    public static final String J_DOC = "doc";
+    public static final TruffleString T_NAME = tsLiteral(J_NAME);
+    public static final TruffleString T_DOC = tsLiteral(J_DOC);
 
     public PyMemberDefWrapper(PythonObject delegate) {
         super(delegate);
@@ -87,8 +93,8 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected boolean isMemberReadable(String member) {
         switch (member) {
-            case NAME:
-            case DOC:
+            case J_NAME:
+            case J_DOC:
                 return true;
             default:
                 return false;
@@ -123,12 +129,12 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
             return expected.equals(actual);
         }
 
-        @Specialization(guards = {"eq(NAME, key)"})
+        @Specialization(guards = {"eq(J_NAME, key)"})
         static Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
                         @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode) {
-            Object name = getAttrNode.execute(object, NAME);
+            Object name = getAttrNode.execute(object, T_NAME);
             if (PGuards.isPNone(name)) {
                 return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
             } else {
@@ -136,12 +142,12 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = {"eq(DOC, key)"})
+        @Specialization(guards = {"eq(J_DOC, key)"})
         static Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
                         @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.execute(object, DOC);
+            Object doc = getAttrNode.execute(object, T_DOC);
             if (PGuards.isPNone(doc)) {
                 // CPython just returns the pointer of the original member def (i.e.
                 // ((PyMemberDef*)obj)->doc )
@@ -154,7 +160,7 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isMemberModifiable(String member) {
-        return member.equals(DOC);
+        return member.equals(J_DOC);
     }
 
     @ExportMessage
@@ -164,17 +170,18 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
+                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
                     @Exclusive @Cached FromCharPointerNode fromCharPointerNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            if (!DOC.equals(member)) {
+            if (!J_DOC.equals(member)) {
                 CompilerDirectives.transferToInterpreter();
                 throw UnsupportedMessageException.create();
             }
-            setAttrNode.execute(lib.getDelegate(this), member, fromCharPointerNode.execute(value));
+            setAttrNode.execute(lib.getDelegate(this), fromJavaStringNode.execute(member, TS_ENCODING), fromCharPointerNode.execute(value));
         } finally {
             gil.release(mustRelease);
         }

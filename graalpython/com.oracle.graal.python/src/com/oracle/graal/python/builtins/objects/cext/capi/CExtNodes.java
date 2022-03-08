@@ -52,9 +52,17 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_STRING_TO_CSTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_FLOAT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_TUPLE;
+import static com.oracle.graal.python.nodes.PGuards.isTruffleString;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_GET_;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
@@ -110,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByte
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
@@ -168,6 +177,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -205,8 +215,13 @@ import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 public abstract class CExtNodes {
+
+    private static final TruffleString T_UNICODE = tsLiteral("unicode");
+    private static final TruffleString T_SUBTYPE_NEW = tsLiteral("_subtype_new");
 
     @GenerateUncached
     abstract static class ImportCAPISymbolNode extends PNodeWithContext {
@@ -233,7 +248,7 @@ public abstract class CExtNodes {
         /**
          * typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
          */
-        protected String getTypenamePrefix() {
+        protected TruffleString getTypenamePrefix() {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
@@ -241,11 +256,11 @@ public abstract class CExtNodes {
 
         protected NativeCAPISymbol getFunctionName() {
             CompilerAsserts.neverPartOfCompilation();
-            String subtypeNewFunctionName = getTypenamePrefix() + "_subtype_new";
-            if (!NativeCAPISymbol.isValid(subtypeNewFunctionName)) {
+            TruffleString subtypeNewFunctionName = cat(getTypenamePrefix(), T_SUBTYPE_NEW);
+            if (!NativeCAPISymbol.isValid(subtypeNewFunctionName, TruffleString.EqualNode.getUncached())) {
                 throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + subtypeNewFunctionName);
             }
-            return NativeCAPISymbol.getByName(subtypeNewFunctionName);
+            return NativeCAPISymbol.getByName(subtypeNewFunctionName, TruffleString.EqualNode.getUncached());
         }
 
         @Specialization(guards = "isNativeClass(object)")
@@ -267,8 +282,8 @@ public abstract class CExtNodes {
 
     public abstract static class FloatSubtypeNew extends SubtypeNew {
         @Override
-        protected final String getTypenamePrefix() {
-            return "float";
+        protected final TruffleString getTypenamePrefix() {
+            return T_FLOAT;
         }
 
         public final Object call(Object object, double arg) {
@@ -285,8 +300,8 @@ public abstract class CExtNodes {
         @Child private ToSulongNode toSulongNode;
 
         @Override
-        protected final String getTypenamePrefix() {
-            return "tuple";
+        protected final TruffleString getTypenamePrefix() {
+            return T_TUPLE;
         }
 
         public final Object call(Object object, Object arg) {
@@ -306,8 +321,8 @@ public abstract class CExtNodes {
         @Child private ToSulongNode toSulongNode;
 
         @Override
-        protected final String getTypenamePrefix() {
-            return "unicode";
+        protected final TruffleString getTypenamePrefix() {
+            return T_UNICODE;
         }
 
         public final Object call(Object object, Object arg) {
@@ -362,7 +377,7 @@ public abstract class CExtNodes {
     public abstract static class ToSulongNode extends CExtToNativeNode {
 
         @Specialization
-        static Object doString(@SuppressWarnings("unused") CExtContext cextContext, String str,
+        static Object doString(@SuppressWarnings("unused") CExtContext cextContext, TruffleString str,
                         @Cached PythonObjectFactory factory,
                         @Cached ConditionProfile noWrapperProfile) {
             return PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
@@ -539,7 +554,7 @@ public abstract class CExtNodes {
         }
 
         static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
-            return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
+            return !(object instanceof TruffleString || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
                             object instanceof PythonBuiltinClassType || object instanceof PythonNativeNull || object == DescriptorDeleteMarker.INSTANCE ||
                             object instanceof PythonAbstractObject) && !(isForeignObjectNode.execute(object) && !CApiGuards.isNativeWrapper(object));
         }
@@ -605,7 +620,7 @@ public abstract class CExtNodes {
         public abstract Object executeLong(CExtContext cExtContext, long l);
 
         @Specialization
-        static Object doString(CExtContext cextContext, String str,
+        static Object doString(CExtContext cextContext, TruffleString str,
                         @Cached PythonObjectFactory factory,
                         @Cached ConditionProfile noWrapperProfile) {
             return ToSulongNode.doString(cextContext, str, factory, noWrapperProfile);
@@ -845,7 +860,7 @@ public abstract class CExtNodes {
         public abstract Object executeLong(CExtContext cExtContext, long l);
 
         @Specialization
-        static Object doString(CExtContext cextContext, String str,
+        static Object doString(CExtContext cextContext, TruffleString str,
                         @Cached PythonObjectFactory factory,
                         @Cached ConditionProfile noWrapperProfile) {
             return ToSulongNode.doString(cextContext, str, factory, noWrapperProfile);
@@ -1054,7 +1069,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static String doString(@SuppressWarnings("unused") CExtContext cextContext, String object) {
+        static TruffleString doString(@SuppressWarnings("unused") CExtContext cextContext, TruffleString object) {
             return object;
         }
 
@@ -1351,7 +1366,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static String doString(@SuppressWarnings("unused") CExtContext nativeContext, String object) {
+        static TruffleString doString(@SuppressWarnings("unused") CExtContext nativeContext, TruffleString object) {
             return object;
         }
 
@@ -1382,8 +1397,8 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isForeignObject(Object obj) {
-            return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof String || obj instanceof Boolean || obj instanceof Integer ||
-                            obj instanceof Long || obj instanceof Byte || obj instanceof Double);
+            return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof TruffleString || obj instanceof Boolean || obj instanceof Integer ||
+                            obj instanceof Long || obj instanceof Byte || obj instanceof Double || isTruffleString(obj));
         }
     }
 
@@ -1483,15 +1498,18 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doPString(PString str,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("callStringToCstrNode") @Cached PCallCapiFunction callStringToCstrNode) {
-            String value = str.getValue();
-            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, value, value.length());
+            TruffleString value = castToStringNode.execute(str);
+            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, value, codePointLengthNode.execute(value, TS_ENCODING));
         }
 
         @Specialization
-        Object doString(String str,
+        Object doString(TruffleString str,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("callStringToCstrNode") @Cached PCallCapiFunction callStringToCstrNode) {
-            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, str, str.length());
+            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, str, codePointLengthNode.execute(str, TS_ENCODING));
         }
 
         @Specialization
@@ -1531,27 +1549,32 @@ public abstract class CExtNodes {
         public abstract Object execute(Object charPtr);
 
         @Specialization(limit = "1")
-        static String doCStringWrapper(CStringWrapper cStringWrapper,
+        static TruffleString doCStringWrapper(CStringWrapper cStringWrapper,
                         @CachedLibrary("cStringWrapper") PythonNativeWrapperLibrary lib) {
             return cStringWrapper.getString(lib);
         }
 
         @Specialization(limit = "1")
-        static String doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper,
-                        @CachedLibrary("cByteArrayWrapper") PythonNativeWrapperLibrary lib) {
+        static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper,
+                        @CachedLibrary("cByteArrayWrapper") PythonNativeWrapperLibrary lib,
+                        @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             byte[] byteArray = cByteArrayWrapper.getByteArray(lib);
             // TODO(fa): what is the encoding ? ASCII only ?
-            return PythonUtils.newString(byteArray);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, Encoding.US_ASCII, true), TS_ENCODING);
         }
 
         @Specialization(limit = "1")
-        static String doSequenceArrayWrapper(PySequenceArrayWrapper obj,
+        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             Object delegate = lib.getDelegate(obj);
             if (delegate instanceof PBytesLike) {
                 byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-                return PythonUtils.newString(bytes);
+                // TODO(fa): what is the encoding ? ASCII only ?
+                return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, Encoding.US_ASCII, true), TS_ENCODING);
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -1622,7 +1645,7 @@ public abstract class CExtNodes {
                         @Cached ToJavaNode toJavaNode,
                         @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberName())));
+            return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberNameJavaString())));
         }
 
         @Specialization(guards = {"!lib.hasMembers(object.getPtr())"}, //
@@ -1636,7 +1659,7 @@ public abstract class CExtNodes {
                         @Cached ToJavaNode toJavaNode,
                         @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
             Object typedPtr = callGetObTypeNode.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyObject));
-            return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberName())));
+            return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberNameJavaString())));
         }
 
         @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember", "getNativeClassByMemberAttachType"})
@@ -1662,7 +1685,7 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
     public abstract static class PointerCompareNode extends Node {
-        public abstract boolean execute(String opName, Object a, Object b);
+        public abstract boolean execute(TruffleString opName, Object a, Object b);
 
         private static boolean executeCFunction(int op, Object a, Object b, InteropLibrary interopLibrary, ImportCAPISymbolNode importCAPISymbolNode) {
             try {
@@ -1673,62 +1696,67 @@ public abstract class CExtNodes {
             }
         }
 
-        @Specialization(guards = "isEq(opName)", limit = "2")
-        static boolean doEq(@SuppressWarnings("unused") String opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
+        @Specialization(guards = "isEq(opName, equalNode)", limit = "2")
+        static boolean doEq(@SuppressWarnings("unused") TruffleString opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
                         @CachedLibrary("a.getPtr()") InteropLibrary aLib,
-                        @CachedLibrary(limit = "3") InteropLibrary bLib) {
+                        @CachedLibrary(limit = "3") InteropLibrary bLib,
+                        @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
             return aLib.isIdentical(a.getPtr(), b.getPtr(), bLib);
         }
 
-        @Specialization(guards = "isNe(opName)", limit = "2")
-        static boolean doNe(@SuppressWarnings("unused") String opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
+        @Specialization(guards = "isNe(opName, equalNode)", limit = "2")
+        static boolean doNe(@SuppressWarnings("unused") TruffleString opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
                         @CachedLibrary("a.getPtr()") InteropLibrary aLib,
-                        @CachedLibrary(limit = "3") InteropLibrary bLib) {
+                        @CachedLibrary(limit = "3") InteropLibrary bLib,
+                        @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
             return !aLib.isIdentical(a.getPtr(), b.getPtr(), bLib);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeObject a, PythonNativeObject b,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
-                        @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
+        static boolean execute(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
+                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             return executeCFunction(op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeObject a, long b,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
-                        @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
+        static boolean execute(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
+                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             return executeCFunction(op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeVoidPtr a, long b,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
-                        @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
+        static boolean execute(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
+                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             return executeCFunction(op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
 
-        static int findOp(String specialMethodName) {
+        static int findOp(TruffleString specialMethodName, TruffleString.EqualNode equalNode) {
             for (int i = 0; i < SpecialMethodNames.COMPARE_OP_COUNT; i++) {
-                if (SpecialMethodNames.getCompareName(i).equals(specialMethodName)) {
+                if (equalNode.execute(SpecialMethodNames.getCompareName(i), specialMethodName, TS_ENCODING)) {
                     return i;
                 }
             }
             throw new RuntimeException("The special method used for Python C API pointer comparison must be a constant literal (i.e., interned) string");
         }
 
-        static boolean isEq(String opName) {
-            return SpecialMethodNames.__EQ__.equals(opName);
+        static boolean isEq(TruffleString opName, TruffleString.EqualNode equalNode) {
+            return equalNode.execute(SpecialMethodNames.T___EQ__, opName, TS_ENCODING);
         }
 
-        static boolean isNe(String opName) {
-            return SpecialMethodNames.__NE__.equals(opName);
+        static boolean isNe(TruffleString opName, TruffleString.EqualNode equalNode) {
+            return equalNode.execute(SpecialMethodNames.T___NE__, opName, TS_ENCODING);
         }
     }
 
@@ -2158,7 +2186,7 @@ public abstract class CExtNodes {
         Object upcall0(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallNode callNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            assert args[0] instanceof String;
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
@@ -2168,7 +2196,7 @@ public abstract class CExtNodes {
                         @Cached CallUnaryMethodNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode toJavaNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            assert args[0] instanceof String;
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.executeObject(frame, callable, toJavaNode.execute(args[1]));
         }
@@ -2179,7 +2207,7 @@ public abstract class CExtNodes {
                         @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
             Object[] converted = allToPythonNode.execute(args, 1);
-            assert args[0] instanceof String;
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.executeObject(frame, callable, converted[0], converted[1]);
         }
@@ -2190,7 +2218,7 @@ public abstract class CExtNodes {
                         @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
             Object[] converted = allToPythonNode.execute(args, 1);
-            assert args[0] instanceof String;
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
@@ -2201,7 +2229,7 @@ public abstract class CExtNodes {
                         @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
             Object[] converted = allToPythonNode.execute(args, 1);
-            assert args[0] instanceof String;
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
         }
@@ -2358,7 +2386,7 @@ public abstract class CExtNodes {
                         @Cached LookupAndCallUnaryDynamicNode callComplex,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
-            Object result = callComplex.executeObject(value, __COMPLEX__);
+            Object result = callComplex.executeObject(value, T___COMPLEX__);
             // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
             // of PComplex
             if (result != PNone.NO_VALUE) {
@@ -2444,6 +2472,7 @@ public abstract class CExtNodes {
      * As an optimization, this node can also unwrap {@code PrimitiveNativeWrapper} instances to
      * avoid eager and explicit conversion.
      */
+    @ImportStatic(PythonUtils.class)
     @GenerateUncached
     public abstract static class CastToNativeLongNode extends PNodeWithContext {
         public abstract long execute(boolean arg);
@@ -2458,9 +2487,11 @@ public abstract class CExtNodes {
 
         public abstract Object execute(Object arg);
 
-        @Specialization(guards = "value.length() == 1")
-        static long doString(String value) {
-            return value.charAt(0);
+        @Specialization(guards = "lengthNode.execute(value, TS_ENCODING) == 1")
+        static long doString(TruffleString value,
+                        @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
+                        @Cached TruffleString.CodePointLengthNode lengthNode) {
+            return codepointAtIndexNode.execute(value, 0, TS_ENCODING);
         }
 
         @Specialization
@@ -2534,14 +2565,16 @@ public abstract class CExtNodes {
             return execute(null, symbol, args);
         }
 
-        public abstract Object execute(CApiContext context, NativeCAPISymbol symbol, Object[] args);
+        protected abstract Object execute(CApiContext context, NativeCAPISymbol symbol, Object[] args);
 
         @Specialization(guards = "capiContext != null")
         static Object doWithContext(CApiContext capiContext, NativeCAPISymbol name, Object[] args,
                         @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
-                return interopLibrary.execute(importCExtSymbolNode.execute(capiContext, name), args);
+                // TODO review EnsureTruffleStringNode with GR-37896
+                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(capiContext, name), args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 // consider these exceptions to be fatal internal errors
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -2551,9 +2584,11 @@ public abstract class CExtNodes {
         @Specialization(guards = "capiContext == null")
         static Object doWithoutContext(@SuppressWarnings("unused") CApiContext capiContext, NativeCAPISymbol name, Object[] args,
                         @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
-                return interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name), args);
+                // TODO review EnsureTruffleStringNode with GR-37896
+                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name), args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 // consider these exceptions to be fatal internal errors
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -2703,7 +2738,7 @@ public abstract class CExtNodes {
                         @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
                         throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            return toJavaNode.execute(lib.readMember(object.getPtr(), member.getMemberName()));
+            return toJavaNode.execute(lib.readMember(object.getPtr(), member.getMemberNameJavaString()));
         }
 
         @Specialization(guards = {"!lib.hasMembers(object.getPtr())", "member.getType() == cachedMemberType"}, //
@@ -2717,13 +2752,15 @@ public abstract class CExtNodes {
                         @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
                         throws UnknownIdentifierException, UnsupportedMessageException {
             Object typedPtr = callGetObTypeNode.call(FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyTypeObject));
-            return toJavaNode.execute(lib.readMember(typedPtr, member.getMemberName()));
+            return toJavaNode.execute(lib.readMember(typedPtr, member.getMemberNameJavaString()));
         }
 
         @Specialization(guards = "memberName == cachedMemberName", limit = "1", replaces = {"doCachedObj", "getByMember", "getByMemberAttachType"})
         static Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMember memberName,
                         @SuppressWarnings("unused") @Cached("memberName") NativeMember cachedMemberName,
-                        @Cached("getterFuncName(memberName)") NativeCAPISymbol getterName,
+                        @SuppressWarnings("unused") @Cached TruffleString.ConcatNode concatNode,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached("getterFuncName(memberName, concatNode, eqNode)") NativeCAPISymbol getterName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") ToJavaBaseNode toJavaNode,
                         @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
@@ -2732,12 +2769,14 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = {"doCachedObj", "getByMember", "getByMemberAttachType", "doCachedMember"})
         static Object doGeneric(Object self, NativeMember memberName,
+                        @Cached TruffleString.ConcatNode concatNode,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached ToJavaNode toJavaNode,
                         @Cached CharPtrToJavaNode charPtrToJavaNode,
                         @Cached VoidPtrToJavaNode voidPtrToJavaNode,
-                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
-            Object value = callMemberGetterNode.call(getterFuncName(memberName), toSulong.execute(self));
+                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode,
+                        @Cached TruffleString.EqualNode eqNode) {
+            Object value = callMemberGetterNode.call(getterFuncName(memberName, concatNode, eqNode), toSulong.execute(self));
             switch (memberName.getType()) {
                 case OBJECT:
                     return toJavaNode.execute(value);
@@ -2751,14 +2790,14 @@ public abstract class CExtNodes {
         }
 
         static Object doSlowPath(Object obj, NativeMember memberName) {
-            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(getterFuncName(memberName), ToSulongNode.getUncached().execute(obj)));
+            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(
+                            getterFuncName(memberName, TruffleString.ConcatNode.getUncached(), TruffleString.EqualNode.getUncached()), ToSulongNode.getUncached().execute(obj)));
         }
 
-        @TruffleBoundary
-        static NativeCAPISymbol getterFuncName(NativeMember memberName) {
-            String name = "get_" + memberName.getMemberName();
-            assert NativeCAPISymbol.isValid(name) : "invalid native member getter function " + name;
-            return NativeCAPISymbol.getByName(name);
+        static NativeCAPISymbol getterFuncName(NativeMember memberName, TruffleString.ConcatNode concatNode, TruffleString.EqualNode eqNode) {
+            TruffleString name = concatNode.execute(T_GET_, memberName.getMemberNameTruffleString(), TS_ENCODING, false);
+            assert NativeCAPISymbol.isValid(name, eqNode) : "invalid native member getter function " + name;
+            return NativeCAPISymbol.getByName(name, eqNode);
         }
 
         static ToJavaBaseNode createForMember(NativeMember member) {
@@ -2874,24 +2913,24 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class PRaiseNativeNode extends Node {
 
-        public final int raiseInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
+        public final int raiseInt(Frame frame, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
             return executeInt(frame, errorValue, errType, format, arguments);
         }
 
-        public final Object raise(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
+        public final Object raise(Frame frame, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
             return execute(frame, errorValue, errType, format, arguments);
         }
 
-        public final int raiseIntWithoutFrame(int errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
+        public final int raiseIntWithoutFrame(int errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
             return executeInt(null, errorValue, errType, format, arguments);
         }
 
-        public abstract Object execute(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object[] arguments);
+        public abstract Object execute(Frame frame, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments);
 
-        public abstract int executeInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object[] arguments);
+        public abstract int executeInt(Frame frame, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments);
 
         @Specialization
-        static int doInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object[] arguments,
+        static int doInt(Frame frame, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
@@ -2899,14 +2938,14 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doObject(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object[] arguments,
+        static Object doObject(Frame frame, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
             return errorValue;
         }
 
-        public static void raiseNative(Frame frame, PythonBuiltinClassType errType, String format, Object[] arguments, PRaiseNode raiseNode,
+        public static void raiseNative(Frame frame, PythonBuiltinClassType errType, TruffleString format, Object[] arguments, PRaiseNode raiseNode,
                         TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 throw raiseNode.raise(errType, format, arguments);
@@ -2943,8 +2982,9 @@ public abstract class CExtNodes {
             if (!lib.isNull(object) && cApiContext != null) {
                 assert value >= 0 : "adding negative reference count; dealloc might not happen";
                 cApiContext.checkAccess(object, lib);
-                long refCnt = castToJavaLongNode.execute(lib.readMember(object, OB_REFCNT.getMemberName()));
-                lib.writeMember(object, OB_REFCNT.getMemberName(), refCnt + value);
+                String member = OB_REFCNT.getMemberNameJavaString();
+                long refCnt = castToJavaLongNode.execute(lib.readMember(object, member));
+                lib.writeMember(object, member, refCnt + value);
             }
             return object;
         }
@@ -3074,6 +3114,7 @@ public abstract class CExtNodes {
         static long doNativeObjectTypedWithContext(CApiContext cApiContext, Object ptrObject,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
             if (!lib.isNull(ptrObject)) {
                 boolean haveCApiContext = cApiContext != null;
@@ -3084,7 +3125,7 @@ public abstract class CExtNodes {
                 // directly reading the member is only possible if the pointer object is typed but
                 // if so, it is the faster way
                 if (lib.hasMembers(ptrObject)) {
-                    return castToJavaLongNode.execute(lib.readMember(ptrObject, OB_REFCNT.getMemberName()));
+                    return castToJavaLongNode.execute(lib.readMember(ptrObject, OB_REFCNT.getMemberNameJavaString()));
                 }
                 if (haveCApiContext) {
                     return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbol.FUN_GET_OB_REFCNT, ptrObject));
@@ -3111,8 +3152,9 @@ public abstract class CExtNodes {
         static long doNativeObjectTyped(@SuppressWarnings("unused") CApiContext cApiContext, Object ptrObject,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
-            return doNativeObjectTypedWithContext(PythonContext.get(callGetObRefCntNode).getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
+            return doNativeObjectTypedWithContext(PythonContext.get(callGetObRefCntNode).getCApiContext(), ptrObject, callGetObRefCntNode, lib, toJavaStringNode, castToJavaLongNode);
         }
 
         @Specialization(limit = "2", replaces = {"doNativeObjectTypedWithContext", "doNativeObjectWithContext", "doNativeObjectTyped"})
@@ -3282,11 +3324,13 @@ public abstract class CExtNodes {
             return pattern.matcher(formatStr);
         }
 
-        public abstract Object execute(String format, Object vaList);
+        public abstract Object execute(TruffleString format, Object vaList);
 
         @Specialization
         @TruffleBoundary
-        Object doGeneric(String format, Object vaList) {
+        Object doGeneric(TruffleString f, Object vaList) {
+            // TODO use TruffleString [GR-38103]
+            String format = f.toJavaStringUncached();
 
             // helper nodes
             GetVaArgsNode getVaArgsNode = GetVaArgsNodeGen.getUncached();
@@ -3329,7 +3373,7 @@ public abstract class CExtNodes {
                         case 'c':
                             int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t);
                             if (ordinal < 0 || ordinal > 0x110000) {
-                                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "character argument not in range(0x110000)");
+                                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.CHARACTER_ARG_NOT_IN_RANGE);
                             }
                             result.append((char) ordinal);
                             vaArgIdx++;
@@ -3433,13 +3477,13 @@ public abstract class CExtNodes {
                             } else {
                                 value = System.identityHashCode(ptr);
                             }
-                            result.append(String.format("0x%x", value));
+                            result.append(PythonUtils.format("0x%x", value));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 'A':
                             // %A
-                            result.append(callBuiltin(context, BuiltinNames.ASCII, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            result.append(callBuiltin(context, BuiltinNames.T_ASCII, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
                             vaArgIdx++;
                             valid = true;
                             break;
@@ -3463,13 +3507,13 @@ public abstract class CExtNodes {
                             break;
                         case 'S':
                             // %S
-                            result.append(callBuiltin(context, BuiltinNames.STR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            result.append(callBuiltin(context, BuiltinNames.T_STR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 'R':
                             // %R
-                            result.append(callBuiltin(context, BuiltinNames.REPR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            result.append(callBuiltin(context, BuiltinNames.T_REPR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
                             vaArgIdx++;
                             valid = true;
                             break;
@@ -3484,11 +3528,11 @@ public abstract class CExtNodes {
                 // matched)
                 result.append(format, cur, format.length());
             } catch (InteropException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Error when accessing variable argument at position %d", vaArgIdx);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.ERROR_WHEN_ACCESSING_VAR_ARG_AT_POS, vaArgIdx);
             } finally {
                 current.get();
             }
-            return result.toString();
+            return toTruffleStringUncached(result.toString());
         }
 
         private static int getPrec(String prec) {
@@ -3511,7 +3555,7 @@ public abstract class CExtNodes {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, "%p object cannot be interpreted as integer", value);
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
         }
 
         /**
@@ -3526,7 +3570,7 @@ public abstract class CExtNodes {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, "%p object cannot be interpreted as integer", value);
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
         }
 
         private static Object getPyObject(GetVaArgsNode getVaArgsNode, Object vaList, int idx) throws InteropException {
@@ -3534,7 +3578,7 @@ public abstract class CExtNodes {
         }
 
         @TruffleBoundary
-        private static Object callBuiltin(PythonContext context, String builtinName, Object object) {
+        private static Object callBuiltin(PythonContext context, TruffleString builtinName, Object object) {
             Object attribute = PyObjectLookupAttr.getUncached().execute(null, context.getBuiltins(), builtinName);
             return CastToJavaStringNodeGen.getUncached().execute(CallNode.getUncached().execute(null, attribute, object));
         }
@@ -3589,21 +3633,22 @@ public abstract class CExtNodes {
 
     abstract static class MultiPhaseExtensionModuleInitNode extends Node {
 
-        static final String M_NAME = "m_name";
-        static final String M_DOC = "m_doc";
-        static final String M_METHODS = "m_methods";
-        static final String M_SLOTS = "m_slots";
-        static final String M_SIZE = "m_size";
+        static final String J_M_NAME = "m_name";
+        static final String J_M_DOC = "m_doc";
+        static final String J_M_METHODS = "m_methods";
+        static final TruffleString T_M_METHODS = tsLiteral(J_M_METHODS);
+        static final String J_M_SLOTS = "m_slots";
+        static final TruffleString T_M_SLOTS = tsLiteral(J_M_SLOTS);
+        static final String J_M_SIZE = "m_size";
 
         // according to definitions in 'moduleobject.h'
         static final int SLOT_PY_MOD_CREATE = 1;
         static final int SLOT_PY_MOD_EXEC = 2;
 
         // member names of 'PyModuleDef_Slot'
-        static final String MODULEDEF_SLOT = "slot";
-        static final String MODULEDEF_VALUE = "value";
+        static final String J_MODULEDEF_SLOT = "slot";
+        static final String J_MODULEDEF_VALUE = "value";
 
-        static final String FIELD_S_DID_NOT_RETURN_AN_ARRAY = "field '%s' did not return an array";
     }
 
     /**
@@ -3627,13 +3672,9 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class CreateModuleNode extends MultiPhaseExtensionModuleInitNode {
 
-        private static final String CREATION_FAILD_WITHOUT_EXCEPTION = "creation of module %s failed without setting an exception";
-        private static final String CREATION_RAISED_EXCEPTION = "creation of module %s raised unreported exception";
-        public static final String NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE = "module %s is not a module object, but requests module state";
-
         @TruffleBoundary
         static boolean checkLayout(Object moduleDef, InteropLibrary moduleDefLib) {
-            String[] members = new String[]{"m_base", M_NAME, M_DOC, M_SIZE, M_METHODS, M_SLOTS, "m_traverse", "m_clear", "m_free"};
+            String[] members = new String[]{"m_base", J_M_NAME, J_M_DOC, J_M_SIZE, J_M_METHODS, J_M_SLOTS, "m_traverse", "m_clear", "m_free"};
             for (String member : members) {
                 if (!moduleDefLib.isMemberReadable(moduleDef, member)) {
                     return false;
@@ -3669,27 +3710,27 @@ public abstract class CExtNodes {
              * The name of the module is taken from the module spec and *NOT* from the module
              * definition.
              */
-            String mName = moduleSpec.name;
+            TruffleString mName = moduleSpec.name;
             Object mDoc;
             int mSize;
             try {
                 // do not eagerly read the doc string; this turned out to be unnecessarily expensive
-                Object docPtr = interopLib.readMember(moduleDef, M_DOC);
+                Object docPtr = interopLib.readMember(moduleDef, J_M_DOC);
                 if (interopLib.isNull(docPtr)) {
                     mDoc = PNone.NO_VALUE;
                 } else {
                     mDoc = fromCharPointerNode.execute(docPtr);
                 }
 
-                Object mSizeObj = interopLib.readMember(moduleDef, M_SIZE);
+                Object mSizeObj = interopLib.readMember(moduleDef, J_M_SIZE);
                 mSize = interopLib.asInt(mSizeObj);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot create module from definition because: %m", e);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_CREATE_MODULE_FROM_DEFINITION, e);
             }
 
             if (mSize < 0) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "module %s: m_size may not be negative for multi-phase initialization", mName);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, mName);
             }
 
             // parse slot definitions
@@ -3700,26 +3741,26 @@ public abstract class CExtNodes {
                 if (!interopLib.isNull(slotDefinitions)) {
                     if (!interopLib.hasArrayElements(slotDefinitions)) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, FIELD_S_DID_NOT_RETURN_AN_ARRAY, M_SLOTS);
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, T_M_SLOTS);
                     }
                     long nSlots = interopLib.getArraySize(slotDefinitions);
                     for (long i = 0; i < nSlots; i++) {
                         Object slotDefinition = interopLib.readArrayElement(slotDefinitions, i);
 
-                        Object slotIdObj = interopLib.readMember(slotDefinition, MODULEDEF_SLOT);
+                        Object slotIdObj = interopLib.readMember(slotDefinition, J_MODULEDEF_SLOT);
                         int slotId = interopLib.asInt(slotIdObj);
                         switch (slotId) {
                             case SLOT_PY_MOD_CREATE:
                                 if (createFunction != null) {
-                                    throw raiseNode.raise(SystemError, "module %s has multiple create slots", mName);
+                                    throw raiseNode.raise(SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
                                 }
-                                createFunction = interopLib.readMember(slotDefinition, MODULEDEF_VALUE);
+                                createFunction = interopLib.readMember(slotDefinition, J_MODULEDEF_VALUE);
                                 break;
                             case SLOT_PY_MOD_EXEC:
                                 hasExecutionSlots = true;
                                 break;
                             default:
-                                throw raiseNode.raise(SystemError, "module %s uses unknown slot ID %i", mName, slotId);
+                                throw raiseNode.raise(SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
                         }
                     }
                 }
@@ -3733,7 +3774,7 @@ public abstract class CExtNodes {
                 try {
                     Object result = interopLib.execute(createFunction, cArguments);
                     DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, interopLib.isNull(result), true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
-                                    errOccurredProfile, CREATION_FAILD_WITHOUT_EXCEPTION, CREATION_RAISED_EXCEPTION);
+                                    errOccurredProfile, ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(capiContext, result);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
@@ -3746,10 +3787,10 @@ public abstract class CExtNodes {
                  */
                 if (!(module instanceof PythonModule)) {
                     if (mSize > 0) {
-                        throw raiseNode.raise(SystemError, NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
+                        throw raiseNode.raise(SystemError, ErrorMessages.NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
                     }
                     if (hasExecutionSlots) {
-                        throw raiseNode.raise(SystemError, "module %s specifies execution slots, but did not create a ModuleType instance", mName);
+                        throw raiseNode.raise(SystemError, ErrorMessages.MODULE_SPECIFIES_EXEC_SLOTS_BUT_DIDNT_CREATE_INSTANCE, mName);
                     }
                     // otherwise CPython is just fine
                 } else {
@@ -3767,14 +3808,14 @@ public abstract class CExtNodes {
                 if (!interopLib.isNull(methodDefinitions)) {
                     if (!interopLib.hasArrayElements(methodDefinitions)) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, FIELD_S_DID_NOT_RETURN_AN_ARRAY, M_METHODS);
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, T_M_METHODS);
                     }
                     long nMethods = interopLib.getArraySize(methodDefinitions);
                     for (long i = 0; i < nMethods; i++) {
                         Object methodDefinition = interopLib.readArrayElement(methodDefinitions, i);
                         PBuiltinFunction fun = addLegacyMethodNode.execute(capiContext, methodDefinition);
                         PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                        writeAttrToMethodNode.execute(method, SpecialAttributeNames.__MODULE__, mName);
+                        writeAttrToMethodNode.execute(method, SpecialAttributeNames.T___MODULE__, mName);
                         writeAttrNode.execute(module, fun.getName(), method);
                     }
                 }
@@ -3786,7 +3827,7 @@ public abstract class CExtNodes {
                 throw CompilerDirectives.shouldNotReachHere();
             }
 
-            writeAttrNode.execute(module, SpecialAttributeNames.__DOC__, mDoc);
+            writeAttrNode.execute(module, SpecialAttributeNames.T___DOC__, mDoc);
             return module;
         }
     }
@@ -3796,8 +3837,6 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     public abstract static class ExecModuleNode extends MultiPhaseExtensionModuleInitNode {
-        private static final String EXECUTION_FAILED_WITHOUT_EXCEPTION = "execution of module %s failed without setting an exception";
-        private static final String EXECUTION_RAISED_EXCEPTION = "execution of module %s raised unreported exception";
 
         public abstract int execute(CApiContext capiContext, PythonModule module, Object moduleDef);
 
@@ -3814,14 +3853,14 @@ public abstract class CExtNodes {
             // call to type the pointer
             assert CreateModuleNode.checkLayout(moduleDef, interopLib);
 
-            String mName = getNameNode.execute(module);
+            TruffleString mName = getNameNode.execute(module);
             int mSize;
             try {
-                Object mSizeObj = interopLib.readMember(moduleDef, M_SIZE);
+                Object mSizeObj = interopLib.readMember(moduleDef, J_M_SIZE);
                 mSize = interopLib.asInt(mSizeObj);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot create module from definition because: %m", e);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_CREATE_MODULE_FROM_DEFINITION, e);
             }
 
             try {
@@ -3835,7 +3874,7 @@ public abstract class CExtNodes {
                      * and/or we could also use a Truffle buffer object.
                      */
                     Object moduleStatePtr = callMallocNode.call(capiContext, NativeCAPISymbol.FUN_PYMEM_RAWMALLOC, mSize);
-                    writeNativeMemberNode.execute(module, moduleWrapper, MD_STATE.getMemberName(), moduleStatePtr);
+                    writeNativeMemberNode.execute(module, moduleWrapper, MD_STATE.getMemberNameJavaString(), moduleStatePtr);
                 }
 
                 // parse slot definitions
@@ -3845,20 +3884,20 @@ public abstract class CExtNodes {
                 }
                 if (!interopLib.hasArrayElements(slotDefinitions)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, FIELD_S_DID_NOT_RETURN_AN_ARRAY, M_SLOTS);
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, T_M_SLOTS);
                 }
                 long nSlots = interopLib.getArraySize(slotDefinitions);
                 for (long i = 0; i < nSlots; i++) {
                     Object slotDefinition = interopLib.readArrayElement(slotDefinitions, i);
 
-                    Object slotIdObj = interopLib.readMember(slotDefinition, MODULEDEF_SLOT);
+                    Object slotIdObj = interopLib.readMember(slotDefinition, J_MODULEDEF_SLOT);
                     int slotId = interopLib.asInt(slotIdObj);
                     switch (slotId) {
                         case SLOT_PY_MOD_CREATE:
                             // handled in CreateModuleNode
                             break;
                         case SLOT_PY_MOD_EXEC:
-                            Object execFunction = interopLib.readMember(slotDefinition, MODULEDEF_VALUE);
+                            Object execFunction = interopLib.readMember(slotDefinition, J_MODULEDEF_VALUE);
                             Object result = interopLib.execute(execFunction, moduleToNativeNode.execute(capiContext, module));
                             int iResult = interopLib.asInt(result);
                             /*
@@ -3868,11 +3907,12 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(callGetterNode), capiContext.getContext(), errOccurredProfile,
-                                            EXECUTION_FAILED_WITHOUT_EXCEPTION, EXECUTION_RAISED_EXCEPTION);
+                            DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
+                                            errOccurredProfile,
+                                            ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:
-                            throw raiseNode.raise(SystemError, "module %s initialized with unknown slot %i", mName, slotId);
+                            throw raiseNode.raise(SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
                     }
                 }
             } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException | UnsupportedTypeException | ArityException e) {
@@ -3896,10 +3936,10 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class CreateMethodNode extends PNodeWithContext {
 
-        public static final String ML_NAME = "ml_name";
-        public static final String ML_DOC = "ml_doc";
-        public static final String ML_FLAGS = "ml_flags";
-        public static final String ML_METH = "ml_meth";
+        public static final String J_ML_NAME = "ml_name";
+        public static final String J_ML_DOC = "ml_doc";
+        public static final String J_ML_FLAGS = "ml_flags";
+        public static final String J_ML_METH = "ml_meth";
 
         public abstract PBuiltinFunction execute(CApiContext context, Object legacyMethodDef);
 
@@ -3909,17 +3949,16 @@ public abstract class CExtNodes {
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached PCallCapiFunction callGetNameNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
             assert checkLayout(methodDef) : "provided pointer has unexpected structure";
 
-            String methodName;
+            TruffleString methodName;
             try {
-                Object methodNamePtr = interopLibrary.readMember(methodDef, ML_NAME);
-                methodName = castToJavaStringNode.execute(callGetNameNode.call(context, NativeCAPISymbol.FUN_POLYGLOT_FROM_STRING, methodNamePtr, StandardCharsets.UTF_8.name()));
+                Object methodNamePtr = interopLibrary.readMember(methodDef, J_ML_NAME);
+                methodName = (TruffleString) callGetNameNode.call(context, NativeCAPISymbol.FUN_POLYGLOT_FROM_STRING, methodNamePtr, StandardCharsets.UTF_8.name());
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -3927,7 +3966,7 @@ public abstract class CExtNodes {
             // note: 'ml_doc' may be NULL; in this case, we would store 'None'
             Object methodDoc = PNone.NONE;
             try {
-                Object methodDocPtr = interopLibrary.readMember(methodDef, ML_DOC);
+                Object methodDocPtr = interopLibrary.readMember(methodDef, J_ML_DOC);
                 if (!resultLib.isNull(methodDocPtr)) {
                     methodDoc = fromCharPointerNode.execute(methodDocPtr);
                 }
@@ -3939,24 +3978,24 @@ public abstract class CExtNodes {
             int flags;
             Object mlMethObj;
             try {
-                methodFlagsObj = interopLibrary.readMember(methodDef, ML_FLAGS);
+                methodFlagsObj = interopLibrary.readMember(methodDef, J_ML_FLAGS);
                 if (!resultLib.fitsInInt(methodFlagsObj)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_flags of %s is not an integer", methodName);
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.ML_FLAGS_IS_NOT_INTEGER, methodName);
                 }
                 flags = resultLib.asInt(methodFlagsObj);
 
-                mlMethObj = interopLibrary.readMember(methodDef, ML_METH);
+                mlMethObj = interopLibrary.readMember(methodDef, J_ML_METH);
                 if (!resultLib.isExecutable(mlMethObj)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_meth of %s is not callable", methodName);
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.ML_METH_IS_NOT_CALLABLE, methodName);
                 }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Invalid struct member '%s'", e.getUnknownIdentifier());
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_STRUCT_MEMBER, e.getUnknownIdentifier());
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH);
             }
 
             // CPy-style methods
@@ -3967,14 +4006,14 @@ public abstract class CExtNodes {
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.
-            writeAttributeToDynamicObjectNode.execute(function.getStorage(), SpecialAttributeNames.__DOC__, methodDoc);
+            writeAttributeToDynamicObjectNode.execute(function.getStorage(), SpecialAttributeNames.T___DOC__, methodDoc);
 
             return function;
         }
 
         @TruffleBoundary
         private static boolean checkLayout(Object methodDef) {
-            String[] members = new String[]{ML_NAME, ML_METH, ML_FLAGS, ML_DOC};
+            String[] members = new String[]{J_ML_NAME, J_ML_METH, J_ML_FLAGS, J_ML_DOC};
             InteropLibrary lib = InteropLibrary.getUncached(methodDef);
             for (String member : members) {
                 if (!lib.isMemberReadable(methodDef, member)) {
@@ -3985,7 +4024,7 @@ public abstract class CExtNodes {
         }
 
         @TruffleBoundary
-        private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name) {
+        private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, TruffleString name) {
             boolean isStatic = CExtContext.isMethStatic(flags);
             if (CExtContext.isMethNoArgs(flags)) {
                 return new MethNoargsRoot(language, name, isStatic, PExternalFunctionWrapper.NOARGS);

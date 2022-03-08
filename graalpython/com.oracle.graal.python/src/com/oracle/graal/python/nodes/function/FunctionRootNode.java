@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -119,7 +119,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     }
 
     public boolean isLambda() {
-        return functionName.equals(BuiltinNames.LAMBDA_NAME);
+        return functionName.equals(BuiltinNames.J_LAMBDA_NAME);
     }
 
     @Override

@@ -41,6 +41,8 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextNativePointer;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -57,6 +59,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This object is used to override specific native upcall pointers in the HPyContext. This is
@@ -85,8 +88,9 @@ final class GraalHPyJNIContext implements TruffleObject {
     @ExportMessage
     @SuppressWarnings("static-method")
     @TruffleBoundary
-    boolean isMemberReadable(String key) {
-        return HPyContextMember.getIndex(key) != -1;
+    boolean isMemberReadable(String key,
+                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        return HPyContextMember.getIndex(fromJavaStringNode.execute(key, TS_ENCODING)) != -1;
     }
 
     @ExportMessage

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,20 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class LoadCExtException extends Exception {
     private static final long serialVersionUID = 3517291912314595890L;
     protected final PException cause;
     protected final Object name;
-    protected final String formatString;
+    protected final TruffleString formatString;
     protected final Object[] formatArgs;
 
-    LoadCExtException(PException cause, Object name, String formatString, Object... formatArgs) {
+    protected LoadCExtException(PException cause, TruffleString name, TruffleString formatString, Object... formatArgs) {
         /*
          * We use the super constructor that initializes the cause to null. Without that, the cause
          * would be this exception itself. This helps escape analysis: it avoids the circle of an
@@ -79,7 +81,7 @@ public abstract class LoadCExtException extends Exception {
     public static final class ApiInitException extends LoadCExtException {
         private static final long serialVersionUID = 982734876234786L;
 
-        public ApiInitException(PException cause, Object name, String formatString, Object... formatArgs) {
+        public ApiInitException(PException cause, TruffleString name, TruffleString formatString, Object... formatArgs) {
             super(cause, name, null, formatString, formatArgs);
         }
 
@@ -95,7 +97,7 @@ public abstract class LoadCExtException extends Exception {
         private static final long serialVersionUID = 7862376523476548L;
         protected final Object path;
 
-        public ImportException(PException cause, Object name, Object path, String formatString, Object... formatArgs) {
+        public ImportException(PException cause, TruffleString name, TruffleString path, TruffleString formatString, Object... formatArgs) {
             super(cause, name, formatString, formatArgs);
             this.path = path;
         }

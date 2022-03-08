@@ -48,6 +48,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 
+import com.oracle.truffle.api.strings.TruffleString;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
@@ -455,5 +456,9 @@ public class PythonTests {
         } catch (UnsupportedMessageException ume) {
             throw new IllegalStateException("should not be reached");
         }
+    }
+
+    public static TruffleString ts(String s) {
+        return TruffleString.fromJavaStringUncached(s, TruffleString.Encoding.UTF_8);
     }
 }

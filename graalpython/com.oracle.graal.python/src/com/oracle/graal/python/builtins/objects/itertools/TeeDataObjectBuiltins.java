@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,9 +46,9 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ARG_D_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULDNT_HAVE_NEXT;
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
 
 import java.util.List;
 
@@ -87,7 +87,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         return TeeDataObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "it", "values", "nxt"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "it", "values", "nxt"})
     @ArgumentClinic(name = "values", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @ArgumentClinic(name = "nxt", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -154,11 +154,11 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         }
 
         protected LookupAndCallUnaryNode createCopyNode() {
-            return LookupAndCallUnaryNode.create(__COPY__);
+            return LookupAndCallUnaryNode.create(T___COPY__);
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         abstract Object execute(VirtualFrame frame, PythonObject self);

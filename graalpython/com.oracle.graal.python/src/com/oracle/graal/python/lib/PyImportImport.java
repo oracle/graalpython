@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,12 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_GLOBALS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -53,11 +56,16 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyImport_Import}.
  */
 public abstract class PyImportImport extends PNodeWithState {
+
+    private static final TruffleString T_LEVEL = tsLiteral("level");
+    private static final TruffleString T_FROMLIST = tsLiteral("fromlist");
+
     public abstract Object execute(VirtualFrame frame, Object name);
 
     @Specialization
@@ -74,26 +82,26 @@ public abstract class PyImportImport extends PNodeWithState {
         Object globals = getGlobals.execute(frame);
         Object builtins;
         if (noGlobalsProfile.profile(globals != null)) {
-            builtins = getItemNode.execute(frame, globals, __BUILTINS__);
+            builtins = getItemNode.execute(frame, globals, T___BUILTINS__);
         } else {
             // No globals -- use standard builtins, and fake globals
-            builtins = importModuleLevelObject.execute(frame, getContext(), BUILTINS, null, null, 0);
-            globals = factory().createDict(new PKeyword[]{new PKeyword(__BUILTINS__, builtins)});
+            builtins = importModuleLevelObject.execute(frame, getContext(), T_BUILTINS, null, null, 0);
+            globals = factory().createDict(new PKeyword[]{new PKeyword(T___BUILTINS__, builtins)});
         }
 
         // Get the __import__ function from the builtins
         Object importFunc;
         if (dictBuiltinsProfile.profile(builtins instanceof PDict)) {
-            importFunc = getItemNode.execute(frame, builtins, __IMPORT__);
+            importFunc = getItemNode.execute(frame, builtins, T___IMPORT__);
         } else {
-            importFunc = getAttrNode.execute(frame, builtins, __IMPORT__);
+            importFunc = getAttrNode.execute(frame, builtins, T___IMPORT__);
         }
 
         // Call the __import__ function with the proper argument list Always use absolute import
         // here. Calling for side-effect of import.
         callNode.execute(importFunc, new Object[]{moduleName}, new PKeyword[]{
-                        new PKeyword("globals", globals), new PKeyword("locals", globals),
-                        new PKeyword("fromlist", factory().createList()), new PKeyword("level", 0)
+                        new PKeyword(T_GLOBALS, globals), new PKeyword(T_LOCALS, globals),
+                        new PKeyword(T_FROMLIST, factory().createList()), new PKeyword(T_LEVEL, 0)
         });
         return importGetModule.execute(frame, moduleName);
     }

@@ -40,8 +40,11 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyDictGetItem;
@@ -52,7 +55,7 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -61,13 +64,17 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 public abstract class ImportFromNode extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object module, String name);
+    private static final TruffleString T_UNKNOWN_LOCATION = tsLiteral("unknown location");
+    private static final TruffleString T_UNKNOWN_MODULE_NAME = tsLiteral("<unknown module name>");
+
+    public abstract Object execute(Frame frame, Object module, TruffleString name);
 
     @Specialization
-    Object doImport(VirtualFrame frame, Object module, String name,
+    Object doImport(VirtualFrame frame, Object module, TruffleString name,
                     @Cached PyObjectLookupAttr lookupAttr,
                     @Cached BranchProfile maybeCircularProfile) {
         Object result = lookupAttr.execute(frame, module, name);
@@ -79,26 +86,26 @@ public abstract class ImportFromNode extends PNodeWithContext {
     }
 
     @TruffleBoundary
-    private Object tryResolveCircularImport(Object module, String name) {
+    private Object tryResolveCircularImport(Object module, TruffleString name) {
         Object pkgnameObj;
         Object pkgpathObj = null;
-        String pkgname = "<unknown module name>";
-        String pkgpath = "unknown location";
+        TruffleString pkgname = T_UNKNOWN_MODULE_NAME;
+        TruffleString pkgpath = T_UNKNOWN_LOCATION;
         try {
-            pkgnameObj = PyObjectGetAttr.getUncached().execute(null, module, __NAME__);
-            pkgname = CastToJavaStringNode.getUncached().execute(pkgnameObj);
+            pkgnameObj = PyObjectGetAttr.getUncached().execute(null, module, T___NAME__);
+            pkgname = CastToTruffleStringNode.getUncached().execute(pkgnameObj);
         } catch (PException | CannotCastException e) {
             pkgnameObj = null;
         }
         if (pkgnameObj != null) {
-            String fullname = pkgname + "." + name;
+            TruffleString fullname = cat(pkgname, T_DOT, name);
             Object imported = PyDictGetItem.getUncached().execute(null, getContext().getSysModules(), fullname);
             if (imported != null) {
                 return imported;
             }
             try {
-                pkgpathObj = PyObjectGetAttr.getUncached().execute(null, module, __FILE__);
-                pkgpath = CastToJavaStringNode.getUncached().execute(pkgpathObj);
+                pkgpathObj = PyObjectGetAttr.getUncached().execute(null, module, T___FILE__);
+                pkgpath = CastToTruffleStringNode.getUncached().execute(pkgpathObj);
             } catch (PException | CannotCastException e) {
                 pkgpathObj = null;
             }

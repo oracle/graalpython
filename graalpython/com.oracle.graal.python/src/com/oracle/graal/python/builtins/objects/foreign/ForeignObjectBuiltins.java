@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -29,49 +29,55 @@ package com.oracle.graal.python.builtins.objects.foreign;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Arrays;
 import java.util.List;
@@ -88,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -135,6 +142,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public class ForeignObjectBuiltins extends PythonBuiltins {
@@ -144,7 +152,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         return ForeignObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
@@ -169,7 +177,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return lib.getHashSize(receiver) != 0;
                 }
                 if (lib.isString(receiver)) {
-                    return !lib.asString(receiver).isEmpty();
+                    return !lib.asTruffleString(receiver).isEmpty();
                 }
                 return !lib.isNull(receiver);
             } catch (UnsupportedMessageException e) {
@@ -201,7 +209,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         return null;
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -222,7 +230,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __LEN__);
+            throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___LEN__);
         }
     }
 
@@ -302,11 +310,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!lib.isBoolean(left)", "!lib.fitsInLong(left)", "!lib.fitsInDouble(left)", "lib.isString(left)"})
         Object doComparisonString(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached GilNode gil) {
-            String leftString;
+            TruffleString leftString;
             gil.release(true);
             try {
-                leftString = lib.asString(left);
+                leftString = switchEncodingNode.execute(lib.asTruffleString(left), TS_ENCODING);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
@@ -326,7 +335,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends ForeignBinaryNode {
         AddNode() {
@@ -362,7 +371,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RAddNode extends AddNode {
         RAddNode() {
@@ -370,7 +379,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends ForeignBinaryNode {
         MulNode() {
@@ -445,12 +454,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SubNode extends ForeignBinaryNode {
         SubNode() {
@@ -458,7 +467,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RSubNode extends ForeignBinaryNode {
         RSubNode() {
@@ -466,7 +475,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __TRUEDIV__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___TRUEDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class TrueDivNode extends ForeignBinaryNode {
         TrueDivNode() {
@@ -474,7 +483,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RTRUEDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RTrueDivNode extends ForeignBinaryNode {
         RTrueDivNode() {
@@ -482,7 +491,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FLOORDIV__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___FLOORDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class FloorDivNode extends ForeignBinaryNode {
         FloorDivNode() {
@@ -490,7 +499,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RFLOORDIV__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RFLOORDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RFloorDivNode extends ForeignBinaryNode {
         RFloorDivNode() {
@@ -498,7 +507,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DIVMOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DivModNode extends ForeignBinaryNode {
         DivModNode() {
@@ -506,7 +515,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RDIVMOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RDIVMOD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RDivModNode extends ForeignBinaryNode {
         RDivModNode() {
@@ -585,7 +594,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class LtNode extends ForeignBinaryComparisonNode {
         protected LtNode() {
@@ -593,7 +602,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class LeNode extends ForeignBinaryComparisonNode {
         protected LeNode() {
@@ -601,7 +610,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GtNode extends ForeignBinaryComparisonNode {
         protected GtNode() {
@@ -609,7 +618,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GeNode extends ForeignBinaryComparisonNode {
         protected GeNode() {
@@ -617,7 +626,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends ForeignBinaryComparisonNode {
         protected EqNode() {
@@ -625,7 +634,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
@@ -647,7 +656,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -655,21 +664,18 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         // accesses both self and iterator
                         @CachedLibrary(limit = "3") InteropLibrary library,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached CastToJavaStringNode cast) {
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached StringBuiltins.ContainsNode containsNode,
+                        @Cached PForeignToPTypeNode convertNode) {
             try {
                 if (library.isString(self)) {
-                    String selfStr = library.asString(self);
-                    try {
-                        String argStr = cast.execute(arg);
-                        return containsBoundary(selfStr, argStr);
-                    } catch (CannotCastException e) {
-                        throw raise(TypeError, ErrorMessages.REQUIRES_STRING_AS_LEFT_OPERAND, arg);
-                    }
+                    TruffleString selfStr = switchEncodingNode.execute(library.asTruffleString(self), TS_ENCODING);
+                    return containsNode.execute(frame, selfStr, arg);
                 }
                 if (library.hasArrayElements(self)) {
                     for (int i = 0; i < library.getArraySize(self); i++) {
                         if (library.isArrayElementReadable(self, i)) {
-                            Object element = library.readArrayElement(self, i);
+                            Object element = convertNode.executeConvert(library.readArrayElement(self, i));
                             if (eqNode.execute(frame, arg, element)) {
                                 return true;
                             }
@@ -688,7 +694,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 if (iterator != null) {
                     try {
                         while (library.hasIteratorNextElement(iterator)) {
-                            Object next = library.getIteratorNextElement(iterator);
+                            Object next = convertNode.executeConvert(library.getIteratorNextElement(iterator));
                             if (eqNode.execute(frame, arg, next)) {
                                 return true;
                             }
@@ -703,14 +709,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
-
-        @TruffleBoundary
-        private static boolean containsBoundary(String selfStr, String argStr) {
-            return selfStr.contains(argStr);
-        }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -719,13 +720,15 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib,
+                        @Cached PForeignToPTypeNode convertNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached GilNode gil) {
             gil.release(true);
             try {
                 if (lib.isIterator(object)) {
-                    return object;
+                    return convertNode.executeConvert(object);
                 } else if (lib.hasIterator(object)) {
-                    return lib.getIterator(object);
+                    return convertNode.executeConvert(lib.getIterator(object));
                 } else if (lib.hasArrayElements(object)) {
                     long size = lib.getArraySize(object);
                     if (size < Integer.MAX_VALUE) {
@@ -733,10 +736,10 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                     throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
                 } else if (lib.isString(object)) {
-                    return factory.createStringIterator(lib.asString(object));
+                    return factory.createStringIterator(switchEncodingNode.execute(lib.asTruffleString(object), TS_ENCODING));
                 } else if (lib.hasHashEntries(object)) {
                     // just like dict.__iter__, we take the keys by default
-                    return lib.getHashKeysIterator(object);
+                    return convertNode.executeConvert(lib.getHashKeysIterator(object));
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -747,7 +750,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
@@ -756,11 +759,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile notIterator,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("iterator") InteropLibrary lib,
+                        @Cached PForeignToPTypeNode convertNode,
                         @Cached GilNode gil) {
             if (notIterator.profile(lib.isIterator(iterator))) {
                 gil.release(true);
                 try {
-                    return lib.getIteratorNextElement(iterator);
+                    return convertNode.executeConvert(lib.getIteratorNextElement(iterator));
                 } catch (StopIterationException e) {
                     throw raiseNode.raiseStopIteration();
                 } catch (UnsupportedMessageException e) {
@@ -769,12 +773,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } else {
-                throw raiseNode.raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __NEXT__);
+                throw raiseNode.raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___NEXT__);
             }
         }
     }
 
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class NewNode extends PythonBuiltinNode {
         /**
@@ -805,7 +809,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
         public final Object executeWithArgs(VirtualFrame frame, Object callee, Object[] arguments) {
@@ -854,7 +858,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
         @Child private AccessForeignItemNodes.GetForeignItemNode getForeignItemNode = AccessForeignItemNodes.GetForeignItemNode.create();
@@ -865,7 +869,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Child private PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
@@ -892,7 +896,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -914,7 +918,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SetitemNode extends PythonTernaryBuiltinNode {
         @Child private AccessForeignItemNodes.SetForeignItemNode setForeignItemNode = AccessForeignItemNodes.SetForeignItemNode.create();
@@ -926,11 +930,11 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELATTR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___DELATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, String key,
+        protected PNone doIt(Object object, Object key,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CastToJavaStringNode castToString,
                         @Cached GilNode gil) {
@@ -948,7 +952,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelitemNode extends PythonBinaryBuiltinNode {
         @Child private AccessForeignItemNodes.RemoveForeignItemNode delForeignItemNode = AccessForeignItemNodes.RemoveForeignItemNode.create();
@@ -960,7 +964,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -983,7 +987,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INDEX__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
@@ -1024,11 +1028,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Child private LookupAndCallUnaryNode callStrNode;
         @Child private CastToListNode castToListNode;
+        @Child private TruffleString.SwitchEncodingNode switchEncodingNode;
 
         @Specialization
         Object str(VirtualFrame frame, Object object,
@@ -1057,14 +1062,14 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return getCallStrNode().executeObject(frame, value);
                 } else if (lib.isString(object)) {
                     isString.enter();
-                    String value;
+                    TruffleString value;
                     gil.release(true);
                     try {
-                        value = lib.asString(object);
+                        value = lib.asTruffleString(object);
                     } finally {
                         gil.acquire();
                     }
-                    return getCallStrNode().executeObject(frame, value);
+                    return getCallStrNode().executeObject(frame, getSwitchEncodingNode().execute(value, TS_ENCODING));
                 } else if (lib.fitsInLong(object)) {
                     isLong.enter();
                     long value;
@@ -1103,7 +1108,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 // Fall back to the generic impl
             }
             defaultCase.enter();
-            return defaultConversion(frame, lib, object);
+            return defaultConversion(frame, lib, object, getSwitchEncodingNode());
         }
 
         private LookupAndCallUnaryNode getCallStrNode() {
@@ -1122,21 +1127,30 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             return castToListNode;
         }
 
-        protected String defaultConversion(@SuppressWarnings("unused") VirtualFrame frame, InteropLibrary lib, Object object) {
+        private TruffleString.SwitchEncodingNode getSwitchEncodingNode() {
+            if (switchEncodingNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                switchEncodingNode = insert(TruffleString.SwitchEncodingNode.create());
+            }
+            return switchEncodingNode;
+        }
+
+        protected TruffleString defaultConversion(@SuppressWarnings("unused") VirtualFrame frame, InteropLibrary lib, Object object, TruffleString.SwitchEncodingNode switchEncodingNode) {
             try {
-                return lib.asString(lib.toDisplayString(object));
+                return switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(object)), TS_ENCODING);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
             }
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
         @Child private ObjectNodes.DefaultObjectReprNode defaultReprNode;
 
-        protected String defaultConversion(VirtualFrame frame, @SuppressWarnings("unused") InteropLibrary lib, Object object) {
+        @Override
+        protected TruffleString defaultConversion(VirtualFrame frame, InteropLibrary lib, Object object, TruffleString.SwitchEncodingNode switchEncodingNode) {
             try {
                 if (getContext().getEnv().isHostObject(object)) {
                     boolean isMetaObject = lib.isMetaObject(object);
@@ -1147,9 +1161,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         metaObject = lib.getMetaObject(object);
                     }
                     if (metaObject != null) {
-                        Object displayName = lib.toDisplayString(metaObject);
-                        String text = createDisplayName(isMetaObject, displayName);
-                        return PythonUtils.format("<%s at 0x%x>", text, PythonAbstractObject.systemHashCode(object));
+                        TruffleString displayName = switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(metaObject)), TS_ENCODING);
+                        return simpleTruffleStringFormatUncached("<%s[%s] at 0x%s>", isMetaObject ? "JavaClass" : "JavaObject", displayName,
+                                        PythonAbstractObject.systemHashCodeAsHexString(object));
                     }
                 }
             } catch (UnsupportedMessageException e) {
@@ -1161,14 +1175,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             }
             return defaultReprNode.execute(frame, object);
         }
-
-        @TruffleBoundary
-        private static String createDisplayName(boolean isMetaObject, Object object) {
-            return (isMetaObject ? "JavaClass[" : "JavaObject[") + object + "]";
-        }
     }
 
-    @Builtin(name = __BASES__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
+    @Builtin(name = J___BASES__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class BasesNode extends PythonUnaryBuiltinNode {
@@ -1178,12 +1187,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             if (lib.isMetaObject(self)) {
                 return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
             } else {
-                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __BASES__);
+                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___BASES__);
             }
         }
     }
 
-    @Builtin(name = __INSTANCECHECK__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___INSTANCECHECK__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
@@ -1201,13 +1210,13 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } else {
-                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __INSTANCECHECK__);
+                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___INSTANCECHECK__);
             }
         }
     }
 
-    @Builtin(name = __RAND__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __AND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
@@ -1234,8 +1243,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ROR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
@@ -1262,8 +1271,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RXOR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __XOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class XorNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")

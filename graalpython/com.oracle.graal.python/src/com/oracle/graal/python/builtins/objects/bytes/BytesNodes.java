@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,12 +41,17 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createASCIIString;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.utf8StringToBytes;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.isSpace;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.NON_HEX_NUMBER_IN_FROMHEX;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.arrayCopyOf;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,7 +91,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -97,6 +102,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -106,6 +112,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.InternalByteArray;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class BytesNodes {
 
@@ -203,9 +213,9 @@ public abstract class BytesNodes {
     public abstract static class ToBytesNode extends PNodeWithRaiseAndIndirectCall {
 
         private final PythonBuiltinClassType errorType;
-        private final String errorMessageFormat;
+        private final TruffleString errorMessageFormat;
 
-        ToBytesNode(PythonBuiltinClassType errorType, String errorMessageFormat) {
+        ToBytesNode(PythonBuiltinClassType errorType, TruffleString errorMessageFormat) {
             this.errorType = errorType;
             this.errorMessageFormat = errorMessageFormat;
         }
@@ -237,7 +247,7 @@ public abstract class BytesNodes {
             return ToBytesNodeGen.create(TypeError, EXPECTED_BYTESLIKE_GOT_P);
         }
 
-        public static ToBytesNode create(PythonBuiltinClassType errorType, String errorMessageFormat) {
+        public static ToBytesNode create(PythonBuiltinClassType errorType, TruffleString errorMessageFormat) {
             return ToBytesNodeGen.create(errorType, errorMessageFormat);
         }
     }
@@ -538,15 +548,11 @@ public abstract class BytesNodes {
 
     public abstract static class ExpectStringNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
         private final int argNum;
-        final String className;
+        private final String className;
 
         protected ExpectStringNode(int argNum, String className) {
             this.argNum = argNum;
             this.className = className;
-        }
-
-        protected String className() {
-            return className;
         }
 
         @Override
@@ -558,7 +564,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        static Object str(String str) {
+        static Object str(TruffleString str) {
             return str;
         }
 
@@ -570,7 +576,7 @@ public abstract class BytesNodes {
 
         @Fallback
         Object doOthers(@SuppressWarnings("unused") VirtualFrame frame, Object value) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className(), argNum, PythonBuiltinClassType.PString, value);
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className, argNum, PythonBuiltinClassType.PString, value);
         }
 
         @ClinicConverterFactory
@@ -664,14 +670,14 @@ public abstract class BytesNodes {
 
         @Specialization(guards = {"isString(source)", "isString(encoding)"})
         byte[] fromString(Object source, Object encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToTruffleStringNode castStr,
                         @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
-            return encodeNode.execute(source, castStr.execute(encoding), "strict");
+            return encodeNode.execute(source, castStr.execute(encoding), T_STRICT);
         }
 
         @Specialization(guards = {"isString(source)", "isString(encoding)", "isString(errors)"})
         byte[] fromString(Object source, Object encoding, Object errors,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToTruffleStringNode castStr,
                         @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
             return encodeNode.execute(source, castStr.execute(encoding), castStr.execute(errors));
         }
@@ -695,10 +701,12 @@ public abstract class BytesNodes {
     @GenerateNodeFactory
     public abstract static class ByteToHexNode extends PNodeWithRaise {
 
-        public abstract String execute(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup);
+        public abstract TruffleString execute(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup);
 
         @Specialization(guards = "bytesPerSepGroup == 0")
-        public static String zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup) {
+        public static TruffleString zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
 
             int resultlen = arglen * 2;
             byte[] retbuf = new byte[resultlen];
@@ -709,15 +717,17 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c >>> 4];
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
-            return createASCIIString(retbuf);
+            return createASCIIString(retbuf, fromByteArrayNode, switchEncodingNode);
         }
 
         @Specialization(guards = "bytesPerSepGroup < 0")
-        public String negative(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup,
+        public TruffleString negative(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup,
                         @Cached ConditionProfile earlyExit,
-                        @Cached ConditionProfile memoryError) {
+                        @Cached ConditionProfile memoryError,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (earlyExit.profile(arglen == 0)) {
-                return "";
+                return T_EMPTY_STRING;
             }
             int absBytesPerSepGroup = -bytesPerSepGroup;
             /* How many sep characters we'll be inserting. */
@@ -729,7 +739,7 @@ public abstract class BytesNodes {
             resultlen += arglen * 2;
 
             if (absBytesPerSepGroup >= arglen) {
-                return zero(argbuf, arglen, sep, 0);
+                return zero(argbuf, arglen, sep, 0, fromByteArrayNode, switchEncodingNode);
             }
 
             byte[] retbuf = new byte[resultlen];
@@ -749,15 +759,17 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
 
-            return createASCIIString(retbuf);
+            return createASCIIString(retbuf, fromByteArrayNode, switchEncodingNode);
         }
 
         @Specialization(guards = "absBytesPerSepGroup > 0")
-        public String positive(byte[] argbuf, int arglen, byte sep, int absBytesPerSepGroup,
+        public TruffleString positive(byte[] argbuf, int arglen, byte sep, int absBytesPerSepGroup,
                         @Cached ConditionProfile earlyExit,
-                        @Cached ConditionProfile memoryError) {
+                        @Cached ConditionProfile memoryError,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (earlyExit.profile(arglen == 0)) {
-                return "";
+                return T_EMPTY_STRING;
             }
             /* How many sep characters we'll be inserting. */
             int resultlen = (arglen - 1) / absBytesPerSepGroup;
@@ -769,7 +781,7 @@ public abstract class BytesNodes {
             resultlen += arglen * 2;
 
             if (absBytesPerSepGroup >= arglen) {
-                return zero(argbuf, arglen, sep, 0);
+                return zero(argbuf, arglen, sep, 0, fromByteArrayNode, switchEncodingNode);
             }
 
             byte[] retbuf = new byte[resultlen];
@@ -789,7 +801,7 @@ public abstract class BytesNodes {
                 retbuf[j--] = BytesUtils.HEXDIGITS[c & 0x0f];
                 retbuf[j--] = BytesUtils.HEXDIGITS[c >>> 4];
             }
-            return createASCIIString(retbuf);
+            return createASCIIString(retbuf, fromByteArrayNode, switchEncodingNode);
         }
     }
 
@@ -829,37 +841,32 @@ public abstract class BytesNodes {
 
     public abstract static class DecodeUTF8FSPathNode extends PNodeWithRaiseAndIndirectCall {
 
-        public byte[] getBytes(VirtualFrame frame, Object value) {
-            return utf8StringToBytes(execute(frame, value));
-        }
-
-        public abstract String execute(VirtualFrame frame, Object value);
+        public abstract TruffleString execute(VirtualFrame frame, Object value);
 
         @Specialization
-        String doit(VirtualFrame frame, Object value,
+        TruffleString doit(VirtualFrame frame, Object value,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached CastToJavaStringNode toString,
-                        @Cached PosixModuleBuiltins.FspathNode fsPath) {
+                        @Cached CastToTruffleStringNode toString,
+                        @Cached PosixModuleBuiltins.FspathNode fsPath,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             Object path = fsPath.execute(frame, value);
             if (bufferAcquireLib.hasBuffer(path)) {
                 Object buffer = bufferAcquireLib.acquireReadonly(path, frame, this);
                 try {
-                    return encodeFSDefault(bufferLib.getCopiedByteArray(path));
+                    /*-
+                     * This should be equivalent to PyUnicode_EncodeFSDefault
+                     * TODO: encoding preference is set per context but will force
+                     * it to UTF-8 for the time being.
+                     */
+                    TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getCopiedByteArray(path), Encoding.UTF_8, false);
+                    return switchEncodingNode.execute(utf8, TS_ENCODING);
                 } finally {
                     bufferLib.release(buffer, frame, this);
                 }
             }
             return toString.execute(path);
-        }
-
-        /*-
-         * This should be equivalent to PyUnicode_EncodeFSDefault
-         * TODO: encoding preference is set per context but will force
-         * it to UTF-8 for the time being.
-         */
-        private static String encodeFSDefault(byte[] path) {
-            return createUTF8String(path);
         }
     }
 
@@ -903,6 +910,60 @@ public abstract class BytesNodes {
 
         public static HashBufferNode getUncached() {
             return BytesNodesFactory.HashBufferNodeGen.getUncached();
+        }
+    }
+
+    public abstract static class HexStringToBytesNode extends PNodeWithRaise {
+        public abstract byte[] execute(TruffleString str);
+
+        @Specialization(guards = "isAscii(str, getCodeRangeNode)", limit = "1")
+        byte[] ascii(TruffleString str,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode) {
+            TruffleString ascii = switchEncodingNode.execute(str, Encoding.US_ASCII);
+            InternalByteArray iba = getInternalByteArrayNode.execute(ascii, Encoding.US_ASCII);
+            byte[] bytes = new byte[iba.getLength() / 2];
+            byte[] strchar = iba.getArray();
+            int n = 0;
+            for (int i = iba.getOffset(); i < iba.getEnd(); ++i) {
+                byte c = strchar[i];
+                if (isSpace(c)) {
+                    continue;
+                }
+                int top = BytesUtils.digitValue(c);
+                if (top >= 16 || top < 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                }
+
+                c = i + 1 < iba.getEnd() ? strchar[++i] : 0;
+                int bottom = BytesUtils.digitValue(c);
+                if (bottom >= 16 || bottom < 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                }
+
+                bytes[n++] = (byte) ((top << 4) | bottom);
+            }
+            if (n != bytes.length) {
+                bytes = arrayCopyOf(bytes, n);
+            }
+            return bytes;
+        }
+
+        @Specialization(guards = "!isAscii(str, getCodeRangeNode)", limit = "1")
+        byte[] nonAscii(TruffleString str,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode) {
+            TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
+            int i = 0;
+            while (it.hasNext()) {
+                if (nextNode.execute(it) > 127) {
+                    throw raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                }
+                ++i;
+            }
+            throw shouldNotReachHere();
         }
     }
 }

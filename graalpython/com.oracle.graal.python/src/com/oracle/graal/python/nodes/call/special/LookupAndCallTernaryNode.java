@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 // actual implementation is in the subclasses: one for reversible, other for non-reversible.
 @ImportStatic({SpecialMethodNames.class, PythonOptions.class})
@@ -56,17 +57,17 @@ public abstract class LookupAndCallTernaryNode extends Node {
         public abstract Object execute(Object arg, Object arg2, Object arg3);
     }
 
-    protected final String name;
+    protected final TruffleString name;
     protected final SpecialMethodSlot slot;
     @Child protected CallTernaryMethodNode dispatchNode = CallTernaryMethodNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3);
 
-    public static LookupAndCallTernaryNode create(String name) {
+    public static LookupAndCallTernaryNode create(TruffleString name) {
         // Use SpecialMethodSlot overload for special slots, if there is a need to create
         // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
         // to try to lookup a slot and use that if found
-        assert SpecialMethodSlot.findSpecialSlot(name) == null : name;
+        assert SpecialMethodSlot.findSpecialSlotUncached(name) == null : name;
         return LookupAndCallNonReversibleTernaryNodeGen.create(name);
     }
 
@@ -74,7 +75,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return LookupAndCallNonReversibleTernaryNodeGen.create(slot);
     }
 
-    public static LookupAndCallTernaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory) {
+    public static LookupAndCallTernaryNode createReversible(TruffleString name, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallReversibleTernaryNodeGen.create(name, handlerFactory);
     }
 
@@ -82,7 +83,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return LookupAndCallReversibleTernaryNodeGen.create(slot, handlerFactory);
     }
 
-    LookupAndCallTernaryNode(String name) {
+    LookupAndCallTernaryNode(TruffleString name) {
         this.name = name;
         this.slot = null;
     }

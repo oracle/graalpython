@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,45 +40,44 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTES_EXPECTED_INSTEAD_OF_S_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTE_STRING_TOO_LONG;
 import static com.oracle.graal.python.nodes.ErrorMessages.STRING_TOO_LONG;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayRawNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayValueNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.WCharArrayValueNodeFactory;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -88,6 +87,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
@@ -98,7 +98,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
     /**
      * Those getters and setter of PyCArrayType are added conditionally
-     * 
+     *
      */
 
     @TruffleBoundary
@@ -121,7 +121,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static void createGetSet(PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
-        String name = builtin.name();
+        TruffleString name = toTruffleStringUncached(builtin.name());
         RootCallTarget rawCallTarget = language.createCachedCallTarget(
                         l -> new BuiltinFunctionRootNode(l, builtin, factory, true),
                         factory.getNodeClass(),
@@ -130,7 +130,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         int flags = PBuiltinFunction.getFlags(builtin, rawCallTarget);
         PBuiltinFunction getter = f.createBuiltinFunction(name, type, 1, flags, rawCallTarget);
         GetSetDescriptor callable = f.createGetSetDescriptor(getter, getter, name, type, false);
-        callable.setAttribute(__DOC__, builtin.doc());
+        callable.setAttribute(T___DOC__, toTruffleStringUncached(builtin.doc()));
         WriteAttributeToObjectNode.getUncached(true).execute(type, name, callable);
     }
 
@@ -139,7 +139,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
     abstract static class CharArrayRawNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)", limit = "1")
-        Object doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+        PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib) {
             return factory().createBytes(bufferLib.getInternalOrCopiedByteArray(self));
         }
@@ -157,7 +157,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                 ByteArrayStorage storage = (ByteArrayStorage) self.b_ptr.ptr;
                 storage.memcpy(self.b_ptr.offset, bytes);
             } else {
-                throw raise(NotImplementedError, "Some storage types aren't supported yet.");
+                throw raise(NotImplementedError, toTruffleStringUncached("Some storage types aren't supported yet."));
             }
             return PNone.NONE;
         }
@@ -168,11 +168,11 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
     abstract static class CharArrayValueNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
-        Object doGet(CDataObject self, @SuppressWarnings("unused") PNone value) {
+        PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value) {
             if (self.b_ptr.isManagedBytes()) {
                 return factory().createBytes(ByteArrayStorage.trim((ByteArrayStorage) self.b_ptr.ptr, self.b_ptr.offset));
             } else {
-                throw raise(NotImplementedError, "Some storage types aren't supported yet.");
+                throw raise(NotImplementedError, toTruffleStringUncached("Some storage types aren't supported yet."));
             }
         }
 
@@ -188,7 +188,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                 ByteArrayStorage storage = (ByteArrayStorage) self.b_ptr.ptr;
                 storage.memcpy(self.b_ptr.offset, getBytes.execute(value.getSequenceStorage()));
             } else {
-                throw raise(NotImplementedError, "Some storage types aren't supported yet.");
+                throw raise(NotImplementedError, toTruffleStringUncached("Some storage types aren't supported yet."));
             }
             return PNone.NONE;
         }
@@ -206,20 +206,25 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
     abstract static class WCharArrayValueNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
-        Object doGet(CDataObject self, @SuppressWarnings("unused") PNone value) {
-            return createUTF8String(ByteArrayStorage.trim((ByteArrayStorage) self.b_ptr.ptr, self.b_ptr.offset));
+        TruffleString doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            TruffleString s = fromByteArrayNode.execute(ByteArrayStorage.trim((ByteArrayStorage) self.b_ptr.ptr, self.b_ptr.offset), TruffleString.Encoding.UTF_8);
+            return switchEncodingNode.execute(s, TS_ENCODING);
         }
 
         @Specialization(guards = "isString(value)")
         Object doSet(CDataObject self, Object value,
-                        @Cached CastToJavaStringNode toJavaStringNode) {
-            String str = toJavaStringNode.execute(value);
-            int len = PString.length(str);
+                        @Cached CastToTruffleStringNode toTruffleStringNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            TruffleString str = switchEncodingNode.execute(toTruffleStringNode.execute(value), TruffleString.Encoding.UTF_8);
+            int len = str.byteLength(TruffleString.Encoding.UTF_8);
             if (len > self.b_size) {
                 throw raise(ValueError, STRING_TOO_LONG);
             }
             ByteArrayStorage storage = (ByteArrayStorage) self.b_ptr.ptr;
-            storage.memcpy(self.b_ptr.offset, BytesUtils.utf8StringToBytes(str));
+            copyToByteArrayNode.execute(str, 0, storage.value, self.b_ptr.offset, len, TruffleString.Encoding.UTF_8);
             return PNone.NONE;
         }
 

@@ -45,7 +45,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
+
 import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -93,6 +94,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropException;
+import com.oracle.truffle.api.strings.TruffleString;
 import java.util.Arrays;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
@@ -235,7 +237,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyBytesFromFormatNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object fromFormat(VirtualFrame frame, String fmt, Object args,
+        public Object fromFormat(VirtualFrame frame, TruffleString fmt, Object args,
                         @Cached ModNode modeNode,
                         @Cached EncodeNode encodeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -292,7 +294,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
             return isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PList) ||
                             isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PTuple) ||
                             isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PMemoryView) ||
-                            (!isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PString) && lookupAttrNode.execute(frame, obj, __ITER__) != PNone.NO_VALUE);
+                            (!isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PString) && lookupAttrNode.execute(frame, obj, T___ITER__) != PNone.NO_VALUE);
         }
     }
 
@@ -329,9 +331,9 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
             try {
                 return toSulongNode.execute(factory().createBytes(getByteArrayNode.execute(nativePointer, size)));
             } catch (InteropException e) {
-                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.TypeError, "%m", e);
+                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
-                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.SystemError, "negative size passed");
+                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
         }
     }

@@ -26,12 +26,14 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
-import static com.oracle.graal.python.nodes.BuiltinNames.ITER;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ITER;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -75,6 +77,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator,
                 PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictReverseItemIterator,
@@ -92,7 +95,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         return IteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
@@ -203,9 +206,11 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PStringIterator self) {
-            if (self.getIndex() < self.value.length()) {
-                return Character.toString(self.value.charAt(self.index++));
+        Object next(PStringIterator self,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SubstringNode substringNode) {
+            if (self.getIndex() < codePointLengthNode.execute(self.value, TS_ENCODING)) {
+                return substringNode.execute(self.value, self.index++, 1, TS_ENCODING, false);
             }
             return stopIteration(self);
         }
@@ -254,7 +259,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -263,7 +268,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LENGTH_HINT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
 
@@ -336,8 +341,9 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public static int lengthHint(PStringIterator self) {
-            int len = self.value.length() - self.getIndex();
+        public static int lengthHint(PStringIterator self,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            int len = codePointLengthNode.execute(self.value, TS_ENCODING) - self.getIndex();
             return len < 0 ? 0 : len;
         }
 
@@ -356,7 +362,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Child PyObjectGetAttr getAttrNode;
@@ -420,7 +426,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         public Object reduce(VirtualFrame frame, PStringIterator self) {
             PythonContext context = PythonContext.get(this);
             if (self.isExhausted()) {
-                return reduceInternal(frame, "", null, context);
+                return reduceInternal(frame, T_EMPTY_STRING, null, context);
             }
             return reduceInternal(frame, self.value, self.getIndex(), context);
         }
@@ -470,7 +476,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         private PTuple reduceInternal(VirtualFrame frame, Object arg, Object state, PythonContext context) {
             PythonModule builtins = context.getBuiltins();
-            Object iter = getGetAttrNode().execute(frame, builtins, ITER);
+            Object iter = getGetAttrNode().execute(frame, builtins, T_ITER);
             PTuple args = factory().createTuple(new Object[]{arg});
             // callable, args, state (optional)
             if (state != null) {
@@ -489,7 +495,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization

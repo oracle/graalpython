@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeW
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -145,7 +146,7 @@ public class PyTruffleObjectFree implements TruffleObject {
                 // necessary distinction.
                 Object nativePointer = lib.getNativePointer(nativeWrapper);
                 if (LOGGER.isLoggable(Level.FINER)) {
-                    LOGGER.finer(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, nativeWrapper));
+                    LOGGER.finer(() -> PythonUtils.format("Releasing handle: %s (object: %s)", nativePointer, nativeWrapper));
                 }
                 callReleaseHandleNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, nativePointer);
             }

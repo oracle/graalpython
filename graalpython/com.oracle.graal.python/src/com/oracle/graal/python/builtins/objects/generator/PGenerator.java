@@ -54,11 +54,12 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PGenerator extends PythonBuiltinObject {
 
-    private String name;
-    private String qualname;
+    private TruffleString name;
+    private TruffleString qualname;
     /**
      * Call targets with copies of the generator's AST. Each call target corresponds to one possible
      * entry point into the generator: the first call, and continuation for each yield. Each AST can
@@ -80,7 +81,7 @@ public final class PGenerator extends PythonBuiltinObject {
     // running means it is currently on the stack, not just started
     private boolean running;
 
-    public static PGenerator create(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
+    public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
                     ExecutionCellSlots cellSlots, GeneratorInfo generatorInfo, PythonObjectFactory factory,
                     Object iterator) {
         /*
@@ -115,7 +116,7 @@ public final class PGenerator extends PythonBuiltinObject {
         return new PGenerator(lang, name, qualname, callTargets, generatorInfo, arguments, closure, iterator);
     }
 
-    public static PGenerator create(PythonLanguage lang, String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+    public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         rootNode.createGeneratorFrame(arguments);
         return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments);
     }
@@ -136,7 +137,7 @@ public final class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    private PGenerator(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, Object[] arguments,
+    private PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, Object[] arguments,
                     PCell[] closure, Object iterator) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
@@ -153,7 +154,7 @@ public final class PGenerator extends PythonBuiltinObject {
         this.frameInfo = null;
     }
 
-    private PGenerator(PythonLanguage lang, String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+    private PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
@@ -299,19 +300,19 @@ public final class PGenerator extends PythonBuiltinObject {
         this.running = running;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(TruffleString name) {
         this.name = name;
     }
 
-    public String getQualname() {
+    public TruffleString getQualname() {
         return qualname;
     }
 
-    public void setQualname(String qualname) {
+    public void setQualname(TruffleString qualname) {
         this.qualname = qualname;
     }
 }

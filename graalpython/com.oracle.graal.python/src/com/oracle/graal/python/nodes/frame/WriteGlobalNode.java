@@ -54,6 +54,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class WriteGlobalNode extends StatementNode implements GlobalNode, WriteNode {
     private static final WriteGlobalNode UNCACHED = new WriteGlobalNode(null, null) {
@@ -63,7 +64,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
         }
 
         @Override
-        public void write(Frame frame, Object globals, String name, Object value) {
+        public void write(Frame frame, Object globals, TruffleString name, Object value) {
             if (globals instanceof PythonModule) {
                 WriteAttributeToObjectNode.getUncached().execute(globals, name, value);
             } else {
@@ -72,19 +73,19 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
         }
     };
 
-    protected final String attributeId;
+    protected final TruffleString attributeId;
     @Child private ExpressionNode rhs;
 
-    WriteGlobalNode(String attributeId, ExpressionNode rhs) {
+    WriteGlobalNode(TruffleString attributeId, ExpressionNode rhs) {
         this.attributeId = attributeId;
         this.rhs = rhs;
     }
 
-    public static WriteGlobalNode create(String attributeId) {
+    public static WriteGlobalNode create(TruffleString attributeId) {
         return WriteGlobalNodeGen.create(attributeId, null);
     }
 
-    public static WriteGlobalNode create(String attributeId, ExpressionNode rhs) {
+    public static WriteGlobalNode create(TruffleString attributeId, ExpressionNode rhs) {
         return WriteGlobalNodeGen.create(attributeId, rhs);
     }
 
@@ -126,7 +127,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
         executeObjectWithGlobals(frame, globals, getRhs().execute(frame));
     }
 
-    public void write(Frame frame, Object globals, String name, Object value) {
+    public void write(Frame frame, Object globals, TruffleString name, Object value) {
         assert name == attributeId : "cached WriteGlobalNode can only be used with cached attributeId";
         executeObjectWithGlobals((VirtualFrame) frame, globals, value);
     }
@@ -166,7 +167,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
     }
 
     @Override
-    public String getAttributeId() {
+    public TruffleString getAttributeId() {
         return attributeId;
     }
 

@@ -59,6 +59,15 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_GET_;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TYPE_ID;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.lang.ref.Reference;
@@ -71,6 +80,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
+import com.oracle.truffle.api.strings.TruffleString;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -187,6 +197,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -276,8 +287,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private static final long SIZEOF_LONG = java.lang.Long.BYTES;
 
+    private static final TruffleString T_NAME = tsLiteral("HPy Universal ABI (GraalVM backend)");
+
     @TruffleBoundary
-    public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, String name, String path) throws IOException, ApiInitException, ImportException {
+    public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ApiInitException, ImportException {
         if (!context.hasHPyContext()) {
             /*
              * TODO(fa): Currently, you can't have the HPy context without the C API context. This
@@ -287,11 +300,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             Env env = context.getEnv();
             CompilerDirectives.transferToInterpreterAndInvalidate();
 
-            String libPythonName = "libhpy" + context.getSoAbi();
-            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
-            TruffleFile capiFile = homePath.resolve(libPythonName);
+            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
+            TruffleFile capiFile = homePath.resolve("libhpy" + context.getSoAbi().toJavaStringUncached());
             try {
-                SourceBuilder capiSrcBuilder = Source.newBuilder(PythonLanguage.LLVM_LANGUAGE, capiFile);
+                SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
                     capiSrcBuilder.internal(true);
                 }
@@ -333,7 +345,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      * @throws ImportException If an exception occurred during C extension initialization.
      */
     @TruffleBoundary
-    public static Object loadHPyModule(Node location, PythonContext context, String name, String path, boolean debug,
+    public static Object loadHPyModule(Node location, PythonContext context, TruffleString name, TruffleString path, boolean debug,
                     HPyCheckFunctionResultNode checkResultNode) throws IOException, ApiInitException, ImportException {
 
         /*
@@ -343,10 +355,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
         Object llvmLibrary = loadLLVMLibrary(location, context, name, path);
         InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
-        String basename = name.substring(name.lastIndexOf('.') + 1);
-        String hpyInitFuncName = "HPyInit_" + basename;
+        TruffleString basename = getBaseName(name);
+        TruffleString hpyInitFuncName = StringUtils.cat(T_HPY_INIT, basename);
         try {
-            if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName)) {
+            if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName.toJavaStringUncached())) {
                 return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib, checkResultNode);
             }
             throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_EXT_NO_ENTRY, basename, path, hpyInitFuncName);
@@ -356,12 +368,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     @TruffleBoundary
-    public final Object initHPyModule(PythonContext context, Object llvmLibrary, String initFuncName, String name, String path, boolean debug,
+    public final Object initHPyModule(PythonContext context, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug,
                     InteropLibrary llvmInteropLib,
                     HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         Object initFunction;
         try {
-            initFunction = llvmInteropLib.readMember(llvmLibrary, initFuncName);
+            initFunction = llvmInteropLib.readMember(llvmLibrary, initFuncName.toJavaStringUncached());
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
             throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
         }
@@ -447,258 +459,258 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
     enum HPyContextMember {
-        NAME("name"),
-        PRIVATE("_private"),
-        CTX_VERSION("ctx_version"),
+        NAME(tsLiteral("name")),
+        PRIVATE(tsLiteral("_private")),
+        CTX_VERSION(tsLiteral("ctx_version")),
 
         // constants
-        H_NONE("h_None"),
-        H_TRUE("h_True"),
-        H_FALSE("h_False"),
-        H_NOTIMPLEMENTED("h_NotImplemented"),
-        H_ELLIPSIS("h_Ellipsis"),
+        H_NONE(tsLiteral("h_None")),
+        H_TRUE(tsLiteral("h_True")),
+        H_FALSE(tsLiteral("h_False")),
+        H_NOTIMPLEMENTED(tsLiteral("h_NotImplemented")),
+        H_ELLIPSIS(tsLiteral("h_Ellipsis")),
 
         // exception types
-        H_BASEEXCEPTION("h_BaseException"),
-        H_EXCEPTION("h_Exception"),
-        H_STOPASYNCITERATION("h_StopAsyncIteration"),
-        H_STOPITERATION("h_StopIteration"),
-        H_GENERATOREXIT("h_GeneratorExit"),
-        H_ARITHMETICERROR("h_ArithmeticError"),
-        H_LOOKUPERROR("h_LookupError"),
-        H_ASSERTIONERROR("h_AssertionError"),
-        H_ATTRIBUTEERROR("h_AttributeError"),
-        H_BUFFERERROR("h_BufferError"),
-        H_EOFERROR("h_EOFError"),
-        H_FLOATINGPOINTERROR("h_FloatingPointError"),
-        H_OSERROR("h_OSError"),
-        H_IMPORTERROR("h_ImportError"),
-        H_MODULENOTFOUNDERROR("h_ModuleNotFoundError"),
-        H_INDEXERROR("h_IndexError"),
-        H_KEYERROR("h_KeyError"),
-        H_KEYBOARDINTERRUPT("h_KeyboardInterrupt"),
-        H_MEMORYERROR("h_MemoryError"),
-        H_NAMEERROR("h_NameError"),
-        H_OVERFLOWERROR("h_OverflowError"),
-        H_RUNTIMEERROR("h_RuntimeError"),
-        H_RECURSIONERROR("h_RecursionError"),
-        H_NOTIMPLEMENTEDERROR("h_NotImplementedError"),
-        H_SYNTAXERROR("h_SyntaxError"),
-        H_INDENTATIONERROR("h_IndentationError"),
-        H_TABERROR("h_TabError"),
-        H_REFERENCEERROR("h_ReferenceError"),
-        H_SYSTEMERROR("h_SystemError"),
-        H_SYSTEMEXIT("h_SystemExit"),
-        H_TYPEERROR("h_TypeError"),
-        H_UNBOUNDLOCALERROR("h_UnboundLocalError"),
-        H_UNICODEERROR("h_UnicodeError"),
-        H_UNICODEENCODEERROR("h_UnicodeEncodeError"),
-        H_UNICODEDECODEERROR("h_UnicodeDecodeError"),
-        H_UNICODETRANSLATEERROR("h_UnicodeTranslateError"),
-        H_VALUEERROR("h_ValueError"),
-        H_ZERODIVISIONERROR("h_ZeroDivisionError"),
-        H_BLOCKINGIOERROR("h_BlockingIOError"),
-        H_BROKENPIPEERROR("h_BrokenPipeError"),
-        H_CHILDPROCESSERROR("h_ChildProcessError"),
-        H_CONNECTIONERROR("h_ConnectionError"),
-        H_CONNECTIONABORTEDERROR("h_ConnectionAbortedError"),
-        H_CONNECTIONREFUSEDERROR("h_ConnectionRefusedError"),
-        H_CONNECTIONRESETERROR("h_ConnectionResetError"),
-        H_FILEEXISTSERROR("h_FileExistsError"),
-        H_FILENOTFOUNDERROR("h_FileNotFoundError"),
-        H_INTERRUPTEDERROR("h_InterruptedError"),
-        H_ISADIRECTORYERROR("h_IsADirectoryError"),
-        H_NOTADIRECTORYERROR("h_NotADirectoryError"),
-        H_PERMISSIONERROR("h_PermissionError"),
-        H_PROCESSLOOKUPERROR("h_ProcessLookupError"),
-        H_TIMEOUTERROR("h_TimeoutError"),
-        H_WARNING("h_Warning"),
-        H_USERWARNING("h_UserWarning"),
-        H_DEPRECATIONWARNING("h_DeprecationWarning"),
-        H_PENDINGDEPRECATIONWARNING("h_PendingDeprecationWarning"),
-        H_SYNTAXWARNING("h_SyntaxWarning"),
-        H_RUNTIMEWARNING("h_RuntimeWarning"),
-        H_FUTUREWARNING("h_FutureWarning"),
-        H_IMPORTWARNING("h_ImportWarning"),
-        H_UNICODEWARNING("h_UnicodeWarning"),
-        H_BYTESWARNING("h_BytesWarning"),
-        H_RESOURCEWARNING("h_ResourceWarning"),
+        H_BASEEXCEPTION(tsLiteral("h_BaseException")),
+        H_EXCEPTION(tsLiteral("h_Exception")),
+        H_STOPASYNCITERATION(tsLiteral("h_StopAsyncIteration")),
+        H_STOPITERATION(tsLiteral("h_StopIteration")),
+        H_GENERATOREXIT(tsLiteral("h_GeneratorExit")),
+        H_ARITHMETICERROR(tsLiteral("h_ArithmeticError")),
+        H_LOOKUPERROR(tsLiteral("h_LookupError")),
+        H_ASSERTIONERROR(tsLiteral("h_AssertionError")),
+        H_ATTRIBUTEERROR(tsLiteral("h_AttributeError")),
+        H_BUFFERERROR(tsLiteral("h_BufferError")),
+        H_EOFERROR(tsLiteral("h_EOFError")),
+        H_FLOATINGPOINTERROR(tsLiteral("h_FloatingPointError")),
+        H_OSERROR(tsLiteral("h_OSError")),
+        H_IMPORTERROR(tsLiteral("h_ImportError")),
+        H_MODULENOTFOUNDERROR(tsLiteral("h_ModuleNotFoundError")),
+        H_INDEXERROR(tsLiteral("h_IndexError")),
+        H_KEYERROR(tsLiteral("h_KeyError")),
+        H_KEYBOARDINTERRUPT(tsLiteral("h_KeyboardInterrupt")),
+        H_MEMORYERROR(tsLiteral("h_MemoryError")),
+        H_NAMEERROR(tsLiteral("h_NameError")),
+        H_OVERFLOWERROR(tsLiteral("h_OverflowError")),
+        H_RUNTIMEERROR(tsLiteral("h_RuntimeError")),
+        H_RECURSIONERROR(tsLiteral("h_RecursionError")),
+        H_NOTIMPLEMENTEDERROR(tsLiteral("h_NotImplementedError")),
+        H_SYNTAXERROR(tsLiteral("h_SyntaxError")),
+        H_INDENTATIONERROR(tsLiteral("h_IndentationError")),
+        H_TABERROR(tsLiteral("h_TabError")),
+        H_REFERENCEERROR(tsLiteral("h_ReferenceError")),
+        H_SYSTEMERROR(tsLiteral("h_SystemError")),
+        H_SYSTEMEXIT(tsLiteral("h_SystemExit")),
+        H_TYPEERROR(tsLiteral("h_TypeError")),
+        H_UNBOUNDLOCALERROR(tsLiteral("h_UnboundLocalError")),
+        H_UNICODEERROR(tsLiteral("h_UnicodeError")),
+        H_UNICODEENCODEERROR(tsLiteral("h_UnicodeEncodeError")),
+        H_UNICODEDECODEERROR(tsLiteral("h_UnicodeDecodeError")),
+        H_UNICODETRANSLATEERROR(tsLiteral("h_UnicodeTranslateError")),
+        H_VALUEERROR(tsLiteral("h_ValueError")),
+        H_ZERODIVISIONERROR(tsLiteral("h_ZeroDivisionError")),
+        H_BLOCKINGIOERROR(tsLiteral("h_BlockingIOError")),
+        H_BROKENPIPEERROR(tsLiteral("h_BrokenPipeError")),
+        H_CHILDPROCESSERROR(tsLiteral("h_ChildProcessError")),
+        H_CONNECTIONERROR(tsLiteral("h_ConnectionError")),
+        H_CONNECTIONABORTEDERROR(tsLiteral("h_ConnectionAbortedError")),
+        H_CONNECTIONREFUSEDERROR(tsLiteral("h_ConnectionRefusedError")),
+        H_CONNECTIONRESETERROR(tsLiteral("h_ConnectionResetError")),
+        H_FILEEXISTSERROR(tsLiteral("h_FileExistsError")),
+        H_FILENOTFOUNDERROR(tsLiteral("h_FileNotFoundError")),
+        H_INTERRUPTEDERROR(tsLiteral("h_InterruptedError")),
+        H_ISADIRECTORYERROR(tsLiteral("h_IsADirectoryError")),
+        H_NOTADIRECTORYERROR(tsLiteral("h_NotADirectoryError")),
+        H_PERMISSIONERROR(tsLiteral("h_PermissionError")),
+        H_PROCESSLOOKUPERROR(tsLiteral("h_ProcessLookupError")),
+        H_TIMEOUTERROR(tsLiteral("h_TimeoutError")),
+        H_WARNING(tsLiteral("h_Warning")),
+        H_USERWARNING(tsLiteral("h_UserWarning")),
+        H_DEPRECATIONWARNING(tsLiteral("h_DeprecationWarning")),
+        H_PENDINGDEPRECATIONWARNING(tsLiteral("h_PendingDeprecationWarning")),
+        H_SYNTAXWARNING(tsLiteral("h_SyntaxWarning")),
+        H_RUNTIMEWARNING(tsLiteral("h_RuntimeWarning")),
+        H_FUTUREWARNING(tsLiteral("h_FutureWarning")),
+        H_IMPORTWARNING(tsLiteral("h_ImportWarning")),
+        H_UNICODEWARNING(tsLiteral("h_UnicodeWarning")),
+        H_BYTESWARNING(tsLiteral("h_BytesWarning")),
+        H_RESOURCEWARNING(tsLiteral("h_ResourceWarning")),
 
         // built-in types
-        H_BASEOBJECTTYPE("h_BaseObjectType"),
-        H_TYPETYPE("h_TypeType"),
-        H_BOOLTYPE("h_BoolType"),
-        H_LONGTYPE("h_LongType"),
-        H_FLOATTYPE("h_FloatType"),
-        H_UNICODETYPE("h_UnicodeType"),
-        H_TUPLETYPE("h_TupleType"),
-        H_LISTTYPE("h_ListType"),
+        H_BASEOBJECTTYPE(tsLiteral("h_BaseObjectType")),
+        H_TYPETYPE(tsLiteral("h_TypeType")),
+        H_BOOLTYPE(tsLiteral("h_BoolType")),
+        H_LONGTYPE(tsLiteral("h_LongType")),
+        H_FLOATTYPE(tsLiteral("h_FloatType")),
+        H_UNICODETYPE(tsLiteral("h_UnicodeType")),
+        H_TUPLETYPE(tsLiteral("h_TupleType")),
+        H_LISTTYPE(tsLiteral("h_ListType")),
 
-        CTX_MODULE_CREATE("ctx_Module_Create"),
-        CTX_DUP("ctx_Dup", signature(HPy, HPy)),
-        CTX_AS_STRUCT("ctx_AsStruct", signature(DataPtr, HPy)),
-        CTX_AS_STRUCT_LEGACY("ctx_AsStructLegacy"),
-        CTX_CLOSE("ctx_Close", signature(Void, HPy)),
-        CTX_BOOL_FROMLONG("ctx_Bool_FromLong"),
-        CTX_LONG_FROMLONG("ctx_Long_FromLong"),
-        CTX_LONG_FROMUNSIGNEDLONG("ctx_Long_FromUnsignedLong"),
-        CTX_LONG_FROMLONGLONG("ctx_Long_FromLongLong"),
-        CTX_LONG_FROM_UNSIGNEDLONGLONG("ctx_Long_FromUnsignedLongLong"),
-        CTX_LONG_FROMSSIZE_T("ctx_Long_FromSsize_t"),
-        CTX_LONG_FROMSIZE_T("ctx_Long_FromSize_t"),
-        CTX_LONG_ASLONG("ctx_Long_AsLong", signature(Long, HPy)),
-        CTX_LONG_ASLONGLONG("ctx_Long_AsLongLong"),
-        CTX_LONG_ASUNSIGNEDLONG("ctx_Long_AsUnsignedLong"),
-        CTX_LONG_ASUNSIGNEDLONGMASK("ctx_Long_AsUnsignedLongMask"),
-        CTX_LONG_ASUNSIGNEDLONGLONG("ctx_Long_AsUnsignedLongLong"),
-        CTX_LONG_ASUNSIGNEDLONGLONGMASK("ctx_Long_AsUnsignedLongLongMask"),
-        CTX_LONG_ASSIZE_T("ctx_Long_AsSize_t"),
-        CTX_LONG_ASSSIZE_T("ctx_Long_AsSsize_t"),
-        CTX_LONG_ASVOIDPTR("ctx_Long_AsVoidPtr"),
-        CTX_LONG_ASDOUBLE("ctx_Long_AsDouble", signature(Double, HPy)),
-        CTX_NEW("ctx_New", signature(HPy, HPy, DataPtrPtr)),
-        CTX_TYPE("ctx_Type"),
-        CTX_TYPECHECK("ctx_TypeCheck", signature(Long, HPy, HPy)),
-        CTX_IS("ctx_Is"),
-        CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew", signature(HPy, HPy)),
-        CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble", signature(HPy, Double)),
-        CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble", signature(Double, HPy)),
+        CTX_MODULE_CREATE(tsLiteral("ctx_Module_Create")),
+        CTX_DUP(tsLiteral("ctx_Dup"), signature(HPy, HPy)),
+        CTX_AS_STRUCT(tsLiteral("ctx_AsStruct"), signature(DataPtr, HPy)),
+        CTX_AS_STRUCT_LEGACY(tsLiteral("ctx_AsStructLegacy")),
+        CTX_CLOSE(tsLiteral("ctx_Close"), signature(Void, HPy)),
+        CTX_BOOL_FROMLONG(tsLiteral("ctx_Bool_FromLong")),
+        CTX_LONG_FROMLONG(tsLiteral("ctx_Long_FromLong")),
+        CTX_LONG_FROMUNSIGNEDLONG(tsLiteral("ctx_Long_FromUnsignedLong")),
+        CTX_LONG_FROMLONGLONG(tsLiteral("ctx_Long_FromLongLong")),
+        CTX_LONG_FROM_UNSIGNEDLONGLONG(tsLiteral("ctx_Long_FromUnsignedLongLong")),
+        CTX_LONG_FROMSSIZE_T(tsLiteral("ctx_Long_FromSsize_t")),
+        CTX_LONG_FROMSIZE_T(tsLiteral("ctx_Long_FromSize_t")),
+        CTX_LONG_ASLONG(tsLiteral("ctx_Long_AsLong"), signature(Long, HPy)),
+        CTX_LONG_ASLONGLONG(tsLiteral("ctx_Long_AsLongLong")),
+        CTX_LONG_ASUNSIGNEDLONG(tsLiteral("ctx_Long_AsUnsignedLong")),
+        CTX_LONG_ASUNSIGNEDLONGMASK(tsLiteral("ctx_Long_AsUnsignedLongMask")),
+        CTX_LONG_ASUNSIGNEDLONGLONG(tsLiteral("ctx_Long_AsUnsignedLongLong")),
+        CTX_LONG_ASUNSIGNEDLONGLONGMASK(tsLiteral("ctx_Long_AsUnsignedLongLongMask")),
+        CTX_LONG_ASSIZE_T(tsLiteral("ctx_Long_AsSize_t")),
+        CTX_LONG_ASSSIZE_T(tsLiteral("ctx_Long_AsSsize_t")),
+        CTX_LONG_ASVOIDPTR(tsLiteral("ctx_Long_AsVoidPtr")),
+        CTX_LONG_ASDOUBLE(tsLiteral("ctx_Long_AsDouble"), signature(Double, HPy)),
+        CTX_NEW(tsLiteral("ctx_New"), signature(HPy, HPy, DataPtrPtr)),
+        CTX_TYPE(tsLiteral("ctx_Type")),
+        CTX_TYPECHECK(tsLiteral("ctx_TypeCheck"), signature(Long, HPy, HPy)),
+        CTX_IS(tsLiteral("ctx_Is")),
+        CTX_TYPE_GENERIC_NEW(tsLiteral("ctx_Type_GenericNew"), signature(HPy, HPy)),
+        CTX_FLOAT_FROMDOUBLE(tsLiteral("ctx_Float_FromDouble"), signature(HPy, Double)),
+        CTX_FLOAT_ASDOUBLE(tsLiteral("ctx_Float_AsDouble"), signature(Double, HPy)),
 
         // unary
-        CTX_NEGATIVE("ctx_Negative"),
-        CTX_POSITIVE("ctx_Positive"),
-        CTX_ABSOLUTE("ctx_Absolute"),
-        CTX_INVERT("ctx_Invert"),
-        CTX_INDEX("ctx_Index"),
-        CTX_LONG("ctx_Long"),
-        CTX_FLOAT("ctx_Float"),
+        CTX_NEGATIVE(tsLiteral("ctx_Negative")),
+        CTX_POSITIVE(tsLiteral("ctx_Positive")),
+        CTX_ABSOLUTE(tsLiteral("ctx_Absolute")),
+        CTX_INVERT(tsLiteral("ctx_Invert")),
+        CTX_INDEX(tsLiteral("ctx_Index")),
+        CTX_LONG(tsLiteral("ctx_Long")),
+        CTX_FLOAT(tsLiteral("ctx_Float")),
 
         // binary
-        CTX_ADD("ctx_Add"),
-        CTX_SUB("ctx_Subtract"),
-        CTX_MULTIPLY("ctx_Multiply"),
-        CTX_MATRIXMULTIPLY("ctx_MatrixMultiply"),
-        CTX_FLOORDIVIDE("ctx_FloorDivide"),
-        CTX_TRUEDIVIDE("ctx_TrueDivide"),
-        CTX_REMAINDER("ctx_Remainder"),
-        CTX_DIVMOD("ctx_Divmod"),
-        CTX_LSHIFT("ctx_Lshift"),
-        CTX_RSHIFT("ctx_Rshift"),
-        CTX_AND("ctx_And"),
-        CTX_XOR("ctx_Xor"),
-        CTX_OR("ctx_Or"),
-        CTX_INPLACEADD("ctx_InPlaceAdd"),
-        CTX_INPLACESUBTRACT("ctx_InPlaceSubtract"),
-        CTX_INPLACEMULTIPLY("ctx_InPlaceMultiply"),
-        CTX_INPLACEMATRIXMULTIPLY("ctx_InPlaceMatrixMultiply"),
-        CTX_INPLACEFLOORDIVIDE("ctx_InPlaceFloorDivide"),
-        CTX_INPLACETRUEDIVIDE("ctx_InPlaceTrueDivide"),
-        CTX_INPLACEREMAINDER("ctx_InPlaceRemainder"),
+        CTX_ADD(tsLiteral("ctx_Add")),
+        CTX_SUB(tsLiteral("ctx_Subtract")),
+        CTX_MULTIPLY(tsLiteral("ctx_Multiply")),
+        CTX_MATRIXMULTIPLY(tsLiteral("ctx_MatrixMultiply")),
+        CTX_FLOORDIVIDE(tsLiteral("ctx_FloorDivide")),
+        CTX_TRUEDIVIDE(tsLiteral("ctx_TrueDivide")),
+        CTX_REMAINDER(tsLiteral("ctx_Remainder")),
+        CTX_DIVMOD(tsLiteral("ctx_Divmod")),
+        CTX_LSHIFT(tsLiteral("ctx_Lshift")),
+        CTX_RSHIFT(tsLiteral("ctx_Rshift")),
+        CTX_AND(tsLiteral("ctx_And")),
+        CTX_XOR(tsLiteral("ctx_Xor")),
+        CTX_OR(tsLiteral("ctx_Or")),
+        CTX_INPLACEADD(tsLiteral("ctx_InPlaceAdd")),
+        CTX_INPLACESUBTRACT(tsLiteral("ctx_InPlaceSubtract")),
+        CTX_INPLACEMULTIPLY(tsLiteral("ctx_InPlaceMultiply")),
+        CTX_INPLACEMATRIXMULTIPLY(tsLiteral("ctx_InPlaceMatrixMultiply")),
+        CTX_INPLACEFLOORDIVIDE(tsLiteral("ctx_InPlaceFloorDivide")),
+        CTX_INPLACETRUEDIVIDE(tsLiteral("ctx_InPlaceTrueDivide")),
+        CTX_INPLACEREMAINDER(tsLiteral("ctx_InPlaceRemainder")),
         // TODO(fa): support IDivMod
-        // CTX_INPLACEDIVMOD("ctx_InPlaceDivmod"),
-        CTX_INPLACELSHIFT("ctx_InPlaceLshift"),
-        CTX_INPLACERSHIFT("ctx_InPlaceRshift"),
-        CTX_INPLACEAND("ctx_InPlaceAnd"),
-        CTX_INPLACEXOR("ctx_InPlaceXor"),
-        CTX_INPLACEOR("ctx_InPlaceOr"),
+        // CTX_INPLACEDIVMOD(tsLiteral("ctx_InPlaceDivmod")),
+        CTX_INPLACELSHIFT(tsLiteral("ctx_InPlaceLshift")),
+        CTX_INPLACERSHIFT(tsLiteral("ctx_InPlaceRshift")),
+        CTX_INPLACEAND(tsLiteral("ctx_InPlaceAnd")),
+        CTX_INPLACEXOR(tsLiteral("ctx_InPlaceXor")),
+        CTX_INPLACEOR(tsLiteral("ctx_InPlaceOr")),
 
         // ternary
-        CTX_POWER("ctx_Power"),
-        CTX_INPLACEPOWER("ctx_InPlacePower"),
+        CTX_POWER(tsLiteral("ctx_Power")),
+        CTX_INPLACEPOWER(tsLiteral("ctx_InPlacePower")),
 
-        CTX_CALLABLE_CHECK("ctx_Callable_Check"),
-        CTX_CALLTUPLEDICT("ctx_CallTupleDict"),
-        CTX_ERR_NOMEMORY("ctx_Err_NoMemory"),
-        CTX_ERR_SETSTRING("ctx_Err_SetString"),
-        CTX_ERR_SETOBJECT("ctx_Err_SetObject"),
-        CTX_ERR_SETFROMERRNOWITHFILENAME("ctx_Err_SetFromErrnoWithFilename"),
-        CTX_ERR_SETFROMERRNOWITHFILENAMEOBJECTS("ctx_Err_SetFromErrnoWithFilenameObjects"),
-        CTX_ERR_OCCURRED("ctx_Err_Occurred"),
-        CTX_ERR_EXCEPTIONMATCHES("ctx_Err_ExceptionMatches"),
-        CTX_ERR_CLEAR("ctx_Err_Clear"),
-        CTX_ERR_NEWEXCEPTION("ctx_Err_NewException"),
-        CTX_ERR_NEWEXCEPTIONWITHDOC("ctx_Err_NewExceptionWithDoc"),
-        CTX_ERR_WARNEX("ctx_Err_WarnEx"),
-        CTX_ERR_WRITEUNRAISABLE("ctx_Err_WriteUnraisable"),
-        CTX_FATALERROR("ctx_FatalError"),
-        CTX_ISTRUE("ctx_IsTrue"),
-        CTX_TYPE_FROM_SPEC("ctx_Type_FromSpec"),
-        CTX_GETATTR("ctx_GetAttr"),
-        CTX_GETATTR_S("ctx_GetAttr_s"),
-        CTX_HASATTR("ctx_HasAttr"),
-        CTX_HASATTR_S("ctx_HasAttr_s"),
-        CTX_SETATTR("ctx_SetAttr"),
-        CTX_SETATTR_S("ctx_SetAttr_s"),
-        CTX_GETITEM("ctx_GetItem"),
-        CTX_GETITEM_I("ctx_GetItem_i", signature(HPy, HPy, HPy_ssize_t)),
-        CTX_GETITEM_S("ctx_GetItem_s"),
-        CTX_SETITEM("ctx_SetItem"),
-        CTX_SETITEM_I("ctx_SetItem_i"),
-        CTX_SETITEM_S("ctx_SetItem_s"),
-        CTX_CONTAINS("ctx_Contains"),
-        CTX_BYTES_CHECK("ctx_Bytes_Check"),
-        CTX_BYTES_SIZE("ctx_Bytes_Size"),
-        CTX_BYTES_GET_SIZE("ctx_Bytes_GET_SIZE"),
-        CTX_BYTES_ASSTRING("ctx_Bytes_AsString"),
-        CTX_BYTES_AS_STRING("ctx_Bytes_AS_STRING"),
-        CTX_BYTES_FROMSTRING("ctx_Bytes_FromString"),
-        CTX_BYTES_FROMSTRINGANDSIZE("ctx_Bytes_FromStringAndSize"),
-        CTX_UNICODE_FROMSTRING("ctx_Unicode_FromString"),
-        CTX_UNICODE_CHECK("ctx_Unicode_Check"),
-        CTX_UNICODE_ASUTF8STRING("ctx_Unicode_AsUTF8String"),
-        CTX_UNICODE_ASASCIISTRING("ctx_Unicode_AsASCIIString"),
-        CTX_UNICODE_ASLATIN1STRING("ctx_Unicode_AsLatin1String"),
-        CTX_UNICODE_ASUTF8ANDSIZE("ctx_Unicode_AsUTF8AndSize"),
-        CTX_UNICODE_FROMWIDECHAR("ctx_Unicode_FromWideChar"),
-        CTX_UNICODE_DECODEASCII("ctx_Unicode_DecodeASCII"),
-        CTX_UNICODE_DECODELATIN1("ctx_Unicode_DecodeLatin1"),
-        CTX_UNICODE_DECODEFSDEFAULT("ctx_Unicode_DecodeFSDefault"),
-        CTX_UNICODE_DECODEFSDEFAULTANDSIZE("ctx_Unicode_DecodeFSDefaultAndSize"),
-        CTX_UNICODE_ENCODEFSDEFAULT("ctx_Unicode_EncodeFSDefault"),
-        CTX_UNICODE_READCHAR("ctx_Unicode_ReadChar"),
-        CTX_LIST_NEW("ctx_List_New"),
-        CTX_LIST_APPEND("ctx_List_Append"),
-        CTX_DICT_CHECK("ctx_Dict_Check"),
-        CTX_DICT_NEW("ctx_Dict_New"),
-        CTX_DICT_SETITEM("ctx_Dict_SetItem"),
-        CTX_DICT_GETITEM("ctx_Dict_GetItem"),
-        CTX_FROMPYOBJECT("ctx_FromPyObject"),
-        CTX_ASPYOBJECT("ctx_AsPyObject"),
-        CTX_CALLREALFUNCTIONFROMTRAMPOLINE("ctx_CallRealFunctionFromTrampoline"),
-        CTX_REPR("ctx_Repr"),
-        CTX_STR("ctx_Str"),
-        CTX_ASCII("ctx_ASCII"),
-        CTX_BYTES("ctx_Bytes"),
-        CTX_RICHCOMPARE("ctx_RichCompare"),
-        CTX_RICHCOMPAREBOOL("ctx_RichCompareBool"),
-        CTX_HASH("ctx_Hash"),
-        CTX_NUMBER_CHECK("ctx_Number_Check", signature(Int, HPy)),
-        CTX_LENGTH("ctx_Length", signature(HPy_ssize_t, HPy)),
-        CTX_IMPORT_IMPORTMODULE("ctx_Import_ImportModule"),
-        CTX_TUPLE_CHECK("ctx_Tuple_Check"),
-        CTX_TUPLE_FROMARRAY("ctx_Tuple_FromArray"),
-        CTX_TUPLE_BUILDER_NEW("ctx_TupleBuilder_New"),
-        CTX_TUPLE_BUILDER_SET("ctx_TupleBuilder_Set"),
-        CTX_TUPLE_BUILDER_BUILD("ctx_TupleBuilder_Build"),
-        CTX_TUPLE_BUILDER_CANCEL("ctx_TupleBuilder_Cancel"),
-        CTX_LIST_CHECK("ctx_List_Check", signature(Int, HPy)),
-        CTX_LIST_BUILDER_NEW("ctx_ListBuilder_New"),
-        CTX_LIST_BUILDER_SET("ctx_ListBuilder_Set"),
-        CTX_LIST_BUILDER_BUILD("ctx_ListBuilder_Build"),
-        CTX_LIST_BUILDER_CANCEL("ctx_ListBuilder_Cancel"),
-        CTX_TRACKER_NEW("ctx_Tracker_New", signature(HPyTracker, HPy_ssize_t)),
-        CTX_TRACKER_ADD("ctx_Tracker_Add", signature(Int, HPyTracker, HPy)),
-        CTX_TRACKER_FORGET_ALL("ctx_Tracker_ForgetAll"),
-        CTX_TRACKER_CLOSE("ctx_Tracker_Close", signature(Void, HPyTracker)),
-        CTX_FIELD_STORE("ctx_Field_Store", signature(Void, HPy, _HPyFieldPtr, HPy)),
-        CTX_FIELD_LOAD("ctx_Field_Load", signature(HPy, HPyField)),
-        CTX_LEAVEPYTHONEXECUTION("ctx_LeavePythonExecution", signature(HPyThreadState)),
-        CTX_REENTERPYTHONEXECUTION("ctx_ReenterPythonExecution", signature(Void, HPyThreadState)),
-        CTX_GLOBAL_STORE("ctx_Global_Store", signature(Void, _HPyGlobalPtr, HPy)),
-        CTX_GLOBAL_LOAD("ctx_Global_Load", signature(Void, HPyGlobal, HPy)),
-        CTX_DUMP("ctx_Dump");
+        CTX_CALLABLE_CHECK(tsLiteral("ctx_Callable_Check")),
+        CTX_CALLTUPLEDICT(tsLiteral("ctx_CallTupleDict")),
+        CTX_ERR_NOMEMORY(tsLiteral("ctx_Err_NoMemory")),
+        CTX_ERR_SETSTRING(tsLiteral("ctx_Err_SetString")),
+        CTX_ERR_SETOBJECT(tsLiteral("ctx_Err_SetObject")),
+        CTX_ERR_SETFROMERRNOWITHFILENAME(tsLiteral("ctx_Err_SetFromErrnoWithFilename")),
+        CTX_ERR_SETFROMERRNOWITHFILENAMEOBJECTS(tsLiteral("ctx_Err_SetFromErrnoWithFilenameObjects")),
+        CTX_ERR_OCCURRED(tsLiteral("ctx_Err_Occurred")),
+        CTX_ERR_EXCEPTIONMATCHES(tsLiteral("ctx_Err_ExceptionMatches")),
+        CTX_ERR_CLEAR(tsLiteral("ctx_Err_Clear")),
+        CTX_ERR_NEWEXCEPTION(tsLiteral("ctx_Err_NewException")),
+        CTX_ERR_NEWEXCEPTIONWITHDOC(tsLiteral("ctx_Err_NewExceptionWithDoc")),
+        CTX_ERR_WARNEX(tsLiteral("ctx_Err_WarnEx")),
+        CTX_ERR_WRITEUNRAISABLE(tsLiteral("ctx_Err_WriteUnraisable")),
+        CTX_FATALERROR(tsLiteral("ctx_FatalError")),
+        CTX_ISTRUE(tsLiteral("ctx_IsTrue")),
+        CTX_TYPE_FROM_SPEC(tsLiteral("ctx_Type_FromSpec")),
+        CTX_GETATTR(tsLiteral("ctx_GetAttr")),
+        CTX_GETATTR_S(tsLiteral("ctx_GetAttr_s")),
+        CTX_HASATTR(tsLiteral("ctx_HasAttr")),
+        CTX_HASATTR_S(tsLiteral("ctx_HasAttr_s")),
+        CTX_SETATTR(tsLiteral("ctx_SetAttr")),
+        CTX_SETATTR_S(tsLiteral("ctx_SetAttr_s")),
+        CTX_GETITEM(tsLiteral("ctx_GetItem")),
+        CTX_GETITEM_I(tsLiteral("ctx_GetItem_i"), signature(HPy, HPy, HPy_ssize_t)),
+        CTX_GETITEM_S(tsLiteral("ctx_GetItem_s")),
+        CTX_SETITEM(tsLiteral("ctx_SetItem")),
+        CTX_SETITEM_I(tsLiteral("ctx_SetItem_i")),
+        CTX_SETITEM_S(tsLiteral("ctx_SetItem_s")),
+        CTX_CONTAINS(tsLiteral("ctx_Contains")),
+        CTX_BYTES_CHECK(tsLiteral("ctx_Bytes_Check")),
+        CTX_BYTES_SIZE(tsLiteral("ctx_Bytes_Size")),
+        CTX_BYTES_GET_SIZE(tsLiteral("ctx_Bytes_GET_SIZE")),
+        CTX_BYTES_ASSTRING(tsLiteral("ctx_Bytes_AsString")),
+        CTX_BYTES_AS_STRING(tsLiteral("ctx_Bytes_AS_STRING")),
+        CTX_BYTES_FROMSTRING(tsLiteral("ctx_Bytes_FromString")),
+        CTX_BYTES_FROMSTRINGANDSIZE(tsLiteral("ctx_Bytes_FromStringAndSize")),
+        CTX_UNICODE_FROMSTRING(tsLiteral("ctx_Unicode_FromString")),
+        CTX_UNICODE_CHECK(tsLiteral("ctx_Unicode_Check")),
+        CTX_UNICODE_ASUTF8STRING(tsLiteral("ctx_Unicode_AsUTF8String")),
+        CTX_UNICODE_ASASCIISTRING(tsLiteral("ctx_Unicode_AsASCIIString")),
+        CTX_UNICODE_ASLATIN1STRING(tsLiteral("ctx_Unicode_AsLatin1String")),
+        CTX_UNICODE_ASUTF8ANDSIZE(tsLiteral("ctx_Unicode_AsUTF8AndSize")),
+        CTX_UNICODE_FROMWIDECHAR(tsLiteral("ctx_Unicode_FromWideChar")),
+        CTX_UNICODE_DECODEASCII(tsLiteral("ctx_Unicode_DecodeASCII")),
+        CTX_UNICODE_DECODELATIN1(tsLiteral("ctx_Unicode_DecodeLatin1")),
+        CTX_UNICODE_DECODEFSDEFAULT(tsLiteral("ctx_Unicode_DecodeFSDefault")),
+        CTX_UNICODE_DECODEFSDEFAULTANDSIZE(tsLiteral("ctx_Unicode_DecodeFSDefaultAndSize")),
+        CTX_UNICODE_ENCODEFSDEFAULT(tsLiteral("ctx_Unicode_EncodeFSDefault")),
+        CTX_UNICODE_READCHAR(tsLiteral("ctx_Unicode_ReadChar")),
+        CTX_LIST_NEW(tsLiteral("ctx_List_New")),
+        CTX_LIST_APPEND(tsLiteral("ctx_List_Append")),
+        CTX_DICT_CHECK(tsLiteral("ctx_Dict_Check")),
+        CTX_DICT_NEW(tsLiteral("ctx_Dict_New")),
+        CTX_DICT_SETITEM(tsLiteral("ctx_Dict_SetItem")),
+        CTX_DICT_GETITEM(tsLiteral("ctx_Dict_GetItem")),
+        CTX_FROMPYOBJECT(tsLiteral("ctx_FromPyObject")),
+        CTX_ASPYOBJECT(tsLiteral("ctx_AsPyObject")),
+        CTX_CALLREALFUNCTIONFROMTRAMPOLINE(tsLiteral("ctx_CallRealFunctionFromTrampoline")),
+        CTX_REPR(tsLiteral("ctx_Repr")),
+        CTX_STR(tsLiteral("ctx_Str")),
+        CTX_ASCII(tsLiteral("ctx_ASCII")),
+        CTX_BYTES(tsLiteral("ctx_Bytes")),
+        CTX_RICHCOMPARE(tsLiteral("ctx_RichCompare")),
+        CTX_RICHCOMPAREBOOL(tsLiteral("ctx_RichCompareBool")),
+        CTX_HASH(tsLiteral("ctx_Hash")),
+        CTX_NUMBER_CHECK(tsLiteral("ctx_Number_Check"), signature(Int, HPy)),
+        CTX_LENGTH(tsLiteral("ctx_Length"), signature(HPy_ssize_t, HPy)),
+        CTX_IMPORT_IMPORTMODULE(tsLiteral("ctx_Import_ImportModule")),
+        CTX_TUPLE_CHECK(tsLiteral("ctx_Tuple_Check")),
+        CTX_TUPLE_FROMARRAY(tsLiteral("ctx_Tuple_FromArray")),
+        CTX_TUPLE_BUILDER_NEW(tsLiteral("ctx_TupleBuilder_New")),
+        CTX_TUPLE_BUILDER_SET(tsLiteral("ctx_TupleBuilder_Set")),
+        CTX_TUPLE_BUILDER_BUILD(tsLiteral("ctx_TupleBuilder_Build")),
+        CTX_TUPLE_BUILDER_CANCEL(tsLiteral("ctx_TupleBuilder_Cancel")),
+        CTX_LIST_CHECK(tsLiteral("ctx_List_Check"), signature(Int, HPy)),
+        CTX_LIST_BUILDER_NEW(tsLiteral("ctx_ListBuilder_New")),
+        CTX_LIST_BUILDER_SET(tsLiteral("ctx_ListBuilder_Set")),
+        CTX_LIST_BUILDER_BUILD(tsLiteral("ctx_ListBuilder_Build")),
+        CTX_LIST_BUILDER_CANCEL(tsLiteral("ctx_ListBuilder_Cancel")),
+        CTX_TRACKER_NEW(tsLiteral("ctx_Tracker_New"), signature(HPyTracker, HPy_ssize_t)),
+        CTX_TRACKER_ADD(tsLiteral("ctx_Tracker_Add"), signature(Int, HPyTracker, HPy)),
+        CTX_TRACKER_FORGET_ALL(tsLiteral("ctx_Tracker_ForgetAll")),
+        CTX_TRACKER_CLOSE(tsLiteral("ctx_Tracker_Close"), signature(Void, HPyTracker)),
+        CTX_FIELD_STORE(tsLiteral("ctx_Field_Store"), signature(Void, HPy, _HPyFieldPtr, HPy)),
+        CTX_FIELD_LOAD(tsLiteral("ctx_Field_Load"), signature(HPy, HPyField)),
+        CTX_LEAVEPYTHONEXECUTION(tsLiteral("ctx_LeavePythonExecution"), signature(HPyThreadState)),
+        CTX_REENTERPYTHONEXECUTION(tsLiteral("ctx_ReenterPythonExecution"), signature(Void, HPyThreadState)),
+        CTX_GLOBAL_STORE(tsLiteral("ctx_Global_Store"), signature(Void, _HPyGlobalPtr, HPy)),
+        CTX_GLOBAL_LOAD(tsLiteral("ctx_Global_Load"), signature(Void, HPyGlobal, HPy)),
+        CTX_DUMP(tsLiteral("ctx_Dump"));
 
-        final String name;
+        final TruffleString name;
 
         /**
          * If this signature is present (non-null), then a corresponding function in
@@ -707,18 +719,18 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
          */
         final HPyContextSignature signature;
 
-        HPyContextMember(String name) {
+        HPyContextMember(TruffleString name) {
             this.name = name;
             this.signature = null;
         }
 
-        HPyContextMember(String name, HPyContextSignature signature) {
+        HPyContextMember(TruffleString name, HPyContextSignature signature) {
             this.name = name;
             this.signature = signature;
         }
 
         @CompilationFinal(dimensions = 1) private static final HPyContextMember[] VALUES = values();
-        public static final HashMap<String, HPyContextMember> MEMBERS = new HashMap<>();
+        public static final HashMap<TruffleString, HPyContextMember> MEMBERS = new HashMap<>();
         public static final Object KEYS;
 
         static {
@@ -726,7 +738,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 MEMBERS.put(member.name, member);
             }
 
-            String[] names = new String[VALUES.length];
+            TruffleString[] names = new TruffleString[VALUES.length];
             for (int i = 0; i < names.length; i++) {
                 names[i] = VALUES[i].name;
             }
@@ -734,7 +746,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
 
         @TruffleBoundary
-        public static int getIndex(String key) {
+        public static int getIndex(TruffleString key) {
             HPyContextMember member = HPyContextMember.MEMBERS.get(key);
             return member == null ? -1 : member.ordinal();
         }
@@ -784,11 +796,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         public static GraalHPyNativeSymbol getGetterFunctionName(LLVMType llvmType) {
             CompilerAsserts.neverPartOfCompilation();
-            String getterFunctionName = "get_" + llvmType.name() + "_typeid";
-            if (!GraalHPyNativeSymbol.isValid(getterFunctionName)) {
+            TruffleString getterFunctionName = cat(T_GET_, toTruffleStringUncached(llvmType.name()), T_TYPE_ID);
+            if (!GraalHPyNativeSymbol.isValid(getterFunctionName, TruffleString.EqualNode.getUncached())) {
                 throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + getterFunctionName);
             }
-            return GraalHPyNativeSymbol.getByName(getterFunctionName);
+            return GraalHPyNativeSymbol.getByName(getterFunctionName, TruffleString.EqualNode.getUncached());
         }
     }
 
@@ -858,8 +870,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    protected String getName() {
-        return "HPy Universal ABI (GraalVM backend)";
+    protected TruffleString getName() {
+        return T_NAME;
     }
 
     public PythonObjectSlowPathFactory getSlowPathFactory() {
@@ -1000,7 +1012,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      * Python objects.
      */
     private static final class HPyNativeSpaceCleanerRootNode extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"refs"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("refs"), EMPTY_TRUFFLESTRING_ARRAY);
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.HPyNativeSpaceCleanerRootNode.class);
 
         @Child private PCallHPyFunction callBulkFree;
@@ -1236,7 +1248,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     InteropLibrary interop = InteropLibrary.getUncached();
                     SignatureLibrary signatures = SignatureLibrary.getUncached();
                     try {
-                        Object rlib = evalNFI(context, "load \"" + getJNILibrary() + "\"", "load " + PythonContext.PYTHON_JNI_LIBRARY_NAME);
+                        Object rlib = evalNFI(context, "load \"" + getJNILibrary() + "\"", "load " + PythonContext.J_PYTHON_JNI_LIBRARY_NAME);
 
                         Object augmentSignature = evalNFI(context, "(POINTER):VOID", "hpy-nfi-signature");
                         Object augmentFunction = interop.readMember(rlib, "initDirectFastPaths");
@@ -1264,7 +1276,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private String getJNILibrary() {
         CompilerAsserts.neverPartOfCompilation();
-        return Paths.get(getContext().getJNIHome(), PythonContext.PYTHON_JNI_LIBRARY_NAME).toString();
+        return Paths.get(getContext().getJNIHome().toJavaStringUncached(), PythonContext.J_PYTHON_JNI_LIBRARY_NAME).toString();
     }
 
     private void loadJNIBackend() {
@@ -1491,7 +1503,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         } else {
             // check if argument is still a type (e.g. a built-in type, ...)
             if (!IsTypeNode.getUncached().execute(type)) {
-                return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, PythonBuiltinClassType.TypeError, "HPy_New arg 1 must be a type");
+                return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, PythonBuiltinClassType.TypeError, ErrorMessages.HPY_NEW_ARG_1_MUST_BE_A_TYPE);
             }
             // TODO(fa): this should actually call __new__
             pythonObject = slowPathFactory.createPythonObject(type);
@@ -1629,14 +1641,14 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 HashingStorage dictStorage = dict.getDictStorage();
 
                 // super-fast path for string keys
-                if (key instanceof String) {
+                if (key instanceof TruffleString) {
                     if (dictStorage instanceof EmptyStorage) {
                         dictStorage = PDict.createNewStorage(true, 1);
                         dict.setDictStorage(dictStorage);
                     }
 
                     if (dictStorage instanceof HashMapStorage) {
-                        ((HashMapStorage) dictStorage).put((String) key, value);
+                        ((HashMapStorage) dictStorage).put((TruffleString) key, value);
                         return 0;
                     }
                     // fall through to generic case
@@ -1822,7 +1834,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             return 0;
         }
         int isize = (int) size;
-
+        // TODO GR-37216: use TruffleString.FromNativePointer?
         char[] decoded = new char[isize];
         for (int i = 0; i < size; i++) {
             int wchar = unsafe.getInt(wcharArrayPtr + (long) Integer.BYTES * i);
@@ -1833,12 +1845,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 throw new RuntimeException();
             }
         }
-        return createHandle(new String(decoded, 0, isize)).getId(this, ConditionProfile.getUncached());
+        return createHandle(toTruffleStringUncached(new String(decoded, 0, isize))).getId(this, ConditionProfile.getUncached());
     }
 
     public final long ctxUnicodeFromJCharArray(char[] arr) {
         increment(Counter.UpcallUnicodeFromJCharArray);
-        return createHandle(new String(arr, 0, arr.length)).getId(this, ConditionProfile.getUncached());
+        return createHandle(TruffleString.fromCharArrayUTF16Uncached(arr).switchEncodingUncached(TS_ENCODING)).getId(this, ConditionProfile.getUncached());
     }
 
     public final long ctxDictNew() {
@@ -1895,25 +1907,28 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     @ExportMessage
-    @ImportStatic(HPyContextMember.class)
+    @ImportStatic({HPyContextMember.class, PythonUtils.class})
     static class IsMemberReadable {
         @Specialization(guards = "cachedKey.equals(key)", limit = "1")
         static boolean isMemberReadableCached(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String key,
                         @Cached(value = "key") @SuppressWarnings("unused") String cachedKey,
-                        @Cached(value = "getIndex(key)") int cachedIdx) {
+                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached(value = "getIndex(fromJavaStringNode.execute(key, TS_ENCODING))") int cachedIdx) {
             return cachedIdx != -1;
         }
 
         @Specialization(replaces = "isMemberReadableCached")
-        static boolean isMemberReadable(@SuppressWarnings("unused") GraalHPyContext context, String key) {
-            return HPyContextMember.getIndex(key) != -1;
+        static boolean isMemberReadable(@SuppressWarnings("unused") GraalHPyContext context, String key,
+                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+            return HPyContextMember.getIndex(fromJavaStringNode.execute(key, TS_ENCODING)) != -1;
         }
     }
 
     @ExportMessage
     final Object readMember(String key,
-                    @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode) {
-        return readMemberNode.execute(this, key);
+                    @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        return readMemberNode.execute(this, fromJavaStringNode.execute(key, TS_ENCODING));
     }
 
     @ExportMessage
@@ -1928,14 +1943,15 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     @GenerateUncached
-    @ImportStatic(HPyContextMember.class)
+    @ImportStatic({HPyContextMember.class, PythonUtils.class})
     abstract static class GraalHPyReadMemberNode extends Node {
 
-        public abstract Object execute(GraalHPyContext hpyContext, String key);
+        public abstract Object execute(GraalHPyContext hpyContext, TruffleString key);
 
-        @Specialization(guards = "cachedKey.equals(key)", limit = "1")
-        static Object doMemberCached(GraalHPyContext hpyContext, String key,
-                        @Cached(value = "key") @SuppressWarnings("unused") String cachedKey,
+        @Specialization(guards = "eqNode.execute(cachedKey, key, TS_ENCODING)", limit = "1")
+        static Object doMemberCached(GraalHPyContext hpyContext, TruffleString key,
+                        @Cached(value = "key") @SuppressWarnings("unused") TruffleString cachedKey,
+                        @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                         @Cached(value = "getIndex(key)") int cachedIdx) {
             // TODO(fa) once everything is implemented, remove this check
             if (cachedIdx != -1) {
@@ -1945,30 +1961,33 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw CompilerDirectives.shouldNotReachHere(String.format("context function %s not yet implemented: ", key));
+            throw CompilerDirectives.shouldNotReachHere(PythonUtils.format("context function %s not yet implemented: ", key));
         }
 
         @Specialization(replaces = "doMemberCached")
-        static Object doMember(GraalHPyContext hpyContext, String key,
-                        @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") String cachedKey) {
-            return doMemberCached(hpyContext, key, key, HPyContextMember.getIndex(key));
+        static Object doMember(GraalHPyContext hpyContext, TruffleString key,
+                        @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") TruffleString cachedKey,
+                        @Shared("eq") @Cached TruffleString.EqualNode eqNode) {
+            return doMemberCached(hpyContext, key, key, eqNode, HPyContextMember.getIndex(key));
         }
     }
 
     @ExportMessage
     final boolean isMemberInvocable(String key,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode,
                     @Shared("memberInvokeLib") @CachedLibrary(limit = "1") InteropLibrary memberInvokeLib) {
-        Object member = readMemberNode.execute(this, key);
+        Object member = readMemberNode.execute(this, fromJavaStringNode.execute(key, TS_ENCODING));
         return member != null && memberInvokeLib.isExecutable(member);
     }
 
     @ExportMessage
     final Object invokeMember(String key, Object[] args,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode,
                     @Shared("memberInvokeLib") @CachedLibrary(limit = "1") InteropLibrary memberInvokeLib)
                     throws UnsupportedMessageException, UnsupportedTypeException, ArityException {
-        Object member = readMemberNode.execute(this, key);
+        Object member = readMemberNode.execute(this, fromJavaStringNode.execute(key, TS_ENCODING));
         assert member != null;
         /*
          * Optimization: the first argument *MUST* always be the context. If not, we can just set
@@ -1978,7 +1997,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         return memberInvokeLib.execute(member, args);
     }
 
-    private static Object[] createMembers(PythonContext context, String name, boolean traceJNIUpcalls) {
+    private static Object[] createMembers(PythonContext context, TruffleString name, boolean traceJNIUpcalls) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
 
         members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
@@ -2102,11 +2121,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         // unary
         members[HPyContextMember.CTX_NEGATIVE.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Neg);
         members[HPyContextMember.CTX_POSITIVE.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Pos);
-        members[HPyContextMember.CTX_ABSOLUTE.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.ABS, 1);
+        members[HPyContextMember.CTX_ABSOLUTE.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_ABS, 1);
         members[HPyContextMember.CTX_INVERT.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Invert);
         members[HPyContextMember.CTX_INDEX.ordinal()] = new GraalHPyAsIndex();
-        members[HPyContextMember.CTX_LONG.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.INT, 1);
-        members[HPyContextMember.CTX_FLOAT.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.FLOAT, 1);
+        members[HPyContextMember.CTX_LONG.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_INT, 1);
+        members[HPyContextMember.CTX_FLOAT.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_FLOAT, 1);
 
         // binary
         members[HPyContextMember.CTX_ADD.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Add);
@@ -2200,15 +2219,15 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_SETITEM_S.ordinal()] = new GraalHPySetItem(CHAR_PTR);
         members[HPyContextMember.CTX_SETITEM_I.ordinal()] = new GraalHPySetItem(INT32);
         members[HPyContextMember.CTX_CONTAINS.ordinal()] = new GraalHPyContains();
-        members[HPyContextMember.CTX_REPR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.REPR, 1);
-        members[HPyContextMember.CTX_STR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.STR, 1);
-        members[HPyContextMember.CTX_ASCII.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.ASCII, 1);
-        members[HPyContextMember.CTX_BYTES.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.BYTES, 1);
+        members[HPyContextMember.CTX_REPR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_REPR, 1);
+        members[HPyContextMember.CTX_STR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_STR, 1);
+        members[HPyContextMember.CTX_ASCII.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_ASCII, 1);
+        members[HPyContextMember.CTX_BYTES.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_BYTES, 1);
         members[HPyContextMember.CTX_RICHCOMPARE.ordinal()] = new GraalHPyRichcompare(false);
         members[HPyContextMember.CTX_RICHCOMPAREBOOL.ordinal()] = new GraalHPyRichcompare(true);
-        members[HPyContextMember.CTX_HASH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.HASH, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
+        members[HPyContextMember.CTX_HASH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_HASH, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
         members[HPyContextMember.CTX_NUMBER_CHECK.ordinal()] = new GraalHPyIsNumber();
-        members[HPyContextMember.CTX_LENGTH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.LEN, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
+        members[HPyContextMember.CTX_LENGTH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_LEN, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
         members[HPyContextMember.CTX_IMPORT_IMPORTMODULE.ordinal()] = new GraalHPyImportModule();
         members[HPyContextMember.CTX_TUPLE_FROMARRAY.ordinal()] = new GraalHPyTupleFromArray();
         members[HPyContextMember.CTX_TUPLE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PythonBuiltinClassType.PTuple);
@@ -2399,7 +2418,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
         if (LOGGER.isLoggable(Level.FINER)) {
             final int handleID = handle;
-            LOGGER.finer(() -> String.format("allocating HPy handle %d (object: %s)", handleID, object));
+            LOGGER.finer(() -> PythonUtils.format("allocating HPy handle %d (object: %s)", handleID, object));
         }
         return handle;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,55 +38,64 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.nodes.truffle;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
+import com.oracle.truffle.api.dsl.ImplicitCast;
+import com.oracle.truffle.api.dsl.TypeSystem;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
- * {@code __str__} special method.
- * <p>
- * The output is always coerced to a Java {@link String}
+ * Temporary {@link TypeSystem} used during migration of j.l.String -> TruffleString. Once the
+ * migration is complete, this type system can be deleted.
  *
- * @see PyObjectStrAsObjectNode
+ * The same implicit casts are also in {@link PythonTypes} and {@link PythonArithmeticTypes}. All
+ * explicit usages of {@link #ts2js(TruffleString)} are to-do markers.
  */
-@GenerateUncached
-public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
-    public abstract String execute(Frame frame, Object object);
+@TypeSystem
+public abstract class TruffleStringMigrationPythonTypes {
 
-    public final String execute(Object object) {
-        return execute(null, object);
+    @ImplicitCast
+    public static TruffleString fromJavaString(String value) {
+        assert false;
+        return TruffleString.fromJavaStringUncached(value, TS_ENCODING);
     }
 
-    @Specialization
-    static String doString(String obj) {
-        return obj;
+    /**
+     * Used in places where we don't expect a {@link String}.
+     */
+    public static Object assertNoJavaString(Object o) {
+        assert !(o instanceof String);
+        return o;
     }
 
-    @Specialization
-    static String doGeneric(VirtualFrame frame, Object obj,
-                    @Cached PyObjectStrAsObjectNode strNode,
-                    @Cached CastToJavaStringNode castToString) {
-        try {
-            return castToString.execute(strNode.execute(frame, obj));
-        } catch (CannotCastException e) {
-            throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
+    /**
+     * Used in places where we accept a {@link String}, but we want it silently converted to a
+     * {@link TruffleString}.
+     */
+    public static Object ensureNoJavaString(Object o) {
+        if (o instanceof String) {
+            return toTruffleStringUncached((String) o);
         }
+        return o;
     }
 
-    public static PyObjectStrAsJavaStringNode create() {
-        return PyObjectStrAsJavaStringNodeGen.create();
+    public static boolean isJavaString(Object o) {
+        assert !(o instanceof String);
+        return false;
     }
 
-    public static PyObjectStrAsJavaStringNode getUncached() {
-        return PyObjectStrAsJavaStringNodeGen.getUncached();
+    public static boolean containsJavaString(Object[] elements) {
+        if (elements == null) {
+            return false;
+        }
+        for (Object o : elements) {
+            if (o instanceof String) {
+                return true;
+            }
+        }
+        return false;
     }
 }

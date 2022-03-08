@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,8 +49,9 @@ import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBui
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsBytes;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsInt;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsString;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 
 import java.util.List;
 
@@ -61,18 +62,20 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeDecodeError)
 public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
@@ -82,7 +85,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         return UnicodeDecodeErrorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class UnicodeDecodeErrorInitNode extends PythonBuiltinNode {
         public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args);
@@ -90,34 +93,35 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         @Specialization
         Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args,
                         @Cached UnicodeErrorBuiltins.GetArgAsBytesNode getArgAsBytesNode,
-                        @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UOnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
-                            getArgAsString(args, 0, this, toJavaStringNode),
+                            getArgAsString(args, 0, this, toStringNode),
                             getArgAsBytes(frame, args, 1, this, getArgAsBytesNode),
                             getArgAsInt(args, 2, this, toJavaIntExactNode),
                             getArgAsInt(args, 3, this, toJavaIntExactNode),
-                            getArgAsString(args, 4, this, toJavaStringNode)
+                            getArgAsString(args, 4, this, toStringNode)
             });
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class UnicodeEncodeErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object str(VirtualFrame frame, PBaseException self,
+        TruffleString str(VirtualFrame frame, PBaseException self,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached SequenceStorageNodes.GetItemNode getitemNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached PyObjectStrAsJavaStringNode strNode) {
+                        @Cached PyObjectStrAsTruffleStringNode strNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             if (self.getExceptionAttributes() == null) {
                 // Not properly initialized.
-                return "";
+                return T_EMPTY_STRING;
             }
 
             // Get reason and encoding as strings, which they might not be if they've been
@@ -125,13 +129,14 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
             PBytesLike object = (PBytesLike) attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
             final int start = attrNode.getInt(self, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
             final int end = attrNode.getInt(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
-            final String encoding = strNode.execute(frame, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
-            final String reason = strNode.execute(frame, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
+            final TruffleString encoding = strNode.execute(frame, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
+            final TruffleString reason = strNode.execute(frame, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
             if (start < lenNode.execute(object.getSequenceStorage()) && end == start + 1) {
                 final int b = (int) getitemNode.execute(frame, object.getSequenceStorage(), 0);
-                return PythonUtils.format("'%s' codec can't decode byte 0x%02x in position %d: %s", encoding, b, start, reason);
+                String bStr = PythonUtils.format("%02x", b);
+                return simpleTruffleStringFormatNode.format("'%s' codec can't decode byte 0x%s in position %d: %s", encoding, bStr, start, reason);
             } else {
-                return PythonUtils.format("'%s' codec can't decode bytes in position %d-%d: %s", encoding, start, end - 1, reason);
+                return simpleTruffleStringFormatNode.format("'%s' codec can't decode bytes in position %d-%d: %s", encoding, start, end - 1, reason);
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,8 +43,9 @@ package com.oracle.graal.python.builtins.objects.exception;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_PARENTHESES_IN_CALL_TO_EXEC;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_PARENTHESES_IN_CALL_TO_PRINT;
 import static com.oracle.graal.python.nodes.ErrorMessages.TUPLE_OUT_OF_BOUNDS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -54,25 +55,28 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.SyntaxError, PythonBuiltinClassType.IndentationError, PythonBuiltinClassType.TabError})
 public final class SyntaxErrorBuiltins extends PythonBuiltins {
@@ -92,7 +96,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         return SyntaxErrorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class SyntaxErrorInitNode extends PythonBuiltinNode {
         private static final String PREFIX_PRINT = "print ";
@@ -116,13 +120,13 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             if (textLen > 0 && data.charAt(textLen - 1) == CHR_COMMA) {
                 maybeEndArg = " end=\" \"";
             }
-            return String.format(MISSING_PARENTHESES_IN_CALL_TO_PRINT, data, maybeEndArg);
+            return String.format(MISSING_PARENTHESES_IN_CALL_TO_PRINT.toJavaStringUncached(), data, maybeEndArg);
         }
 
         @CompilerDirectives.TruffleBoundary
         private static Object checkForLegacyStatements(String text, int start) {
             // Ignore leading whitespace
-            final String trimmedText = PythonUtils.trimLeft(PythonUtils.substring(text, start));
+            final String trimmedText = trimLeft(text, start);
             // Checking against an empty or whitespace-only part of the string
             if (trimmedText.isEmpty()) {
                 return null;
@@ -143,7 +147,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         @CompilerDirectives.TruffleBoundary
         private static Object reportMissingParentheses(Object msg, String text) {
             // Skip entirely if there is an opening parenthesis
-            final int leftParenIndex = PythonUtils.indexOf(text, CHR_LEFTPAREN);
+            final int leftParenIndex = text.indexOf(CHR_LEFTPAREN);
             if (leftParenIndex != -1) {
                 // Use default error message for any line with an opening paren
                 return msg;
@@ -153,7 +157,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             Object rv = checkForLegacyStatements(text, 0);
             if (rv == null) {
                 // Handle the one-line complex statement case
-                final int colonIndex = PythonUtils.indexOf(text, CHR_COLON);
+                final int colonIndex = text.indexOf(CHR_COLON);
                 if (colonIndex >= 0 && colonIndex < text.length()) {
                     // Check again, starting from just after the colon
                     rv = checkForLegacyStatements(text, colonIndex + 1);
@@ -161,6 +165,16 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             }
 
             return (rv != null) ? rv : msg;
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static String trimLeft(String str, int start) {
+            int len = str.length();
+            int st = start;
+            while (st < len && str.charAt(st) <= ' ') {
+                st++;
+            }
+            return str.substring(st);
         }
 
         @Specialization
@@ -265,25 +279,29 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class SyntaxErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object str(VirtualFrame frame, PBaseException self,
+        TruffleString str(VirtualFrame frame, PBaseException self,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached PyObjectStrAsJavaStringNode strNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PyObjectStrAsTruffleStringNode strNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode,
-                        @Cached PyLongCheckExactNode pyLongCheckExactNode) {
+                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.LastIndexOfStringNode lastIndexOfStringNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             // Below, we always ignore overflow errors, just printing -1.
             // Still, we cannot allow an OverflowError to be raised, so
             // we need to call PyLong_AsLongAndOverflow.
-            String filename;
+            TruffleString filename;
             final Object filenameAttrValue = attrNode.get(self, IDX_FILENAME, SYNTAX_ERROR_ATTR_FACTORY);
             if (filenameAttrValue != PNone.NONE && PGuards.isString(filenameAttrValue)) {
-                filename = castToJavaStringNode.execute(self.getExceptionAttribute(IDX_FILENAME));
-                final int sepIdx = PythonUtils.lastIndexOf(filename, getContext().getEnv().getFileNameSeparator());
-                filename = (sepIdx != -1) ? PythonUtils.substring(filename, sepIdx + 1) : filename;
+                filename = castToStringNode.execute(self.getExceptionAttribute(IDX_FILENAME));
+                filename = getLastPathElement(filename, fromJavaStringNode, codePointLengthNode, lastIndexOfStringNode, substringNode);
             } else {
                 filename = null;
             }
@@ -291,12 +309,13 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             final Object lineno = attrNode.get(self, IDX_LINENO, SYNTAX_ERROR_ATTR_FACTORY);
             final Object msg = attrNode.get(self, IDX_MSG, SYNTAX_ERROR_ATTR_FACTORY);
             boolean heaveLineNo = lineno != PNone.NONE && pyLongCheckExactNode.execute(lineno);
+            final TruffleString msgStr = strNode.execute(frame, msg);
 
             if (filename == null && !heaveLineNo) {
-                return strNode.execute(frame, msg);
+                return msgStr;
             }
 
-            String result;
+            TruffleString result;
             if (filename != null && heaveLineNo) {
                 long ln;
                 try {
@@ -304,9 +323,9 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                 } catch (OverflowException e) {
                     ln = -1;
                 }
-                result = PythonUtils.format("%s (%s, line %d)", msg, filename, ln);
+                result = simpleTruffleStringFormatNode.format("%s (%s, line %d)", msgStr, filename, ln);
             } else if (filename != null) {
-                result = PythonUtils.format("%s (%s)", msg, filename);
+                result = simpleTruffleStringFormatNode.format("%s (%s)", msgStr, filename);
             } else {
                 // only have_lineno
                 long ln;
@@ -315,9 +334,21 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                 } catch (OverflowException e) {
                     ln = -1;
                 }
-                result = PythonUtils.format("%s (line %d)", msg, ln);
+                result = simpleTruffleStringFormatNode.format("%s (line %d)", msgStr, ln);
             }
             return result;
         }
+
+        TruffleString getLastPathElement(TruffleString path, TruffleString.FromJavaStringNode fromJavaStringNode, TruffleString.CodePointLengthNode codePointLengthNode,
+                        TruffleString.LastIndexOfStringNode lastIndexOfStringNode, TruffleString.SubstringNode substringNode) {
+            int len = codePointLengthNode.execute(path, TS_ENCODING);
+            TruffleString sep = fromJavaStringNode.execute(getContext().getEnv().getFileNameSeparator(), TS_ENCODING);
+            int sepIdx = lastIndexOfStringNode.execute(path, sep, len, 0, TS_ENCODING);
+            if (sepIdx < 0) {
+                return path;
+            }
+            return substringNode.execute(path, sepIdx + 1, len - sepIdx - 1, TS_ENCODING, true);
+        }
+
     }
 }

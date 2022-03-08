@@ -25,8 +25,8 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -55,7 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
-@NodeInfo(shortName = __GETITEM__)
+@NodeInfo(shortName = J___GETITEM__)
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     public ExpressionNode getPrimary() {
         return getLeftNode();
@@ -146,7 +146,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
             if (PGuards.isPythonClass(arg)) {
                 if (getClassGetItemNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getClassGetItemNode = insert(GetAttributeNode.create(__CLASS_GETITEM__));
+                    getClassGetItemNode = insert(GetAttributeNode.create(T___CLASS_GETITEM__));
                     isBuiltinClassProfile = insert(IsBuiltinClassProfile.create());
                 }
                 Object classGetItem = null;

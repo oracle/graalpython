@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,11 +25,13 @@
  */
 package com.oracle.graal.python.test.runtime;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
+import static com.oracle.graal.python.test.PythonTests.ts;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.After;
@@ -89,17 +91,17 @@ public class PythonModuleTests {
 
     @Test
     public void pythonModuleTest() {
-        PythonModule module = context.factory().createPythonModule("testModule");
-        assertEquals("testModule", module.getAttribute(__NAME__).toString());
-        assertEquals("None", module.getAttribute(__DOC__).toString());
-        assertEquals("None", module.getAttribute(__PACKAGE__).toString());
-        assertEquals("NoValue", module.getAttribute(__FILE__).toString());
+        PythonModule module = context.factory().createPythonModule(tsLiteral("testModule"));
+        assertEquals("testModule", module.getAttribute(T___NAME__).toString());
+        assertEquals("None", module.getAttribute(T___DOC__).toString());
+        assertEquals("None", module.getAttribute(T___PACKAGE__).toString());
+        assertEquals("NoValue", module.getAttribute(T___FILE__).toString());
     }
 
     @Test
     public void builtinsMinTest() {
         final PythonModule builtins = context.getBuiltins();
-        Object min = builtins.getAttribute(BuiltinNames.MIN);
+        Object min = builtins.getAttribute(BuiltinNames.T_MIN);
         Object returnValue = callBuiltin(min, 4, 2, 1);
         assertEquals(1, returnValue);
     }
@@ -107,17 +109,17 @@ public class PythonModuleTests {
     @Test
     public void builtinsIntTest() {
         final PythonModule builtins = context.getBuiltins();
-        PythonBuiltinClass intClass = (PythonBuiltinClass) builtins.getAttribute(BuiltinNames.INT);
-        Object intNew = intClass.getAttribute(SpecialMethodNames.__NEW__);
-        Object returnValue = callBuiltin(intNew, PythonBuiltinClassType.PInt, "42");
+        PythonBuiltinClass intClass = (PythonBuiltinClass) builtins.getAttribute(BuiltinNames.T_INT);
+        Object intNew = intClass.getAttribute(SpecialMethodNames.T___NEW__);
+        Object returnValue = callBuiltin(intNew, PythonBuiltinClassType.PInt, ts("42"));
         assertEquals(42, returnValue);
     }
 
     @Test
     public void mainModuleTest() {
         PythonModule main = context.getMainModule();
-        PythonModule builtins = (PythonModule) main.getAttribute(__BUILTINS__);
-        PBuiltinMethod abs = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.ABS);
+        PythonModule builtins = (PythonModule) main.getAttribute(T___BUILTINS__);
+        PBuiltinMethod abs = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.T_ABS);
         Object returned = callBuiltin(abs, -42);
         assertEquals(42, (int) returned);
     }

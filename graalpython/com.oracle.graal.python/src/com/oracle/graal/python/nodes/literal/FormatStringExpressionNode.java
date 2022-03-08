@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
-import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -65,8 +67,8 @@ public class FormatStringExpressionNode extends LiteralNode {
     private final StringLiteralSSTNode.FormatStringConversionType conversionType;
 
     @Child private BuiltinFunctions.FormatNode formatNode;
-    @Child private PyObjectStrAsJavaStringNode strNode;
-    @Child private PyObjectReprAsJavaStringNode reprNode;
+    @Child private PyObjectStrAsTruffleStringNode strNode;
+    @Child private PyObjectReprAsTruffleStringNode reprNode;
     @Child private PyObjectAsciiNode asciiNode;
 
     public FormatStringExpressionNode(ExpressionNode expression, ExpressionNode specifier, StringLiteralSSTNode.FormatStringConversionType conversionType) {
@@ -93,7 +95,7 @@ public class FormatStringExpressionNode extends LiteralNode {
                     break;
             }
         }
-        Object specifierObject = specifier == null ? "" : specifier.execute(frame);
+        Object specifierObject = specifier == null ? T_EMPTY_STRING : specifier.execute(frame);
         result = getFormatNode().execute(frame, result, specifierObject);
         return result;
     }
@@ -114,18 +116,18 @@ public class FormatStringExpressionNode extends LiteralNode {
         return formatNode;
     }
 
-    private PyObjectStrAsJavaStringNode getStrNode() {
+    private PyObjectStrAsTruffleStringNode getStrNode() {
         if (strNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            strNode = insert(PyObjectStrAsJavaStringNode.create());
+            strNode = insert(PyObjectStrAsTruffleStringNode.create());
         }
         return strNode;
     }
 
-    private PyObjectReprAsJavaStringNode getReprNode() {
+    private PyObjectReprAsTruffleStringNode getReprNode() {
         if (reprNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            reprNode = insert(PyObjectReprAsJavaStringNode.create());
+            reprNode = insert(PyObjectReprAsTruffleStringNode.create());
         }
         return reprNode;
     }

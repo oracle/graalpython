@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,8 +56,16 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public class YieldFromNode extends AbstractYieldNode implements GeneratorControlNode {
+    private static final TruffleString T_VALUE = tsLiteral("value");
+    private static final TruffleString T_CLOSE = tsLiteral("close");
+    private static final TruffleString T_THROW = tsLiteral("throw");
+    private static final TruffleString T_SEND = tsLiteral("send");
+
     @Child private PyObjectGetIter getIter = PyObjectGetIter.create();
     @Child private GetNextNode next = GetNextNode.create();
     @Child private GeneratorAccessNode access = GeneratorAccessNode.create();
@@ -214,7 +222,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     private GetAttributeNode getGetValue() {
         if (getValue == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getValue = insert(GetAttributeNode.create("value", null));
+            getValue = insert(GetAttributeNode.create(T_VALUE, null));
         }
         return getValue;
     }
@@ -222,7 +230,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     private GetAttributeNode getGetCloseNode() {
         if (getCloseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getCloseNode = insert(GetAttributeNode.create("close"));
+            getCloseNode = insert(GetAttributeNode.create(T_CLOSE));
         }
         return getCloseNode;
     }
@@ -238,7 +246,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     private GetAttributeNode getGetThrowNode() {
         if (getThrowNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getThrowNode = insert(GetAttributeNode.create("throw"));
+            getThrowNode = insert(GetAttributeNode.create(T_THROW));
         }
         return getThrowNode;
     }
@@ -254,7 +262,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     private GetAttributeNode getGetSendNode() {
         if (getSendNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getSendNode = insert(GetAttributeNode.create("send"));
+            getSendNode = insert(GetAttributeNode.create(T_SEND));
         }
         return getSendNode;
     }

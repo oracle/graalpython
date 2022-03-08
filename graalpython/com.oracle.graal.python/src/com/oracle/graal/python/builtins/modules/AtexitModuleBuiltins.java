@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,6 +73,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 @CoreFunctions(defineModule = "atexit")
 public class AtexitModuleBuiltins extends PythonBuiltins {
     @Override
@@ -119,11 +122,11 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
                 PBaseException pythonException = e.getEscapedException();
                 if (!IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
                     PyObjectCallMethodObjArgs callWrite = PyObjectCallMethodObjArgs.getUncached();
-                    callWrite.execute(null, context.getStderr(), "write", "Error in atexit._run_exitfuncs:\n");
+                    callWrite.execute(null, context.getStderr(), T_WRITE, toTruffleStringUncached("Error in atexit._run_exitfuncs:\n"));
                     try {
                         ExceptionUtils.printExceptionTraceback(context, pythonException);
                     } catch (PException pe) {
-                        callWrite.execute(null, context.getStderr(), "write", "Failed to print traceback\n");
+                        callWrite.execute(null, context.getStderr(), T_WRITE, toTruffleStringUncached("Failed to print traceback\n"));
                     }
                 }
             }

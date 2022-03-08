@@ -58,7 +58,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -71,6 +70,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Implementation of POSIX support that delegates to another instance and logs all the messages
@@ -113,14 +113,14 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final String getBackend(
+    final TruffleString getBackend(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "getBackend", "");
         return logExit(Level.FINEST, "getBackend", "%s", lib.getBackend(delegate));
     }
 
     @ExportMessage
-    final String strerror(int errorCode,
+    final TruffleString strerror(int errorCode,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "strerror", "%d", errorCode);
         return logExit(Level.FINEST, "strerror", "%s", lib.strerror(delegate, errorCode));
@@ -780,7 +780,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final String ctermid(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+    final TruffleString ctermid(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("ctermid", "");
         try {
             return logExit("ctermid", "%s", lib.ctermid(delegate));
@@ -1147,7 +1147,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final String crypt(String word, String salt,
+    final TruffleString crypt(TruffleString word, TruffleString salt,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("crypt", "%s, %s", word, salt);
         try {
@@ -1165,7 +1165,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final Object createPathFromString(String path,
+    final Object createPathFromString(TruffleString path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "createPathFromString", "%s", path);
         return logExit(Level.FINEST, "createPathFromString", "%s", lib.createPathFromString(delegate, path));
@@ -1179,7 +1179,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final String getPathAsString(Object path,
+    final TruffleString getPathAsString(Object path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "getPathAsString", "%s", path);
         return logExit(Level.FINEST, "getPathAsString", "%s", lib.getPathAsString(delegate, path));
@@ -1255,7 +1255,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     private static Object fixLogArg(Object arg) {
-        if (arg instanceof String) {
+        if (arg instanceof String || arg instanceof TruffleString) {
             return "'" + arg + "'";
         }
         if (arg instanceof Buffer) {
@@ -1295,8 +1295,9 @@ public class LoggingPosixSupport extends PosixSupport {
         return fixed;
     }
 
+    @TruffleBoundary
     private static String asString(byte[] bytes, int offset, int length) {
-        return "b'" + PythonUtils.newString(bytes, offset, length) + "'";
+        return "b'" + new String(bytes, offset, length) + "'";
     }
 
     @TruffleBoundary

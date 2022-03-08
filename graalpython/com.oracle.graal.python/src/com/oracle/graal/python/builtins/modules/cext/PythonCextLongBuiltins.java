@@ -96,6 +96,7 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -223,7 +224,7 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
     abstract static class PyLongFromStringNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "negative == 0")
-        Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
+        Object fromString(VirtualFrame frame, TruffleString s, long base, @SuppressWarnings("unused") long negative,
                         @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
                         @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -235,7 +236,7 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "negative != 0")
-        Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
+        Object fromString(VirtualFrame frame, TruffleString s, long base, @SuppressWarnings("unused") long negative,
                         @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
                         @Cached NegNode negNode,
                         @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {

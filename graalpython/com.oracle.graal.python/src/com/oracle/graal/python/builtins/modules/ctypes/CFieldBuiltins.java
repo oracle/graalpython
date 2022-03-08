@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,12 +43,14 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.HAS_NO_STGINFO;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -68,7 +70,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerSto
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -76,13 +77,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -90,7 +92,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -106,6 +108,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CField)
 public class CFieldBuiltins extends PythonBuiltins {
@@ -135,7 +138,7 @@ public class CFieldBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __SET__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class SetNode extends PythonTernaryBuiltinNode {
@@ -163,7 +166,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J___GET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -181,20 +184,21 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        String PyCField_repr(CFieldObject self,
-                        @Cached GetNameNode getNameNode) {
+        TruffleString PyCField_repr(CFieldObject self,
+                        @Cached GetNameNode getNameNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             int bits = self.size >> 16;
             int size = self.size & 0xFFFF;
-            String name = getNameNode.execute(self.proto);
+            TruffleString name = getNameNode.execute(self.proto);
             if (bits != 0) {
-                return PythonUtils.format("<Field type=%s, ofs=%d:%d, bits=%d>", name, self.offset, size, bits);
+                return simpleTruffleStringFormatNode.format("<Field type=%s, ofs=%d:%d, bits=%d>", name, self.offset, size, bits);
             } else {
-                return PythonUtils.format("<Field type=%s, ofs=%d, size=%d>", name, self.offset, size);
+                return simpleTruffleStringFormatNode.format("<Field type=%s, ofs=%d, size=%d>", name, self.offset, size);
             }
         }
     }
@@ -215,7 +219,7 @@ public class CFieldBuiltins extends PythonBuiltins {
      * stores the total size so far in props[psize], the offset for the next field in
      * props[poffset], the alignment requirements for the current field in props[palign], and
      * returns a field desriptor for this field.
-     * 
+     *
      * bitfields extension: bitsize != 0: this is a bit field. pbitofs points to the current bit
      * offset, this will be updated. prev_desc points to the type of the previous bitfield, if any.
      */
@@ -374,7 +378,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                     PyLongAsLongNode asLongNode,
                     PRaiseNode raiseNode) {
         if (floatCheck.execute(v)) {
-            throw raiseNode.raise(TypeError, "int expected instead of float");
+            throw raiseNode.raise(TypeError, ErrorMessages.INT_EXPECTED_INSTEAD_FLOAT);
         }
         return asLongNode.execute(frame, v); // PyLong_AsUnsignedLongMask(v);
     }
@@ -566,51 +570,55 @@ public class CFieldBuiltins extends PythonBuiltins {
                 }
             }
 
-            throw raise(TypeError, "one character bytes, bytearray or integer expected");
+            throw raise(TypeError, ErrorMessages.ONE_CHARACTER_BYTES_BYTEARRAY_INTEGER_EXPECTED);
         }
 
         /* u - a single wchar_t character */
         @Specialization(guards = "setfunc == u_set")
         Object u_set(FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached CastToJavaStringNode toString,
+                        @Cached CastToTruffleStringNode toString,
                         @Cached GetNameNode getNameNode,
-                        @Cached GetClassNode getClassNode) { // CTYPES_UNICODE
+                        @Cached GetClassNode getClassNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.ReadCharUTF16Node readCharNode) { // CTYPES_UNICODE
             if (!PGuards.isString(value)) {
-                throw raise(TypeError, "unicode string expected instead of %s instance",
+                throw raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE,
                                 getNameNode.execute(getClassNode.execute(value)));
             }
-            String str = toString.execute(value);
-            if (PString.length(str) != 1) {
-                throw raise(TypeError, "one character unicode string expected");
+            TruffleString str = toString.execute(value);
+            str = switchEncodingNode.execute(str, TruffleString.Encoding.UTF_16);
+            if (codePointLengthNode.execute(str, TruffleString.Encoding.UTF_16) != 1) {
+                throw raise(TypeError, ErrorMessages.ONE_CHARACTER_UNICODE_EXPECTED);
             }
-
-            char[] chars = BytesUtils.stringToChars(str);
-            ptr.writePrimitive(setfunc.ffiType, (short) chars[0]);
+            ptr.writePrimitive(setfunc.ffiType, (short) readCharNode.execute(str, 0));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == U_set")
         Object U_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, int size,
-                        @Cached CastToJavaStringNode toString,
+                        @Cached CastToTruffleStringNode toString,
                         @Cached GetNameNode getNameNode,
-                        @Cached GetClassNode getClassNode) { // CTYPES_UNICODE
+                        @Cached GetClassNode getClassNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.ReadCharUTF16Node readCharNode) { // CTYPES_UNICODE
             /* It's easier to calculate in characters than in bytes */
             int wcharSize = FieldDesc.u.pffi_type.size;
             int length = size / wcharSize;
 
             if (!PGuards.isString(value)) {
-                throw raise(TypeError, "unicode string expected instead of %s instance", getNameNode.execute(getClassNode.execute(value)));
+                throw raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE, getNameNode.execute(getClassNode.execute(value)));
             }
 
-            String str = toString.execute(value);
-            int strLen = PString.length(str);
+            TruffleString str = toString.execute(value);
+            str = switchEncodingNode.execute(str, TruffleString.Encoding.UTF_16);
+            int strLen = codePointLengthNode.execute(str, TruffleString.Encoding.UTF_16);
             if (strLen > length) {
-                throw raise(ValueError, "string too long (%d, maximum length %d)", strLen, length);
+                throw raise(ValueError, ErrorMessages.STR_TOO_LONG, strLen, length);
             }
-
-            char[] chars = BytesUtils.stringToChars(str);
             for (int i = 0; i < strLen; i++) {
-                ptr.writeArrayElement(FieldDesc.u.pffi_type, i * 2, (short) chars[i]);
+                ptr.writeArrayElement(FieldDesc.u.pffi_type, i * 2, (short) readCharNode.execute(str, i));
             }
             return value;
         }
@@ -624,7 +632,7 @@ public class CFieldBuiltins extends PythonBuiltins {
             int size;
 
             if (!PGuards.isPBytes(value)) {
-                throw raise(TypeError, "expected bytes, %s found", getNameNode.execute(getClassNode.execute(value)));
+                throw raise(TypeError, ErrorMessages.EXPECTED_BYTES_S_FOUND, getNameNode.execute(getClassNode.execute(value)));
             }
 
             data = getBytes.execute((PBytes) value); // a copy is expected.. no need for memcpy
@@ -635,7 +643,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                  */
                 ++size;
             } else if (size > length) {
-                throw raise(ValueError, "bytes too long (%d, maximum length %d)", size, length);
+                throw raise(ValueError, ErrorMessages.BYTES_TOO_LONG, size, length);
             }
             /* Also copy the terminating NUL character if there is space */
             ptr.writeBytesArrayElement(data);
@@ -663,15 +671,18 @@ public class CFieldBuiltins extends PythonBuiltins {
                 // *(char **)ptr = (char *)PyLong_AsUnsignedLongMask(value);
                 throw raise(PythonBuiltinClassType.NotImplementedError);
             }
-            throw raise(TypeError, "bytes or integer address expected instead of %s instance", getNameNode.execute(getClassNode.execute(value)));
+            throw raise(TypeError, ErrorMessages.BYTES_OR_INT_ADDR_EXPECTED_INSTEAD_OF_S, getNameNode.execute(getClassNode.execute(value)));
         }
 
         @Specialization(guards = "setfunc == Z_set")
         Object Z_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object v, @SuppressWarnings("unused") int size,
-                        @Cached CastToJavaStringNode toString,
+                        @Cached CastToTruffleStringNode toString,
                         @Cached GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached PyLongCheckNode longCheckNode) { // CTYPES_UNICODE
+                        @Cached PyLongCheckNode longCheckNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.ReadCharUTF16Node readCharNode) { // CTYPES_UNICODE
             Object value = v;
             if (value == PNone.NONE) {
                 ptr.toNil();
@@ -686,17 +697,18 @@ public class CFieldBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.NotImplementedError);
             }
             if (!PGuards.isString(value)) {
-                throw raise(TypeError, "unicode string or integer address expected instead of %s instance", getNameNode.execute(getClassNode.execute(value)));
+                throw raise(TypeError, ErrorMessages.UNICODE_STR_OR_INT_ADDR_EXPECTED_INSTEAD_OF_S, getNameNode.execute(getClassNode.execute(value)));
             }
 
             /*
              * We must create a wchar_t* buffer from the unicode object, and keep it alive
              */
-            String buffer = toString.execute(value);
-            char[] chars = BytesUtils.stringToChars(buffer);
-            ptr.ensureCapacity(chars.length * 2);
-            for (int i = 0; i < chars.length; i++) {
-                ptr.writeArrayElement(FieldDesc.u.pffi_type, i * 2, (short) chars[i]);
+            TruffleString buffer = toString.execute(value);
+            buffer = switchEncodingNode.execute(buffer, TruffleString.Encoding.UTF_16);
+            int len = codePointLengthNode.execute(buffer, TruffleString.Encoding.UTF_16);
+            ptr.ensureCapacity(len * 2);
+            for (int i = 0; i < len; i++) {
+                ptr.writeArrayElement(FieldDesc.u.pffi_type, i * 2, (short) readCharNode.execute(buffer, i));
             }
             return buffer;
         }
@@ -713,7 +725,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 if (longCheckNode.execute(value)) {
                     throw raise(PythonBuiltinClassType.NotImplementedError);
                 }
-                throw raise(TypeError, "cannot be converted to pointer");
+                throw raise(TypeError, ErrorMessages.CANNOT_BE_CONVERTED_TO_POINTER);
             }
 
             // v = (void *)PyLong_AsUnsignedLongMask(value);
@@ -725,7 +737,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         Object error(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, int size) {
-            throw raise(NotImplementedError, "Field setter %s is not supported yet.", setfunc.name());
+            throw raise(NotImplementedError, toTruffleStringUncached("Field setter %s is not supported yet."), setfunc.name());
         }
 
     }
@@ -908,11 +920,11 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         /*
          * py_object refcounts:
-         * 
+         *
          * 1. If we have a py_object instance, O_get must Py_INCREF the returned object, of course.
          * If O_get is called from a function result, no py_object instance is created - so
          * callproc.c::GetResult has to call Py_DECREF.
-         * 
+         *
          * 2. The memory block in py_object owns a refcount. So, py_object must call Py_DECREF on
          * destruction. Maybe only when b_needsfree is non-zero.
          */
@@ -920,7 +932,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         Object O_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
             if (ptr.isNil()) {
                 /* Set an error if not yet set */
-                throw raise(ValueError, "PyObject is NULL");
+                throw raise(ValueError, ErrorMessages.PY_OBJ_IS_NULL);
             }
             return ptr.getPrimitiveValue(getfunc.ffiType);
         }
@@ -934,16 +946,20 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == u_get")
-        static Object u_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) { // CTYPES_UNICODE
+        static Object u_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory,
+                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Short;
             short v = (short) obj;
-            return BytesUtils.createString(new char[]{(char) v});
+            return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(new char[]{(char) v}), TS_ENCODING);
         }
 
         /* U - a unicode string */
         @Specialization(guards = "getfunc == U_get")
-        static Object U_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) { // CTYPES_UNICODE
+        static Object U_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory,
+                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
             assert ptr.ptr instanceof ByteArrayStorage;
             byte[] p = ((ByteArrayStorage) ptr.ptr).value;
             int wcharSize = FieldDesc.u.pffi_type.size;
@@ -963,7 +979,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 }
                 str[i] = c;
             }
-            return BytesUtils.createString(str);
+            return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(str), TS_ENCODING);
         }
 
         @Specialization(guards = "getfunc == s_get")
@@ -995,7 +1011,9 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == Z_get")
-        static Object Z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object Z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory,
+                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (!ptr.isNil()) {
                 assert ptr.ptr instanceof ByteArrayStorage;
                 byte[] p = ((ByteArrayStorage) ptr.ptr).value;
@@ -1010,7 +1028,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                     }
                     str[i] = c;
                 }
-                return BytesUtils.createString(str);
+                return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(str), TS_ENCODING);
             } else {
                 return PNone.NONE;
             }

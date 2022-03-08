@@ -49,11 +49,12 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PFunction extends PythonObject {
-    private String name;
-    private String qualname;
+    private TruffleString name;
+    private TruffleString qualname;
     private final Assumption codeStableAssumption;
     private final Assumption defaultsStableAssumption;
     private final PythonObject globals;
@@ -63,16 +64,19 @@ public final class PFunction extends PythonObject {
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
 
-    public PFunction(PythonLanguage lang, String name, String qualname, PCode code, PythonObject globals, PCell[] closure) {
+    public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, PCell[] closure) {
         this(lang, name, qualname, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
     }
 
-    public PFunction(PythonLanguage lang, String name, String qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
+    public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues,
+                    PKeyword[] kwDefaultValues,
+                    PCell[] closure) {
         this(lang, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 
-    public PFunction(PythonLanguage lang, String name, String qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure,
-                    Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
+    public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues,
+                    PKeyword[] kwDefaultValues,
+                    PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
         super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
@@ -98,19 +102,19 @@ public final class PFunction extends PythonObject {
         return globals;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(TruffleString name) {
         this.name = name;
     }
 
-    public String getQualname() {
+    public TruffleString getQualname() {
         return this.qualname;
     }
 
-    public void setQualname(String qualname) {
+    public void setQualname(TruffleString qualname) {
         this.qualname = qualname;
     }
 
@@ -183,10 +187,11 @@ public final class PFunction extends PythonObject {
     }
 
     @ExportMessage
-    String getExecutableName(@Shared("gil") @Cached GilNode gil) {
+    String getExecutableName(@Shared("gil") @Cached GilNode gil,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return getName();
+            return toJavaStringNode.execute(getName());
         } finally {
             gil.release(mustRelease);
         }

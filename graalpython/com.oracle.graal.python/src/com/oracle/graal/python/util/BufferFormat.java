@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,12 @@
  */
 package com.oracle.graal.python.util;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import com.oracle.truffle.api.strings.TruffleString;
+
 /**
  * This enum represents formats used by {@code array} and {@code memoryview}. The correspondence
  * between the type specifier string and {@link BufferFormat} is not 1 to 1. Multiple specifiers may
@@ -65,20 +71,25 @@ public enum BufferFormat {
     BOOLEAN(1, "?"),
     OTHER(-1, null);
 
-    public final int bytesize;
-    public final String baseTypeCode;
+    public static final TruffleString T_UINT_8_TYPE_CODE = tsLiteral("B");
+    public static final TruffleString T_UNICODE_TYPE_CODE_U = tsLiteral("u");
+    public static final TruffleString T_UNICODE_TYPE_CODE_W = tsLiteral("w");
 
-    BufferFormat(int bytesize, String baseTypeCode) {
+    public final int bytesize;
+    public final TruffleString baseTypeCode;
+
+    private BufferFormat(int bytesize, String baseTypeCode) {
         this.bytesize = bytesize;
-        this.baseTypeCode = baseTypeCode;
+        this.baseTypeCode = toTruffleStringUncached(baseTypeCode);
     }
 
-    public static BufferFormat forMemoryView(String formatString) {
+    public static BufferFormat forMemoryView(TruffleString formatString, TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexNode atIndexNode) {
         char fmtchar;
-        if (formatString.length() == 1) {
-            fmtchar = formatString.charAt(0);
-        } else if (formatString.length() == 2 && formatString.charAt(0) == '@') {
-            fmtchar = formatString.charAt(1);
+        int length = lengthNode.execute(formatString, TS_ENCODING);
+        if (length == 1) {
+            fmtchar = (char) atIndexNode.execute(formatString, 0, TS_ENCODING);
+        } else if (length == 2 && atIndexNode.execute(formatString, 0, TS_ENCODING) == '@') {
+            fmtchar = (char) atIndexNode.execute(formatString, 1, TS_ENCODING);
         } else {
             return OTHER;
         }
@@ -97,9 +108,10 @@ public enum BufferFormat {
         return format != null ? format : OTHER;
     }
 
-    public static BufferFormat forArray(String formatString) {
-        if (formatString.length() == 1) {
-            char fmtchar = formatString.charAt(0);
+    public static BufferFormat forArray(TruffleString formatString, TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexNode atIndexNode) {
+        int length = lengthNode.execute(formatString, TS_ENCODING);
+        if (length == 1) {
+            char fmtchar = (char) atIndexNode.execute(formatString, 0, TS_ENCODING);
             if (fmtchar == 'u') {
                 return UNICODE;
             }

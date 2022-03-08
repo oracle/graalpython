@@ -27,11 +27,11 @@ package com.oracle.graal.python.builtins.objects.traceback;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_FRAME;
-import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LASTI;
-import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LINENO;
-import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_NEXT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_FRAME;
+import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LASTI;
+import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LINENO;
+import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_NEXT;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 
 import java.util.List;
 
@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -74,7 +75,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         return TracebackBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization
@@ -220,7 +221,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_FRAME, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_TB_FRAME, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
         public abstract PFrame execute(VirtualFrame frame, Object traceback);
@@ -309,7 +310,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J_TB_NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackNextNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
@@ -327,7 +328,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
             PTraceback tb = next;
             while (loopProfile.profile(tb != null)) {
                 if (tb == self) {
-                    throw raise(ValueError, "traceback loop detected");
+                    throw raise(ValueError, ErrorMessages.TRACEBACK_LOOP_DETECTED);
                 }
                 tb = tb.getNext();
             }
@@ -350,11 +351,11 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPNone(next)", "!isPTraceback(next)"})
         Object setError(@SuppressWarnings("unused") PTraceback self, Object next) {
-            throw raise(TypeError, "expected traceback object, got '%p'", next);
+            throw raise(TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ, next);
         }
     }
 
-    @Builtin(name = TB_LASTI, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_TB_LASTI, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
@@ -363,7 +364,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_LINENO, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_TB_LINENO, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization

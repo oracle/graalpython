@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,28 +40,44 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.unicodeNonAsciiEscape;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 /**
  * Equivalent of CPython's PyObject_ASCII.
  */
 @GenerateUncached
 public abstract class PyObjectAsciiNode extends PNodeWithContext {
-    public abstract String execute(Frame frame, Object object);
+    public abstract TruffleString execute(Frame frame, Object object);
 
     @Specialization
-    static String ascii(VirtualFrame frame, Object obj,
-                    @Cached PyObjectReprAsJavaStringNode reprNode) {
-        String repr = reprNode.execute(frame, obj);
-        byte[] bytes = BytesUtils.unicodeNonAsciiEscape(repr);
-        return PythonUtils.newString(bytes);
+    static TruffleString ascii(VirtualFrame frame, Object obj,
+                    @Cached PyObjectReprAsTruffleStringNode reprNode,
+                    @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                    @Cached TruffleStringIterator.NextNode nextNode,
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+        // TODO GR-37220: rewrite using TruffleStringBuilder?
+        TruffleString repr = reprNode.execute(frame, obj);
+        byte[] bytes = new byte[codePointLengthNode.execute(repr, TS_ENCODING) * 10];
+        TruffleStringIterator it = createCodePointIteratorNode.execute(repr, TS_ENCODING);
+        int j = 0;
+        while (it.hasNext()) {
+            int ch = nextNode.execute(it);
+            j = unicodeNonAsciiEscape(ch, j, bytes);
+        }
+        return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, j, Encoding.US_ASCII, true), TS_ENCODING);
     }
 
     public static PyObjectAsciiNode create() {

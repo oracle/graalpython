@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This node implements all {@code LOAD_*} bytecodes that can occur in CPython in class bodies. They
@@ -81,22 +82,22 @@ import com.oracle.truffle.api.nodes.NodeInfo;
  */
 @NodeInfo(shortName = "read_class_member")
 public abstract class ReadClassAttributeNode extends ExpressionNode implements ReadLocalNode, AccessNameNode {
-    protected final String identifier;
+    protected final TruffleString identifier;
     protected final boolean isFreeVar;
     protected final Integer cellSlot;
 
-    ReadClassAttributeNode(String identifier, Integer cellSlot, boolean isFreeVar) {
+    ReadClassAttributeNode(TruffleString identifier, Integer cellSlot, boolean isFreeVar) {
         this.identifier = identifier;
         this.isFreeVar = isFreeVar;
         this.cellSlot = cellSlot;
     }
 
-    public static ReadClassAttributeNode create(String name, Integer cellSlot, boolean isFreeVar) {
+    public static ReadClassAttributeNode create(TruffleString name, Integer cellSlot, boolean isFreeVar) {
         return ReadClassAttributeNodeGen.create(name, cellSlot, isFreeVar);
     }
 
     @Override
-    public String getAttributeId() {
+    public TruffleString getAttributeId() {
         return identifier;
     }
 
@@ -195,7 +196,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
         @Child WriteLocalCellNode writeCell;
         @Child ExpressionNode rhs;
 
-        WriteClassAttributeCellNode(String identifier, int cellSlot, ExpressionNode rhs) {
+        WriteClassAttributeCellNode(TruffleString identifier, int cellSlot, ExpressionNode rhs) {
             writeName = WriteNameNode.create(identifier, rhs);
             writeCell = WriteLocalCellNode.create(cellSlot, ReadLocalVariableNode.create(cellSlot), rhs);
         }

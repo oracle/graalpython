@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,10 @@ package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.errorType2errno;
 import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins.setSSLErrorAttributes;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -58,12 +62,14 @@ import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 @ImportStatic(PGuards.class)
@@ -74,43 +80,26 @@ public abstract class PConstructAndRaiseNode extends Node {
         return execute(frame, type, null, null, null, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    public final PException executeWithArgsOnly(Frame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments) {
-        return execute(frame, type, cause, null, null, arguments, PKeyword.EMPTY_KEYWORDS);
-    }
-
-    public final PException executeWithArgsAndKwargs(Frame frame, PythonBuiltinClassType type, Object[] arguments, PKeyword[] keywords) {
-        return execute(frame, type, null, null, null, arguments, keywords);
-    }
-
-    public final PException executeWithArgsAndKwargs(Frame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments, PKeyword[] keywords) {
-        return execute(frame, type, cause, null, null, arguments, keywords);
-    }
-
-    public final PException executeWithFmtMessageAndKwargs(Frame frame, PythonBuiltinClassType type, String format, Object[] formatArgs, PKeyword[] keywords) {
-        return execute(frame, type, null, format, formatArgs, null, keywords);
-    }
-
-    public final PException executeWithFmtMessageAndKwargs(Frame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs, PKeyword[] keywords) {
-        return execute(frame, type, cause, format, formatArgs, null, keywords);
-    }
-
-    public final PException executeWithFmtMessageAndArgs(Frame frame, PythonBuiltinClassType type, String format, Object[] formatArgs, Object[] arguments) {
+    public final PException executeWithFmtMessageAndArgs(Frame frame, PythonBuiltinClassType type, TruffleString format, Object[] formatArgs, Object[] arguments) {
         return execute(frame, type, null, format, formatArgs, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    public final PException executeWithFmtMessageAndArgs(Frame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs, Object[] arguments) {
-        return execute(frame, type, cause, format, formatArgs, arguments, PKeyword.EMPTY_KEYWORDS);
-    }
-
-    public abstract PException execute(Frame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs, Object[] arguments, PKeyword[] keywords);
+    public abstract PException execute(Frame frame, PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object[] formatArgs, Object[] arguments, PKeyword[] keywords);
 
     @CompilerDirectives.TruffleBoundary
-    private static String getFormattedMessage(String format, Object[] formatArgs) {
-        return FORMATTER.format(format, formatArgs);
+    private static TruffleString getFormattedMessage(TruffleString format, Object[] formatArgs) {
+        return toTruffleStringUncached(FORMATTER.format(format, formatArgs));
     }
 
     private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments, PKeyword[] keywords,
-                    CallVarargsMethodNode callNode, Python3Core core) {
+                    CallVarargsMethodNode callNode, Python3Core core, TruffleString.FromJavaStringNode fromJavaStringNode) {
+        if (arguments != null) {
+            for (int i = 0; i < arguments.length; ++i) {
+                if (arguments[i] instanceof String) {
+                    arguments[i] = fromJavaStringNode.execute((String) arguments[i], TS_ENCODING);
+                }
+            }
+        }
         PBaseException error = (PBaseException) callNode.execute(frame, core.lookupType(type), arguments, keywords);
         if (cause != null) {
             error.setContext(cause);
@@ -120,75 +109,74 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     @Specialization(guards = {"format == null", "formatArgs == null"})
-    PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, @SuppressWarnings("unused") String format,
+    PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, @SuppressWarnings("unused") TruffleString format,
                     @SuppressWarnings("unused") Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
-                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
+                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         Python3Core core = PythonContext.get(this);
-        return raiseInternal(frame, type, cause, arguments, keywords, callNode, core);
+        return raiseInternal(frame, type, cause, arguments, keywords, callNode, core, fromJavaStringNode);
     }
 
     @Specialization(guards = {"format != null", "arguments == null"})
-    PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
+    PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object[] formatArgs,
                     @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
-                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
+                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         Python3Core core = PythonContext.get(this);
         Object[] args = new Object[]{formatArgs != null ? getFormattedMessage(format, formatArgs) : format};
-        return raiseInternal(frame, type, cause, args, keywords, callNode, core);
+        return raiseInternal(frame, type, cause, args, keywords, callNode, core, fromJavaStringNode);
     }
 
     @Specialization(guards = {"format != null", "arguments != null"})
-    PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
+    PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
-                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
+                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         Python3Core core = PythonContext.get(this);
         Object[] args = new Object[arguments.length + 1];
         args[0] = (formatArgs != null) ? getFormattedMessage(format, formatArgs) : format;
         System.arraycopy(arguments, 0, args, 1, arguments.length);
-        return raiseInternal(frame, type, cause, args, keywords, callNode, core);
+        return raiseInternal(frame, type, cause, args, keywords, callNode, core, fromJavaStringNode);
     }
 
     // ImportError helpers
-    private PException raiseImportErrorInternal(Frame frame, PBaseException cause, String format, Object[] formatArgs, PKeyword[] keywords) {
-        return executeWithFmtMessageAndKwargs(frame, PythonBuiltinClassType.ImportError, cause, format, formatArgs, keywords);
+    public final PException raiseImportError(Frame frame, Object name, Object path, TruffleString format, Object... formatArgs) {
+        return raiseImportErrorInternal(frame, format, formatArgs, new PKeyword[]{new PKeyword(T_NAME, name), new PKeyword(T_PATH, path)});
     }
 
-    private PException raiseImportErrorInternal(Frame frame, String format, Object[] formatArgs, PKeyword[] keywords) {
-        return executeWithFmtMessageAndKwargs(frame, PythonBuiltinClassType.ImportError, format, formatArgs, keywords);
-    }
-
-    public final PException raiseImportError(Frame frame, Object name, Object path, String format, Object... formatArgs) {
-        return raiseImportErrorInternal(frame, format, formatArgs, new PKeyword[]{new PKeyword("name", name), new PKeyword("path", path)});
-    }
-
-    public final PException raiseImportError(Frame frame, String format, Object... formatArgs) {
+    public final PException raiseImportError(Frame frame, TruffleString format, Object... formatArgs) {
         return raiseImportErrorInternal(frame, format, formatArgs, PKeyword.EMPTY_KEYWORDS);
     }
 
-    public final PException raiseImportError(Frame frame, PBaseException cause, Object name, Object path, String format, Object... formatArgs) {
-        return raiseImportErrorInternal(frame, cause, format, formatArgs, new PKeyword[]{new PKeyword("name", name), new PKeyword("path", path)});
+    private PException raiseImportErrorInternal(Frame frame, TruffleString format, Object[] formatArgs, PKeyword[] keywords) {
+        return execute(frame, PythonBuiltinClassType.ImportError, null, format, formatArgs, null, keywords);
+    }
+
+    public final PException raiseImportError(Frame frame, PBaseException cause, Object name, Object path, TruffleString format, Object... formatArgs) {
+        return execute(frame, PythonBuiltinClassType.ImportError, cause, format, formatArgs, null, new PKeyword[]{new PKeyword(T_NAME, name), new PKeyword(T_PATH, path)});
     }
 
     // OSError helpers
     @CompilerDirectives.TruffleBoundary
-    private static String getMessage(Exception exception) {
-        return exception.getMessage();
+    private static TruffleString getMessage(Exception exception) {
+        return toTruffleStringUncached(exception.getMessage());
     }
 
-    public final PException raise(Frame frame, PythonBuiltinClassType err, String message, Object... formatArgs) {
+    private final PException raise(Frame frame, PythonBuiltinClassType err, TruffleString message, Object... formatArgs) {
         return executeWithFmtMessageAndArgs(frame, err, message, formatArgs, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    private static Object[] createOsErrorArgs(int errno, String message, Object filename1, Object filename2) {
+    private static Object[] createOsErrorArgs(int errno, TruffleString message, Object filename1, Object filename2) {
         return new Object[]{errno, message, filename1, null, filename2};
     }
 
-    private static Object[] createOsErrorArgs(OSErrorEnum osErrorEnum, String filename1, String filename2) {
+    private static Object[] createOsErrorArgs(OSErrorEnum osErrorEnum, TruffleString filename1, TruffleString filename2) {
         return new Object[]{osErrorEnum.getNumber(), osErrorEnum.getMessage(), filename1, null, filename2};
     }
 
-    private static Object[] createOsErrorArgs(Exception exception, String filename1, String filename2) {
-        OSErrorEnum.ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(exception);
+    private static Object[] createOsErrorArgs(Exception exception, TruffleString filename1, TruffleString filename2, TruffleString.EqualNode eqNode) {
+        OSErrorEnum.ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(exception, eqNode);
         return new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message, filename1, null, filename2};
     }
 
@@ -200,43 +188,31 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseOSErrorInternal(frame, createOsErrorArgs(osErrorEnum, null, null));
     }
 
-    public final PException raiseOSError(Frame frame, OSErrorEnum osErrorEnum, String filename) {
+    public final PException raiseOSError(Frame frame, OSErrorEnum osErrorEnum, TruffleString filename) {
         return raiseOSErrorInternal(frame, createOsErrorArgs(osErrorEnum, filename, null));
     }
 
-    public final PException raiseOSError(Frame frame, OSErrorEnum osErrorEnum, String filename, String filename2) {
-        return raiseOSErrorInternal(frame, createOsErrorArgs(osErrorEnum, filename, filename2));
-    }
-
-    public final PException raiseOSError(Frame frame, Exception exception) {
-        return raiseOSErrorInternal(frame, createOsErrorArgs(exception, null, null));
-    }
-
-    public final PException raiseOSError(Frame frame, Exception exception, String filename) {
-        return raiseOSErrorInternal(frame, createOsErrorArgs(exception, filename, null));
-    }
-
-    public final PException raiseOSError(Frame frame, Exception exception, String filename, String filename2) {
-        return raiseOSErrorInternal(frame, createOsErrorArgs(exception, filename, filename2));
+    public final PException raiseOSError(Frame frame, Exception exception, TruffleString.EqualNode eqNode) {
+        return raiseOSErrorInternal(frame, createOsErrorArgs(exception, null, null, eqNode));
     }
 
     public final PException raiseOSError(Frame frame, OSErrorEnum osErrorEnum, Exception exception) {
         return raiseOSError(frame, osErrorEnum, getMessage(exception));
     }
 
-    public final PException raiseOSError(Frame frame, int errno, String message, Object filename) {
+    public final PException raiseOSError(Frame frame, int errno, TruffleString message, Object filename) {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, null));
     }
 
-    public final PException raiseOSError(Frame frame, int errno, String message, Object filename, Object filename2) {
+    public final PException raiseOSError(Frame frame, int errno, TruffleString message, Object filename, Object filename2) {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, filename2));
     }
 
-    public final PException raiseSSLError(Frame frame, String message) {
+    public final PException raiseSSLError(Frame frame, TruffleString message) {
         return raiseSSLError(frame, message, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public final PException raiseSSLError(Frame frame, String message, Object... formatArgs) {
+    private final PException raiseSSLError(Frame frame, TruffleString message, Object... formatArgs) {
         return raise(frame, PythonBuiltinClassType.SSLError, message, formatArgs);
     }
 
@@ -244,8 +220,8 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseSSLError(frame, errorCode, getMessage(ex));
     }
 
-    public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, String format, Object... formatArgs) {
-        String message = getFormattedMessage(format, formatArgs);
+    public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, TruffleString format, Object... formatArgs) {
+        TruffleString message = getFormattedMessage(format, formatArgs);
         try {
             return executeWithFmtMessageAndArgs(frame, errorCode.getType(), null, null, new Object[]{errorCode.getErrno(), message});
         } catch (PException pException) {
@@ -254,11 +230,11 @@ public abstract class PConstructAndRaiseNode extends Node {
         }
     }
 
-    public static PException raiseUncachedSSLError(String message) {
+    public static PException raiseUncachedSSLError(TruffleString message) {
         return getUncached().raiseSSLError(null, message);
     }
 
-    public static PException raiseUncachedSSLError(String message, Object... formatArgs) {
+    public static PException raiseUncachedSSLError(TruffleString message, Object... formatArgs) {
         return getUncached().raiseSSLError(null, message, formatArgs);
     }
 
@@ -266,35 +242,31 @@ public abstract class PConstructAndRaiseNode extends Node {
         return getUncached().raiseSSLError(null, errorCode, ex);
     }
 
-    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, String format, Object... formatArgs) {
+    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, TruffleString format, Object... formatArgs) {
         return getUncached().raiseSSLError(null, errorCode, format, formatArgs);
     }
 
-    public final PException raiseOSErrorSubType(Frame frame, PythonBuiltinClassType osErrorSubtype, String format, Object... fmtArgs) {
-        String message = getFormattedMessage(format, fmtArgs);
+    private final PException raiseOSErrorSubType(Frame frame, PythonBuiltinClassType osErrorSubtype, TruffleString format, Object... fmtArgs) {
+        TruffleString message = getFormattedMessage(format, fmtArgs);
         final OSErrorEnum osErrorEnum = errorType2errno(osErrorSubtype);
         assert osErrorEnum != null : "could not determine an errno for this error, either not an OSError subtype or multiple errno codes are available";
         return executeWithArgsOnly(frame, osErrorSubtype, new Object[]{osErrorEnum.getNumber(), message});
     }
 
-    public final PException raiseFileNotFoundError(Frame frame, String format, Object... fmtArgs) {
+    public final PException raiseFileNotFoundError(Frame frame, TruffleString format, Object... fmtArgs) {
         return raiseOSErrorSubType(frame, PythonBuiltinClassType.FileNotFoundError, format, fmtArgs);
     }
 
-    public final PException raiseSocketTimeoutError(Frame frame, String format, Object... fmtArgs) {
+    public final PException raiseSocketTimeoutError(Frame frame, TruffleString format, Object... fmtArgs) {
         return raiseOSErrorSubType(frame, PythonBuiltinClassType.SocketTimeout, format, fmtArgs);
     }
 
-    public final PException raiseUnicodeEncodeError(Frame frame, String encoding, String object, int start, int end, String reason) {
+    public final PException raiseUnicodeEncodeError(Frame frame, String encoding, TruffleString object, int start, int end, String reason) {
         return executeWithArgsOnly(frame, PythonBuiltinClassType.UnicodeEncodeError, new Object[]{encoding, object, start, end, reason});
     }
 
-    public final PException raiseUnicodeDecodeError(Frame frame, String encoding, Object object, int start, int end, String reason) {
+    private final PException raiseUnicodeDecodeError(Frame frame, String encoding, Object object, int start, int end, String reason) {
         return executeWithArgsOnly(frame, PythonBuiltinClassType.UnicodeDecodeError, new Object[]{encoding, object, start, end, reason});
-    }
-
-    public final PException raiseUnicodeTranslateError(Frame frame, String object, int start, int end, String reason) {
-        return executeWithArgsOnly(frame, PythonBuiltinClassType.UnicodeTranslateError, new Object[]{object, start, end, reason});
     }
 
     public static PException raiseUncachedUnicodeDecodeError(String encoding, Object object, int start, int end, String reason) {

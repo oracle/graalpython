@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,30 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ILSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -49,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.CallBinaryArithmeticRootNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic.CallTernaryArithmeticRootNode;
 import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
@@ -57,48 +80,48 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum InplaceArithmetic {
-    IAdd(SpecialMethodSlot.IAdd, "+=", BinaryArithmetic.Add),
-    ISub(SpecialMethodNames.__ISUB__, "-=", BinaryArithmetic.Sub),
-    IMul(SpecialMethodSlot.IMul, "*=", BinaryArithmetic.Mul),
-    ITrueDiv(SpecialMethodNames.__ITRUEDIV__, "/=", BinaryArithmetic.TrueDiv),
-    IFloorDiv(SpecialMethodNames.__IFLOORDIV__, "//=", BinaryArithmetic.FloorDiv),
-    IMod(SpecialMethodNames.__IMOD__, "%=", BinaryArithmetic.Mod),
-    IPow(SpecialMethodNames.__IPOW__, "**=", BinaryArithmetic.Pow, true),
-    ILShift(SpecialMethodNames.__ILSHIFT__, "<<=", BinaryArithmetic.LShift),
-    IRShift(SpecialMethodNames.__IRSHIFT__, ">>=", BinaryArithmetic.RShift),
-    IAnd(SpecialMethodNames.__IAND__, "&=", BinaryArithmetic.And),
-    IOr(SpecialMethodNames.__IOR__, "|=", BinaryArithmetic.Or),
-    IXor(SpecialMethodNames.__IXOR__, "^=", BinaryArithmetic.Xor),
-    IMatMul(SpecialMethodNames.__IMATMUL__, "@", BinaryArithmetic.MatMul);
+    IAdd(SpecialMethodSlot.IAdd, T___ADD__, "+=", BinaryArithmetic.Add),
+    ISub(T___ISUB__, T___SUB__, "-=", BinaryArithmetic.Sub),
+    IMul(SpecialMethodSlot.IMul, T___MUL__, "*=", BinaryArithmetic.Mul),
+    ITrueDiv(T___ITRUEDIV__, T___TRUEDIV__, "/=", BinaryArithmetic.TrueDiv),
+    IFloorDiv(T___IFLOORDIV__, T___FLOORDIV__, "//=", BinaryArithmetic.FloorDiv),
+    IMod(T___IMOD__, T___MOD__, "%=", BinaryArithmetic.Mod),
+    IPow(T___IPOW__, T___POW__, "**=", BinaryArithmetic.Pow, true),
+    ILShift(T___ILSHIFT__, T___LSHIFT__, "<<=", BinaryArithmetic.LShift),
+    IRShift(T___IRSHIFT__, T___RSHIFT__, ">>=", BinaryArithmetic.RShift),
+    IAnd(T___IAND__, T___AND__, "&=", BinaryArithmetic.And),
+    IOr(T___IOR__, T___OR__, "|=", BinaryArithmetic.Or),
+    IXor(T___IXOR__, T___XOR__, "^=", BinaryArithmetic.Xor),
+    IMatMul(T___IMATMUL__, T___MATMUL__, "@", BinaryArithmetic.MatMul);
 
-    final String methodName;
+    final TruffleString methodName;
     final SpecialMethodSlot slot;
-    final String operator;
     final boolean isTernary;
     final Supplier<LookupAndCallInplaceNode.NotImplementedHandler> notImplementedHandler;
     final BinaryArithmetic binary;
-    final String binaryOpName;
+    final TruffleString binaryOpName;
 
-    InplaceArithmetic(String methodName, String operator, BinaryArithmetic binary) {
-        this(methodName, operator, binary, false);
+    InplaceArithmetic(TruffleString methodName, TruffleString binaryOpName, String operator, BinaryArithmetic binary) {
+        this(methodName, binaryOpName, operator, binary, false);
     }
 
-    InplaceArithmetic(SpecialMethodSlot slot, String operator, BinaryArithmetic binary) {
-        this(slot.getName(), operator, binary, false, slot);
+    InplaceArithmetic(SpecialMethodSlot slot, TruffleString binaryOpName, String operator, BinaryArithmetic binary) {
+        this(slot.getName(), binaryOpName, operator, binary, false, slot);
     }
 
-    InplaceArithmetic(String methodName, String operator, BinaryArithmetic binary, boolean isTernary) {
-        this(methodName, operator, binary, isTernary, null);
+    InplaceArithmetic(TruffleString methodName, TruffleString binaryOpName, String operator, BinaryArithmetic binary, boolean isTernary) {
+        this(methodName, binaryOpName, operator, binary, isTernary, null);
     }
 
-    InplaceArithmetic(String methodName, String operator, BinaryArithmetic binary, boolean isTernary, SpecialMethodSlot slot) {
+    InplaceArithmetic(TruffleString methodName, TruffleString binaryOpName, @SuppressWarnings("unused") String operator, BinaryArithmetic binary, boolean isTernary, SpecialMethodSlot slot) {
+        assert methodName.toJavaStringUncached().startsWith("__i") && methodName.toJavaStringUncached().substring(3).equals(binaryOpName.toJavaStringUncached().substring(2));
         this.methodName = methodName;
-        this.operator = operator;
         this.binary = binary;
         this.isTernary = isTernary;
-        this.binaryOpName = methodName.replaceFirst("__i", "__");
+        this.binaryOpName = binaryOpName;
         this.slot = slot;
 
         this.notImplementedHandler = () -> new LookupAndCallInplaceNode.NotImplementedHandler() {
@@ -144,12 +167,8 @@ public enum InplaceArithmetic {
         }
     }
 
-    public String getMethodName() {
+    public TruffleString getMethodName() {
         return methodName;
-    }
-
-    public String getOperator() {
-        return operator;
     }
 
     public boolean isTernary() {

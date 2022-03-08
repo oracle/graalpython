@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.queue.SimpleQueueBuiltinsClinicProviders.SimpleQueueGetNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
@@ -187,12 +188,12 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
                 try {
                     ltimeout = PythonUtils.multiplyExact(asLongNode.execute(frame, timeout), 1000000);
                 } catch (OverflowException oe) {
-                    throw raise(OverflowError, "timeout value is too large");
+                    throw raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
                 }
             }
 
             if (ltimeout < 0) {
-                throw raise(ValueError, "'timeout' must be a non-negative number");
+                throw raise(ValueError, ErrorMessages.TIMEOUT_MUST_BE_NON_NEG_NUM);
             }
 
             // CPython first tries a non-blocking get without releasing the GIL

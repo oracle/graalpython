@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,9 +71,11 @@ import static com.oracle.graal.python.runtime.NFILZMASupport.MODE_FAST_INDEX;
 import static com.oracle.graal.python.runtime.NFILZMASupport.MODE_NORMAL_INDEX;
 import static com.oracle.graal.python.runtime.NFILZMASupport.PRESET_DEFAULT_INDEX;
 import static com.oracle.graal.python.runtime.NFILZMASupport.PRESET_EXTREME_INDEX;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.truffle.api.strings.TruffleString;
 import org.tukaani.xz.FilterOptions;
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZ;
@@ -104,14 +106,13 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(defineModule = LZMAModuleBuiltins._LZMA)
+@CoreFunctions(defineModule = LZMAModuleBuiltins.J__LZMA)
 public class LZMAModuleBuiltins extends PythonBuiltins {
 
-    public static final String _LZMA = "_lzma";
+    public static final String J__LZMA = "_lzma";
+    public static final TruffleString T__LZMA = tsLiteral(J__LZMA);
 
-    public static final String LZMA_JAVA_ERROR = "This feature is only " +
-                    "supported with native library being loaded. " +
-                    "Please install 'lzma' library in your system.";
+    public static final TruffleString T_LZMA_JAVA_ERROR = tsLiteral("This feature is only supported with native library being loaded. Please install 'lzma' library in your system.");
 
     // defined in '_lzmamodule.c'
     public static final int INITIAL_BUFFER_SIZE = 8192;
@@ -191,7 +192,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core c) {
         super.postInitialize(c);
         NFILZMASupport lzmaSupport = c.getContext().getNFILZMASupport();
-        PythonModule lzmaModule = c.lookupBuiltinModule(_LZMA);
+        PythonModule lzmaModule = c.lookupBuiltinModule(T__LZMA);
         int[] formats = new int[4];
         int[] checks = new int[6];
         int[] mfs = new int[5];
@@ -226,34 +227,34 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 // ignore and proceed without native lzma support and use the java port.
             }
         }
-        lzmaModule.setAttribute("CHECK_NONE", CHECK_NONE);
-        lzmaModule.setAttribute("CHECK_CRC32", CHECK_CRC32);
-        lzmaModule.setAttribute("CHECK_CRC64", CHECK_CRC64);
-        lzmaModule.setAttribute("CHECK_SHA256", CHECK_SHA256);
-        lzmaModule.setAttribute("CHECK_ID_MAX", CHECK_ID_MAX);
-        lzmaModule.setAttribute("CHECK_UNKNOWN", CHECK_UNKNOWN);
-        lzmaModule.setAttribute("FILTER_LZMA1", FILTERS[FILTER_LZMA1_INDEX]);
-        lzmaModule.setAttribute("FILTER_LZMA2", FILTERS[FILTER_LZMA2_INDEX]);
-        lzmaModule.setAttribute("FILTER_DELTA", FILTERS[FILTER_DELTA_INDEX]);
-        lzmaModule.setAttribute("FILTER_X86", FILTERS[FILTER_X86_INDEX]);
-        lzmaModule.setAttribute("FILTER_POWERPC", FILTERS[FILTER_POWERPC_INDEX]);
-        lzmaModule.setAttribute("FILTER_IA64", FILTERS[FILTER_IA64_INDEX]);
-        lzmaModule.setAttribute("FILTER_ARM", FILTERS[FILTER_ARM_INDEX]);
-        lzmaModule.setAttribute("FILTER_ARMTHUMB", FILTERS[FILTER_ARMTHUMB_INDEX]);
-        lzmaModule.setAttribute("FILTER_SPARC", FILTERS[FILTER_SPARC_INDEX]);
-        lzmaModule.setAttribute("FORMAT_AUTO", FORMAT_AUTO);
-        lzmaModule.setAttribute("FORMAT_XZ", FORMAT_XZ);
-        lzmaModule.setAttribute("FORMAT_ALONE", FORMAT_ALONE);
-        lzmaModule.setAttribute("FORMAT_RAW", FORMAT_RAW);
-        lzmaModule.setAttribute("PRESET_DEFAULT", PRESET_DEFAULT);
-        lzmaModule.setAttribute("PRESET_EXTREME", PRESET_EXTREME);
-        lzmaModule.setAttribute("MODE_FAST", MODE_FAST);
-        lzmaModule.setAttribute("MODE_NORMAL", MODE_NORMAL);
-        lzmaModule.setAttribute("MF_BT2", MF_BT2);
-        lzmaModule.setAttribute("MF_BT3", MF_BT3);
-        lzmaModule.setAttribute("MF_BT4", MF_BT4);
-        lzmaModule.setAttribute("MF_HC3", MF_HC3);
-        lzmaModule.setAttribute("MF_HC4", MF_HC4);
+        lzmaModule.setAttribute(tsLiteral("CHECK_NONE"), CHECK_NONE);
+        lzmaModule.setAttribute(tsLiteral("CHECK_CRC32"), CHECK_CRC32);
+        lzmaModule.setAttribute(tsLiteral("CHECK_CRC64"), CHECK_CRC64);
+        lzmaModule.setAttribute(tsLiteral("CHECK_SHA256"), CHECK_SHA256);
+        lzmaModule.setAttribute(tsLiteral("CHECK_ID_MAX"), CHECK_ID_MAX);
+        lzmaModule.setAttribute(tsLiteral("CHECK_UNKNOWN"), CHECK_UNKNOWN);
+        lzmaModule.setAttribute(tsLiteral("FILTER_LZMA1"), FILTERS[FILTER_LZMA1_INDEX]);
+        lzmaModule.setAttribute(tsLiteral("FILTER_LZMA2"), FILTERS[FILTER_LZMA2_INDEX]);
+        lzmaModule.setAttribute(tsLiteral("FILTER_DELTA"), FILTERS[FILTER_DELTA_INDEX]);
+        lzmaModule.setAttribute(tsLiteral("FILTER_X86"), FILTERS[FILTER_X86_INDEX]);
+        lzmaModule.setAttribute(tsLiteral("FILTER_POWERPC"), FILTERS[FILTER_POWERPC_INDEX]);
+        lzmaModule.setAttribute(tsLiteral("FILTER_IA64"), FILTERS[FILTER_IA64_INDEX]);
+        lzmaModule.setAttribute(tsLiteral("FILTER_ARM"), FILTERS[FILTER_ARM_INDEX]);
+        lzmaModule.setAttribute(tsLiteral("FILTER_ARMTHUMB"), FILTERS[FILTER_ARMTHUMB_INDEX]);
+        lzmaModule.setAttribute(tsLiteral("FILTER_SPARC"), FILTERS[FILTER_SPARC_INDEX]);
+        lzmaModule.setAttribute(tsLiteral("FORMAT_AUTO"), FORMAT_AUTO);
+        lzmaModule.setAttribute(tsLiteral("FORMAT_XZ"), FORMAT_XZ);
+        lzmaModule.setAttribute(tsLiteral("FORMAT_ALONE"), FORMAT_ALONE);
+        lzmaModule.setAttribute(tsLiteral("FORMAT_RAW"), FORMAT_RAW);
+        lzmaModule.setAttribute(tsLiteral("PRESET_DEFAULT"), PRESET_DEFAULT);
+        lzmaModule.setAttribute(tsLiteral("PRESET_EXTREME"), PRESET_EXTREME);
+        lzmaModule.setAttribute(tsLiteral("MODE_FAST"), MODE_FAST);
+        lzmaModule.setAttribute(tsLiteral("MODE_NORMAL"), MODE_NORMAL);
+        lzmaModule.setAttribute(tsLiteral("MF_BT2"), MF_BT2);
+        lzmaModule.setAttribute(tsLiteral("MF_BT3"), MF_BT3);
+        lzmaModule.setAttribute(tsLiteral("MF_BT4"), MF_BT4);
+        lzmaModule.setAttribute(tsLiteral("MF_HC3"), MF_HC3);
+        lzmaModule.setAttribute(tsLiteral("MF_HC4"), MF_HC4);
     }
 
     @Builtin(name = "LZMACompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMACompressor)

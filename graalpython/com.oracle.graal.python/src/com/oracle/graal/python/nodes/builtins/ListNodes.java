@@ -41,6 +41,9 @@
 package com.oracle.graal.python.nodes.builtins;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LIST;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -67,6 +70,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -83,6 +87,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class ListNodes {
 
@@ -97,15 +103,24 @@ public abstract class ListNodes {
         protected abstract PList execute(Frame frame, Object cls, Object value);
 
         @Specialization
-        static PList listString(Object cls, String arg,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createList(cls, StringUtils.toCharacterArray(arg));
+        static PList listString(Object cls, TruffleString arg,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            return factory.createList(cls, StringUtils.toCharacterArray(arg, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode));
         }
 
         @Specialization
         static PList listString(Object cls, PString arg,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return listString(cls, arg.getValue(), factory);
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            return listString(cls, castToStringNode.execute(arg), factory, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
         @Specialization(guards = "isNoValue(none)")
@@ -174,10 +189,10 @@ public abstract class ListNodes {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IndexNode extends PNodeWithContext {
         @Child private PRaiseNode raise;
-        private static final String DEFAULT_ERROR_MSG = "list " + ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES;
+        private static final TruffleString DEFAULT_ERROR_MSG = cat(T_LIST, T_SPACE, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
         @Child LookupAndCallUnaryNode getIndexNode;
         private final CheckType checkType;
-        private final String errorMessage;
+        private final TruffleString errorMessage;
 
         protected static enum CheckType {
             SUBSCRIPT,
@@ -185,13 +200,13 @@ public abstract class ListNodes {
             NUMBER;
         }
 
-        protected IndexNode(String message, CheckType type) {
+        protected IndexNode(TruffleString message, CheckType type) {
             checkType = type;
             getIndexNode = LookupAndCallUnaryNode.create(SpecialMethodSlot.Index);
             errorMessage = message;
         }
 
-        public static IndexNode create(String message) {
+        public static IndexNode create(TruffleString message) {
             return IndexNodeGen.create(message, CheckType.SUBSCRIPT);
         }
 
@@ -199,11 +214,11 @@ public abstract class ListNodes {
             return IndexNodeGen.create(DEFAULT_ERROR_MSG, CheckType.SUBSCRIPT);
         }
 
-        public static IndexNode createInteger(String msg) {
+        public static IndexNode createInteger(TruffleString msg) {
             return IndexNodeGen.create(msg, CheckType.INTEGER);
         }
 
-        public static IndexNode createNumber(String msg) {
+        public static IndexNode createNumber(TruffleString msg) {
             return IndexNodeGen.create(msg, CheckType.NUMBER);
         }
 

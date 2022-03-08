@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,8 +58,10 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
+
 public class ConversionNodeTests {
-    static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"arg"}, null);
+    static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("arg"), null);
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
     protected static Object call(Object arg, ArgumentCastNode castNode) {

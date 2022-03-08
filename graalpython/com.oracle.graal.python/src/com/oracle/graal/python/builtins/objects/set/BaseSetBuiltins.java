@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,17 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Iterator;
 import java.util.List;
@@ -66,16 +74,15 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -85,7 +92,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -95,6 +101,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PSet, PythonBuiltinClassType.PFrozenSet})
 public final class BaseSetBuiltins extends PythonBuiltins {
@@ -104,66 +111,65 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         return BaseSetBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BaseReprNode extends PythonUnaryBuiltinNode {
-        private static void fillItems(VirtualFrame frame, StringBuilder sb, LookupAndCallUnaryNode repr, HashingStorageLibrary.HashingStorageIterator<Object> iter) {
+        private static void fillItems(VirtualFrame frame, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode repr, HashingStorageLibrary.HashingStorageIterator<Object> iter,
+                        TruffleStringBuilder.AppendStringNode appendStringNode) {
             boolean first = true;
-            PythonUtils.append(sb, "{");
+            appendStringNode.execute(sb, T_LBRACE);
             while (iter.hasNext()) {
-                Object reprString = repr.executeObject(frame, iter.next());
-                if (reprString instanceof PString) {
-                    reprString = ((PString) reprString).getValue();
-                }
                 if (first) {
                     first = false;
                 } else {
-                    PythonUtils.append(sb, ", ");
+                    appendStringNode.execute(sb, T_COMMA_SPACE);
                 }
-                PythonUtils.append(sb, (String) reprString);
+                appendStringNode.execute(sb, repr.execute(frame, iter.next()));
             }
-            PythonUtils.append(sb, "}");
+            appendStringNode.execute(sb, T_RBRACE);
         }
 
         @Specialization(limit = "3")
         public static Object repr(VirtualFrame frame, PBaseSet self,
-                        @Cached("create(Repr)") LookupAndCallUnaryNode repr,
+                        @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
-            StringBuilder sb = PythonUtils.newStringBuilder();
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             Object clazz = getClassNode.execute(self);
             PythonContext ctxt = PythonContext.get(getNameNode);
             int len = hlib.length(self.getDictStorage());
             if (len == 0) {
-                PythonUtils.append(sb, getNameNode.execute(clazz));
-                PythonUtils.append(sb, "()");
-                return PythonUtils.sbToString(sb);
+                appendStringNode.execute(sb, getNameNode.execute(clazz));
+                appendStringNode.execute(sb, T_EMPTY_PARENS);
+                return toStringNode.execute(sb);
             }
             if (!ctxt.reprEnter(self)) {
-                PythonUtils.append(sb, getNameNode.execute(clazz));
-                PythonUtils.append(sb, "(...)");
-                return PythonUtils.sbToString(sb);
+                appendStringNode.execute(sb, getNameNode.execute(clazz));
+                appendStringNode.execute(sb, T_ELLIPSIS_IN_PARENS);
+                return toStringNode.execute(sb);
             }
             try {
                 HashingStorageLibrary.HashingStorageIterator<Object> iter = hlib.keys(self.getDictStorage()).iterator();
                 boolean showType = clazz != PythonBuiltinClassType.PSet;
                 if (showType) {
-                    PythonUtils.append(sb, getNameNode.execute(clazz));
-                    PythonUtils.append(sb, '(');
+                    appendStringNode.execute(sb, getNameNode.execute(clazz));
+                    appendStringNode.execute(sb, T_LPAREN);
                 }
-                fillItems(frame, sb, repr, iter);
+                fillItems(frame, sb, repr, iter, appendStringNode);
                 if (showType) {
-                    PythonUtils.append(sb, ')');
+                    appendStringNode.execute(sb, T_RPAREN);
                 }
-                return PythonUtils.sbToString(sb);
+                return toStringNode.execute(sb);
             } finally {
                 ctxt.reprLeave(self);
             }
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class BaseIterNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
@@ -173,7 +179,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class BaseLenNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
@@ -183,7 +189,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class BaseReduceNode extends PythonUnaryBuiltinNode {
 
@@ -200,7 +206,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                 keysArray[i] = keys.next();
             }
             PTuple contents = factory().createTuple(new Object[]{factory().createList(keysArray)});
-            Object dict = lookup.execute(frame, self, __DICT__);
+            Object dict = lookup.execute(frame, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
@@ -208,7 +214,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class BaseEqNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
@@ -225,7 +231,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class BaseContainsNode extends PythonBinaryBuiltinNode {
 
@@ -334,7 +340,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class BaseLessEqualNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
@@ -351,7 +357,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class BaseGreaterEqualNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
@@ -368,7 +374,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class BaseLessThanNode extends PythonBinaryBuiltinNode {
 
@@ -392,7 +398,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class BaseGreaterThanNode extends PythonBinaryBuiltinNode {
 

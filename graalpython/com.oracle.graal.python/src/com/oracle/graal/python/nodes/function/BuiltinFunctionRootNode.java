@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -61,6 +61,11 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 /**
  * CPython wraps built-in types' slots so the C can take the direct arguments. The slot wrappers for
@@ -73,6 +78,9 @@ import com.oracle.truffle.api.nodes.NodeUtil;
  * execute method we want and cares about swapping arguments back if needed.
  */
 public final class BuiltinFunctionRootNode extends PRootNode {
+    private static final TruffleString T_DOLLAR_CLS = tsLiteral("$cls");
+    private static final TruffleString T_DOLLAR_SELF = tsLiteral("$self");
+
     private final Signature signature;
     private final Builtin builtin;
     private final String name;
@@ -145,7 +153,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
      * Should return a signature compatible with {@link #createArgumentsList(Builtin, boolean)}
      */
     private static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf, boolean constructsClass) {
-        String[] parameterNames = builtin.parameterNames();
+        TruffleString[] parameterNames = toTruffleStringArrayUncached(builtin.parameterNames());
         int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
 
         if (builtin.maxNumOfPositionalArgs() >= 0) {
@@ -167,10 +175,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             if (parameterNames.length == 0) {
                 // PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin
                 // " + factory);
-                parameterNames = new String[maxNumPosArgs];
-                parameterNames[0] = constructsClass ? "$cls" : "$self";
+                parameterNames = new TruffleString[maxNumPosArgs];
+                parameterNames[0] = constructsClass ? T_DOLLAR_CLS : T_DOLLAR_SELF;
                 for (int i = 1, p = 'a'; i < parameterNames.length; i++, p++) {
-                    parameterNames[i] = Character.toString((char) p);
+                    parameterNames[i] = TruffleString.fromCodePointUncached(p, TS_ENCODING);
                 }
             } else {
                 if (declaresExplicitSelf) {
@@ -180,7 +188,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                     assert parameterNames.length + 1 == maxNumPosArgs : "not enough parameter ids on " + factory;
                     parameterNames = Arrays.copyOf(parameterNames, parameterNames.length + 1);
                     PythonUtils.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
-                    parameterNames[0] = constructsClass ? "$cls" : "$self";
+                    parameterNames[0] = constructsClass ? T_DOLLAR_CLS : T_DOLLAR_SELF;
                 }
             }
         }

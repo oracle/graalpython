@@ -172,6 +172,7 @@ import com.oracle.graal.python.builtins.objects.ssl.PMemoryBIO;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLSocket;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
+import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
@@ -224,6 +225,7 @@ import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Factory for Python objects that also reports to Truffle's {@link AllocationReporter}. The
@@ -375,19 +377,19 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFloat(cls, getShape(cls), value));
     }
 
-    public final PString createString(String string) {
+    public final PString createString(TruffleString string) {
         return createString(PythonBuiltinClassType.PString, string);
     }
 
-    public final PString createString(Object cls, String string) {
+    public final PString createString(Object cls, TruffleString string) {
         return trace(new PString(cls, getShape(cls), string));
     }
 
-    public final PString createString(CharSequence string) {
+    public final PString createString(NativeCharSequence string) {
         return createString(PythonBuiltinClassType.PString, string);
     }
 
-    public final PString createString(Object cls, CharSequence string) {
+    public final PString createString(Object cls, NativeCharSequence string) {
         return trace(new PString(cls, getShape(cls), string));
     }
 
@@ -516,7 +518,7 @@ public abstract class PythonObjectFactory extends Node {
     /**
      * Only to be used during context creation
      */
-    public final PythonModule createPythonModule(String name) {
+    public final PythonModule createPythonModule(TruffleString name) {
         return trace(PythonModule.createInternal(name));
     }
 
@@ -524,43 +526,45 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonModule(cls, getShape(cls)));
     }
 
-    public final PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, String name, PythonAbstractClass[] bases) {
+    public final PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, TruffleString name, PythonAbstractClass[] bases) {
         PythonClass result = trace(new PythonClass(language, metaclass, getShape(metaclass), name, bases));
         SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.getUncached(), language);
         result.initializeMroShape(language);
         return result;
     }
 
-    public final PythonClass createPythonClass(Object metaclass, String name, boolean invokeMro, PythonAbstractClass[] bases) {
+    public final PythonClass createPythonClass(Object metaclass, TruffleString name, boolean invokeMro, PythonAbstractClass[] bases) {
         // Note: called from type ctor, which itself will invoke setupSpecialMethodSlots at the
         // right point
         return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, bases));
     }
 
     public final PMemoryView createMemoryView(PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
-                    int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
+                    int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return trace(new PMemoryView(cls, getShape(cls), context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize, format, formatString,
                         ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
-    public final PMemoryView createMemoryView(PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
-                    int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
-                    int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
+    private final PMemoryView createMemoryView(PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
+                    int len, boolean readonly, int itemsize, TruffleString formatString, int ndim, Object bufPointer,
+                    int offset, int[] shape, int[] strides, int[] suboffsets, int flags, TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexNode atIndexNode) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return trace(new PMemoryView(cls, getShape(cls), context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
-                        BufferFormat.forMemoryView(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
+                        BufferFormat.forMemoryView(formatString, lengthNode, atIndexNode), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
-    public final PMemoryView createMemoryViewForManagedObject(Object buffer, Object owner, int itemsize, int length, boolean readonly, String format) {
+    public final PMemoryView createMemoryViewForManagedObject(Object buffer, Object owner, int itemsize, int length, boolean readonly, TruffleString format,
+                    TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexNode atIndexNode) {
         return createMemoryView(null, null, buffer, owner, length, readonly, itemsize, format, 1,
                         null, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
-                        PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
+                        PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN, lengthNode, atIndexNode);
     }
 
-    public final PMemoryView createMemoryViewForManagedObject(Object owner, int itemsize, int length, boolean readonly, String format) {
-        return createMemoryViewForManagedObject(owner, owner, itemsize, length, readonly, format);
+    public final PMemoryView createMemoryViewForManagedObject(Object owner, int itemsize, int length, boolean readonly, TruffleString format, TruffleString.CodePointLengthNode lengthNode,
+                    TruffleString.CodePointAtIndexNode atIndexNode) {
+        return createMemoryViewForManagedObject(owner, owner, itemsize, length, readonly, format, lengthNode, atIndexNode);
     }
 
     public final PMethod createMethod(Object cls, Object self, Object function) {
@@ -583,54 +587,54 @@ public abstract class PythonObjectFactory extends Node {
         return createBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, self, function);
     }
 
-    public final PFunction createFunction(String name, PCode code, PythonObject globals, PCell[] closure) {
+    public final PFunction createFunction(TruffleString name, PCode code, PythonObject globals, PCell[] closure) {
         return trace(new PFunction(getLanguage(), name, name, code, globals, closure));
     }
 
-    public final PFunction createFunction(String name, String qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
+    public final PFunction createFunction(TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
         return trace(new PFunction(getLanguage(), name, qualname, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
-    public final PFunction createFunction(String name, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
+    public final PFunction createFunction(TruffleString name, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
         return trace(new PFunction(getLanguage(), name, name, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
-    public final PFunction createFunction(String name, String qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure,
+    public final PFunction createFunction(TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure,
                     Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
         return trace(new PFunction(getLanguage(), name, qualname, code, globals, defaultValues, kwDefaultValues, closure,
                         codeStableAssumption, defaultsStableAssumption));
     }
 
-    public final PBuiltinFunction createGetSetBuiltinFunction(String name, Object type, int numDefaults, RootCallTarget callTarget) {
+    public final PBuiltinFunction createGetSetBuiltinFunction(TruffleString name, Object type, int numDefaults, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, 0, callTarget));
     }
 
-    public final PBuiltinFunction createBuiltinFunction(String name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
+    public final PBuiltinFunction createBuiltinFunction(TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, flags, callTarget));
     }
 
-    public final PBuiltinFunction createGetSetBuiltinFunction(String name, Object type, Object[] defaults, PKeyword[] kw, RootCallTarget callTarget) {
+    public final PBuiltinFunction createGetSetBuiltinFunction(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, 0, callTarget));
     }
 
-    public final PBuiltinFunction createBuiltinFunction(String name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
+    public final PBuiltinFunction createBuiltinFunction(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, flags, callTarget));
     }
 
-    public final PBuiltinFunction createWrapperDescriptor(String name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
+    public final PBuiltinFunction createWrapperDescriptor(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(getLanguage()), name, type, defaults, kw, flags,
                         callTarget));
     }
 
-    public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type) {
+    public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, TruffleString name, Object type) {
         return trace(new GetSetDescriptor(getLanguage(), get, set, name, type));
     }
 
-    public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type, boolean allowsDelete) {
+    public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, TruffleString name, Object type, boolean allowsDelete) {
         return trace(new GetSetDescriptor(getLanguage(), get, set, name, type, allowsDelete));
     }
 
-    public final GetSetDescriptor createMemberDescriptor(Object get, Object set, String name, Object type) {
+    public final GetSetDescriptor createMemberDescriptor(Object get, Object set, TruffleString name, Object type) {
         return trace(new GetSetDescriptor(PythonBuiltinClassType.MemberDescriptor, PythonBuiltinClassType.MemberDescriptor.getInstanceShape(getLanguage()), get, set, name, type, set != null));
     }
 
@@ -832,13 +836,13 @@ public abstract class PythonObjectFactory extends Node {
      * Special objects: generators, proxies, references, cells
      */
 
-    public final PGenerator createGenerator(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
+    public final PGenerator createGenerator(TruffleString name, TruffleString qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
                     ExecutionCellSlots cellSlots,
                     GeneratorInfo generatorInfo, Object iterator) {
         return trace(PGenerator.create(getLanguage(), name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, generatorInfo, this, iterator));
     }
 
-    public final PGenerator createGenerator(String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+    public final PGenerator createGenerator(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments));
     }
 
@@ -899,11 +903,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBaseException(cls, getShape(cls), data, args));
     }
 
-    public final PBaseException createBaseException(Object cls, String format, Object[] args) {
+    public final PBaseException createBaseException(Object cls, TruffleString format, Object[] args) {
         return createBaseException(cls, null, format, args);
     }
 
-    public final PBaseException createBaseException(Object cls, Object[] data, String format, Object[] args) {
+    public final PBaseException createBaseException(Object cls, Object[] data, TruffleString format, Object[] args) {
         assert format != null;
         return trace(new PBaseException(cls, getShape(cls), data, format, args));
     }
@@ -920,16 +924,16 @@ public abstract class PythonObjectFactory extends Node {
      * Arrays
      */
 
-    public final PArray createArray(Object cls, String formatString, BufferFormat format) {
+    public final PArray createArray(Object cls, TruffleString formatString, BufferFormat format) {
         assert format != null;
         return trace(new PArray(cls, getShape(cls), formatString, format));
     }
 
-    public final PArray createArray(String formatString, BufferFormat format, int length) throws OverflowException {
+    public final PArray createArray(TruffleString formatString, BufferFormat format, int length) throws OverflowException {
         return createArray(PythonBuiltinClassType.PArray, formatString, format, length);
     }
 
-    public final PArray createArray(Object cls, String formatString, BufferFormat format, int length) throws OverflowException {
+    public final PArray createArray(Object cls, TruffleString formatString, BufferFormat format, int length) throws OverflowException {
         assert format != null;
         return trace(new PArray(cls, getShape(cls), formatString, format, length));
     }
@@ -962,11 +966,11 @@ public abstract class PythonObjectFactory extends Node {
      * Iterators
      */
 
-    public final PStringIterator createStringIterator(String str) {
+    public final PStringIterator createStringIterator(TruffleString str) {
         return trace(new PStringIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), str));
     }
 
-    public final PStringReverseIterator createStringReverseIterator(Object cls, String str) {
+    public final PStringReverseIterator createStringReverseIterator(Object cls, TruffleString str) {
         return trace(new PStringReverseIterator(cls, getShape(cls), str));
     }
 
@@ -1087,21 +1091,21 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct));
     }
 
-    public final PCode createCode(RootCallTarget ct, int flags, int firstlineno, byte[] lnotab, String filename) {
+    public final PCode createCode(RootCallTarget ct, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, flags, firstlineno, lnotab, filename));
     }
 
     public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,
-                    Object[] freevars, Object[] cellvars, String filename, String name, int firstlineno, byte[] lnotab) {
+                    Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] lnotab) {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
                         filename, name, firstlineno, lnotab));
     }
 
-    public PCode createCode(Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, String filename) {
+    public PCode createCode(Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), createCode, flags, firstlineno, lnotab, filename));
     }
 
-    public final PZipImporter createZipImporter(Object cls, PDict zipDirectoryCache, String separator) {
+    public final PZipImporter createZipImporter(Object cls, PDict zipDirectoryCache, TruffleString separator) {
         return trace(new PZipImporter(cls, getShape(cls), zipDirectoryCache, separator));
     }
 
@@ -1145,7 +1149,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PThread(cls, getShape(cls), thread));
     }
 
-    public final PSemLock createSemLock(Object cls, String name, int kind, Semaphore sharedSemaphore) {
+    public final PSemLock createSemLock(Object cls, TruffleString name, int kind, Semaphore sharedSemaphore) {
         return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
@@ -1189,24 +1193,18 @@ public abstract class PythonObjectFactory extends Node {
         return trace(LZMAObject.createCompressor(clazz, getShape(clazz), isNative));
     }
 
-    public final CSVReader createCSVReader(Object clazz) {
-        return trace(new CSVReader(clazz, getShape(clazz)));
+    public final CSVReader createCSVReader(Object clazz, Object inputIter, CSVDialect dialect) {
+        return trace(new CSVReader(clazz, getShape(clazz), inputIter, dialect));
     }
 
-    public final CSVWriter createCSVWriter(Object clazz) {
-        return trace(new CSVWriter(clazz, getShape(clazz)));
+    public final CSVWriter createCSVWriter(Object clazz, Object write, CSVDialect dialect) {
+        return trace(new CSVWriter(clazz, getShape(clazz), write, dialect));
     }
 
-    public final CSVDialect createCSVDialect(Object clazz) {
-        return trace(new CSVDialect(clazz, getShape(clazz)));
-    }
-
-    public final CSVDialect createCSVDialect(Object clazz, String delimiter, boolean doublequote, String escapechar,
-                    String lineterminator, String quotechar, QuoteStyle quoting, boolean skipinitialspace,
-                    boolean strict) {
-        return trace(new CSVDialect(clazz, getShape(clazz), delimiter, doublequote, escapechar,
-                        lineterminator, quotechar, quoting, skipinitialspace,
-                        strict));
+    public final CSVDialect createCSVDialect(Object clazz, TruffleString delimiter, int delimiterCodePoint, boolean doubleQuote, TruffleString escapeChar, int escapeCharCodePoint,
+                    TruffleString lineTerminator, TruffleString quoteChar, int quoteCharCodePoint, QuoteStyle quoting, boolean skipInitialSpace, boolean strict) {
+        return trace(new CSVDialect(clazz, getShape(clazz), delimiter, delimiterCodePoint, doubleQuote, escapeChar, escapeCharCodePoint, lineTerminator, quoteChar, quoteCharCodePoint, quoting,
+                        skipInitialSpace, strict));
     }
 
     public final PFileIO createFileIO(Object clazz) {
@@ -1406,8 +1404,8 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     @TruffleBoundary
-    public final PJSONEncoder createJSONEncoder(Object clazz, Object markers, Object defaultFn, Object encoder, Object indent, String keySeparator, String itemSeparator, boolean sortKeys,
-                    boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
+    public final PJSONEncoder createJSONEncoder(Object clazz, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator, TruffleString itemSeparator,
+                    boolean sortKeys, boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
         return trace(new PJSONEncoder(clazz, getShape(clazz), markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode));
     }
 
@@ -1435,7 +1433,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDebugHandle(PythonBuiltinClassType.DebugHandle, getShape(PythonBuiltinClassType.DebugHandle), handle));
     }
 
-    public final PContextVar createContextVar(String name, Object def) {
+    public final PContextVar createContextVar(TruffleString name, Object def) {
         return trace(new PContextVar(PythonBuiltinClassType.ContextVar, getShape(PythonBuiltinClassType.ContextVar), name, def));
     }
 }

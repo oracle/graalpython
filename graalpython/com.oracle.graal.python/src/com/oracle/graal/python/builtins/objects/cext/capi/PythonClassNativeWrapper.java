@@ -43,7 +43,9 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct shape
@@ -52,7 +54,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
 
-    private PythonClassNativeWrapper(PythonManagedClass object, String name) {
+    private PythonClassNativeWrapper(PythonManagedClass object, TruffleString name) {
         super(object);
         this.nameWrapper = new CStringWrapper(name);
     }
@@ -61,7 +63,7 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
         return nameWrapper;
     }
 
-    public static PythonClassNativeWrapper wrap(PythonManagedClass obj, String name) {
+    public static PythonClassNativeWrapper wrap(PythonManagedClass obj, TruffleString name) {
         // important: native wrappers are cached
         PythonClassNativeWrapper nativeWrapper = obj.getClassNativeWrapper();
         if (nativeWrapper == null) {
@@ -71,7 +73,7 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
         return nativeWrapper;
     }
 
-    public static PythonClassNativeWrapper wrapNewRef(PythonManagedClass obj, String name) {
+    public static PythonClassNativeWrapper wrapNewRef(PythonManagedClass obj, TruffleString name) {
         // important: native wrappers are cached
         PythonClassNativeWrapper nativeWrapper = obj.getClassNativeWrapper();
         if (nativeWrapper == null) {
@@ -88,6 +90,6 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
     @TruffleBoundary
     public String toString() {
         PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return String.format("PythonClassNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
+        return PythonUtils.format("PythonClassNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
     }
 }

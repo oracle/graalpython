@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -40,6 +40,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class DictLiteralNode {
 
@@ -48,10 +49,10 @@ public abstract class DictLiteralNode {
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
         @Children private final ExpressionNode[] values;
 
-        @CompilationFinal(dimensions = 1) private final String[] keys;
+        @CompilationFinal(dimensions = 1) private final TruffleString[] keys;
 
         protected FixedDictLiteralNode(ExpressionNode[] keys, ExpressionNode[] values) {
-            this.keys = new String[keys.length];
+            this.keys = new TruffleString[keys.length];
             for (int i = 0; i < keys.length; i++) {
                 this.keys[i] = ((StringLiteralNode) keys[i]).getValue();
             }

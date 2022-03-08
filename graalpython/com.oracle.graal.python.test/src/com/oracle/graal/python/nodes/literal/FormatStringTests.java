@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.nodes.literal;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.test.PythonTests;
 import org.junit.Assert;
 import org.junit.Test;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.parser.sst.*;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.parser.ParserTestBase;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class FormatStringTests extends ParserTestBase {
 
@@ -259,37 +261,37 @@ public class FormatStringTests extends ParserTestBase {
 
     @Test
     public void emptyExpression01() {
-        checkSyntaxError("f'{}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{}'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void emptyExpression02() {
-        checkSyntaxError("f'start{}end'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'start{}end'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void emptyExpression03() {
-        checkSyntaxError("f'start{}}end'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'start{}}end'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void emptyExpression04() {
-        checkSyntaxError("f'start{{{}}}end'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'start{{{}}}end'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void singleBracket01() {
-        checkSyntaxError("f'}'", FormatStringParser.ERROR_MESSAGE_SINGLE_BRACE);
+        checkSyntaxError("f'}'", ErrorMessages.ERROR_MESSAGE_SINGLE_BRACE);
     }
 
     @Test
     public void singleBracket02() {
-        checkSyntaxError("f'start}end'", FormatStringParser.ERROR_MESSAGE_SINGLE_BRACE);
+        checkSyntaxError("f'start}end'", ErrorMessages.ERROR_MESSAGE_SINGLE_BRACE);
     }
 
     @Test
     public void singleBracket03() {
-        checkSyntaxError("f'start{{}end'", FormatStringParser.ERROR_MESSAGE_SINGLE_BRACE);
+        checkSyntaxError("f'start{{}end'", ErrorMessages.ERROR_MESSAGE_SINGLE_BRACE);
     }
 
     @Test
@@ -319,35 +321,35 @@ public class FormatStringTests extends ParserTestBase {
 
     @Test
     public void missingExpression01() {
-        checkSyntaxError("f'{!x}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{!x}'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression02() {
-        checkSyntaxError("f'{     !x}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{     !x}'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression03() {
-        checkSyntaxError("f'{ !xr:a}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{ !xr:a}'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression04() {
-        checkSyntaxError("f'{:x'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{:x'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression05() {
-        checkSyntaxError("f'{!'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{!'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
     public void missingExpression06() {
-        checkSyntaxError("f'{10:{ }}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
+        checkSyntaxError("f'{10:{ }}'", ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
-    private void checkSyntaxError(String text, String expectedMessage) {
+    private void checkSyntaxError(String text, TruffleString expectedMessage) {
         try {
             testFormatString(text, "Expected Error: " + expectedMessage);
         } catch (PException e) {

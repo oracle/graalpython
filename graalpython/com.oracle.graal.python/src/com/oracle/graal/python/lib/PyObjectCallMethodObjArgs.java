@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent to use for the various PyObject_CallMethod* functions available in CPython.
@@ -64,14 +65,15 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectCallMethodObjArgs extends Node {
-    public final Object execute(Frame frame, Object receiver, String name, Object... arguments) {
+
+    public final Object execute(Frame frame, Object receiver, TruffleString name, Object... arguments) {
         return executeInternal(frame, receiver, name, arguments);
     }
 
-    protected abstract Object executeInternal(Frame frame, Object receiver, String name, Object[] arguments);
+    protected abstract Object executeInternal(Frame frame, Object receiver, TruffleString name, Object[] arguments);
 
     @Specialization(guards = "arguments.length == 0")
-    static Object callUnary(Frame frame, Object receiver, String name, @SuppressWarnings("unused") Object[] arguments,
+    static Object callUnary(Frame frame, Object receiver, TruffleString name, @SuppressWarnings("unused") Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
                     @Cached CallUnaryMethodNode callNode) {
         Object callable = getMethod.execute(frame, receiver, name);
@@ -79,7 +81,7 @@ public abstract class PyObjectCallMethodObjArgs extends Node {
     }
 
     @Specialization(guards = "arguments.length == 1")
-    static Object callBinary(Frame frame, Object receiver, String name, Object[] arguments,
+    static Object callBinary(Frame frame, Object receiver, TruffleString name, Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
                     @Cached CallBinaryMethodNode callNode) {
         Object callable = getMethod.execute(frame, receiver, name);
@@ -87,7 +89,7 @@ public abstract class PyObjectCallMethodObjArgs extends Node {
     }
 
     @Specialization(guards = "arguments.length == 2")
-    static Object callTernary(Frame frame, Object receiver, String name, Object[] arguments,
+    static Object callTernary(Frame frame, Object receiver, TruffleString name, Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
                     @Cached CallTernaryMethodNode callNode) {
         Object callable = getMethod.execute(frame, receiver, name);
@@ -95,7 +97,7 @@ public abstract class PyObjectCallMethodObjArgs extends Node {
     }
 
     @Specialization(guards = "arguments.length == 3")
-    static Object callQuad(Frame frame, Object receiver, String name, Object[] arguments,
+    static Object callQuad(Frame frame, Object receiver, TruffleString name, Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
                     @Cached CallQuaternaryMethodNode callNode) {
         Object callable = getMethod.execute(frame, receiver, name);
@@ -103,7 +105,7 @@ public abstract class PyObjectCallMethodObjArgs extends Node {
     }
 
     @Specialization(replaces = {"callUnary", "callBinary", "callTernary", "callQuad"})
-    static Object call(Frame frame, Object receiver, String name, Object[] arguments,
+    static Object call(Frame frame, Object receiver, TruffleString name, Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
                     @Cached CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,10 +43,12 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class BadOPCodeNode extends PRootNode {
 
@@ -57,14 +59,14 @@ public class BadOPCodeNode extends PRootNode {
         this.name = "<invalid code>";
     }
 
-    public BadOPCodeNode(TruffleLanguage<?> language, String name) {
+    public BadOPCodeNode(TruffleLanguage<?> language, TruffleString name) {
         super(language);
-        this.name = name;
+        this.name = name.toJavaStringUncached();
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, "unknown opcode");
+        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.UNKNOWN_OPCODE);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,37 +41,53 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Equivalent of CPython's {@code PyObject_Repr}. Converts the object to a string using its
- * {@code __repr__} special method. Falls back to default object {@code __repr__} implementation.
+ * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
+ * {@code __str__} special method.
  * <p>
- * The output is always coerced to a Java {@link String}
+ * The output is always coerced to a {@link TruffleString}
  *
- * @see PyObjectReprAsObjectNode
+ * @see PyObjectStrAsObjectNode
  */
 @GenerateUncached
-public abstract class PyObjectReprAsJavaStringNode extends PNodeWithContext {
-    public abstract String execute(Frame frame, Object object);
+public abstract class PyObjectStrAsTruffleStringNode extends PNodeWithContext {
+    public abstract TruffleString execute(Frame frame, Object object);
+
+    public final TruffleString execute(Object object) {
+        return execute(null, object);
+    }
 
     @Specialization
-    static String repr(VirtualFrame frame, Object obj,
-                    @Cached PyObjectReprAsObjectNode reprNode,
-                    @Cached CastToJavaStringNode cast) {
-        return cast.execute(reprNode.execute(frame, obj));
+    static TruffleString doString(TruffleString obj) {
+        return obj;
     }
 
-    public static PyObjectReprAsJavaStringNode create() {
-        return PyObjectReprAsJavaStringNodeGen.create();
+    @Specialization
+    static TruffleString doGeneric(VirtualFrame frame, Object obj,
+                    @Cached PyObjectStrAsObjectNode strNode,
+                    @Cached CastToTruffleStringNode castToString) {
+        try {
+            return castToString.execute(strNode.execute(frame, obj));
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
+        }
     }
 
-    public static PyObjectReprAsJavaStringNode getUncached() {
-        return PyObjectReprAsJavaStringNodeGen.getUncached();
+    public static PyObjectStrAsTruffleStringNode create() {
+        return PyObjectStrAsTruffleStringNodeGen.create();
+    }
+
+    public static PyObjectStrAsTruffleStringNode getUncached() {
+        return PyObjectStrAsTruffleStringNodeGen.getUncached();
     }
 }

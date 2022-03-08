@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.buffer;
 
+import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
+
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -54,6 +56,7 @@ import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -62,11 +65,11 @@ import com.oracle.truffle.api.nodes.Node;
  * permissible to use this library to access the underlying memory of {@link PBytesLike} objects
  * that implement the API directly (i.e. as an equivalent of {@code PyBytes_AsStringAndSize}) - in
  * that case, the buffer doesn't need to be acquired or released.
- * 
+ *
  * As in CPython, the caller is responsible for keeping consistency of the underlying memory -
  * implementations are not expected to perform bounds check or check for writability before write
  * operations.
- * 
+ *
  * The messages can be categorized into several groups:
  * <ul>
  * <li>Accessing the underlying byte array - {@link #hasInternalByteArray},
@@ -220,7 +223,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
     /**
      * Read data from this buffer and write to another buffer. Bounds checks are responsibility of
      * the caller.
-     * 
+     *
      * @param receiver this buffer (source)
      * @param srcOffset the offset in this buffer in bytes
      * @param dest other buffer (destination)
@@ -265,7 +268,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Read a single byte from the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     @Abstract
@@ -276,7 +279,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Read a single short from the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public short readShort(Object receiver, int byteOffset) {
@@ -291,7 +294,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Read a single int from the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public int readInt(Object receiver, int byteOffset) {
@@ -308,7 +311,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Read a single long from the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public long readLong(Object receiver, int byteOffset) {
@@ -331,7 +334,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Read a single float from the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public float readFloat(Object receiver, int byteOffset) {
@@ -340,7 +343,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Read a single double from the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public double readDouble(Object receiver, int byteOffset) {
@@ -349,7 +352,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Write a single byte to the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     @Abstract(ifExported = "isReadonly")
@@ -360,7 +363,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Write a single short to the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public void writeShort(Object receiver, int byteOffset, short value) {
@@ -377,7 +380,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Write a single int to the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public void writeInt(Object receiver, int byteOffset, int value) {
@@ -400,7 +403,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Write a single long to the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public void writeLong(Object receiver, int byteOffset, long value) {
@@ -435,7 +438,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Write a single float to the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public void writeFloat(Object receiver, int byteOffset, float value) {
@@ -444,7 +447,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
 
     /**
      * Write a single double to the buffer. Bounds checks are responsibility of the caller.
-     * 
+     *
      * @param byteOffset offset in bytes
      */
     public void writeDouble(Object receiver, int byteOffset, double value) {
@@ -473,8 +476,8 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * {@code Py_buffer.format}.
      */
     @Abstract(ifExported = "getItemSize")
-    public String getFormatString(@SuppressWarnings("unused") Object receiver) {
-        return "B";
+    public TruffleString getFormatString(@SuppressWarnings("unused") Object receiver) {
+        return T_UINT_8_TYPE_CODE;
     }
 
     static final LibraryFactory<PythonBufferAccessLibrary> FACTORY = LibraryFactory.resolve(PythonBufferAccessLibrary.class);

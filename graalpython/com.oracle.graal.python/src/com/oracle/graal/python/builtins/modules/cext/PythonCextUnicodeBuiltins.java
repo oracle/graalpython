@@ -42,8 +42,11 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UNICODE_ESCAPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -105,7 +108,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.OverflowException;
@@ -119,6 +122,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -138,7 +142,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyUnicodeFromObjectNode extends PythonBuiltinNode {
         @Specialization
-        public static String fromObject(String s) {
+        public static TruffleString fromObject(TruffleString s) {
             return s;
         }
 
@@ -183,11 +187,12 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyUnicodeGetLengthNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int fromObject(String s) {
-            return s.length();
+        public int fromObject(TruffleString s,
+                        @Cached TruffleString.CodePointLengthNode lengthNode) {
+            return lengthNode.execute(s, TS_ENCODING);
         }
 
-        @Specialization(guards = {"!isJavaString(obj)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(obj)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
         public static Object getLength(VirtualFrame frame, Object obj,
                         @Cached com.oracle.graal.python.builtins.objects.str.StringBuiltins.LenNode lenNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -201,7 +206,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
         public static Object getLength(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -257,14 +262,14 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyUnicodeFromEncodedObjectNode extends PythonTernaryBuiltinNode {
         @Specialization
-        public Object fromBytes(VirtualFrame frame, PBytesLike obj, String encoding, String errors,
+        public Object fromBytes(VirtualFrame frame, PBytesLike obj, TruffleString encoding, TruffleString errors,
                         @Cached DecodeNode decodeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             return decode(frame, obj, encoding, errors, decodeNode, transformExceptionToNativeNode);
         }
 
         @Specialization(guards = {"!isBytes(obj)", "!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object fromEncoded(VirtualFrame frame, Object obj, String encoding, String errors,
+        public Object fromEncoded(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
                         @Cached DecodeNode decodeNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -272,7 +277,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
             return decode(frame, obj, encoding, errors, decodeNode, transformExceptionToNativeNode);
         }
 
-        private Object decode(VirtualFrame frame, Object obj, String encoding, String errors, DecodeNode decodeNode, TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        private Object decode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors, DecodeNode decodeNode, TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return decodeNode.execute(frame, obj, encoding, errors);
             } catch (PException e) {
@@ -282,7 +287,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isString(obj) || isStringSubtype(frame, obj, getClassNode, isSubtypeNode)")
-        public Object concat(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") String encoding, @SuppressWarnings("unused") String errors,
+        public Object concat(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") TruffleString encoding, @SuppressWarnings("unused") TruffleString errors,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -297,7 +302,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @Builtin(name = "PyUnicode_InternInPlace", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PyUnicodeInternInPlaceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = {"!isJavaString(obj)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(obj)", "isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
         public Object intern(VirtualFrame frame, Object obj,
                         @Cached InternNode internNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -311,7 +316,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
         public Object intern(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
@@ -341,7 +346,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(format)", "isStringSubtype(frame, format, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(format)", "isStringSubtype(frame, format, getClassNode, isSubtypeNode)"})
         public Object find(VirtualFrame frame, Object format, @SuppressWarnings("unused") Object args,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -388,7 +393,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(string)", "isStringSubtype(frame, string, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(string)", "isStringSubtype(frame, string, getClassNode, isSubtypeNode)"})
         public static Object find(VirtualFrame frame, Object string, @SuppressWarnings("unused") Object c, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
                         @SuppressWarnings("unused") Object direction,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -415,7 +420,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object getItemCallable = lookupAttrNode.execute(frame, s, __GETITEM__);
+                Object getItemCallable = lookupAttrNode.execute(frame, s, T___GETITEM__);
                 return callNode.execute(getItemCallable, sliceNode.execute(start, end, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -423,7 +428,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(s)", "isStringSubtype(frame, s, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(s)", "isStringSubtype(frame, s, getClassNode, isSubtypeNode)"})
         public Object find(VirtualFrame frame, Object s, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -454,7 +459,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(separator)", "isStringSubtype(frame, separator, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(separator)", "isStringSubtype(frame, separator, getClassNode, isSubtypeNode)"})
         public Object find(VirtualFrame frame, Object separator, @SuppressWarnings("unused") Object seq,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -517,7 +522,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object getItemCallable = lookupAttrNode.execute(frame, string, __GETITEM__);
+                Object getItemCallable = lookupAttrNode.execute(frame, string, T___GETITEM__);
                 Object slice = callNode.execute(getItemCallable, sliceNode.execute(start, end, PNone.NONE));
                 return (boolean) endsWith.execute(frame, slice, substring, start, end) ? 1 : 0;
             } catch (PException e) {
@@ -536,7 +541,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object getItemCallable = lookupAttrNode.execute(frame, string, __GETITEM__);
+                Object getItemCallable = lookupAttrNode.execute(frame, string, T___GETITEM__);
                 Object slice = callNode.execute(getItemCallable, sliceNode.execute(start, end, PNone.NONE));
                 return (boolean) endsWith.execute(frame, slice, substring, start, end) ? 1 : 0;
             } catch (PException e) {
@@ -567,7 +572,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyUnicodeAsEncodedStringNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "isString(obj) || isStringSubtype(frame, obj, getClassNode, isSubtypeNode)")
-        public Object encode(VirtualFrame frame, Object obj, String encoding, String errors,
+        public Object encode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached EncodeNode encodeNode,
@@ -581,7 +586,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isString(obj)", "!isStringSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object encode(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") String encoding, @SuppressWarnings("unused") String errors,
+        public Object encode(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") TruffleString encoding, @SuppressWarnings("unused") TruffleString errors,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -621,14 +626,14 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
             return replace(frame, s, substr, replstr, count, replaceNode, transformExceptionToNativeNode);
         }
 
+        @SuppressWarnings("unused")
         @Specialization(guards = {"!isString(s)", "!isString(substr)", "!isString(replstr)",
                         "!isStringSubtype(frame, s, getClassNode, isSubtypeNode)",
                         "!isStringSubtype(frame, substr, getClassNode, isSubtypeNode)",
                         "!isStringSubtype(frame, replstr, getClassNode, isSubtypeNode)"})
-        public Object replace(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") String s, @SuppressWarnings("unused") String substr,
-                        @SuppressWarnings("unused") String replstr, @SuppressWarnings("unused") long count,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+        public Object replace(VirtualFrame frame, Object s, Object substr, Object replstr, long count,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
             return getContext().getNativeNull();
         }
 
@@ -647,7 +652,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return getItemNode.execute(frame, encodeNode.execute(frame, s, "unicode_escape", PNone.NO_VALUE), 0);
+                return getItemNode.execute(frame, encodeNode.execute(frame, s, T_UNICODE_ESCAPE, PNone.NO_VALUE), 0);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -682,17 +687,19 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     abstract static class PyUnicodeReadChar extends PythonBinaryBuiltinNode {
         @Specialization
         int doGeneric(Object type, long lindex,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TruffleString.CodePointLengthNode lengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode) {
             try {
                 try {
-                    String s = castToJavaStringNode.execute(type);
+                    TruffleString s = castToStringNode.execute(type);
                     int index = PInt.intValueExact(lindex);
                     // avoid StringIndexOutOfBoundsException
-                    if (index < 0 || index >= PString.length(s)) {
+                    if (index < 0 || index >= lengthNode.execute(s, TS_ENCODING)) {
                         throw raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
                     }
-                    return PString.charAt(s, index);
+                    return codepointAtIndexNode.execute(s, index, TS_ENCODING);
                 } catch (CannotCastException e) {
                     throw raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
                 } catch (OverflowException e) {
@@ -720,7 +727,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyUnicodeFromStringNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PString run(String str) {
+        PString run(TruffleString str) {
             return factory().createString(str);
         }
 
@@ -776,7 +783,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     abstract static class PyUnicodeDecodeUTF8StatefulNode extends NativeUnicodeBuiltin {
 
         @Specialization
-        Object doUtf8Decode(VirtualFrame frame, Object cByteArray, String errors, @SuppressWarnings("unused") int reportConsumed,
+        Object doUtf8Decode(VirtualFrame frame, Object cByteArray, TruffleString errors, @SuppressWarnings("unused") int reportConsumed,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached GetByteArrayNode getByteArrayNode) {
 
@@ -787,16 +794,16 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                 decodeUTF8(resultBuffer, inputBuffer, errors);
                 return toSulongNode.execute(factory().createTuple(new Object[]{toString(resultBuffer), n - remaining(inputBuffer)}));
             } catch (InteropException e) {
-                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.TypeError, "%m", e);
+                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
                 return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
             }
         }
 
         @TruffleBoundary
-        private void decodeUTF8(CharBuffer resultBuffer, ByteBuffer inputBuffer, String errors) {
+        private void decodeUTF8(CharBuffer resultBuffer, ByteBuffer inputBuffer, TruffleString errors) {
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
+            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this, TruffleString.EqualNode.getUncached());
             decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
         }
     }
@@ -806,7 +813,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     abstract static class PyUnicodeDecodeNode extends NativeBuiltin {
 
         @Specialization
-        Object doDecode(VirtualFrame frame, PMemoryView mv, String encoding, String errors,
+        Object doDecode(VirtualFrame frame, PMemoryView mv, TruffleString encoding, TruffleString errors,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
                         @Cached CExtNodes.ToNewRefNode toSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -823,17 +830,17 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyUnicodeEncodeFSDefaultNode extends PythonBuiltinNode {
         @Specialization
-        PBytes fromObject(String s,
+        PBytes fromObject(TruffleString s,
                         @Shared("encode") @Cached EncodeNativeStringNode encode) {
-            byte[] array = encode.execute(StandardCharsets.UTF_8, s, "replace");
+            byte[] array = encode.execute(StandardCharsets.UTF_8, s, T_REPLACE);
             return factory().createBytes(array);
         }
 
         @Specialization
         PBytes fromObject(Object s,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToTruffleStringNode castStr,
                         @Shared("encode") @Cached EncodeNativeStringNode encode) {
-            byte[] array = encode.execute(StandardCharsets.UTF_8, castStr.execute(s), "replace");
+            byte[] array = encode.execute(StandardCharsets.UTF_8, castStr.execute(s), T_REPLACE);
             return factory().createBytes(array);
         }
     }

@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -48,6 +51,8 @@ import java.util.Currency;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -61,7 +66,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -69,7 +74,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import org.graalvm.nativeimage.ImageInfo;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_locale")
 public class LocaleModuleBuiltins extends PythonBuiltins {
@@ -83,17 +88,18 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     static final int CHAR_MAX = 127;
 
     @TruffleBoundary
-    public static Locale fromPosix(String posixLocaleId) {
+    public static Locale fromPosix(TruffleString tposixLocaleId) {
         // format: [language[_territory][.variant][@modifier]]
         // 2 lower _ 2 UPPER .
-        if (posixLocaleId == null) {
+        if (tposixLocaleId == null) {
             return null;
         }
-        if (posixLocaleId.isEmpty()) {
+        if (tposixLocaleId.isEmpty()) {
             // per Python docs: empty string -> default locale
             return Locale.getDefault();
         }
 
+        String posixLocaleId = tposixLocaleId.toJavaStringUncached();
         String language;
         String country = "";
         String variant = "";
@@ -128,7 +134,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static String toPosix(Locale locale) {
+    public static TruffleString toPosix(Locale locale) {
         if (locale == null) {
             return null;
         }
@@ -158,7 +164,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
             return null;
         }
 
-        return builder.toString();
+        return toTruffleStringUncached(builder.toString());
     }
 
     @Override
@@ -168,16 +174,16 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        builtinConstants.put("LC_ALL", 6);
-        builtinConstants.put("LC_COLLATE", 3);
-        builtinConstants.put("LC_CTYPE", 0);
-        builtinConstants.put("LC_MESSAGES", 5);
-        builtinConstants.put("LC_MONETARY", 4);
-        builtinConstants.put("LC_NUMERIC", 1);
-        builtinConstants.put("LC_TIME", 2);
-        builtinConstants.put("CHAR_MAX", 127);
+        addBuiltinConstant("LC_ALL", 6);
+        addBuiltinConstant("LC_COLLATE", 3);
+        addBuiltinConstant("LC_CTYPE", 0);
+        addBuiltinConstant("LC_MESSAGES", 5);
+        addBuiltinConstant("LC_MONETARY", 4);
+        addBuiltinConstant("LC_NUMERIC", 1);
+        addBuiltinConstant("LC_TIME", 2);
+        addBuiltinConstant("CHAR_MAX", 127);
 
-        builtinConstants.put("Error", PythonBuiltinClassType.ValueError);
+        addBuiltinConstant("Error", PythonBuiltinClassType.ValueError);
 
         super.initialize(core);
     }
@@ -207,8 +213,8 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
             }
 
             // LC_NUMERIC
-            dict.put("decimal_point", String.valueOf(decimalFormatSymbols.getDecimalSeparator()));
-            dict.put("thousands_sep", String.valueOf(decimalFormatSymbols.getGroupingSeparator()));
+            dict.put("decimal_point", TruffleString.fromCodePointUncached(decimalFormatSymbols.getDecimalSeparator(), TS_ENCODING));
+            dict.put("thousands_sep", TruffleString.fromCodePointUncached(decimalFormatSymbols.getGroupingSeparator(), TS_ENCODING));
             // TODO: set the proper grouping
             if (groupSize != -1) {
                 dict.put("grouping", factory().createList(new Object[]{groupSize, 0}));
@@ -217,15 +223,15 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
             }
 
             // LC_MONETARY
-            dict.put("int_curr_symbol", decimalFormatSymbols.getInternationalCurrencySymbol());
-            dict.put("currency_symbol", decimalFormatSymbols.getCurrencySymbol());
-            dict.put("mon_decimal_point", String.valueOf(decimalFormatSymbols.getMonetaryDecimalSeparator()));
-            dict.put("mon_thousands_sep", String.valueOf(decimalFormatSymbols.getGroupingSeparator()));
+            dict.put("int_curr_symbol", toTruffleStringUncached(decimalFormatSymbols.getInternationalCurrencySymbol()));
+            dict.put("currency_symbol", toTruffleStringUncached(decimalFormatSymbols.getCurrencySymbol()));
+            dict.put("mon_decimal_point", TruffleString.fromCodePointUncached(decimalFormatSymbols.getMonetaryDecimalSeparator(), TS_ENCODING));
+            dict.put("mon_thousands_sep", TruffleString.fromCodePointUncached(decimalFormatSymbols.getGroupingSeparator(), TS_ENCODING));
             // TODO: set the proper grouping
             dict.put("mon_grouping", factory().createList());
             // TODO: reasonable default, but not the current locale setting
             dict.put("positive_sign", "");
-            dict.put("negative_sign", String.valueOf(decimalFormatSymbols.getMinusSign()));
+            dict.put("negative_sign", TruffleString.fromCodePointUncached(decimalFormatSymbols.getMinusSign(), TS_ENCODING));
             dict.put("int_frac_digits", currency.getDefaultFractionDigits());
             dict.put("frac_digits", currency.getDefaultFractionDigits());
             dict.put("p_cs_precedes", PNone.NONE);
@@ -247,7 +253,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("fallthrough")
         @Specialization(guards = "isValidCategory(category)")
         @TruffleBoundary
-        Object doWithoutLocaleID(int category, @SuppressWarnings("unused") PNone posixLocaleID) {
+        TruffleString doWithoutLocaleID(int category, @SuppressWarnings("unused") PNone posixLocaleID) {
             Locale defaultLocale;
             Locale.Category displayCategory = null;
             Locale.Category formatCategory = null;
@@ -284,7 +290,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isValidCategory(category)")
         @TruffleBoundary
         @SuppressWarnings("fallthrough")
-        Object doWithLocaleID(int category, String posixLocaleID) {
+        TruffleString doWithLocaleID(int category, TruffleString posixLocaleID) {
             Locale.Category displayCategory = null;
             Locale.Category formatCategory = null;
             if (!ImageInfo.inImageBuildtimeCode()) {
@@ -327,19 +333,19 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doWithoutLocaleID", "doWithLocaleID"})
-        Object doGeneric(VirtualFrame frame, Object category, Object posixLocaleID,
+        TruffleString doGeneric(VirtualFrame frame, Object category, Object posixLocaleID,
                         @Cached PyLongAsLongNode asLongNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Cached CastToTruffleStringNode castToStringNode) {
             long l = asLongNode.execute(frame, category);
             if (!isValidCategory(l)) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
             }
 
-            String posixLocaleIDStr = null;
+            TruffleString posixLocaleIDStr = null;
             // may be NONE or NO_VALUE
             if (!PGuards.isPNone(posixLocaleID)) {
                 try {
-                    posixLocaleIDStr = castToJavaStringNode.execute(posixLocaleID);
+                    posixLocaleIDStr = castToStringNode.execute(posixLocaleID);
                 } catch (CannotCastException e) {
                     // fall through
                 }

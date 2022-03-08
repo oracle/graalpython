@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
 
 import java.util.Iterator;
 
@@ -70,6 +71,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EconomicMapStorage extends HashingStorage {
@@ -123,27 +125,29 @@ public class EconomicMapStorage extends HashingStorage {
     static class GetItemWithState {
 
         @Specialization
-        static Object getItemString(EconomicMapStorage self, String key, @SuppressWarnings("unused") ThreadState state,
+        static Object getItemTruffleString(EconomicMapStorage self, TruffleString key, ThreadState state,
+                        @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
                         @Shared("findProfile") @Cached ConditionProfile findProfile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-            DictKey newKey = new DictKey(key, key.hashCode());
+            DictKey newKey = new DictKey(key, PyObjectHashNode.hash(key, hashCodeNode));
             return self.map.get(frame, newKey, findProfile, eqNode);
         }
 
         @Specialization(guards = {"isBuiltinString(key, isBuiltinClassProfile)"}, limit = "1")
-        static Object getItemPString(EconomicMapStorage self, PString key, @SuppressWarnings("unused") ThreadState state,
+        static Object getItemPString(EconomicMapStorage self, PString key, ThreadState state,
                         @Shared("stringMaterialize") @Cached StringMaterializeNode stringMaterializeNode,
+                        @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
                         @Shared("findProfile") @Cached ConditionProfile findProfile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("gotState") @Cached ConditionProfile gotState,
                         @Shared("builtinProfile") @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isBuiltinClassProfile) {
-            final String k = stringMaterializeNode.execute(key);
-            return getItemString(self, k, state, findProfile, eqNode, gotState);
+            final TruffleString k = stringMaterializeNode.execute(key);
+            return getItemTruffleString(self, k, state, hashCodeNode, findProfile, eqNode, gotState);
         }
 
-        @Specialization(replaces = {"getItemString", "getItemPString"})
+        @Specialization(replaces = {"getItemTruffleString", "getItemPString"})
         static Object getItemGeneric(EconomicMapStorage self, Object key, ThreadState state,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
@@ -174,29 +178,31 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         static boolean maySideEffect(PythonObject o, LookupInheritedAttributeNode.Dynamic lookup) {
-            return !PGuards.isBuiltinFunction(lookup.execute(o, __EQ__)) || !PGuards.isBuiltinFunction(lookup.execute(o, __HASH__));
+            return !PGuards.isBuiltinFunction(lookup.execute(o, T___EQ__)) || !PGuards.isBuiltinFunction(lookup.execute(o, T___HASH__));
         }
 
         @Specialization
-        static HashingStorage setItemString(EconomicMapStorage self, String key, Object value, ThreadState state,
+        static HashingStorage setItemTruffleString(EconomicMapStorage self, TruffleString key, Object value, ThreadState state,
+                        @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
                         @Shared("findProfile") @Cached ConditionProfile findProfile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-            DictKey newKey = new DictKey(key, key.hashCode());
-            self.map.put(frame, newKey, value, findProfile, eqNode);
+            DictKey newKey = new DictKey(key, PyObjectHashNode.hash(key, hashCodeNode));
+            self.map.put(frame, newKey, assertNoJavaString(value), findProfile, eqNode);
             return self;
         }
 
         @Specialization(guards = {"isBuiltinString(key, isBuiltinClassProfile)"}, limit = "1")
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
                         @Shared("stringMaterialize") @Cached StringMaterializeNode stringMaterializeNode,
+                        @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
                         @Shared("findProfile") @Cached ConditionProfile findProfile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("gotState") @Cached ConditionProfile gotState,
                         @Shared("builtinProfile") @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
-            final String k = stringMaterializeNode.execute(key);
-            return setItemString(self, k, value, state, findProfile, eqNode, gotState);
+            final TruffleString k = stringMaterializeNode.execute(key);
+            return setItemTruffleString(self, k, value, state, hashCodeNode, findProfile, eqNode, gotState);
         }
 
         @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile) || !isBuiltin(value,builtinProfile)",
@@ -236,7 +242,7 @@ public class EconomicMapStorage extends HashingStorage {
             return setItemGeneric(self, key, value, state, eqNode, hashNode, findProfile, gotState);
         }
 
-        @Specialization(replaces = "setItemString")
+        @Specialization(replaces = {"setItemPString", "setItemTruffleString"})
         static HashingStorage setItemGeneric(EconomicMapStorage self, Object key, Object value, ThreadState state,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
@@ -244,7 +250,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @Shared("gotState") @Cached ConditionProfile gotState) {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             DictKey newKey = new DictKey(key, hashNode.execute(frame, key));
-            self.map.put(frame, newKey, value, findProfile, eqNode);
+            self.map.put(frame, newKey, assertNoJavaString(value), findProfile, eqNode);
             return self;
         }
     }

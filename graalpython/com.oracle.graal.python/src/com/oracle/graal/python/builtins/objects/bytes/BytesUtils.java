@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,22 +27,22 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.parser.sst.StringUtils.warnInvalidEscapeSequence;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public final class BytesUtils {
 
-    public static final byte[] HEXDIGITS = "0123456789abcdef".getBytes();
+    @CompilationFinal(dimensions = 1) public static final byte[] HEXDIGITS = "0123456789abcdef".getBytes();
 
     // tables are copied from CPython/Python/pyctype.c
     static final byte PY_CTF_LOWER = 0x01;
@@ -332,40 +332,49 @@ public final class BytesUtils {
         return quote;
     }
 
-    public static void reprLoop(StringBuilder sb, byte[] bytes, int len) {
+    public static void reprLoop(TruffleStringBuilder sb, byte[] bytes, int len, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
         char quote = figureOutQuote(bytes, len);
-        PythonUtils.append(sb, 'b');
-        PythonUtils.append(sb, quote);
+        appendCodePointNode.execute(sb, 'b', 1, true);
+        appendCodePointNode.execute(sb, quote, 1, true);
         for (int i = 0; i < len; i++) {
-            byteRepr(sb, bytes[i], quote == '\'');
+            byteRepr(sb, bytes[i], quote == '\'', appendCodePointNode);
         }
-        PythonUtils.append(sb, quote);
+        appendCodePointNode.execute(sb, quote, 1, true);
     }
 
     @TruffleBoundary
-    private static void byteRepr(StringBuilder sb, byte b, boolean isSingleQuote) {
+    private static void byteRepr(TruffleStringBuilder sb, byte b, boolean isSingleQuote, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
         if (b == '\t') {
-            PythonUtils.append(sb, "\\t");
+            appendCodePointNode.execute(sb, '\\', 1, true);
+            appendCodePointNode.execute(sb, 't', 1, true);
         } else if (b == '\n') {
-            PythonUtils.append(sb, "\\n");
+            appendCodePointNode.execute(sb, '\\', 1, true);
+            appendCodePointNode.execute(sb, 'n', 1, true);
         } else if (b == '\r') {
-            PythonUtils.append(sb, "\\r");
+            appendCodePointNode.execute(sb, '\\', 1, true);
+            appendCodePointNode.execute(sb, 'r', 1, true);
         } else if (b == '\'') {
-            PythonUtils.append(sb, isSingleQuote ? "\\'" : "'");
+            if (isSingleQuote) {
+                appendCodePointNode.execute(sb, '\\', 1, true);
+            }
+            appendCodePointNode.execute(sb, '\'', 1, true);
         } else if (b > 31 && b <= 126) {
             char chr = (char) b;
             if (chr == '\\') {
-                PythonUtils.append(sb, '\\');
+                appendCodePointNode.execute(sb, '\\', 1, true);
             }
-            PythonUtils.append(sb, chr);
+            appendCodePointNode.execute(sb, chr, 1, true);
         } else {
-            PythonUtils.append(sb, String.format("\\x%02x", b));
+            appendCodePointNode.execute(sb, '\\', 1, true);
+            appendCodePointNode.execute(sb, 'x', 1, true);
+            appendCodePointNode.execute(sb, HEXDIGITS[(b >>> 4) & 0x000F], 1, true);
+            appendCodePointNode.execute(sb, HEXDIGITS[b & 0x000F], 1, true);
         }
     }
 
-    public static void repr(StringBuilder sb, byte[] bytes, int len) {
+    public static void repr(TruffleStringBuilder sb, byte[] bytes, int len, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
         for (int i = 0; i < len; i++) {
-            byteRepr(sb, bytes[i], true);
+            byteRepr(sb, bytes[i], true, appendCodePointNode);
         }
     }
 
@@ -376,11 +385,12 @@ public final class BytesUtils {
             len = bytes.length;
         }
 
-        StringBuilder sb = PythonUtils.newStringBuilder();
-        PythonUtils.append(sb, "b'");
-        repr(sb, bytes, len);
-        PythonUtils.append(sb, "'");
-        return PythonUtils.sbToString(sb);
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        sb.appendCodePointUncached('b');
+        sb.appendCodePointUncached('\'');
+        repr(sb, bytes, len, TruffleStringBuilder.AppendCodePointNode.getUncached());
+        sb.appendCodePointUncached('\'');
+        return sb.toStringUncached().toJavaStringUncached();
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)
@@ -520,19 +530,6 @@ public final class BytesUtils {
         return bytes;
     }
 
-    @TruffleBoundary
-    public static byte[] unicodeNonAsciiEscape(String str) {
-        byte[] bytes = new byte[str.length() * 10];
-        int j = 0;
-        for (int i = 0; i < str.length();) {
-            int ch = str.codePointAt(i);
-            j = unicodeNonAsciiEscape(ch, j, bytes);
-            i += Character.charCount(ch);
-        }
-        bytes = Arrays.copyOf(bytes, j);
-        return bytes;
-    }
-
     /**
      * Puts the escape sequence for given code point into given byte array starting from given
      * index. Returns index of the last written buffer plus one.
@@ -610,36 +607,6 @@ public final class BytesUtils {
         return i;
     }
 
-    @TruffleBoundary
-    public static byte[] fromHex(String str, PRaiseNode raiseNode) {
-        // This overestimates if there are spaces
-        byte[] bytes = new byte[str.length() / 2];
-        byte[] strchar = str.getBytes();
-        int n = 0;
-        for (int i = 0; i < str.length(); i++) {
-            byte c = strchar[i];
-            if (isSpace(c)) {
-                continue;
-            }
-            int top = BytesUtils.digitValue(c);
-            if (top >= 16 || top < 0) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "non-hexadecimal number found in fromhex() arg at position %d", i);
-            }
-
-            c = i + 1 < str.length() ? strchar[++i] : 0;
-            int bottom = BytesUtils.digitValue(c);
-            if (bottom >= 16 || bottom < 0) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "non-hexadecimal number found in fromhex() arg at position %d", i);
-            }
-
-            bytes[n++] = (byte) ((top << 4) | bottom);
-        }
-        if (n != bytes.length) {
-            bytes = Arrays.copyOf(bytes, n);
-        }
-        return bytes;
-    }
-
     /**
      * Convert a hex digit character to it's byte value. E.g. this method returns {@code (byte)10}
      * for character {@code 'A'}. For any other character, value {@code 37} is returned. This is
@@ -667,8 +634,8 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary
-    public static String createASCIIString(byte[] retbuf) {
-        return new String(retbuf, StandardCharsets.US_ASCII);
+    public static TruffleString createASCIIString(byte[] retbuf, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
+        return switchEncodingNode.execute(fromByteArrayNode.execute(retbuf, TruffleString.Encoding.US_ASCII), TS_ENCODING);
     }
 
     @TruffleBoundary
@@ -694,25 +661,5 @@ public final class BytesUtils {
     @TruffleBoundary
     public static byte[] toByteArray(ByteArrayOutputStream bas) {
         return bas.toByteArray();
-    }
-
-    @TruffleBoundary
-    public static String createUTF8String(byte[] retbuf) {
-        return new String(retbuf, StandardCharsets.UTF_8);
-    }
-
-    @TruffleBoundary
-    public static byte[] utf8StringToBytes(String str) {
-        return str.getBytes(StandardCharsets.UTF_8);
-    }
-
-    @TruffleBoundary
-    public static char[] stringToChars(String str) {
-        return str.toCharArray();
-    }
-
-    @TruffleBoundary
-    public static String createString(char[] chars) {
-        return new String(chars);
     }
 }

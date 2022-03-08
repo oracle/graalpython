@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,18 +51,22 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTextIOWrapper;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
+import static com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.T_WARN;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_HAVE_UNBUFFERED_TEXT_IO;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_BUFFERING_SIZE;
+import static com.oracle.graal.python.nodes.ErrorMessages.LINE_BUFFERING_ISNT_SUPPORTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_MODE_S;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeWarning;
 
 import java.util.List;
@@ -74,6 +78,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IONodes.IOMode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -97,6 +102,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_io")
 public final class IOModuleBuiltins extends PythonBuiltins {
@@ -110,17 +116,17 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("SEEK_SET", SEEK_SET);
-        builtinConstants.put("SEEK_CUR", SEEK_CUR);
-        builtinConstants.put("SEEK_END", SEEK_END);
-        builtinConstants.put("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
+        addBuiltinConstant("SEEK_SET", SEEK_SET);
+        addBuiltinConstant("SEEK_CUR", SEEK_CUR);
+        addBuiltinConstant("SEEK_END", SEEK_END);
+        addBuiltinConstant("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
         PythonBuiltinClass unsupportedOpExcType = core.lookupType(IOUnsupportedOperation);
         unsupportedOpExcType.setSuperClass(core.lookupType(OSError), core.lookupType(ValueError));
-        builtinConstants.put(IOUnsupportedOperation.getName(), unsupportedOpExcType);
-        builtinConstants.put(BlockingIOError.getName(), core.lookupType(BlockingIOError));
+        addBuiltinConstant(IOUnsupportedOperation.getName(), unsupportedOpExcType);
+        addBuiltinConstant(BlockingIOError.getName(), core.lookupType(BlockingIOError));
 
-        builtinConstants.put("_warn", core.lookupBuiltinModule("_warnings").getAttribute("warn"));
-        builtinConstants.put("_os", core.lookupBuiltinModule("posix"));
+        addBuiltinConstant("_warn", core.lookupBuiltinModule(T__WARNINGS).getAttribute(T_WARN));
+        addBuiltinConstant("_os", core.lookupBuiltinModule(T_POSIX));
     }
 
     @Builtin(name = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIOBase)
@@ -237,7 +243,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
     // PEP 578 stub
     @Builtin(name = "open_code", minNumOfPositionalArgs = 1, parameterNames = {"path"})
-    @ArgumentClinic(name = "path", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "path", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class IOOpenCodeNode extends PythonUnaryClinicBuiltinNode {
 
@@ -247,18 +253,18 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PFileIO openCode(VirtualFrame frame, String path,
+        PFileIO openCode(VirtualFrame frame, TruffleString path,
                         @Cached FileIOBuiltins.FileIOInit initFileIO) {
-            return createFileIO(frame, path, IONodes.IOMode.create("rb"), true, PNone.NONE, factory(), initFileIO);
+            return createFileIO(frame, path, IOMode.RB, true, PNone.NONE, factory(), initFileIO);
         }
     }
 
     @Builtin(name = "open", minNumOfPositionalArgs = 1, parameterNames = {"file", "mode", "buffering", "encoding", "errors", "newline", "closefd", "opener"})
     @ArgumentClinic(name = "mode", conversionClass = IONodes.CreateIOModeNode.class, args = "true")
     @ArgumentClinic(name = "buffering", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
-    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
     @ArgumentClinic(name = "closefd", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true", useDefaultForNone = true)
     @ImportStatic({IONodes.class, IONodes.IOMode.class})
     @GenerateNodeFactory
@@ -273,7 +279,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
-                        @Cached("create(MODE)") SetAttributeNode setAttrNode,
+                        @Cached("create(T_MODE)") SetAttributeNode setAttrNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
                         @Shared("e") @Cached ConditionProfile profile) {
@@ -321,7 +327,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 /* wraps into a TextIOWrapper */
                 PTextIO wrapper = factory().createTextIO(PTextIOWrapper);
                 initTextIO.execute(frame, wrapper, buffer, encoding,
-                                errors == PNone.NONE ? STRICT : (String) errors,
+                                errors == PNone.NONE ? T_STRICT : (TruffleString) errors,
                                 newline, line_buffering, false);
 
                 result = wrapper;
@@ -329,7 +335,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 setAttrNode.executeVoid(frame, wrapper, mode.mode);
                 return result;
             } catch (PException e) {
-                callClose.execute(frame, result, CLOSE);
+                callClose.execute(frame, result, T_CLOSE);
                 throw e;
             }
         }
@@ -356,7 +362,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
                         @Shared("e") @Cached ConditionProfile profile) {
-            warnNode.warnEx(frame, RuntimeWarning, "line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used", 1);
+            warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
             return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, initFileIO, createBufferedIO, posixLib, callClose, profile);
         }
 
@@ -407,7 +413,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 /* if binary, returns the buffered file */
                 return createBufferedIO.execute(frame, fileIO, buffering, factory(), mode);
             } catch (PException e) {
-                callClose.execute(frame, fileIO, CLOSE);
+                callClose.execute(frame, fileIO, T_CLOSE);
                 throw e;
             }
         }

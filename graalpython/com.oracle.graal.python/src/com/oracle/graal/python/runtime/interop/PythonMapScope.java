@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,8 +64,8 @@ import com.oracle.truffle.api.profiles.IntValueProfile;
 public final class PythonMapScope implements TruffleObject {
 
     @CompilationFinal(dimensions = 1) private static final String[] TOP_SCOPE_NAMES = {
-                    BuiltinNames.__MAIN__,
-                    BuiltinNames.BUILTINS,
+                    BuiltinNames.J___MAIN__,
+                    BuiltinNames.J_BUILTINS,
     };
 
     static final int LIMIT = 2;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,9 +50,9 @@ import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.F
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_AUTO;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_RAW;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_XZ;
-import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_JAVA_ERROR;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.T_LZMA_JAVA_ERROR;
 import static com.oracle.graal.python.nodes.ErrorMessages.ALREADY_AT_END_OF_STREAM;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
@@ -95,7 +95,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "memlimit", "filters"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "memlimit", "filters"})
     @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "LZMAModuleBuiltins.FORMAT_AUTO", useDefaultForNone = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -253,7 +253,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization
         int doCheck(@SuppressWarnings("unused") LZMADecompressor.Java self) {
-            throw raise(SystemError, LZMA_JAVA_ERROR);
+            throw raise(SystemError, T_LZMA_JAVA_ERROR);
         }
 
     }

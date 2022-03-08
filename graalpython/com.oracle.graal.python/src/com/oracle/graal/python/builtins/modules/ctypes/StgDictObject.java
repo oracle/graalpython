@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class StgDictObject extends PDict {
 
@@ -76,11 +77,11 @@ public final class StgDictObject extends PDict {
     int flags; /* calling convention and such */
 
     /* pep3118 fields, pointers neeed PyMem_Free */
-    String format;
+    TruffleString format;
     int ndim;
     int[] shape;
 
-    String[] fieldsNames;
+    TruffleString[] fieldsNames;
     int[] fieldsOffsets;
     FFI_TYPES[] fieldsTypes;
 

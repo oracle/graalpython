@@ -62,6 +62,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @NodeInfo(shortName = "read_global")
 public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements ReadNode, GlobalNode {
@@ -72,7 +73,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         }
 
         @Override
-        public Object read(Frame frame, Object globals, String name) {
+        public Object read(Frame frame, Object globals, TruffleString name) {
             Object result;
             if (globals instanceof PythonModule) {
                 result = ReadAttributeFromObjectNode.getUncached().execute(globals, name);
@@ -81,7 +82,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
             }
             if (result == null || result == PNone.NO_VALUE) {
                 PythonContext context = PythonContext.get(this);
-                PythonModule builtins = context.getCore().lookupBuiltinModule(BuiltinNames.BUILTINS);
+                PythonModule builtins = context.getCore().lookupBuiltinModule(BuiltinNames.T_BUILTINS);
                 result = ReadAttributeFromObjectNode.getUncached().execute(builtins, name);
             }
             if (result != PNone.NO_VALUE) {
@@ -143,18 +144,18 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     protected abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
 
-    public Object read(Frame frame, Object globals, String name) {
+    public Object read(Frame frame, Object globals, TruffleString name) {
         assert name == attributeId : "cached ReadGlobalOrBuiltinNode can only be used with cached attributeId";
         return executeWithGlobals((VirtualFrame) frame, globals);
     }
 
-    protected final String attributeId;
+    protected final TruffleString attributeId;
 
-    protected ReadGlobalOrBuiltinNode(String attributeId) {
+    protected ReadGlobalOrBuiltinNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
-    public static ReadGlobalOrBuiltinNode create(String attributeId) {
+    public static ReadGlobalOrBuiltinNode create(TruffleString attributeId) {
         return ReadGlobalOrBuiltinNodeGen.create(attributeId);
     }
 
@@ -239,7 +240,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     }
 
     @Override
-    public String getAttributeId() {
+    public TruffleString getAttributeId() {
         return attributeId;
     }
 
@@ -258,7 +259,7 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
     protected static final Assumption singleCoreNotInitialized = Truffle.getRuntime().createAssumption();
 
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
-    protected final String attributeId;
+    protected final TruffleString attributeId;
 
     @CompilationFinal private ConditionProfile isCoreInitializedProfile;
 
@@ -267,7 +268,7 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
 
     public abstract Object execute();
 
-    protected ReadBuiltinNode(String attributeId) {
+    protected ReadBuiltinNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
@@ -299,7 +300,7 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
         if (ensureContextInitializedProfile().profile(context.isInitialized())) {
             return context.getBuiltins();
         } else {
-            return context.lookupBuiltinModule(BuiltinNames.BUILTINS);
+            return context.lookupBuiltinModule(BuiltinNames.T_BUILTINS);
         }
     }
 

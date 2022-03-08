@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,7 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
@@ -91,6 +91,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_multiprocessing")
 public class MultiprocessingModuleBuiltins extends PythonBuiltins {
@@ -105,7 +106,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         // TODO: add necessary entries to the dict
-        builtinConstants.put("flags", core.factory().createDict());
+        addBuiltinConstant("flags", core.factory().createDict());
         super.initialize(core);
     }
 
@@ -114,7 +115,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class ConstructSemLockNode extends PythonBuiltinNode {
         @Specialization
         PSemLock construct(Object cls, Object kindObj, Object valueObj, Object maxvalueObj, Object nameObj, Object unlinkObj,
-                        @Cached CastToJavaStringNode castNameNode,
+                        @Cached CastToTruffleStringNode castNameNode,
                         @Cached CastToJavaIntExactNode castKindToIntNode,
                         @Cached CastToJavaIntExactNode castValueToIntNode,
                         @Cached CastToJavaIntExactNode castMaxvalueToIntNode,
@@ -128,7 +129,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                                                         // on posix
             Semaphore semaphore = newSemaphore(value);
             int unlink = castUnlinkToIntNode.execute(unlinkObj);
-            String name;
+            TruffleString name;
             try {
                 name = castNameNode.execute(nameObj);
             } catch (CannotCastException e) {
@@ -160,7 +161,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "sem_unlink", parameterNames = {"name"})
     abstract static class SemUnlink extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone doit(VirtualFrame frame, String name,
+        PNone doit(VirtualFrame frame, TruffleString name,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             Semaphore prev = getContext().getSharedMultiprocessingData().removeNamedSemaphore(name);
             if (prev == null) {

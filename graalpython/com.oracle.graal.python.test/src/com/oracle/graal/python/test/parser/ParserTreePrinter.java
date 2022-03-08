@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -86,6 +86,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class ParserTreePrinter implements NodeVisitor {
     private final int MAX_TEXT_LENGTH = 20;
@@ -428,6 +429,13 @@ public class ParserTreePrinter implements NodeVisitor {
         newLine();
     }
 
+    private void nodeHeader(Node node, TruffleString name) {
+        addNodeClassName(node);
+        sb.append(" Name: ").append(name).append(" ");
+        addSourceSection(node.getSourceSection());
+        newLine();
+    }
+
     private void nodeHeader(Node node, String name) {
         addNodeClassName(node);
         sb.append(" Name: ").append(name).append(" ");
@@ -517,12 +525,16 @@ public class ParserTreePrinter implements NodeVisitor {
         }
     }
 
-    private void add(String[] array) {
+    private void add(TruffleString text) {
+        add(text == null ? null : text.toJavaStringUncached());
+    }
+
+    private void add(TruffleString[] array) {
         if (array == null || array.length == 0) {
             sb.append("None");
         } else {
             boolean first = true;
-            for (String text : array) {
+            for (TruffleString text : array) {
                 if (!first) {
                     sb.append(", ");
                 } else {

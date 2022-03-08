@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,6 +28,8 @@ package com.oracle.graal.python.builtins.objects;
 
 import com.oracle.truffle.api.CompilerAsserts;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_NOT_IMPLEMENTED;
+
 public final class PNotImplemented extends PythonAbstractObject {
 
     public static final PNotImplemented NOT_IMPLEMENTED = new PNotImplemented();
@@ -38,7 +40,7 @@ public final class PNotImplemented extends PythonAbstractObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "NotImplemented";
+        return J_NOT_IMPLEMENTED;
     }
 
     public int compareTo(Object o) {

@@ -520,7 +520,7 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), "invalid item for assignment");
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), ErrorMessages.INVALID_ITEM_FOR_ASSIGMENT);
         }
     }
 
