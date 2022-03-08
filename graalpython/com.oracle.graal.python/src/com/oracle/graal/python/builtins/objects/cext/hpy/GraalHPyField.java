@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,14 +41,11 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -58,7 +55,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -69,19 +65,16 @@ public final class GraalHPyField implements TruffleObject {
     public static final GraalHPyField NULL_FIELD = new GraalHPyField();
     public static final String I = "_i";
 
-    private final PythonObject owner;
     private final Object referent;
-    private int id = -1;
+    private int id;
 
     private GraalHPyField() {
-        this.owner = null;
         this.referent = null;
         this.id = 0;
     }
 
-    GraalHPyField(GraalHPyContext hpyContext, PythonObject owner, Object referent, int location) {
+    GraalHPyField(Object referent, int location) {
         assert referent != null : "HPy fields to Java null are not allowed";
-        this.owner = owner;
         this.referent = referent;
         this.id = location;
     }
@@ -117,11 +110,10 @@ public final class GraalHPyField implements TruffleObject {
     @ExportMessage
     static class GetNativeType {
 
-        @Specialization(assumptions = "singleContextAssumption")
+        @Specialization(assumptions = "singleNativeContextAssumption()")
         @SuppressWarnings("unused")
         static Object doSingleContext(GraalHPyField handle,
                         @CachedLibrary("handle") InteropLibrary lib,
-                        @Cached("singleContextAssumption(lib)") Assumption singleContextAssumption,
                         @Cached("getHPyFieldNativeType(lib)") Object hpyNativeType) {
             return hpyNativeType;
         }
@@ -136,8 +128,8 @@ public final class GraalHPyField implements TruffleObject {
             return PythonContext.get(node).getHPyContext().getHPyFieldNativeType();
         }
 
-        static Assumption singleContextAssumption(Node node) {
-            return PythonLanguage.get(node).singleContextAssumption;
+        protected static Assumption singleNativeContextAssumption() {
+            return PythonContext.getSingleNativeContextAssumption();
         }
     }
 
@@ -147,14 +139,12 @@ public final class GraalHPyField implements TruffleObject {
     }
 
     @ExportMessage
-    Object getNativePointer(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
+    Object getNativePointer() {
         return isPointer() ? id : null;
     }
 
     @ExportMessage
-    boolean isNative(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
+    boolean isNative() {
         return isPointer();
     }
 

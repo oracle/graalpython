@@ -2584,6 +2584,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallHPyFunction callHelperFunctionNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 4);
@@ -2593,26 +2594,27 @@ public abstract class GraalHPyContextFunctions {
                 Object ownerObject = asPythonObjectNode.execute(context, arguments[1]);
                 Object hpyFieldPtr = arguments[2];
                 Object referent = asPythonObjectNode.execute(context, arguments[3]);
-                Object hpyFieldObject = lib.readArrayElement(hpyFieldPtr, 0);
+                Object hpyFieldObject = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_GET_FIELD_I, hpyFieldPtr);
 
                 if (!(ownerObject instanceof PythonObject)) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    throw CompilerDirectives.shouldNotReachHere("HPyField owner is not a PythonObject!");
                 }
                 PythonObject owner = (PythonObject) ownerObject;
 
                 int idx;
-                if (hpyFieldObject instanceof Long) {
-                    idx = PInt.intValueExact((Long) hpyFieldObject);
+                if (lib.isNull(hpyFieldObject)) { // uninitialized
+                    idx = 0;
                 } else if (hpyFieldObject instanceof GraalHPyField) {
+                    // avoid `asPointer` message dispatch
                     idx = ((GraalHPyField) hpyFieldObject).getId();
-                } else {
-                    throw CompilerDirectives.shouldNotReachHere();
+                } else { // in case of transition to native
+                    idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
                 }
                 idx = assign(owner, referent, idx);
-                lib.writeArrayElement(hpyFieldPtr, 0, new GraalHPyField(context, owner, referent, idx));
+                callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, new GraalHPyField(referent, idx));
                 return 0;
             } catch (InteropException | OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
                 gil.release(mustRelease);
             }
@@ -2622,7 +2624,7 @@ public abstract class GraalHPyContextFunctions {
             Object[] hpyFields = owner.getHpyFields();
             if (location != 0) {
                 assert hpyFields != null;
-                hpyFields[location] = referent;
+                hpyFields[location - 1] = referent;
                 return location;
             } else {
                 int newLocation;
@@ -2649,6 +2651,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("createClassProfile()") ValueProfile fieldTypeProfile,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 3);
@@ -2656,23 +2659,24 @@ public abstract class GraalHPyContextFunctions {
             try {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object hpyFieldObject = fieldTypeProfile.profile(arguments[2]);
+                if (lib.isNull(hpyFieldObject)) { // fast track in case field is not initialized.
+                    return GraalHPyHandle.NULL_HANDLE;
+                }
                 Object referent;
-                if (hpyFieldObject instanceof Long) {
-                    Object owner = asPythonObjectNode.execute(context, arguments[1]);
-                    try {
-                        int idx = PInt.intValueExact((Long) hpyFieldObject);
-                        if (owner instanceof PythonObject) {
-                            referent = ((PythonObject) owner).getHpyFields()[idx];
-                        } else {
-                            throw CompilerDirectives.shouldNotReachHere();
-                        }
-                    } catch (OverflowException e) {
-                        throw CompilerDirectives.shouldNotReachHere();
-                    }
-                } else if (hpyFieldObject instanceof GraalHPyField) {
+                if (hpyFieldObject instanceof GraalHPyField) { // avoid `asPointer` message dispatch
                     referent = ((GraalHPyField) hpyFieldObject).getDelegate();
-                } else {
-                    throw CompilerDirectives.shouldNotReachHere();
+                } else { // in case of transition to native
+                    try {
+                        int idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
+                        Object owner = asPythonObjectNode.execute(context, arguments[1]);
+                        if (owner instanceof PythonObject) {
+                            referent = ((PythonObject) owner).getHpyFields()[idx - 1];
+                        } else {
+                            throw CompilerDirectives.shouldNotReachHere("HPyField owner is not a PythonObject!");
+                        }
+                    } catch (InteropException | OverflowException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
                 }
                 return asHandleNode.execute(context, referent);
             } finally {

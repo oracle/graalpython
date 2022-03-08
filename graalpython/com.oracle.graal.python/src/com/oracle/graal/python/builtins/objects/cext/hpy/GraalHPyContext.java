@@ -1051,6 +1051,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final Object getHPyFieldNativeType() {
+        assert this.hpyNativeTypeID != null : "HPyField native type ID not available";
         return hpyFieldNativeTypeID;
     }
 

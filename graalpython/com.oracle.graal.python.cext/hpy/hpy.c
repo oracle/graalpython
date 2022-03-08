@@ -170,6 +170,14 @@ HPyFunc_Signature graal_hpy_meth_get_signature(HPyMeth *methodDef) {
 	return methodDef->signature;
 }
 
+void* graal_hpy_get_field_i(HPyField *hf) {
+	return hf->_i;
+}
+
+void graal_hpy_set_field_i(HPyField *hf, void* i) {
+	hf->_i = i;
+}
+
 /* getters for HPySlot */
 
 HPySlot_Slot graal_hpy_slot_get_slot(HPySlot *slot) {
@@ -638,6 +646,7 @@ HPy_buffer *graal_hpy_allocate_buffer() {
 #define _h2py(_x) NULL
 
 typedef HPy* _HPyPtr;
+typedef HPyField* _HPyFieldPtr;
 typedef HPy _HPyConst;
 
 #define HPy void*
