@@ -466,8 +466,12 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         boolean run(String name) {
             // if PYTHONPATH is set, it is prepended to the sys.path on startup and thus might
-            // override any frozen modules from the stdlib
-            return getContext().getOption(PythonOptions.PythonPath).isEmpty() && findFrozen(name).status == FROZEN_OKAY;
+            // override the site module from the stdlib
+            if (!getContext().getOption(PythonOptions.PythonPath).isEmpty() && "site".equals(name)) {
+                return false;
+            } else {
+                return findFrozen(name).status == FROZEN_OKAY;
+            }
         }
     }
 
