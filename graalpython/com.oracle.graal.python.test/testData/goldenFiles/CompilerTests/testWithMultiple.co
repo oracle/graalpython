@@ -15,7 +15,7 @@ Disassembly of <module>:
 000016        23 POP_TOP
 000065        24 LOAD_NAME                         2    (f)
 000073        26 LOAD_STRING                       3    (foo)
-000065        28 CALL_METHOD                       259
+000065        28 CALL_METHOD                       259   (1 write)
 000065        31 POP_TOP
 000065        32 LOAD_NONE
 000016        33 EXIT_WITH                                                               (exc handler 23 - 33; stack: 4)

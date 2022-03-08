@@ -243,6 +243,10 @@ public final class CodeUnit {
                 case CALL_METHOD_VARARGS:
                     line[5] = names[arg];
                     break;
+                case CALL_METHOD: {
+                    line[5] = String.format("%d %s", arg >>> 8, names[arg & 0xFF]);
+                    break;
+                }
                 case COLLECTION_FROM_STACK:
                 case COLLECTION_ADD_STACK:
                 case COLLECTION_FROM_COLLECTION:
