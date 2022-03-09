@@ -82,7 +82,7 @@ public final class CompilationUnit {
 
     int startOffset;
 
-    CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs,
+    CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int scopeDepth, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs,
                     boolean takesVarKeywordArgs, int startOffset) {
         this.scopeType = scopeType;
         this.scope = scope;
@@ -94,7 +94,7 @@ public final class CompilationUnit {
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.startOffset = startOffset;
 
-        if (parent != null) {
+        if (scopeDepth > 1 && parent != null) {
             if (scopeType == Class) {
                 privateName = name;
             } else {

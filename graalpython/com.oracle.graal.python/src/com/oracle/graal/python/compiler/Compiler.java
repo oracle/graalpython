@@ -105,7 +105,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (unit != null) {
             stack.add(unit);
         }
-        unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, argc, pargc, kwargc,
+        unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, stack.size(), argc, pargc, kwargc,
                         hasSplat, hasKwSplat, node.getStartOffset());
         nestingLevel++;
     }

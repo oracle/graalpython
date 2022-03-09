@@ -1,19 +1,19 @@
 Disassembly of <module>:
-000000         0 LOAD_CONST                        0    (<module>.docompute from <module>)
+000000         0 LOAD_CONST                        0    (docompute from <module>)
 000000         2 MAKE_FUNCTION                     1
 000000         4 STORE_NAME                        0    (docompute)
-000204         6 LOAD_CONST                        1    (<module>.measure from <module>)
+000204         6 LOAD_CONST                        1    (measure from <module>)
 000204         8 MAKE_FUNCTION                     1
 000204        10 STORE_NAME                        1    (measure)
 000337        12 LOAD_BYTE                         5
 000315        14 COLLECTION_FROM_STACK             1    (Object[])
-000315        16 LOAD_CONST                        2    (<module>.__benchmark__ from <module>)
+000315        16 LOAD_CONST                        2    (__benchmark__ from <module>)
 000315        18 MAKE_FUNCTION                     2
 000315        20 STORE_NAME                        2    (__benchmark__)
 000315        22 LOAD_NONE
 000315        23 RETURN_VALUE
 
-Disassembly of <module>.docompute:
+Disassembly of docompute:
 000033         0 LOAD_GLOBAL                       0    (range)
 000039         2 LOAD_FAST                         0    (num)
 000033         4 CALL_FUNCTION                     1
@@ -57,7 +57,7 @@ Disassembly of <module>.docompute:
 000197   >>   69 LOAD_FAST                         2    (sum_)
 000190        71 RETURN_VALUE
 
-Disassembly of <module>.measure:
+Disassembly of measure:
 000237         0 LOAD_GLOBAL                       0    (range)
 000243         2 LOAD_FAST                         0    (num)
 000237         4 CALL_FUNCTION                     1
@@ -77,7 +77,7 @@ Disassembly of <module>.measure:
 000000        30 LOAD_NONE
 000000        31 RETURN_VALUE
 
-Disassembly of <module>.__benchmark__:
+Disassembly of __benchmark__:
 000345         0 LOAD_GLOBAL                       0    (measure)
 000353         2 LOAD_FAST                         0    (num)
 000345         4 CALL_FUNCTION                     1
