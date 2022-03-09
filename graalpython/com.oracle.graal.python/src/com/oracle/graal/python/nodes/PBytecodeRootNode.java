@@ -80,6 +80,7 @@ import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -236,12 +237,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectIsTrueNode> NODE_OBJECT_IS_TRUE = PyObjectIsTrueNode::create;
     private static final PyObjectIsTrueNode UNCACHED_OBJECT_IS_TRUE = PyObjectIsTrueNode.getUncached();
     private static final NodeSupplier<GetItemNode> NODE_GET_ITEM = GetItemNode::create;
-    private static final ExceptMatchNode UNCACHED_EXCEPT_MATCH_NODE = ExceptMatchNode.getUncached();
-    private static final NodeSupplier<ExceptMatchNode> EXCEPT_MATCH_NODE = ExceptMatchNode::create;
+    private static final ExceptMatchNode UNCACHED_EXCEPT_MATCH = ExceptMatchNode.getUncached();
+    private static final NodeSupplier<ExceptMatchNode> NODE_EXCEPT_MATCH = ExceptMatchNode::create;
     private static final SetupWithNode UNCACHED_SETUP_WITH_NODE = SetupWithNode.getUncached();
     private static final NodeSupplier<SetupWithNode> NODE_SETUP_WITH = SetupWithNode::create;
     private static final ExitWithNode UNCACHED_EXIT_WITH_NODE = ExitWithNode.getUncached();
     private static final NodeSupplier<ExitWithNode> NODE_EXIT_WITH = ExitWithNode::create;
+    private static final ExecutePositionalStarargsNode UNCACHED_EXECUTE_STARARGS = ExecutePositionalStarargsNode.getUncached();
+    private static final NodeSupplier<ExecutePositionalStarargsNode> NODE_EXECUTE_STARARGS = ExecutePositionalStarargsNode::create;
 
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
@@ -799,9 +802,44 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         frame.setObject(stackTop, new PKeyword(key, value));
                         break;
                     }
+                    case COLLECTION_FROM_COLLECTION: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        Object sourceCollection = frame.getObject(stackTop);
+                        Object result;
+                        switch (oparg) {
+                            case OpCodes.CollectionBits.OBJECT:
+                                ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes[bci], UNCACHED_EXECUTE_STARARGS, NODE_EXECUTE_STARARGS, bci);
+                                result = executeStarargsNode.executeWith(frame, sourceCollection);
+                                break;
+                            default:
+                                throw CompilerDirectives.shouldNotReachHere("Not supported yet");
+                        }
+                        frame.setObject(stackTop, result);
+                        break;
+                    }
+                    case COLLECTION_ADD_COLLECTION: {
+                        /*
+                         * The first collection must be in the target format already, the second one
+                         * is a python object.
+                         */
+                        int type = Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeCollectionAddCollection(frame, type, stackTop, localNodes, bci);
+                        break;
+                    }
                     case COLLECTION_FROM_STACK: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeCollectionFromStack(frame, oparg, stackTop, localNodes, bci);
+                        int count = oparg & OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                        int type = oparg & ~OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                        stackTop = bytecodeCollectionFromStack(frame, type, count, stackTop, localNodes, bci);
+                        break;
+                    }
+                    case COLLECTION_ADD_STACK: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        // Just combine COLLECTION_FROM_STACK and COLLECTION_ADD_COLLECTION for now
+                        int count = oparg & OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                        int type = oparg & ~OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                        stackTop = bytecodeCollectionFromStack(frame, type, count, stackTop, localNodes, bci - 1);
+                        stackTop = bytecodeCollectionAddCollection(frame, type, stackTop, localNodes, bci);
                         break;
                     }
                     case NOP:
@@ -1483,7 +1521,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object exception = frame.getObject(stackTop - 1);
                         Object matchType = frame.getObject(stackTop);
                         frame.setObject(stackTop--, null);
-                        ExceptMatchNode matchNode = insertChildNode(localNodes[bci], UNCACHED_EXCEPT_MATCH_NODE, EXCEPT_MATCH_NODE, bci);
+                        ExceptMatchNode matchNode = insertChildNode(localNodes[bci], UNCACHED_EXCEPT_MATCH, NODE_EXCEPT_MATCH, bci);
                         if (!matchNode.executeMatch(frame, exception, matchType)) {
                             bci += Byte.toUnsignedInt(localBC[bci + 1]);
                             continue;
@@ -1889,28 +1927,26 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private int bytecodeCollectionFromStack(VirtualFrame frame, int oparg, int oldStackTop, Node[] localNodes, int bci) {
+    private int bytecodeCollectionFromStack(VirtualFrame frame, int type, int count, int oldStackTop, Node[] localNodes, int nodeIndex) {
         int stackTop = oldStackTop;
-        int cnt = oparg & OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
-        int typ = oparg & ~OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
         Object res = null;
-        switch (typ) {
+        switch (type) {
             case OpCodes.CollectionBits.LIST: {
-                Object[] store = new Object[cnt];
-                moveFromStack(frame, stackTop - cnt + 1, stackTop + 1, store);
+                Object[] store = new Object[count];
+                moveFromStack(frame, stackTop - count + 1, stackTop + 1, store);
                 res = factory.createList(store);
                 break;
             }
             case OpCodes.CollectionBits.TUPLE: {
-                Object[] store = new Object[cnt];
-                moveFromStack(frame, stackTop - cnt + 1, stackTop + 1, store);
+                Object[] store = new Object[count];
+                moveFromStack(frame, stackTop - count + 1, stackTop + 1, store);
                 res = factory.createTuple(store);
                 break;
             }
             case OpCodes.CollectionBits.SET: {
                 PSet set = factory.createSet();
-                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes[bci], UNCACHED_SET_ITEM, NODE_SET_ITEM, bci);
-                for (int i = stackTop; i > stackTop - cnt; i--) {
+                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes[nodeIndex], UNCACHED_SET_ITEM, NODE_SET_ITEM, nodeIndex);
+                for (int i = stackTop; i > stackTop - count; i--) {
                     newNode.execute(frame, set, frame.getObject(i), PNone.NONE);
                     frame.setObject(i, null);
                 }
@@ -1918,23 +1954,45 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case OpCodes.CollectionBits.DICT: {
-                throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "dict build");
+                throw insertChildNode(localNodes[nodeIndex], NODE_RAISE, nodeIndex).raise(SystemError, "dict build");
             }
             case OpCodes.CollectionBits.KWORDS: {
-                PKeyword[] kwds = new PKeyword[cnt];
-                moveFromStack(frame, stackTop - cnt + 1, stackTop + 1, kwds);
+                PKeyword[] kwds = new PKeyword[count];
+                moveFromStack(frame, stackTop - count + 1, stackTop + 1, kwds);
                 res = kwds;
                 break;
             }
             case OpCodes.CollectionBits.OBJECT: {
-                Object[] objs = new Object[cnt];
-                moveFromStack(frame, stackTop - cnt + 1, stackTop + 1, objs);
+                Object[] objs = new Object[count];
+                moveFromStack(frame, stackTop - count + 1, stackTop + 1, objs);
                 res = objs;
                 break;
             }
         }
-        stackTop -= cnt;
+        stackTop -= count;
         frame.setObject(++stackTop, res);
+        return stackTop;
+    }
+
+    private int bytecodeCollectionAddCollection(VirtualFrame frame, int type, int stackTop, Node[] localNodes, int nodeIndex) {
+        Object collection1 = frame.getObject(stackTop - 1);
+        Object collection2 = frame.getObject(stackTop);
+        Object result;
+        switch (type) {
+            case OpCodes.CollectionBits.OBJECT:
+                Object[] array1 = (Object[]) collection1;
+                ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes[nodeIndex], UNCACHED_EXECUTE_STARARGS, NODE_EXECUTE_STARARGS, nodeIndex);
+                Object[] array2 = executeStarargsNode.executeWith(frame, collection2);
+                Object[] combined = new Object[array1.length + array2.length];
+                System.arraycopy(array1, 0, combined, 0, array1.length);
+                System.arraycopy(array2, 0, combined, array1.length, array2.length);
+                result = combined;
+                break;
+            default:
+                throw CompilerDirectives.shouldNotReachHere("Not supported yet");
+        }
+        frame.setObject(stackTop--, null);
+        frame.setObject(stackTop, result);
         return stackTop;
     }
 
