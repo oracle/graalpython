@@ -262,7 +262,6 @@ class ProxyType(object):
         return result
 
 
-ref = ReferenceType
 proxy = ProxyType
 
 # getweakrefcount,  -> truffle

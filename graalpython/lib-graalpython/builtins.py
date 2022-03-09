@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -44,30 +44,6 @@
 def __gr__(self, name, mode='r', closefd=True, opener=None):
     pass
 
-def __import__(filename, module_name):
-    import sys, _imp, posix
-    module = sys.modules[module_name]
-    if filename.startswith("%s"):
-        full_filename = filename % __graalpython__.core_home
-        filename = filename[len("%s"):]
-    elif filename.startswith(__graalpython__.stdlib_home):
-        full_filename = filename
-        filename = filename[len(__graalpython__.stdlib_home):]
-    else:
-        raise RuntimeError("There was an import during bootstrap outside the core or stdlib home.")
-
-    # If we can, avoid opening the file and use our cached code
-    if not __graalpython__.has_cached_code(filename):
-        content = __graalpython__.read_file(full_filename)
-        code = compile(content, filename, "exec")
-    else:
-        # n.b.: for these builtin modules, there's never a full path and none of
-        # them can be packages
-        code = __graalpython__.get_cached_code(filename)
-
-    exec(code, module.__dict__)
-    return module
-
 
 # TODO(fa): This was formerly located in 'property.py' which has been intrinsified but seemingly other modules rely
 #  on 'descriptor'. We should revisit that.
@@ -75,4 +51,66 @@ def _f(): pass
 FunctionType = type(_f)
 descriptor = type(FunctionType.__code__)
 
-__import__("%s/functions.py", "builtins")
+
+from sys import _getframe as __getframe__
+
+
+@__graalpython__.builtin
+def vars(*obj):
+    """Return a dictionary of all the attributes currently bound in obj.  If
+    called with no argument, return the variables bound in local scope."""
+    if len(obj) == 0:
+        # TODO inlining _caller_locals().items() in the dict comprehension does not work for now, investigate!
+        return __getframe__(0).f_locals
+    elif len(obj) != 1:
+        raise TypeError("vars() takes at most 1 argument.")
+    try:
+        return obj[0].__dict__
+    except AttributeError:
+        raise TypeError("vars() argument must have __dict__ attribute")
+
+
+@__graalpython__.builtin
+def input(prompt=None):
+    import sys
+    if(not hasattr(sys, "stdin")):
+        raise RuntimeError('input(): lost sys.stdin')
+    if(not hasattr(sys, "stdout")):
+        raise RuntimeError('input(): lost sys.stdout')
+    if(not hasattr(sys, "stderr")):
+        raise RuntimeError('input(): lost sys.stderr')
+
+    if prompt is not None:
+        print(prompt, end="", flush=hasattr(sys.stdout, "flush"))
+
+    result = []
+    while True:
+        ch = sys.stdin.read(1)
+        if ch:
+            if ch == "\n":
+                break
+            result.append(ch)
+        else:
+            if(len(result) == 0):
+                raise EOFError('EOF when reading a line')
+            break
+    return "".join(result)
+
+
+class filter(object):
+    def __init__(self, predicateOrNone, iterable):
+        self.predicateOrNone = predicateOrNone
+        self.iterable = iter(iterable)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            item = next(self.iterable)
+            if self.predicateOrNone is None:
+                if item:
+                    return item
+            else:
+                if self.predicateOrNone(item):
+                    return item

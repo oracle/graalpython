@@ -734,31 +734,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, String[]> cachedCodeModulePath = new ConcurrentHashMap<>();
 
     @TruffleBoundary
     public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
-        return cachedCode.computeIfAbsent(filename, f -> {
-            LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+        if (!singleContext) {
+            return cachedCode.computeIfAbsent(filename, f -> {
+                LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+                return createCode.get();
+            });
+        } else {
             return createCode.get();
-        });
-    }
-
-    @TruffleBoundary
-    public String[] cachedCodeModulePath(String name) {
-        return cachedCodeModulePath.get(name);
-    }
-
-    @TruffleBoundary
-    public boolean hasCachedCode(String name) {
-        return cachedCode.get(name) != null;
-    }
-
-    @TruffleBoundary
-    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode, String[] modulepath) {
-        CallTarget ct = cacheCode(filename, createCode);
-        cachedCodeModulePath.computeIfAbsent(filename, t -> modulepath);
-        return ct;
+        }
     }
 
     @Override
@@ -845,7 +831,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
         CompilerAsserts.neverPartOfCompilation();
-        return cachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
+        if (!singleContext) {
+            return cachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
+        } else {
+            return PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this));
+        }
     }
 
     /**

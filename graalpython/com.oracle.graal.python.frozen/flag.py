@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,25 +37,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _imp
-import sys
-
-# - make sure encodings gets frozen in scope of _imp.cache_all_file_modules
-# - at this point during context startup, sys.path isn't initialized, 
-#   so we need to set it up
-sys.path.append(__graalpython__.stdlib_home)
-try:
-    import encodings
-finally:
-    assert len(sys.path) == 1
-    sys.path.pop()
-    
-_imp.cache_all_file_modules()
-
-from importlib._bootstrap import BuiltinImporter
-for name in ['importlib._bootstrap', 'importlib._bootstrap_external', '_descriptor']:
-    mod = sys.modules.get(name, None)
-    if mod:
-        spec = BuiltinImporter.find_spec(name)
-        setattr(mod, '__spec__', spec)
-        setattr(mod, '__loader__', spec.loader)
+initialized = True
+print("Hello world!")

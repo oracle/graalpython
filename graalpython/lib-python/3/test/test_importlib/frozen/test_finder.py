@@ -15,18 +15,15 @@ class FindSpecTests(abc.FinderTests):
         finder = self.machinery.FrozenImporter
         return finder.find_spec(name, path)
 
-    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module(self):
         name = '__hello__'
         spec = self.find(name)
         self.assertEqual(spec.origin, 'frozen')
 
-    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_package(self):
         spec = self.find('__phello__')
         self.assertIsNotNone(spec)
 
-    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module_in_package(self):
         spec = self.find('__phello__.spam', ['__phello__'])
         self.assertIsNotNone(spec)
@@ -55,18 +52,15 @@ class FinderTests(abc.FinderTests):
         finder = self.machinery.FrozenImporter
         return finder.find_module(name, path)
 
-    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module(self):
         name = '__hello__'
         loader = self.find(name)
         self.assertTrue(hasattr(loader, 'load_module'))
 
-    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_package(self):
         loader = self.find('__phello__')
         self.assertTrue(hasattr(loader, 'load_module'))
 
-    @impl_detail("GR-26392: add support for frozen modules", graalvm=False)
     def test_module_in_package(self):
         loader = self.find('__phello__.spam', ['__phello__'])
         self.assertTrue(hasattr(loader, 'load_module'))

@@ -63,6 +63,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -92,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
@@ -103,6 +103,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -146,8 +147,6 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 public final class PythonContext extends Python3Core {
-    private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
-    private static final Source FORCE_IMPORTS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build();
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
@@ -988,7 +987,7 @@ public final class PythonContext extends Python3Core {
         return importLock;
     }
 
-    public PMethod importFunc() {
+    public PFunction importFunc() {
         return getImportFunc();
     }
 
@@ -1180,13 +1179,11 @@ public final class PythonContext extends Python3Core {
 
     private void importSiteIfForced() {
         if (getOption(PythonOptions.ForceImportSite)) {
-            CallTarget site = env.parsePublic(FORCE_IMPORTS_SOURCE);
-            site.call();
+            AbstractImportNode.importModule("site");
         }
         if (!getOption(PythonOptions.WarnOptions).isEmpty()) {
             // we must force an import of the warnings module here if warnings were passed
-            CallTarget site = env.parsePublic(IMPORT_WARNINGS_SOURCE);
-            site.call();
+            AbstractImportNode.importModule("warnings");
         }
         if (getOption(PythonOptions.InputFilePath).isEmpty()) {
             // When InputFilePath is set, this is handled by __graalpython__.run_path
