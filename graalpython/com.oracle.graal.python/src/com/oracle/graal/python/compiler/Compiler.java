@@ -319,41 +319,43 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void collectIntoArray(SSTNode[] nodes, int bits, int alreadyOnStack) {
         boolean collectionOnStack = false;
-        int cnt = alreadyOnStack;
+        int stackItems = alreadyOnStack;
         for (SSTNode e : nodes) {
-            assert e instanceof ExprTy || e instanceof KeywordTy || e instanceof ExprTy.Starred;
+            assert e instanceof ExprTy || e instanceof KeywordTy;
             if (e instanceof ExprTy.Starred || (e instanceof KeywordTy && ((KeywordTy) e).arg == null)) {
                 // splat
-                if (!collectionOnStack && cnt > 0) {
-                    addOp(COLLECTION_FROM_STACK, bits | cnt);
-                    e.accept(this);
+                collectionOnStack = collectIntoArrayFromStack(bits, collectionOnStack, stackItems);
+                stackItems = 0;
+                e.accept(this);
+                if (collectionOnStack) {
                     addOp(COLLECTION_ADD_COLLECTION, bits);
                 } else {
-                    e.accept(this);
                     addOp(COLLECTION_FROM_COLLECTION, bits);
                 }
                 collectionOnStack = true;
-                cnt = 0;
             } else {
                 e.accept(this);
+                stackItems++;
             }
-            if (cnt > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
-                if (!collectionOnStack) {
-                    addOp(COLLECTION_FROM_STACK, bits | cnt);
-                } else {
-                    addOp(COLLECTION_ADD_STACK, bits | cnt);
-                }
-                collectionOnStack = true;
-                cnt = 0;
+            if (stackItems >= CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+                collectionOnStack = collectIntoArrayFromStack(bits, collectionOnStack, stackItems);
+                stackItems = 0;
+            }
+        }
+        collectIntoArrayFromStack(bits, collectionOnStack, stackItems);
+    }
+
+    private boolean collectIntoArrayFromStack(int bits, boolean collectionOnStack, int stackItems) {
+        assert stackItems < CollectionBits.MAX_STACK_ELEMENT_COUNT;
+        if (stackItems > 0) {
+            if (collectionOnStack) {
+                addOp(COLLECTION_ADD_STACK, bits | stackItems);
             } else {
-                cnt++;
+                addOp(COLLECTION_FROM_STACK, bits | stackItems);
             }
+            return true;
         }
-        if (!collectionOnStack) {
-            addOp(COLLECTION_FROM_STACK, bits | cnt);
-        } else {
-            addOp(COLLECTION_ADD_STACK, bits | cnt);
-        }
+        return collectionOnStack;
     }
 
     private void collectIntoArray(SSTNode[] nodes, int bits) {
@@ -912,7 +914,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Starred node) {
         int savedOffset = setLocation(node);
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            // TODO context?
+            node.value.accept(this);
+            return null;
         } finally {
             setLocation(savedOffset);
         }
