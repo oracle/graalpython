@@ -379,6 +379,25 @@ def known_packages():
         install_from_pypi("scipy==1.8.1", env=scipy_build_env, **kwargs)
 
     @pip_package()
+    def scikit_learn(**kwargs):
+        # honor following selected env variables: BLAS, LAPACK, ATLAS
+        scikit_learn_build_env = {}
+        for key in ("BLAS", "LAPACK", "ATLAS"):
+            if key in os.environ:
+                scikit_learn_build_env[key] = os.environ[key]
+
+        if sys.implementation.name == "graalpython":
+            if not os.environ.get("VIRTUAL_ENV", None):
+                xit("scikit-learn can only be installed within a venv.")
+            from distutils.sysconfig import get_config_var
+            scikit_learn_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
+
+        # install dependencies
+        scipy(**kwargs)
+
+        install_from_pypi("scikit-learn==0.20.0", env=scikit_learn_build_env, **kwargs)
+
+    @pip_package()
     def cycler(**kwargs):
         six(**kwargs)
         install_from_pypi("cycler==0.11.0", **kwargs)
