@@ -229,7 +229,8 @@ class ReloadTests:
 
             self.assertIs(reloaded, types)
             self.assertIs(sys.modules['types'], types)
-            self.assertEqual(reloaded.__loader__.path, loader.path)
+            # Truffle change: we freeze types, so may not have a path
+            self.assertEqual(getattr(reloaded.__loader__, "path", None), getattr(loader, "path", None))
 
     def test_reload_loader_replaced(self):
         with support.CleanImport('types'):
