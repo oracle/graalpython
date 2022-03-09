@@ -1,0 +1,79 @@
+diff --git a/sklearn/cluster/_dbscan_inner.cpp b/sklearn/cluster/_dbscan_inner.cpp
+index b06d029..8c46655 100644
+--- a/sklearn/cluster/_dbscan_inner.cpp
++++ b/sklearn/cluster/_dbscan_inner.cpp
+@@ -808,13 +808,7 @@ static const char *__pyx_filename;
+
+ /* Header.proto */
+ #if !defined(CYTHON_CCOMPLEX)
+-  #if defined(__cplusplus)
+-    #define CYTHON_CCOMPLEX 1
+-  #elif defined(_Complex_I)
+-    #define CYTHON_CCOMPLEX 1
+-  #else
+     #define CYTHON_CCOMPLEX 0
+-  #endif
+ #endif
+ #if CYTHON_CCOMPLEX
+   #ifdef __cplusplus
+diff --git a/sklearn/cluster/_hierarchical.cpp b/sklearn/cluster/_hierarchical.cpp
+index 93fa9ad..4cfdd19 100644
+--- a/sklearn/cluster/_hierarchical.cpp
++++ b/sklearn/cluster/_hierarchical.cpp
+@@ -815,13 +815,7 @@ static const char *__pyx_filename;
+
+ /* Header.proto */
+ #if !defined(CYTHON_CCOMPLEX)
+-  #if defined(__cplusplus)
+-    #define CYTHON_CCOMPLEX 1
+-  #elif defined(_Complex_I)
+-    #define CYTHON_CCOMPLEX 1
+-  #else
+     #define CYTHON_CCOMPLEX 0
+-  #endif
+ #endif
+ #if CYTHON_CCOMPLEX
+   #ifdef __cplusplus
+diff --git a/sklearn/externals/joblib/externals/cloudpickle/cloudpickle.py b/sklearn/externals/joblib/externals/cloudpickle/cloudpickle.py
+index 8427235..5be0183 100644
+--- a/sklearn/externals/joblib/externals/cloudpickle/cloudpickle.py
++++ b/sklearn/externals/joblib/externals/cloudpickle/cloudpickle.py
+@@ -131,6 +131,7 @@ def _make_cell_set_template_code():
+     else:
+         return types.CodeType(
+             co.co_argcount,
++            0,
+             co.co_kwonlyargcount,
+             co.co_nlocals,
+             co.co_stacksize,
+diff --git a/sklearn/svm/setup.py b/sklearn/svm/setup.py
+index 399b1a8..31fd621 100644
+--- a/sklearn/svm/setup.py
++++ b/sklearn/svm/setup.py
+@@ -21,7 +21,7 @@ def configuration(parent_package='', top_path=None):
+                                 join('src', 'libsvm', 'svm.h')],
+                        # Force C++ linking in case gcc is picked up instead
+                        # of g++ under windows with some versions of MinGW
+-                       extra_link_args=['-lstdc++'],
++                       #extra_link_args=['-lstdc++'],
+                        )
+
+     libsvm_sources = ['libsvm.pyx']
+diff --git a/sklearn/utils/fast_dict.cpp b/sklearn/utils/fast_dict.cpp
+index 2c9eaf8..bedd939 100644
+--- a/sklearn/utils/fast_dict.cpp
++++ b/sklearn/utils/fast_dict.cpp
+@@ -815,13 +815,7 @@ static const char *__pyx_filename;
+
+ /* Header.proto */
+ #if !defined(CYTHON_CCOMPLEX)
+-  #if defined(__cplusplus)
+-    #define CYTHON_CCOMPLEX 1
+-  #elif defined(_Complex_I)
+-    #define CYTHON_CCOMPLEX 1
+-  #else
+     #define CYTHON_CCOMPLEX 0
+-  #endif
+ #endif
+ #if CYTHON_CCOMPLEX
+   #ifdef __cplusplus
