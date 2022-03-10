@@ -1493,7 +1493,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object callable = frame.getObject(stackTop - 1);
                         Object[] args = (Object[]) frame.getObject(stackTop);
                         frame.setObject(stackTop - 1, callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
-                        frame.setObject(--stackTop, null);
+                        frame.setObject(stackTop--, null);
                         break;
                     }
                     case CALL_FUNCTION_KW: {
@@ -1501,8 +1501,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object callable = frame.getObject(stackTop - 2);
                         Object[] args = (Object[]) frame.getObject(stackTop - 1);
                         frame.setObject(stackTop - 2, callNode.execute(frame, callable, args, (PKeyword[]) frame.getObject(stackTop)));
-                        frame.setObject(--stackTop, null);
-                        frame.setObject(--stackTop, null);
+                        frame.setObject(stackTop--, null);
+                        frame.setObject(stackTop--, null);
                         break;
                     }
                     case MAKE_FUNCTION: {
