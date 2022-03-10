@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -89,13 +90,9 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.CompilationUnit;
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -115,12 +112,6 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.pegparser.FExprParser;
-import com.oracle.graal.python.pegparser.NodeFactoryImp;
-import com.oracle.graal.python.pegparser.Parser;
-import com.oracle.graal.python.pegparser.ParserErrorCallback;
-import com.oracle.graal.python.pegparser.ParserTokenizer;
-import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -154,9 +145,6 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
-import java.util.Arrays;
-import java.util.EnumSet;
-import org.graalvm.polyglot.io.ByteSequence;
 
 @CoreFunctions(defineModule = __GRAALPYTHON__, isEager = true)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
@@ -869,64 +857,35 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     abstract static class CompileNode extends PythonTernaryBuiltinNode {
         @Specialization
         PCode compile(VirtualFrame frame, Object codestr, String path, String mode,
-                        @Cached PythonObjectFactory objFactory,
                         @Cached PRaiseNode raise,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached CastToJavaStringNode castStr,
                         @Cached("create(false)") BuiltinFunctions.CompileNode compileNode) {
             if (mode.equals("pyc")) {
-                String name = path;
-                ParserTokenizer tok;
-                Source source = null;
+                Source source;
                 if (codestr instanceof PBytesLike) {
                     try {
                         byte[] c = toBytes.execute((PBytesLike) codestr);
                         TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
                         if (truffleFile.exists() && c.length == truffleFile.size()) {
-                            source = Source.newBuilder(PythonLanguage.ID, truffleFile).mimeType(PythonLanguage.getCompileMimeType(2)).build();
-                            name = truffleFile.getName();
+                            source = Source.newBuilder(PythonLanguage.ID, truffleFile).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
                         } else {
                             ByteSequence bs = ByteSequence.create(c);
-                            source = Source.newBuilder(PythonLanguage.ID, bs, path).mimeType(PythonLanguage.getCompileMimeType(2)).build();
+                            source = Source.newBuilder(PythonLanguage.ID, bs, path).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
                         }
-                        tok = new ParserTokenizer(c);
                     } catch (SecurityException | IOException ex) {
                         throw raise.raise(SystemError, ex);
                     }
                 } else {
                     try {
                         String c = castStr.execute(codestr);
-                        tok = new ParserTokenizer(c);
-                        source = PythonLanguage.newSource(getContext(), c, path, true, PythonLanguage.getCompileMimeType(2));
+                        source = PythonLanguage.newSource(getContext(), c, path, true, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE);
                     } catch (CannotCastException e) {
                         throw raise.raise(TypeError, "expected str or bytes, got '%p'", codestr);
                     }
                 }
-
-                com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
-                ParserErrorCallback errorCb = (ParserErrorCallback.ErrorType type, int start, int end, String message) -> {
-                    System.err.println(String.format("TODO: %s[%d:%d]: %s", type.name(), start, end, message));
-                };
-                FExprParser fexpParser = new FExprParser() {
-                    @Override
-                    public ExprTy parse(String code) {
-                        ParserTokenizer tok = new ParserTokenizer(code);
-                        return new Parser(tok, factory, this, errorCb).fstring_rule();
-                    }
-                };
-                Parser parser = new Parser(tok, factory, fexpParser, errorCb);
-                Compiler compiler = new Compiler();
-                CompilationUnit cu = compiler.compile(parser.file_rule(), name, EnumSet.noneOf(Compiler.Flags.class), 2);
-                CodeUnit co = cu.assemble(path, 0);
-
-                Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
-                                co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, false,
-                                Arrays.copyOf(co.varnames, co.argCount), // parameter names
-                                Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
-                PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), signature, co, source);
-                return objFactory.createCode(rootNode.getCallTarget(), signature, co.nlocals, co.stacksize, co.flags,
-                                co.constants, co.names, co.varnames, co.freevars, co.cellvars, co.filename, co.name,
-                                co.startOffset, co.srcOffsetTable);
+                CallTarget callTarget = getContext().getEnv().parsePublic(source);
+                return factory().createCode((RootCallTarget) callTarget);
             } else {
                 return compileNode.execute(frame, codestr, path, mode, 0, false, 2);
             }

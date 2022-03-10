@@ -118,7 +118,8 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = {PythonLanguage.MIME_TYPE,
                                 PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2,
-                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE}, //
+                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2,
+                                PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE}, //
                 byteMimeTypes = {PythonLanguage.MIME_TYPE_BYTECODE}, //
                 defaultMimeType = PythonLanguage.MIME_TYPE, //
                 dependentLanguages = {"nfi", "llvm"}, //
@@ -188,6 +189,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
     // XXX Temporary mime type to force bytecode compiler
     public static final String MIME_TYPE_SOURCE_FOR_BYTECODE = "application/x-python-source-for-bytecode";
+    public static final String MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE = "application/x-python-source-for-bytecode-compile";
     public static final String EXTENSION = ".py";
     public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
@@ -437,7 +439,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.File, optimize, context, source, null, null));
             }
         }
-        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType()) || MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
             ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
             com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
             ParserErrorCallback errorCb = (ParserErrorCallback.ErrorType type, int start, int end, String message) -> {
@@ -453,14 +455,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
             Compiler compiler = new Compiler();
             CompilationUnit cu = compiler.compile(parser.file_rule(), source.getName(), EnumSet.noneOf(Compiler.Flags.class), 2);
-            CodeUnit co = cu.assemble(source.getPath(), 0);
+            CodeUnit co = cu.assemble(source.getName(), 0);
 
             Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
                             co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, false,
                             Arrays.copyOf(co.varnames, co.argCount), // parameter names
                             Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
-            PBytecodeRootNode rootNode = new PBytecodeRootNode(this, signature, co, source);
-            return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, rootNode, source));
+            RootNode rootNode = new PBytecodeRootNode(this, signature, co, source);
+            if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
+                rootNode = new TopLevelExceptionHandler(this, rootNode, source);
+            }
+            return PythonUtils.getOrCreateCallTarget(rootNode);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
