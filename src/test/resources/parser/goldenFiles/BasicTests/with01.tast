@@ -4,6 +4,6 @@ Module[0, 21]
             Item[5, 13]
                 ContextExpr: Call[5, 8]
                     Target: Name[5, 6] Value: "A"
-                Var: Name[12, 13] Value: "a" Store
+                OptionalVars: Name[12, 13] Value: "a" Store
         Body:
             Pass[17, 21]

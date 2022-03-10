@@ -1,0 +1,30 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      fn: [DefLocal, Local]
+    Scope fn Function
+        Flags: [HasChildWithFreeVars]
+        Symbols:
+            MyIter: [DefLocal, Cell]
+            gen: [DefLocal, Use, Local]
+            list: [Use, GlobalImplicit]
+            ret: [DefLocal, Cell]
+      Scope MyIter Class
+            Symbols:
+                  __iter__: [DefLocal, Local]
+                  __next__: [DefLocal, Local]
+        Scope __iter__ Function
+                Varnames: self
+                Symbols:
+                        self: [DefParam, Use, Local]
+        Scope __next__ Function
+                Varnames: self
+                Symbols:
+                        StopIteration: [Use, GlobalImplicit]
+                        self: [DefParam, Local]
+      Scope gen Function
+            Flags: [HasFreeVars, IsGenerator]
+            Symbols:
+                  MyIter: [Use, Free]
+                  ret: [DefLocal, DefNonLocal, Free]

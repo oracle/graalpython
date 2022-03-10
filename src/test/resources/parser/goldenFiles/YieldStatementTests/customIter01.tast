@@ -1,0 +1,47 @@
+Module[0, 244]
+    FunctionDef[0, 244]
+        Name:fn
+        ---- Function body of fn ----
+        ClassDef[14, 143] MyIter
+            ---- Class body of MyIter ----
+            FunctionDef[36, 79]
+                Name:__iter__
+                ArgumentsTy[0, 0]
+                    Args:
+                        ArgTy[49, 53] self
+                ---- Function body of __iter__ ----
+                Return[68, 79] Name[75, 79] Value: "self"
+                ---- End of __iter__ function ----
+            FunctionDef[88, 143]
+                Name:__next__
+                ArgumentsTy[0, 0]
+                    Args:
+                        ArgTy[101, 105] self
+                ---- Function body of __next__ ----
+                Raise[120, 143]
+                    Exc: Call[126, 143]
+                        Target: Name[126, 139] Value: "StopIteration"
+                        Args:
+                            LONG[140, 142] Value: 42
+                ---- End of __next__ function ----
+            ---- End of MyIter class ----
+        FunctionDef[148, 213]
+            Name:gen
+            ---- Function body of gen ----
+            NonLocal[167, 179]: ret 
+            Assign[188, 213]
+                LHS: Name[188, 191] Value: "ret" Store
+                RHS: 
+                    YieldFrom[194, 213]
+                        Call[205, 213]
+                            Target: Name[205, 211] Value: "MyIter"
+            ---- End of gen function ----
+        Assign[218, 228]
+            LHS: Name[218, 221] Value: "ret" Store
+            RHS: NONE[224, 228] Value: null
+        Call[233, 244]
+            Target: Name[233, 237] Value: "list"
+            Args:
+                Call[238, 243]
+                    Target: Name[238, 241] Value: "gen"
+        ---- End of fn function ----

@@ -1,0 +1,17 @@
+Module[0, 60]
+    FunctionDef[0, 60]
+        Name:gen
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[8, 9] x
+        ---- Function body of gen ----
+        Try[14, 17]
+            Body:
+                Pass[23, 27]
+            Except:
+                ExceptHandler[30, 36]
+                    Type: Name[37, 47] Value: "ValueError"
+                    Body:
+                        Yield[53, 60]
+                            LONG[59, 60] Value: 3
+        ---- End of gen function ----

@@ -7,7 +7,7 @@ Module[0, 35]
                 Item[17, 25]
                     ContextExpr: Call[17, 20]
                         Target: Name[17, 18] Value: "A"
-                    Var: Name[24, 25] Value: "a" Store
+                    OptionalVars: Name[24, 25] Value: "a" Store
             Body:
                 Pass[31, 35]
         ---- End of fn function ----
