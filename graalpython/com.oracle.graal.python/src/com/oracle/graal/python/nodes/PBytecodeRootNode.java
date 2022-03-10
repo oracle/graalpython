@@ -1295,7 +1295,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 result = ((GetItemNode) helper).execute(frame, locals, varname);
                             } else {
                                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                                assert helper == null;
+                                assert helper == null || helper == MARKER_NODE;
                                 if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
                                     HashingStorageLibrary lib = insertChildNode(localNodes[bci - 1], UNCACHED_HASHING_STORAGE_LIBRARY, NODE_HASHING_STORAGE_LIBRARY, bci - 1);
                                     result = lib.getItem(((PDict) locals).getDictStorage(), varname);
@@ -1727,7 +1727,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 return stackTop;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            assert helper == null;
+            assert helper == null || helper == MARKER_NODE;
             if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
                 HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes[bci - 1], UNCACHED_SET_ITEM, NODE_SET_ITEM, bci - 1);
                 newNode.execute(frame, (PDict) locals, varname, value);
