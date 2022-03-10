@@ -136,7 +136,7 @@ public class NodeFactoryImp implements NodeFactory {
     public StmtTy createContinue(int startOffset, int endOffset) {
         return new StmtTy.Continue(startOffset, endOffset);
     }
-    
+
     @Override
     public StmtTy createDelete(ExprTy[] targets, int startOffset, int endOffset) {
         return new StmtTy.Delete(targets, startOffset, endOffset);
@@ -512,12 +512,13 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public StmtTy createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset) {
-        return new StmtTy.With(items, body, typeComment, startOffset, endOffset);
+    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset) {
+        // TODO check if context expr is not null -> throw error
+        return new StmtTy.With.Item(contextExpr, optionalVars, startOffset, endOffset);
     }
 
     @Override
-    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset) {
-        return new StmtTy.With.Item(contextExpr, optionalVars, startOffset, endOffset);
+    public StmtTy.With createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset) {
+        return new StmtTy.With(items, body, typeComment, startOffset, endOffset);
     }
 }

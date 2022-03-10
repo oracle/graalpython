@@ -1,0 +1,12 @@
+Module[0, 22]
+    FunctionDef[0, 22]
+        Name:f
+        ---- Function body of f ----
+        BinOp[9, 22]
+            Op: ADD
+            LHS: LONG[9, 10] Value: 1
+            RHS: BinOp[13, 22]
+                Op: MULT
+                LHS: Yield[14, 19]
+                RHS: LONG[21, 22] Value: 2
+        ---- End of f function ----
