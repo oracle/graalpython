@@ -1,0 +1,15 @@
+Disassembly of <module>:
+000000         0 LOAD_CONST                        0    (foo from <module>)
+000000         2 MAKE_FUNCTION                     1
+000000         4 STORE_NAME                        0    (foo)
+000000         6 LOAD_NONE
+000000         7 RETURN_VALUE
+
+Disassembly of foo:
+000021         0 LOAD_GLOBAL                       0    (print)
+000029         2 LOAD_FAST                         0    (kwargs)
+000021         4 COLLECTION_FROM_COLLECTION        0    (PKeyword[])
+000021         6 CALL_FUNCTION_KW
+000021         7 POP_TOP
+000000         8 LOAD_NONE
+000000         9 RETURN_VALUE

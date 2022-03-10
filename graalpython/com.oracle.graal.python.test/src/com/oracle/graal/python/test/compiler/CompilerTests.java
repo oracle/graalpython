@@ -103,9 +103,26 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testCallMultiStarArgs() {
+        doTest("foo(1, *a, 2, *b, 3)");
+    }
+
+    @Test
+    public void testCallMultiStarKwargs() {
+        doTest("foo(a=1, **a, b=2, **b, c=3)");
+    }
+
+    @Test
     public void testVarArgs() {
         String source = "def foo(*args):\n" +
                         "  print(*args)\n";
+        doTest(source);
+    }
+
+    @Test
+    public void testVarKwargs() {
+        String source = "def foo(**kwargs):\n" +
+                "  print(**kwargs)\n";
         doTest(source);
     }
 

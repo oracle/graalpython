@@ -134,4 +134,12 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
     static int len(HashingStorageLibrary lib, PDict dict) {
         return lib.length(dict.getDictStorage());
     }
+
+    public static ExpandKeywordStarargsNode create() {
+        return ExpandKeywordStarargsNodeGen.create();
+    }
+
+    public static ExpandKeywordStarargsNode getUncached() {
+        return ExpandKeywordStarargsNodeGen.getUncached();
+    }
 }

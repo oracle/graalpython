@@ -80,6 +80,7 @@ import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
@@ -245,6 +246,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ExitWithNode> NODE_EXIT_WITH = ExitWithNode::create;
     private static final ExecutePositionalStarargsNode UNCACHED_EXECUTE_STARARGS = ExecutePositionalStarargsNode.getUncached();
     private static final NodeSupplier<ExecutePositionalStarargsNode> NODE_EXECUTE_STARARGS = ExecutePositionalStarargsNode::create;
+    private static final ExpandKeywordStarargsNode UNCACHED_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode.getUncached();
+    private static final NodeSupplier<ExpandKeywordStarargsNode> NODE_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode::create;
 
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
@@ -803,18 +806,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case COLLECTION_FROM_COLLECTION: {
-                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        Object sourceCollection = frame.getObject(stackTop);
-                        Object result;
-                        switch (oparg) {
-                            case OpCodes.CollectionBits.OBJECT:
-                                ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes[bci], UNCACHED_EXECUTE_STARARGS, NODE_EXECUTE_STARARGS, bci);
-                                result = executeStarargsNode.executeWith(frame, sourceCollection);
-                                break;
-                            default:
-                                throw CompilerDirectives.shouldNotReachHere("Not supported yet");
-                        }
-                        frame.setObject(stackTop, result);
+                        int type = Byte.toUnsignedInt(localBC[++bci]);
+                        bytecodeCollectionFromCollection(frame, type, stackTop, localNodes, bci);
                         break;
                     }
                     case COLLECTION_ADD_COLLECTION: {
@@ -1974,12 +1967,33 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeCollectionAddCollection(VirtualFrame frame, int type, int stackTop, Node[] localNodes, int nodeIndex) {
+    private void bytecodeCollectionFromCollection(VirtualFrame frame, int type, int stackTop, Node[] localNodes, int nodeIndex) {
+        Object sourceCollection = frame.getObject(stackTop);
+        Object result;
+        switch (type) {
+            case OpCodes.CollectionBits.OBJECT: {
+                ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes[nodeIndex], UNCACHED_EXECUTE_STARARGS, NODE_EXECUTE_STARARGS, nodeIndex);
+                result = executeStarargsNode.executeWith(frame, sourceCollection);
+                break;
+            }
+            case OpCodes.CollectionBits.KWORDS: {
+                ExpandKeywordStarargsNode expandKeywordStarargsNode = insertChildNode(localNodes[nodeIndex], UNCACHED_EXPAND_KEYWORD_STARARGS, NODE_EXPAND_KEYWORD_STARARGS, nodeIndex);
+                result = expandKeywordStarargsNode.execute(sourceCollection);
+                break;
+            }
+            default:
+                throw CompilerDirectives.shouldNotReachHere("Not supported yet");
+        }
+        frame.setObject(stackTop, result);
+    }
+
+    private int bytecodeCollectionAddCollection(VirtualFrame frame, int type, int initialStackTop, Node[] localNodes, int nodeIndex) {
+        int stackTop = initialStackTop;
         Object collection1 = frame.getObject(stackTop - 1);
         Object collection2 = frame.getObject(stackTop);
         Object result;
         switch (type) {
-            case OpCodes.CollectionBits.OBJECT:
+            case OpCodes.CollectionBits.OBJECT: {
                 Object[] array1 = (Object[]) collection1;
                 ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes[nodeIndex], UNCACHED_EXECUTE_STARARGS, NODE_EXECUTE_STARARGS, nodeIndex);
                 Object[] array2 = executeStarargsNode.executeWith(frame, collection2);
@@ -1988,6 +2002,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 System.arraycopy(array2, 0, combined, array1.length, array2.length);
                 result = combined;
                 break;
+            }
+            case OpCodes.CollectionBits.KWORDS: {
+                PKeyword[] array1 = (PKeyword[]) collection1;
+                ExpandKeywordStarargsNode expandKeywordStarargsNode = insertChildNode(localNodes[nodeIndex], UNCACHED_EXPAND_KEYWORD_STARARGS, NODE_EXPAND_KEYWORD_STARARGS, nodeIndex);
+                PKeyword[] array2 = expandKeywordStarargsNode.execute(collection2);
+                PKeyword[] combined = new PKeyword[array1.length + array2.length];
+                System.arraycopy(array1, 0, combined, 0, array1.length);
+                System.arraycopy(array2, 0, combined, array1.length, array2.length);
+                result = combined;
+                break;
+            }
             default:
                 throw CompilerDirectives.shouldNotReachHere("Not supported yet");
         }

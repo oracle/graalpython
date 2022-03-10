@@ -1,0 +1,16 @@
+Disassembly of <module>:
+000000         0 LOAD_NAME                         0    (foo)
+000004         2 LOAD_BYTE                         1
+000000         4 COLLECTION_FROM_STACK             1    (Object[])
+000008         6 LOAD_NAME                         1    (a)
+000000         8 COLLECTION_ADD_COLLECTION         0    (Object[])
+000011        10 LOAD_BYTE                         2
+000000        12 COLLECTION_ADD_STACK              1    (Object[])
+000015        14 LOAD_NAME                         2    (b)
+000000        16 COLLECTION_ADD_COLLECTION         0    (Object[])
+000018        18 LOAD_BYTE                         3
+000000        20 COLLECTION_ADD_STACK              1    (Object[])
+000000        22 CALL_FUNCTION_VARARGS
+000000        23 POP_TOP
+000000        24 LOAD_NONE
+000000        25 RETURN_VALUE
