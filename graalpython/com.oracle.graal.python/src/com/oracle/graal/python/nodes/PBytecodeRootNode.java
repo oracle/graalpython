@@ -1894,7 +1894,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Signature newSignature = new Signature(newCode.positionalOnlyArgCount - 1,
                         newCode.takesVarKeywordArgs(),
                         varArgsIndex,
-                        newCode.takesVarArgs(),
+                        newCode.positionalOnlyArgCount > 0,
                         parameterNames,
                         kwOnlyNames);
         PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), newSignature, newCode, source);

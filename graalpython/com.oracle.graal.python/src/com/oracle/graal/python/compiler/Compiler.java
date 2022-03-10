@@ -345,7 +345,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 stackItems = 0;
             }
         }
-        if (stackItems > 0) {
+        if (stackItems > 0 || !collectionOnStack) {
             collectIntoArrayFromStack(bits, collectionOnStack, stackItems);
         }
     }
