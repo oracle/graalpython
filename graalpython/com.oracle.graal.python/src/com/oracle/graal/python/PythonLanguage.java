@@ -56,6 +56,7 @@ import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.ParserErrorCallback;
 import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -111,6 +113,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import com.oracle.truffle.api.source.SourceSection;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -452,20 +455,35 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     return new Parser(tok, factory, this, errorCb).fstring_rule();
                 }
             };
-            Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-            Compiler compiler = new Compiler();
-            CompilationUnit cu = compiler.compile(parser.file_rule(), source.getName(), EnumSet.noneOf(Compiler.Flags.class), 2);
-            CodeUnit co = cu.assemble(source.getName(), 0);
+            try {
+                Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
+                Compiler compiler = new Compiler();
+                ModTy mod = parser.file_rule();
+                // TODO this is needed until we get proper error handling in the parser
+                if (mod == null) {
+                    Node errorLocation = new Node() {
+                        @Override
+                        public SourceSection getSourceSection() {
+                            return source.createSection(0, source.getLength());
+                        }
+                    };
+                    throw PRaiseNode.raiseUncached(errorLocation, PythonBuiltinClassType.SyntaxError);
+                }
+                CompilationUnit cu = compiler.compile(mod, source.getName(), EnumSet.noneOf(Compiler.Flags.class), 2);
+                CodeUnit co = cu.assemble(source.getName(), 0);
 
-            Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
-                            co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, false,
-                            Arrays.copyOf(co.varnames, co.argCount), // parameter names
-                            Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
-            RootNode rootNode = new PBytecodeRootNode(this, signature, co, source);
-            if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-                rootNode = new TopLevelExceptionHandler(this, rootNode, source);
+                Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
+                                co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, co.positionalOnlyArgCount > 0,
+                                Arrays.copyOf(co.varnames, co.argCount), // parameter names
+                                Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
+                RootNode rootNode = new PBytecodeRootNode(this, signature, co, source);
+                if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
+                    rootNode = new TopLevelExceptionHandler(this, rootNode, source);
+                }
+                return PythonUtils.getOrCreateCallTarget(rootNode);
+            } catch (PException e) {
+                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
             }
-            return PythonUtils.getOrCreateCallTarget(rootNode);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
