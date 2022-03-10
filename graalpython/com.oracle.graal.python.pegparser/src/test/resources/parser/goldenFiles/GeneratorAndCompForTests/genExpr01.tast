@@ -1,0 +1,21 @@
+Module[0, 48]
+    ListComp[0, 48]
+        Element: Tuple[2, 7]
+            Values:
+                Name[3, 4] Value: "c"
+                Name[5, 6] Value: "s"
+        ComprehensionTy[8, 26]
+            Target: Name[12, 13] Value: "c" Store
+            Iterator: Tuple[17, 26]
+                Values:
+                    RAW[18, 21] Value: a
+                    RAW[22, 25] Value: b
+        ComprehensionTy[27, 47]
+            Target: Name[31, 32] Value: "s" Store
+            Iterator: Tuple[36, 47]
+                Values:
+                    LONG[37, 38] Value: 1
+                    LONG[39, 40] Value: 2
+                    LONG[41, 42] Value: 3
+                    LONG[43, 44] Value: 4
+                    LONG[45, 46] Value: 5
